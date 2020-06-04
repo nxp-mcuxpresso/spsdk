@@ -1,0 +1,7 @@
+{
+	"family": "rt5xx",
+	"revision": "a0",
+	"tzpOutputFile": "C:/Work/TrustZone/tzFile.bin",
+	"trustZonePreset": {
+	}
+}

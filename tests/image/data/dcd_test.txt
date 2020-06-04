@@ -1,0 +1,37 @@
+# DCD test file (12 commands)
+
+# Write value at specific address
+WriteValue 4 0x30340004 0x4F400005
+
+# Clear bit-mask at specific address
+ClearBitMask 4 0x307900C4 0x00000001
+
+# Set bit-mask at specific address
+SetBitMask 4 0x307900C4 0x00000001
+
+# Check if all bits from mask are cleared at specific address
+CheckAllClear 4 0x307900C4 0x00000001
+
+# Check five times if all bits from mask are cleared at specific address
+CheckAllClear 4 0x307900C4 0x00000001 5
+
+# Check if any bit from mask is cleared at specific address
+CheckAnyClear 4 0x307900C4 0x00000001
+
+# Check five times if any bit from mask is cleared at specific address
+CheckAnyClear 4 0x307900C4 0x00000001 5
+
+# Check if all bits from mask are set at specific address
+CheckAllSet 4 0x307900C4 0x00000001
+
+# Check five times if all bits from mask are set at specific address
+CheckAllSet 4 0x307900C4 0x00000001 5
+
+# Check if any bit from mask is set at specific address
+CheckAnySet 4 0x307900C4 0x00000001
+
+# Check five times if any bit from mask is set at specific address
+CheckAnySet 4 0x307900C4 0x00000001 5
+
+# Generic nop command
+Nop

@@ -1,0 +1,1 @@
+elftosb.exe -V -f lpc55xx -J "lpc55_crc_custom_tz.json"

@@ -1,0 +1,15 @@
+bitstring==3.1.6
+click==7.0
+click-option-group==0.3.0
+construct==2.10.56
+crccheck==0.6
+hexdump==3.3
+asn1crypto==1.2.0
+cryptography==2.8
+oscrypto==1.2.0
+pycryptodome==3.9.0
+pyserial==3.4
+pyusb==1.0.0; sys_platform == 'linux'
+pyusb==1.0.0; sys_platform == 'darwin'
+pywinusb==0.4.2; sys_platform == 'win32'
+jinja2>2.11.0

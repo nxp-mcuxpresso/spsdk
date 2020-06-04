@@ -1,0 +1,5 @@
+{
+    "CM33 Secure vector table address (cm33_vtor_addr)" : "0x2000000",
+    "CM33 Non-secure vector table address (cm33_vtor_ns_addr)" : "0x4000000",  
+    "MPU Control Register.(cm33_mpu_ctrl)" : "0xffaa00cc"
+}

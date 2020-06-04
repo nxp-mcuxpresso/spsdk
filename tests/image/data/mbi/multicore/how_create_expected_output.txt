@@ -1,0 +1,29 @@
+expected_output.bin was generated from elkftosb.exe using:
+
+elftosb.exe -V -d -f rt5xx -J workspace/image_config/rt5xxMulticoreExample.json
+
+
+with following configuration in rt5xxMulticoreExample.json:
+
+{
+    "family": "rt5xx",
+    "inputImageFile": "./workspace/input_images/testfffffff.bin",
+    "multicoreImages": [
+	{"address": "0x80000", "file": "./workspace/input_images/normal_boot.bin"},
+	{"address": "0x80600", "file": "./workspace/input_images/special_boot.bin"}
+    ],
+    "imageLinkAddress": "0x0",
+    "outputImageExecutionTarget": "RAM",
+    "outputImageAuthenticationType": "CRC",
+    "enableTrustZone": true,
+    "deviceKeySource": "OTP",
+    "outputImageEncryptionKeyFile": "",
+    "trustZonePresetFile": "./workspace/trust_zone_config/rt5xxA0.json",
+    "rootCertificate0File": "",
+    "rootCertificate1File": "",
+    "rootCertificate2File": "",
+    "rootCertificate3File": "",
+    "mainCertChainId": 1,
+    "mainCertPrivateKeyFile": "",
+    "masterBootOutputFile": "./workspace/output_images/test_output.bin"
+}

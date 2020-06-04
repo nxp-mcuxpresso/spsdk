@@ -1,0 +1,20 @@
+# tox has to installed first
+tox
+-r requirements.txt
+# testing
+pyyaml
+pytest
+pytest-cov
+voluptuous
+jsonschema
+# metrics
+radon
+mypy
+pylint==2.4.4
+pydocstyle
+# docs
+sphinx
+sphinx_rtd_theme
+sphinx-autodoc-annotation
+sphinx_autodoc_typehints
+recommonmark

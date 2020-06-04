@@ -1,0 +1,14 @@
+NXP Software Content Register
+
+Package:                   NXP SPSDK 0.1.0
+Outgoing License:          BSD-3-Clause
+License Files:             LICENSE
+Type of content:           Source code
+Description and comments:  NXP Secure Provisioning SDK
+Origin:                    NXP (BSD-3-Clause)
+                           Das U-Boot - Universal Bootloader API (U-Boot exception 2.0) - https://www.denx.de/wiki/U-Boot
+                           Jupytext (MIT) - https://github.com/mwouts/jupytext
+                           PyIMX (BSD-3-Clause) - https://github.com/molejar/pyIMX
+                           PyMBoot (BSD-3-Clause) - https://github.com/molejar/pyMBoot
+                           PyEnum (Apache-2) - https://github.com/molejar/pyEnum
+

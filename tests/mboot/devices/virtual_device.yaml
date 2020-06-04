@@ -1,0 +1,25 @@
+Properties:
+  CurrentVersion: 'K0.1.0'
+  AvailablePeripherals:
+    - 'UART'
+    - 'USB-HID'
+  FlashStartAddress: '0x00000000'
+  FlashSize: 128000
+  FlashSectorSize: 0
+  FlashBlockCount: 0
+  FlashPageSize: 10
+  MaxPacketSize: 1024
+  AvailableCommands:
+    - 'FlashEraseAll'
+    - 'FlashEraseRegion'
+    - 'ReadMemory'
+    - 'WriteMemory'
+    - 'FillMemory'
+    - 'GetProperty'
+    - 'FlashSecurityDisable'
+    - 'Reset'
+  RamStartAddress: 0x20000000
+  RamSize: 32000
+
+Other:
+  FlashBackdorKey: b'12345678'
