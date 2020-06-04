@@ -29,6 +29,7 @@ author = 'NXP'
 version = f"{spsdk.__version__}"
 
 # -- General configuration ---------------------------------------------------
+master_doc = 'index'
 
 source_suffix = ['.rst', '.md']
 
