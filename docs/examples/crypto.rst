@@ -3,22 +3,18 @@ Crypto examples
 
 Key generation example
 ------------------------
+Located at: `examples/crypto/key_generation.py`
+
 .. automodule:: examples.crypto.key_generation
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Chain of certificate example
 -----------------------------
+Located at: `examples/crypto/chain_of_certificates.py`
+
 .. automodule:: examples.crypto.chain_of_certificates
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Validation of certificate example
 -----------------------------------
-.. automodule:: examples.crypto.certificates_validation
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Located at: `examples/crypto/certificates_validation.py`
 
+.. automodule:: examples.crypto.certificates_validation
