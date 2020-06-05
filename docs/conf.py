@@ -15,7 +15,8 @@ import sys
 import spsdk
 from recommonmark.transform import AutoStructify
 
-sys.path.insert(0, os.path.abspath('../spsdk'))
+sys.path.insert(0, os.path.abspath('..'))
+# sys.path.insert(0, os.path.abspath('../spsdk'))
 sys.setrecursionlimit(1500)
 
 # -- Project information -----------------------------------------------------
@@ -29,6 +30,7 @@ author = 'NXP'
 version = f"{spsdk.__version__}"
 
 # -- General configuration ---------------------------------------------------
+master_doc = 'index'
 
 source_suffix = ['.rst', '.md']
 
