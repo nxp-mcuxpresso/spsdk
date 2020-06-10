@@ -1,6 +1,6 @@
 NXP SPSDK Examples
 ==================
-Here you can find various examples demonstrating **SPSDK** functinoality:
+Here you can find various examples demonstrating **SPSDK** functionality:
 
 - **image.py** - demonstration how to create a simple bootable image (i.MX-RT).
 - **image_dcd.py** - demonstration how to create and parse Device Configuration Data (DCD).
