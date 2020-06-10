@@ -28,28 +28,21 @@ The dependencies for the development are included in requirements-develop.txt.
 Installation
 ============
 
-Installation directly from master branch [bitbucket.sw.nxp.com](https://bitbucket.sw.nxp.com/spsdk):
+Directly from GitHub:
 
-```bash
-pip install -U https://bitbucket.sw.nxp.com/rest/api/latest/projects/SPSDK/repos/spsdk/archive?format=zip
+``` bash
+    $ pip install -U https://github.com/NXPmicro/spsdk/archive/master.zip
 ```
 
-If you will be asked for credentials, use your NXP login and password:
+Install SPSDK from sources:
 
-```text
-User for bitbucket.sw.nxp.com: nxa...
-Password: ******
+``` bash
+    $ git clone https://github.com/NXPmicro/spsdk.git
+    $ cd spsdk
+    $ pip install -r requirements-develop.txt
+    $ pip install -U -e .
 ```
-
-In case of development, install SPSDK from sources:
-
-```bash
-git clone ssh://git@bitbucket.sw.nxp.com/spsdk/spsdk.git
-cd spsdk
-pip install -r requirements-develop.txt
-pip install -U -e .
-```
- 
+> In Windows OS you need to instal [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
 
 Contribution
 ============
