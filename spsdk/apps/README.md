@@ -7,7 +7,7 @@ After installing SPSDK, several applications are present directly on PATH as exe
 - [sdphost](sdphost.py) - Console script for SDP module.
 - [pfr](pfr.py) - simple utility for creation and analysis of protected regions - CMPA and CFPA.
 
-`` spsdk `` - lists all available commands.
+`` spsdk --help`` - lists all available commands.
 
 `` spsdk <application> --help`` - print help for given application. 
 
