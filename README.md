@@ -14,13 +14,13 @@ Architecure
 - **Application Layer** is a layer allowing SPSDK integration into various applications such as command-line utilities, GUI tools, DevOps/Automation infrastructure which is used in prototyping, production, or testing environments or any application based on specific customer needs. As a part of the library, several command-line applications are [included](spsdk/apps). 
 
 - **Library Layer** abstracts functionality related to images or messages creation and parsing including required security and cryptography functionality.
-    - SB - Secure Boot File module
-    - MBI - Master Boot Image module
-    - Crypto - Cryptography module
+    - SB - Secure Boot File [module](https://spsdk.readthedocs.io/en/latest/api/sbfile.html).
+    - MBI - Master Boot Image [module](https://spsdk.readthedocs.io/en/latest/api/image.html).
+    - Crypto - Cryptography [module](https://spsdk.readthedocs.io/en/latest/api/crypto.html).
     
 - **Protocol Layer** packs or unpacks messages and images into a protocol defined by the required device counterpart.
-    - BL Host module
-    - SDP Host module
+    - BL Host [module](https://spsdk.readthedocs.io/en/latest/api/mboot.html).
+    - SDP Host [module](https://spsdk.readthedocs.io/en/latest/api/sdp.html).
 
 - **Communication Layer** links SPSDK and connected devices.
 
