@@ -50,7 +50,7 @@ Install SPSDK from sources:
     $ pip install -r requirements-develop.txt
     $ pip install -U -e .
 ```
-> In Windows OS you need to install [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
+> In **Windows OS** you need to install [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
  
 Usage
 -----
@@ -59,9 +59,9 @@ Usage
 - See [application](spsdk/apps) directory
 
 ---
-**NOTE**
+**i.Mx RT 1050**
 
-To run examples using **i.MX RT 1050** you need to download a flashloader:
+To run examples using i.MX RT 1050 you need to download a flashloader:
 - Go to: https://www.nxp.com/webapp/sps/download/license.jsp?colCode=IMX-RT1050-FLASHLOADER
 - Review the license agreement, download and unzip the package
 - Convert the elf file into bin (For this operation you need to have MCUXpresso IDE, IAR or Keil)
