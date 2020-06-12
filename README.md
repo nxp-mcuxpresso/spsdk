@@ -1,22 +1,28 @@
 NXP Secure Provisioning SDK
 ===========================
 
-**Secure Provisioning SDK (SPSDK)** allows the user to connect and communicate with a device; configure the device; prepare, download and upload data including security operations. It is delivered in a form of python library and command line applications.
+**Secure Provisioning SDK (SPSDK)** allows the user to connect and communicate with a device; configure the device; prepare, download, and upload data including security operations. It is delivered in a form of python library and command-line applications.
 
 * [Documentation](https://spsdk.readthedocs.io)
 
 Architecure
 -----------
-![SPSDK Architecture](docs/_static/images/SPSDK-Architecture.png)
+<img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="400"/>
 
-Dependencies
-------------
+**SPSDK** is a library which may be separated into the following layers based on performed functionality:
 
-- requirements.txt
-  - list of requirements for running SPSDK core + apps
-- requirements-develop.txt
-  - requirements needed for development (running tests, checking coding style, generating docs...)
+- **Application Layer** is a layer allowing SPSDK integration into various applications such as command-line utilities, GUI tools, DevOps/Automation infrastructure which is used in prototyping, production, or testing environments or any application based on specific customer needs. As a part of the library, several command-line applications are [included](spsdk/apps). 
 
+- **Library Layer** abstracts functionality related to images or messages creation and parsing including required security and cryptography functionality.
+    - SB - Secure Boot File module
+    - MBI - Master Boot Image module
+    - Crypto - Cryptography module
+    
+- **Protocol Layer** packs or unpacks messages and images into a protocol defined by the required device counterpart.
+    - BL Host module
+    - SDP Host module
+
+- **Communication Layer** links SPSDK and connected devices.
 
 Installation
 ------------
@@ -37,16 +43,29 @@ Install SPSDK from sources:
     $ pip install -r requirements-develop.txt
     $ pip install -U -e .
 ```
-> In Windows OS you need to instal [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
+> In Windows OS you need to install [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
  
-
 Usage
 -----
 
 - See [examples](examples) directory
+- See [application](spsdk/apps) directory
 
-To run examples using i.MX RT 1050 you need to download a flashloader:
+---
+**NOTE**
+
+To run examples using **i.MX RT 1050** you need to download a flashloader:
 - Go to: https://www.nxp.com/webapp/sps/download/license.jsp?colCode=IMX-RT1050-FLASHLOADER
 - Review the license agreement, download and unzip the package
 - Convert the elf file into bin (For this operation you need to have MCUXpresso IDE, IAR or Keil)
   - run ```python tools\flashloader_converter.py --elf-path <path/to/flashloader.elf> --ide-type <mcux | iar | keil> --ide-path <path/to/IDE/install/folder```
+
+---
+
+Dependencies
+------------
+
+- requirements.txt
+  - list of requirements for running SPSDK core + apps
+- requirements-develop.txt
+  - requirements needed for development (running tests, checking coding style, generating docs...)
