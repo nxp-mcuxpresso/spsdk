@@ -1,9 +1,13 @@
 NXP Secure Provisioning SDK
 ===========================
 
-**Secure Provisioning SDK (SPSDK)** is unified, reliable and easy to use SW library working across NXP MCU portfolio providing strong foundation from quick customer prototyping up to production deployment. The library allows the user to connect and communicate with a device; configure the device; prepare, download and upload data including security operations. It is delivered in a form of python library and command line applications.
+**Secure Provisioning SDK (SPSDK)** allows the user to connect and communicate with a device; configure the device; prepare, download and upload data including security operations. It is delivered in a form of python library and command line applications.
 
 * [Documentation](https://spsdk.readthedocs.io)
+
+Architecure
+-----------
+![SPSDK Architecture](docs/_static/images/SPSDK-Architecture.png)
 
 Dependencies
 ------------
