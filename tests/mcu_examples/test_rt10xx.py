@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timezone
 from struct import pack
 from time import sleep
-from typing import Optional
+from typing import Optional, Sequence, Tuple
 
 import pytest
 from cryptography import x509
@@ -18,8 +18,9 @@ from cryptography.hazmat.primitives.serialization import PrivateFormat, NoEncryp
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from spsdk.crypto import generate_certificate, save_crypto_item, Encoding
-from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_private_key
-from spsdk.image import BootImgRT, SrkTable, SrkItem, PaddingFCB, FlexSPIConfBlockFCB, MAC, hab_audit_log
+from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key
+from spsdk.image import BootImgRT, SrkTable, SrkItem, PaddingFCB, FlexSPIConfBlockFCB, MAC, hab_audit_log, \
+    BeeRegionHeader, BeeKIB, BeeProtectRegionBlock, BeeFacRegion
 from spsdk.mboot import McuBoot, ExtMemId, PropertyTag
 from spsdk.mboot import scan_usb as mboot_scan_usb
 from spsdk.sbfile.sb1 import SecureBootV1, BootSectionV1, SecureBootFlagsV1, CmdFill, CmdMemEnable, CmdErase, CmdLoad
@@ -54,6 +55,10 @@ SRK_SUBDIR = 'srk'
 PRIV_KEY_PASSWORD = b'SWTestTeam'
 # name of the sub-directory with debug logs for generation of the output
 DEBUG_LOG_SUBDIR = 'debug_logs'
+# name of the sub-directory with processor specific files; it is also used as ID of the test processor
+ID_RT1020 = 'rt102x'
+ID_RT1050 = 'rt105x'
+ID_RT1060 = 'rt106x'
 
 # configuration words for external FLASH "IS26KS" on RT1050 EVKB
 IS26KS_FLASH_CFG_WORD0 = 0xC0233007
@@ -75,7 +80,7 @@ class CpuParams:
     """Processor specific parameters of the test"""
 
     def __init__(self, data_dir: str, data_subdir: str, com_processor_name: str, board: str, ext_flash_cfg_word0: int,
-                 exec_hab_audit_addr: int):
+                 exec_hab_audit_base: int, exec_hab_audit_start: int):
         """Constructor.
 
         :param data_dir: base absolute path for test data
@@ -83,7 +88,8 @@ class CpuParams:
         :param com_processor_name: SPSDK-specific name of the target processor for communication API (MBOOT and SDP)
         :param board: name of the board (used to select name of the source and output image)
         :param ext_flash_cfg_word0: configuration word 0 for external FLASH
-        :param exec_hab_audit_addr: address of the `exec_hab_audit` function in internal RAM (DTCM)
+        :param exec_hab_audit_base: base address of the `exec_hab_audit` image; `-1` if not supported
+        :param exec_hab_audit_start: address of the `exec_hab_audit` function in internal RAM (DTCM); `-1` not supported
         """
         # ID of the test configuration
         self.id = data_subdir
@@ -100,13 +106,29 @@ class CpuParams:
         self.board = board
         self.ext_flash_cfg_word0 = ext_flash_cfg_word0
         self.ext_flash_cfg_word1 = 0  # currently zero for all RT
-        self.exec_hab_audit_addr = exec_hab_audit_addr
+        self.exec_hab_audit_base = exec_hab_audit_base
+        self.exec_hab_audit_start = exec_hab_audit_start
+
+    def __str__(self) -> str:
+        return self.id + ' ' + self.__class__.__name__
+
+    @classmethod
+    def rt1020(cls, data_dir: str) -> 'CpuParams':
+        """Parameters for RT1020"""
+        return CpuParams(data_dir, ID_RT1020, 'MXRT20', 'evkmimxrt1020', IS25WP_FLASH_CFG_WORD0,
+                         exec_hab_audit_base=0x20008000, exec_hab_audit_start=0x2000833c)
 
     @classmethod
     def rt1050(cls, data_dir: str) -> 'CpuParams':
         """Parameters for RT1050"""
-        return CpuParams(data_dir, 'rt105x', 'MXRT50', 'evkbimxrt1050', IS26KS_FLASH_CFG_WORD0,
-                         exec_hab_audit_addr=0x20018378)
+        return CpuParams(data_dir, ID_RT1050, 'MXRT50', 'evkbimxrt1050', IS26KS_FLASH_CFG_WORD0,
+                         exec_hab_audit_base=0x20018000, exec_hab_audit_start=0x20018378)
+
+    @classmethod
+    def rt1060(cls, data_dir: str) -> 'CpuParams':
+        """Parameters for RT1060"""
+        return CpuParams(data_dir, ID_RT1060, 'MXRT60', 'evkmimxrt1060', IS25WP_FLASH_CFG_WORD0,
+                         exec_hab_audit_base=0x20018000, exec_hab_audit_start=0x200183A4)
 
 
 # ############################## PROCESSOR/BOARD SPECIFIC INFO ########################################
@@ -133,7 +155,7 @@ ENABLE_HAB_FUSE_MASK = 0x00000002
 def pytest_generate_tests(metafunc):
     """Create test configurations for all tested processors"""
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-    cpus = [CpuParams.rt1050(data_dir), CpuParams.rt1060(data_dir)]
+    cpus = [CpuParams.rt1020(data_dir), CpuParams.rt1050(data_dir), CpuParams.rt1060(data_dir)]
     metafunc.parametrize("cpu_params", cpus, indirect=False, ids=[cpu_params.id for cpu_params in cpus])
 
 
@@ -342,6 +364,11 @@ def hab_audit_xip_app(cpu_params: CpuParams, read_log_only: bool) -> None:
         It is recommended to call the function firstly with parameter `True` and second time with parameter False to
         see the difference.
     """
+    exec_hab_audit_path = os.path.join(cpu_params.data_dir, 'exec_hab_audit.bin')
+    if not os.path.isfile(exec_hab_audit_path):
+        print('\nHAB logger not supported for the processor')
+        return
+
     mboot = init_flashloader(cpu_params)
 
     # ### Configure external FLASH on EVK: flex-spi-nor using options on address 0x2000 ###
@@ -352,14 +379,12 @@ def hab_audit_xip_app(cpu_params: CpuParams, read_log_only: bool) -> None:
     # call "%blhost%" -u 0x15A2,0x0073 -j -- configure-memory 9 0x2000
     assert mboot.configure_memory(INT_RAM_ADDR_DATA, ExtMemId.FLEX_SPI_NOR)
 
-    # Note: tle application is linked to fixed location in DTCM RAM
-    APP_BASE = 0x20018000
-    reset_code = load_binary(cpu_params.data_dir, 'exec_hab_audit.bin')
+    exec_hab_audit_code = load_binary(exec_hab_audit_path)
     # find address of the buffer in RAM, where the HAB LOG will be stored
-    log_addr = APP_BASE + reset_code.find(b'\xA5\x5A\x11\x22\x33\x44\x55\x66')
-    assert log_addr > APP_BASE
-    assert mboot.write_memory(APP_BASE, reset_code, 0)
-    assert mboot.call(cpu_params.exec_hab_audit_addr | 1, 0 if read_log_only else 1)
+    log_addr = cpu_params.exec_hab_audit_base + exec_hab_audit_code.find(b'\xA5\x5A\x11\x22\x33\x44\x55\x66')
+    assert log_addr > cpu_params.exec_hab_audit_base
+    assert mboot.write_memory(cpu_params.exec_hab_audit_base, exec_hab_audit_code, 0)
+    assert mboot.call(cpu_params.exec_hab_audit_start | 1, 0 if read_log_only else 1)
 
     log = mboot.read_memory(log_addr, 4096, 0)
     mboot.close()
@@ -373,12 +398,38 @@ def hab_audit_xip_app(cpu_params: CpuParams, read_log_only: bool) -> None:
             print(line)
 
 
-def _burn_image_to_flash(cpu_params: CpuParams, img: BootImgRT, img_data: bytes) -> None:
+def _init_otpmk_bee_regions(mboot: McuBoot, bee_regions: Sequence[BeeFacRegion]) -> None:
+    """Initialize PRDB regions for BEE encryption using master key.
+
+    :param mboot: instance allowing communicate with processor/flashloader
+    :param bee_regions: FAC regions to be created and encrypted
+    """
+    # 0xE0120000 is an option for PRDB construction and image encryption
+    # bit[31:28] tag, fixed to 0x0E
+    # bit[27:24] Key source, fixed to 0 (not known any RT device with supported non zero value)
+    # bit[23:20] AES mode: 1 = CTR mode, 0 = ECB mode (fixed to 1)
+    # bit[19:16] Encrypted region count
+    # bit[15:00] reserved
+    assert mboot.fill_memory(INT_RAM_ADDR_DATA, 4, (0xE010 + len(bee_regions)) << 16)
+    offset = 4
+    for fac in bee_regions:
+        # init FAC region start and length
+        assert mboot.fill_memory(INT_RAM_ADDR_DATA + offset, 4, fac.start_addr)
+        offset += 4
+        assert mboot.fill_memory(INT_RAM_ADDR_DATA + offset, 4, fac.length)
+        offset += 4
+    # apply the configuration
+    assert mboot.configure_memory(INT_RAM_ADDR_DATA, ExtMemId.FLEX_SPI_NOR)
+
+
+def _burn_image_to_flash(cpu_params: CpuParams, img: BootImgRT, img_data: bytes,
+                         otpmk_bee_regions: Tuple[BeeFacRegion, ...] = tuple()) -> None:
     """Burn image into external FLASH. This function is called only in production mode.
 
     :param cpu_params: processor specific parameters of the test
     :param img: RT10xx image instance
     :param img_data: exported image data
+    :param otpmk_bee_regions: optional list of BEE regions for BEE OTPMK encryption
     """
     assert TEST_IMG_CONTENT is False
 
@@ -399,13 +450,13 @@ def _burn_image_to_flash(cpu_params: CpuParams, img: BootImgRT, img_data: bytes)
 
     if not img.fcb.enabled:
         write_addr_ofs = img.ivt_offset
-        img_data_offset = 0
+        imgdata_offset = 0
     elif isinstance(img.fcb, PaddingFCB):
-        write_addr_ofs = img.ivt_offset
-        img_data_offset = img.ivt_offset
+        write_addr_ofs = img.BEE_OFFSET if img.bee_encrypted else img.ivt_offset
+        imgdata_offset = img.BEE_OFFSET if img.bee_encrypted else img.ivt_offset
     elif isinstance(img.fcb, FlexSPIConfBlockFCB):
         write_addr_ofs = 0
-        img_data_offset = 0
+        imgdata_offset = 0
     else:
         assert False
 
@@ -426,9 +477,16 @@ def _burn_image_to_flash(cpu_params: CpuParams, img: BootImgRT, img_data: bytes)
         with open(os.path.join(cpu_params.data_dir, 'flex_spi.fcb'), 'wb') as f:
             f.write(mem)
 
+        if otpmk_bee_regions:
+            assert img.address == EXT_FLASH_ADDR  # is applicable for XIP images only
+            _init_otpmk_bee_regions(mboot, otpmk_bee_regions)
+
+    else:
+        assert len(otpmk_bee_regions) == 0
+
     # @echo ### Write image ###
     # call "%blhost%" -u 0x15A2,0x0073 -j -- write-memory 0x60001000 image.bin 9
-    mboot.write_memory(EXT_FLASH_ADDR + write_addr_ofs, img_data[img_data_offset:])
+    mboot.write_memory(EXT_FLASH_ADDR + write_addr_ofs, img_data[imgdata_offset:])
 
     # for HAB encrypted image write KEY BLOB
     if img.dek_key:
@@ -438,21 +496,23 @@ def _burn_image_to_flash(cpu_params: CpuParams, img: BootImgRT, img_data: bytes)
         # call "blhost" -u 0x15A2,0x0073 -j -- write-memory 0x60008000 blob.bin 9
         assert mboot.write_memory(tgt_address, blob, ExtMemId.FLEX_SPI_NOR)
 
-    if AUTHENTICATE and (img.address == EXT_FLASH_ADDR):
+    if AUTHENTICATE and (img.address == EXT_FLASH_ADDR) and not otpmk_bee_regions:
         mboot.close()
         hab_audit_xip_app(cpu_params, True)
     else:
-        # run XIP image immediately
+        # detect XIP image
         app_data = img.decrypted_app_data
         initial_pc = int.from_bytes(app_data[4:8], byteorder="little")
         if img.address == EXT_FLASH_ADDR:  # if XIP
+            # run XIP image immediately
             stack_ptr = int.from_bytes(app_data[:4], byteorder="little")
             assert mboot.execute(initial_pc, EXT_FLASH_ADDR + img.ivt_offset, stack_ptr)
 
         mboot.close()
 
 
-def write_image(cpu_params: CpuParams, image_file_name: str, img: BootImgRT) -> None:
+def write_image(cpu_params: CpuParams, image_file_name: str, img: BootImgRT,
+                otpmk_bee_regions: Tuple[BeeFacRegion, ...] = tuple()) -> None:
     """Write image to the external flash
     The method behaviour depends on TEST_IMG_CONTENT:
     - if True (TEST MODE), the method generates the image and compare with previous version
@@ -461,6 +521,7 @@ def write_image(cpu_params: CpuParams, image_file_name: str, img: BootImgRT) -> 
     :param cpu_params: processor specific parameters of the test
     :param image_file_name: of the image to be written (including file extension)
     :param img: image instance to be written
+    :param otpmk_bee_regions: optional list of BEE regions for BEE OTPMK encryption
     """
     path = os.path.join(cpu_params.data_dir, OUTPUT_IMAGES_SUBDIR, image_file_name)
     debug_info = DebugInfo()
@@ -473,25 +534,26 @@ def write_image(cpu_params: CpuParams, image_file_name: str, img: BootImgRT) -> 
         assert img.info()  # quick check info prints non-empty output
         compare_bin_files(path, img_data)
         # compare no-padding
-        if NO_PADDING and img.fcb.enabled and isinstance(img.fcb, PaddingFCB):
+        if NO_PADDING and img.fcb.enabled and isinstance(img.fcb, PaddingFCB) and not img.bee_encrypted:
             img.fcb.enabled = False
             compare_bin_files(path.replace('.bin', '_nopadding.bin'), img.export(zulu=zulu))
             img.fcb.enabled = False
         # test that parse image will return same content
-        if img.fcb.enabled:
+        if img.fcb.enabled and not img.bee_encrypted:
             compare_bin_files(path, BootImgRT.parse(img_data).export())
             # test that size matches len of exported data
             assert img.size == len(img_data)
     else:
         with open(path, 'wb') as f:
             f.write(img_data)
-        if NO_PADDING and img.fcb.enabled and isinstance(img.fcb, PaddingFCB):
+        if NO_PADDING and img.fcb.enabled and isinstance(img.fcb, PaddingFCB) and not img.bee_encrypted:
             with open(path.replace('.bin', '_nopadding.bin'), 'wb') as f:
                 f.write(img_data[img.ivt_offset:])
 
         if img.ivt_offset == BootImgRT.IVT_OFFSET_NOR_FLASH:
-            _burn_image_to_flash(cpu_params, img, img_data)
+            _burn_image_to_flash(cpu_params, img, img_data, otpmk_bee_regions)
         else:
+            assert len(otpmk_bee_regions) == 0
             _burn_image_to_sd(cpu_params, img, img_data)
 
 
@@ -594,6 +656,9 @@ def test_nor_flash_fcb(cpu_params: CpuParams, fcb: bool) -> None:
     :param cpu_params: processor specific parameters of the test
     :param fcb: True to include FCB block to output image; False to exclude
     """
+    if (cpu_params.id != ID_RT1050) and (cpu_params.id != ID_RT1060):
+        return  # this test case is supported only for RT1050 and RT1060
+
     image_name = f'{cpu_params.board}_iled_blinky_ext_FLASH'
     # create bootable image object
     app_data = load_binary(cpu_params.data_dir, image_name + '.bin')
@@ -709,8 +774,8 @@ def test_generate_csf_img(cpu_params: CpuParams, srk_key_index: int, cert_name_p
     out_key_path = os.path.join(cpu_params.keys_data_dir, out_name + '_key')
     # generate private key
     gen_priv_key = generate_rsa_private_key(key_size=key_size)
-    save_private_key(gen_priv_key, out_key_path + '.pem', password=PRIV_KEY_PASSWORD, encoding=Encoding.PEM)
-    save_private_key(gen_priv_key, out_key_path + '.der', password=PRIV_KEY_PASSWORD, encoding=Encoding.DER)
+    save_rsa_private_key(gen_priv_key, out_key_path + '.pem', password=PRIV_KEY_PASSWORD, encoding=Encoding.PEM)
+    save_rsa_private_key(gen_priv_key, out_key_path + '.der', password=PRIV_KEY_PASSWORD, encoding=Encoding.DER)
     # generate public key
     gen_pub_key = generate_rsa_public_key(gen_priv_key)
     # load private key of the issuer (SRK)
@@ -741,8 +806,8 @@ def test_hab_encrypted(cpu_params: CpuParams) -> None:
     #
     boot_img = BootImgRT(tgt_address)
     _to_authenticated_image(cpu_params, boot_img, app_data, srk_key_index, -1, dek, nonce)
-    assert boot_img.dek_ram_address == 0x20008000
-    assert boot_img.dek_img_offset == 0x8000
+    assert boot_img.dek_ram_address == boot_img.ivt.csf_address + 0x2000
+    assert boot_img.dek_img_offset == (boot_img.ivt.csf_address - INT_RAM_ADDR_CODE) + 0x2000
     write_image(cpu_params, image_name + f'_encrypted_key{str(srk_key_index + 1)}.bin', boot_img)
 
 
@@ -806,7 +871,7 @@ def test_sb(cpu_params: CpuParams) -> None:
     timestamp = datetime(year=2020, month=4, day=24, hour=16, minute=33, second=32)
 
     # load application to add into SB
-    img_name = f'{cpu_params.board}_iled_blinky_ext_FLASH_unsigned_nofcb'
+    img_name = f'{cpu_params.board}_iled_blinky_ext_FLASH_unsigned_nopadding'
     app_data = load_binary(cpu_params.data_dir, OUTPUT_IMAGES_SUBDIR, img_name + '.bin')
     boot_img = BootImgRT.parse(app_data)  # parse to retrieve IVT offset
 
@@ -823,7 +888,7 @@ def test_sb(cpu_params: CpuParams) -> None:
     # enable flexspinor 0x3000;
     sect.append(CmdMemEnable(INT_RAM_ADDR_DATA, 4, ExtMemId.FLEX_SPI_NOR))
     # load myBinFile > kAbsAddr_Ivt;
-    app_data += b'\x49\x20\x93\x8e\x89\x8F\x43\x88'  # this is random padding fixed for the test, not use for production
+    app_data = align_block(app_data, 0x10)  # this is padding fixed for the test, not needed for production
     sect.append(CmdLoad(EXT_FLASH_ADDR + boot_img.ivt_offset, app_data))
     #
     sb.append(sect)
@@ -836,6 +901,9 @@ def test_sb_multiple_sections(cpu_params: CpuParams) -> None:
 
     :param cpu_params: processor specific parameters of the test
     """
+    if (cpu_params.id != ID_RT1050) and (cpu_params.id != ID_RT1060):
+        return  # this test case is supported only for RT1050 and RT1060
+
     # timestamp is fixed for the test, do not not for production
     timestamp = datetime(year=2020, month=4, day=24, hour=16, minute=33, second=32)
 
@@ -869,3 +937,59 @@ def test_sb_multiple_sections(cpu_params: CpuParams) -> None:
     sb.append(sect2)
     #
     write_sb(cpu_params, 'sb_file_2_sections' + '.sb', sb)
+
+
+# ####################################################################################
+# ########################### example: BEE OTMPK signed ##############################
+# ####################################################################################
+def test_bee_otmpk(cpu_params: CpuParams) -> None:
+    """Test creation of signed image BEE encrypted using master key.
+    It is supposed the SRK fuses are burned and HAB is enabled.
+    It is supposed the SRK_KEY_SEL fuse is burned.
+
+    :param cpu_params: processor specific parameters of the test
+    """
+    image_name = f'{cpu_params.board}_iled_blinky_ext_FLASH'
+    tgt_address = EXT_FLASH_ADDR
+
+    boot_img = BootImgRT(tgt_address)
+    boot_img.fcb.enabled = False
+    app_data = load_binary(cpu_params.data_dir, image_name + '.bin')
+    _to_authenticated_image(cpu_params, boot_img, app_data, 0)  # use signed image
+    write_image(cpu_params, image_name + '_bee_otmpk.bin', boot_img, (BeeFacRegion(EXT_FLASH_ADDR + 0x1000, 0x2000), ))
+
+
+# ####################################################################################
+# ######################## example: BEE SW_GPx unsigned ##############################
+# ####################################################################################
+def test_bee_unsigned_sw_key(cpu_params: CpuParams) -> None:
+    """Test encrypted XIP unsigned image with user keys.
+    It is supposed the SRK_KEY_SEL fuse is burned.
+    It is supposed the user key is burned in SW_GP2 fuses.
+
+    :param cpu_params: processor specific parameters of the test
+    """
+    img = BootImgRT(EXT_FLASH_ADDR)
+    img.add_image(load_binary(cpu_params.data_dir, f'{cpu_params.board}_iled_blinky_ext_FLASH.bin'))
+    # the following parameters are fixed for the test only, to produce stable result; for production use random number
+    cntr1 = bytes.fromhex('112233445566778899AABBCC00000000')
+    kib_key1 = bytes.fromhex('C1C2C3C4C5C6C7C8C9CACBCCCDCECFC0')
+    kib_iv1 = bytes.fromhex('1112131415161718191A1B1C1D1E1F10')
+    cntr2 = bytes.fromhex('2233445566778899AABBCCDD00000000')
+    kib_key2 = bytes.fromhex('C1C2C3C4C5C6C7C8C9CACBCCCDCECFC2')
+    kib_iv2 = bytes.fromhex('2122232425262728292A2B2C2D2E2F20')
+    # Add two regions as an example (even this is probably not real use case)
+    # BEE region 0
+    sw_key = bytes.fromhex('0123456789abcdeffedcba9876543210')
+    region = BeeRegionHeader(BeeProtectRegionBlock(counter=cntr1), sw_key, BeeKIB(kib_key1, kib_iv1))
+    region.add_fac(BeeFacRegion(EXT_FLASH_ADDR + 0x1000, 0x2000))
+    region.add_fac(BeeFacRegion(EXT_FLASH_ADDR + 0x3800, 0x800))
+    img.bee.add_region(region)
+    # BEE region 1 (this is just example, the is no code in the region)
+    sw_key = bytes.fromhex('F123456789abcdeffedcba987654321F')
+    region = BeeRegionHeader(BeeProtectRegionBlock(counter=cntr2), sw_key, BeeKIB(kib_key2, kib_iv2))
+    region.add_fac(BeeFacRegion(EXT_FLASH_ADDR + 0x100000, 0x1000))
+    img.bee.add_region(region)
+    #
+    out_name = cpu_params.board + '_iled_blinky_ext_FLASH_bee_userkey_unsigned.bin'
+    write_image(cpu_params, out_name, img)

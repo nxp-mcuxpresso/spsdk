@@ -6,15 +6,19 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Loading methods for keys/certificates/CSR."""
 
-from typing import Callable, Any
+from typing import Callable, Any, Union
 
 from spsdk.crypto import default_backend, RSAPrivateKeyWithSerialization, RSAPublicKey, Certificate, \
     load_pem_x509_certificate, load_der_x509_certificate, load_pem_public_key, load_der_public_key, \
-    load_pem_private_key, load_der_private_key, Encoding
+    load_pem_private_key, load_der_private_key, Encoding, EllipticCurvePrivateKeyWithSerialization, \
+    EllipticCurvePublicKey
+
+PrivateKey = Union[RSAPrivateKeyWithSerialization, EllipticCurvePrivateKeyWithSerialization]
+PublicKey = Union[RSAPublicKey, EllipticCurvePublicKey]
 
 
 def load_private_key(file_path: str, password: bytes = None,
-                     encoding: Encoding = None) -> RSAPrivateKeyWithSerialization:
+                     encoding: Encoding = None) -> PrivateKey:
     """Load private key from file.
 
     :param file_path: path to file, where private key is stored
@@ -24,7 +28,7 @@ def load_private_key(file_path: str, password: bytes = None,
     """
     real_encoding = encoding or _get_encoding_type(file_path)
 
-    def solve(key_data: bytes) -> RSAPrivateKeyWithSerialization:
+    def solve(key_data: bytes) -> PrivateKey:
         """Determine the type of data and perform loading based on data type.
 
         :param key_data: given private keys data
@@ -38,7 +42,7 @@ def load_private_key(file_path: str, password: bytes = None,
     return generic_load(file_path, solve)
 
 
-def load_public_key(file_path: str, encoding: Encoding = None) -> RSAPublicKey:
+def load_public_key(file_path: str, encoding: Encoding = None) -> PublicKey:
     """Load the public key from file.
 
     :param file_path: path to file, where public key is stored
@@ -47,7 +51,7 @@ def load_public_key(file_path: str, encoding: Encoding = None) -> RSAPublicKey:
     """
     real_encoding = encoding or _get_encoding_type(file_path)
 
-    def solve(key_data: bytes) -> RSAPublicKey:
+    def solve(key_data: bytes) -> PublicKey:
         """Determine the type of data and perform loading based on data type.
 
         :param key_data: given public keys data

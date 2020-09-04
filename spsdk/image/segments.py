@@ -11,9 +11,10 @@ import logging
 from abc import ABC
 from datetime import datetime
 from struct import pack, unpack_from, calcsize
-from typing import Dict, List, Optional, Iterator, Union, Tuple
+from typing import Dict, List, Optional, Iterator, Sequence, Tuple, Union
 
-from spsdk.utils.misc import align, extend_block, find_first, DebugInfo
+from spsdk.utils.misc import align, align_block, extend_block, DebugInfo
+from .bee import BeeRegionHeader, BEE_ENCR_BLOCK_SIZE
 from .commands import CmdBase, CmdWriteData, CmdCheckData, CmdUnlock, \
     CmdNop, CmdAuthData, EnumWriteOps, EnumCheckOps, EnumEngine, CmdTag, parse_command
 from .header import Header, Header2, SegTag, CorruptedException
@@ -41,6 +42,7 @@ class BaseSegment(ABC):
     @padding_len.setter
     def padding_len(self, value: int) -> None:
         """New length (in bytes) of padding applied at the end of exported data."""
+        assert value >= 0
         self.padding = value
 
     @property
@@ -331,7 +333,7 @@ class FlexSPIConfBlockFCB(AbstractFCB):
             return b''
 
         data = self.export_header()
-        data += pack('<6BH7I5I4B2I4I6I4H',
+        data += pack(self.FORMAT,
                      # B
                      self.read_sample_clk_src, self.cs_hold_time, self.cs_setup_time, self.column_address_width,
                      self.device_mode_cfg_enable, self.device_mode_type,
@@ -358,7 +360,9 @@ class FlexSPIConfBlockFCB(AbstractFCB):
 
         dbg_info.append_binary_section('FCB', data)
 
-        data += self._padding_export()
+        if self.padding_len > 0:
+            data += self._padding_export()
+            dbg_info.append_section(f'FCB-padding: {self.padding_len} bytes')
 
         return data
 
@@ -424,6 +428,120 @@ class FlexSPIConfBlockFCB(AbstractFCB):
         result.reserved_padding2 = buffer[offset:offset + len(result.reserved_padding2)]
 
         return result
+
+
+########################################################################################################################
+# KIB and PRDB (i.MX-RT) for BEE Encrypted XIP mode
+########################################################################################################################
+
+class SegBEE(BaseSegment):
+    """BEE keys and regions segment."""
+
+    @property
+    def size(self) -> int:
+        """:return: size of the exported binary data in bytes."""
+        result = 0
+        for region in self._regions:
+            result += region.size
+        return result
+
+    def __init__(self, regions: Sequence[BeeRegionHeader], max_facs: int = 3):
+        """Constructor.
+
+        :param regions: list of regions
+        :param max_facs: maximum total number of FAC in all regions, used for validation
+        """
+        super().__init__()
+        self._regions = list(regions)
+        self.max_facs = max_facs
+
+    def add_region(self, region: BeeRegionHeader) -> None:
+        """Add region.
+
+        :param region: to be added
+        """
+        self._regions.append(region)
+
+    def info(self) -> str:
+        """:return: test description of the instance."""
+        result = f'BEE Segment, with {len(self._regions)} regions\n'
+        for region in self._regions:
+            result += region.info()
+        return result
+
+    def update(self) -> None:
+        """Updates internal fields of the instance."""
+        for region in self._regions:
+            region.update()
+
+    def validate(self) -> None:
+        """Validates settings of the instance.
+
+        :raises AssertionError: if settings invalid
+        :raises ValueError: if number of FAC regions exceeds the limit
+        """
+        total_facs = 0
+        for region in self._regions:
+            region.validate()
+            total_facs += len(region.fac_regions)
+        if total_facs > self.max_facs:
+            raise ValueError(f'Totally {total_facs} FAC regions, but only {self.max_facs} supported')
+
+    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+        """Serialization to binary representation.
+
+        :param dbg_info: instance allowing to provide debug info about exported data
+        :return:binary representation of the region (serialization).
+        """
+        self.update()
+        self.validate()
+        result = b''
+        for index, region in enumerate(self._regions):
+            dbg_info.append_section(f'BEE Region {index}')
+            result += region.export(dbg_info=dbg_info)
+        if self.padding_len:
+            result += self._padding_export()
+            if self.size == 0:
+                dbg_info.append_section(f'BEE-padding {self.padding_len} bytes')
+
+        return result
+
+    @classmethod
+    def parse(cls, data: bytes, offset: int = 0, decrypt_keys: List[bytes] = list()) -> 'SegBEE':
+        """Deserialization.
+
+        :param data: binary data to be parsed
+        :param offset: to start parsing the data
+        :param decrypt_keys: list of SW_GP keys used to decrypt EKIB
+                The number of keys must match number of regions to be parsed
+        :return: instance created from binary data
+        """
+        regions: List[BeeRegionHeader] = list()
+        for sw_gp_key in decrypt_keys:
+            region = BeeRegionHeader.parse(data, offset, sw_gp_key)
+            regions.append(region)
+            offset += region.size
+        return SegBEE(regions)
+
+    def encrypt_data(self, start_addr: int, data: bytes) -> bytes:
+        """Encrypt image data located in any PRDB block.
+
+        :param start_addr: start address of the data; must be aligned to block size
+        :param data: to be encrypted
+        :return: encrypted data, aligned to block size; blocks outside any FAC region kept untouched
+        """
+        assert align(start_addr, BEE_ENCR_BLOCK_SIZE) == start_addr
+        orig_len = len(data)
+        data = align_block(data, BEE_ENCR_BLOCK_SIZE)
+        result = bytes()
+        offset = 0
+        while offset < len(data):
+            blck = data[offset:offset + BEE_ENCR_BLOCK_SIZE]
+            for region in self._regions:
+                blck = region.encrypt_block(start_addr + offset, blck)
+            result += blck
+            offset += BEE_ENCR_BLOCK_SIZE
+        return result[:orig_len]
 
 
 ########################################################################################################################

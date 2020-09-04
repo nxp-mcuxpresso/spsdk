@@ -71,11 +71,10 @@ class SDP:
         """Disconnect i.MX device."""
         self._device.close()
 
-    def _process_cmd(self, cmd_packet: CmdPacket, timeout: int = 1000) -> bool:
+    def _process_cmd(self, cmd_packet: CmdPacket) -> bool:
         """Process Command Packet.
 
         :param cmd_packet: Command packet object
-        :param timeout: Waiting time in ms for hab response
         :return: True if success else False.
         :raises SdpCommandError: If command failed and the 'cmd_exception' is set to True
         :raises SdpConnectionError: Timeout or Connection error
@@ -89,7 +88,7 @@ class SDP:
 
         try:
             self._device.write(cmd_packet)
-            response = self._device.read(timeout)
+            response = self._device.read()
         except Exception as e:
             logger.debug(e)
             logger.info('RX-CMD: Timeout Error')
@@ -106,15 +105,14 @@ class SDP:
 
         return True
 
-    def _read_status(self, timeout: int = 1000) -> int:
+    def _read_status(self) -> int:
         """Read status value.
 
-        :param timeout: Waiting time in ms for rx data
         :return: Status code
         :raises SdpConnectionError: Timeout
         """
         try:
-            response = self._device.read(timeout)
+            response = self._device.read()
             logger.info(f'RX-PACKET: {response.info()}')
         except:
             logger.info('RX-CMD: Timeout Error')
@@ -122,11 +120,10 @@ class SDP:
 
         return response.value
 
-    def _read_data(self, length: int, timeout: int = 1000) -> Optional[bytes]:
+    def _read_data(self, length: int) -> Optional[bytes]:
         """Read data from device.
 
         :param length: Count of bytes
-        :param timeout: Waiting time in ms for rx data
         :return: bytes read if the read operation is successfull else None
         :raises SdpCommandError: If command failed and the 'cmd_exception' is set to True
         :raises SdpConnectionError: Timeout or Connection error
@@ -135,7 +132,7 @@ class SDP:
 
         while len(data) < length:
             try:
-                response = self._device.read(timeout)
+                response = self._device.read()
             except:
                 logger.info('RX-CMD: Timeout Error')
                 raise SdpConnectionError('Timeout Error')
@@ -218,7 +215,7 @@ class SDP:
         logger.info(f"TX-CMD: Read(address=0x{address:08X}, length={length}, format={data_format})")
         cmd_packet = CmdPacket(CommandTag.READ_REGISTER, address, data_format, length)
         if self._process_cmd(cmd_packet):
-            return self._read_data(length, timeout=1000)
+            return self._read_data(length)
         return None
 
     def read_safe(self, address: int, length: int, data_format: int = 32) -> Optional[bytes]:

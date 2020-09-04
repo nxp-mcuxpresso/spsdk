@@ -10,17 +10,16 @@
 import json
 import sys
 # no_type_check decorator is used to suppress mypy's confusion in Click and cryptography libraries
-from typing import (Iterable, List, Mapping, Optional, Type, Union,
-                    no_type_check)
+from typing import Iterable, List, Mapping, Optional, Type, Union, Tuple, no_type_check
 
 import click
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from cryptography.hazmat.primitives.serialization import (
-    load_pem_private_key, load_pem_public_key)
+
 from cryptography.x509 import load_pem_x509_certificate
 from jinja2 import Environment, FileSystemLoader
 
+from spsdk import crypto
 from spsdk import SPSDK_DATA_FOLDER
 from spsdk import __version__ as spsdk_version
 from spsdk.image import pfr
@@ -54,27 +53,24 @@ def _load_user_config(user_config_file: click.File) -> Optional[dict]:
 
 
 @no_type_check
-def _extract_public_key(secret_type: str, data: bytes, password: Optional[bytes]) -> RSAPublicKey:
-    if secret_type == 'cert':
-        return load_pem_x509_certificate(data, default_backend()).public_key()
-    if secret_type == 'priv-key':
-        return load_pem_private_key(data, password, default_backend()).public_key()
-    if secret_type == 'pub-key':
-        return load_pem_public_key(data, default_backend())
-    # return None
-    assert False, f"Unsupported secret file type '{secret_type}'."
+def _extract_public_key(file_path: str, password: Optional[str]) -> crypto.RSAPublicKey:
+    cert_candidate = crypto.load_certificate(file_path)
+    if cert_candidate:
+        return cert_candidate.public_key()
+    private_candidate = crypto.load_private_key(file_path, password.encode() if password else None)
+    if private_candidate:
+        return private_candidate.public_key()
+    public_candidate = crypto.load_public_key(file_path)
+    if public_candidate:
+        return public_candidate
+    assert False, f"Unable to load secret file '{file_path}'."
 
 
 @no_type_check
-def _extract_public_keys(
-        secret_type: str, secret_files: List[Union[click.File, bytes]], password: Optional[bytes]
-) -> List[RSAPublicKey]:
-    """Exrtact RSAPublic key from a file that contains Certificate, Private Key o Public Key."""
+def _extract_public_keys(secret_files: Tuple[str], password: Optional[str]) -> List[RSAPublicKey]:
+    """Extract RSAPublic key from a file that contains Certificate, Private Key o Public Key."""
     return [
-        _extract_public_key(
-            secret_type=secret_type, password=password,
-            data=source if isinstance(source, bytes) else source.read()
-        )
+        _extract_public_key(file_path=source, password=password)
         for source in secret_files
     ]
 
@@ -173,7 +169,7 @@ def parse(device: str, revision: str, area: str, output: click.Path, binary: cli
 @click.option('-r', '--revision', help="Chip revision; if not specivfied, most recent one will be used")
 @click.option('-t', '--type', 'area', required=True, type=click.Choice(['cmpa', 'cfpa']),
               help='Select PFR partition')
-@click.option('-o', '--output', type=click.Path(), required=False,
+@click.option('-o', '--output', type=click.Path(), required=True,
               help="Save the output into a file instead of console")
 @click.option('-c', '--user-config', 'user_config_file', type=click.File('r'), required=True,
               help="JSON file with user configuration")
@@ -181,16 +177,17 @@ def parse(device: str, revision: str, area: str, output: click.Path, binary: cli
               help="Add HASH digest at the end. CAUTION!!! It locks the device")
 @click.option('-i', '--calc-inverse', is_flag=True,
               help="Calculate the INVERSE values CAUTION!!! It locks the settings")
-@click.option('-s', '--secret-type', type=click.Choice(['cert', 'priv-key', 'pub-key']), required=True,
-              help="Type of the secure file")
-@click.option('-p', '--password', help="Password when using Encrypted private keys as --secret-type")
-@click.option('-f', '--secure-file', type=click.File('rb'), multiple=True, required=True,
-              help="Secure file (certificate, public key, private key); can be defined multiple times")
+@click.option('-f', '--secret-file', type=click.Path(exists=True), multiple=True, required=False,
+              help="Secret file (certificate, public key, private key); can be defined multiple times")
+@click.option('-p', '--password', help="Password when using Encrypted private keys as --secret-file")
 def generate(device: str, revision: str, area: str, output: click.Path, user_config_file: click.File,
-             add_hash: bool, calc_inverse: bool, secret_type: str, password: str, secure_file: click.File) -> None:
+             add_hash: bool, calc_inverse: bool, secret_file: Tuple[str], password: str) -> None:
     """Generate binary data."""
+    if area == 'cmpa' and not secret_file:
+        click.echo('Error: CMPA page requires --secret-file(s)')
+        sys.exit(1)
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
-    pfr_obj.keys = _extract_public_keys(secret_type, secure_file, None if password is None else password.encode())
+    pfr_obj.keys = _extract_public_keys(secret_file, password)
     pfr_obj.user_config = _load_user_config(user_config_file)
     data = pfr_obj.export(add_hash=add_hash, compute_inverses=calc_inverse)
     _store_output(data, output, 'wb')
@@ -211,7 +208,7 @@ def info(device: str, revision: str, area: str, output: click.Path, open_result:
     html_output = _generate_html(pfr_obj.__class__.__name__, data)
     _store_output(html_output, output)
     if open_result:  # pragma: no cover # can't test opening the html document
-        click.launch(f"start {output}")
+        click.launch(f'{output}')
 
 
 if __name__ == "__main__":

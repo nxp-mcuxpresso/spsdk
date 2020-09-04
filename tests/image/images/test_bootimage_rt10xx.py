@@ -8,15 +8,20 @@
 import pytest
 
 from spsdk.image import BootImgRT
+from spsdk.utils.misc import DebugInfo
 
 
 def test_bootimage_rt10xx_basic():
     """Simple test for BootImgRT"""
     img = BootImgRT(0x60000000)
     assert img.info()
-    img_data = img.export()
+    dbg_info = DebugInfo()
+    img_data = img.export(dbg_info=dbg_info)
     # test parser returns same result
-    assert BootImgRT.parse(img_data).export() == img_data
+    dbg_info2 = DebugInfo()
+    img_data2 = BootImgRT.parse(img_data).export(dbg_info=dbg_info2)
+    assert dbg_info.lines == dbg_info2.lines
+    assert img_data == img_data2
 
 
 def test_bootimage_rt10xx_missing_ivt():

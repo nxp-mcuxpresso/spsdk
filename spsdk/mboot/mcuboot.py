@@ -62,11 +62,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                  exception_value: BaseException = None, traceback: TracebackType = None) -> None:
         self.close()
 
-    def _process_cmd(self, cmd_packet: CmdPacket, timeout: int = 2000) -> Any:
+    def _process_cmd(self, cmd_packet: CmdPacket) -> Any:
         """Process Command.
 
         :param cmd_packet: Command Packet
-        :param timeout: The maximal waiting time in [ms] for response packet
         :return: commad response derived from the CmdResponse
         :raises McuBootConnectionError: Timeout Error
         :raises McuBootCommandError: Error during command execution on the target
@@ -79,7 +78,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         try:
             self._device.write(cmd_packet)
-            response = self._device.read(timeout)
+            response = self._device.read()
         except TimeoutError:
             self._status_code = StatusCode.NO_RESPONSE
             logger.debug('RX-PACKET: No Response, Timeout Error !')
@@ -111,7 +110,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         while True:
             try:
-                response = self._device.read(timeout)
+                response = self._device.read()
             except TimeoutError:
                 self._status_code = StatusCode.NO_RESPONSE
                 logger.debug('RX: No Response, Timeout Error !')
@@ -136,13 +135,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         return data[:length] if len(data) > length else data
 
-    def _send_data(self, cmd_tag: int, data: bytes) -> bool:
+    def _send_data(self, cmd_tag: int, data: List[bytes]) -> bool:
         """Send Data part of specific command.
 
         :param cmd_tag: Tag indicating the command
-        :type cmd_tag: int
-        :param data: Data to send
-        :type data: bytes
+        :param data: List of data chunks to send
         :raises McuBootConnectionError: Timeout error
         :raises McuBootCommandError: Error during command execution on the target
         :return: True if the operation is successfull
@@ -152,12 +149,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             raise McuBootConnectionError('Device Disconnected !')
 
         try:
-            self._device.write(data)
+            for data_chunk in data:
+                self._device.write(data_chunk)
             response = self._device.read()
         except TimeoutError:
             self._status_code = StatusCode.NO_RESPONSE
             logger.debug('RX: No Response, Timeout Error !')
             raise McuBootConnectionError("No Response from Device")
+        except SPSDKError:
+            response = self._device.read()
 
         logger.debug(f'RX-PACKET: {response.info()}')
         self._status_code = response.status
@@ -168,8 +168,23 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                 raise McuBootCommandError(CommandTag.name(cmd_tag), response.status)
             return False
 
-        logger.info(f"CMD: Successfully Send {len(data)} Bytes")
+        logger.info(f"CMD: Successfully Send {sum(len(chunk) for chunk in data)} Bytes")
         return True
+
+    def _split_data(self, data: bytes) -> List[bytes]:
+        """Split data to send if necessary.
+
+        :param data: Data to send
+        :return: List of data splices
+        """
+        if not self._device.need_data_split:
+            return [data]
+        packet_size_property = self.get_property(prop_tag=PropertyTag.MAX_PACKET_SIZE)
+        assert packet_size_property, "Unable to get MAX PACKET SIZE"
+        max_packet_size = packet_size_property[0]
+        return [
+            data[i:i + max_packet_size] for i in range(0, len(data), max_packet_size)
+        ]
 
     def open(self) -> None:
         """Connect to the device."""
@@ -405,7 +420,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         logger.info(f"CMD: FlashEraseRegion(address=0x{address:08X}, length={length}, mem_id={mem_id})")
         cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_REGION, 0, address, length, mem_id)
-        return self._process_cmd(cmd_packet, 5000).status == StatusCode.SUCCESS
+        return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def read_memory(self, address: int, length: int, mem_id: int = 0) -> Optional[bytes]:
         """Read data from MCU memory.
@@ -431,9 +446,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problem; True otherwise
         """
         logger.info(f"CMD: WriteMemory(address=0x{address:08X}, length={len(data)}, mem_id={mem_id})")
+        data_chunks = self._split_data(data=data)
         cmd_packet = CmdPacket(CommandTag.WRITE_MEMORY, 0, address, len(data), mem_id)
         if self._process_cmd(cmd_packet).status == StatusCode.SUCCESS:
-            return self._send_data(CommandTag.WRITE_MEMORY, data)
+            return self._send_data(CommandTag.WRITE_MEMORY, data_chunks)
         return False
 
     def fill_memory(self, address: int, length: int, pattern: int = 0xFFFFFFFF) -> bool:
@@ -492,10 +508,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problem; True otherwise
         """
         logger.info(f"CMD: ReceiveSBfile(data_length={len(data)})")
+        data_chunks = self._split_data(data=data)
         cmd_packet = CmdPacket(CommandTag.RECEIVE_SB_FILE, 1, len(data))
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
-            return self._send_data(CommandTag.RECEIVE_SB_FILE, data)
+            return self._send_data(CommandTag.RECEIVE_SB_FILE, data_chunks)
         return False
 
     def execute(self, address: int, argument: int, sp: int) -> bool:    # pylint: disable=invalid-name
@@ -508,7 +525,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         logger.info(f"CMD: Execute(address=0x{address:08X}, argument=0x{argument:08X}, SP=0x{sp:08X})")
         cmd_packet = CmdPacket(CommandTag.EXECUTE, 0, address, argument, sp)
-        return self._process_cmd(cmd_packet, timeout=5000).status == StatusCode.SUCCESS
+        return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def call(self, address: int, argument: int) -> bool:
         """Fill MCU memory with specified pattern.
@@ -648,10 +665,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: Key blob; None in case of an failure
         """
         logger.info(f"CMD: GenerateKeyBlob(dek_len={len(dek_data)}, count={count})")
+        data_chunks = self._split_data(data=dek_data)
         cmd_response = self._process_cmd(CmdPacket(CommandTag.GENERATE_KEY_BLOB, 1, 0, len(dek_data), 0))
         if cmd_response.status != StatusCode.SUCCESS:
             return None
-        if not self._send_data(CommandTag.GENERATE_KEY_BLOB, dek_data):
+        if not self._send_data(CommandTag.GENERATE_KEY_BLOB, data_chunks):
             return None
         cmd_response = self._process_cmd(CmdPacket(CommandTag.GENERATE_KEY_BLOB, 0, 0, count, 1))
         if cmd_response.status == StatusCode.SUCCESS:
@@ -707,25 +725,25 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         logger.info(f"CMD: [KeyProvisioning] SetUserKey(key_type={KeyProvUserKeyType.name(key_type)}, "
                     f"key_len={len(key_data)})")
+        data_chunks = self._split_data(data=key_data)
         cmd_packet = CmdPacket(CommandTag.KEY_PROVISIONING, 1, KeyProvOperation.SET_USER_KEY, key_type, len(key_data))
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
-            return self._send_data(CommandTag.KEY_PROVISIONING, key_data)
+            return self._send_data(CommandTag.KEY_PROVISIONING, data_chunks)
         return False
 
-    def kp_write_key_store(self, key_type: int, key_data: bytes) -> bool:
+    def kp_write_key_store(self, key_data: bytes) -> bool:
         """Key provisioning: Write key data into key store area.
 
-        :param key_type: TODO this seems to be irrelevant and should be removed
         :param key_data: key store binary content to be written to processor
         :return: result of the operation; True means success
         """
-        logger.info(f"CMD: [KeyProvisioning] WriteKeyStore(key_type={key_type}, key_len={len(key_data)})")
-        cmd_packet = CmdPacket(CommandTag.KEY_PROVISIONING, 1, KeyProvOperation.WRITE_KEY_STORE, key_type,
-                               len(key_data))
+        logger.info(f"CMD: [KeyProvisioning] WriteKeyStore(key_len={len(key_data)})")
+        data_chunks = self._split_data(data=key_data)
+        cmd_packet = CmdPacket(CommandTag.KEY_PROVISIONING, 1, KeyProvOperation.WRITE_KEY_STORE, 0, len(key_data))
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
-            return self._send_data(CommandTag.KEY_PROVISIONING, key_data)
+            return self._send_data(CommandTag.KEY_PROVISIONING, data_chunks)
         return False
 
     def kp_read_key_store(self) -> Optional[bytes]:

@@ -18,6 +18,11 @@ class Interface(ABC):
     def is_opened(self) -> bool:
         """Indicates whether interface is open."""
 
+    @property
+    def need_data_split(self) -> bool:
+        """Indicates whether device need to split data into smaller chunks."""
+        return False
+
     def __init__(self, reopen: bool = False) -> None:
         """Initialize the Interface object.
 
@@ -31,7 +36,7 @@ class Interface(ABC):
     def close(self) -> None:
         """Close the interface."""
 
-    def read(self, timeout: int = 1000) -> Any:
+    def read(self) -> Any:
         """Read data from the device."""
 
     def write(self, packet: Any) -> None:

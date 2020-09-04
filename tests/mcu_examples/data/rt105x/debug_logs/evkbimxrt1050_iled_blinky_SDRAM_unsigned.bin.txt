@@ -1,5 +1,6 @@
 [RT10xxBootableImage]
-[FCB-padding: 4096 bytes]
+[FCB-padding: 1024 bytes]
+[BEE-padding 3072 bytes]
 [IVT]
 hex=d100204005230080000000004010008020100080001000800000000000000000
 len=32=0x20

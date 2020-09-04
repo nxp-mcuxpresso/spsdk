@@ -54,7 +54,9 @@ setup(
             'pfr=spsdk.apps.pfr:main',
             'blhost=spsdk.apps.blhost:main',
             'sdphost=spsdk.apps.sdphost:main',
-            'spsdk=spsdk.apps.spsdk_apps:main'
+            'spsdk=spsdk.apps.spsdk_apps:main',
+            'nxpkeygen=spsdk.apps.nxpkeygen:main',
+            'nxpdebugmbox=spsdk.apps.nxpdebugmbox:main'
         ],
     },
 )

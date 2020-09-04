@@ -5,9 +5,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Miscellaneous functions used throughout the SPSDK."""
-
+import contextlib
 import os
-from typing import Callable, Iterable, Optional, TypeVar, List
+from typing import Callable, Iterable, Iterator, Optional, TypeVar, List, Union
 
 from spsdk.utils.crypto import crypto_backend
 
@@ -87,18 +87,69 @@ def load_binary(*args: str) -> bytes:
         All the fields together represents absolute path to the file
     :return: content of the binary file as bytes
     """
-    path = os.path.join(*args)
-    assert os.path.isfile(path)
-    with open(path, 'rb') as f:
+    data = load_file(*args, mode='rb')
+    assert isinstance(data, bytes)
+    return data
+
+
+def load_file(*path_segments: str, mode: str = 'r') -> Union[str, bytes]:
+    """Loads a file into bytes.
+
+    :param path_segments: list that consists of:
+        - absolute path
+        - optional sub-directory (any number)
+        - file name including file extension
+        All the fields together represents absolute path to the file
+    :param mode: mode for reading the file 'r'/'rb'
+    :return: content of the binary file as bytes or str (based on mode)
+    """
+    path = os.path.join(*path_segments)
+    with open(path, mode) as f:
         return f.read()
 
 
+def write_file(data: Union[str, bytes], *path_segments: str, mode: str = 'w') -> int:
+    """Writes data into a file.
+
+    :param data: data to write
+    :param path_segments: pieces of path to the file, might be just a single str
+    :param mode: writing mode, 'w' for text, 'wb' for binary data, defaults to 'w'
+    :return: number of written elements
+    """
+    path = os.path.join(*path_segments)
+    with open(path, mode) as f:
+        return f.write(data)
+
+
+@contextlib.contextmanager
+def use_working_directory(path: str) -> Iterator[None]:
+    # pylint: disable=missing-yield-doc
+    """Execute the block in given directory.
+
+    Cd into specific directory.
+    Execute the block.
+    Change the directory back into the original one.
+
+    :param path: the path, where the current directory will be changed to
+    """
+    current_dir = os.getcwd()
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(current_dir)
+        assert os.getcwd() == current_dir
+
+
 class DebugInfo:
-    """The class is used to provide detailed information about export process and exported data for debugging."""
+    """The class is used to provide detailed information about export process and exported data.
+
+    It is handy for analyzing content and debugging changes in the exported binary output.
+    """
 
     @classmethod
     def disabled(cls) -> 'DebugInfo':
-        """Return an instance of DebugInfo with deabled message collecting."""
+        """Return an instance of DebugInfo with disabled message collecting."""
         return DebugInfo(enabled=False)
 
     def __init__(self, enabled: bool = True):
@@ -157,11 +208,11 @@ class DebugInfo:
 
     @property
     def lines(self) -> Iterable[str]:
-        """:return: list of logged lines; empty list if nothing logged ot log disabled."""
+        """:return: list of logged lines; empty list if nothing logged or log disabled."""
         if self._lines:
             return self._lines
         return list()
 
     def info(self) -> str:
-        """:return: multi-line text with log; empty string if nothing logged ot log disabled."""
+        """:return: multi-line text with log; empty string if nothing logged or log disabled."""
         return "\n".join(self.lines)

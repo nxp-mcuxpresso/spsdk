@@ -40,11 +40,10 @@ def test_cli_devices_global():
 
 
 def test_generate_cmpa(data_dir, tmpdir):
-    cmd = 'generate --device lpc55xx --type cmpa '
+    cmd = 'generate --device lpc55s6x --type cmpa '
     cmd += f'--output {tmpdir}/pnd.bin '
     cmd += f'--user-config {data_dir}/cmpa_96mhz.json --calc-inverse '
-    cmd += f'--secret-type priv-key '
-    cmd += f'--secure-file {data_dir}/selfsign_privatekey_rsa2048.pem '
+    cmd += f'--secret-file {data_dir}/selfsign_privatekey_rsa2048.pem '
     logging.debug(cmd)
     runner = CliRunner()
     result = runner.invoke(cli.main, cmd.split())
@@ -55,7 +54,7 @@ def test_generate_cmpa(data_dir, tmpdir):
 
 
 def test_parse(data_dir, tmpdir):
-    cmd = 'parse --device lpc55xx --type cmpa '
+    cmd = 'parse --device lpc55s6x --type cmpa '
     cmd += f'--binary {data_dir}/CMPA_96MHz.bin '
     cmd += f'--show-diff '
     cmd += f'--output {tmpdir}/config.json '
@@ -69,7 +68,7 @@ def test_parse(data_dir, tmpdir):
 
 
 def test_user_config(data_dir, tmpdir):
-    cmd = 'user-config --device lpc55xx --type cmpa'
+    cmd = 'user-config --device lpc55s6x --type cmpa'
     logging.debug(cmd)
     runner = CliRunner()
     result = runner.invoke(cli.main, cmd.split())
@@ -79,7 +78,7 @@ def test_user_config(data_dir, tmpdir):
 
 
 def test_info(tmpdir):
-    cmd = f'info --device lpc55xx --type cmpa --output {tmpdir}/cmpa.html'
+    cmd = f'info --device lpc55s6x --type cmpa --output {tmpdir}/cmpa.html'
     logging.debug(cmd)
     runner = CliRunner()
     result = runner.invoke(cli.main, cmd.split())

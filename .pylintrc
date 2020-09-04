@@ -252,7 +252,10 @@ good-names=i,
            f,
            logger,
            mb,
-           sdp
+           sdp,
+           di,
+           dm,
+           id
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no

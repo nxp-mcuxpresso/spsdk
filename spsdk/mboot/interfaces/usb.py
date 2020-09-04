@@ -17,6 +17,8 @@ from struct import pack, unpack_from
 from time import time
 from typing import List, Tuple, Union
 
+from spsdk.exceptions import SPSDKError
+
 from ..commands import CmdPacket, CmdResponse, parse_cmd_response
 from .base import Interface
 
@@ -34,6 +36,7 @@ USB_DEVICES = {
     'MKL27': (0x15A2, 0x0073),
     'LPC55': (0x1FC9, 0x0021),
     'IMXRT': (0x1FC9, 0x0135),
+    'MXRT20': (0x15A2, 0x0073),  # this is ID of flash-loader for RT102x
     'MXRT50': (0x15A2, 0x0073),  # this is ID of flash-loader for RT105x
     'MXRT60': (0x15A2, 0x0073),  # this is ID of flash-loader for RT106x
     'LPC55xx': (0x1FC9, 0x0020),
@@ -110,6 +113,7 @@ class RawHidBase(Interface):
         self.pid = 0
         self.vendor_name = ""
         self.product_name = ""
+        self.timeout = 2000
 
     @staticmethod
     def _encode_report(report_id: int, report_size: int, data: bytes, offset: int = 0) -> Tuple[bytes, int]:
@@ -135,9 +139,13 @@ class RawHidBase(Interface):
         :param raw_data: Data received
         :type raw_data: bytes
         :return: CmdResponse object or data read
+        :raises SPSDKError: Transaction aborted by target
         """
         logger.debug(f"IN [{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         report_id, _, plen = unpack_from('<2BH', raw_data)
+        if plen == 0:
+            logger.debug("Received an abort package")
+            raise SPSDKError('Transaction aborted')
         data = raw_data[4: 4 + plen]
         if report_id == REPORT_ID['CMD_IN']:
             return parse_cmd_response(data)
@@ -217,16 +225,15 @@ if os.name == "nt":
                 raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
                 self.report[report_id - 1].send(raw_data)
 
-        def read(self, timeout: int = 2000) -> Union[CmdResponse, bytes]:
+        def read(self) -> Union[CmdResponse, bytes]:
             """Read data on the IN endpoint associated to the HID interfaces.
 
-            :param timeout: Read timeout in milliseconds
             :return: Response to the last command
             :raises TimeoutError: Exception caused by time-out
             """
             start = time()
             while len(self.rcv_data) == 0:
-                if ((time() - start) * 1000) > timeout:
+                if ((time() - start) * 1000) > self.timeout:
                     raise TimeoutError()
 
             raw_data = self.rcv_data.popleft()
@@ -335,14 +342,13 @@ else:
                     raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
                     self.device.ctrl_transfer(bm_request_type, bm_request, w_value, w_index, raw_data)
 
-        def read(self, timeout: int = 1000) -> Union[CmdResponse, bytes]:
+        def read(self) -> Union[CmdResponse, bytes]:
             """Read data on the IN endpoint associated to the HID interface.
 
-            :param timeout: wait time in milliseconds
             :return: Return CmdResponse object.
             """
             # TODO: test if self.ep_in.wMaxPacketSize is accessible in all Linux distributions
-            raw_data = self.ep_in.read(self.ep_in.wMaxPacketSize, timeout)
+            raw_data = self.ep_in.read(self.ep_in.wMaxPacketSize, self.timeout)
             # TODO: why is the code commented-out? rawdata = self.ep_in.read(36, timeout)
             return self._decode_report(raw_data)
 

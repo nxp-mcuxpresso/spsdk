@@ -34,7 +34,7 @@ CLRInfo = namedtuple('CLRInfo', ['path', 'copyrights', 'license'])
 COPYRIGHT_REGEX = re.compile(
     r"Copyright.*(?P<from>\d{4})?-?(?P<till>\d{4}) (?P<holder>.*)"
 )
-LICENSE_REGEX = re.compile(r"SPDX-License-Identifier: (?P<license>.*)")
+LICENSE_REGEX = re.compile(r"SPDX-License-Identifier:[#\s]*(?P<license>.*)", re.MULTILINE)
 
 
 def format_copyright_instance(copyright_instance: tuple) -> str:
@@ -85,31 +85,31 @@ def main() -> None:
         for file_path in get_all_files(ROOT_FOLDERS)
     ]
 
-    print('Files without copyright info:')
-    for clr_info in clr_info_list:
-        if len(clr_info.copyrights) == 0:
-            print(f' - {clr_info.path}')
+    no_cr_list = [item for item in clr_info_list if len(item.copyrights) == 0]
+    print(f'{len(no_cr_list)} Files without copyright info')
+    for clr_info in no_cr_list:
+        print(f' - {clr_info.path}')
 
-    print('Files without "NXP" copyright:')
-    for clr_info in clr_info_list:
-        if not list(filter(lambda x: 'NXP' in x, clr_info.copyrights)):
-            print(f' - {clr_info.path}: {clr_info.copyrights}')
+    no_nxp_cp = [item for item in clr_info_list if not any('NXP' in x for x in item.copyrights)]
+    print(f'{len(no_nxp_cp)} Files without "NXP" copyright')
+    for clr_info in no_nxp_cp:
+        print(f' - {clr_info.path}: {clr_info.copyrights}')
 
     this_year = datetime.now().year
-    print(f'Files without "{this_year} NXP" copyright:')
-    for clr_info in clr_info_list:
-        if not list(filter(lambda x: f'{this_year} NXP' in x, clr_info.copyrights)):
-            print(f' - {clr_info.path}: {clr_info.copyrights}')
+    not_this_year = [item for item in clr_info_list if not any(f'{this_year} NXP' in x for x in item.copyrights)]
+    print(f'{len(not_this_year)} Files without "{this_year} NXP" copyright')
+    for clr_info in not_this_year:
+        print(f' - {clr_info.path}: {clr_info.copyrights}')
 
-    print('Files without license info:')
-    for clr_info in clr_info_list:
-        if not clr_info.license:
-            print(f' - {clr_info.path}')
+    no_lic = [item for item in clr_info_list if not item.license]
+    print(f'{len(no_lic)} Files without license info')
+    for clr_info in no_lic:
+        print(f' - {clr_info.path}')
 
-    print('Files without "BSD-3-Clause" license:')
-    for clr_info in clr_info_list:
-        if clr_info.license != 'BSD-3-Clause':
-            print(f' - {clr_info.path}: {clr_info.license}')
+    no_bsd_3 = [item for item in clr_info_list if item.license != 'BSD-3-Clause']
+    print(f'{len(no_bsd_3)} Files without "BSD-3-Clause" license')
+    for clr_info in no_bsd_3:
+        print(f' - {clr_info.path}: {clr_info.license}')
 
 
 if __name__ == "__main__":

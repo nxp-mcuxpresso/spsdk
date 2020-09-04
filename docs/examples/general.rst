@@ -43,3 +43,21 @@ Create the Secure Boot (SB) images.
 Located at: `examples/sbfile.py`
 
 .. automodule:: examples.sbfile
+
+Read memory using SDP.
+-----------------------
+Located at: `examples/sdp.py`
+
+.. automodule:: examples.sdp
+
+Download a flashloader into i.MX RT10xx device and read bootloader properties.
+-------------------------------------------------------------------------------
+Located at: `examples/sdp_mboot.py`
+
+.. automodule:: examples.sdp_mboot
+
+Write memory using SDPS.
+-------------------------
+Located at: `examples/sdps.py`
+
+.. automodule:: examples.sdps

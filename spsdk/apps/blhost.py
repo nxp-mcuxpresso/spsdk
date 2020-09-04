@@ -28,16 +28,19 @@ from spsdk.mboot import McuBoot, StatusCode, parse_property_value
 @click.option('-j', '--json', 'use_json', is_flag=True, help='Use JSON output')
 @click.option('-v', '--verbose', 'log_level', flag_value=logging.INFO, help='Display more verbose output')
 @click.option('-d', '--debug', 'log_level', flag_value=logging.DEBUG, help='Display debugging info')
+@click.option('-t', '--timeout', metavar='<ms>', help='Set packet timeout in milliseconds', default=5000)
 @click.version_option(spsdk_version, '--version')
 @click.pass_context
-def main(ctx: click.Context, port: str, usb: str, use_json: bool, log_level: int) -> int:
-    """Utility for comunication with bootloader on target."""
+def main(ctx: click.Context, port: str, usb: str, use_json: bool, log_level: int, timeout: int) -> int:
+    """Utility for communication with bootloader on target."""
     logging.basicConfig(level=log_level or logging.WARNING)
     # if --help is provided anywhere on commandline, skip interface lookup and display help message
     if '--help' in sys.argv:
         port, usb = None, None  # type: ignore
     ctx.obj = {
-        'interface': get_interface(module='mboot', port=port, usb=usb) if port or usb else None,
+        'interface': get_interface(
+            module='mboot', port=port, usb=usb, timeout=timeout
+        ) if port or usb else None,
         'use_json': use_json
     }
     return 0
@@ -207,6 +210,26 @@ def write_memory(ctx: click.Context, address: int, in_file: click.File, memory_i
         write_response = mboot.write_memory(address, data, memory_id)
         assert write_response, f"Error writing memory addr={address:#0x} memory_id={memory_id}"
         display_output([write_response], mboot.status_code, ctx.obj['use_json'])
+
+
+@main.command()
+@click.argument('dek_file', type=click.File('rb'), required=True)
+@click.argument('blob_file', type=click.File('wb'), required=True)
+@click.pass_context
+def generate_key_blob(ctx: click.Context, dek_file: click.File, blob_file: click.File) -> None:
+    """Generate the Key Blob for a given DEK.
+
+    \b
+    DEK_FILE     - the file with the binary DEK key
+    BLOB_FILE    - the generated file with binary key blob
+    """
+    with McuBoot(ctx.obj['interface']) as mboot:
+        data = dek_file.read()  # type: ignore
+        write_response = mboot.generate_key_blob(data)
+        if not write_response:
+            raise ValueError(f"Error generating key blob")
+        blob_file.write(write_response)  # type: ignore
+        display_output([mboot.status_code, len(write_response)], mboot.status_code, ctx.obj['use_json'])
 
 
 def display_output(response: list, status_code: int, use_json: bool = False,

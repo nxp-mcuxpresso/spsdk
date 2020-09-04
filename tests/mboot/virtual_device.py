@@ -10,7 +10,7 @@ from struct import pack
 
 import pytest
 
-from spsdk.mboot.commands import CommandTag, CmdPacket, ResponseTag, parse_cmd_response
+from spsdk.mboot.commands import CommandTag, CmdPacket, ResponseTag, parse_cmd_response, KeyProvOperation
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.interfaces import Interface
 
@@ -20,6 +20,12 @@ from spsdk.mboot.interfaces import Interface
 ########################################################################################################################
 def pack_response(tag, *params):
     return True, pack(f'<4B{len(params)}I', tag, 0, 0, len(params), *params)
+
+
+def set_error_code(step_index: int, fail_step: int) -> int:
+    if fail_step is not None and fail_step == step_index:
+        return StatusCode.FAIL
+    return StatusCode.SUCCESS
 
 
 ########################################################################################################################
@@ -126,6 +132,74 @@ def cmd_reset(*args, **kwargs):
     return pack_response(ResponseTag.GENERIC, StatusCode.SUCCESS, CommandTag.RESET)
 
 
+def cmd_generate_keyblob(*args, index, fail_step, **kwargs):
+    response = {
+        0: pack_response(
+            ResponseTag.KEY_BLOB_RESPONSE,
+            set_error_code(index, fail_step),
+            20
+        ),
+        1: pack_response(
+            ResponseTag.GENERIC,
+            set_error_code(index, fail_step),
+            CommandTag.GENERATE_KEY_BLOB
+        ) if args[2] == 0 else (False, bytes(20)),
+        2: pack_response(
+            ResponseTag.GENERIC,
+            set_error_code(index, fail_step),
+            CommandTag.GENERATE_KEY_BLOB
+        )
+    }[index]
+    return response
+
+
+######################################
+# Key Provisioning support functions #
+######################################
+def cmd_key_prov_no_data(index, fail_step):
+    return pack_response(
+        ResponseTag.KEY_PROVISIONING_RESPONSE, 
+        set_error_code(index, fail_step), 20
+    )
+
+
+def cmd_key_prov_write(index, fail_step):
+    return {
+        0: cmd_key_prov_no_data(index, fail_step),
+        1: pack_response(
+            ResponseTag.GENERIC,
+            set_error_code(index, fail_step),
+            CommandTag.KEY_PROVISIONING
+        )
+    }[index]
+
+
+def cmd_key_prov_read(index, fail_step):
+    return {
+        0: cmd_key_prov_no_data(index, fail_step),
+        1: (False, bytes(20)),
+        2: pack_response(
+            ResponseTag.GENERIC,
+            set_error_code(index, fail_step),
+            CommandTag.KEY_PROVISIONING
+        )
+    }[index]
+
+
+def cmd_key_provisioning(*args, index, fail_step, **kwargs):
+    response_function = {
+        KeyProvOperation.ENROLL: cmd_key_prov_no_data,
+        KeyProvOperation.SET_INTRINSIC_KEY: cmd_key_prov_no_data,
+        KeyProvOperation.WRITE_NON_VOLATILE: cmd_key_prov_no_data,
+        KeyProvOperation.READ_NON_VOLATILE: cmd_key_prov_no_data,
+        KeyProvOperation.SET_USER_KEY: cmd_key_prov_write,
+        KeyProvOperation.WRITE_KEY_STORE: cmd_key_prov_write,
+        KeyProvOperation.READ_KEY_STORE: cmd_key_prov_read,
+    }[args[0]]
+    response = response_function(index, fail_step)
+    return response
+
+
 ########################################################################################################################
 # Virtual Device Class
 ########################################################################################################################
@@ -149,14 +223,18 @@ class VirtualDevice(Interface):
         CommandTag.FLASH_READ_RESOURCE: None,
         CommandTag.CONFIGURE_MEMORY: None,
         CommandTag.RELIABLE_UPDATE: None,
-        CommandTag.GENERATE_KEY_BLOB: None,
-        CommandTag.KEY_PROVISIONING: None
+        CommandTag.GENERATE_KEY_BLOB: cmd_generate_keyblob,
+        CommandTag.KEY_PROVISIONING: cmd_key_provisioning
     }
 
     @property
     def is_opened(self):
         return self._opened
 
+    @property
+    def need_data_split(self) -> bool:
+        return self._need_data_split
+    
     def __init__(self, config, **kwargs):
         super().__init__(**kwargs)
         self._opened = False
@@ -165,6 +243,8 @@ class VirtualDevice(Interface):
         self._cmd_params = []
         self._cmd_data = bytes()
         self._response_index = 0
+        self._need_data_split = True
+        self.fail_step = False
 
     def open(self):
         self._opened = True
@@ -176,7 +256,8 @@ class VirtualDevice(Interface):
         if self._dev_conf.valid_cmd(self._cmd_tag):
             cmd, raw_data = self.CMD[self._cmd_tag](*self._cmd_params,
                                                     index=self._response_index,
-                                                    config=self._dev_conf)
+                                                    config=self._dev_conf,
+                                                    fail_step=self.fail_step)
             self._response_index += 1
         else:
             cmd, raw_data = pack_response(ResponseTag.GENERIC, StatusCode.UNKNOWN_COMMAND, self._cmd_tag)

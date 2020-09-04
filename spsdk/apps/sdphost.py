@@ -28,16 +28,19 @@ from spsdk.sdp.commands import ResponseValue
 @click.option('-j', '--json', 'use_json', is_flag=True, help='Use JSON output')
 @click.option('-v', '--verbose', 'log_level', flag_value=logging.INFO, help='Display more verbose output')
 @click.option('-d', '--debug', 'log_level', flag_value=logging.DEBUG, help='Display debugging info')
+@click.option('-t', '--timeout', metavar='<ms>', help='Set packet timeout in milliseconds', default=5000)
 @click.version_option(spsdk_version, '--version')
 @click.pass_context
-def main(ctx: click.Context, port: str, usb: str, use_json: bool, log_level: int) -> int:
-    """Utility for comunication with ROM on i.MX targets."""
+def main(ctx: click.Context, port: str, usb: str, use_json: bool, log_level: int, timeout: int) -> int:
+    """Utility for communication with ROM on i.MX targets."""
     logging.basicConfig(level=log_level or logging.WARNING)
     # if --help is provided anywhere on commandline, skip interface lookup and display help message
     if '--help ' in sys.argv:
         port, usb = None, None  # type: ignore
     ctx.obj = {
-        'interface': get_interface(module='sdp', port=port, usb=usb) if port or usb else None,
+        'interface': get_interface(
+            module='sdp', port=port, usb=usb, timeout=timeout
+        ) if port or usb else None,
         'use_json': use_json
     }
     return 0

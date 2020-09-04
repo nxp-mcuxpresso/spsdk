@@ -27,13 +27,14 @@ SDP Commands
    :undoc-members:
    :show-inheritance:
 
-SDP HAB Logs
-------------
 
-.. automodule:: spsdk.sdp.hab_logs
+SDPS communication protocol
+----------------------------
+.. automodule:: spsdk.sdp.sdps
    :members:
    :undoc-members:
    :show-inheritance:
+
 
 SDP ErrorCodes
 --------------

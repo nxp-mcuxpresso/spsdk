@@ -24,7 +24,7 @@ def compare_bin_files(path: str, bin_data: bytes) -> None:
     if expected != bin_data:
         with open(path + '.generated', 'wb') as f:
             f.write(bin_data)
-        assert expected == bin_data
+        assert expected == bin_data, f'file does not match: "{path}"'
 
 
 def write_dbg_log(data_dir: str, file_name: str, text: Iterable[str], test: bool) -> None:

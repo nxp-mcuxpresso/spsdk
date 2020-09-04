@@ -27,7 +27,7 @@ def test_generate_cmpa(data_dir):
         read_file(data_dir, 'selfsign_privatekey_rsa2048.pem', 'rb'),
         password=None, backend=default_backend())
 
-    cmpa = CMPA('lpc55xx', keys=[key.public_key()], user_config=config)
+    cmpa = CMPA('lpc55s6x', keys=[key.public_key()], user_config=config)
     assert binary == cmpa.export(add_hash=False, compute_inverses=True)
 
 
@@ -35,7 +35,7 @@ def test_generate_cfpa(data_dir):
     config = json.loads(read_file(data_dir, 'cfpa_test.json'))
     binary = read_file(data_dir, 'CFPA_test.bin', 'rb')
 
-    cfpa = CFPA('lpc55xx', user_config=config)
+    cfpa = CFPA('lpc55s6x', user_config=config)
     data = cfpa.export(add_hash=True, compute_inverses=False)
     assert binary == data
 
@@ -49,7 +49,7 @@ def test_supported_devices():
 
 def test_hash_cmpa():
 
-    cfpa = CFPA('lpc55xx')
+    cfpa = CFPA('lpc55s6x')
 
     data = cfpa.export(add_hash=False)
     assert len(data) == 512
@@ -62,20 +62,20 @@ def test_hash_cmpa():
 
 
 def test_basic_cmpa():
-    cmpa = CMPA('lpc55xx')
+    cmpa = CMPA('lpc55s6x')
     with pytest.raises(AssertionError):
         cmpa.export()
 
 
 def test_config_cfpa():
 
-    cfpa = CFPA('lpc55xx')
+    cfpa = CFPA('lpc55s6x')
     config = cfpa.generate_config()
     config2 = cfpa.generate_config(exclude_computed=False)
 
     assert config != config2
 
-    cfpa2 = CFPA('lpc55xx', user_config=config2)
+    cfpa2 = CFPA('lpc55s6x', user_config=config2)
     out = cfpa2.parse(bytes(512), exclude_computed=False)
 
     assert out == config2
@@ -83,18 +83,18 @@ def test_config_cfpa():
 
 def test_config_cmpa():
 
-    cmpa = CMPA('lpc55xx')
+    cmpa = CMPA('lpc55s6x')
     config = cmpa.generate_config()
     config2 = cmpa.generate_config(exclude_computed=False)
 
     assert config != config2
 
-    cmpa2 = CMPA('lpc55xx', user_config=config2)
+    cmpa2 = CMPA('lpc55s6x', user_config=config2)
     out = cmpa2.parse(bytes(512), exclude_computed=False)
 
     assert out == config2
 
 def test_address():
-    cmpa = CMPA('lpc55xx')
+    cmpa = CMPA('lpc55s6x')
     assert '0x9_E400' == cmpa.get_address(remove_underscore=False)
     assert '0x9E400' == cmpa.get_address(remove_underscore=True)

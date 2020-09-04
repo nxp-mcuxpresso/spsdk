@@ -4,12 +4,16 @@
 # Copyright 2020 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+import filecmp
+import os
 
 from typing import Union
 
 import pytest
 
-from spsdk.utils.misc import align, align_block, align_block_fill_random, extend_block, find_first
+from spsdk.utils.misc import (
+    align, align_block, align_block_fill_random, extend_block, find_first,
+    load_binary, load_file, write_file)
 
 
 @pytest.mark.parametrize(
@@ -158,3 +162,30 @@ def test_find_first():
 
     assert find_first((TestClass(False), TestClass(False)), lambda x: x.first) is None
     assert find_first((TestClass(False), TestClass(True)), lambda x: x.first) is not None
+
+
+def test_load_binary(data_dir):
+    """Test loading binary files using load_binary and load_file."""
+    data = load_binary(data_dir, 'file.bin')
+    data2 = load_file(data_dir, 'file.bin', mode='rb')
+
+    assert data == data2
+    assert data == bytes(i for i in range(10))
+
+
+def test_load_file(data_dir):
+    """Test loading text file."""
+    text = load_file(data_dir, 'file.txt')
+    assert text == 'Hello\nworld'
+
+
+def test_write_file(data_dir, tmpdir):
+    """Test writing data to data using write_file."""
+    data = load_binary(data_dir, 'file.bin')
+    text = load_file(data_dir, 'file.txt')
+
+    write_file(data, tmpdir, 'file.bin', mode='wb')
+    write_file(text, tmpdir, 'file.txt')
+
+    assert filecmp.cmp(os.path.join(data_dir, 'file.bin'), os.path.join(tmpdir, 'file.bin'))
+    assert filecmp.cmp(os.path.join(data_dir, 'file.txt'), os.path.join(tmpdir, 'file.txt'))

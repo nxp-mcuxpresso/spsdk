@@ -116,8 +116,5 @@ venv.bak/
 .mypy_cache/
 
 # IDE
-.idea/workspace.xml
-.idea/pylint.xml
-.idea/mypy.xml
-.idea/dictionaries/
 .vscode
+.idea

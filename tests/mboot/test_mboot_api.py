@@ -7,6 +7,7 @@
 
 import pytest
 from spsdk.mboot.mcuboot import PropertyTag, StatusCode, McuBootConnectionError, CmdPacket, CommandTag, ExtMemId
+from spsdk.mboot.mcuboot import KeyProvUserKeyType
 
 
 def test_class(mcuboot, target, config):
@@ -17,7 +18,7 @@ def test_class(mcuboot, target, config):
     with pytest.raises(McuBootConnectionError):
         mcuboot._read_data(CommandTag.READ_MEMORY, 1000)
     with pytest.raises(McuBootConnectionError):
-        mcuboot._send_data(CommandTag.WRITE_MEMORY, b'00000000')
+        mcuboot._send_data(CommandTag.WRITE_MEMORY, [b'00000000'])
     assert not mcuboot.is_opened
     mcuboot.open()
 
@@ -158,13 +159,73 @@ def test_cmd_reliable_update(mcuboot, target):
     assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND
 
 
-@pytest.mark.skip
 def test_cmd_generate_key_blob(mcuboot, target):
-    # TODO implement the test
-    pass
+    mcuboot._device.fail_step = None
+    assert mcuboot.generate_key_blob(bytes(20))
+    mcuboot._device.fail_step = 0
+    assert mcuboot.generate_key_blob(bytes(20)) is None
+    mcuboot._device.fail_step = 1
+    assert mcuboot.generate_key_blob(bytes(20)) is None
+    # Currently it's not possible to simulate error in the last step
+    # mcuboot._device.fail_step = 2
+    # assert mcuboot.generate_key_blob(bytes(20)) is None
 
 
-@pytest.mark.skip
-def test_cmd_key_provisioning(mcuboot, target):
-    # TODO implement the test
-    pass
+# Key provisioning tests
+def test_cmd_key_provisioning_enroll(mcuboot):
+    mcuboot._device.fail_step = None
+    assert mcuboot.kp_enroll()
+    mcuboot._device.fail_step = 0
+    assert not mcuboot.kp_enroll()
+
+
+def test_cmd_key_provisioning_set_intrinsic(mcuboot):
+    mcuboot._device.fail_step = None
+    assert mcuboot.kp_set_intrinsic_key(KeyProvUserKeyType.OTFADKEK, 100)
+    mcuboot._device.fail_step = 0
+    assert not mcuboot.kp_set_intrinsic_key(KeyProvUserKeyType.OTFADKEK, 100)
+
+
+def test_cmd_key_provisioning_write_nonvolatile(mcuboot):
+    mcuboot._device.fail_step = None
+    assert mcuboot.kp_write_nonvolatile(0)
+    mcuboot._device.fail_step = 0
+    assert not mcuboot.kp_write_nonvolatile(0)
+
+
+def test_cmd_key_provisioning_read_nonvolatile(mcuboot):
+    mcuboot._device.fail_step = None
+    assert mcuboot.kp_read_nonvolatile(0)
+    mcuboot._device.fail_step = 0
+    assert not mcuboot.kp_read_nonvolatile(0)
+
+
+def test_cmd_key_provisioning_set_user_key(mcuboot, target):
+    mcuboot._device.fail_step = None
+    data = bytes(100)
+    assert mcuboot.kp_set_user_key(KeyProvUserKeyType.SBKEK, data)
+
+    mcuboot._device.fail_step = 0
+    data = bytes(100)
+    assert not mcuboot.kp_set_user_key(KeyProvUserKeyType.SBKEK, data)
+
+
+def test_cmd_key_provisioning_write_key_store(mcuboot, target):
+    mcuboot._device.fail_step = None
+    data = bytes(100)
+    assert mcuboot.kp_write_key_store(data)
+
+    mcuboot._device.fail_step = 0
+    data = bytes(100)
+    assert not mcuboot.kp_write_key_store(data)
+
+
+def test_cmd_key_provisioning_read_key_store(mcuboot, target):
+    mcuboot._device.fail_step = None
+    data = mcuboot.kp_read_key_store()
+    assert data
+
+    mcuboot._device.fail_step = 0
+    data = mcuboot.kp_read_key_store()
+    assert data is None
+

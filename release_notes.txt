@@ -1,0 +1,58 @@
+Release Notes for Secure Provisioning SDK
+==========================================
+Version: 1.1
+Date: 28-August-2020
+
+Secure Provisioning SDK (SPSDK) is unified, reliable and easy to use SW library working across NXP MCU portfolio 
+providing strong foundation from quick customer prototyping up to production deployment. The library allows the user 
+to connect and communicate with a device, configure the device, prepare, download and upload data including security 
+operations. It is delivered in a form of python library and command line applications.
+
+Features:
+- support for i.MX RT1170 device
+- support for elliptic-curve cryptography (ECC)
+- support for SDPS protocol
+- included Debug Authentication functionality, support for debuggers
+- utility (nxpkeygen) for generating debug credential files and corresponding keys
+
+
+Supported devices: 
+==================
+- LPC55S69 (Niobe4)
+- LPC55S16 (Niobe4 Mini)
+- i.MX RT105x, RT106x
+- i.MX RT595S, RT685S
+
+
+System Requirements:
+===================
+Operating System:
+- Windows 
+- Mac OS 
+- Linux
+	
+
+Revision History:
+================
+1.0
+- support for LPC55S69 (Niobe4) and LPC55S16 (Niobe4 Mini) devices
+- support for i.MX RT105x and RT106x devices
+- support for i.MX RT595S and RT685S devices
+- connectivity to the target via UART, USB-HID.
+- support for generating, saving, loading of RSA keys with different sizes
+- genaration and management of certificate
+- CLI utility blhost for communication with boot loader on a target
+- CLI utility sdphost for communication with ROM on a target
+- CLI utility PFR for generating and parsing Protocted Flash Regions - CMPA and CFPA regions
+
+
+Licence: 
+=========
+BSD-3 License
+
+
+
+
+
+
+

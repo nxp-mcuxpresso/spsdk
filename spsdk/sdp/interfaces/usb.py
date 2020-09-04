@@ -29,8 +29,8 @@ logger = logging.getLogger('SDP:USB')
 
 HID_REPORT = {
     # name | id | length
-    'CMD': (0x01, 1024),
-    'DATA': (0x02, 1024),
+    'CMD': (0x01, 1024, False),
+    'DATA': (0x02, 1024, False),
     'HAB': (0x03, 4),
     'RET': (0x04, 64)
 }
@@ -48,6 +48,7 @@ USB_DEVICES = {
     'MX7ULP': (0x1FC9, 0x0126),
     'VYBRID': (0x15A2, 0x006A),
 
+    'MXRT20': (0x1FC9, 0x0130),
     'MXRT50': (0x1FC9, 0x0130),
     'MXRT60': (0x1FC9, 0x0135),
 
@@ -57,7 +58,9 @@ USB_DEVICES = {
     'MX8QM-A0': (0x1FC9, 0x0129),
 
     'MX8QXP': (0x1FC9, 0x012F),
-    'MX8QM': (0x1FC9, 0x0129)
+    'MX8QM': (0x1FC9, 0x0129),
+    'MX815': (0x1FC9, 0x013E),
+    'MX865': (0x1FC9, 0x0146)
 }
 
 
@@ -116,6 +119,7 @@ class RawHidBase(Interface):
         self.pid = 0
         self.vendor_name = ""
         self.product_name = ""
+        self.timeout = 2000
 
     @staticmethod
     def _encode_report(report_id: int, report_size: int, data: bytes, offset: int = 0) -> Tuple[bytes, int]:
@@ -149,10 +153,19 @@ class RawHidBase(Interface):
         """Return information about the USB interface."""
         return f"{self.product_name:s} (0x{self.vid:04X}, 0x{self.pid:04X})"
 
+    def conf(self, config: dict):
+        """Set HID report data.
+
+        :param config: parameters dictionary
+        """
+        if 'hid_ep1' in config and 'pack_size' in config:
+            HID_REPORT['CMD'] = (0x01, config['pack_size'], config['hid_ep1'])
+            HID_REPORT['DATA'] = (0x02, config['pack_size'], config['hid_ep1'])
 
 ########################################################################################################################
 # USB Interface Classes
 ########################################################################################################################
+
 
 if os.name == "nt":
     try:
@@ -204,10 +217,10 @@ if os.name == "nt":
             :raises ValueError: Raises an error if packet type is incorrect
             """
             if isinstance(packet, CmdPacket):
-                report_id, report_size = HID_REPORT['CMD']
+                report_id, report_size, hid_ep1 = HID_REPORT['CMD']
                 data = packet.to_bytes()
             elif isinstance(packet, (bytes, bytearray)):
-                report_id, report_size = HID_REPORT['DATA']
+                report_id, report_size, hid_ep1 = HID_REPORT['DATA']
                 data = packet
             else:
                 raise ValueError("Packet has to be either 'CmdPacket' or 'bytes'")
@@ -217,16 +230,15 @@ if os.name == "nt":
                 raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
                 self.report[report_id - 1].send(raw_data)
 
-        def read(self, timeout: int = 2000) -> CmdResponse:
+        def read(self) -> CmdResponse:
             """Read data on the IN endpoint associated to the HID interfaces.
 
-            :param timeout: Read timeout in milliseconds
             :return: Response to the last command
             :raises SdpConnectionError: Exception caused by time-out
             """
             start = time()
             while len(self.rcv_data) == 0:
-                if ((time() - start) * 1000) > timeout:
+                if ((time() - start) * 1000) > self.timeout:
                     raise SdpConnectionError("Read timed out")
 
             raw_data = self.rcv_data.popleft()
@@ -315,10 +327,10 @@ elif os.name == "posix":
             :raises ValueError: Raises an error if packet type is incorrect
             """
             if isinstance(packet, CmdPacket):
-                report_id, report_size = HID_REPORT['CMD']
+                report_id, report_size, hid_ep1 = HID_REPORT['CMD']
                 data = packet.to_bytes()
             elif isinstance(packet, (bytes, bytearray)):
-                report_id, report_size = HID_REPORT['DATA']
+                report_id, report_size, hid_ep1 = HID_REPORT['DATA']
                 data = packet
             else:
                 raise ValueError("Packet has to be either 'CmdPacket' or 'bytes'")
@@ -331,15 +343,17 @@ elif os.name == "posix":
             data_index = 0
             while data_index < len(data):
                 raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
-                self.device.ctrl_transfer(bm_request_type, bm_request, w_value, w_index, raw_data)
+                if hid_ep1:
+                    self.device.write(0x1, raw_data)
+                else:
+                    self.device.ctrl_transfer(bm_request_type, bm_request, w_value, w_index, raw_data)
 
-        def read(self, timeout: int = 1000) -> CmdResponse:
+        def read(self) -> CmdResponse:
             """Read data on the IN endpoint associated to the HID interface.
 
-            :param timeout: wait time in milliseconds
             :return: Return CmdResponse object.
             """
-            raw_data = self.device.read(1 | 0x80, 1024, timeout)
+            raw_data = self.device.read(1 | 0x80, 1024, self.timeout)
             return self._decode_report(raw_data)
 
         @staticmethod

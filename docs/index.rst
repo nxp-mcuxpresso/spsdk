@@ -20,6 +20,13 @@
     api/sdp
     api/base
     api/utils
+    api/dat
+
+.. toctree::
+    :caption: SPSDK APPS
+    :maxdepth: 1
+
+    apps/overview
 
 .. toctree::
     :caption: SPSDK Usage

@@ -11,8 +11,8 @@ from typing import List
 
 import pytest
 
-from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_private_key, \
-    save_public_key, validate_ca_flag_in_cert_chain, Certificate, Encoding
+from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key, \
+    save_rsa_public_key, validate_ca_flag_in_cert_chain, Certificate, Encoding
 from spsdk.crypto import _get_encoding_type, load_private_key, load_certificate, load_public_key
 from spsdk.crypto import validate_certificate_chain, validate_certificate, is_ca_flag_set
 from spsdk.crypto import generate_certificate, save_crypto_item, x509
@@ -48,8 +48,8 @@ def get_certificates(data_dir, cert_file_names: List[str]) -> List[Certificate]:
 def keys_generation(data_dir):
     priv_key = generate_rsa_private_key()
     pub_key = generate_rsa_public_key(priv_key)
-    save_private_key(priv_key, path.join(data_dir, "priv.pem"))
-    save_public_key(pub_key, path.join(data_dir, "pub.pem"))
+    save_rsa_private_key(priv_key, path.join(data_dir, "priv.pem"))
+    save_rsa_public_key(pub_key, path.join(data_dir, "pub.pem"))
 
 
 @pytest.mark.parametrize(
@@ -184,9 +184,9 @@ def test_validate_ca_flag_in_cert_chain(data_dir):
 
 def test_certificate_generation(tmpdir):
     ca_priv_key = generate_rsa_private_key()
-    save_private_key(ca_priv_key, path.join(tmpdir, "ca_private_key.pem"))
+    save_rsa_private_key(ca_priv_key, path.join(tmpdir, "ca_private_key.pem"))
     ca_pub_key = generate_rsa_public_key(ca_priv_key)
-    save_public_key(ca_pub_key, path.join(tmpdir, "ca_pub_key.pem"))
+    save_rsa_public_key(ca_pub_key, path.join(tmpdir, "ca_pub_key.pem"))
     assert path.isfile(path.join(tmpdir, "ca_private_key.pem"))
     assert path.isfile(path.join(tmpdir, "ca_pub_key.pem"))
 
@@ -196,10 +196,10 @@ def test_certificate_generation(tmpdir):
     assert path.isfile(path.join(tmpdir, "ca_cert.pem"))
 
     srk_priv_key = generate_rsa_private_key()
-    save_private_key(srk_priv_key, path.join(tmpdir, "srk_priv_key.pem"))
+    save_rsa_private_key(srk_priv_key, path.join(tmpdir, "srk_priv_key.pem"))
     assert path.isfile(path.join(tmpdir, "srk_priv_key.pem"))
     srk_pub_key = generate_rsa_public_key(srk_priv_key)
-    save_public_key(srk_pub_key, path.join(tmpdir, "srk_pub_key.pem"))
+    save_rsa_public_key(srk_pub_key, path.join(tmpdir, "srk_pub_key.pem"))
     assert path.isfile(path.join(tmpdir, "srk_pub_key.pem"))
     srk_subject = gen_name_struct('srk')
     srk_cert = generate_certificate(srk_subject, issuer, srk_pub_key, ca_priv_key, if_ca=False)

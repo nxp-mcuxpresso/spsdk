@@ -20,6 +20,7 @@ from spsdk.sdp.interfaces import Interface as SDPInterface
 
 class INT(click.ParamType):
     """Type that allows integers in bin, hex, oct format including _ as a visual separator."""
+    name = 'integer'
 
     def __init__(self, base: int = 0) -> None:
         """Initialize custom INT param class.
@@ -53,17 +54,16 @@ class INT(click.ParamType):
             self.fail(f"{value!r} is not a valid integer", param, ctx)
 
 
-def get_interface(module: str, port: str = None, usb: str = None) -> Union[MBootInterface, SDPInterface]:
+def get_interface(module: str, port: str = None, usb: str = None,
+                  timeout: int = 5000) -> Union[MBootInterface, SDPInterface]:
     """Get appropriate interface.
 
     'port' and 'usb' parameters are mutually exclusive; one of them is required.
 
     :param module: name of module to get interface from, 'sdp' or 'mboot'
-    :type module: str
     :param port: name and speed of the serial port (format: name[,speed]), defaults to None
-    :type port: str, optional
     :param usb: PID,VID of the USB interface, defaults to None
-    :type usb: str, optional
+    :param timeout: timeout in milliseconds
     :return: Selected interface instance
     :rtype: Interface
     :raises ValueError: only one of 'port' or 'usb' must be specified
@@ -82,7 +82,7 @@ def get_interface(module: str, port: str = None, usb: str = None) -> Union[MBoot
     if port:
         # it seems that the variable baudrate doesn't work properly
         name = port.split(',')[0] if ',' in port else port
-        devices = interface_module.scan_uart(port=name)  # type: ignore
+        devices = interface_module.scan_uart(port=name, timeout=timeout)  # type: ignore
         if len(devices) != 1:
             click.echo(f"Error: cannot open PC UART port '{name}'.")
             sys.exit(1)
@@ -95,4 +95,5 @@ def get_interface(module: str, port: str = None, usb: str = None) -> Union[MBoot
         if len(devices) > 1:
             click.echo(f"Error: more than one device '{pid_vid}' found")
             sys.exit(1)
+        devices[0].timeout = timeout
     return devices[0]

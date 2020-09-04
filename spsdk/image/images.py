@@ -28,7 +28,7 @@ from .header import Header, Header2, UnparsedException
 from .misc import read_raw_data, read_raw_segment
 from .secret import Signature, CertificateImg, MAC, SrkTable
 from .segments import SegTag, SegIVT2, SegBDT, SegAPP, SegDCD, SegCSF, SegIVT3a, SegIVT3b, SegBDS3a, SegBDS3b, \
-    SegBIC1, AbstractFCB, FlexSPIConfBlockFCB, PaddingFCB
+    SegBIC1, AbstractFCB, FlexSPIConfBlockFCB, PaddingFCB, SegBEE
 
 
 ########################################################################################################################
@@ -110,6 +110,8 @@ class BootImgBase:
 class BootImgRT(BootImgBase):
     """IMX Boot Image v2."""
 
+    # offset of the BEE PRDB Header segment
+    BEE_OFFSET = 0x400
     # IVT offset for NOR flash
     IVT_OFFSET_NOR_FLASH = 0x1000
     # IVT offset for other memories
@@ -128,10 +130,11 @@ class BootImgRT(BootImgBase):
     # The length of DEK key section; Note: Dek key is just 16 bytes
     DEK_SIZE = 0x200  # TODO this is sector size alignment???
 
-    def __init__(self, address: int, offset: int = IVT_OFFSET_NOR_FLASH, version: int = 0x40, plugin: bool = False):
+    def __init__(self, address: int, offset: int = IVT_OFFSET_NOR_FLASH, version: int = 0x40,
+                 plugin: bool = False):
         """Initialize boot image object.
 
-        :param address: The start address of img in target memory
+        :param address: The start address of img in target memory, where the image is executed
         :param offset: The IVT offset; use IVT_OFFSET_NOR_FLASH for NOR-FLASH or IVT_OFFSET_OTHER
         :param version: The version of boot img format; default value should be used
         :param plugin: Do not use; see `self.plugin` property
@@ -144,6 +147,7 @@ class BootImgRT(BootImgBase):
         self._dek_key: Optional[bytes] = None
         self._mac: Optional[bytes] = None
         self._fcb: AbstractFCB = PaddingFCB(self.IVT_OFFSET_OTHER)
+        self._bee: SegBEE = SegBEE([])
         self._ivt: SegIVT2 = SegIVT2(version)
         self._bdt: SegBDT = SegBDT(plugin=int(plugin))
         self._app: SegAPP = SegAPP()
@@ -276,13 +280,22 @@ class BootImgRT(BootImgBase):
         self.fcb = data if isinstance(data, FlexSPIConfBlockFCB) else FlexSPIConfBlockFCB.parse(data)
 
     @property
+    def bee(self) -> SegBEE:
+        """:return: BEE segment that contains configuration of encrypted XIP.
+
+        By default, BEE segment is empty. PRDB regions may be specified only for XIP images.
+        """
+        return self._bee
+
+    @property
     def app_offset(self) -> int:
         """:return: offset in the binary image, where the application starts.
 
-        Please mind: the offset inlcude FCB block (even the FCB block is not exported)
+        Please mind: the offset include FCB block (even the FCB block is not exported)
         The offset is 0x2000 for XIP images and 0x1000 for non-XIP images
         """
-        return BootImgRT.XIP_APP_OFFSET if self.ivt_offset == 0x1000 else BootImgRT.NON_XIP_APP_OFFSET
+        return BootImgRT.XIP_APP_OFFSET if (self.ivt_offset == self.IVT_OFFSET_NOR_FLASH) \
+            else BootImgRT.NON_XIP_APP_OFFSET
 
     @property
     def size(self) -> int:
@@ -301,7 +314,13 @@ class BootImgRT(BootImgBase):
     def _update(self) -> None:
         """Update Image Object."""
         # fcb
-        self.fcb.padding_len = self.ivt_offset - self.fcb.size if self.fcb.enabled else 0
+        self.fcb.padding_len = self.BEE_OFFSET - self.fcb.size if self.fcb.enabled else 0
+        # bee
+        if (self.ivt_offset == self.IVT_OFFSET_NOR_FLASH) and self.fcb.enabled:
+            self.bee.padding_len = self.ivt_offset - self.BEE_OFFSET - self.bee.size
+        else:
+            self.bee.padding_len = 0
+        self.bee.update()
         # padding for APP sections
         self.app.padding_len = 0
         # Set IVT section
@@ -351,7 +370,7 @@ class BootImgRT(BootImgBase):
         self.ivt.csf_address = self.address + self.app_offset + self.app.space
         csf.padding_len = self.CSF_SIZE - csf.size
         self.bdt.app_length = self.app_offset + self.app.space + csf.space
-        if self.encrypted:
+        if self.hab_encrypted:
             # calculate address of a DEK key
             for cmd in csf.commands:
                 if isinstance(cmd, CmdInstallKey) and (cmd.certificate_format == EnumCertFormat.BLOB):
@@ -371,6 +390,11 @@ class BootImgRT(BootImgBase):
         msg = "#" * 60 + "\n"
         msg += "# FCB (Flash Configuration Block)\n"
         msg += self.fcb.info()
+        # Print BEE
+        if self.bee_encrypted:
+            msg = "#" * 60 + "\n"
+            msg += "# BEE (Encrypted XIP configuration)\n"
+            msg += self.bee.info()
         # Print IVT
         msg = "#" * 60 + "\n"
         msg += "# IVT (Image Vector Table)\n"
@@ -403,11 +427,11 @@ class BootImgRT(BootImgBase):
         :param data: Raw data of img
         :param img_type: value must be EnumAppType.APP, no other options supported in this class
         :param address: start address of the application (entry point); Use -1 to detect the address from the image
-        :param dek_key: key for AES128 image encryption [16 bytes],
+        :param dek_key: key for AES128 image HAB encryption [16 bytes],
                     - use None for non-encrypted images;
                     - use empty bytes to create random key (recommended)
                     - use fixed key for testing to produce stable output
-        :param nonce: initial vector for AEAD encryption, if not specified random value is used;
+        :param nonce: initial vector for AEAD HAB encryption, if not specified random value is used;
                         For non-encrypted image use `None`
                         The parameter should be used only for testing to produce stable output
         :raise ValueError: if any parameter is not valid
@@ -437,8 +461,8 @@ class BootImgRT(BootImgBase):
             elif len(self._nonce) != nonce_len:
                 raise ValueError(f'Invalid nonce length, expected {nonce_len} bytes')
             # encrypt APP
-            assert self.encrypted
-            self.app.data = self._encrypt_data(align_block(data, MAC.AES128_BLK_LEN))
+            assert self.hab_encrypted
+            self.app.data = self._hab_encrypt_app_data(align_block(data, MAC.AES128_BLK_LEN))
         else:
             assert nonce is None
 
@@ -502,8 +526,13 @@ class BootImgRT(BootImgBase):
         self.csf = csf
 
     @property
-    def encrypted(self) -> bool:
-        """True if encrypted; False otherwise."""
+    def bee_encrypted(self) -> bool:
+        """True if BEE encrypted XIP image (with SW keys); False otherwise; see also `hab_encrypted`."""
+        return self.bee.size > 0
+
+    @property
+    def hab_encrypted(self) -> bool:
+        """True if HAB encrypted; False otherwise; see also `bee_encrypted`."""
         return self._dek_key is not None
 
     @staticmethod
@@ -520,11 +549,11 @@ class BootImgRT(BootImgBase):
             len_bytes = 4
         return 16 - 1 - len_bytes  # AES_BLOCK_BYTES - FLAG_BYTES - len_bytes
 
-    def _encrypt_data(self, app_data: bytes) -> bytes:
-        """Encrypt application data.
+    def _hab_encrypt_app_data(self, app_data: bytes) -> bytes:
+        """HAB Encrypt application data.
 
         :param app_data: application data to be encrypted
-        :return: encrypted application data
+        :return: encrypted application data (using HAB encryption)
         """
         assert self._nonce is not None
         assert len(app_data) & (MAC.AES128_BLK_LEN - 1) == 0
@@ -544,7 +573,7 @@ class BootImgRT(BootImgBase):
         """
         app_data = self.app.data
         assert app_data
-        if not self.encrypted:
+        if not self.hab_encrypted:
             return app_data
 
         assert len(app_data) & (MAC.AES128_BLK_LEN - 1) == 0
@@ -613,15 +642,40 @@ class BootImgRT(BootImgBase):
         #
         self.csf = csf
 
-    def _export_fcb(self, dbg_info: DebugInfo) -> bytes:
-        """Export FCB segment.
+    def _export_fcb_bee(self, dbg_info: DebugInfo) -> bytes:
+        """Export FCB and BEE segments.
 
         :param dbg_info: optional instance to provide info about exported data
-        :return: binary FCB segment
+        :return: binary FCB segment and BEE regions
+        :raise ValueError: if any BEE region is configured for images not located in the FLASH
         """
+        if not self.fcb.enabled:
+            return b''
         data = self.fcb.export(dbg_info=dbg_info)
         assert len(data) == self.fcb.space
+        if self.ivt_offset == self.IVT_OFFSET_NOR_FLASH:
+            data += self.bee.export(dbg_info=dbg_info)
+        elif self.bee.space > 0:
+            raise ValueError('BEE can be configured only for XIP images located in FLASH')
         return data
+
+    def _bee_encrypt_img_data(self, data: bytes) -> bytes:
+        """Encrypt data located in BEE regions.
+
+        :param data: image data (including IVT offset) to be encrypted
+        :return: the image with encrypted regions
+        :raise ValueError: if image configuration is invalid and BEE encryption cannot be applied
+        """
+        if not self.bee_encrypted:
+            return data
+
+        if self.ivt_offset != self.IVT_OFFSET_NOR_FLASH:
+            raise ValueError('BEE encryption is supported only for NOR FLASH')
+        if self.hab_encrypted:
+            raise ValueError('BEE encryption cannot be used for HAB encrypted images')
+
+        # encrypt
+        return data[:self.ivt_offset] + self.bee.encrypt_data(self.address + self.ivt_offset, data[self.ivt_offset:])
 
     def export(self, zulu: datetime = datetime.now(timezone.utc),
                dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
@@ -638,10 +692,12 @@ class BootImgRT(BootImgBase):
             csf.update_signatures(zulu, b'', 0)  # dummy call to provide size of the CSF section
         elif self.dek_key is not None:
             raise ValueError('CSF must be assigned for encrypted images')
+
         self._update()
         dbg_info.append_section('RT10xxBootableImage')
-        # FCB
-        data = self._export_fcb(dbg_info)
+        # FCB + BEE
+        data = self._export_fcb_bee(dbg_info)
+
         # IVT
         ivt_data = self.ivt.export()
         data += ivt_data
@@ -672,7 +728,7 @@ class BootImgRT(BootImgBase):
             csf.update_signatures(zulu, data, base_data_addr)
             data += csf.export(dbg_info=dbg_info)
 
-        return data
+        return self._bee_encrypt_img_data(data)
 
     @classmethod
     def _find_ivt_pos(cls, strm: Union[BufferedReader, BytesIO], size: Optional[int] = None) -> Tuple[Header, int, int]:

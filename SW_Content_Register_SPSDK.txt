@@ -1,14 +1,43 @@
 NXP Software Content Register
 
-Package:                   NXP SPSDK 0.1.0
+Package:                   NXP SPSDK 1.1.0
 Outgoing License:          BSD-3-Clause
 License Files:             LICENSE
 Type of content:           Source code
 Description and comments:  NXP Secure Provisioning SDK
 Origin:                    NXP (BSD-3-Clause)
-                           Das U-Boot - Universal Bootloader API (U-Boot exception 2.0) - https://www.denx.de/wiki/U-Boot
-                           Jupytext (MIT) - https://github.com/mwouts/jupytext
-                           PyIMX (BSD-3-Clause) - https://github.com/molejar/pyIMX
-                           PyMBoot (BSD-3-Clause) - https://github.com/molejar/pyMBoot
-                           PyEnum (Apache-2) - https://github.com/molejar/pyEnum
 
+Das U-Boot          Name: U-Boot Universal Bootloader API
+                    License: U-Boot exception 2.0
+                    Location: tests/mcu_examples/data
+                    URL: https://www.denx.de/wiki/U-Boot
+    
+PyIMX               Name: PyIMX
+                    License: BSD-3-Clause
+                    Location: spsdk/sdp
+                    Type: Source
+                    URL: https://github.com/molejar/pyIMX
+    
+PyMBoot             Name: PyMBoot
+                    License: BSD-3-Clause
+                    Location: spsdk/mboot
+                    Type: Source
+                    URL: https://github.com/molejar/pyMBoot
+    
+PyEnum              Name: PyEnum
+                    License: Apache-2
+                    Location: spsdk/utils
+                    Type: Source
+                    URL: https://github.com/molejar/pyEnum
+    
+P&E Micro Debugger  Name: Unit ACMP Debugger Controller
+                    License: BSD-3-Clause
+                    Location: spsdk/debuggers
+                    Type: Source + binary libraries
+
+Flashloader         Name: Flashloader
+                    License: BSD-3-Clause
+                    Location: test/mcu_examples/data
+                    Type: Binary
+                    URL: https://mcuxpresso.nxp.com/en/welcome
+                    Note: Built from Flashloader sources in NXP MCUXpresso SDK

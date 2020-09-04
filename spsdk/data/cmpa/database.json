@@ -1,6 +1,6 @@
 {
     "devices": {
-        "lpc55xx": {
+        "lpc55s6x": {
             "revisions": {
                 "a1": "niobe4_a1.xml"
             },

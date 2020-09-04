@@ -19,11 +19,14 @@
 #define EXAMPLE_LED_GPIO_PIN BOARD_USER_LED_PIN
 
 
+
 /**********************************************************************************************/
 /*  HAB  **************************************************************************************/
 /**********************************************************************************************/
 
-uint8_t logs[1024] = {0xA5, 0x5A, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+#define LOGS_SIZE 4096
+
+uint8_t logs[LOGS_SIZE] = {0xA5, 0x5A, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 
 enum hab_config {
 	HAB_CFG_RETURN = 0x33,	/* < Field Return IC */
@@ -33,7 +36,7 @@ enum hab_config {
 
 /* State definitions */
 enum hab_state {
-	HAB_STATE_INITIAL = 0x33,	/* Initialising state (transitory) */
+	HAB_STATE_INITIAL = 0x33,	/* Initializing state (transitory) */
 	HAB_STATE_CHECK = 0x55,		/* Check state (non-secure) */
 	HAB_STATE_NONSECURE = 0x66,	/* Non-secure state */
 	HAB_STATE_TRUSTED = 0x99,	/* Trusted state */
@@ -79,7 +82,6 @@ typedef uint32_t hab_rvt_authenticate_image_t(uint8_t, int, void **, size_t *, h
 /*
  * The following function authenticate the application and reads the HAB log.
  * Resulting status LOG is stored into `logs` static variable
- * The function
  */
 uint32_t exec_hab_audit(uint32_t authenticate) {
     /* The following code can be used to turn ON the LED, to ensure, the function was properly executed */
@@ -90,7 +92,7 @@ uint32_t exec_hab_audit(uint32_t authenticate) {
 
 	//check that external FLASH is readable
  	uint32_t pc = (*(uint32_t *)(0x60001004));
- 	if ((pc < 0x60000000UL) || (pc >= 0x60010000UL)) {
+ 	if ((pc < 0x60001000UL) || (pc >= 0x60010000UL)) {
  		//FLASH not accessible or PC outside expected range
  		memset(logs, 0xFF, 4);
  		return 0;
@@ -130,8 +132,12 @@ uint32_t exec_hab_audit(uint32_t authenticate) {
 		uint32_t index = 0; /* Loop index */
 		uint8_t event_data[128]; /* Event data buffer */
 		size_t bytes = sizeof(event_data); /* Event size in bytes */
+	        int16_t logs_space = LOGS_SIZE - 4;
 		/* Read HAB events */
 		while (hab_rvt_report_event(HAB_STS_ANY, index, event_data, &bytes) == HAB_SUCCESS) {
+        		if ((logs_space -= bytes) < 0) {
+		            	break; //stop if there is no more space in buffer
+		        }
 			memcpy(d_logs, event_data, bytes);
 			d_logs += bytes;
 			index++;

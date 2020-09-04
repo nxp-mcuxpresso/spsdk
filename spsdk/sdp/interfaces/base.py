@@ -23,11 +23,14 @@ class Interface(ABC):
     def close(self) -> None:
         """Close the interface."""
 
-    def read(self, timeout: int = 1000) -> Any:
+    def read(self) -> Any:
         """Read data from the device."""
 
     def write(self, packet: Any) -> None:
         """Write a packet to the device."""
+
+    def conf(self, config: dict) -> None:
+        """Configure device."""
 
     def info(self) -> str:
         """Return string containing information about the interface."""

@@ -19,7 +19,7 @@ from .base import Interface
 logger = logging.getLogger("SDP:UART")
 
 
-def scan_uart(port: str = None, baudrate: int = 115200) -> List[Interface]:
+def scan_uart(port: str = None, baudrate: int = 115200, timeout: int = 5000) -> List[Interface]:
     """Scan connected serial ports.
 
     Returns list of serial ports with devices that respond to PING command.
@@ -27,31 +27,29 @@ def scan_uart(port: str = None, baudrate: int = 115200) -> List[Interface]:
     If no devices are found, return an empty list.
 
     :param port: name of preferred serial port, defaults to None
-    :type port: str, optional
     :param baudrate: speed of the UART interface, defaults to 56700
-    :type baudrate: int, optional
+    :param timeout: timeout in milliseconds
     :return: list of interfaces responding to the PING command
     :rtype: List[spsdk.sdp.interfaces.base.Interface]
     """
     if port:
-        interface = _check_port(port, baudrate)
+        interface = _check_port(port, baudrate, timeout)
         return [interface] if interface else []
-    all_ports = [_check_port(comport.device, baudrate) for comport in comports(include_links=True)]
+    all_ports = [_check_port(comport.device, baudrate, timeout) for comport in comports(include_links=True)]
     return list(filter(None, all_ports))
 
 
-def _check_port(port: str, baudrate: int) -> Optional[Interface]:
+def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
     """Check if device on comport 'port' could be openned.
 
     :param port: name of port to check
-    :type port: str
     :param baudrate: speed of the UART interface, defaults to 56700
-    :type baudrate: int, optional
+    :param timeout: timeout in milliseconds
     :return: None if device can't be openned, instance of Interface if it does
     :rtype: Optional[Interface]
     """
     try:
-        interface = Uart(port=port, baudrate=baudrate)
+        interface = Uart(port=port, baudrate=baudrate, timeout=timeout)
         return interface
     except SerialException as e:
         logger.error(str(e))
@@ -98,11 +96,16 @@ class Uart(Interface):
         """Return information about the UART interface."""
         return self.device.port
 
-    def read(self, timeout: int = 1000) -> CmdResponse:
+    def conf(self, config: dict) -> None:
+        """Configure device.
+
+        :param config: parameters dictionary
+        """
+        pass
+
+    def read(self) -> CmdResponse:
         """Read data from device.
 
-        :param timeout: read timeout in milliseconds, defaults to 1000
-        :type timeout: int, optional
         :return: data read from device
         :rtype: spsdk.sdp.commands.CmdResponse
         """

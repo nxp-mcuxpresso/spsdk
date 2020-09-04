@@ -8,6 +8,7 @@
 
 """Module implementing functionality of srktool, dcdgen, mkimage and other similar tools."""
 
+from .bee import BeeRegionHeader, BeeKIB, BeeProtectRegionBlock, BeeFacRegion
 from .commands import EnumWriteOps, EnumCheckOps, EnumCertFormat, EnumInsKey, EnumAuthDat, EnumEngine, \
                       EnumItm, CmdWriteData, CmdCheckData, CmdNop, CmdSet, CmdInitialize, CmdUnlock, CmdUnlockSNVS,\
                       CmdInstallKey, CmdAuthData
@@ -45,6 +46,11 @@ __all__ = [
     'CFPA',
     'PaddingFCB',
     'FlexSPIConfBlockFCB',
+    # BEE
+    'BeeRegionHeader',
+    'BeeKIB',
+    'BeeProtectRegionBlock',
+    'BeeFacRegion',
     # Secret
     'SrkTable',
     'SrkItem',

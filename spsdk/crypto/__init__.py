@@ -13,7 +13,11 @@ There is functionality included:
 - generating RSA private key (size and exponent as parameter)
 - generating RSA public key
 - saving RSA private key to the file
-- saving RSA publice key to the file
+- saving RSA public key to the file
+- generating ECC private key (curve name as parameter)
+- generating ECC public key
+- saving ECC private key to the file
+- saving ECC public key to the file
 
 2. for certificate management:
 
@@ -39,8 +43,11 @@ from cryptography.hazmat.primitives import *
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import *
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.hazmat.primitives.asymmetric.rsa import *
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.ec import *
+from cryptography.hazmat.primitives.asymmetric.rsa import *  # type: ignore
 from cryptography.hazmat.primitives.serialization import *
+import cryptography.hazmat.primitives.asymmetric.utils as utils_cryptography
 from cryptography.x509 import *
 from cryptography.x509.oid import *
 from cryptography.x509.base import *

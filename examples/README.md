@@ -12,3 +12,4 @@ Here you can find various examples demonstrating **SPSDK** functionality:
 - [sbfile.py](sbfile.py) - demonstrations how to create Secure Boot (SB 2.0 and 2.1) images and boot image with and without a signature.
 - [sdp.py](sdp.py) - demonstrations how to read memory using SDP.
 - [sdp_mboot.py](sdp_mboot.py) - demonstrations how to download a flashloader into i.MX RT10xx device and read bootloader properties.
+- [sdps.py](sdps.py) - demonstrations how to write memory using SDPS.

@@ -39,8 +39,8 @@ class Counter:
         assert isinstance(nonce, bytes) and len(nonce) == 16
         assert ctr_byteorder_encoding in ['little', 'big']
         self._nonce = nonce[:-4]
-        self._ctr = int.from_bytes(nonce[-4:], 'little')
         self._ctr_byteorder_encoding = ctr_byteorder_encoding
+        self._ctr = int.from_bytes(nonce[-4:], ctr_byteorder_encoding)
         if ctr_value is not None:
             self._ctr += ctr_value
 

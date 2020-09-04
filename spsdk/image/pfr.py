@@ -112,9 +112,15 @@ class BaseConfigArea:
         fields = self.config["computed_fields"]
         return self._filter_by_names(items, fields)
 
+    def _filter_ignored_registers(self, items: List[ET.Element]) -> List[ET.Element]:
+        """Filter registers that shall be ignored."""
+        regs = self.config.get("ignored_registers", "")
+        return self._filter_by_names(items, regs)
+
     def _get_registers(self, exclude_computed: bool = True) -> List[ET.Element]:
         """Get a list of all registers as ElementTree."""
         registers = self.data.findall("register")
+        registers = self._filter_ignored_registers(registers)
         if exclude_computed:
             return self._filter_computed_registers(registers)
         return registers
