@@ -650,15 +650,27 @@ class CmdInitialize(CmdBase):
 class CmdUnlockAbstract(CmdBase, ABC):
     """Abstract unlock engine command; the command depends on engine type."""
 
-    def __init__(self, engine: EnumEngine = EnumEngine.ANY, features: int = 0):
+    def __init__(self, engine: EnumEngine = EnumEngine.ANY, features: int = 0, uid: int = 0):
         """Constructor.
 
         :param engine: to be unlocked
         :param features: engine specific features
+        :param uid: Unique ID required by some engine/feature combinations
         """
-        super().__init__(CmdTag.UNLK, EnumEngine.from_int(engine))
+        super().__init__(CmdTag.UNLK, EnumEngine.from_int(engine), length=8)
         self.features = features
-        self._header.length = CmdHeader.SIZE + 4
+        self.uid = uid
+        if self._need_uid:
+            self._header.length += 8
+
+    def __iter__(self) -> Iterator[int]:
+        return self.__iter__()
+
+    def __repr__(self) -> str:
+        return "{} <{}, {}, {}>".format(
+            self.__class__.__name__,
+            EnumEngine.desc(self.engine), self.features, self.uid
+        )
 
     @property
     def engine(self) -> EnumEngine:
@@ -679,8 +691,21 @@ class CmdUnlockAbstract(CmdBase, ABC):
         msg += f"Engine : {EnumEngine.desc(self.engine)}\n"
         return msg
 
+    @property
+    def _need_uid(self) -> bool:
+        """Return True if given Engine and Feature requires UID."""
+        return self.need_uid(self.engine, self.features)
+
+    @staticmethod
+    def need_uid(engine: EnumEngine, features: int) -> bool:
+        """Return True if given Engine and Feature requires UID."""
+        overall_condition = False
+        ocotp_condition = (engine == EnumEngine.OCOTP and bool(features & 0b1101))
+        overall_condition |= ocotp_condition
+        return overall_condition
+
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> CmdBase:
+    def parse(cls, data: bytes, offset: int = 0) -> 'CmdUnlockAbstract':
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -690,16 +715,35 @@ class CmdUnlockAbstract(CmdBase, ABC):
         header = CmdHeader.parse(data, offset, CmdTag.UNLK)
         features = unpack_from(">L", data, offset + header.size)[0]
         engine = EnumEngine.from_int(header.param)
+        uid = 0
+        if cls.need_uid(engine, features):
+            uid = unpack_from(">Q", data, offset + header.size + 4)[0]
 
         if engine == EnumEngine.SNVS:
-            obj: CmdUnlockAbstract = CmdUnlockSNVS(features)
+            return CmdUnlockSNVS(features)
+        if engine == EnumEngine.CAAM:
+            return CmdUnlockCAAM(features)
+        if engine == EnumEngine.OCOTP:
+            return CmdUnlockOCOTP(features, uid)
         else:
-            # The UID parameter is present only for OCOTP engine
-            # while the 'Leave LP SW reset unlocked.' feature is being used
-            parse_uid = header.param == EnumEngine.OCOTP and features == 0x1
-            uid = unpack_from(">Q", data, offset + header.size + 4)[0] if parse_uid else 0
-            obj = CmdUnlock(engine, features, uid)
-        return obj
+            return CmdUnlock(engine, features, uid)
+
+    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+        """Export to binary form (serialization).
+
+        :param dbg_info: debug information about exported data
+        :return: binary representation of the command
+        """
+        # assert self.size == CmdHeader.SIZE + 4
+        raw_data = super().export(dbg_info=dbg_info)
+        data = pack(">L", self.features)
+        dbg_info.append_binary_data('features', data)
+        raw_data += data
+        if self._need_uid:
+            data = pack(">Q", self.uid)
+            dbg_info.append_binary_data('uid', data)
+            raw_data += data
+        return raw_data
 
 
 class CmdUnlockSNVS(CmdUnlockAbstract):
@@ -736,19 +780,106 @@ class CmdUnlockSNVS(CmdUnlockAbstract):
         msg += "-" * 60 + "\n"
         return msg
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
-        """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
-        :return: binary representation of the command
+class CmdUnlockCAAM(CmdUnlockAbstract):
+    """Command Unlock for Cryptographic Acceleration and Assurance Module ."""
+    # Leave Job Ring and DECO Master IP unlocked
+    FEATURE_UNLOCK_MID = 1
+    # Leave RNG unititialized
+    FEATURE_UNLOCK_RNG = 2
+    # Keep manufacturing protection key in internal memory
+    FEATURE_UNLOCK_MFG = 4
+
+    def __init__(self, features: int = 0):
+        """Initialize.
+
+        :param features: mask of FEATURE_UNLOCK_ constants, defaults to 0
         """
-        assert self.size == CmdHeader.SIZE + 4
-        raw_data = super().export(dbg_info=dbg_info)
-        data = pack(">L", self.features)
-        dbg_info.append_binary_data('data', data)
-        raw_data += data
-        return raw_data
+        super().__init__(EnumEngine.CAAM, features)
 
+    @property
+    def unlock_mid(self) -> bool:
+        """Leave Job Ring and DECO master ID registers unlocked."""
+        return self.features & self.FEATURE_UNLOCK_MID != 0
+
+    @property
+    def unlock_rng(self) -> bool:
+        """Leave RNG un-instantiated."""
+        return self.features & self.FEATURE_UNLOCK_RNG != 0
+
+    @property
+    def unlock_mfg(self) -> bool:
+        """Leave Zero is able Master Key write unlocked."""
+        return self.features & self.FEATURE_UNLOCK_MFG != 0
+
+    def info(self) -> str:
+        """Text description of the command."""
+        msg = "-" * 60 + "\n"
+        msg += super().info()
+        msg += f"MID : {self.unlock_mid}\n"
+        msg += f"RNG : {self.unlock_rng}\n"
+        msg += f"MFG : {self.unlock_mfg}\n"
+        msg += "-" * 60 + "\n"
+        return msg
+
+class CmdUnlockOCOTP(CmdUnlockAbstract):
+    """Command Unlock for On-Chip One-time programable memory (fuses)."""
+    #pylint: disable = bad-whitespace
+    # Leave Field Return activation unlocked.
+    FEATURE_UNLOCK_FLD_RTN  = 1
+    # Leave SRK revocation unlocked.
+    FEATURE_UNLOCK_SRK_RVK  = 2
+    # Leave SCS register unlocked.
+    FEATURE_UNLOCK_SCS      = 4
+    # Unlock JTAG using SCS HAB_JDE bit.
+    FEATURE_UNLOCK_JTAG     = 8
+
+    def __init__(self, features: int = 0, uid: int = 0):
+        """Initialize.
+
+        :param features: mask of FEATURE_UNLOCK_ constants, defaults to 0
+        :param uid: Unique ID required by some engine/feature combinations
+        """
+        super().__init__(EnumEngine.OCOTP, features, uid=uid)
+
+    @property
+    def _need_uid(self) -> bool:
+        """Return True if given Engine and Feature requires UID."""
+        return self.unlock_fld_rtn or self.unlock_csc or self.unlock_jtag
+
+    @property
+    def unlock_fld_rtn(self) -> bool:
+        """Leave Field Return activation unlocked."""
+        return self.features & self.FEATURE_UNLOCK_FLD_RTN != 0
+
+    @property
+    def unlock_srk_rvk(self) -> bool:
+        """Leave SRK revocation unlocked."""
+        return self.features & self.FEATURE_UNLOCK_SRK_RVK != 0
+
+    @property
+    def unlock_csc(self) -> bool:
+        """Leave SCS register unlocked."""
+        return self.features & self.FEATURE_UNLOCK_SCS != 0
+
+    @property
+    def unlock_jtag(self) -> bool:
+        """Unlock JTAG using SCS HAB_JDE bit."""
+        return self.features & self.FEATURE_UNLOCK_JTAG != 0
+
+
+    def info(self) -> str:
+        """Text description of the command."""
+        msg = "-" * 60 + "\n"
+        msg += super().info()
+        msg += f"FLD_RTN : {self.unlock_fld_rtn}\n"
+        msg += f"SRK_RVK : {self.unlock_srk_rvk}\n"
+        msg += f"CSC     : {self.unlock_csc}\n"
+        msg += f"JTAG    : {self.unlock_jtag}\n"
+        if self.uid:
+            msg += f"UID : {hex(self.uid)}\n"
+        msg += "-" * 60 + "\n"
+        return msg
 
 class CmdUnlock(CmdUnlockAbstract):
     """Generic unlock engine command."""
@@ -757,20 +888,10 @@ class CmdUnlock(CmdUnlockAbstract):
         """Constructor.
 
         :param engine: to be unlocked
-        :param features: TODO
-        :param uid: TODO
+        :param features: mask of features to use by the engine
+        :param uid: Unique ID (if needed)
         """
-        super().__init__(engine, features)
-        self.uid = uid
-        self._header.length = CmdHeader.SIZE + 12
-
-    def __repr__(self) -> str:
-        return "CmdUnlock <{}, {}, {}>".format(
-            EnumEngine.desc(self.engine), self.features, self.uid
-        )
-
-    def __iter__(self) -> Iterator[int]:
-        return self.__iter__()
+        super().__init__(engine, features, uid=uid)
 
     def info(self) -> str:
         """Text description of the command."""
@@ -780,17 +901,6 @@ class CmdUnlock(CmdUnlockAbstract):
         msg += "UID:      {})\n".format(self.uid)
         msg += "-" * 60 + "\n"
         return msg
-
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
-        """Export to binary form (serialization).
-
-        :param dbg_info: debug information about exported data
-        :return: binary representation of the command
-        """
-        self._header.length = self.size
-        raw_data = super().export(dbg_info=dbg_info)
-        raw_data += pack(">LQ", self.features, self.uid)
-        return raw_data
 
 
 class CmdInstallKey(CmdBase):

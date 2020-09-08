@@ -6,15 +6,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import CmdNop, CmdUnlock, CmdUnlockSNVS, EnumEngine
+from spsdk.image import (CmdNop, CmdUnlock, CmdUnlockCAAM, CmdUnlockOCOTP,
+                         CmdUnlockSNVS, EnumEngine)
 from spsdk.image.header import CmdHeader
 
 
 def test_unlock_cmd_base():
     cmd = CmdUnlock()
     assert cmd.engine == EnumEngine.ANY
-    assert cmd.size == 16
-    assert "CmdUnlock" in repr(cmd)
+    assert cmd.size == 8
+    assert "CmdUnlock" in str(cmd)
     assert cmd._header.param == 0
 
     cmd = CmdUnlock(EnumEngine.CSU)
@@ -24,7 +25,7 @@ def test_unlock_cmd_base():
 def test_unlock_cmd_export_parse():
     cmd = CmdUnlock()
     data = cmd.export()
-    assert len(data) == 16
+    assert len(data) == 8
     assert cmd == CmdUnlock.parse(data)
 
 
@@ -56,3 +57,73 @@ def test_unlock_snvs():
     cmd = CmdUnlockSNVS()
     assert not cmd.unlock_lp_swr
     assert not cmd.unlock_zmk_write
+
+    assert cmd.info()
+
+    data = cmd.export()
+    cmd2 = CmdUnlock.parse(data)
+    assert data == cmd2.export()
+    assert cmd == cmd2
+
+
+def test_unlock_caam():
+    cmd = CmdUnlockCAAM(features=CmdUnlockCAAM.FEATURE_UNLOCK_MID)
+    assert cmd.features == 1
+    assert cmd.unlock_mid
+    assert not cmd.unlock_mfg
+    assert not cmd.unlock_rng
+    assert "CmdUnlockCAAM" in str(cmd)
+
+    assert cmd.info()
+
+    data = cmd.export()
+    cmd2 = CmdUnlock.parse(data)
+    assert data == cmd2.export()
+    assert cmd == cmd2
+
+
+def test_unlock_ocotp():
+    cmd = CmdUnlockOCOTP(
+        features=
+            CmdUnlockOCOTP.FEATURE_UNLOCK_FLD_RTN |
+            CmdUnlockOCOTP.FEATURE_UNLOCK_JTAG |
+            CmdUnlockOCOTP.FEATURE_UNLOCK_SCS,
+        uid=0x123456789
+    )
+
+    assert cmd.unlock_fld_rtn
+    assert not cmd.unlock_srk_rvk
+    assert "CmdUnlockOCOTP" in str(cmd)
+
+    assert "UID" in cmd.info()
+    assert "UID" not in CmdUnlockOCOTP().info()
+
+    data = cmd.export()
+    cmd2 = CmdUnlock.parse(data)
+    assert data == cmd2.export()
+    assert cmd == cmd2
+
+
+def test_unlock_parse_others():
+    cmd = CmdUnlock(engine=EnumEngine.SRTC)
+    assert "CmdUnlock" in str(cmd)
+    data = cmd.export()
+    cmd2 = CmdUnlock.parse(data)
+    assert cmd == cmd2
+
+
+def test_need_uid():
+    positive = [
+        CmdUnlock.need_uid(EnumEngine.OCOTP, CmdUnlockOCOTP.FEATURE_UNLOCK_FLD_RTN),
+        CmdUnlock.need_uid(EnumEngine.OCOTP, CmdUnlockOCOTP.FEATURE_UNLOCK_JTAG),
+        CmdUnlock.need_uid(EnumEngine.OCOTP, CmdUnlockOCOTP.FEATURE_UNLOCK_SCS),
+    ]
+    negative = [
+        CmdUnlock.need_uid(EnumEngine.OCOTP, CmdUnlockOCOTP.FEATURE_UNLOCK_SRK_RVK),
+        CmdUnlock.need_uid(EnumEngine.CAAM, 0b001),
+        CmdUnlock.need_uid(EnumEngine.CAAM, 0b010),
+        CmdUnlock.need_uid(EnumEngine.CAAM, 0b100),
+        CmdUnlock.need_uid(EnumEngine.ANY, 0b1111)
+    ]
+    assert all(positive)
+    assert not all(negative)
