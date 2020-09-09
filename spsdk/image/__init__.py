@@ -10,8 +10,8 @@
 
 from .bee import BeeRegionHeader, BeeKIB, BeeProtectRegionBlock, BeeFacRegion
 from .commands import EnumWriteOps, EnumCheckOps, EnumCertFormat, EnumInsKey, EnumAuthDat, EnumEngine, \
-                      EnumItm, CmdWriteData, CmdCheckData, CmdNop, CmdSet, CmdInitialize, CmdUnlock, CmdUnlockSNVS,\
-                      CmdInstallKey, CmdAuthData
+                      EnumItm, CmdWriteData, CmdCheckData, CmdNop, CmdSet, CmdInitialize, CmdUnlock, \
+                      CmdUnlockCAAM, CmdUnlockOCOTP, CmdUnlockSNVS, CmdInstallKey, CmdAuthData
 from .segments import SegIVT2, SegIVT3a, SegIVT3b, SegBDT, SegAPP, SegDCD, SegCSF, PaddingFCB, FlexSPIConfBlockFCB
 from .secret import SrkTable, SrkItem, CertificateImg, Signature, MAC, SecretKeyBlob, EnumAlgorithm
 from .images import parse, BootImgRT, BootImg2, BootImg3a, BootImg3b, BootImg4, EnumAppType
@@ -69,6 +69,8 @@ __all__ = [
     'CmdInstallKey',
     'CmdAuthData',
     'CmdUnlock',
+    'CmdUnlockCAAM',
+    'CmdUnlockOCOTP',
     'CmdUnlockSNVS',
     # Elements
     'EnumWriteOps',
