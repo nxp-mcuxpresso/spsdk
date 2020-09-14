@@ -297,8 +297,8 @@ class DebugCredentialRSA2048(DebugCredentialRSA):
 
 class DebugCredentialRSA4096(DebugCredentialRSA):
     """DebugCredential class for RSA 4096."""
-    FORMAT = "<2HL16s128s514s3L514s512s"
-    FORMAT_NO_SIG = "<2HL16s128s514s3L514s"
+    FORMAT = "<2HL16s128s516s3L516s512s"
+    FORMAT_NO_SIG = "<2HL16s128s516s3L516s"
 
 
 class DebugCredentialECC256(DebugCredentialECC):

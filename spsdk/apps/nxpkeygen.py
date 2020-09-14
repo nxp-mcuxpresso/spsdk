@@ -94,7 +94,6 @@ def genkey(ctx: click.Context, path: str, password: str) -> None:
     is_rsa = ctx.obj['is_rsa']
     key_param = ctx.obj['key_param']
 
-    assert os.path.isdir(os.path.dirname(path)), f"The target directory '{os.path.dirname(path)}' does not exist."
     if is_rsa:
         logger.info("Generating RSA private key...")
         priv_key_rsa = generate_rsa_private_key(key_size=key_param)
