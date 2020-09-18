@@ -725,8 +725,7 @@ class CmdUnlockAbstract(CmdBase, ABC):
             return CmdUnlockCAAM(features)
         if engine == EnumEngine.OCOTP:
             return CmdUnlockOCOTP(features, uid)
-        else:
-            return CmdUnlock(engine, features, uid)
+        return CmdUnlock(engine, features, uid)
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Export to binary form (serialization).

@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module is used to generate public/private key and generating debug credential file."""
+import json
 import logging
 import os
 import sys
@@ -17,7 +18,9 @@ import yaml
 from spsdk import __version__ as version
 from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key, save_rsa_public_key, \
     generate_ecc_public_key, generate_ecc_private_key, save_ecc_public_key, save_ecc_private_key
-from spsdk.dat import DebugCredentialECC, DebugCredentialRSA
+from spsdk.dat import DebugCredential
+
+from .elftosb_helper import RootOfTrustInfo
 
 logger = logging.getLogger(__name__)
 LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
@@ -79,20 +82,55 @@ def determine_protocol_version(protocol: str) -> Tuple[bool, List[str]]:
     return is_rsa, protocol_version
 
 
+def check_destination_dir(path: str, create_folder: bool = False) -> None:
+    """Checks path's destination dir, optionally create the destination folder.
+
+    :param path: Path to file to create/consider
+    :param create_folder: Create destination folder
+    """
+    dest_dir = os.path.dirname(path)
+    if not dest_dir:
+        return
+    if create_folder:
+        os.makedirs(dest_dir, exist_ok=True)
+        return
+    if not os.path.isdir(dest_dir):
+        click.echo(f"Can't create '{path}', folder '{dest_dir}' doesn't exit.")
+        sys.exit(1)
+
+
+def check_file_exists(path: str, force_overwrite: bool = False) -> bool:    #type: ignore
+    """Check if file exists, exits if file exists and overwriting is disabled.
+
+    :param path: Path to a file
+    :param force_overwrite: allows file overwriting
+    :return: if file overwriting is allowed, it return True if file exists
+    """
+    if force_overwrite:
+        return os.path.isfile(path)
+    if os.path.isfile(path) and not force_overwrite:
+        click.echo(f"File '{path}' already exists. Use --force to overwrite it.")
+        sys.exit(1)
+
+
 @main.command()
 @click.option('--password', 'password', metavar='PASSWORD', help='Password with which the output file will be '
                                                                  'encrypted. If not provided, the output will be '
                                                                  'unencrypted.')
-@click.argument('path', type=click.Path())
+@click.argument('path', type=click.Path(file_okay=True))
+@click.option('--force', is_flag=True, default=False,
+              help="Force overwritting of an existing file. Create destination folder, if doesn't exist already.")
 @click.pass_context
-def genkey(ctx: click.Context, path: str, password: str) -> None:
+def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
     """Generate key pair for RoT or DCK.
 
     \b
-    PATH_WHERE_TO_SAVE_KEYS    - path where the key pairs will be stored
+    PATH    - path where the key pairs will be stored
     """
     is_rsa = ctx.obj['is_rsa']
     key_param = ctx.obj['key_param']
+    check_destination_dir(path, force)
+    check_file_exists(path, force)
 
     if is_rsa:
         logger.info("Generating RSA private key...")
@@ -101,7 +139,7 @@ def genkey(ctx: click.Context, path: str, password: str) -> None:
         pub_key_rsa = generate_rsa_public_key(priv_key_rsa)
         logger.info("Saving RSA key pair...")
         save_rsa_private_key(priv_key_rsa, path, password if password else None)
-        save_rsa_public_key(pub_key_rsa, path[:-3] + 'pub')
+        save_rsa_public_key(pub_key_rsa, os.path.splitext(path)[0] + '.pub')
     else:
         logger.info("Generating ECC private key...")
         priv_key_ec = generate_ecc_private_key(curve_name=key_param)
@@ -109,32 +147,38 @@ def genkey(ctx: click.Context, path: str, password: str) -> None:
         pub_key_ec = generate_ecc_public_key(priv_key_ec)
         logger.info("Saving ECC key pair...")
         save_ecc_private_key(priv_key_ec, path, password if password else None)
-        save_ecc_public_key(pub_key_ec, path[:-3] + 'pub')
+        save_ecc_public_key(pub_key_ec, os.path.splitext(path)[0] + '.pub')
 
 
 @main.command()
-@click.option('-c', '--config', metavar='PATH', help='Specify YAML credential config file.')
-@click.argument('dc_file_path', metavar='PATH', type=click.Path())
+@click.option('-c', '--config', type=click.File('r'), required=True,
+              help='Specify YAML credential config file.')
+@click.option('-e', '--elf2sb-config', type=click.File('r'), required=False,
+              help='Specify Root Of Trust from configuration file used by elf2sb tool')
+@click.option('--force', is_flag=True, default=False,
+              help="Force overwritting of an existing file. Create destination folder, if doesn't exist already.")
+@click.argument('dc_file_path', metavar='PATH', type=click.Path(file_okay=True))
 @click.pass_context
-def gendc(ctx: click.Context, dc_file_path: str, config: str) -> None:
+def gendc(ctx: click.Context, dc_file_path: str, config: click.File, elf2sb_config: click.File, force: bool) -> None:
     """Generate debug certificate (DC).
 
     \b
-    PATH_TO_DC_FILE     - path to dc file
+    PATH    - path to dc file
     """
     is_rsa = ctx.obj['is_rsa']
     protocol = ctx.obj['protocol_version']
-    assert os.path.isdir(os.path.dirname(config)), \
-        f"The target directory '{os.path.dirname(config)}' does not exist."
+    check_destination_dir(dc_file_path, force)
+    check_file_exists(dc_file_path, force)
+
     logger.info("Loading configuration from yml file...")
-    with open(config, 'r') as stream:
-        yaml_content = yaml.safe_load(stream)
-    if is_rsa:
-        logger.info("Creating debug credential RSA object from yml file...")
-        dc = DebugCredentialRSA.from_yaml_config(version=protocol, yaml_config=yaml_content)
-    else:
-        logger.info("Creating debug credential ECC object from yml file...")
-        dc = DebugCredentialECC.from_yaml_config(version=protocol, yaml_config=yaml_content)
+    yaml_content = yaml.safe_load(config)   #type: ignore
+    if elf2sb_config:
+        logger.info("Loading configuration from elf2sb config file...")
+        rot_info = RootOfTrustInfo(json.load(elf2sb_config))    #type: ignore
+        yaml_content["rot_meta"] = rot_info.public_keys
+        yaml_content["rotk"] = rot_info.private_key
+    logger.info(f"Creating {'RSA' if is_rsa else 'ECC'} debug credential object...")
+    dc = DebugCredential.from_yaml_config(version=protocol, yaml_config=yaml_content)
     data = dc.export()
     logger.info("Saving the debug credential to a file...")
     with open(dc_file_path, 'wb') as f:

@@ -8,15 +8,15 @@
 """Main Debug Authentication Tool application."""
 
 import logging
+import struct
 import sys
 
 import click
-import struct
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import INT
-from spsdk.dat import dm_commands, DebugCredential, DebugAuthenticationChallenge
-from spsdk.dat import dar_packet
+from spsdk.dat import (DebugAuthenticationChallenge, DebugCredential,
+                       dar_packet, dm_commands)
 from spsdk.dat.debug_mailbox import DebugMailbox
 
 logger = logging.getLogger("DebugMBox")
@@ -61,9 +61,9 @@ def main(ctx: click.Context, interface: str, protocol: str, log_level: str, timi
 
 
 @main.command()
-@click.option('-b', '--beacon', type=INT())
-@click.option('-c', '--certificate')
-@click.option('-k', '--key')
+@click.option('-b', '--beacon', type=INT(), help='Authentication beacon')
+@click.option('-c', '--certificate', help='Path to Debug Credentials.')
+@click.option('-k', '--key', help='Path to DCK private key.')
 @click.option('-f', '--force', is_flag=True, default=True)
 @click.pass_obj
 def auth(pass_obj: dict, beacon: int, certificate: str, key: str, force: bool) -> None:

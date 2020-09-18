@@ -27,7 +27,7 @@ def test_generate_cmpa(data_dir):
         read_file(data_dir, 'selfsign_privatekey_rsa2048.pem', 'rb'),
         password=None, backend=default_backend())
 
-    cmpa = CMPA('lpc55s6x', keys=[key.public_key()], user_config=config)
+    cmpa = CMPA('lpc55s6x', keys=[key.public_key()], user_config=config['settings'])
     assert binary == cmpa.export(add_hash=False, compute_inverses=True)
 
 
@@ -35,7 +35,7 @@ def test_generate_cfpa(data_dir):
     config = json.loads(read_file(data_dir, 'cfpa_test.json'))
     binary = read_file(data_dir, 'CFPA_test.bin', 'rb')
 
-    cfpa = CFPA('lpc55s6x', user_config=config)
+    cfpa = CFPA('lpc55s6x', user_config=config['settings'])
     data = cfpa.export(add_hash=True, compute_inverses=False)
     assert binary == data
 

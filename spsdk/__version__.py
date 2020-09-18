@@ -10,4 +10,4 @@
 Having the version in a separate file makes it easier to share it with setup.py
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"

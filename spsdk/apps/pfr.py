@@ -10,20 +10,19 @@
 import json
 import sys
 # no_type_check decorator is used to suppress mypy's confusion in Click and cryptography libraries
-from typing import Iterable, List, Mapping, Optional, Type, Union, Tuple, no_type_check
+from typing import (Iterable, List, Mapping, Optional, Tuple, Type, Union,
+                    no_type_check)
 
 import click
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-
-from cryptography.x509 import load_pem_x509_certificate
 from jinja2 import Environment, FileSystemLoader
 
-from spsdk import crypto
 from spsdk import SPSDK_DATA_FOLDER
 from spsdk import __version__ as spsdk_version
+from spsdk import crypto
 from spsdk.image import pfr
 from spsdk.image.misc import dict_diff
+
+from .elftosb_helper import RootOfTrustInfo
 
 HTMLDataElement = Mapping[str, Union[str, Iterable[dict]]]
 HTMLData = List[HTMLDataElement]
@@ -67,7 +66,7 @@ def _extract_public_key(file_path: str, password: Optional[str]) -> crypto.RSAPu
 
 
 @no_type_check
-def _extract_public_keys(secret_files: Tuple[str], password: Optional[str]) -> List[RSAPublicKey]:
+def _extract_public_keys(secret_files: Tuple[str], password: Optional[str]) -> List[crypto.RSAPublicKey]:
     """Extract RSAPublic key from a file that contains Certificate, Private Key o Public Key."""
     return [
         _extract_public_key(file_path=source, password=password)
@@ -136,7 +135,13 @@ def user_config(device: str, revision: str, area: str, output: click.Path, full:
     """Generate user configuration."""
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     data = pfr_obj.generate_config(not full)
-    json_data = json.dumps(data, indent=2)
+    config = {
+        'device': pfr_obj.device,
+        'revision': pfr_obj.revision,
+        'type': area,
+        'settings': data
+    }
+    json_data = json.dumps(config, indent=2)
     _store_output(json_data, output)
 
 
@@ -160,35 +165,47 @@ def parse(device: str, revision: str, area: str, output: click.Path, binary: cli
         parsed = dict_diff(
             pfr_obj.generate_config(exclude_computed=not show_calc),
             parsed)
-    json_data = json.dumps(parsed, indent=2)
+    config = {
+        'device': pfr_obj.device,
+        'revision': pfr_obj.revision,
+        'type': area,
+        'settings': parsed
+    }
+    json_data = json.dumps(config, indent=2)
     _store_output(json_data, output)
 
 
 @main.command()
-@click.option('-d', '--device', type=click.Choice(pfr.CMPA.devices()), help="Device to use", required=True)
-@click.option('-r', '--revision', help="Chip revision; if not specivfied, most recent one will be used")
-@click.option('-t', '--type', 'area', required=True, type=click.Choice(['cmpa', 'cfpa']),
-              help='Select PFR partition')
-@click.option('-o', '--output', type=click.Path(), required=True,
-              help="Save the output into a file instead of console")
 @click.option('-c', '--user-config', 'user_config_file', type=click.File('r'), required=True,
               help="JSON file with user configuration")
+@click.option('-o', '--output', type=click.Path(), required=True,
+              help="Save the output into a file instead of console")
 @click.option('-a', '--add-hash', is_flag=True,
               help="Add HASH digest at the end. CAUTION!!! It locks the device")
 @click.option('-i', '--calc-inverse', is_flag=True,
               help="Calculate the INVERSE values CAUTION!!! It locks the settings")
+@click.option('-e', '--elf2sb-config', type=click.File('r'), required=False,
+              help='Specify Root Of Trust from configuration file used by elf2sb tool')
 @click.option('-f', '--secret-file', type=click.Path(exists=True), multiple=True, required=False,
               help="Secret file (certificate, public key, private key); can be defined multiple times")
 @click.option('-p', '--password', help="Password when using Encrypted private keys as --secret-file")
-def generate(device: str, revision: str, area: str, output: click.Path, user_config_file: click.File,
-             add_hash: bool, calc_inverse: bool, secret_file: Tuple[str], password: str) -> None:
+def generate(output: click.Path, user_config_file: click.File, add_hash: bool, calc_inverse: bool,
+             elf2sb_config: click.File, secret_file: Tuple[str], password: str) -> None:
     """Generate binary data."""
-    if area == 'cmpa' and not secret_file:
-        click.echo('Error: CMPA page requires --secret-file(s)')
+    user_config = _load_user_config(user_config_file)
+    root_of_trust = None
+    if elf2sb_config:
+        keys = RootOfTrustInfo(json.load(elf2sb_config)).public_keys    #type: ignore
+        root_of_trust = tuple(keys)
+    if secret_file:
+        root_of_trust = secret_file
+    area = user_config['type']
+    pfr_obj = _get_pfr_class(area)(device=user_config['device'], revision=user_config['revision'])
+    if area == 'cmpa' and not root_of_trust:
+        click.echo('Error: CMPA page requires either --secret-file(s) or --elf2sb-config')
         sys.exit(1)
-    pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
-    pfr_obj.keys = _extract_public_keys(secret_file, password)
-    pfr_obj.user_config = _load_user_config(user_config_file)
+    pfr_obj.keys = _extract_public_keys(root_of_trust, password) if area == 'cmpa' else None
+    pfr_obj.user_config = user_config['settings']
     data = pfr_obj.export(add_hash=add_hash, compute_inverses=calc_inverse)
     _store_output(data, output, 'wb')
 
