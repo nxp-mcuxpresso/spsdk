@@ -8,10 +8,10 @@ rot_meta:
  - ./p1_cert0_2048.pub
 rot_id: 0
 
-# sign_provider: 'type=sasp;key_number=0'
+sign_provider: 'type=sasp;key_number=0'
 
 # To use signing using local file comment out the line above and uncomment one of lines below
-rotk: ./hsm/k0_cert0_2048.pem
+# rotk: ./hsm/k0_cert0_2048.pem
 # sign_provider: 'type=file;file_path=./hsm/k0_cert0_2048.pem'
 
 dck: ./dck.pub
