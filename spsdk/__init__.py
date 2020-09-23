@@ -22,9 +22,10 @@ import os
 # pylint: disable=wrong-import-position     # we want this symbol to be available in other submodules
 SPSDK_DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
-from . import image, sbfile, mboot, sdp, utils, apps, dat
-from .exceptions import SPSDKError
+from . import apps, crypto, dat, image, mboot, sbfile, sdp, utils
 from .__version__ import __version__ as version
+from .exceptions import SPSDKError
+
 
 __author__ = "NXP"
 __contact__ = "michal.starecek@nxp.com"

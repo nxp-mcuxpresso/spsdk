@@ -16,8 +16,11 @@ import click
 import yaml
 
 from spsdk import __version__ as version
-from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key, save_rsa_public_key, \
-    generate_ecc_public_key, generate_ecc_private_key, save_ecc_public_key, save_ecc_private_key
+from spsdk.crypto import (generate_ecc_private_key, generate_ecc_public_key,
+                          generate_rsa_private_key, generate_rsa_public_key,
+                          save_ecc_private_key, save_ecc_public_key,
+                          save_rsa_private_key, save_rsa_public_key)
+from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.dat import DebugCredential
 
 from .elftosb_helper import RootOfTrustInfo
@@ -157,14 +160,25 @@ def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
               help='Specify Root Of Trust from configuration file used by elf2sb tool')
 @click.option('--force', is_flag=True, default=False,
               help="Force overwritting of an existing file. Create destination folder, if doesn't exist already.")
+@click.option('--plugin', type=click.Path(exists=True, file_okay=True), required=False,
+              help='External python file contaning a custom SignatureProvider implementation.')
 @click.argument('dc_file_path', metavar='PATH', type=click.Path(file_okay=True))
 @click.pass_context
-def gendc(ctx: click.Context, dc_file_path: str, config: click.File, elf2sb_config: click.File, force: bool) -> None:
+def gendc(ctx: click.Context, plugin: click.Path, dc_file_path: str, config: click.File,
+          elf2sb_config: click.File, force: bool) -> None:
     """Generate debug certificate (DC).
 
     \b
     PATH    - path to dc file
     """
+    if plugin:
+        # if a plugin is present simply load it
+        # The SignatureProvider will automatically pick up any implementation(s)
+        from importlib.util import spec_from_file_location, module_from_spec
+        spec = spec_from_file_location(name='plugin', location=plugin)  #type: ignore
+        mod = module_from_spec(spec)
+        spec.loader.exec_module(mod)    #type: ignore
+
     is_rsa = ctx.obj['is_rsa']
     protocol = ctx.obj['protocol_version']
     check_destination_dir(dc_file_path, force)
@@ -177,6 +191,11 @@ def gendc(ctx: click.Context, dc_file_path: str, config: click.File, elf2sb_conf
         rot_info = RootOfTrustInfo(json.load(elf2sb_config))    #type: ignore
         yaml_content["rot_meta"] = rot_info.public_keys
         yaml_content["rotk"] = rot_info.private_key
+        yaml_content["rot_id"] = rot_info.public_key_index
+
+    # enforcing rot_id presence in yaml config...
+    assert "rot_id" in yaml_content, "Config file doesn't contain the 'rot_id' field"
+
     logger.info(f"Creating {'RSA' if is_rsa else 'ECC'} debug credential object...")
     dc = DebugCredential.from_yaml_config(version=protocol, yaml_config=yaml_content)
     data = dc.export()

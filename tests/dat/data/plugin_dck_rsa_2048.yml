@@ -11,3 +11,4 @@ rot_meta:
 rot_id: 0
 rotk: ./k0_cert0_2048.pem
 dck: ./dck.pub
+sign_provider: 'type=test;param=256'

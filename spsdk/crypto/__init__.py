@@ -56,3 +56,4 @@ from .certificate_management import *
 from .keys_management import *
 from .loaders import (_get_encoding_type, generic_load, load_certificate,
                       load_private_key, load_public_key)
+from .signature_provider import SignatureProvider

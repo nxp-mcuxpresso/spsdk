@@ -9,27 +9,27 @@
 
 import binascii
 from struct import pack, unpack_from
-from typing import List, Type
+from typing import Any, List, Type
 
 from spsdk import crypto
 from spsdk.dat.utils import ecc_public_numbers_to_bytes, ecc_key_to_bytes, rsa_key_to_bytes
 from spsdk.utils.crypto.backend_internal import internal_backend
-from spsdk.crypto import utils_cryptography
-
+from spsdk.crypto import utils_cryptography, SignatureProvider
 
 class DebugCredential:
     """Base class for DebugCredential."""
-
+    #Subclasses override the following invalid class member values
     FORMAT = 'INVALID_FORMAT'
     FORMAT_NO_SIG = 'INVALID_FORMAT'
+    VERSION = '0.0'
 
-    def __init__(self, version: str, socc: int, uuid: str, rot_meta: bytes, dck_pub: bytes,
-                 cc_socu: int, cc_vu: int, cc_beacon: int, rot_pub: bytes, signature: bytes = None) -> None:
+    def __init__(self, socc: int, uuid: bytes, rot_meta: bytes, dck_pub: bytes,
+                 cc_socu: int, cc_vu: int, cc_beacon: int, rot_pub: bytes, signature: bytes = None,
+                 signature_provider: SignatureProvider = None) -> None:
         """Initialize the DebugCredential object.
 
-        :param version: The string representing version: for RSA: 1.0, for ECC: 2.0, 2.1, 2.2
         :param socc: The SoC Class that this credential applies to
-        :param uuid: The string representing the unique device identifier
+        :param uuid: The bytes of the unique device identifier
         :param rot_meta: Metadata for Root of Trust
         :param dck_pub: Internal binary representation of Debug Credential public key
         :param cc_socu: The Credential Constraint value that the vendor has associated with this credential.
@@ -37,8 +37,8 @@ class DebugCredential:
         :param cc_beacon: The non-zero Credential Beacon value, which is bound to a DC
         :param rot_pub: Internal binary representation of RoT public key
         :param signature: Debug Credential signature
+        :param signature_provider: external signature provider
         """
-        self.version = version
         self.socc = socc
         self.uuid = uuid
         self.rot_meta = rot_meta
@@ -48,16 +48,19 @@ class DebugCredential:
         self.cc_beacon = cc_beacon
         self.rot_pub = rot_pub
         self.signature = signature
+        self.signature_provider = signature_provider
 
     def export(self) -> bytes:
         """Export to binary form (serialization).
 
         :return: binary representation of the debug credential
         """
+        #make sure user called .sign before
+        assert self.signature, "Signature is not set, call the .sign method first"
         data = pack(
             self.FORMAT,
-            *[int(v) for v in self.version.split('.')],
-            self.socc, bytes.fromhex(self.uuid), self.rot_meta, self.dck_pub, self.cc_socu,
+            *[int(v) for v in self.VERSION.split('.')],
+            self.socc, self.uuid, self.rot_meta, self.dck_pub, self.cc_socu,
             self.cc_vu, self.cc_beacon, self.rot_pub, self.signature
         )
         return data
@@ -67,30 +70,32 @@ class DebugCredential:
 
         :return: binary representation of the debug credential
         """
-        msg = f"Version : {self.version}\n"
+        msg = f"Version : {self.VERSION}\n"
         msg += f"SOCC    : {self.socc}\n"
-        msg += f"UUID    : {self.uuid}\n"
+        msg += f"UUID    : {self.uuid.hex().upper()}\n"
         msg += f"CC_SOCC : {hex(self.cc_socu)}\n"
         msg += f"CC_VU   : {hex(self.cc_vu)}\n"
         msg += f"BEACON  : {self.cc_beacon}\n"
         return msg
 
+    def sign(self, signature_provider: crypto.SignatureProvider) -> None:
+        """Sign the DC data using SignatureProvider."""
+        signature = signature_provider.sign(self._get_data_to_sign())
+        assert signature, f"Signature provider didn't return any signature"
+        self.signature = signature
+
     def _get_data_to_sign(self) -> bytes:
+        """Collects data meant for signing."""
         data = pack(
             self.FORMAT_NO_SIG,
-            *[int(v) for v in self.version.split('.')],
-            self.socc, bytes.fromhex(self.uuid), self.rot_meta, self.dck_pub,
+            *[int(v) for v in self.VERSION.split('.')],
+            self.socc, self.uuid, self.rot_meta, self.dck_pub,
             self.cc_socu, self.cc_vu, self.cc_beacon, self.rot_pub
         )
         return data
 
-    @staticmethod
-    def _get_signature(data: bytes, rotk_priv_path: str) -> bytes:
-        """Creates a cryptographic signature over the data.
-
-        :return: binary representing the signature
-        """
-        raise NotImplementedError('Derived class has to implement this method.')
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, DebugCredential) and vars(self) == vars(other)
 
     @staticmethod
     def _get_rot_meta(rot_pub_keys: List[str]) -> bytes:
@@ -109,18 +114,15 @@ class DebugCredential:
         raise NotImplementedError('Derived class has to implement this method.')
 
     @staticmethod
-    def _get_rotk(rotk_priv_key: str, rot_pub_keys: List[str]) -> bytes:
-        """Loads the vendor RoT private key.
-
-        Derive from it and gets public key as bytes used by the device
-        to verify the signature of this DC.
+    def _get_rot_pub(rot_pub_id: int, rot_pub_keys: List[str]) -> bytes:
+        """Loads the vendor RoT Public key that corresponds to the private key used for singing.
 
         :return: binary representing the rotk public key
         """
         raise NotImplementedError('Derived class has to implement this method.')
 
     @classmethod
-    def __get_class(cls, version: str) -> 'Type[DebugCredential]':
+    def _get_class(cls, version: str) -> 'Type[DebugCredential]':
         return _version_mapping[version]
 
     @classmethod
@@ -129,17 +131,22 @@ class DebugCredential:
 
         :return: DebugCredential object
         """
-        klass = DebugCredential.__get_class(version=version)
+        klass = DebugCredential._get_class(version=version)
         dc_obj = klass(
-            version=version, socc=yaml_config['socc'], uuid=yaml_config['uuid'],
+            socc=yaml_config['socc'], uuid=bytes.fromhex(yaml_config['uuid']),
             rot_meta=klass._get_rot_meta(yaml_config['rot_meta']),
             dck_pub=klass._get_dck(yaml_config['dck']),
             cc_socu=yaml_config['cc_socu'],
             cc_vu=yaml_config['cc_vu'], cc_beacon=yaml_config['cc_beacon'],
-            rot_pub=klass._get_rotk(yaml_config['rotk'], yaml_config['rot_meta'])
+            rot_pub=klass._get_rot_pub(yaml_config['rot_id'], yaml_config['rot_meta'])
         )
-        # calculate signature
-        dc_obj.signature = dc_obj._get_signature(dc_obj._get_data_to_sign(), yaml_config['rotk'])
+        # if the yaml_config doesn't contain 'sign_provider' assume file-type
+        sign_provider = yaml_config.get('sign_provider') or f'type=file;file_path={yaml_config["rotk"]}'
+        signature_provider = SignatureProvider.create(create_params=sign_provider)
+        assert signature_provider, f"Couldn't create Signature Provider for '{sign_provider}'"
+        dc_obj.sign(signature_provider)
+        # cache for later?
+        dc_obj.signature_provider = signature_provider
         return dc_obj
 
     @classmethod
@@ -151,28 +158,16 @@ class DebugCredential:
         :return: DebugCredential object
         """
         version = "{}.{}".format(*unpack_from("<2H", data, offset))
-        klass = cls.__get_class(version)
-        _, _, socc, uuid, *rest = unpack_from(klass.FORMAT, data, offset)
-        return klass(version, socc, uuid.hex().upper(), *rest)
+        klass = cls._get_class(version)
+        _versionH, _versionL, *rest = unpack_from(klass.FORMAT, data, offset)
+        return klass(*rest)
 
 
 class DebugCredentialRSA(DebugCredential):
     """Class for RSA specific of DebugCredential."""
 
     FORMAT_NO_SIG = "<2HL16s128s260s3L260s"
-    FORMAT = "<2HL16s128s260s3L260s256s"
-
-    @staticmethod
-    def _get_signature(data: bytes, rotk_priv_path: str) -> bytes:
-        """Creates a rsa signature over the data.
-
-        :return: binary representing the signature
-        """
-        priv_rotk = crypto.load_private_key(file_path=rotk_priv_path). \
-            private_bytes(encoding=crypto.Encoding.PEM,
-                          format=crypto.serialization.PrivateFormat.PKCS8,
-                          encryption_algorithm=crypto.serialization.NoEncryption())
-        return internal_backend.rsa_sign(priv_rotk, data)
+    FORMAT = FORMAT_NO_SIG + "256s"
 
     @staticmethod
     def _get_rot_meta(rot_pub_keys: List[str]) -> bytes:
@@ -204,7 +199,7 @@ class DebugCredentialRSA(DebugCredential):
         return rsa_key_to_bytes(key=dck_key, exp_length=4)
 
     @staticmethod
-    def _get_rotk(rotk_priv_key: str, _rot_pub_keys: List[str]) -> bytes:
+    def _get_rot_pub(rot_pub_id: int, rot_pub_keys: List[str]) -> bytes:
         """Loads the vendor RoT private key.
 
          It corresponds to the (default) position zero RoT key in the rot_meta list of public keys.
@@ -212,30 +207,26 @@ class DebugCredentialRSA(DebugCredential):
 
         :return: binary representing the rotk public key
         """
-        priv_key_rotk = crypto.load_private_key(file_path=rotk_priv_key)
-        pub_key_rotk = priv_key_rotk.public_key()
-        assert isinstance(pub_key_rotk, crypto.RSAPublicKey)
-        return rsa_key_to_bytes(key=pub_key_rotk, exp_length=4)
+        pub_key_path = rot_pub_keys[rot_pub_id]
+        pub_key = crypto.load_public_key(pub_key_path)
+        assert isinstance(pub_key, crypto.RSAPublicKey)
+        return rsa_key_to_bytes(key=pub_key, exp_length=4)
 
 
 class DebugCredentialECC(DebugCredential):
     """Class for ECC specific of DebugCredential."""
 
     FORMAT_NO_SIG = "<2HL16s528s132s3L4s"
-    FORMAT = "<2HL16s528s132s3L4s132s"
+    FORMAT = FORMAT_NO_SIG + "132s"
+    CURVE: Any = crypto.ec.SECP256R1()
 
-    @staticmethod
-    def _get_signature(data: bytes, rotk_priv_path: str) -> bytes:
-        """Creates a cryptographic signature over the data.
-
-        :return: binary representing the signature
-        """
-        priv_rotk = crypto.load_private_key(file_path=rotk_priv_path)
-        assert isinstance(priv_rotk, crypto.EllipticCurvePrivateKeyWithSerialization)
-        signature = priv_rotk.sign(data, crypto.ec.ECDSA(crypto.hashes.SHA256()))
-        r, s = utils_cryptography.decode_dss_signature(signature)
-        public_numbers = crypto.EllipticCurvePublicNumbers(r, s, priv_rotk.curve)
-        return ecc_public_numbers_to_bytes(public_numbers=public_numbers)
+    def sign(self, signature_provider: crypto.SignatureProvider) -> None:
+        """Sign the DC data using SignatureProvider."""
+        super().sign(signature_provider)
+        assert self.signature, "Signature is not set in base class"
+        r, s = crypto.utils_cryptography.decode_dss_signature(self.signature)
+        public_numbers = crypto.EllipticCurvePublicNumbers(r, s, self.CURVE)
+        self.signature = ecc_public_numbers_to_bytes(public_numbers=public_numbers)
 
     @staticmethod
     def _get_rot_meta(rot_pub_keys: List[str]) -> bytes:
@@ -265,7 +256,7 @@ class DebugCredentialECC(DebugCredential):
         return ecc_key_to_bytes(key=dck_key, length=66)
 
     @staticmethod
-    def _get_rotk(rotk_priv_key: str, rot_pub_keys: List[str]) -> bytes:
+    def _get_rot_pub(rot_pub_id: int, rot_pub_keys: List[str]) -> bytes:
         """Creates RoTKey_Pub (2 element 16-bit array (little endian).
 
         CTRKtable index (RoT meta-data) of the public key used by the vendor to sign the DC.
@@ -276,44 +267,43 @@ class DebugCredentialECC(DebugCredential):
 
         :return: binary representation
         """
-        priv_loaded = crypto.load_private_key(rotk_priv_key)
-        pub_from_priv = priv_loaded.public_key()
-        pub_numbers = pub_from_priv.public_numbers()
-        rot_pub_numbers = [crypto.load_public_key(k).public_numbers() for k in rot_pub_keys]
-        key_index = rot_pub_numbers.index(pub_numbers)
-        assert key_index is not None, "ROTK private key does not correspond to any of RotMeta public keys."
+        pub_key_path = rot_pub_keys[rot_pub_id]
+        pub_key = crypto.load_public_key(pub_key_path)
+        assert isinstance(pub_key, crypto.EllipticCurvePublicKey)
         curve_index = {
-            256: 1, 384: 2, 521: 3
-        }[pub_from_priv.key_size]
-        return pack('<2H', key_index, curve_index)
+            256: 1, 386: 2, 521: 3
+        }[pub_key.curve.key_size]
+        return pack('<2H', rot_pub_id, curve_index)
 
 
 class DebugCredentialRSA2048(DebugCredentialRSA):
     """DebugCredential class for RSA 2048."""
-
-    FORMAT = "<2HL16s128s260s3L260s256s"
     FORMAT_NO_SIG = "<2HL16s128s260s3L260s"
-
+    FORMAT = FORMAT_NO_SIG + "256s"
+    VERSION = '1.0'
 
 class DebugCredentialRSA4096(DebugCredentialRSA):
     """DebugCredential class for RSA 4096."""
-    FORMAT = "<2HL16s128s516s3L516s512s"
     FORMAT_NO_SIG = "<2HL16s128s516s3L516s"
-
+    FORMAT = FORMAT_NO_SIG + "512s"
+    VERSION = '1.1'
 
 class DebugCredentialECC256(DebugCredentialECC):
     """DebugCredential class for ECC 256."""
-    pass
+    VERSION = '2.0'
+    CURVE = crypto.ec.SECP256R1()
 
 
 class DebugCredentialECC384(DebugCredentialECC):
     """DebugCredential class for ECC 384."""
-    pass
+    VERSION = '2.1'
+    CURVE = crypto.ec.SECP384R1()
 
 
 class DebugCredentialECC521(DebugCredentialECC):
     """DebugCredential class for ECC 521."""
-    pass
+    VERSION = '2.2'
+    CURVE = crypto.ec.SECP521R1()
 
 
 _version_mapping = {

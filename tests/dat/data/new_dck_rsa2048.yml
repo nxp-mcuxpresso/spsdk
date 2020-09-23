@@ -5,5 +5,6 @@ cc_vu: 0x5678
 cc_beacon: 0
 rot_meta:
 - new_rotk_2048.pub
+rot_id: 0
 rotk: new_rotk_2048.pem
 dck: new_dck_2048.pub
