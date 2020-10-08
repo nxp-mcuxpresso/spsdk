@@ -23,6 +23,7 @@ def test_dar_packet_rsa(tmpdir, data_dir):
         with open(os.path.join(data_dir, "new_dck_rsa2048.yml"), 'r') as f:
             yaml_config = yaml.safe_load(f)
         dc = DebugCredentialRSA.from_yaml_config(version='1.0', yaml_config=yaml_config)
+        dc.sign()
         dar = DebugAuthenticateResponseRSA(debug_credential=dc,
                                            auth_beacon=0,
                                            dac=dac_bytes,
@@ -39,6 +40,7 @@ def test_dar_packet_ecc(tmpdir, data_dir):
         with open(os.path.join(data_dir, 'new_dck_secp256.yml'), 'r') as f:
             yaml_config = yaml.safe_load(f)
         dc = DebugCredentialECC.from_yaml_config(version='2.0', yaml_config=yaml_config)
+        dc.sign()
         dar = DebugAuthenticateResponseECC(debug_credential=dc,
                                            auth_beacon=0,
                                            dac=dac_bytes,

@@ -198,6 +198,7 @@ def gendc(ctx: click.Context, plugin: click.Path, dc_file_path: str, config: cli
 
     logger.info(f"Creating {'RSA' if is_rsa else 'ECC'} debug credential object...")
     dc = DebugCredential.from_yaml_config(version=protocol, yaml_config=yaml_content)
+    dc.sign()
     data = dc.export()
     logger.info("Saving the debug credential to a file...")
     with open(dc_file_path, 'wb') as f:

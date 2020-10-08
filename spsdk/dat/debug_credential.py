@@ -56,7 +56,7 @@ class DebugCredential:
         :return: binary representation of the debug credential
         """
         #make sure user called .sign before
-        assert self.signature, "Signature is not set, call the .sign method first"
+        assert self.signature, "Debug Credential Signature is not set, call the .sign method first"
         data = pack(
             self.FORMAT,
             *[int(v) for v in self.VERSION.split('.')],
@@ -78,10 +78,11 @@ class DebugCredential:
         msg += f"BEACON  : {self.cc_beacon}\n"
         return msg
 
-    def sign(self, signature_provider: crypto.SignatureProvider) -> None:
+    def sign(self) -> None:
         """Sign the DC data using SignatureProvider."""
-        signature = signature_provider.sign(self._get_data_to_sign())
-        assert signature, f"Signature provider didn't return any signature"
+        assert self.signature_provider, f"Debug Credential Signature provider is not set"
+        signature = self.signature_provider.sign(self._get_data_to_sign())
+        assert signature, f"Debug Credential Signature provider didn't return any signature"
         self.signature = signature
 
     def _get_data_to_sign(self) -> bytes:
@@ -138,15 +139,12 @@ class DebugCredential:
             dck_pub=klass._get_dck(yaml_config['dck']),
             cc_socu=yaml_config['cc_socu'],
             cc_vu=yaml_config['cc_vu'], cc_beacon=yaml_config['cc_beacon'],
-            rot_pub=klass._get_rot_pub(yaml_config['rot_id'], yaml_config['rot_meta'])
+            rot_pub=klass._get_rot_pub(yaml_config['rot_id'], yaml_config['rot_meta']),
+            signature_provider=SignatureProvider.create(
+                # if the yaml_config doesn't contain 'sign_provider' assume file-type
+                yaml_config.get('sign_provider') or f'type=file;file_path={yaml_config["rotk"]}'
+            )
         )
-        # if the yaml_config doesn't contain 'sign_provider' assume file-type
-        sign_provider = yaml_config.get('sign_provider') or f'type=file;file_path={yaml_config["rotk"]}'
-        signature_provider = SignatureProvider.create(create_params=sign_provider)
-        assert signature_provider, f"Couldn't create Signature Provider for '{sign_provider}'"
-        dc_obj.sign(signature_provider)
-        # cache for later?
-        dc_obj.signature_provider = signature_provider
         return dc_obj
 
     @classmethod
@@ -220,10 +218,10 @@ class DebugCredentialECC(DebugCredential):
     FORMAT = FORMAT_NO_SIG + "132s"
     CURVE: Any = crypto.ec.SECP256R1()
 
-    def sign(self, signature_provider: crypto.SignatureProvider) -> None:
+    def sign(self) -> None:
         """Sign the DC data using SignatureProvider."""
-        super().sign(signature_provider)
-        assert self.signature, "Signature is not set in base class"
+        super().sign()
+        assert self.signature, "Debug Credential Signature is not set in base class"
         r, s = crypto.utils_cryptography.decode_dss_signature(self.signature)
         public_numbers = crypto.EllipticCurvePublicNumbers(r, s, self.CURVE)
         self.signature = ecc_public_numbers_to_bytes(public_numbers=public_numbers)

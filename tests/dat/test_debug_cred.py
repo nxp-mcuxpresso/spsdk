@@ -22,6 +22,7 @@ def test_debugcredential_rsa_compare_with_reference(data_dir):
         with open("new_dck_rsa2048.yml", 'r') as f:
             yaml_config = yaml.safe_load(f)
             dc = DebugCredentialRSA.from_yaml_config(version='1.0', yaml_config=yaml_config)
+            dc.sign()
             data = dc.export()
             with open('sample.cert', 'wb') as f:
                 f.write(data)
@@ -44,6 +45,7 @@ def test_verify_ecc_signature(data_dir):
         with open("new_dck_secp256.yml", 'r') as f:
             yaml_config = yaml.safe_load(f)
         dc = DebugCredentialECC.from_yaml_config(version='2.0', yaml_config=yaml_config)
+        dc.sign()
         data = dc.export()
         priv_key = load_private_key(yaml_config['rotk'])
     data_without_signature = data[:-132]
@@ -63,6 +65,7 @@ def test_debugcredential_info(data_dir):
         with open("new_dck_secp256.yml", 'r') as f:
             yaml_config = yaml.safe_load(f)
         dc = DebugCredentialECC.from_yaml_config(version='2.0', yaml_config=yaml_config)
+        dc.sign()
     output = dc.info()
     req_strings = ["Version", "SOCC", "UUID", "UUID", "CC_SOCC", "CC_VU", "BEACON"]
     for req_string in req_strings:
@@ -75,6 +78,7 @@ def test_debugcredential_ecc_compare_with_reference(data_dir):
         with open("new_dck_secp256.yml", 'r') as f:
             yaml_config = yaml.safe_load(f)
             dc = DebugCredentialECC.from_yaml_config(version='2.0', yaml_config=yaml_config)
+            dc.sign()
             data = dc.export()
             pub_key = load_private_key(yaml_config['rotk']).public_key()
         data_without_singature = data[:-132]
