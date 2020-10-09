@@ -22,6 +22,37 @@
             },
             "latest": "a1",
             "address": "0x3_E400"
+        },
+		"lpc550x":
+        {
+            "revisions": {
+                "a1": "niobe4nano_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x3_E400"
+        },
+		"lpc55s0x":
+        {
+            "revisions": {
+                "a1": "niobe4nano_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x3_E400"
+        },
+		"lpc55s2x":
+        {
+            "revisions": {
+                "a1": "niobe4_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x9_E400"
+        },
+		"lpc552x": {
+            "revisions": {
+                "a1": "niobe4_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x9_E400"
         }
     },
     "computed_registers": [

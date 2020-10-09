@@ -99,9 +99,6 @@ class SDP:
             self._response_value = response.value
             if response.value != ResponseValue.UNLOCKED:
                 self._status_code = StatusCode.HAB_IS_LOCKED
-                if self._cmd_exception:
-                    raise SdpCommandError(CommandTag.name(cmd_packet.tag), self.status_code)
-                return False
 
         return True
 
@@ -144,9 +141,6 @@ class SDP:
                 self._response_value = response.value
                 if response.value == ResponseValue.LOCKED:
                     self._status_code = StatusCode.HAB_IS_LOCKED
-                    if self._cmd_exception:
-                        raise SdpCommandError('ReadData', self.status_code)
-                    return None
 
         return data[:length] if len(data) > length else data
 
@@ -181,19 +175,19 @@ class SDP:
             # TODO: Is this condition necessary?
             if response.value != ResponseValue.UNLOCKED:
                 self._status_code = StatusCode.HAB_IS_LOCKED
-            else:
-                # Read Command Status
-                response = self._device.read()
-                logger.debug(f'RX-DATA: {response.info()}')
-                if cmd_packet.tag == CommandTag.WRITE_DCD and response.value != ResponseValue.WRITE_DATA_OK:
-                    self._status_code = StatusCode.WRITE_DCD_FAILURE
-                    ret_val = False
-                elif cmd_packet.tag == CommandTag.WRITE_CSF and response.value != ResponseValue.WRITE_DATA_OK:
-                    self._status_code = StatusCode.WRITE_CSF_FAILURE
-                    ret_val = False
-                elif cmd_packet.tag == CommandTag.WRITE_FILE and response.value != ResponseValue.WRITE_FILE_OK:
-                    self._status_code = StatusCode.WRITE_IMAGE_FAILURE
-                    ret_val = False
+
+            # Read Command Status
+            response = self._device.read()
+            logger.debug(f'RX-DATA: {response.info()}')
+            if cmd_packet.tag == CommandTag.WRITE_DCD and response.value != ResponseValue.WRITE_DATA_OK:
+                self._status_code = StatusCode.WRITE_DCD_FAILURE
+                ret_val = False
+            elif cmd_packet.tag == CommandTag.WRITE_CSF and response.value != ResponseValue.WRITE_DATA_OK:
+                self._status_code = StatusCode.WRITE_CSF_FAILURE
+                ret_val = False
+            elif cmd_packet.tag == CommandTag.WRITE_FILE and response.value != ResponseValue.WRITE_FILE_OK:
+                self._status_code = StatusCode.WRITE_IMAGE_FAILURE
+                ret_val = False
 
         except:
             logger.info('RX-CMD: Timeout Error')

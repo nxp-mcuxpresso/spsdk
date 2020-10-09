@@ -89,7 +89,7 @@ def efuse_read_once(ctx: click.Context, address: int) -> None:
     """
     with McuBoot(ctx.obj['interface']) as mboot:
         response = mboot.efuse_read_once(address)
-        display_output([response], mboot.status_code, ctx.obj['use_json'])
+        display_output([4, response], mboot.status_code, ctx.obj['use_json'])
 
 
 @main.command()
