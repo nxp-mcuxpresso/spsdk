@@ -1090,8 +1090,8 @@ class BootImg2(BootImgBase):
         if obj.ivt.csf_address:
             csf_start = start_index + (obj.ivt.csf_address - obj.ivt.ivt_address)
             try:
-                obj.csf = SegCSF.parse(read_raw_segment(stream, SegTag.CSF, csf_start))
-                # obj.csf.padding = csf_start + obj.csf.size
+                obj.csf = SegCSF.parse(read_raw_data(stream, cls.CSF_SIZE, csf_start))
+                obj.csf.padding = cls.CSF_SIZE - obj.csf.size
             except NotEnoughBytesException:
                 pass
 
