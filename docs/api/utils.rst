@@ -1,7 +1,7 @@
 Utils Module API
 =================
 
-Utils module
+Module containing various functions/modules used throughout the SPSDK.
 
 Utils easy enum
 ------------------

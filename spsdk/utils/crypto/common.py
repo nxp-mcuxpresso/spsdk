@@ -6,9 +6,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Common cryptographic functions."""
-
+import math
 from datetime import datetime
 
+from cryptography.hazmat.primitives.asymmetric import utils
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.x509 import Certificate
 
@@ -114,3 +116,32 @@ def matches_key_and_cert(priv_key: bytes, cert: Certificate) -> bool:
     return crypto_backend().rsa_verify(
         cert_pub_key.public_numbers().n, cert_pub_key.public_numbers().e, signature, bytes()
     )
+
+
+def serialize_ecc_signature(signature: bytes, coordinate_length: int) -> bytes:
+    """Re-format ECC ANS.1 DER signature into the format used by ROM code."""
+    r, s = utils.decode_dss_signature(signature)
+
+    #TODO: dirty hack, this needs fixing!
+    min_len = math.ceil(r.bit_length() / 8)
+    if min_len > coordinate_length:
+        coordinate_length = 48
+
+    r_bytes = r.to_bytes(coordinate_length, 'big')
+    s_bytes = s.to_bytes(coordinate_length, 'big')
+    return r_bytes + s_bytes
+
+
+def ecc_public_numbers_to_bytes(public_numbers: EllipticCurvePublicNumbers, length: int = None) -> bytes:
+    """Converts public numbers from ECC key into bytes.
+
+    :param public_numbers: instance of ecc public numbers
+    :param length: length of bytes object to use
+    :return: bytes representation
+    """
+    x = public_numbers.x
+    y = public_numbers.y
+    length = length or math.ceil(x.bit_length() // 8)
+    x_bytes = x.to_bytes(length, 'big')
+    y_bytes = y.to_bytes(length, 'big')
+    return x_bytes + y_bytes

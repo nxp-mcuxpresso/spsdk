@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Internal implementation for security backend."""
-
+import importlib
 from struct import pack, unpack_from
 from typing import Any, Union
 
@@ -54,11 +54,11 @@ class Backend(BackendClass):
         :return: instance of algorithm class
         :raise ValueError: if the algorithm is not found
         """
-        algo_cls = getattr(Hash, name.upper(), None)  # hack: get class object by name
+        # algo_cls = getattr(Hash, name.upper(), None)  # hack: get class object by name
+        algo_cls = importlib.import_module(f'Crypto.Hash.{name.upper()}')
         if algo_cls is None:
             raise ValueError(f'Unsupported algorithm: Hash.{name}'.format(name=name.upper()))
-
-        return algo_cls.new(data)  # pylint: disable=not-callable
+        return algo_cls.new(data)  # type: ignore  # pylint: disable=not-callable
 
     def hash(self, data: bytes, algorithm: str = 'sha256') -> bytes:
         """Return a HASH from input data with specified algorithm.

@@ -48,12 +48,13 @@ def test_generate_rsa_key(tmpdir) -> None:
     assert isinstance(priv_key_from_file, RSAPrivateKey)
     assert priv_key_from_file.key_size == 2048
 
+
 @pytest.mark.parametrize(
     "protocol_version, curve_name",
     [
         ("2.0", 'secp256r1'),
-        ("2.1",  'secp384r1'),
-        ("2.2",  'secp521r1')
+        ("2.1", 'secp384r1'),
+        ("2.2", 'secp521r1')
     ]
 )
 def test_generate_ecc_key(tmpdir, protocol_version, curve_name) -> None:
@@ -75,7 +76,6 @@ def test_generate_ecc_key(tmpdir, protocol_version, curve_name) -> None:
     priv_key_from_file = load_private_key(pem_path)
     assert isinstance(priv_key_from_file, EllipticCurvePrivateKey)
     assert pub_key_from_file.curve.name == curve_name
-
 
 
 def test_generate_invalid_key(tmpdir) -> None:
@@ -127,6 +127,29 @@ def test_generate_ecc_dc_file(tmpdir, data_dir):
         result = runner.invoke(main, cmd.split())
         assert result.exit_code == 0, result.output
         assert os.path.isfile(out_file)
+
+
+def test_generate_dc_file_N4A_256(tmpdir, data_dir):
+    """Test generate dc file with ecc protocol for N4A"""
+    out_file = f'{tmpdir}/dc_secp256r1_N4A.cert'
+    cmd = f'-p 2.0 gendc -c new_dck_secp256_N4A.yml {out_file}'
+    with use_working_directory(data_dir):
+        runner = CliRunner()
+        result = runner.invoke(main, cmd.split())
+        assert result.exit_code == 0, result.output
+        assert os.path.isfile(out_file)
+
+
+def test_generate_dc_file_N4A_384(tmpdir, data_dir):
+    """Test generate dc file with ecc protocol for N4A"""
+    out_file = f'{tmpdir}/dc_secp384r1_N4A.cert'
+    cmd = f'-p 2.1 gendc -c new_dck_secp384_N4A.yml {out_file}'
+    with use_working_directory(data_dir):
+        runner = CliRunner()
+        result = runner.invoke(main, cmd.split())
+        assert result.exit_code == 0, result.output
+        assert os.path.isfile(out_file)
+
 
 def test_generate_rsa_with_elf2sb(tmpdir, data_dir):
     org_file = f'{tmpdir}/org.dc'

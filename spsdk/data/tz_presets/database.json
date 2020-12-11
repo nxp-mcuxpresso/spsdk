@@ -5,7 +5,19 @@
             "a1": "lpc55xx_a1.json"
         },
         "latest": "a1"
-    },    
+    },   
+	"lpc55s1x": {
+        "revisions": {
+            "a1": "lpc55s1x.json"
+        },
+        "latest": "a1"
+    }, 
+	"lpc55s3x": {
+        "revisions": {
+            "a1": "lpc55s3x.json"
+        },
+        "latest": "a1"
+    },   	
     "rt6xx": {
         "revisions": {
             "a0": "rt6xx_a0.json",

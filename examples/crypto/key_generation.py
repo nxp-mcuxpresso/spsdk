@@ -13,8 +13,10 @@ because it provides keys for certificate's generation.
 
 import os
 from os import path
-from spsdk.crypto.keys_management import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key, \
-    save_rsa_public_key, Encoding, generate_ecc_private_key, generate_ecc_public_key, save_ecc_private_key, save_ecc_public_key
+from spsdk.crypto.keys_management import (
+    generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key, save_rsa_public_key, Encoding,
+    generate_ecc_private_key, generate_ecc_public_key, save_ecc_private_key, save_ecc_public_key
+)
 
 
 def main() -> None:

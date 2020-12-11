@@ -15,7 +15,7 @@ IF EXIST venv\Scripts\activate.bat call venv\Scripts\activate.bat
 @rem -------------------------------------------------------
 @rem python tests including the code coverage
 IF EXIST %CD%\reports\htmlcov DEL %CD%\reports\htmlcov /Q
-pytest --cov=spsdk --cov-report=term --cov-report=html:reports/htmlcov/ --cov-branch --cov-report=xml:reports/coverage.xml --log-cli-level=WARN .
+pytest --cov=spsdk --cov-report=term --cov-report=html:reports/htmlcov/ --cov-branch --cov-report=xml:reports/coverage.xml .
 @rem WITH DURATIONS pytest --durations=0 --cov=spsdk --cov-report=term --cov-report=html:reports/htmlcov/ --cov-branch --cov-report=xml:reports/coverage.xml --log-cli-level=WARN .
 @if errorlevel 1 goto END
 @rem -------------------------------------------------------

@@ -7,28 +7,29 @@
 
 """Common utils for DAT module."""
 import math
-import os
-from typing import Union, Iterator
+from typing import Union
 
 from spsdk import crypto
 from spsdk.crypto import utils_cryptography
 
 
-def reconstruct_signature(signature_bytes: bytes) -> bytes:
+def reconstruct_signature(signature_bytes: bytes, size: int = None) -> bytes:
     """Reconstructs signature.
 
     :param signature_bytes: signature's bytes
+    :param size: size of r and s bytes (from signature)
     :return: reconstructed signature
     """
-    r_bytes = signature_bytes[:66]
+    size = len(signature_bytes) // 2
+    r_bytes = signature_bytes[:size]
     r = int.from_bytes(r_bytes, 'big')
-    s_bytes = signature_bytes[66:132]
+    s_bytes = signature_bytes[size:(size*2)]
     s = int.from_bytes(s_bytes, 'big')
     signature = utils_cryptography.encode_dss_signature(r, s)
     return signature
 
 
-def ecc_public_numbers_to_bytes(public_numbers: crypto.EllipticCurvePublicNumbers, length: int = 66) -> bytes:
+def ecc_public_numbers_to_bytes(public_numbers: crypto.EllipticCurvePublicNumbers, length: int = None) -> bytes:
     """Converts public numbers from ECC key into bytes.
 
     :param public_numbers: instance of ecc public numbers
@@ -37,7 +38,7 @@ def ecc_public_numbers_to_bytes(public_numbers: crypto.EllipticCurvePublicNumber
     """
     x = public_numbers.x
     y = public_numbers.y
-    length = length or math.ceil(x.bit_length() / 8)
+    length = length or math.ceil(x.bit_length() // 8)
     x_bytes = x.to_bytes(length, 'big')
     y_bytes = y.to_bytes(length, 'big')
     return x_bytes + y_bytes
@@ -62,7 +63,7 @@ def rsa_key_to_bytes(key: Union[crypto.RSAPublicKey, crypto.RSAPrivateKeyWithSer
     return mod_rotk_bytes + exp_rotk_bytes
 
 
-def ecc_key_to_bytes(key: crypto.EllipticCurvePublicKey, length: int = 66) -> bytes:
+def ecc_key_to_bytes(key: crypto.EllipticCurvePublicKey, length: int = None) -> bytes:
     """Converts key into bytes.
 
     :param key: instance of ECC Public Key

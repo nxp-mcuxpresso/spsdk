@@ -14,19 +14,22 @@
     :maxdepth: 1
 
     api/crypto
+    api/dat
     api/image
     api/mboot
+    api/pfr
     api/sbfile
     api/sdp
-    api/base
+    api/exceptions
     api/utils
-    api/dat
+
 
 .. toctree::
     :caption: SPSDK APPS
     :maxdepth: 1
 
     apps/overview
+
 
 .. toctree::
     :caption: SPSDK Usage
@@ -37,13 +40,14 @@
     usage/mboot
     usage/sdp
 
+
 .. toctree::
     :caption: Examples
     :maxdepth: 1
 
     examples/crypto
     examples/general
-
+    examples/dat
 
 
 Indices and tables

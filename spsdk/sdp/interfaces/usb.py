@@ -14,8 +14,12 @@
 import collections
 import logging
 import os
+import platform
+
 from time import time
 from typing import List, Tuple, Union
+
+import hid
 
 from ..commands import CmdPacket, CmdResponse
 from ..exceptions import SdpConnectionError
@@ -88,9 +92,9 @@ def scan_usb(device_name: str = None) -> List[Interface]:
 
 
 ########################################################################################################################
-# USB Interface Base Class
+# USB HID Interface Class
 ########################################################################################################################
-class RawHidBase(Interface):
+class RawHid(Interface):
     """Base class for OS specific RAW HID Interface classes."""
 
     @property
@@ -117,9 +121,12 @@ class RawHidBase(Interface):
         self._opened = False
         self.vid = 0
         self.pid = 0
+        self.sn = ""
         self.vendor_name = ""
         self.product_name = ""
+        self.interface_number = 0
         self.timeout = 2000
+        self.device = None
 
     @staticmethod
     def _encode_report(report_id: int, report_size: int, data: bytes, offset: int = 0) -> Tuple[bytes, int]:
@@ -162,229 +169,77 @@ class RawHidBase(Interface):
             HID_REPORT['CMD'] = (0x01, config['pack_size'], config['hid_ep1'])
             HID_REPORT['DATA'] = (0x02, config['pack_size'], config['hid_ep1'])
 
-########################################################################################################################
-# USB Interface Classes
-########################################################################################################################
-
-
-if os.name == "nt":
-    try:
-        import pywinusb.hid as hid
-    except:
-        raise Exception("PyWinUSB is required on a Windows Machine")
-
-
-    class RawHid(RawHidBase):
-        """Provides basic functions to access a USB HID device using pywinusb."""
-
-        def __init__(self) -> None:
-            """Initialize the USB interface object."""
-            super().__init__()
-            # Vendor page and usage_id = 2
-            self.report = []
-            # deque used here instead of synchronized Queue
-            # since read speeds are ~10-30% faster and are
-            # comparable to a based list implementation.
-            self.rcv_data = collections.deque()
-            self.device = None
-
-        # handler called when a report is received
-        def rx_handler(self, data: bytes) -> None:
-            """Handler is called when a new USB report (data) is received.
-
-            :param data: Data received by the USB stack
-            """
-            # logging.debug("rcv: %s", data[1:])
-            self.rcv_data.append(data)
-
-        def open(self) -> None:
-            """Open the interface."""
-            logger.debug("Open Interface")
-            self.device.set_raw_data_handler(self.rx_handler)
-            self.device.open(shared=False)
+    def open(self) -> None:
+        """Open the interface."""
+        logger.debug("Open Interface")
+        try:
+            self.device.open(self.vid, self.pid)
+            self.device.set_nonblocking(False)
+            # self.device.read(1021, 1000)
             self._opened = True
+        except OSError:
+            raise SdpConnectionError(f"Unable to open device VIP={self.vid} PID={self.pid} SN='{self.sn}'")
 
-        def close(self) -> None:
-            """Close the interface."""
-            logger.debug("Close Interface")
+    def close(self) -> None:
+        """Close the interface."""
+        logging.debug("Close Interface")
+        try:
             self.device.close()
             self._opened = False
+        except OSError:
+            raise SdpConnectionError(f"Unable to close device VIP={self.vid} PID={self.pid} SN='{self.sn}'")
 
-        def write(self, packet: Union[CmdPacket, bytes]) -> None:
-            """Write data on the OUT endpoint associated to the HID interfaces.
+    def write(self, packet: Union[CmdPacket, bytes]) -> None:
+        """Write data on the OUT endpoint associated to the HID interfaces.
 
-            :param packet: HID packet data
-            :raises ValueError: Raises an error if packet type is incorrect
-            """
-            if isinstance(packet, CmdPacket):
-                report_id, report_size, hid_ep1 = HID_REPORT['CMD']
-                data = packet.to_bytes()
-            elif isinstance(packet, (bytes, bytearray)):
-                report_id, report_size, hid_ep1 = HID_REPORT['DATA']
-                data = packet
-            else:
-                raise ValueError("Packet has to be either 'CmdPacket' or 'bytes'")
+        :param packet: Data to send
+        :raises ValueError: Raises an error if packet type is incorrect
+        """
+        if isinstance(packet, CmdPacket):
+            report_id, report_size, hid_ep1 = HID_REPORT['CMD']
+            data = packet.to_bytes()
+        elif isinstance(packet, (bytes, bytearray)):
+            report_id, report_size, hid_ep1 = HID_REPORT['DATA']
+            data = packet
+        else:
+            raise ValueError("Packet has to be either 'CmdPacket' or 'bytes'")
 
-            data_index = 0
-            while data_index < len(data):
-                raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
-                self.report[report_id - 1].send(raw_data)
+        data_index = 0
+        while data_index < len(data):
+            raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
+            self.device.write(raw_data)
 
-        def read(self) -> CmdResponse:
-            """Read data on the IN endpoint associated to the HID interfaces.
+    def read(self, length: int = None) -> CmdResponse:
+        """Read data on the IN endpoint associated to the HID interface.
 
-            :return: Response to the last command
-            :raises SdpConnectionError: Exception caused by time-out
-            """
-            start = time()
-            while len(self.rcv_data) == 0:
-                if ((time() - start) * 1000) > self.timeout:
-                    raise SdpConnectionError("Read timed out")
+        :return: Return CmdResponse object.
+        """
+        raw_data = self.device.read(1024, self.timeout)
+        if raw_data[0] == 0x04 and platform.system() == "Linux":
+            raw_data += self.device.read(1024, self.timeout)
+        return self._decode_report(bytes(raw_data))
 
-            raw_data = self.rcv_data.popleft()
-            return self._decode_report(bytes(raw_data))
+    @staticmethod
+    def enumerate(vid: int, pid: int) -> List[Interface]:
+        """Get list of all connected devices which matches PyUSB.vid and PyUSB.pid.
 
-        @staticmethod
-        def enumerate(vid: int, pid: int) -> List[Interface]:
-            """Returns all the connected devices which matches PyWinUSB.vid/PyWinUSB.pid.
+        :param vid: USB Vendor ID
+        :param pid: USB Product ID
+        :return: List of interfaces found
+        """
+        devices = []
+        all_hid_devices = hid.enumerate()
 
-            :param vid: USB Vendor ID
-            :param pid: USB Product ID
-            :return: List of interfaces found
-            """
-            targets = []
-            all_devices = hid.find_all_hid_devices()
+        # iterate on all devices found
+        for dev in all_hid_devices:
+            if dev['vendor_id'] == vid and dev['product_id'] == pid:
+                new_device = RawHid()
+                new_device.device = hid.device()
+                new_device.vid = vid
+                new_device.pid = pid
+                new_device.vendor_name = dev['manufacturer_string']
+                new_device.product_name = dev['product_string']
+                new_device.interface_number = dev['interface_number']
+                devices.append(new_device)
 
-            # find devices with good vid/pid
-            for dev in all_devices:
-                if (dev.vendor_id == vid) and (dev.product_id == pid):
-                    try:
-                        dev.open(shared=False)
-                        report = dev.find_output_reports()
-
-                        if report:
-                            new_target = RawHid()
-                            new_target.report = report
-                            new_target.vendor_name = dev.vendor_name.strip()
-                            new_target.product_name = dev.product_name.strip()
-                            new_target.vid = dev.vendor_id
-                            new_target.pid = dev.product_id
-                            new_target.device = dev
-                            new_target.device.set_raw_data_handler(new_target.rx_handler)
-                            targets.append(new_target)
-
-                    except hid.HIDError as e:
-                        logger.error(f"Receiving Exception: {str(e)}")
-                    finally:
-                        dev.close()
-
-            return targets
-
-elif os.name == "posix":
-    try:
-        import usb.core
-        import usb.util
-    except:
-        raise ImportError("PyUSB is required on a Linux Machine")
-
-    class RawHid(RawHidBase):
-        """Provides basic functions to access a USB HID device using pyusb."""
-        vid = 0
-        pid = 0
-        interface_number = 0
-
-        def __init__(self) -> None:
-            """Initialize the USB interface object."""
-            super().__init__()
-            self.device = None
-            self._opened = False
-
-        def open(self) -> None:
-            """Open the interface."""
-            logger.debug("Open Interface")
-            # self.device.open()
-            try:
-                if self.device.is_kernel_driver_active(0):
-                    self.device.detach_kernel_driver(0)
-                self._opened = True
-            except usb.core.HIDError as e:
-                logging.warning(str(e))
-
-        def close(self) -> None:
-            """Close the interface."""
-            logging.debug("Close Interface")
-            self._opened = False
-            try:
-                if self.device:
-                    usb.util.dispose_resources(self.device)
-            except usb.core.HIDError:
-                pass
-
-        def write(self, packet: Union[CmdPacket, bytes]) -> None:
-            """Write data on the OUT endpoint associated to the HID interfaces.
-
-            :param packet: Data to send
-            :raises ValueError: Raises an error if packet type is incorrect
-            """
-            if isinstance(packet, CmdPacket):
-                report_id, report_size, hid_ep1 = HID_REPORT['CMD']
-                data = packet.to_bytes()
-            elif isinstance(packet, (bytes, bytearray)):
-                report_id, report_size, hid_ep1 = HID_REPORT['DATA']
-                data = packet
-            else:
-                raise ValueError("Packet has to be either 'CmdPacket' or 'bytes'")
-
-            bm_request_type = 0x21  # ------ # Host to device request of type Class of Recipient Interface
-            bm_request = 0x09  # ----------- # Set_REPORT (HID class-specific request for transferring data over EP0)
-            w_value = 0x200 + report_id  # - # Issuing an OUT report with specified ID
-            w_index = self.interface_number  # Interface number for HID
-
-            data_index = 0
-            while data_index < len(data):
-                raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
-                if hid_ep1:
-                    self.device.write(0x1, raw_data)
-                else:
-                    self.device.ctrl_transfer(bm_request_type, bm_request, w_value, w_index, raw_data)
-
-        def read(self) -> CmdResponse:
-            """Read data on the IN endpoint associated to the HID interface.
-
-            :return: Return CmdResponse object.
-            """
-            raw_data = self.device.read(1 | 0x80, 1024, self.timeout)
-            return self._decode_report(raw_data)
-
-        @staticmethod
-        def enumerate(vid: int, pid: int) -> List[Interface]:
-            """Get list of all connected devices which matches PyUSB.vid and PyUSB.pid.
-
-            :param vid: USB Vendor ID
-            :param pid: USB Product ID
-            :return: List of interfaces found
-            :raises SdpConnectionError: Propagating exception from underlying USB module
-            """
-            devices = []
-            all_hid_devices = usb.core.find(find_all=True, idVendor=vid, idProduct=pid)
-
-            # iterate on all devices found
-            for dev in all_hid_devices:
-
-                try:
-                    new_device = RawHid()
-                    new_device.device = dev
-                    new_device.vid = dev.idVendor
-                    new_device.pid = dev.idProduct
-                    new_device.vendor_name = usb.util.get_string(dev, 1).strip('\0')
-                    new_device.product_name = usb.util.get_string(dev, 2).strip('\0')
-                    new_device.interface_number = 0
-                    devices.append(new_device)
-                except usb.core.USBError as e:
-                    logging.debug(e)
-                    raise SdpConnectionError(e)
-
-            return devices
-
-else:
-    raise ImportError("No USB backend found")
+        return devices

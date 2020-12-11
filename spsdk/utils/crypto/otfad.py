@@ -12,8 +12,8 @@ from typing import List, Optional, Union
 
 from Crypto.Cipher import AES
 
-from spsdk.utils.misc import align_block
-from .common import Counter, crypto_backend
+from ..misc import align_block
+from . import Counter, crypto_backend
 
 
 class KeyBlob:

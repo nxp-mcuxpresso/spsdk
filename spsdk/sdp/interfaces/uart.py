@@ -80,7 +80,7 @@ class Uart(Interface):
         """
         super().__init__()
         self.device = Serial(port=port, timeout=timeout // 1000, baudrate=baudrate)
-        self.expect_status = False
+        self.expect_status = True
 
     def open(self) -> None:
         """Open the UART interface."""
@@ -101,18 +101,17 @@ class Uart(Interface):
 
         :param config: parameters dictionary
         """
-        pass
 
-    def read(self) -> CmdResponse:
+    def read(self, length: int = None) -> CmdResponse:
         """Read data from device.
 
         :return: data read from device
         :rtype: spsdk.sdp.commands.CmdResponse
         """
-        hab_info = self._read(4)
+        hab_info = self._read(length or 4)
         # raw_data = self._read(4) if self.expect_status else hab_info
         # return CmdResponse(hab_info, raw_data)
-        return CmdResponse(True, hab_info)
+        return CmdResponse(self.expect_status, hab_info)
 
     def write(self, packet: Union[CmdPacket, bytes]) -> None:
         """Write data to the device; data might be in format of 'CmdPacket' or bytes.
@@ -120,12 +119,11 @@ class Uart(Interface):
         :param packet: Packet to send
         :type packet: Union[spsdk.sdp.commands.CmdPacket, bytes]
         """
+        self.expect_status = True
         if isinstance(packet, CmdPacket):
             data = packet.to_bytes()
-            self.expect_status = False
         else:
             data = packet
-            self.expect_status = True
         self._write(data)
 
     def _read(self, length: int) -> bytes:

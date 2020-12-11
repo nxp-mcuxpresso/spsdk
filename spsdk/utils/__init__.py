@@ -5,4 +5,4 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module containing various functions/modules used throughtout the SPSDK."""
+"""Module containing various functions/modules used throughout the SPSDK."""

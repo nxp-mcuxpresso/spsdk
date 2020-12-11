@@ -6,7 +6,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for crypto operations (certificate and key management).
 
-There is functionality included:
+Moreover it includes SignatureProvider as an Interface for all potential signature providers.
+
+It provides following functionality:
 
 1. for the key management:
 
@@ -56,3 +58,4 @@ from .certificate_management import *
 from .keys_management import *
 from .loaders import (_get_encoding_type, generic_load, load_certificate,
                       load_private_key, load_public_key)
+from .signature_provider import SignatureProvider

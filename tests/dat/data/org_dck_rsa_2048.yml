@@ -8,5 +8,6 @@ rot_meta:
  - ./p1_cert0_2048.pub
  - ./p2_cert0_2048.pub
  - ./p3_cert0_2048.pub
+rot_id: 0
 rotk: ./k0_cert0_2048.pem
 dck: ./dck.pub

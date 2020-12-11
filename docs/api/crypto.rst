@@ -1,7 +1,7 @@
 Crypto Module API
 ===================
 
-Crypto Module serves provides basic keys and certificate operations.
+Crypto Module provides basic key's and certificate's operations.
 
 
 Crypto module general information
@@ -14,7 +14,7 @@ Crypto module general information
 
 
 Crypto module key generation
------------------------------------
+------------------------------
 
 .. automodule:: spsdk.crypto.keys_management
    :members:
@@ -30,6 +30,14 @@ Crypto module certificate generation
    :show-inheritance:
 
 
+Interface for all potential signature providers
+------------------------------------------------
+.. automodule:: spsdk.crypto.signature_provider
+   :members: SignatureProvider, PlainFileSP
+   :undoc-members:
+   :show-inheritance:
+
+
 Crypto module loading helper functions
 ---------------------------------------
 
@@ -37,3 +45,4 @@ Crypto module loading helper functions
    :members:
    :undoc-members:
    :show-inheritance:
+

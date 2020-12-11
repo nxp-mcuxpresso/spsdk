@@ -12,9 +12,5 @@ radon
 mypy
 pylint==2.4.4
 pydocstyle
-# docs
-sphinx==2.4.1
-sphinx_rtd_theme==0.5.0
-sphinx-autodoc-annotation==1.0.post1
-sphinx_autodoc_typehints==1.11.0
-recommonmark
+# cli executables
+pyinstaller

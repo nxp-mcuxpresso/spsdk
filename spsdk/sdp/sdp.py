@@ -125,11 +125,13 @@ class SDP:
         :raises SdpCommandError: If command failed and the 'cmd_exception' is set to True
         :raises SdpConnectionError: Timeout or Connection error
         """
+        MAX_LENGTH = 64
         data = b''
-
-        while len(data) < length:
+        remaining = length - len(data)
+        while remaining > 0:
             try:
-                response = self._device.read()
+                self._device.expect_status = False
+                response = self._device.read(min(remaining, MAX_LENGTH))
             except:
                 logger.info('RX-CMD: Timeout Error')
                 raise SdpConnectionError('Timeout Error')
@@ -141,7 +143,7 @@ class SDP:
                 self._response_value = response.value
                 if response.value == ResponseValue.LOCKED:
                     self._status_code = StatusCode.HAB_IS_LOCKED
-
+            remaining = length - len(data)
         return data[:length] if len(data) > length else data
 
     def _send_data(self, cmd_packet: CmdPacket, data: bytes) -> bool:

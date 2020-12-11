@@ -1,7 +1,7 @@
 Release Notes for Secure Provisioning SDK
 ==========================================
-Version: 1.1
-Date: 28-August-2020
+Version: 1.2
+Date: 11-December-2020
 
 Secure Provisioning SDK (SPSDK) is unified, reliable and easy to use SW library working across NXP MCU portfolio 
 providing strong foundation from quick customer prototyping up to production deployment. The library allows the user 
@@ -9,19 +9,29 @@ to connect and communicate with a device, configure the device, prepare, downloa
 operations. It is delivered in a form of python library and command line applications.
 
 Features:
-- support for i.MX RT1170 device
-- support for elliptic-curve cryptography (ECC)
-- support for SDPS protocol
-- included Debug Authentication functionality, support for debuggers
-- utility (nxpkeygen) for generating debug credential files and corresponding keys
+- support for Niobe4 Analog devices
+- extend support for Niobe4 Mini, Nano
+- PFRC - console script for searching for brick-conditions in PFR settings
+- SB version 3.1
+- custom HSM support
+- elftosb application covering SB 3.1 support
+- sdpshost cli utility using sdpshost communication protocol
+- remote signing for Debug Credential
+- added command read-register into sdphost cli 
+- dynamic plugin support
+- MCU Link Debugger support
+- support for image_enc utility for BEE encryption use case
+- [PFR] added CMAC-based seal 
+- [PFR] load Root of Trust from elf2sb configuration file 
 
 
 Supported devices: 
 ==================
-- LPC55S69 (Niobe4)
-- LPC55S16 (Niobe4 Mini)
-- i.MX RT105x, RT106x
-- i.MX RT595S, RT685S
+- LPC55S69, LPC55S28 (Niobe4) 	
+- LPC55S06 (Niobe 4 Nano)
+- LPC55S16 (Niobe4 Mini) 
+- i.MX RT105x, RT106x 
+- i.MX RT595S, RT685S 
 
 
 System Requirements:
@@ -45,13 +55,17 @@ Revision History:
 - CLI utility sdphost for communication with ROM on a target
 - CLI utility PFR for generating and parsing Protocted Flash Regions - CMPA and CFPA regions
 
+1.1
+- support for i.MX RT1170 device
+- support for elliptic-curve cryptography (ECC)
+- support for SDPS protocol
+- included Debug Authentication functionality
+- included support for debuggers
+- utility (nxpkeygen) for generating debug credential files and corresponding keys
 
 Licence: 
 =========
 BSD-3 License
-
-
-
 
 
 

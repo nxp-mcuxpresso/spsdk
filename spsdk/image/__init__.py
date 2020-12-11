@@ -16,8 +16,8 @@ from .segments import SegIVT2, SegIVT3a, SegIVT3b, SegBDT, SegAPP, SegDCD, SegCS
 from .secret import SrkTable, SrkItem, CertificateImg, Signature, MAC, SecretKeyBlob, EnumAlgorithm
 from .images import parse, BootImgRT, BootImg2, BootImg3a, BootImg3b, BootImg4, EnumAppType
 from .keystore import KeySourceType, KeyStore
-from .mbimg import MasterBootImage, MasterBootImageType, MultipleImageEntry, MultipleImageTable
-from .pfr import CMPA, CFPA
+from .mbimg import MasterBootImage, MasterBootImageN4Analog, MasterBootImageType, MasterBootImageManifest, \
+                   MultipleImageEntry, MultipleImageTable
 from .trustzone import TrustZone, TrustZoneType
 
 __all__ = [
@@ -42,8 +42,6 @@ __all__ = [
     'SegCSF',
     'TrustZone',
     'TrustZoneType',
-    'CMPA',
-    'CFPA',
     'PaddingFCB',
     'FlexSPIConfBlockFCB',
     # BEE

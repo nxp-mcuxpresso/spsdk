@@ -1,7 +1,8 @@
 SBFile Module API
 =================
 
-MCU Secure Boot File API
+Module implementing SBFile.
+
 
 SBFile Commands
 ---------------

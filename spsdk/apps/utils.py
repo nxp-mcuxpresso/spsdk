@@ -8,10 +8,13 @@
 """Module for general utilities used by applications."""
 
 import sys
-from typing import Union
+from functools import wraps
+from typing import Union, Any, Callable
 
 import click
+import hexdump
 
+from spsdk import SPSDKError
 from spsdk.mboot import interfaces as MBootInterfaceModule
 from spsdk.mboot.interfaces import Interface as MBootInterface
 from spsdk.sdp import interfaces as SDPInterfaceModule
@@ -67,6 +70,7 @@ def get_interface(module: str, port: str = None, usb: str = None,
     :return: Selected interface instance
     :rtype: Interface
     :raises ValueError: only one of 'port' or 'usb' must be specified
+    :raises SPSDKError: when SPSDK-specific error occurs
     """
     # check that one and only one interface is defined
     if port is None and usb is None:
@@ -84,16 +88,60 @@ def get_interface(module: str, port: str = None, usb: str = None,
         name = port.split(',')[0] if ',' in port else port
         devices = interface_module.scan_uart(port=name, timeout=timeout)  # type: ignore
         if len(devices) != 1:
-            click.echo(f"Error: cannot open PC UART port '{name}'.")
-            sys.exit(1)
+            raise SPSDKError(f"Cannot ping device on UART port '{name}'.")
     if usb:
-        pid_vid = usb.replace(',', ':')
-        devices = interface_module.scan_usb(pid_vid)    # type: ignore
+        vid_pid = usb.replace(',', ':')
+        devices = interface_module.scan_usb(vid_pid)  # type: ignore
         if len(devices) == 0:
-            click.echo(f"Error: cannot open USB device '{pid_vid}'")
-            sys.exit(1)
+            raise SPSDKError(f"Cannot find USB device '{format_vid_pid(vid_pid)}'")
         if len(devices) > 1:
-            click.echo(f"Error: more than one device '{pid_vid}' found")
-            sys.exit(1)
+            raise SPSDKError(f"More than one device '{format_vid_pid(vid_pid)}' found")
         devices[0].timeout = timeout
     return devices[0]
+
+
+def _split_string(string: str, length: int) -> list:
+    """Split the string into chunks of same length."""
+    return [string[i:i + length] for i in range(0, len(string), length)]
+
+
+def format_raw_data(data: bytes, use_hexdump: bool = False, line_length: int = 16) -> str:
+    """Format bytes data into human-readable form.
+
+    :param data: Data to format
+    :param use_hexdump: Use hexdump with addresses and ASCII, defaults to False
+    :param line_length: bytes per line, defaults to 32
+    :return: formatted string (multilined if necessary)
+    """
+    if use_hexdump:
+        return hexdump.hexdump(data, result='return')
+    data_string = data.hex()
+    parts = [_split_string(line, 2) for line in _split_string(data_string, line_length * 2)]
+    result = '\n'.join(' '.join(line) for line in parts)
+    return result
+
+
+def format_vid_pid(dec_version: str) -> str:
+    """Format VID:PID information in more human-readable format."""
+    if ':' in dec_version:
+        vid, pid = dec_version.split(':')
+        return f"{int(vid, 0):#06x}:{int(pid, 0):#06x}"
+    return dec_version
+
+
+def catch_spsdk_error(function: Callable) -> Callable:
+    """Catch the SPSDKError."""
+
+    @wraps(function)
+    def wrapper(*args: tuple, **kwargs: dict) -> Any:
+        try:
+            retval = function(*args, **kwargs)
+            return retval
+        except (AssertionError, SPSDKError) as spsdk_exc:
+            click.echo(f"ERROR:{spsdk_exc}")
+            sys.exit(2)
+        except Exception as base_exc:  # pylint: disable=W0703
+            click.echo(f"GENERAL ERROR:{base_exc}")
+            sys.exit(3)
+
+    return wrapper

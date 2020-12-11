@@ -14,7 +14,8 @@
 import json
 import os
 
-from spsdk.image import CFPA, TrustZone
+from spsdk.image import TrustZone
+from spsdk.pfr import CFPA
 
 # Uncomment for printing debug messages
 # import logging

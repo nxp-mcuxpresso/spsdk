@@ -1,7 +1,7 @@
 MBoot Module API
 ================
 
-MCU Bootloader API
+Module implementing communication with the MCU Bootloader.
 
 .. toctree::
    :maxdepth: 1
@@ -49,13 +49,5 @@ MBoot ErrorCodes
    :undoc-members:
    :show-inheritance:
 
-MBoot Exceptions
------------------
-
-.. automodule:: spsdk.mboot.exceptions
-   :noindex:
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 

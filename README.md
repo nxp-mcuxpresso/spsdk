@@ -27,7 +27,10 @@ Architecure
 Supported Devices
 ----------------
 Following NXP devices are supported:
-- [LPCXpresso55S69](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpcxpresso55s69-development-board:LPC55S69-EVK), [LPCXpresso55S16](https://www.nxp.com/design/development-boards/lpcxpresso-boards/lpcxpresso55s16-development-board:LPC55S16-EVK)
+- [LPCXpresso55S69](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpcxpresso55s69-development-board:LPC55S69-EVK), 
+- [LPCXpresso55S16](https://www.nxp.com/design/development-boards/lpcxpresso-boards/lpcxpresso55s16-development-board:LPC55S16-EVK)
+- [LPC55S28](https://www.nxp.com/design/software/development-software/lpcxpresso55s28-development-board:LPC55S28-EVK), 
+- [LPC55S06](https://www.nxp.com/design/development-boards/lpcxpresso-boards/lpcxpresso-development-board-for-lpc55s0x-0x-family-of-mcus:LPC55S06-EVK), 
 - [i.MX RT600](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt600-crossover-mcu-with-arm-cortex-m33-and-dsp-cores:i.MX-RT600)
 - [i.MX RT1050](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1050-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1050), [i.MX RT1060](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1060-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1060)
 
@@ -52,6 +55,8 @@ Install SPSDK from sources:
 ```
 > In **Windows OS** you need to install [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
  
+ Note: If you use pip version 20.3, please downgrade it to 20.2.4, because of new resolver functionality.
+
 Usage
 -----
 
@@ -72,7 +77,11 @@ To run examples using i.MX RT 1050 you need to download a flashloader:
 Dependencies
 ------------
 
+SPSDK requires [Python](https://www.python.org) >3.5 and <3.9 interpreter, old version 2.x is not supported !
+
 - requirements.txt
   - list of requirements for running SPSDK core + apps
 - requirements-develop.txt
-  - requirements needed for development (running tests, checking coding style, generating docs...)
+  - requirements needed for development (running tests, checking coding style)
+- docs/requirements.txt
+  - requirements needed for generating docs

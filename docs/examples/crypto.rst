@@ -20,3 +20,5 @@ Validation of certificate example
 Located at: `examples/crypto/certificates_validation.py`
 
 .. automodule:: examples.crypto.certificates_validation
+
+

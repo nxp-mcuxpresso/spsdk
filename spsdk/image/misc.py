@@ -15,18 +15,6 @@ from typing import Union
 from .header import Header
 
 
-class RawDataException(Exception):
-    "Raw data read failed"
-
-
-class StreamReadFailed(RawDataException):
-    "read_raw_data could not read stream"
-
-
-class NotEnoughBytesException(RawDataException):
-    "read_raw_data could not read enough data"
-
-
 def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
     """Size format."""
     base, suffix = [(1000., 'B'), (1024., 'iB')][use_kibibyte]
@@ -63,10 +51,10 @@ def read_raw_data(stream: Union[io.BufferedReader, io.BytesIO], length: int, ind
     try:
         data = stream.read(length)
     except Exception:
-        raise StreamReadFailed(" stream.read() failed, requested {} bytes".format(length))
+        raise Exception(" stream.read() failed, requested {} bytes".format(length))
 
     if len(data) != length:
-        raise NotEnoughBytesException(" Could not read enough bytes, expected {}, found {}".format(length, len(data)))
+        raise Exception(" Could not read enough bytes, expected {}, found {}".format(length, len(data)))
 
     if no_seek:
         stream.seek(-length, SEEK_CUR)

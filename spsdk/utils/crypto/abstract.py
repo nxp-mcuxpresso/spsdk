@@ -141,7 +141,6 @@ class BaseClass(ABC):
         """Check object equality."""
         return isinstance(obj, self.__class__) and vars(obj) == vars(self)
 
-    @abstractmethod
     def __str__(self) -> str:
         """Object description in string format."""
 

@@ -7,9 +7,9 @@
 
 """Module for cryptographic utilities."""
 
-from .common import matches_key_and_cert, crypto_backend, Counter
+from .common import matches_key_and_cert, crypto_backend, Counter, serialize_ecc_signature
 from .abstract import BackendClass
-from .cert_blocks import CertBlockV2
+from .cert_blocks import CertBlockV2, CertBlockV3, CertBlock
 from .certificate import Certificate
 from .otfad import KeyBlob, Otfad
 

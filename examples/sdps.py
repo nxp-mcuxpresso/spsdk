@@ -6,11 +6,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """This example demonstrates how to write memory using SDPS."""
+import logging
 import os
+
 from spsdk.sdp import SDPS, scan_usb
 
 # Uncomment for printing debug messages
-import logging
 logging.basicConfig(level=logging.DEBUG)
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
@@ -31,4 +32,3 @@ def program_device() -> None:
 
 if __name__ == '__main__':
     program_device()
-

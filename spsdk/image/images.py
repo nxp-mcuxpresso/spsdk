@@ -25,7 +25,7 @@ from spsdk.utils.misc import align, align_block, extend_block
 from .commands import CmdAuthData, CmdInstallKey
 from .commands import EnumInsKey, EnumCertFormat, EnumAlgorithm, EnumAuthDat, EnumEngine
 from .header import Header, Header2, UnparsedException
-from .misc import read_raw_data, read_raw_segment, NotEnoughBytesException
+from .misc import read_raw_data, read_raw_segment
 from .secret import Signature, CertificateImg, MAC, SrkTable
 from .segments import SegTag, SegIVT2, SegBDT, SegAPP, SegDCD, SegCSF, SegIVT3a, SegIVT3b, SegBDS3a, SegBDS3b, \
     SegBIC1, AbstractFCB, FlexSPIConfBlockFCB, PaddingFCB, SegBEE
@@ -1089,11 +1089,8 @@ class BootImg2(BootImgBase):
         # Parse CSF
         if obj.ivt.csf_address:
             csf_start = start_index + (obj.ivt.csf_address - obj.ivt.ivt_address)
-            try:
-                obj.csf = SegCSF.parse(read_raw_data(stream, cls.CSF_SIZE, csf_start))
-                obj.csf.padding = cls.CSF_SIZE - obj.csf.size
-            except NotEnoughBytesException:
-                pass
+            obj.csf = SegCSF.parse(read_raw_segment(stream, SegTag.CSF, csf_start))
+            # obj.csf.padding = csf_start + obj.csf.size
 
         return obj
 
@@ -2238,7 +2235,6 @@ class KernelImg:
 
     def info(self) -> None:
         """String representation of the IMX Kernel Image."""
-        pass
 
     def export(self) -> bytes:
         """Export."""

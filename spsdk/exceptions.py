@@ -8,10 +8,12 @@
 """Base for SPSDK exceptions."""
 
 #######################################################################
-# # Boot SDK Exceptions
+# # Secure Provisioning SDK Exceptions
 #######################################################################
+
+
 class SPSDKError(Exception):
-    """Boot SDK Base Exception."""
+    """Secure Provisioning SDK Base Exception."""
 
     fmt = 'SPSDK: {description}'
 

@@ -12,6 +12,7 @@ from typing import Any
 
 class Interface(ABC):
     """Base class for all Interface classes."""
+    expect_status = True
 
     @property
     def is_opened(self) -> bool:
@@ -23,7 +24,7 @@ class Interface(ABC):
     def close(self) -> None:
         """Close the interface."""
 
-    def read(self) -> Any:
+    def read(self, length: int = None) -> Any:
         """Read data from the device."""
 
     def write(self, packet: Any) -> None:

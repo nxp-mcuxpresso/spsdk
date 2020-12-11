@@ -1,0 +1,41 @@
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "desc": {
+        "type": "string"
+      },
+      "bitfields": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "desc": {
+              "type": "string"
+            },
+            "bit_values": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "name",
+            "desc",
+            "bit_values"
+          ]
+        }
+      }
+    },
+    "required": [
+      "name",
+      "desc",
+      "bitfields"
+    ]
+  }
+}

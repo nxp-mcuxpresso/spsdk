@@ -7,7 +7,7 @@
 
 """Wrappers for various types of debuggers."""
 
-from .jlink import JLinkWrapper
-from .redlink import RedLinkWrapper
-from .pemicroprobewrapper import pemicroProbeWrapper
-from .pemicrounitacmp import pemicroUnitAcmp
+from .debug_probe import DebugProbe
+from .debug_probe_pyocd import DebugProbePyOCD
+from .debug_probe_jlink import DebugProbePyLink
+from .debug_probe_pemicro import DebugProbePemicro

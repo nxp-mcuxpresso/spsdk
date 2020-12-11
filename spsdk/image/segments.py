@@ -477,7 +477,6 @@ class SegBEE(BaseSegment):
     def validate(self) -> None:
         """Validates settings of the instance.
 
-        :raises AssertionError: if settings invalid
         :raises ValueError: if number of FAC regions exceeds the limit
         """
         total_facs = 0
@@ -491,7 +490,7 @@ class SegBEE(BaseSegment):
         """Serialization to binary representation.
 
         :param dbg_info: instance allowing to provide debug info about exported data
-        :return:binary representation of the region (serialization).
+        :return: binary representation of the region (serialization).
         """
         self.update()
         self.validate()

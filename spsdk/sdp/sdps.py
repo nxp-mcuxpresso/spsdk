@@ -12,7 +12,7 @@ import logging
 from struct import pack, unpack
 from typing import Tuple, Mapping
 
-from .exceptions import SdpCommandError, SdpConnectionError
+from .exceptions import SdpConnectionError
 from .interfaces import Interface
 
 logger = logging.getLogger('SDPS')

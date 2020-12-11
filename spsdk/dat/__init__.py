@@ -7,6 +7,6 @@
 
 """This module contains support for Debug Authentication Tool."""
 from .debug_mailbox import DebugMailbox
-from .debug_credential import DebugCredentialRSA, DebugCredentialECC, DebugCredential
+from .debug_credential import DebugCredential
 from .dac_packet import DebugAuthenticationChallenge
-from .dar_packet import DebugAuthenticateResponseRSA, DebugAuthenticateResponseECC
+from .dar_packet import DebugAuthenticateResponse

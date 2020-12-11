@@ -9,7 +9,7 @@ import contextlib
 import os
 from typing import Callable, Iterable, Iterator, Optional, TypeVar, List, Union
 
-from spsdk.utils.crypto import crypto_backend
+from .crypto.common import crypto_backend
 
 # for generics
 T = TypeVar('T')  # pylint: disable=invalid-name

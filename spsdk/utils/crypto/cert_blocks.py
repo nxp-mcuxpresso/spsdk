@@ -11,11 +11,19 @@ import re
 from struct import pack, unpack_from, calcsize
 from typing import List, Optional, Union
 
+from Crypto.PublicKey import ECC
+
+from spsdk import crypto
+from spsdk.crypto import utils_cryptography
 from spsdk.utils import misc
 from .abstract import BaseClass
 from .backend_internal import internal_backend
 from .certificate import Certificate
-from .common import crypto_backend
+from .common import crypto_backend, serialize_ecc_signature, ecc_public_numbers_to_bytes
+
+
+class CertBlock(BaseClass):
+    """Common general class for various CertBlocks."""
 
 
 ########################################################################################################################
@@ -100,7 +108,7 @@ class CertBlockHeader(BaseClass):
 ########################################################################################################################
 # Certificate Block Class
 ########################################################################################################################
-class CertBlockV2(BaseClass):
+class CertBlockV2(CertBlock):
     """Certificate block.
 
     Shared for SB file and for MasterBootImage
@@ -353,3 +361,305 @@ class CertBlockV2(BaseClass):
             obj.set_root_key_hash(i, data[offset: offset + cls.RKH_SIZE])
             offset += cls.RKH_SIZE
         return obj
+
+########################################################################################################################
+# Certificate Block Class for SB 3.1
+########################################################################################################################
+def get_ecc_key_bytes(key: bytes) -> bytes:
+    """Function to get ECC Key."""
+    key_obj = ECC.import_key(key)
+    point_x = key_obj.pointQ.x.to_bytes()   # type: ignore
+    point_y = key_obj.pointQ.y.to_bytes()   # type: ignore
+    return point_x + point_y
+
+
+class CertificateBlockHeader(BaseClass):
+    """Create Certificate block header."""
+
+    FORMAT = "<4s2HL"
+    SIZE = calcsize(FORMAT)
+    MAGIC = b"chdr"
+
+    def __init__(self, format_version: str = "2.1") -> None:
+        """Constructor for Certificate block header version 2.1.
+
+        :param format_version: Major = 2, minor = 1
+        """
+        self.format_version = format_version
+        self.cert_block_size = 0
+
+    def info(self) -> str:
+        """Get info of Certificate block header."""
+        info = ""
+        info += f"Format version:              {self.format_version}\n"
+        info += f"Certificate block size:      {self.cert_block_size}\n"
+        return info
+
+    def export(self) -> bytes:
+        """Export Certificate block header as bytes array."""
+        major_format_version, minor_format_version = [int(v) for v in self.format_version.split(".")]
+
+        return pack(self.FORMAT, self.MAGIC, minor_format_version, major_format_version, self.cert_block_size)
+
+    @classmethod
+    def parse(cls, data: bytes, offset: int = 0) -> "CertificateBlockHeader":
+        """Parse Certificate block header from bytes array.
+
+        :param data: Input data as bytes
+        :param offset: The offset of input data (default: 0)
+        :raises ValueError: Raise when SIZE is bigger than length of the data without offset
+        :raises ValueError: Raise when magic is not equal MAGIC
+        :return: CertificateBlockHeader
+        """
+        if cls.SIZE > len(data) - offset:
+            raise ValueError("SIZE is bigger than length of the data without offset")
+        (
+            magic,
+            minor_format_version, major_format_version,
+            _cert_block_size
+        ) = unpack_from(cls.FORMAT, data, offset)
+
+        if magic != cls.MAGIC:
+            raise ValueError("Magic is not same!")
+
+        return cls(format_version=f"{major_format_version}.{minor_format_version}")
+
+
+class RootKeyRecord(BaseClass):
+    """Create Root key record."""
+    # P-256
+
+    def __init__(self,
+                 ca_flag: bool,
+                 root_certs: List[bytes],
+                 used_root_cert: int = 0
+                 ) -> None:
+        """Constructor for Root key record.
+
+        :param ca_flag: CA flag
+        :param root_certs: Root cert used to ISK/image signature
+        :param used_root_cert: Used root cert number 0-3
+        """
+        self.ca_flag = ca_flag
+        self.root_certs = root_certs
+        self.used_root_cert = used_root_cert
+        self.flags = self._calculate_flags()
+        self.ctrk_hash_table = self._create_ctrk_hash_table()
+        self.root_public_key = self._create_root_public_key()
+        # the '4' means 4 bytes for flags
+        self.expected_size = 4 + len(self.ctrk_hash_table) + len(self.root_public_key)
+
+    def info(self) -> str:
+        """Get info of Root key record."""
+        info = ""
+        info += f"Flags:           {self.flags}\n"
+        info += f"CA flag:         {self.ca_flag}\n"
+        info += f"Root certs:      {self.root_certs}\n"
+        info += f"Used root cert:  {self.used_root_cert}\n"
+        return info
+
+    def _calculate_flags(self) -> int:
+        """Function to calculate parameter flags."""
+        flags = 0
+        if self.ca_flag is True:
+            flags |= (1 << 31)
+        if self.used_root_cert:
+            flags |= (self.used_root_cert << 8)
+        flags |= (len(self.root_certs) << 4)
+        if ECC.import_key(self.root_certs[0]).curve == "NIST P-256":
+            flags |= (1 << 0)
+        if ECC.import_key(self.root_certs[0]).curve == "NIST P-384":
+            flags |= (1 << 1)
+        return flags
+
+    def _create_root_public_key(self) -> bytes:
+        """Function to create root public key."""
+        root_key = self.root_certs[self.used_root_cert]
+        root_key_data = get_ecc_key_bytes(root_key)
+        return root_key_data
+
+    def _create_ctrk_hash_table(self) -> bytes:
+        """Function to create ctrk hash table."""
+        ctrk_hash_table = bytes()
+        if len(self.root_certs) > 1:
+            for key in self.root_certs:
+                data_to_hash = get_ecc_key_bytes(key)
+                ctrk_hash = internal_backend.hash(data=data_to_hash, algorithm="sha256")
+                ctrk_hash_table += ctrk_hash
+        return ctrk_hash_table
+
+    def export(self) -> bytes:
+        """Export Root key record as bytes array."""
+        data = bytes()
+        data += pack("<L", self.flags)
+        data += self.ctrk_hash_table
+        data += self.root_public_key
+        return data
+
+    @classmethod
+    def parse(cls, data: bytes, offset: int = 0) -> "BaseClass":
+        """Parse Root key record from bytes array.This operation is not supported.
+
+        :param data:  Input data as bytes array
+        :param offset: The offset of input data
+        :raises NotImplementedError: This operation is not supported.
+        """
+        raise NotImplementedError("This operation is not supported.")
+
+
+class IskCertificate(BaseClass):
+    """Create ISK certificate."""
+
+    def __init__(
+            self,
+            constraints: int,
+            isk_private_key: crypto.EllipticCurvePrivateKeyWithSerialization,
+            isk_cert: ECC.EccKey,
+            user_data: bytes = None
+    ) -> None:
+        """Constructor for ISK certificate.
+
+        :param constraints: Certificate version
+        :param isk_private_key: P-256 or P-384 ISK private key
+        :param isk_cert: ISK certificate
+        :param user_data: User data
+        """
+        self.flags = 0
+        self.constraints = constraints
+        self.isk_private_key = isk_private_key
+        self.isk_cert = isk_cert
+        self.user_data = user_data or bytes()
+        self.signature = bytes()
+        self.coordinate_length = 0
+        if self.isk_cert.curve == "NIST P-256":
+            self.coordinate_length = 32
+            self.isk_public_key = ecc_public_numbers_to_bytes(
+                self.isk_private_key.public_key().public_numbers(), length=self.coordinate_length
+            )
+        if self.isk_cert.curve == "NIST P-384":
+            self.coordinate_length = 48
+            self.isk_public_key = ecc_public_numbers_to_bytes(
+                self.isk_private_key.public_key().public_numbers(), length=self.coordinate_length
+            )
+
+        self._calculate_flags()
+        self.signature_offset = calcsize("<2L") + len(self.user_data)
+        self.signature_offset += 64 if self.flags & 1 else 98
+        self.expected_size = 4 + 4 + 4 + 2 * self.coordinate_length + len(self.user_data) + 2 * self.coordinate_length
+
+    def info(self) -> str:
+        """Get info of ISK certificate."""
+        info = ""
+        info += f"Constraints:           {self.constraints}\n"
+        return info
+
+    def _calculate_flags(self) -> None:
+        """Function to calculate parameter flags."""
+        self.flags = 0
+        if self.user_data:
+            self.flags |= (1 << 31)
+        if self.isk_cert.curve == "NIST P-256":
+            self.flags |= (1 << 0)
+        if self.isk_cert.curve == "NIST P-384":
+            self.flags |= (1 << 1)
+
+    def create_isk_signature(self, key_record_data: bytes) -> None:
+        """Function to create ISK signature."""
+        # pylint: disable=invalid-name
+        data = key_record_data + pack("<3L", self.signature_offset, self.constraints, self.flags)
+        data += self.isk_public_key + self.user_data
+
+        assert isinstance(self.isk_private_key, crypto.EllipticCurvePrivateKeyWithSerialization)
+        signature = bytes()
+        if self.isk_cert.curve == "NIST P-256":
+            signature = self.isk_private_key.sign(data, crypto.ec.ECDSA(crypto.hashes.SHA256()))
+        if self.isk_cert.curve == "NIST P-384":
+            signature = self.isk_private_key.sign(data, crypto.ec.ECDSA(crypto.hashes.SHA384()))
+
+        coordinate_length = 32 if self.isk_cert.curve == "NIST P-256" else 48
+        self.signature = serialize_ecc_signature(signature, coordinate_length)
+
+    def export(self) -> bytes:
+        """Export ISK certificate as bytes array."""
+        assert self.signature, "Signature is not set."
+        data = bytes()
+        data += pack("<3L", self.signature_offset, self.constraints, self.flags)
+        # if self.isk_public_key:
+        data += self.isk_public_key
+        if self.user_data:
+            data += self.user_data
+        data += self.signature
+        return data
+
+    @classmethod
+    def parse(cls, data: bytes, offset: int = 0) -> "IskCertificate":
+        """Parse ISK certificate from bytes array.This operation is not supported.
+
+        :param data:  Input data as bytes array
+        :param offset: The offset of input data
+        :raises NotImplementedError: This operation is not supported.
+        """
+        raise NotImplementedError("This operation is not supported.")
+
+
+class CertBlockV3(CertBlock):
+    """Create Certificate block."""
+
+    def __init__(
+            self, root_certs: List[bytes], ca_flag: bool, used_root_cert: int = 0,
+            constraints: int = 0, isk_private_key: crypto.EllipticCurvePrivateKeyWithSerialization = None,
+            isk_cert: ECC.EccKey = None, user_data: bytes = None
+    ) -> None:
+        """The Constructor for Certificate block."""
+        # workaround for base MasterBootImage
+        self.signature_size = 0
+        self.header = CertificateBlockHeader()
+        self.root_key_record = RootKeyRecord(
+            ca_flag=ca_flag, used_root_cert=used_root_cert, root_certs=root_certs
+        )
+        self.isk_certificate = None
+        if not ca_flag:
+            assert isk_private_key, "ISK private key is not set."
+            assert isk_cert, "ISK certificate is not set."
+            self.isk_certificate = IskCertificate(
+                constraints=constraints, isk_private_key=isk_private_key,
+                isk_cert=isk_cert, user_data=user_data
+            )
+        self.expected_size = self._calculate_expected_size()
+
+    def _calculate_expected_size(self) -> int:
+        expected_size = self.header.SIZE
+        expected_size += self.root_key_record.expected_size
+        if self.isk_certificate:
+            expected_size += self.isk_certificate.expected_size
+        return expected_size
+
+    def info(self) -> str:
+        """Get info of Certificate block."""
+        msg = f"HEADER:\n{self.header.info()}\n"
+        msg += f"ROOT KEY RECORD:\n{self.root_key_record.info()}\n"
+        if self.isk_certificate:
+            msg += f"ISK\n{self.isk_certificate.info()}\n"
+        return msg
+
+    def export(self) -> bytes:
+        """Export Certificate block as bytes array."""
+        key_record_data = self.root_key_record.export()
+        self.header.cert_block_size = self.header.SIZE + len(key_record_data)
+        isk_cert_data = bytes()
+        if self.isk_certificate:
+            self.isk_certificate.create_isk_signature(key_record_data)
+            isk_cert_data = self.isk_certificate.export()
+            self.header.cert_block_size += len(isk_cert_data)
+        header_data = self.header.export()
+        return header_data + key_record_data + isk_cert_data
+
+    @classmethod
+    def parse(cls, data: bytes, offset: int = 0) -> "BaseClass":
+        """Parse Certificate block from bytes array.This operation is not supported.
+
+        :param data:  Input data as bytes array
+        :param offset: The offset of input data
+        :raises NotImplementedError: This operation is not supported.
+        """
+        raise NotImplementedError("This operation is not supported.")

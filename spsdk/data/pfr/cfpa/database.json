@@ -1,0 +1,90 @@
+{
+    "devices": {
+        "lpc55s6x": {
+            "revisions": {
+                "a1": "niobe4_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x9_DE00"
+        },
+        "lpc551x":
+        {
+            "revisions": {
+                "a1": "niobe4mini_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x3_DE00"
+        },
+        "lpc55s1x":
+        {
+            "revisions": {
+                "a1": "niobe4mini_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x3_DE00"
+        },
+		"lpc550x":
+		 {
+            "revisions": {
+                "a1": "niobe4nano_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x3_DE00"
+        },
+		"lpc55s0x":
+        {
+            "revisions": {
+                "a1": "niobe4nano_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x3_DE00"
+        },
+		"lpc552x":
+        {
+            "revisions": {
+                "a1": "niobe4_a1.xml"
+            },
+            "latest": "a1",
+            "address": "0x9_DE00"
+		},
+		"lpc55s2x":
+		{
+            "revisions": {
+                "a1": "niobe4_a1.xml"
+			},
+            "latest": "a1",
+            "address": "0x9_DE00"
+		},
+		"lpc55s3x":
+        {
+            "revisions": {
+                "a1": "niobe4analog_a1.xml"
+			},
+            "latest": "a1",
+            "address": "0x3_DC00",
+            "seal_start":"CFPA_CRC32",
+            "seal_count": 1
+        },
+        "lpc553x":
+        {
+            "revisions": {
+                "a1": "niobe4analog_a1.xml"
+			},
+            "latest": "a1",
+            "address": "0x3_DC00",
+            "seal_start": "CFPA_CRC32",
+            "seal_count": 1
+        }
+    },
+    "computed_registers": [
+        "SHA256_DIGEST"
+    ],
+    "computed_fields": [
+        "INVERSE_VALUE"
+    ],
+    "ignored_registers": [
+        "PRINCE_REGION"
+    ],
+    "seal_start": "SHA256_DIGEST0",
+    "seal_count": 8
+}

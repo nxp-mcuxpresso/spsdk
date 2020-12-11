@@ -1,7 +1,7 @@
 SDP Module API
 ==============
 
-Serial Download Protocol API
+Module implementing the SDP communication protocol.
 
 .. toctree::
    :maxdepth: 1
@@ -9,8 +9,8 @@ Serial Download Protocol API
    sdp_interfaces
 
 
-SDP Class
----------
+SDP Communication protocol
+---------------------------
 
 .. automodule:: spsdk.sdp.sdp
    :members:
@@ -36,21 +36,10 @@ SDPS communication protocol
    :show-inheritance:
 
 
-SDP ErrorCodes
---------------
+SDP Error/Status codes
+-----------------------
 
 .. automodule:: spsdk.sdp.error_codes
    :members:
    :undoc-members:
    :show-inheritance:
-
-SDP Exceptions
---------------
-
-.. automodule:: spsdk.sdp.exceptions
-   :noindex:
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-

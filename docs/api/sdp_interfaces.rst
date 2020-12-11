@@ -1,7 +1,7 @@
 SDP Interfaces
 ==============
 
-
+Connection options for SDP.
 
 SDP UART
 --------

@@ -7,14 +7,14 @@
 
 """Module with Debug Authentication Challenge (DAC) Packet."""
 
-from struct import unpack_from, pack
+from struct import unpack_from, pack, calcsize
 
 
 class DebugAuthenticationChallenge:
     """Base class for DebugAuthenticationChallenge."""
 
-    def __init__(self, version: str, socc: int, uuid: str, rotid_rkh_revocation: int,
-                 rotid_rkht_hash: bytes, cc_soc_pinned: int, cc_soc_default: int,
+    def __init__(self, version: str, socc: int, uuid: bytes, rotid_rkh_revocation: int,
+                 rotid_rkth_hash: bytes, cc_soc_pinned: int, cc_soc_default: int,
                  cc_vu: int, challenge: bytes) -> None:
         """Initialize the DebugAuthenticationChallenge object.
 
@@ -22,7 +22,7 @@ class DebugAuthenticationChallenge:
         :param socc: The SoC Class that this credential applies to
         :param uuid: The string representing the unique device identifier
         :param rotid_rkh_revocation: State of certificate revocation field
-        :param rotid_rkht_hash: The hash of roth-meta data
+        :param rotid_rkth_hash: The hash of roth-meta data
         :param cc_soc_pinned: State of lock bits in the debugger configuration field
         :param cc_soc_default: State of the debugger configuration field
         :param cc_vu: The Vendor usage that the vendor has associated with this credential
@@ -30,22 +30,22 @@ class DebugAuthenticationChallenge:
         """
         self.version = version
         self.socc = socc
-        self.uuid = f'{uuid:0>32}'
-        self.cc_vu = cc_vu
+        self.uuid = uuid
         self.rotid_rkh_revocation = rotid_rkh_revocation
-        self.rotid_rkht_hash = rotid_rkht_hash
+        self.rotid_rkth_hash = rotid_rkth_hash
         self.cc_soc_pinned = cc_soc_pinned
         self.cc_soc_default = cc_soc_default
+        self.cc_vu = cc_vu
         self.challenge = challenge
 
     def info(self) -> str:
         """String representation of DebugCredential."""
         msg = f"Version                : {self.version}\n"  # pylint: disable=bad-whitespace
         msg += f"SOCC                   : {self.socc}\n"
-        msg += f"UUID                   : {self.uuid.upper()}\n"
+        msg += f"UUID                   : {self.uuid.hex().upper()}\n"
         msg += f"CC_VU                  : {self.cc_vu}\n"
         msg += f"ROTID_rkh_revocation   : {format(self.rotid_rkh_revocation, '08X')}\n"
-        msg += f"ROTID_rkht_hash        : {self.rotid_rkht_hash.hex()}\n"
+        msg += f"ROTID_rkth_hash        : {self.rotid_rkth_hash.hex()}\n"
         msg += f"CC_soc_pinned          : {format(self.cc_soc_pinned, '08X')}\n"
         msg += f"CC_soc_default         : {format(self.cc_soc_default, '08X')}\n"
         msg += f"Challenge              : {self.challenge.hex()}\n"
@@ -55,9 +55,9 @@ class DebugAuthenticationChallenge:
         """Exports the DebugAuthenticationChallenge into bytes."""
         data = pack("<2H", *[int(part) for part in self.version.split('.')])
         data += pack("<L", self.socc)
-        data += bytes.fromhex(self.uuid)
+        data += self.uuid
         data += pack("<L", self.rotid_rkh_revocation)
-        data += self.rotid_rkht_hash
+        data += self.rotid_rkth_hash
         data += pack("<L", self.cc_soc_pinned)
         data += pack("<L", self.cc_soc_default)
         data += pack("<L", self.cc_vu)
@@ -72,16 +72,14 @@ class DebugAuthenticationChallenge:
         :param offset: Offset within the input data
         :return: DebugAuthenticationChallenge object
         """
-        version = unpack_from("<2H", data, offset)
-        socc = unpack_from("<L", data, offset + 4)
-        uuid = data[offset + 8:offset + 24].hex()
-        rotid_rkh_revocation = unpack_from("<L", data, offset + 24)
-        rotid_rkht_hash = data[offset + 28:offset + 60]
-        cc_soc_pinned = unpack_from("<L", data, offset + 60)
-        cc_soc_default = unpack_from("<L", data, offset + 64)
-        cc_vu = unpack_from("<L", data, offset + 68)
-        challenge = data[offset + 72:offset + 104]
-        return cls(version=f'{version[0]}.{version[1]}', socc=socc[0], uuid=uuid,
-                   rotid_rkh_revocation=rotid_rkh_revocation[0], rotid_rkht_hash=rotid_rkht_hash,
-                   cc_soc_default=cc_soc_default[0], cc_soc_pinned=cc_soc_pinned[0], cc_vu=cc_vu[0],
+        format_head = '<2HL16sL'
+        version_major, version_minor, socc, uuid, rotid_rkh_revocation = unpack_from(format_head, data, offset)
+        hash_length = 48 if (socc == 4 and version_minor == 1 and version_major == 2) else 32
+        format_tail = f'<{hash_length}s3L32s'
+        (
+            rotid_rkth_hash, cc_soc_pinned, cc_soc_default, cc_vu, challenge
+        ) = unpack_from(format_tail, data, offset + calcsize(format_head))
+        return cls(version=f'{version_major}.{version_minor}', socc=socc, uuid=uuid,
+                   rotid_rkh_revocation=rotid_rkh_revocation, rotid_rkth_hash=rotid_rkth_hash,
+                   cc_soc_default=cc_soc_default, cc_soc_pinned=cc_soc_pinned, cc_vu=cc_vu,
                    challenge=challenge)

@@ -1,5 +1,6 @@
 MBoot Interfaces
 ================
+Module implementing the Mboot communication protocol.
 
 MBoot UART
 ----------

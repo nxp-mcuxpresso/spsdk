@@ -1,3 +1,6 @@
+git+https://github.com/tbennun/astunparse#egg=astunparse
+jmespath
+commentjson
 bitstring==3.1.6
 click==7.0
 click-option-group==0.3.0
@@ -5,15 +8,15 @@ construct==2.10.56
 crccheck==0.6
 hexdump==3.3
 asn1crypto==1.2.0
-cryptography==3.2
+cryptography==3.2.1
 oscrypto==1.2.0
 pycryptodome==3.9.8
 pyserial==3.4
-pyusb==1.0.0; sys_platform == 'linux'
-pyusb==1.0.0; sys_platform == 'darwin'
-pywinusb==0.4.2; sys_platform == 'win32'
+hidapi==0.10.1
 jinja2>2.11.0
 
 pylink-square>=0.8.0
-pyocd==0.27.2
+pypemicro
+pyocd-pemicro
+pyocd==0.28.3
 munch==2.5.0

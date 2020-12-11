@@ -16,11 +16,13 @@ import click
 import yaml
 
 from spsdk import __version__ as version
-from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key, save_rsa_public_key, \
-    generate_ecc_public_key, generate_ecc_private_key, save_ecc_public_key, save_ecc_private_key
+from spsdk.apps.elftosb_helper import RootOfTrustInfo
+from spsdk.apps.utils import catch_spsdk_error
+from spsdk.crypto import (generate_ecc_private_key, generate_ecc_public_key,
+                          generate_rsa_private_key, generate_rsa_public_key,
+                          save_ecc_private_key, save_ecc_public_key,
+                          save_rsa_private_key, save_rsa_public_key)
 from spsdk.dat import DebugCredential
-
-from .elftosb_helper import RootOfTrustInfo
 
 logger = logging.getLogger(__name__)
 LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
@@ -99,7 +101,7 @@ def check_destination_dir(path: str, create_folder: bool = False) -> None:
         sys.exit(1)
 
 
-def check_file_exists(path: str, force_overwrite: bool = False) -> bool:    #type: ignore
+def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type: ignore
     """Check if file exists, exits if file exists and overwriting is disabled.
 
     :param path: Path to a file
@@ -157,33 +159,56 @@ def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
               help='Specify Root Of Trust from configuration file used by elf2sb tool')
 @click.option('--force', is_flag=True, default=False,
               help="Force overwritting of an existing file. Create destination folder, if doesn't exist already.")
+@click.option('--plugin', type=click.Path(exists=True, file_okay=True), required=False,
+              help='External python file contaning a custom SignatureProvider implementation.')
 @click.argument('dc_file_path', metavar='PATH', type=click.Path(file_okay=True))
 @click.pass_context
-def gendc(ctx: click.Context, dc_file_path: str, config: click.File, elf2sb_config: click.File, force: bool) -> None:
+def gendc(ctx: click.Context, plugin: click.Path, dc_file_path: str, config: click.File,
+          elf2sb_config: click.File, force: bool) -> None:
     """Generate debug certificate (DC).
 
     \b
     PATH    - path to dc file
     """
+    if plugin:
+        # if a plugin is present simply load it
+        # The SignatureProvider will automatically pick up any implementation(s)
+        from importlib.util import spec_from_file_location, module_from_spec
+        spec = spec_from_file_location(name='plugin', location=plugin)  # type: ignore
+        mod = module_from_spec(spec)
+        spec.loader.exec_module(mod)  # type: ignore
+
     is_rsa = ctx.obj['is_rsa']
     protocol = ctx.obj['protocol_version']
     check_destination_dir(dc_file_path, force)
     check_file_exists(dc_file_path, force)
 
     logger.info("Loading configuration from yml file...")
-    yaml_content = yaml.safe_load(config)   #type: ignore
+    yaml_content = yaml.safe_load(config)  # type: ignore
     if elf2sb_config:
         logger.info("Loading configuration from elf2sb config file...")
-        rot_info = RootOfTrustInfo(json.load(elf2sb_config))    #type: ignore
+        rot_info = RootOfTrustInfo(json.load(elf2sb_config))  # type: ignore
         yaml_content["rot_meta"] = rot_info.public_keys
         yaml_content["rotk"] = rot_info.private_key
+        yaml_content["rot_id"] = rot_info.public_key_index
+
+    # enforcing rot_id presence in yaml config...
+    assert "rot_id" in yaml_content, "Config file doesn't contain the 'rot_id' field"
+
     logger.info(f"Creating {'RSA' if is_rsa else 'ECC'} debug credential object...")
-    dc = DebugCredential.from_yaml_config(version=protocol, yaml_config=yaml_content)
+    dc = DebugCredential.create_from_yaml_config(version=protocol, yaml_config=yaml_content)
+    dc.sign()
     data = dc.export()
     logger.info("Saving the debug credential to a file...")
     with open(dc_file_path, 'wb') as f:
         f.write(data)
 
 
+@catch_spsdk_error
+def safe_main() -> int:
+    """Call the main function."""
+    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+
+
 if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover   # pylint: disable=no-value-for-parameter
+    safe_main()  # pragma: no cover

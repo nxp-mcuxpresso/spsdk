@@ -10,20 +10,14 @@ foundation from quick customer prototyping up to production deployment. Is follo
 
 **SPSDK Modules:**
 
-- **MBoot** - Covering functionality of `blhost` tool
-- **SDP** - Covering functionality of `sdphost` tool
+- **Crypto** - Support for key's and certificate's operations
+- **DAT** - Covering functionality of `debug authentication` tool
 - **Image** - Covering functionality of `srktool`, `dcdgen`, `mkimage` and other similar tools
+- **MBoot** - Covering functionality of `blhost` tool
+- **PFR** - Support for configuration of Protected Flash Region areas (CMPA, CFPA)
 - **SBFile** - Covering functionality of `elftosb` tool
+- **SDP** - Covering functionality of `sdphost` tool
 
-
-Dependencies
-============
-
-SPSDK requires [Python](https://www.python.org) >3.5 interpreter, old version 2.x is not supported !
-
-The core dependencies are included in requirements.txt file. 
-
-The dependencies for the development are included in requirements-develop.txt.
 
 Installation
 ============
@@ -42,7 +36,16 @@ Install SPSDK from sources:
     $ pip install -r requirements-develop.txt
     $ pip install -U -e .
 ```
-> In Windows OS you need to instal [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
+> In Windows OS you need to install [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
 
-Contribution
+
+Note: If you use pip version 20.3, please downgrade it to 20.2.4, because of new resolver functionality.
+ 
+Dependencies
 ============
+
+SPSDK requires [Python](https://www.python.org) >3.5 and <3.9 interpreter, old version 2.x is not supported !
+
+The core dependencies are included in requirements.txt file. 
+
+The dependencies for the development and testing are included in requirements-develop.txt.

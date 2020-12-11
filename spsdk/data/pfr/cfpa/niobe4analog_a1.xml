@@ -1,0 +1,223 @@
+<?xml version="1.0"?>
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/3.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/3.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/3.0/regsPeripheral.xsd">
+  <register offset="0" width="32" name="HEADER" description=".">
+      <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="."/>
+  </register>
+  <register offset="0x4" width="32" name="CFPA_PAGE_Version " description=".">
+      <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="."/>
+  </register>
+  <register offset="0x8" width="32" name="Secure_FW_Version" description="Secure firmware version">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="."/>
+  </register>
+  <register offset="0xC" width="32" name="NS_FW_Version" description="Non-Secure firmware version">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="."/>
+  </register>
+  <register offset="0x10" width="32" name="IMAGE_KEY_REVOKE" description="Image key revocation ID">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="."/>
+  </register>
+  <register offset="0x14" width="32" name="MCTR_INT_IV_CTR0" description="Erase count for internal Prince region 0">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Erase count for internal Prince region 0 (Monotonic counter)"/>
+  </register>
+  <register offset="0x18" width="32" name="MCTR_INT_IV_CTR1" description="Erase count for internal Prince region 1">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Erase count for internal Prince region 1 (Monotonic counter)"/>
+  </register>
+  <register offset="0x1C" width="32" name="MCTR_INT_IV_CTR2" description="Erase count for internal Prince region 2">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Erase count for internal Prince region 2 (Monotonic counter)"/>
+  </register>
+  <register offset="0x20" width="32" name="IPED_IV_CTR0" description="Erase count for external Prince region 0 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Erase count for external Prince region 0 (Monotonic counter)"/>
+  </register>
+  <register offset="0x24" width="32" name="IPED_IV_CTR1" description="Erase count for external Prince region 1 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Erase count for external Prince region 1 (Monotonic counter)"/>
+  </register>
+  <register offset="0x28" width="32" name="IPED_IV_CTR2" description="Erase count for external Prince region 2 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Erase count for external Prince region 2 (Monotonic counter)"/>
+  </register>
+  <register offset="0x2C" width="32" name="IPED_IV_CTR3" description="Erase count for external Prince region 3 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Erase count for external Prince region 3 (Monotonic counter)"/>
+  </register>
+  <register offset="0x30" width="32" name="MCTR_CUST_CTR0" description="Customer defined Monotonic counter 0">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Customer defined Monotonic counter 0"/>
+  </register>
+  <register offset="0x34" width="32" name="MCTR_CUST_CTR1" description="Customer defined Monotonic counter 1">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Customer defined Monotonic counter 1"/>
+  </register>
+  <register offset="0x38" width="32" name="MCTR_CUST_CTR2" description="Customer defined Monotonic counter 2">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Customer defined Monotonic counter 2"/>
+  </register>
+  <register offset="0x3C" width="32" name="MCTR_CUST_CTR3" description="Customer defined Monotonic counter 3">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Customer defined Monotonic counter 3"/>
+  </register>
+  <register offset="0x40" width="32" name="MCTR_CUST_CTR4" description="Customer defined Monotonic counter 4">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Customer defined Monotonic counter 4"/>
+  </register>
+  <register offset="0x44" width="32" name="MCTR_CUST_CTR5" description="Customer defined Monotonic counter 5">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Customer defined Monotonic counter 5"/>
+  </register>
+  <register offset="0x48" width="32" name="MCTR_CUST_CTR6" description="Customer defined Monotonic counter 6">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Customer defined Monotonic counter 6"/>
+  </register>
+  <register offset="0x4C" width="32" name="MCTR_CUST_CTR7" description="Customer defined Monotonic counter 7">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Customer defined Monotonic counter 7"/>
+  </register>
+  <register offset="0x50" width="32" name="ROTKH_REVOKE" description=".">
+    <bit_field offset="0" width="2" name="RoTK0_EN" access="RW" reset_value="0" description="RoT Key 0 enable">
+		<bit_field_value name="ROTKH_REVOKE_RoTK0_EN_VALUE_0" value="0b00" description="Enabled"/>
+        <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_VALUE_1" value="0b01" description="Enabled"/>  
+		<bit_field_value name="ROTKH_REVOKE_RoTK0_EN_VALUE_2" value="0b00" description="Key revoked"/>
+        <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_VALUE_3" value="0b01" description="Key revoked"/>  
+    </bit_field>
+    <bit_field offset="2" width="2" name="RoTK1_EN" access="RW" reset_value="0" description="RoT Key 1 enable">
+		<bit_field_value name="ROTKH_REVOKE_RoTK1_EN_VALUE_0" value="0b00" description="Enabled"/>
+        <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_VALUE_1" value="0b01" description="Enabled"/>  
+		<bit_field_value name="ROTKH_REVOKE_RoTK1_EN_VALUE_2" value="0b00" description="Key revoked"/>
+        <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_VALUE_3" value="0b01" description="Key revoked"/>  
+    </bit_field>  
+    <bit_field offset="4" width="2" name="RoTK2_EN" access="RW" reset_value="0" description="RoT Key 2 enable">
+		<bit_field_value name="ROTKH_REVOKE_RoTK2_EN_VALUE_0" value="0b00" description="Enabled"/>
+        <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_VALUE_1" value="0b01" description="Enabled"/>  
+		<bit_field_value name="ROTKH_REVOKE_RoTK2_EN_VALUE_2" value="0b00" description="Key revoked"/>
+        <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_VALUE_3" value="0b01" description="Key revoked"/>  
+    </bit_field>     
+    <bit_field offset="6" width="2" name="RoTK3_EN" access="RW" reset_value="0" description="RoT Key 3 enable">
+		<bit_field_value name="ROTKH_REVOKE_RoTK3_EN_VALUE_0" value="0b00" description="Enabled"/>
+        <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_VALUE_1" value="0b01" description="Enabled"/>  
+		<bit_field_value name="ROTKH_REVOKE_RoTK3_EN_VALUE_2" value="0b00" description="Key revoked"/>
+        <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_VALUE_3" value="0b01" description="Key revoked"/>  
+    </bit_field> 
+    <reserved_bit_field offset="8" width="8" reset_value="0"/>
+    <bit_field offset="16" width="2" name="DICE_SKIP_CSR" access="RW" reset_value="0" description="Skip DICE CSR generation.">
+		<bit_field_value name="ROTKH_REVOKE_DICE_SKIP_CSR_VALUE_0" value="0b00" description="Generate CSR"/>
+        <bit_field_value name="ROTKH_REVOKE_DICE_SKIP_CSR_VALUE_1" value="0b01" description="Skip CSR. "/>   
+    </bit_field> 	
+	<reserved_bit_field offset="18" width="14" reset_value="0"/>
+  </register>
+  <register offset="0x54" width="32" name="VENDOR_USAGE" description=".">
+    <bit_field offset="0" width="16" name="DBG_VENDOR_USAGE" access="RW" reset_value="0" description="DBG_VENDOR_USAGE."/>
+    <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]"/>
+  </register>
+  <register offset="0x58" width="32" name="DCFG_CC_SOCU_NS_PIN" description=".">
+    <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug enable">
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_NIDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_NIDEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RW" reset_value="0" description="Non Secure debug enable">
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DBGEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DBGEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="SPNIDEN" access="RW" reset_value="0" description="Secure non-invasive debug enable">
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPNIDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPNIDEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="SPIDEN" access="RW" reset_value="0" description="Secure invasive debug enable">
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPIDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPIDEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <reserved_bit_field offset="4" width="1" reset_value="0"/>
+    <bit_field offset="5" width="1" name="DSP_DBGEN" access="RW" reset_value="0" description="DSP debug enable">
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RW" reset_value="0" description="ISP boot command enable">
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>	
+    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RW" reset_value="0" description="FA cmd enable">
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>	
+    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RW" reset_value="0" description="FA cmd enable">
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+	<reserved_bit_field offset="9" width="6" reset_value="0"/>
+    <bit_field offset="15" width="1" name="UUID_CHECK" access="RW" reset_value="0" description="Enforce UUID match during Debug authentication."/>
+	<bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]"/>
+ </register>
+  <register offset="0x5C" width="32" name="DCFG_CC_SOCU_NS_DFLT" description=".">
+    <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug Fixed state">
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_NIDEN_VALUE_0" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_NIDEN_VALUE_1" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RW" reset_value="0" description="Non Secure debug Fixed state">
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DBGEN_VALUE_0" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DBGEN_VALUE_1" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="SPNIDEN" access="RW" reset_value="0" description="Secure non-invasive debug Fixed state">
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPNIDEN_VALUE_0" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPNIDEN_VALUE_1" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="SPIDEN" access="RW" reset_value="0" description="Secure invasive debug Fixed state">
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPIDEN_VALUE_0" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPIDEN_VALUE_1" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="4" width="1" reset_value="0"/>
+    <bit_field offset="5" width="1" name="DSP_DBGEN" access="RW" reset_value="0" description="DSP debug Fixed state">
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_VALUE_0" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_VALUE_1" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RW" reset_value="0" description="ISP command Fixed state">
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_VALUE_0" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_VALUE_1" value="0b1" description="Enabled"/>
+    </bit_field>	
+    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RW" reset_value="0" description="Set FA mode command Fixed state">
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_VALUE_0" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_VALUE_1" value="0b1" description="Enabled"/>
+    </bit_field>	
+    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RW" reset_value="0" description="Mass erase flash command fixed state">
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_VALUE_0" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_VALUE_1" value="0b1" description="Enabled"/>
+    </bit_field>
+	<reserved_bit_field offset="9" width="7" reset_value="0"/>
+    <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]"/>
+ </register>
+  <register offset="0x60" width="32" name="ENABLE_FA_MODE" description="Enable FA mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.">
+  <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="."/>
+  </register>	
+  <register offset="0x64" width="32" name="CMPA_PROG_IN_PROGRESS" description="CMPA Page programming on going. This field shall be set to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.">
+	<bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="."/>
+  </register>
+  <register offset="0x68" width="32" name="CMAC_UPD" description="IMG_UPD">
+	<bit_field offset="0" width="2" name="IMG_UPD" access="RW" reset_value="0" description="Image updated.">
+	  <bit_field_value name="CMAC_UPD_IMG_UPD_VALUE_0" value="0b00" description="Nothing changed"/>
+      <bit_field_value name="CMAC_UPD_IMG_UPD_VALUE_1" value="0b01" description="Update image 0 CMAC"/>
+	  <bit_field_value name="CMAC_UPD_IMG_UPD_VALUE_2" value="0b10" description="Update image 1 CMAC "/>
+      <bit_field_value name="CMAC_UPD_IMG_UPD_VALUE_3" value="0b11" description="Update image 1 CMAC "/>
+    </bit_field>
+	<bit_field offset="2" width="3" name="CMPA_UPD" access="RW" reset_value="0" description="CMPA page updated through ROM API.">
+	  <bit_field_value name="CMAC_UPD_CMPA_UPD_VALUE_0" value="0b000" description="No action"/>
+      <bit_field_value name="CMAC_UPD_CMPA_UPD_VALUE_2" value="0b010" description="Update CMAC field in CMPA page. "/>
+	  <bit_field_value name="CMAC_UPD_CMPA_UPD_VALUE_3" value="0b011" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_SECURE (0x7)."/>
+      <bit_field_value name="CMAC_UPD_CMPA_UPD_VALUE_5" value="0b101" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_CLOSED (0xF)."/>
+      <bit_field_value name="CMAC_UPD_CMPA_UPD_VALUE_6" value="0b110" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_LOCKED (0xCF)."/>
+	</bit_field>
+	<reserved_bit_field offset="5" width="27" reset_value="0"/>
+  </register> 
+  <register offset="0x70" width="32" name="IMG0_CMAC0" description="IMG0_CMAC[31:0]">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="IMG0_CMAC[31:0]"/>
+  </register>
+  <register offset="0x74" width="32" name="IMG0_CMAC1" description="IMG0_CMAC[63:32]">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="IMG0_CMAC[63:32]"/>
+  </register>
+  <register offset="0x78" width="32" name="IMG0_CMAC2" description="IMG0_CMAC[95:64]">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="IMG0_CMAC[95:64]"/>
+  </register>
+  <register offset="0x7C" width="32" name="IMG0_CMAC3" description="IMG0_CMAC[127:96]">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="IMG0_CMAC[127:96]"/>
+  </register>
+  <register offset="0x80" width="32" name="IMG1_CMAC0" description="IMG1_CMAC[31:0]">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="IMG1_CMAC[31:0]"/>
+  </register>
+  <register offset="0x84" width="32" name="IMG1_CMAC1" description="IMG1_CMAC[63:32]">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="IMG1_CMAC[63:32]"/>
+  </register>
+  <register offset="0x88" width="32" name="IMG1_CMAC2" description="IMG1_CMAC[95:64]">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="IMG1_CMAC[95:64]"/>
+  </register>
+  <register offset="0x8C" width="32" name="IMG1_CMAC3" description="IMG1_CMAC[127:96]">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="IMG1_CMAC[127:96]"/>
+  </register>
+  <register offset="0x1EC" width="32" name="CFPA_CRC32" description="CFPA CRC32">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="CFPA _CRC[31:0] used during low-power wake."/>
+  </register>
+</regs:peripheral>

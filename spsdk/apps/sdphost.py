@@ -16,7 +16,7 @@ import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import INT, get_interface
+from spsdk.apps.utils import INT, get_interface, format_raw_data, catch_spsdk_error
 from spsdk.sdp import SDP
 from spsdk.sdp.commands import ResponseValue
 
@@ -54,7 +54,7 @@ def error_status(ctx: click.Context) -> None:
         response = sdp.read_status()
     display_output(
         [response], sdp.response_value, ctx.obj['use_json'],
-        f"Response status = {decode_status_code(response)}."
+        extra_output=f"Response status = {decode_status_code(response)}."
     )
 
 
@@ -85,13 +85,43 @@ def write_file(ctx: click.Context, address: int, bin_file: click.File, count: in
     FILE    - binary file to write
     COUNT   - Count is size of data to write in bytes (default: whole file)
     """
-    data = bin_file.read(count)     # type: ignore
+    data = bin_file.read(count)  # type: ignore
     with SDP(ctx.obj['interface']) as sdp:
         sdp.write_file(address, data)
     display_output([], sdp.response_value)
 
 
-def display_output(response: list, status_code: int, use_json: bool = False, extra_output: str = None) -> None:
+@main.command()
+@click.argument('address', type=INT(), required=True)
+@click.argument('item_length', type=int, required=False, default=32, metavar='[FORMAT]')
+@click.argument('count', type=int, required=False, default=1)
+@click.argument('file', type=click.File('wb'), required=False)
+@click.option('-h', '--use-hexdump', is_flag=True, default=False, help='Use hexdump format')
+@click.pass_context
+def read_register(ctx: click.Context, address: int, item_length: int, count: int,
+                  file: click.File, use_hexdump: bool) -> None:
+    """Read one or more registers.
+
+    \b
+    ADDRESS - starting address where to read
+    FORMAT  - bits per item: valid values: 8, 16, 32; default 32
+    COUNT   - items to read; default 1
+    FILE    - write data into a file; write to stdout if not specified
+    """
+    with SDP(ctx.obj['interface']) as sdp:
+        response = sdp.read_safe(address, count, item_length)
+    if not response:
+        click.echo(f"Error: invalid command or arguments 'read-register {address:#8X} {item_length} {count}'")
+        sys.exit(1)
+    if file:
+        file.write(response)  # type: ignore
+    else:
+        click.echo(format_raw_data(response, use_hexdump=use_hexdump))
+    display_output([], sdp.response_value, ctx.obj['use_json'])
+
+
+def display_output(response: list, status_code: int, use_json: bool = False,
+                   extra_output: str = None) -> None:
     """Printout the response.
 
     :param response: Response list to display
@@ -129,5 +159,12 @@ def decode_status_code(status_code: int = None) -> str:
         return f"UNKNOWN ERROR"
     return f"{status_code} ({status_code:#x}) {ResponseValue.desc(status_code)}"
 
+
+@catch_spsdk_error
+def safe_main() -> int:
+    """Call the main function."""
+    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+
+
 if __name__ == "__main__":
-    sys.exit(main())    #pragma: no cover   # pylint: disable=no-value-for-parameter
+    safe_main()  # pragma: no cover

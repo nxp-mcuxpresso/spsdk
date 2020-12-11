@@ -19,15 +19,13 @@ It is delivered in a form of python library with functionality presented as CLI 
 
 import os
 
-# pylint: disable=wrong-import-position     # we want this symbol to be available in other submodules
-SPSDK_DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-
-from . import image, sbfile, mboot, sdp, utils, apps, dat
-from .exceptions import SPSDKError
 from .__version__ import __version__ as version
+from .exceptions import SPSDKError
+
+SPSDK_DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 __author__ = "NXP"
 __contact__ = "michal.starecek@nxp.com"
-__license__ = "BSD3"
+__license__ = "BSD-3-Clause"
 __version__ = version
 __release__ = "alpha"

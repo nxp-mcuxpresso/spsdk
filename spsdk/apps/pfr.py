@@ -16,17 +16,17 @@ from typing import (Iterable, List, Mapping, Optional, Tuple, Type, Union,
 import click
 from jinja2 import Environment, FileSystemLoader
 
-from spsdk import SPSDK_DATA_FOLDER
 from spsdk import __version__ as spsdk_version
-from spsdk import crypto
-from spsdk.image import pfr
+from spsdk import crypto, pfr
+from spsdk.apps.utils import catch_spsdk_error
 from spsdk.image.misc import dict_diff
 
-from .elftosb_helper import RootOfTrustInfo
+from spsdk.apps.elftosb_helper import RootOfTrustInfo
 
 HTMLDataElement = Mapping[str, Union[str, Iterable[dict]]]
 HTMLData = List[HTMLDataElement]
 PFRArea = Union[Type[pfr.CMPA], Type[pfr.CFPA]]
+
 
 @no_type_check
 def _store_output(data: str, path: Optional[click.Path], mode: str = 'w') -> None:
@@ -105,7 +105,7 @@ def _get_data_for_html(area: PFRArea) -> HTMLData:
 
 def _generate_html(area_name: str, data: List[dict]) -> str:
     """Generate HTML content."""
-    jinja_env = Environment(loader=FileSystemLoader(SPSDK_DATA_FOLDER))
+    jinja_env = Environment(loader=FileSystemLoader(pfr.PFR_DATA_FOLDER))
     template = jinja_env.get_template("pfr_desc_template.html")
     return template.render(area_name=area_name, data=data)
 
@@ -125,7 +125,7 @@ def devices() -> None:
 
 @main.command()
 @click.option('-d', '--device', type=click.Choice(pfr.CMPA.devices()), help="Device to use", required=True)
-@click.option('-r', '--revision', help="Chip revision; if not specivfied, most recent one will be used")
+@click.option('-r', '--revision', help="Chip revision; if not specified, most recent one will be used")
 @click.option('-t', '--type', 'area', required=True, type=click.Choice(['cmpa', 'cfpa']),
               help='Select PFR partition')
 @click.option('-o', '--output', type=click.Path(), required=False,
@@ -147,19 +147,20 @@ def user_config(device: str, revision: str, area: str, output: click.Path, full:
 
 @main.command()
 @click.option('-d', '--device', type=click.Choice(pfr.CMPA.devices()), help="Device to use", required=True)
-@click.option('-r', '--revision', help="Chip revision; if not specivfied, most recent one will be used")
+@click.option('-r', '--revision', help="Chip revision; if not specified, most recent one will be used")
 @click.option('-t', '--type', 'area', required=True, type=click.Choice(['cmpa', 'cfpa']),
               help='Select PFR partition')
 @click.option('-o', '--output', type=click.Path(), required=False,
               help="Save the output into a file instead of console")
 @click.option('-b', '--binary', type=click.File('rb'), required=True, help="Binary to parse")
-@click.option('-c', '--show-calc', is_flag=True, help="Show also the calculated fields")
 @click.option('-f', '--show-diff', is_flag=True, help="Show differences comparing to defaults")
+@click.option('-c', '--show-calc', is_flag=True, help="Show also calculated fields when displaying difference to "
+                                                      "defaults (--show-diff)")
 def parse(device: str, revision: str, area: str, output: click.Path, binary: click.File,
           show_calc: bool, show_diff: bool) -> None:
     """Parse binary a extract configuration."""
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
-    data = binary.read()    # type: ignore
+    data = binary.read()  # type: ignore
     parsed = pfr_obj.parse(data, exclude_computed=False)
     if show_diff:
         parsed = dict_diff(
@@ -180,8 +181,8 @@ def parse(device: str, revision: str, area: str, output: click.Path, binary: cli
               help="JSON file with user configuration")
 @click.option('-o', '--output', type=click.Path(), required=True,
               help="Save the output into a file instead of console")
-@click.option('-a', '--add-hash', is_flag=True,
-              help="Add HASH digest at the end. CAUTION!!! It locks the device")
+@click.option('-a', '--add-seal', is_flag=True,
+              help="Add seal mark digest at the end.")
 @click.option('-i', '--calc-inverse', is_flag=True,
               help="Calculate the INVERSE values CAUTION!!! It locks the settings")
 @click.option('-e', '--elf2sb-config', type=click.File('r'), required=False,
@@ -189,37 +190,37 @@ def parse(device: str, revision: str, area: str, output: click.Path, binary: cli
 @click.option('-f', '--secret-file', type=click.Path(exists=True), multiple=True, required=False,
               help="Secret file (certificate, public key, private key); can be defined multiple times")
 @click.option('-p', '--password', help="Password when using Encrypted private keys as --secret-file")
-def generate(output: click.Path, user_config_file: click.File, add_hash: bool, calc_inverse: bool,
+def generate(output: click.Path, user_config_file: click.File, add_seal: bool, calc_inverse: bool,
              elf2sb_config: click.File, secret_file: Tuple[str], password: str) -> None:
     """Generate binary data."""
     user_config = _load_user_config(user_config_file)
     root_of_trust = None
     if elf2sb_config:
-        keys = RootOfTrustInfo(json.load(elf2sb_config)).public_keys    #type: ignore
+        keys = RootOfTrustInfo(json.load(elf2sb_config)).public_keys  # type: ignore
         root_of_trust = tuple(keys)
     if secret_file:
         root_of_trust = secret_file
     area = user_config['type']
-    pfr_obj = _get_pfr_class(area)(device=user_config['device'], revision=user_config['revision'])
+    pfr_obj = _get_pfr_class(area)(device=user_config['device'], revision=user_config.get('revision'))
     if area == 'cmpa' and not root_of_trust:
         click.echo('Error: CMPA page requires either --secret-file(s) or --elf2sb-config')
         sys.exit(1)
     pfr_obj.keys = _extract_public_keys(root_of_trust, password) if area == 'cmpa' else None
     pfr_obj.user_config = user_config['settings']
-    data = pfr_obj.export(add_hash=add_hash, compute_inverses=calc_inverse)
+    data = pfr_obj.export(add_seal=add_seal, compute_inverses=calc_inverse)
     _store_output(data, output, 'wb')
 
 
 @main.command()
 @click.option('-d', '--device', type=click.Choice(pfr.CMPA.devices()), help="Device to use", required=True)
-@click.option('-r', '--revision', help="Chip revision; if not specivfied, most recent one will be used")
+@click.option('-r', '--revision', help="Chip revision; if not specified, most recent one will be used")
 @click.option('-t', '--type', 'area', required=True, type=click.Choice(['cmpa', 'cfpa']),
               help='Select PFR partition')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help="Save the output into a file instead of console")
 @click.option('-p', '--open', 'open_result', is_flag=True, help="Open the generated description file")
 def info(device: str, revision: str, area: str, output: click.Path, open_result: bool) -> None:
-    """Generate HTML page with brief descrition of CMPA/CFPA sonfiguration fields."""
+    """Generate HTML page with brief description of CMPA/CFPA configuration fields."""
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     data = _get_data_for_html(pfr_obj)
     html_output = _generate_html(pfr_obj.__class__.__name__, data)
@@ -228,5 +229,11 @@ def info(device: str, revision: str, area: str, output: click.Path, open_result:
         click.launch(f'{output}')
 
 
+@catch_spsdk_error
+def safe_main() -> int:
+    """Call the main function."""
+    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+
+
 if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover
+    safe_main()  # pragma: no cover
