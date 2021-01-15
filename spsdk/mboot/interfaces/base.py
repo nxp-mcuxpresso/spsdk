@@ -21,7 +21,7 @@ class Interface(ABC):
     @property
     def need_data_split(self) -> bool:
         """Indicates whether device need to split data into smaller chunks."""
-        return False
+        return True
 
     def __init__(self, reopen: bool = False) -> None:
         """Initialize the Interface object.

@@ -17,6 +17,7 @@ from crccheck.crc import Crc16
 from serial import Serial, SerialException
 from serial.tools.list_ports import comports
 
+from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.mboot.commands import CmdPacket, CmdResponse, parse_cmd_response
 from spsdk.utils.easy_enum import Enum
 
@@ -57,7 +58,6 @@ def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
     try:
         interface = Uart(port=port, baudrate=baudrate, timeout=timeout)
         interface.open()
-        interface.ping()
         interface.close()
         return interface
     except (AssertionError, SerialException) as e:
@@ -104,6 +104,7 @@ PING_RESPONSE = construct.Struct(
     'crc' / construct.Int16ul
 )
 
+MAX_PING_RESPONSE_DUMMY_BYTES = 50
 
 ########################################################################################################################
 # UART Interface Class
@@ -129,11 +130,6 @@ class Uart(Interface):
     def is_opened(self) -> bool:
         """Return True if device is open, False othervise."""
         return self.device.is_open
-
-    @property
-    def need_data_split(self) -> bool:
-        """Indicates whether device need to split data into smaller chunks."""
-        return True
 
     def __init__(self, port: str = None, baudrate: int = 57600, timeout: int = 5000) -> None:
         """Initialize the UART interface.
@@ -287,7 +283,23 @@ class Uart(Interface):
         ping = struct.pack('<BB', self.FRAME_START_BYTE, FPType.PING)
         self._send_frame(ping, wait_for_ack=False)
 
-        header, frame_type = self._read_frame_header(FPType.PINGR)
+        # after power cycle, MBoot v 3.0+ may respond to first command with a leading dummy data
+        # we read data from UART until the FRAME_START_BYTE byte
+        start_byte = b''
+        for i in range(MAX_PING_RESPONSE_DUMMY_BYTES):
+            start_byte = self._read(1)
+            assert start_byte, f"Failed to receive initial byte"
+
+            if start_byte == self.FRAME_START_BYTE.to_bytes(length=1, byteorder='little'):
+                logger.debug(f"FRAME_START_BYTE received in {i + 1}. attempt.")
+                break
+        else:
+            raise McuBootConnectionError(f"Failed to receive FRAME_START_BYTE")
+
+        header = to_int(start_byte)
+        assert header == self.FRAME_START_BYTE
+        frame_type = to_int(self._read(1))
+        assert frame_type == FPType.PINGR
 
         response_data = self._read(8)
         assert response_data, f"Failed to receive ping response"

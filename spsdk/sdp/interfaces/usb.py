@@ -21,6 +21,8 @@ from typing import List, Tuple, Union
 
 import hid
 
+from spsdk.utils.usbfilter import USBDeviceFilter
+
 from ..commands import CmdPacket, CmdResponse
 from ..exceptions import SdpConnectionError
 from .base import Interface
@@ -69,26 +71,13 @@ USB_DEVICES = {
 
 
 def scan_usb(device_name: str = None) -> List[Interface]:
-    """Scan connected USB devices. Return a list of all founded devices.
+    """Scan connected USB devices. Return a list of all devices found.
 
-    :param device_name: The specific device name (MX8QM, MX8QXP, ...) or VID:PID
-    :return: List of found interfaces
+    :param device_name: see USBDeviceFilter classes constructor for usb_id specification
+    :return: list of matching RawHid devices
     """
-    devices = []
-
-    if device_name is None:
-        for _, value in USB_DEVICES.items():
-            devices += RawHid.enumerate(value[0], value[1])
-    else:
-        if ':' in device_name:
-            vid_str, pid_str = device_name.split(':')
-            devices = RawHid.enumerate(int(vid_str, 0), int(pid_str, 0))
-        else:
-            if device_name in USB_DEVICES:
-                vid = USB_DEVICES[device_name][0]
-                pid = USB_DEVICES[device_name][1]
-                devices = RawHid.enumerate(vid, pid)
-    return devices
+    usb_filter = USBDeviceFilter(usb_id=device_name, nxp_device_names=USB_DEVICES)
+    return RawHid.enumerate(usb_filter)
 
 
 ########################################################################################################################
@@ -126,6 +115,7 @@ class RawHid(Interface):
         self.product_name = ""
         self.interface_number = 0
         self.timeout = 2000
+        self.path = ""
         self.device = None
 
     @staticmethod
@@ -173,7 +163,7 @@ class RawHid(Interface):
         """Open the interface."""
         logger.debug("Open Interface")
         try:
-            self.device.open(self.vid, self.pid)
+            self.device.open_path(self.path)
             self.device.set_nonblocking(False)
             # self.device.read(1021, 1000)
             self._opened = True
@@ -220,11 +210,10 @@ class RawHid(Interface):
         return self._decode_report(bytes(raw_data))
 
     @staticmethod
-    def enumerate(vid: int, pid: int) -> List[Interface]:
-        """Get list of all connected devices which matches PyUSB.vid and PyUSB.pid.
+    def enumerate(usb_device_filter: USBDeviceFilter) -> List[Interface]:
+        """Get list of all connected devices which matches device_id.
 
-        :param vid: USB Vendor ID
-        :param pid: USB Product ID
+        :param usb_device_filter: USBDeviceFilter object
         :return: List of interfaces found
         """
         devices = []
@@ -232,14 +221,15 @@ class RawHid(Interface):
 
         # iterate on all devices found
         for dev in all_hid_devices:
-            if dev['vendor_id'] == vid and dev['product_id'] == pid:
+            if usb_device_filter.compare(dev) is True:
                 new_device = RawHid()
                 new_device.device = hid.device()
-                new_device.vid = vid
-                new_device.pid = pid
+                new_device.vid = dev["vendor_id"]
+                new_device.pid = dev["product_id"]
                 new_device.vendor_name = dev['manufacturer_string']
                 new_device.product_name = dev['product_string']
                 new_device.interface_number = dev['interface_number']
+                new_device.path = dev["path"]
                 devices.append(new_device)
 
         return devices

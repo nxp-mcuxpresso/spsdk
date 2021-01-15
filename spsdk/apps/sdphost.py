@@ -24,7 +24,7 @@ from spsdk.sdp.commands import ResponseValue
 @click.group()
 @optgroup.group('Interface configuration', cls=MutuallyExclusiveOptionGroup)
 @optgroup.option('-p', '--port', help='Serial port')
-@optgroup.option('-u', '--usb', help='USB device\'s PID:VID')
+@optgroup.option('-u', '--usb', help='USB device\'s VID:PID in hex format')
 @click.option('-j', '--json', 'use_json', is_flag=True, help='Use JSON output')
 @click.option('-v', '--verbose', 'log_level', flag_value=logging.INFO, help='Display more verbose output')
 @click.option('-d', '--debug', 'log_level', flag_value=logging.DEBUG, help='Display debugging info')

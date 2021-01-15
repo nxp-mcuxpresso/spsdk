@@ -21,7 +21,7 @@ sys.setrecursionlimit(1500)
 # -- Project information -----------------------------------------------------
 
 project = 'SPSDK'
-copyright = '2019-2020, NXP'
+copyright = '2019-2021, NXP'
 author = 'NXP'
 
 # The full version, including alpha/beta/rc tags
@@ -31,6 +31,7 @@ version = f"{spsdk.__version__}"
 # -- General configuration ---------------------------------------------------
 master_doc = 'index'
 source_suffix = ['.rst', '.md']
+autodoc_mock_imports = ['hidapi']
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom

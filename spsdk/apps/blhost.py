@@ -15,8 +15,8 @@ import sys
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
-from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import INT, get_interface, format_raw_data, catch_spsdk_error
+from spsdk import __version__ as spsdk_version, SPSDKError
+from spsdk.apps.utils import INT, get_interface, format_raw_data, catch_spsdk_error, parse_file_and_size
 from spsdk.mboot import McuBoot, StatusCode, parse_property_value
 
 
@@ -29,19 +29,19 @@ from spsdk.mboot import McuBoot, StatusCode, parse_property_value
 @click.option('-d', '--debug', 'log_level', flag_value=logging.DEBUG, help='Display debugging info')
 @click.option('-t', '--timeout', metavar='<ms>', help='Set packet timeout in milliseconds', default=5000)
 @click.version_option(spsdk_version, '--version')
+@click.help_option('--help')
 @click.pass_context
 def main(ctx: click.Context, port: str, usb: str, use_json: bool, log_level: int, timeout: int) -> int:
     """Utility for communication with bootloader on target."""
     logging.basicConfig(level=log_level or logging.WARNING)
     # if --help is provided anywhere on commandline, skip interface lookup and display help message
-    if '--help' in sys.argv:
-        port, usb = None, None  # type: ignore
-    ctx.obj = {
-        'interface': get_interface(
-            module='mboot', port=port, usb=usb, timeout=timeout
-        ) if port or usb else None,
-        'use_json': use_json
-    }
+    if not '--help' in click.get_os_args():
+        ctx.obj = {
+            'interface': get_interface(
+                module='mboot', port=port, usb=usb, timeout=timeout
+            ),
+            'use_json': use_json
+        }
     return 0
 
 
@@ -89,6 +89,24 @@ def efuse_read_once(ctx: click.Context, address: int) -> None:
     with McuBoot(ctx.obj['interface']) as mboot:
         response = mboot.efuse_read_once(address)
         display_output([4, response], mboot.status_code, ctx.obj['use_json'])
+
+
+@main.command()
+@click.argument('address', type=INT(), required=True)
+@click.argument('argument', type=INT(), required=True)
+@click.argument('stackpointer', type=INT(), required=True)
+@click.pass_context
+def execute(ctx: click.Context, address: int, argument: int, stackpointer: int) -> None:
+    """Execute application at address with arg and stack pointer.
+
+    \b
+    ADDRESS      - Address of the application to run
+    ARGUMENT     - Argument passed to the application
+    STACKPOINTER - Stack pointer for the application
+    """
+    with McuBoot(ctx.obj['interface']) as mboot:
+        response = mboot.execute(address, argument, stackpointer)
+        display_output([], mboot.status_code, ctx.obj['use_json'])
 
 
 @main.command()
@@ -184,6 +202,22 @@ def read_memory(ctx: click.Context, address: int, byte_count: int,
 
 
 @main.command()
+@click.argument('sb_file', metavar='FILE', type=click.File('rb'), required=True)
+@click.pass_context
+def receive_sb_file(ctx: click.Context, sb_file: click.File) -> None:
+    """Receive SB file.
+
+    \b
+    FILE    - SB file to send to target
+    """
+    with McuBoot(ctx.obj['interface']) as mboot:
+        data = sb_file.read()  # type: ignore
+        write_response = mboot.receive_sb_file(data)
+        assert write_response, f"Error sending SB file."
+        display_output([write_response], mboot.status_code, ctx.obj['use_json'])
+
+
+@main.command()
 @click.pass_context
 def reset(ctx: click.Context) -> None:
     """Reset the device."""
@@ -227,9 +261,136 @@ def generate_key_blob(ctx: click.Context, dek_file: click.File, blob_file: click
         data = dek_file.read()  # type: ignore
         write_response = mboot.generate_key_blob(data)
         if not write_response:
-            raise ValueError(f"Error generating key blob")
+            raise SPSDKError(f"Error generating key blob")
         blob_file.write(write_response)  # type: ignore
         display_output([mboot.status_code, len(write_response)], mboot.status_code, ctx.obj['use_json'])
+
+
+
+@main.group()
+@click.pass_context
+def key_provisioning(ctx: click.Context) -> None:
+    """Group of commands related to key provisioning."""
+
+
+@key_provisioning.command()
+@click.pass_context
+def enroll(ctx: click.Context) -> None:
+    """Key provisioning enroll."""
+    with McuBoot(ctx.obj['interface']) as mboot:
+        response = mboot.kp_enroll()
+        if not response:
+            raise SPSDKError(f"Error enrolling the device")
+        display_output([], mboot.status_code, ctx.obj['use_json'])
+
+
+@key_provisioning.command(name='set_user_key')
+@click.argument('key_type', metavar='TYPE', type=int, required=True)
+@click.argument('file_and_size', metavar='FILE[,SIZE]', type=str, required=True)
+@click.pass_context
+def set_user_key(ctx: click.Context, key_type: int, file_and_size: str) -> None:
+    """Send the user key specified by <type> to bootloader.
+
+    \b
+    TYPE  - Type of user key
+    FILE  - Binary file containing user key plaintext
+    SIZE  - If not specified, the entire <file> will be sent. Otherwise, only send
+            the first <size> bytes. The valid options of <type> and
+            corresponding <size> are documented in the target's Reference
+            Manual or User Manual.
+    """
+    file_path, size = parse_file_and_size(file_and_size)
+
+    with open(file_path, 'rb') as key_file:
+        key_data = key_file.read(size)
+
+    with McuBoot(ctx.obj['interface']) as mboot:
+        response = mboot.kp_set_user_key(key_type=key_type, key_data=key_data)  # type: ignore
+        if not response:
+            raise SPSDKError("Error sending key to the device")
+        display_output([], mboot.status_code, ctx.obj['use_json'])
+
+
+@key_provisioning.command(name='set_key')
+@click.argument('key_type', metavar='TYPE', type=int, required=True)
+@click.argument('key_size', metavar='SIZE', type=int, required=True)
+@click.pass_context
+def set_key(ctx: click.Context, key_type: int, key_size: int) -> None:
+    """Generate <size> bytes of the key specified by <type>.
+
+    \b
+    TYPE  - type of key to generate
+    SIZE  - size of key to generate
+    """
+    with McuBoot(ctx.obj['interface']) as mboot:
+        response = mboot.kp_set_intrinsic_key(key_type, key_size)
+        display_output([], mboot.status_code, ctx.obj['use_json'])
+
+
+@key_provisioning.command(name='write_key_nonvolatile')
+@click.argument('memory_id', metavar='memoryID', type=int, default=0)
+@click.pass_context
+def write_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
+    """Write the key to a nonvolatile memory.
+
+    \b
+    memoryID  - ID of the non-volatile memory, default: 0
+    """
+    with McuBoot(ctx.obj['interface']) as mboot:
+        response = mboot.kp_write_nonvolatile(memory_id)
+        display_output([], mboot.status_code, ctx.obj['use_json'])
+
+
+@key_provisioning.command(name='read_key_nonvolatile')
+@click.argument('memory_id', metavar='memoryID', type=int, default=0)
+@click.pass_context
+def read_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
+    """Load the key from a nonvolatile memory to bootloader.
+
+    \b
+    memoryID  - ID of the non-volatile memory, default: 0
+    """
+    with McuBoot(ctx.obj['interface']) as mboot:
+        response = mboot.kp_read_nonvolatile(memory_id)
+        display_output([], mboot.status_code, ctx.obj['use_json'])
+
+
+@key_provisioning.command(name='write_key_store')
+@click.argument('file_and_size', metavar='FILE[,SIZE]', type=str, required=True)
+@click.pass_context
+def write_key_store(ctx: click.Context, file_and_size: str) -> None:
+    """Send the key store to bootloader..
+
+    \b
+    FILE  - Binary file containing key store.
+    SIZE  - If not specified, the entire <file> will be sent. Otherwise, only send
+            the first <size> bytes.
+    """
+    file_path, size = parse_file_and_size(file_and_size)
+
+    with open(file_path, 'rb') as key_file:
+        key_data = key_file.read(size)
+
+    with McuBoot(ctx.obj['interface']) as mboot:
+        response = mboot.kp_write_key_store(key_data)
+        display_output([], mboot.status_code, ctx.obj['use_json'])
+
+
+@key_provisioning.command(name='read_key_store')
+@click.argument('key_store_file', metavar='FILE', type=click.File('wb'), required=True)
+@click.pass_context
+def read_key_store(ctx: click.Context, key_store_file: click.File) -> None:
+    """Read the key store from bootloader to host(PC).
+
+    \b
+    FILE  - Binary file to save the key store.
+    """
+    with McuBoot(ctx.obj['interface']) as mboot:
+        response = mboot.kp_read_key_store()
+        if not response:
+            raise SPSDKError('Error reading key store')
+        key_store_file.write(response)  # type: ignore
+        display_output([len(response)], mboot.status_code, ctx.obj['use_json'])
 
 
 def display_output(response: list, status_code: int, use_json: bool = False,

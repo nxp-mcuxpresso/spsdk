@@ -11,6 +11,7 @@ import logging
 import struct
 import sys
 
+from typing import List
 import click
 
 from spsdk import __version__ as spsdk_version
@@ -39,38 +40,48 @@ PROTOCOL_VERSIONS = ['1.0', '1.1', '2.0', '2.1', '2.2']
               type=click.Choice(LOG_LEVEL_NAMES))
 @click.option('-t', '--timing', type=float, default=0.0)
 @click.option('-s', '--serial-no')
-@click.option('-ip', '--ip', 'ip_addr')
 @click.option('-n', '--no-reset', 'reset', is_flag=True, default=True)
+@click.option('-o', '--debug-probe-option', multiple=True, help="This option could be used "
+              "multiply to setup non-standard option for debug probe.")
 @click.version_option(spsdk_version, '-v', '--version')
 @click.help_option('--help')
 @click.pass_context
 def main(ctx: click.Context, interface: str, protocol: str, log_level: str, timing: float,
-         serial_no: str, ip_addr: str, reset: bool) -> int:
+         serial_no: str, debug_probe_option: List[str], reset: bool) -> int:
     """NXP Debug Mailbox Tool."""
     logging.basicConfig(level=log_level.upper())
     logger.setLevel(level=log_level.upper())
 
-    # Get the Debug probe object
-    try:
-        # TODO solve following parameters:
-        # ip_addr
-        # tool
-        debug_probes = DebugProbeUtils.get_connected_probes(interface=interface, hardware_id=serial_no)
-        selected_probe = debug_probes.select_probe()
-        debug_probe = DebugProbeUtils.get_probe(interface=selected_probe.interface,
-                                                hardware_id=selected_probe.hardware_id)
-        debug_probe.open()
+    if '--help' not in click.get_os_args():
+        # Get the Debug probe object
+        try:
+            probe_user_params = {}
+            for par in debug_probe_option:
+                if par.count("=") != 1:
+                    logger.warning(f"Invalid -o parameter {par}!")
+                else:
+                    par_splitted = par.split("=")
+                    probe_user_params[par_splitted[0]] = par_splitted[1]
 
-        ctx.obj = {
-            'protocol': protocol,
-            'debug_mailbox':
-                DebugMailbox(
-                    debug_probe=debug_probe, reset=reset, moredelay=timing
-                ) if '--help' not in click.get_os_args() else None,
-        }
+            debug_probes = DebugProbeUtils.get_connected_probes(interface=interface,
+                                                                hardware_id=serial_no,
+                                                                user_params=probe_user_params)
+            selected_probe = debug_probes.select_probe()
+            debug_probe = DebugProbeUtils.get_probe(interface=selected_probe.interface,
+                                                    hardware_id=selected_probe.hardware_id,
+                                                    user_params=probe_user_params)
+            debug_probe.open()
 
-    except DebugProbeError as exc:
-        logger.error(str(exc))
+            ctx.obj = {
+                'protocol': protocol,
+                'debug_mailbox':
+                    DebugMailbox(
+                        debug_probe=debug_probe, reset=reset, moredelay=timing
+                    ),
+            }
+
+        except DebugProbeError as exc:
+            logger.error(str(exc))
 
     return 0
 

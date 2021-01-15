@@ -16,15 +16,15 @@ from .header import Header
 
 
 class RawDataException(Exception):
-    "Raw data read failed"
+    """Raw data read failed."""
 
 
 class StreamReadFailed(RawDataException):
-    "read_raw_data could not read stream"
+    """read_raw_data could not read stream."""
 
 
 class NotEnoughBytesException(RawDataException):
-    "read_raw_data could not read enough data"
+    """Read_raw_data could not read enough data."""
 
 
 def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:

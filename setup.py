@@ -30,18 +30,18 @@ if sys.version_info >= (3, 8, 0) and sanitize_version(pip.__version__) < '19.2.3
     sys.exit(1)
 
 
-def get_requirements() -> List[str]:
-    """Get the list of requirements from requirements.txt file."""
-    with open('requirements.txt') as req_file:
-        requirements = req_file.read().splitlines()
-    return [x for x in requirements if "astunparse" not in x] + ["astunparse"]
-
+with open('requirements.txt') as req_file:
+    requirements = req_file.read().splitlines()
+    # avoid build errors on readthedocs (excluding hidapi, which depends on C module)
+    if os.getenv('READTHEDOCS'):
+        requirements = [x for x in requirements if "hidapi" not in x]
+    
 
 with open("README.md", "r") as f:
     long_description = f.read()
 
 # extract version info indirectly
-version_info = {}   # type: ignore
+version_info = {}
 base_dir = os.path.dirname(__file__)
 with open(os.path.join(base_dir, "spsdk", "__version__.py")) as f:
     exec(f.read(), version_info)
@@ -61,10 +61,7 @@ setup(
     setup_requires=[
         'setuptools>=40.0'
     ],
-    install_requires=[
-        get_requirements(),
-        'astunparse @ git+https://github.com/tbennun/astunparse#egg=astunparse'
-    ],
+    install_requires=requirements,
     include_package_data=True,
     classifiers=[
         'Development Status :: 3 - Alpha',

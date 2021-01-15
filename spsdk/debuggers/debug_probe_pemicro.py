@@ -7,7 +7,7 @@
 """Module for DebugMailbox Pemicro Debug probes support."""
 
 import logging
-from typing import List, Optional
+from typing import List, Dict, Optional
 
 from pypemicro import PyPemicro, PEMicroException, PEMicroInterfaces
 
@@ -35,24 +35,25 @@ class DebugProbePemicro(DebugProbe):
         return PyPemicro(log_info=PEMICRO_LOGGER.info, log_debug=PEMICRO_LOGGER.debug,
                          log_err=PEMICRO_LOGGER.error, log_war=PEMICRO_LOGGER.warn)
 
-    def __init__(self, hardware_id: str, ip_address: str = None) -> None:
+    def __init__(self, hardware_id: str, user_params: Dict = None) -> None:
         """The Pemicro class initialization.
 
         The Pemicro initialization function for SPSDK library to support various DEBUG PROBES.
         """
-        super().__init__(hardware_id, ip_address)
+        super().__init__(hardware_id, user_params)
 
         self.pemicro: Optional[PyPemicro] = None
 
         logger.debug(f"The SPSDK Pemicro Interface has been initialized")
 
     @classmethod
-    def get_connected_probes(cls, hardware_id: str = None) -> List[ProbeDescription]:
+    def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> List[ProbeDescription]:
         """Get all connected probes over Pemicro.
 
         This functions returns the list of all connected probes in system by Pemicro package.
         :param hardware_id: None to list all probes, otherwice the the only probe with matching
             hardware id is listed.
+        :param user_params: The user params dictionary
         :return: probe_description
         """
         #TODO fix problems with cyclic import
@@ -194,7 +195,7 @@ class DebugProbePemicro(DebugProbe):
 
         logger.debug(f"Looking for debug mailbox access port")
 
-        for access_port_ix in range(0, 255, 1):
+        for access_port_ix in range(256):
             try:
                 address = idr_address | ((access_port_ix << self.APSEL_SHIFT) & self.APSEL_APBANKSEL)
                 ret = self.pemicro.read_ap_register(apselect=access_port_ix,

@@ -21,6 +21,8 @@ from typing import List, Tuple, Union
 
 import hid
 
+from spsdk.utils.usbfilter import USBDeviceFilter
+
 from ..exceptions import McuBootConnectionError
 
 from ..commands import CmdPacket, CmdResponse, parse_cmd_response
@@ -54,7 +56,10 @@ USB_DEVICES = {
     'LPC55xx': (0x1FC9, 0x0020),
     'LPC551x': (0x1FC9, 0x0022),
     'RT6xx': (0x1FC9, 0x0021),
-    'RT5xx': (0x1FC9, 0x0020),
+    'RT5xx_A': (0x1FC9, 0x0020),
+    'RT5xx_B': (0x1FC9, 0x0023),
+    'RT5xx_C': (0x1FC9, 0x0023),
+    'RT5xx': (0x1FC9, 0x0023),
     'RT6xxM': (0x1FC9, 0x0024)
 }
 
@@ -62,24 +67,11 @@ USB_DEVICES = {
 def scan_usb(device_name: str = None) -> List[Interface]:
     """Scan connected USB devices.
 
-    :param device_name: The specific device name (MKL27, LPC55, ...) or VID:PID
+    :param device_name: see USBDeviceFilter classes constructor for usb_id specification
     :return: list of matching RawHid devices
     """
-    devices = []
-
-    if device_name is None:
-        for _, value in USB_DEVICES.items():
-            devices += RawHid.enumerate(value[0], value[1])
-    else:
-        if ':' in device_name:
-            vid_str, pid_str = device_name.split(':')
-            devices = RawHid.enumerate(int(vid_str, 0), int(pid_str, 0))
-        else:
-            if device_name in USB_DEVICES:
-                vid = USB_DEVICES[device_name][0]
-                pid = USB_DEVICES[device_name][1]
-                devices = RawHid.enumerate(vid, pid)
-    return devices
+    usb_filter = USBDeviceFilter(usb_id=device_name, nxp_device_names=USB_DEVICES)
+    return RawHid.enumerate(usb_filter)
 
 
 ########################################################################################################################
@@ -117,24 +109,21 @@ class RawHid(Interface):
         self.product_name = ""
         self.interface_number = 0
         self.timeout = 2000
+        self.path = ""
         self.device = None
 
     @staticmethod
-    def _encode_report(report_id: int, report_size: int, data: bytes, offset: int = 0) -> Tuple[bytes, int]:
+    def _encode_report(report_id: int, data: bytes) -> bytes:
         """Encode the USB packet.
 
         :param report_id: ID of the report (see: HID_REPORT)
-        :param report_size: Length of the report to send
         :param data: Data to send
-        :param offset: offset within the 'data' bytes
         :return: Encoded bytes and length of the final report frame
         """
-        data_len = min(len(data) - offset, report_size - 4)
-        raw_data = pack('<2BH', report_id, 0x00, data_len)
-        raw_data += data[offset: offset + data_len]
-        raw_data += bytes([0x00] * (report_size - len(raw_data)))
+        raw_data = pack('<2BH', report_id, 0x00, len(data))
+        raw_data += data
         logger.debug(f"OUT[{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
-        return raw_data, offset + data_len
+        return raw_data
 
     @staticmethod
     def _decode_report(raw_data: bytes) -> Union[CmdResponse, bytes]:
@@ -163,7 +152,7 @@ class RawHid(Interface):
         """Open the interface."""
         logger.debug("Open Interface")
         try:
-            self.device.open(self.vid, self.pid)
+            self.device.open_path(self.path)
             self._opened = True
         except OSError:
             raise McuBootConnectionError(f"Unable to open device VIP={self.vid} PID={self.pid} SN='{self.sn}'")
@@ -185,18 +174,15 @@ class RawHid(Interface):
         """
         if isinstance(packet, CmdPacket):
             report_id = REPORT_ID['CMD_OUT']
-            data = packet.to_bytes()
+            data = packet.to_bytes(padding=False)
         elif isinstance(packet, (bytes, bytearray)):
             report_id = REPORT_ID['DATA_OUT']
             data = packet
         else:
             raise ValueError("Packet has to be either 'CmdPacket' or 'bytes'")
 
-        report_size = 1021
-        data_index = 0
-        while data_index < len(data):
-            raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
-            self.device.write(raw_data)
+        raw_data = self._encode_report(report_id, data)
+        self.device.write(raw_data)
 
     def read(self) -> Union[CmdResponse, bytes]:
         """Read data on the IN endpoint associated to the HID interface.
@@ -204,16 +190,16 @@ class RawHid(Interface):
         :return: Return CmdResponse object.
         """
         raw_data = self.device.read(1024, self.timeout)
-        if platform.system() == "Linux":
-            raw_data += self.device.read(1024, self.timeout)
+        # NOTE: uncomment the following when using KBoot/Flashloader v2.1 and older
+        # if platform.system() == "Linux":
+        #     raw_data += self.device.read(1024, self.timeout)
         return self._decode_report(bytes(raw_data))
 
     @staticmethod
-    def enumerate(vid: int, pid: int) -> List[Interface]:
+    def enumerate(usb_device_filter: USBDeviceFilter) -> List[Interface]:
         """Get list of all connected devices which matches PyUSB.vid and PyUSB.pid.
 
-        :param vid: USB Vendor ID
-        :param pid: USB Product ID
+        :param usb_device_filter: USBDeviceFilter object
         :return: List of interfaces found
         """
         devices = []
@@ -221,14 +207,15 @@ class RawHid(Interface):
 
         # iterate on all devices found
         for dev in all_hid_devices:
-            if dev['vendor_id'] == vid and dev['product_id'] == pid:
+            if usb_device_filter.compare(dev) is True:
                 new_device = RawHid()
                 new_device.device = hid.device()
-                new_device.vid = vid
-                new_device.pid = pid
+                new_device.vid = dev["vendor_id"]
+                new_device.pid = dev["product_id"]
                 new_device.vendor_name = dev['manufacturer_string']
                 new_device.product_name = dev['product_string']
                 new_device.interface_number = dev['interface_number']
+                new_device.path = dev["path"]
                 devices.append(new_device)
 
         return devices

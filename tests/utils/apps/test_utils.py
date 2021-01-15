@@ -4,6 +4,7 @@
 # Copyright 2020 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+import pytest
 
 from spsdk.apps import utils
 
@@ -19,3 +20,17 @@ def test_format_data():
     assert expect_8 == utils.format_raw_data(data, use_hexdump=False, line_length=8)
     expect_16 = "00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n10 11 12 13"
     assert expect_16 == utils.format_raw_data(data, use_hexdump=False, line_length=16)
+
+
+@pytest.mark.parametrize(
+    "input_param,exp_path,exp_size",
+    [
+        ("path", "path", -1),
+        ("path,10", "path", 10),
+        ("path,0x20", "path", 0x20)
+    ]
+)
+def test_file_size_composite(input_param, exp_path, exp_size):
+    path, size = utils.parse_file_and_size(input_param)
+    assert path == exp_path
+    assert size == exp_size

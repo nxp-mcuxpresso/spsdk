@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Debug probes support."""
 
-from typing import Iterable, List, Any
+from typing import Iterable, List, Dict, Any
 import prettytable
 import colorama
 
@@ -133,25 +133,26 @@ class DebugProbeUtils():
     hardware debug probe to establish connection with hardware.
     """
     @staticmethod
-    def get_connected_probes(interface: str = None, hardware_id: str = None) -> DebugProbes:
+    def get_connected_probes(interface: str = None, hardware_id: str = None, user_params: Dict = None) -> DebugProbes:
         """Functions returns the list of all connected probes in system.
 
         The caller could restrict the scanned interfaces by specification of hardware ID.
 
         :param interface: None to scan all interfaces, otherwice the selected interface is scanned only.
         :param hardware_id: None to list all probes, otherwice the the only probe with matching
+        :param user_params: The dictionary with optional user parameters
         hardware id is listed.
         :return: list of probe_description's
         """
         probes = DebugProbes()
         for probe_key in PROBES:
             if (interface is None) or (interface.lower() == probe_key):
-                probes.extend(PROBES[probe_key].get_connected_probes(hardware_id))
+                probes.extend(PROBES[probe_key].get_connected_probes(hardware_id, user_params))
 
         return probes
 
     @staticmethod
-    def get_probe(interface: str = None, hardware_id: str = None, ip_address: str = None) -> DebugProbe:
+    def get_probe(interface: str = None, hardware_id: str = None, user_params: Dict = None) -> DebugProbe:
         """Function returns the instance of the debug probe by input identicication ID's.
 
         If the Hardware ID  is not specified, the first in the list iis returned. If no probe is found in system
@@ -159,13 +160,13 @@ class DebugProbeUtils():
         :param interface: None to scan all interfaces, otherwice the selected interface is scanned only.
         :param hardware_id: None to list all probes, otherwice the the only probe with matching
         hardware id is listed.
-        :param ip_address: If it's applicable, the IP address of remote debug probe should be provided here
+        :param user_params: The dictionary with optional user parameters
         :return: instance of DebugProbe
         :raises ProbeNotFoundError: No probe has been founded
         """
         probes = DebugProbeUtils.get_connected_probes(interface=interface, hardware_id=hardware_id)
 
         if len(probes) > 0:
-            return probes[0].probe(hardware_id=hardware_id, ip_address=ip_address)
+            return probes[0].probe(hardware_id=hardware_id, user_params=user_params)
 
         raise ProbeNotFoundError("The choosen probe index is out of range")

@@ -75,7 +75,7 @@ class Translator:
             value = reg_val
         else:
             value = int(value, 0)
-        self.logger.debug("Extracted value {value:x}")
+        self.logger.debug(f"Extracted value {value:x}")
 
         return value
 

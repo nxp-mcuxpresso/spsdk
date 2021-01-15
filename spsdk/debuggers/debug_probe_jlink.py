@@ -8,7 +8,7 @@
 
 import logging
 from time import sleep
-from typing import List
+from typing import List, Dict
 
 import pylink
 import pylink.protocols.swd as swd
@@ -42,12 +42,12 @@ class DebugProbePyLink(DebugProbe):
         except TypeError:
             raise DebugProbeError("Cannot open Jlink DLL")
 
-    def __init__(self, hardware_id: str, ip_address: str = None) -> None:
+    def __init__(self, hardware_id: str, user_params: Dict = None) -> None:
         """The PyLink class initialization.
 
         The PyLink initialization function for SPSDK library to support various DEBUG PROBES.
         """
-        super().__init__(hardware_id, ip_address)
+        super().__init__(hardware_id, user_params)
 
         self.pylink = None
 
@@ -58,12 +58,13 @@ class DebugProbePyLink(DebugProbe):
         logger.debug(f"The SPSDK PyLink Interface has been initialized")
 
     @classmethod
-    def get_connected_probes(cls, hardware_id: str = None) -> List[ProbeDescription]:
+    def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> List[ProbeDescription]:
         """Get all connected probes over PyLink.
 
         This functions returns the list of all connected probes in system by PyLink package.
         :param hardware_id: None to list all probes, otherwise the the only probe with matching
             hardware id is listed.
+        :param user_params: The user params dictionary
         :return: probe_description
         """
         #TODO fix problems with cyclic import
@@ -99,7 +100,8 @@ class DebugProbePyLink(DebugProbe):
             raise DebugProbeError(f"Getting of J-Link library failed({str(exc)}).")
 
         try:
-            self.pylink.open(serial_no=self.hardware_id, ip_addr=self.ip_address)
+
+            self.pylink.open(serial_no=self.hardware_id, ip_addr=self.user_params.get("ip_address"))
             self.pylink.set_tif(pylink.enums.JLinkInterfaces.SWD)
             self.pylink.coresight_configure()
             debugmb_ap_ix = self._get_dmbox_ap()
@@ -223,7 +225,7 @@ class DebugProbePyLink(DebugProbe):
 
         logger.debug(f"Looking for debug mailbox access port")
 
-        for access_port_ix in range(0, 255, 1):
+        for access_port_ix in range(256):
             try:
                 self._select_ap(ap_ix=access_port_ix, address=0x000000F0)
                 ret = self._coresight_reg_read(addr=idr_address)

@@ -447,7 +447,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         logger.info(f"CMD: WriteMemory(address=0x{address:08X}, length={len(data)}, mem_id={mem_id})")
         data_chunks = self._split_data(data=data)
-        cmd_packet = CmdPacket(CommandTag.WRITE_MEMORY, 0, address, len(data), mem_id)
+        cmd_packet = CmdPacket(CommandTag.WRITE_MEMORY, 1, address, len(data), mem_id)
         if self._process_cmd(cmd_packet).status == StatusCode.SUCCESS:
             return self._send_data(CommandTag.WRITE_MEMORY, data_chunks)
         return False

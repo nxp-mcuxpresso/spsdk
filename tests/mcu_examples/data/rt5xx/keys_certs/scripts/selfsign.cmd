@@ -1,5 +1,5 @@
 :: Copyright 2020 NXP
-@echo "Script to generate private keys for MIB with 2048, 3073 and 4096 bits length"
+@echo "Script to generate public certificates in DER format for MIB certificate block"
 
 set OPENSSL_CONF=./openssl.cnf
 

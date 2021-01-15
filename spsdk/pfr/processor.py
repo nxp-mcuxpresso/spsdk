@@ -32,22 +32,11 @@ class MyTransformer(ast.NodeTransformer):
         """Translate Attribute Nodes."""
         self.logger.debug("Transforming node attribute...")
         thing = astunparse.unparse(node).strip()
-        # print(thing)
         value = self.translator.translate(thing)
         self.logger.debug(f"Attribute '{thing}' transformed into {value:x}")
-        # result = ast.Num(n=value)
-        result = ast.Constant(value=value)
-
+        result = ast.Constant(value=value, kind=None)
         return ast.copy_location(result, node)
 
-    def visit_Name(self, node: ast.Name) -> ast.Constant:  # pylint: disable=invalid-name
-        """Translate plain names."""
-        self.logger.debug("Transforming node name...")
-        value = self.translator.translate(node.id)
-        # print(f"translated to: {value}")
-        self.logger.debug("Name '{node.id}' transformed into {value:x}")
-        result = ast.Constant(value=value)
-        return ast.copy_location(result, node)
 
 class Processor:
     """Class responsible for processing conditions.
@@ -74,9 +63,7 @@ class Processor:
         """
         self.logger.debug("Transforming condition: {}".format(condition))
         org_node = ast.parse(condition, mode="eval")
-        # print(ast.dump(org_node))
         new_node = self.transformer.visit(org_node)
-        # print(ast.dump(new_node))
         self.logger.debug("Transformed condition: {}".format(new_node))
         node_str = astunparse.unparse(new_node)
         node_str = self._replaceIntAsHex(node_str)

@@ -9,7 +9,7 @@
 
 import sys
 from functools import wraps
-from typing import Union, Any, Callable
+from typing import Union, Any, Callable, Tuple, Optional
 
 import click
 import hexdump
@@ -145,3 +145,18 @@ def catch_spsdk_error(function: Callable) -> Callable:
             sys.exit(3)
 
     return wrapper
+
+
+def parse_file_and_size(file_and_size: str) -> Tuple[str, int]:
+    """Parse composite file-size params.
+
+    :param file_and_size: original param that possibly contains size constrain
+    :return: Tuple of path as str and size as int (if present)
+    """
+    if ',' in file_and_size:
+        file_path, size = file_and_size.split(',')
+        file_size = int(size, 0)
+    else:
+        file_path = file_and_size
+        file_size = -1
+    return file_path, file_size

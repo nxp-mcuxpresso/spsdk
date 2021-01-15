@@ -99,7 +99,7 @@ def write_sb(data_dir: str, sb_file_name: str, bin_data: bytes, key_store: KeySt
 
 #######################################################################################################################
 # Example functions communicating with the processor needed to burn the image
-# These functions expects USB connection woth target processor, so they are not part of the unit-test
+# These functions expects USB connection with target processor, so they are not part of the unit-test
 #######################################################################################################################
 
 def write_shadow_regs(data_dir: str, writes: List[Tuple[int, int]]) -> None:
@@ -242,7 +242,7 @@ def send_sb_via_usb_into_processor(sb_data: bytes, key_store: KeyStore) -> None:
         # configure keystore into processor
         # Mind key store is device specific, it is unique for each piece chip
         # blhost -u 0x1FC9,0x20 -- key-provisioning write_key_store "key_store\key_store_spsdk.bin"
-        assert mboot.kp_write_key_store(0, key_store.export())
+        assert mboot.kp_write_key_store(key_store.export())
 
     # write SB
     assert mboot.receive_sb_file(sb_data)
@@ -722,7 +722,8 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
         0,
         CmdFill(address=0x10C000, pattern=bytes.fromhex('063040C0')),
         CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
-        CmdErase(address=0x8000000, length=0x10000),
+        CmdErase(address=0x8000000, length=0x00800),
+        CmdErase(address=0x8001000, length=0x10000),
         CmdLoad(address=0x8000400, data=fcb_data),
         CmdLoad(address=0x8001000, data=plain_image_data))
     boot_image.add_boot_section(boot_section)

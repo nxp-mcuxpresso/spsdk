@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Debug probes support."""
 
-from typing import List, Any
+from typing import List, Dict, Any
 
 from spsdk.exceptions import SPSDKError
 
@@ -54,23 +54,24 @@ class DebugProbe():
     APSEL_SHIFT = 24
     APSEL_APBANKSEL = APSEL | APBANKSEL
 
-    def __init__(self, hardware_id: str, ip_address: str = None) -> None:
+    def __init__(self, hardware_id: str, user_params: Dict = None) -> None:
         """This is general initialization function for SPSDK library to support various DEBUG PROBES.
 
         :param hardware_id: Open probe with selected hardware ID
-        :param ip_address: The IP Address
+        :param user_params: The user params dictionary
         """
         self.hardware_id = hardware_id
-        self.ip_address = ip_address
+        self.user_params = user_params
         self.dbgmlbx_ap_ix = -1
 
     @classmethod
-    def get_connected_probes(cls, hardware_id: str = None) -> List[ProbeDescription]:
+    def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> List[ProbeDescription]:
         """Functions returns the list of all connected probes in system.
 
         There is option to look for just for one debug porbe defined by its hardware ID.
         :param hardware_id: None to list all probes, otherwice the the only probe with matching
             hardware id is listed.
+        :param user_params: The user params dictionary
         :return: ProbeDescription
         :raises NotImplementedError: The get_connected_probes is NOT implemented
         """
