@@ -1,0 +1,17 @@
+socc: 0x0001
+uuid: "E004090E6BDD2155BBCE9E0665805BE3"
+cc_socu: 0x03FF
+cc_vu: 0x5678
+cc_beacon: 0
+rot_meta:
+ - ./p0_cert0_2048.pub
+ - ./p1_cert0_2048.pub
+rot_id: 0
+
+sign_provider: 'type=sasp;key_number=0'
+
+# To use signing using local file comment out the line above and uncomment one of lines below
+# rotk: ./hsm/k0_cert0_2048.pem
+# sign_provider: 'type=file;file_path=./hsm/k0_cert0_2048.pem'
+
+dck: ./dck.pub
