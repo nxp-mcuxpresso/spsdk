@@ -12,15 +12,12 @@ Features:
 - support for Niobe4 Analog devices
 - extend support for Niobe4 Mini, Nano
 - PFRC - console script for searching for brick-conditions in PFR settings
-- SB version 3.1
 - custom HSM support
-- elftosb application covering SB 3.1 support
 - sdpshost cli utility using sdpshost communication protocol
 - remote signing for Debug Credential
 - added command read-register into sdphost cli 
 - dynamic plugin support
 - MCU Link Debugger support
-- support for image_enc utility for BEE encryption use case
 - [PFR] added CMAC-based seal 
 - [PFR] load Root of Trust from elf2sb configuration file 
 
