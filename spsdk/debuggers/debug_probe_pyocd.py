@@ -89,7 +89,7 @@ class DebugProbePyOCD(DebugProbe):
 
             if self.pyocd_session is None:
                 raise ProbeNotFoundError("No probe available!")
-            self.pyocd_session.options.set("probe_all_aps", True)
+            self.pyocd_session.options.set("scan_all_aps", True)
             self.pyocd_session.delegate = self
             self.pyocd_session.open()
             logger.info(f"PyOCD connected via {self.pyocd_session.probe.product_name} probe.")
