@@ -6,12 +6,20 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os.path
 import pytest
 
 from spsdk.image import CmdCheckData, CmdWriteData, EnumWriteOps
 from spsdk.image import SegCSF, EnumCheckOps
 from spsdk.image.segments import SegDCD
+from spsdk.image.secret import Signature
 from spsdk.utils.misc import extend_block
+
+
+@pytest.fixture(scope="module", name="ref_fast_auth_csf")
+def ref_fast_auth_csf_obj(data_dir):
+    with open(os.path.join(data_dir, 'fastauth.csf.bin'), 'rb') as csf_bin:
+        return SegCSF.parse(csf_bin.read())
 
 
 def test_SegCSF_eq():
@@ -56,6 +64,17 @@ def test_SegCSF_get_set_iter():
     assert next(my_iter) == CmdCheckData(ops=EnumCheckOps.ANY_SET, address=0x307900C4, mask=0x00000001)
     with pytest.raises(StopIteration):
         next(my_iter)
+
+
+def test_SegCSF_fast_auth(ref_fast_auth_csf):
+    "Load parsed Fast Authentication CSF"
+    assert ref_fast_auth_csf
+    assert len(ref_fast_auth_csf) == 5
+    auth_data = ref_fast_auth_csf[4]
+    assert auth_data.key_index == 0
+    assert auth_data.engine == 0xff
+    assert auth_data.cmd_data_offset > 0
+    assert isinstance(auth_data.cmd_data_reference, Signature)
 
 
 def test_SegCSF_export_parse():
