@@ -8,13 +8,14 @@
 
 import os
 import pytest
-from spsdk.image import SrkTable, SrkItem, MAC, Signature, CertificateImg, SecretKeyBlob
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from spsdk.image import SrkTable, SrkItem, MAC, Signature, CertificateImg, SecretKeyBlob
+from spsdk.image.secret import NotImplementedSRKPublicKeyType
 
 
-@pytest.fixture(scope="module")
-def srk_pem(data_dir):
+@pytest.fixture(scope="module", name="srk_pem")
+def srk_pem_func(data_dir):
     srk_pem = []
     for i in range(4):
         srk_pem_file = 'SRK{}_sha256_4096_65537_v3_ca_crt.pem'.format(i + 1)
@@ -23,12 +24,40 @@ def srk_pem(data_dir):
     return srk_pem
 
 
-def test_srk_table_parser(data_dir):
+def test_rsa_srk_table_parser(data_dir):
     with open(os.path.join(data_dir, 'SRK_1_2_3_4_table.bin'), 'rb') as f:
         srk_table = SrkTable.parse(f.read())
 
     assert len(srk_table) == 4
     assert srk_table.size == 2112
+
+    with open(os.path.join(data_dir, 'SRK_1_2_3_4_fuse.bin'), 'rb') as f:
+        srk_fuses = f.read()
+
+    assert srk_table.export_fuses() == srk_fuses
+
+
+@pytest.mark.xfail(raises=NotImplementedSRKPublicKeyType)
+def test_prime256v1_srk_table_parser(data_dir):
+    "EC keys are not yet supported"
+    with open(os.path.join(data_dir, 'SRK_prime256v1_table.bin'), 'rb') as f:
+        srk_table = SrkTable.parse(f.read())
+
+    assert len(srk_table) == 4
+    assert srk_table.size == 308
+
+    with open(os.path.join(data_dir, 'SRK_prime256v1_fuse.bin'), 'rb') as f:
+        srk_fuses = f.read()
+
+    assert srk_table.export_fuses() == srk_fuses
+
+
+def test_hashed_srk_table_parser(data_dir):
+    with open(os.path.join(data_dir, 'SRK_1_2_H3_H4_table.bin'), 'rb') as f:
+        srk_table = SrkTable.parse(f.read())
+
+    assert len(srk_table) == 4
+    assert srk_table.size == 1130
 
     with open(os.path.join(data_dir, 'SRK_1_2_3_4_fuse.bin'), 'rb') as f:
         srk_fuses = f.read()
@@ -50,7 +79,7 @@ def test_srk_table_export(data_dir, srk_pem):
     assert srk_table == SrkTable.parse(srk_table_data)
 
 
-def test_srk_table_single_cert(data_dir, srk_pem):
+def test_srk_table_single_cert(srk_pem):
     """Smoke test that SrkTable with single certificate works"""
     srk_table = SrkTable(version=0x40)
     cert = x509.load_pem_x509_certificate(srk_pem[0], default_backend())
@@ -67,6 +96,37 @@ def test_srk_table_single_cert(data_dir, srk_pem):
         srk_table.get_fuse(8)
     # test info() returns non-empty text
     assert srk_table.info()  # test export returns any result
+
+
+def test_srk_table_cert_hashing(data_dir, srk_pem):
+    """Recreate SRK_1_2_H3_H4 table from certificates"""
+    srk_table = SrkTable(version=0x40)
+    srk_table.append(
+        SrkItem.from_certificate(
+            x509.load_pem_x509_certificate(srk_pem[0], default_backend())))
+    srk_table.append(
+        SrkItem.from_certificate(
+            x509.load_pem_x509_certificate(srk_pem[1], default_backend())))
+    srk_table.append(
+        SrkItem.from_certificate(
+            x509.load_pem_x509_certificate(srk_pem[2], default_backend())).
+        hashed_entry())
+    srk_table.append(
+        SrkItem.from_certificate(
+            x509.load_pem_x509_certificate(srk_pem[3], default_backend())).
+        hashed_entry())
+    assert srk_table.export()
+    assert len(srk_table.export_fuses()) == 32
+    assert srk_table.info()  # test export returns any result
+
+    with open(os.path.join(data_dir, 'SRK_1_2_H3_H4_table.bin'), 'rb') as f:
+        preimaged_srk_table_data = f.read()
+    assert srk_table.export() == preimaged_srk_table_data
+    assert srk_table == SrkTable.parse(preimaged_srk_table_data)
+
+    with open(os.path.join(data_dir, 'SRK_1_2_3_4_fuse.bin'), 'rb') as f:
+        srk_fuses = f.read()
+    assert srk_table.export_fuses() == srk_fuses
 
 
 def test_mac_class():

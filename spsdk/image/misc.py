@@ -37,15 +37,19 @@ def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
     return "{0:3.1f} {1:s}".format(num, i)
 
 
-def modulus_fmt(modulus: bytes, tab: int = 4, length: int = 15, sep: str = ':') -> str:
-    """Modulus format."""
+def hexdump_fmt(data: bytes, tab: int = 4, length: int = 16, sep: str = ':') -> str:
+    """Dump some potentially larger data in hex."""
     text = ' ' * tab
-    data = b'\0' + modulus
     for i, j in enumerate(data):
         text += "{:02x}{}".format(j, sep)
         if ((i + 1) % length) == 0:
             text += '\n' + ' ' * tab
     return text
+
+
+def modulus_fmt(modulus: bytes, tab: int = 4, length: int = 15, sep: str = ':') -> str:
+    """Modulus format."""
+    return hexdump_fmt(b'\0' + modulus, tab, length, sep)
 
 
 def read_raw_data(stream: Union[io.BufferedReader, io.BytesIO], length: int, index: int = None,
