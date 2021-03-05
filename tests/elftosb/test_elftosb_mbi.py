@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,6 +16,7 @@ from click.testing import CliRunner
 from spsdk.apps import elftosb
 from spsdk.utils.misc import use_working_directory
 from spsdk.image import MasterBootImageN4Analog, MasterBootImageType
+
 
 def process_config_file(config_path: str, destination: str):
     with open(config_path) as f:
@@ -46,6 +47,7 @@ def test_elftosb_mbi_basic(data_dir, tmpdir, config_file):
 
         cmd = f"--image-conf {new_config}"
         result = runner.invoke(elftosb.main, cmd.split())
+        assert result.exit_code == 0
         assert os.path.isfile(new_binary)
         assert filecmp.cmp(new_binary, ref_binary)
 

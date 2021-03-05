@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,7 @@ class TestSignatureProvider(SignatureProvider):
 
     def info(self) -> str:
         msg = "Test Signature provider"
-        msg += f'param: {param}'
+        msg += f'param: {self.param}'
 
     def sign(self, data: bytes) -> bytes:
         return b'x' * self.param

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@
 
 from .common import matches_key_and_cert, crypto_backend, Counter, serialize_ecc_signature
 from .abstract import BackendClass
-from .cert_blocks import CertBlockV2, CertBlockV3, CertBlock
+from .cert_blocks import CertBlockV2, CertBlockV31, CertBlock
 from .certificate import Certificate
 from .otfad import KeyBlob, Otfad
 

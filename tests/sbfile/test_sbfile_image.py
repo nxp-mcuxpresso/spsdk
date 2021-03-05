@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,10 +12,10 @@ from typing import List
 
 import pytest
 
-from spsdk.sbfile import BootImageV20, BootImageV21, BootSectionV2, Certificate, CertBlockV2, SBV2xAdvancedParams
-from spsdk.sbfile import CmdErase, CmdLoad, CmdCall, CmdJump, CmdReset
-from spsdk.sbfile import CmdVersionCheck, VersionCheckType, CmdKeyStoreBackup, CmdKeyStoreRestore
-from spsdk.utils.crypto import Otfad, KeyBlob
+from spsdk.sbfile.images import BootImageV20, BootImageV21, BootSectionV2, CertBlockV2, SBV2xAdvancedParams
+from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdCall, CmdJump, CmdReset
+from spsdk.sbfile.commands import CmdVersionCheck, VersionCheckType, CmdKeyStoreBackup, CmdKeyStoreRestore
+from spsdk.utils.crypto import Otfad, KeyBlob, Certificate
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import align_block
 

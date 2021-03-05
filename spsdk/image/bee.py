@@ -62,8 +62,7 @@ class BeeBaseClass:
     def validate(self) -> None:
         """Validates the configuration of the instance.
 
-        :raise AssertionError: if configuration is invalid.
-        It is recommended to call the method before export and after parsing
+        It is recommended to call the method before export and after parsing.
         """
 
     def export(self) -> bytes:
@@ -118,16 +117,13 @@ class BeeFacRegion(BeeBaseClass):
         return f'FAC(start={hex(self.start_addr)}, length={hex(self.length)}, protected_level={self.protected_level})'
 
     def validate(self) -> None:
-        """Validates the configuration of the instance.
-
-        :raise AssertionError: if configuration is invalid.
-        """
+        """Validates the configuration of the instance."""
         assert (self.start_addr & _ENCR_BLOCK_ADDR_MASK == 0) and (self.length & _ENCR_BLOCK_ADDR_MASK == 0)
         assert 0 <= self.protected_level <= 3
         assert 0 <= self.start_addr < self.end_addr <= 0xFFFFFFFF
 
     def export(self) -> bytes:
-        """:return:binary representation of the region (serialization)."""
+        """Exports the binary representation."""
         result = super().export()
         return result + pack(self._struct_format(), self.start_addr, self.end_addr, self.protected_level, b'\x00' * 20)
 
@@ -356,7 +352,7 @@ class BeeKIB(BeeBaseClass):
         assert len(self.kib_iv) == self._KEY_LEN
 
     def export(self) -> bytes:
-        """:return:binary representation of the region (serialization)."""
+        """Exports binary representation of the region (serialization)."""
         result = super().export()
         return result + pack(self._struct_format(), self.kib_key, self.kib_iv)
 
@@ -453,7 +449,7 @@ class BeeRegionHeader(BeeBaseClass):
         """Serialization to binary representation.
 
         :param dbg_info: instance allowing to provide debug info about exported data
-        :return:binary representation of the region (serialization).
+        :return: binary representation of the region (serialization).
         """
         result = super().export()
         # KIB

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,10 +23,6 @@ from spsdk.utils.misc import load_binary
 # - check the tests\image\data\mbi for .cmd and .json files
 # - usage of elftosb-gui is highly encouraged
 #################################################################
-
-@pytest.fixture(scope="module")
-def data_dir(data_dir):
-    return os.path.join(data_dir, "mbi")
 
 
 def certificate_block(data_dir, der_file_names, index=0, chain_der_file_names=None) -> CertBlockV2:

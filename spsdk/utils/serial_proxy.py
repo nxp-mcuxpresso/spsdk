@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -87,3 +87,42 @@ class SerialProxy:
 
     def flush(self) -> None:
         """Simulates flushing input buffer."""
+
+
+class SimpleReadSerialProxy(SerialProxy):
+    """SimpleReadSerialProxy is used to simulate communication with serial device.
+
+    It simplifies reading method.
+    @patch(<your.package>.Serial, SerialProxy.init_proxy(pre_recorded_responses))
+    """
+
+    FULL_BUFFER = bytes()
+
+    @classmethod
+    def init_data_proxy(cls, data: bytes) -> 'Type[SimpleReadSerialProxy]':
+        """Initialized response dictionary of write and read bytes.
+
+        :param data: Dictionary of write and read bytes
+        :return: SerialProxy class with configured data
+        """
+        cls.FULL_BUFFER = data
+        return cls
+
+    def __init__(self, port: str, timeout: int, baudrate: int):
+        """Basic initialization for serial.Serial class.
+
+        __init__ signature must accommodate instantiation of serial.Serial
+
+        :param port: Serial port name
+        :param timeout: timeout (does nothing)
+        :param baudrate: Serial port speed (does nothing)
+        """
+        super().__init__(port=port, timeout=timeout, baudrate=baudrate)
+        self.buffer = self.FULL_BUFFER
+
+    def write(self, data: bytes) -> None:
+        """Simulates a write method, but it does nothing.
+
+        :param data: Bytes to write, key in responses
+        """
+        pass

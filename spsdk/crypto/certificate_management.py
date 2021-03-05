@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for certificate management (generating certificate, validating certificate, chains)."""
@@ -9,13 +9,15 @@
 from datetime import datetime, timedelta
 from typing import Union, List
 
+from spsdk.apps.utils import catch_spsdk_error
 from spsdk.crypto import x509, InvalidSignature, Encoding, default_backend, \
     hashes, RSAPrivateKey, RSAPublicKey, ExtensionOID, \
-    Certificate, CertificateSigningRequest, padding
+    Certificate, CertificateSigningRequest, padding, EllipticCurvePublicKey, EllipticCurvePrivateKey
 
 
-def generate_certificate(subject: x509.Name, issuer: x509.Name, subject_public_key: RSAPublicKey,
-                         issuer_private_key: RSAPrivateKey, serial_number: int = None,
+def generate_certificate(subject: x509.Name, issuer: x509.Name,
+                         subject_public_key: Union[EllipticCurvePublicKey, RSAPublicKey],
+                         issuer_private_key: Union[EllipticCurvePrivateKey, RSAPrivateKey], serial_number: int = None,
                          if_ca: bool = True, duration: int = 3650, path_length: int = 2) -> Certificate:
     """Generate certificate.
 
@@ -123,3 +125,16 @@ def convert_certificate_into_bytes(certificate: Certificate, encoding: Encoding 
     """
     assert isinstance(certificate, Certificate), "The input is not a Certificate"
     return certificate.public_bytes(encoding)
+
+
+def generate_name_struct(common_name: str, country: str) -> x509.Name:
+    """Set the issuer/subject distinguished name.
+
+    :param common_name: string representing  name
+    :param country: string representing country
+    :return: ordered list of attributes of certificate
+    """
+    return x509.Name([
+        x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, common_name),
+        x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, country)
+    ])

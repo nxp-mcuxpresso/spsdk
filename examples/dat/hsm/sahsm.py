@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,11 +13,11 @@ from flask import Flask, jsonify, request
 
 from spsdk import crypto
 
-app = Flask(__name__)   #pylint: disable=invalid-name
+APP = Flask(__name__)
 THIS_DIR = os.path.dirname(__file__)
 
 
-@app.route('/signer/<int:num>', methods=['GET'])
+@APP.route('/signer/<int:num>', methods=['GET'])
 def signer(num: int) -> dict:
     """Route (API) that performing the signing.
 
@@ -26,6 +26,9 @@ def signer(num: int) -> dict:
     """
     private_key_file = os.path.join(THIS_DIR, f"k{num}_cert0_2048.pem")
     private_key = crypto.load_private_key(private_key_file)
+
+    # in this example we assume RSA keys
+    assert isinstance(private_key, crypto.RSAPrivateKey)
 
     data_to_sign = base64.b64decode(request.args['data'])
     signature = private_key.sign(
@@ -37,4 +40,4 @@ def signer(num: int) -> dict:
     return jsonify({'signature': data.decode('utf-8')})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    APP.run(debug=True)

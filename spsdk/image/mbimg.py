@@ -298,16 +298,16 @@ class MasterBootImage:
 
         :param app: input image (binary)
         :param load_addr: address in RAM, where 'RAM' image will be copied;
-                    for XIP images address, where the image is located in FLASH memory
+            for XIP images address, where the image is located in FLASH memory
         :param image_type: type of the master boot image
         :param trust_zone: TrustZone instance; None to use default settings (TrustZone enabled)
         :param app_table: optional table with additional images; None if no additional images needed
         :param cert_block: block of certificates; None for unsigned image
         :param priv_key_pem_data: private key to sign the image, decrypted binary data in PEM format
         :param hmac_key: optional key for HMAC generation (either binary ot HEX string; 32 bytes);
-                                None if HMAC is not in the image
-                If key_store.key_source == KeySourceType.KEYSTORE, this is a user-key from key-store
-                If key_store.key_source == KeySourceType.OTP, this is a master-key burned in OTP
+            None if HMAC is not in the image
+            If key_store.key_source == KeySourceType.KEYSTORE, this is a user-key from key-store
+            If key_store.key_source == KeySourceType.OTP, this is a master-key burned in OTP
         :param key_store: optional key store binary content; None if key store is not in the image
         :param enable_hw_user_mode_keys: flag for controlling secure hardware key bus. If true, then it is possible to
             access keys on hardware secure bus from non-secure application, else non-secure application will read zeros.

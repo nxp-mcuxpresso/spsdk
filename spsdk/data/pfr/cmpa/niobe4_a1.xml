@@ -210,15 +210,15 @@
     <bit_field offset="8" width="4" name="ADDR2_PRG" access="RW" reset_value="0" description="Programmable portion of the base address of region 2.">
       <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_ADDR2_PRG(x)"/>
     </bit_field>
-    <reserved_bit_field offset="12" width="4" reset_value="0"/>
-    <bit_field offset="16" width="2" name="LOCK_REG0" access="RW" reset_value="0" description="Lock PRINCE region0 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
+    <reserved_bit_field offset="12" width="6" reset_value="0"/>
+<!--    <bit_field offset="16" width="2" name="LOCK_REG0_old" access="RW" reset_value="0" description="Lock PRINCE region0 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">-->
+<!--      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_LOCK_REG0(x)"/>-->
+<!--    </bit_field>-->
+    <bit_field offset="18" width="2" name="LOCK_REG0" access="RW" reset_value="0" description="Lock PRINCE region0 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
       <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_LOCK_REG0(x)"/>
     </bit_field>
-    <bit_field offset="18" width="2" name="LOCK_REG1" access="RW" reset_value="0" description="Lock PRINCE region1 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
+    <bit_field offset="20" width="2" name="LOCK_REG1" access="RW" reset_value="0" description="Lock PRINCE region1 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
       <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_LOCK_REG1(x)"/>
-    </bit_field>
-    <bit_field offset="20" width="2" name="LOCK_REG2" access="RW" reset_value="0" description="Lock PRINCE region2 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
-      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_LOCK_REG2(x)"/>
     </bit_field>
     <reserved_bit_field offset="22" width="2" reset_value="0"/>
     <bit_field offset="24" width="2" name="REG0_ERASE_CHECK_EN" access="RW" reset_value="0" description="For PRINCE region0 enable checking whether all encrypted pages are erased together. 00 - Check is disabled. 01, 10, 11 - Check is enabled.">

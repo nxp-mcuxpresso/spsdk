@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,6 +22,7 @@ from .exceptions import McuBootError
 class CommandTag(Enum):
     """McuBoot Commands."""
 
+    NO_COMMAND = (0x00, 'NoCommand', 'No Command')
     FLASH_ERASE_ALL = (0x01, 'FlashEraseAll', 'Erase Complete Flash')
     FLASH_ERASE_REGION = (0x02, 'FlashEraseRegion', 'Erase Flash Region')
     READ_MEMORY = (0x03, 'ReadMemory', 'Read Memory')
@@ -81,6 +82,20 @@ class KeyProvUserKeyType(Enum):
     PRINCE_REGION_2 = (9, "TODO description")  # LPC55Sxx
     USERKEK = (11, "Encrypted boot image key")  # LPC55Sxx and RTxxx
     UDS = (12, "TODO description")  # LPC55Sxx and RTxxx
+
+
+class GenerateKeyBlobSelect(Enum):
+    """Key selector for the generate-key-blob function.
+
+    For devices with SNVS, valid options of [key_sel] are
+    0, 1 or OTPMK: OTPMK from FUSE or OTP(default),
+    2 or ZMK: ZMK from SNVS,
+    3 or CMK: CMK from SNVS,
+    For devices without SNVS, this option will be ignored.
+    """
+    OPTMK = (0, "OPTMK", "OTPMK from FUSE or OTP(default)")
+    ZMK = (2, "ZMK", "ZMK from SNVS")
+    CMK = (3, "CMK", "CMK from SNVS")
 
 
 ########################################################################################################################
@@ -202,6 +217,7 @@ class CmdResponse:
         assert isinstance(raw_data, (bytes, bytearray))
         self.header = header
         self.raw_data = raw_data
+        self.status, = unpack_from("<L", raw_data)
 
     def __eq__(self, obj: Any) -> bool:
         return isinstance(obj, CmdResponse) and vars(obj) == vars(self)
@@ -334,7 +350,7 @@ class KeyProvisioningResponse(CmdResponse):
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
-def parse_cmd_response(data: bytes, offset: int = 0) -> Any:
+def parse_cmd_response(data: bytes, offset: int = 0) -> CmdResponse:
     """Parse command response.
 
     :param data: Input data in bytes

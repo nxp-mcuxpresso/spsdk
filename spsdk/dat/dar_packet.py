@@ -24,7 +24,7 @@ class DebugAuthenticateResponse:
                  dac: DebugAuthenticationChallenge, path_dck_private: str) -> None:
         """Initialize the DebugAuthenticateResponse object.
 
-        :param debug_credential:the path, where the dc is store
+        :param debug_credential: the path, where the dc is store
         :param auth_beacon: authentication beacon value
         :param dac: the path, where the dac is store
         :param path_dck_private: the path, where the dck private key is store

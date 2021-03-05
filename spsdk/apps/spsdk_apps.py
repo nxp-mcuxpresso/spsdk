@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,11 +18,15 @@ import click
 from spsdk import __version__ as spsdk_version
 from .blhost import main as blhost_main
 from .elftosb import main as elftosb_main
+from .nxpcertgen import main as nxpcertgen_main
 from .nxpdebugmbox import main as nxpdebugmbox_main
+from .nxpdevscan import main as nxpdevscan_main
 from .nxpkeygen import main as nxpkeygen_main
 from .pfr import main as pfr_main
+from .pfrc import main as pfrc_main
 from .sdphost import main as sdphost_main
 from .sdpshost import main as sdpshost_main
+from .shadowregs import main as shadowregs_main
 from .utils import catch_spsdk_error
 
 
@@ -34,13 +38,16 @@ def main() -> int:
 
 
 main.add_command(blhost_main, name='blhost')
+main.add_command(elftosb_main, name='elftosb')
+main.add_command(nxpcertgen_main, name='nxpcertgen')
+main.add_command(nxpdebugmbox_main, name='nxpdebugmbox')
+main.add_command(nxpdevscan_main, name='nxpdscan')
+main.add_command(nxpkeygen_main, name='nxpkeygen')
+main.add_command(pfr_main, name='pfr')
+main.add_command(pfrc_main, name='pfrc')
 main.add_command(sdphost_main, name='sdphost')
 main.add_command(sdpshost_main, name='sdpshost')
-main.add_command(pfr_main, name='pfr')
-main.add_command(nxpkeygen_main, name='nxpkeygen')
-main.add_command(nxpdebugmbox_main, name='nxpdebugmbox')
-main.add_command(elftosb_main, name='elftosb')
-
+main.add_command(shadowregs_main, name='shadowreg')
 
 @catch_spsdk_error
 def safe_main() -> Any:

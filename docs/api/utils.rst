@@ -35,3 +35,37 @@ Serial Proxy
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+USB Filter
+-------------
+
+.. automodule:: spsdk.utils.usbfilter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Registers descriptions with support for XML files
+--------------------------------------------------
+
+.. automodule:: spsdk.utils.registers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+USB Device Scanner 
+---------------------
+.. automodule:: spsdk.utils.nxpdevscan
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Device description
+--------------------
+.. automodule:: spsdk.utils.devicedescription
+   :members:
+   :undoc-members:
+   :show-inheritance:

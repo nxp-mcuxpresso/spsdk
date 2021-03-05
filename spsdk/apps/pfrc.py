@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Console script for MBoot module aka BLHost."""
+"""Console script for pfrc (Utility to search for brick-conditions in PFR settings)."""
 import json
 import logging
 import os
@@ -58,7 +58,7 @@ def main(cmpa_config: click.File, cfpa_config: click.File, rules_file: click.Fil
 
 
 @catch_spsdk_error
-def safe_main() -> int:
+def safe_main() -> None:
     """Call the main function."""
     sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
 

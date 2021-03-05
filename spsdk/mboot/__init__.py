@@ -2,18 +2,18 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module implementing communication with the MCU Bootloader."""
 
 from .mcuboot import McuBoot
-from .commands import CommandTag, KeyProvUserKeyType
+from .commands import CommandTag, KeyProvUserKeyType, GenerateKeyBlobSelect
 from .memories import ExtMemPropTags, ExtMemId
 from .properties import PropertyTag, PeripheryTag, Version, parse_property_value
 from .interfaces import scan_usb
-from .exceptions import McuBootError, McuBootCommandError, McuBootConnectionError
+from .exceptions import McuBootError, McuBootCommandError, McuBootConnectionError, McuBootDataAbortError
 from .error_codes import StatusCode
 
 __all__ = [

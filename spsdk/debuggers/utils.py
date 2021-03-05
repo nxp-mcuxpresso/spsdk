@@ -1,26 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Debug probes support."""
 
-from typing import Iterable, List, Dict, Any
+import logging
+from typing import Dict, Any, Type
 import prettytable
 import colorama
 
 # Import all supported debug probe classes
-from .debug_probe_pyocd import DebugProbePyOCD
-from .debug_probe_jlink import DebugProbePyLink
-from .debug_probe_pemicro import DebugProbePemicro
-from .debug_probe import ProbeNotFoundError, DebugProbe, ProbeDescription
+from spsdk.debuggers.debug_probe_pyocd import DebugProbePyOCD
+from spsdk.debuggers.debug_probe_jlink import DebugProbePyLink
+from spsdk.debuggers.debug_probe_pemicro import DebugProbePemicro
+from spsdk.debuggers.debug_probe import DebugProbeError, ProbeNotFoundError, DebugProbe
 
 PROBES = {
     "pyocd":   DebugProbePyOCD,
     "jlink":   DebugProbePyLink,
     "pemicro": DebugProbePemicro,
 }
+
+logger = logging.getLogger(__name__)
+
+class ProbeDescription():
+    """NamedTuple for DAT record of debug probe description."""
+
+    def __init__(self, interface: str, hardware_id: str, description: str, probe: Type[DebugProbe]) -> None:
+        """Initialization of Debug probe dscription class.
+
+        param interface: Probe Interface.
+        param hardware_id: Probe Hardware ID(Identification).
+        param description: Probe Text description.
+        param probe: Probe name of the class.
+        """
+        self.interface = interface
+        self.hardware_id = hardware_id
+        self.description = description
+        self.probe = probe
+
+    def get_probe(self, user_params: Dict = None) -> Any:
+        """Get instance of probe.
+
+        :param user_params: The dictionary with optional user parameters
+        :return: Instance of described probe.
+        """
+        return self.probe(hardware_id=self.hardware_id, user_params=user_params)
 
 class DebugProbes(list):
     """Helper class for debug probe selection. This class accepts only ProbeDescription object."""
@@ -29,52 +56,24 @@ class DebugProbes(list):
         """Overriding build-in function by check the type.
 
         :param item: ProbeDestription item.
-        :raises ValueError: Invalid input types has been used.
+        :raises TypeError: Invalid input types has been used.
         """
         if isinstance(item, ProbeDescription):
             super(DebugProbes, self).append(item)
         else:
-            raise ValueError('The list accepts only ProbeDescription object')
+            raise TypeError('The list accepts only ProbeDescription object')
 
     def insert(self, index: int, item: ProbeDescription) -> None:
         """Overriding build-in function by check the type.
 
         :param item: ProbeDestription item.
         :param index: Index in list to insert.
-        :raises ValueError: Invalid input types has been used.
+        :raises TypeError: Invalid input types has been used.
         """
         if isinstance(item, ProbeDescription):
             super(DebugProbes, self).insert(index, item)
         else:
-            raise ValueError('The list accepts only ProbeDescription object')
-
-    def __add__(self, item: List[Any]) -> List[Any]:
-        """Overriding build-in function by check the type.
-
-        :param item: ProbeDestription item.
-        :return: This List
-        :raises ValueError: Invalid input types has been used.
-        """
-        if isinstance(item, ProbeDescription):
-            super(DebugProbes, self).__add__(item)
-        else:
-            raise ValueError('The list accepts only ProbeDescription object')
-
-        return self
-
-    def __iadd__(self, item: Iterable[Any]) -> Any:
-        """Overriding build-in function by check the type.
-
-        :param item: ProbeDestription item.
-        :return: This List
-        :raises ValueError: Invalid input types has been used.
-        """
-        if isinstance(item, ProbeDescription):
-            super(DebugProbes, self).__iadd__(item)
-        else:
-            raise ValueError('The list accepts only ProbeDescription object')
-
-        return self
+            raise TypeError('The list accepts only ProbeDescription object')
 
     def select_probe(self, silent: bool = False) -> ProbeDescription:
         """Perform Probe selection.
@@ -147,7 +146,10 @@ class DebugProbeUtils():
         probes = DebugProbes()
         for probe_key in PROBES:
             if (interface is None) or (interface.lower() == probe_key):
-                probes.extend(PROBES[probe_key].get_connected_probes(hardware_id, user_params))
+                try:
+                    probes.extend(PROBES[probe_key].get_connected_probes(hardware_id, user_params))
+                except DebugProbeError as exc:
+                    logger.warning(f"The {probe_key} debug probe support is not ready({str(exc)}).")
 
         return probes
 

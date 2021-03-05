@@ -14,3 +14,16 @@ Protected Flash Region
    :exclude-members: CONFIG_DIR
    :undoc-members:
    :show-inheritance:
+
+
+Protected Flash Region Checker for brick-conditions
+----------------------------------------------------
+.. automodule:: spsdk.pfr.processor
+   :members: 
+   :exclude-members: MyTransformer
+   :undoc-members:
+   :show-inheritance:
+.. automodule:: spsdk.pfr.translator
+   :members: 
+   :undoc-members:
+   :show-inheritance:

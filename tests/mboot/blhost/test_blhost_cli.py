@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -29,7 +29,11 @@ data_responses = {
         b'\x5a\xa1\x5a\xa4\x0c\x00\x65\x1c\xa7\x00\x00\x02\x00\x00\x00\x00\x00\x00\x03\x4b',
     # efuse-read-one
     b'\x5a\xa4\x0c\x00\x14\x27\x0f\x00\x00\x02\x64\x00\x00\x00\x04\x00\x00\x00':
-        b'\x5a\xa1\x5a\xa4\x10\x00\xc5\xbf\xaf\x00\x00\x03\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00'       
+        b'\x5a\xa1\x5a\xa4\x10\x00\xc5\xbf\xaf\x00\x00\x03\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00',
+
+    # efuse-read-one 0x98 with unknown error code 0xbeef (48,879)
+    b'\x5a\xa4\x0c\x00\x2e\x7b\x0f\x00\x00\x02\x98\x00\x00\x00\x04\x00\x00\x00':
+        b'\x5a\xa1\x5a\xa4\x0c\x00\x36\xc2\xaf\x00\x00\x02\xef\xbe\x00\x00\x00\x00\x00\x00',
 }
 
 def test_version():
@@ -62,3 +66,14 @@ def test_efuse_read_once(caplog):
         assert result.exit_code == 0
         assert 'Response word 1 = 4 (0x4)' in result.output
         assert 'Response word 2 = 0 (0x0)' in result.output
+
+
+def test_efuse_read_once_unknown_error(caplog):
+    caplog.set_level(100_000)
+    runner = CliRunner()
+    cmd = '-p super-com efuse-read-once 0x98'
+    with patch('spsdk.mboot.interfaces.uart.Serial', SerialProxy.init_proxy(data_responses)):
+        result = runner.invoke(blhost.main, cmd.split())
+        assert result.exit_code == 0
+        assert 'Response word 1 = 4 (0x4)' not in result.output
+        assert 'Unknown error code' in result.output

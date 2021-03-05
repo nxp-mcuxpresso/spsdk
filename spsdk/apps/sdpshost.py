@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Console script for SDP module aka SDPHost."""
+"""Console script for SDPS module aka SDPSHost."""
 
 import logging
 import sys
@@ -65,7 +65,7 @@ def write_file(ctx: click.Context, bin_file: click.File) -> None:
 
 
 @catch_spsdk_error
-def safe_main() -> int:
+def safe_main() -> None:
     """Call the main function."""
     sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -38,7 +38,7 @@ def ecc_public_numbers_to_bytes(public_numbers: crypto.EllipticCurvePublicNumber
     """
     x = public_numbers.x
     y = public_numbers.y
-    length = length or math.ceil(x.bit_length() // 8)
+    length = length or math.ceil(x.bit_length() / 8)
     x_bytes = x.to_bytes(length, 'big')
     y_bytes = y.to_bytes(length, 'big')
     return x_bytes + y_bytes

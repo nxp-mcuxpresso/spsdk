@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,9 @@ import pytest
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from spsdk.image import SrkTable, SrkItem, MAC, Signature, CertificateImg, SecretKeyBlob
-from spsdk.image.secret import NotImplementedSRKPublicKeyType
+from spsdk.image.secret import NotImplementedSRKPublicKeyType, NotImplementedSRKItem, SrkItemRSA, \
+    NotImplementedSRKCertificate, SrkItemHash
+from spsdk.crypto.loaders import load_certificate
 
 
 @pytest.fixture(scope="module", name="srk_pem")
@@ -195,3 +197,27 @@ def test_keyblob_export_parse():
     packed_key = tested_key.export()
     unpacked = tested_key.parse(packed_key)
     assert unpacked == tested_key
+
+
+def test_srktable_parse_not_valid_header():
+    srkitem_rsa = SrkItemRSA(modulus=bytes(2048), exponent=bytes(4))
+    srkitem_rsa._header._tag = 0xFF
+
+    srkitem_rsa_out = srkitem_rsa.export()
+    with pytest.raises(NotImplementedSRKItem):
+        SrkItem.parse(srkitem_rsa_out)
+
+
+def test_srktable_from_certificate_ecc(data_dir):
+    certificate = load_certificate(os.path.join(data_dir, 'ecc.crt'))
+
+    with pytest.raises(NotImplementedSRKCertificate):
+        SrkItem.from_certificate(certificate)
+
+
+def test_srkitemhash_parse_not_valid_header():
+    srkhash = SrkItemHash(algorithm=0x17, digest=bytes(0x10))
+    srkhash._header.param = 0x88
+    srkhash_out = srkhash.export()
+    with pytest.raises(NotImplementedSRKItem):
+        SrkItemHash.parse(srkhash_out)

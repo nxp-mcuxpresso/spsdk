@@ -17,11 +17,10 @@ IF EXIST venv\Scripts\activate.bat call venv\Scripts\activate.bat
 IF EXIST %CD%\reports\htmlcov DEL %CD%\reports\htmlcov /Q
 pytest --cov=spsdk --cov-report=term --cov-report=html:reports/htmlcov/ --cov-branch --cov-report=xml:reports/coverage.xml .
 @rem WITH DURATIONS pytest --durations=0 --cov=spsdk --cov-report=term --cov-report=html:reports/htmlcov/ --cov-branch --cov-report=xml:reports/coverage.xml --log-cli-level=WARN .
-@if errorlevel 1 goto END
+@if errorlevel 1 echo "<<<### TESTS FAILED #################################################################>>>"
 @rem -------------------------------------------------------
 @rem mypy: python typing tests (modules tested: spsdk + examples)
-mypy spsdk > %CD%\reports\mypy.txt
-@rem mypy spsdk examples >%CD%\reports\mypy.txt
+mypy spsdk examples >%CD%\reports\mypy.txt
 @if errorlevel 1 echo "<<<### MYPY PROBLEM DETECTED ########################################################>>>"
 @rem -------------------------------------------------------
 @rem pylint (spsdk module only, errors only)
@@ -46,4 +45,3 @@ radon cc --min C spsdk > %CD%\reports\radonC.txt
 @rem gitcov (coverage of changed files)
 python tools\gitcov.py --verbose --coverage-report reports\coverage.xml
 @if %errorlevel% gtr 0 echo "<<<### GIT-COV ERROR DETECTED #################################################>>>"
-:END

@@ -2,20 +2,23 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for comunication with the bootloader."""
+"""Module for communication with the bootloader."""
 
 import logging
 import time
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Sequence, Union, Type
 
-from .commands import CommandTag, KeyProvOperation, KeyProvUserKeyType, CmdPacket, GenericResponse
+from .commands import (
+    CmdResponse, CommandTag, KeyProvOperation, KeyProvUserKeyType,
+    CmdPacket, GenericResponse, GenerateKeyBlobSelect
+)
 from .error_codes import StatusCode
-from .exceptions import McuBootCommandError, McuBootConnectionError, SPSDKError
+from .exceptions import McuBootCommandError, McuBootConnectionError, SPSDKError, McuBootDataAbortError
 from .interfaces import Interface
 from .memories import ExtMemPropTags, ExtMemId
 from .properties import PropertyTag, Version, parse_property_value
@@ -84,6 +87,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             logger.debug('RX-PACKET: No Response, Timeout Error !')
             raise McuBootConnectionError("No Response from Device")
 
+        assert isinstance(response, CmdResponse)
         logger.debug(f'RX-PACKET: {response.info()}')
         self._status_code = response.status
 
@@ -92,12 +96,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         return response
 
-    def _read_data(self, cmd_tag: int, length: int, timeout: int = 1000) -> bytes:
+    def _read_data(self, cmd_tag: int, length: int) -> bytes:
         """Read data from device.
 
         :param cmd_tag: Tag indicating the read command.
         :param length: Length of data to read
-        :param timeout: Timeout, defaults to 1000
         :raises McuBootConnectionError: Timeout error or a problem opening the interface
         :raises McuBootCommandError: Error during command execution on the target
         :return: Data read from the device
@@ -110,6 +113,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         while True:
             try:
+                response = self._device.read()
+            except McuBootDataAbortError as e:
+                logger.info(f'RX: {e}')
                 response = self._device.read()
             except TimeoutError:
                 self._status_code = StatusCode.NO_RESPONSE
@@ -148,27 +154,36 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             logger.info('TX: Device Disconnected')
             raise McuBootConnectionError('Device Disconnected !')
 
+        total_sent = 0
+        # this difference is applicable for load-image and program-aeskey commands
+        expect_response = (cmd_tag != CommandTag.NO_COMMAND)
         try:
             for data_chunk in data:
                 self._device.write(data_chunk)
-            response = self._device.read()
+                total_sent += len(data_chunk)
+            if expect_response:
+                response = self._device.read()
         except TimeoutError:
             self._status_code = StatusCode.NO_RESPONSE
             logger.debug('RX: No Response, Timeout Error !')
             raise McuBootConnectionError("No Response from Device")
-        except SPSDKError:
-            response = self._device.read()
+        except SPSDKError as e:
+            logger.info(f'RX: {e}')
+            if expect_response:
+                response = self._device.read()
 
-        logger.debug(f'RX-PACKET: {response.info()}')
-        self._status_code = response.status
-        if response.status != StatusCode.SUCCESS:
-            status_info = StatusCode.get(self._status_code, f'0x{self._status_code:08X}')
-            logger.debug(f"CMD: Send Error, {status_info}")
-            if self._cmd_exception:
-                raise McuBootCommandError(CommandTag.name(cmd_tag), response.status)
-            return False
+        if expect_response:
+            assert isinstance(response, CmdResponse)
+            logger.debug(f'RX-PACKET: {response.info()}')
+            self._status_code = response.status
+            if response.status != StatusCode.SUCCESS:
+                status_info = StatusCode.get(self._status_code, f'0x{self._status_code:08X}')
+                logger.debug(f"CMD: Send Error, {status_info}")
+                if self._cmd_exception:
+                    raise McuBootCommandError(CommandTag.name(cmd_tag), response.status)
+                return False
 
-        logger.info(f"CMD: Successfully Send {sum(len(chunk) for chunk in data)} Bytes")
+        logger.info(f"CMD: Successfully Send {total_sent} out of {sum(len(chunk) for chunk in data)} Bytes")
         return True
 
     def _split_data(self, data: bytes) -> List[bytes]:
@@ -182,6 +197,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         packet_size_property = self.get_property(prop_tag=PropertyTag.MAX_PACKET_SIZE)
         assert packet_size_property, "Unable to get MAX PACKET SIZE"
         max_packet_size = packet_size_property[0]
+        logger.info(f"CMD: Max Packet Size = {max_packet_size}")
         return [
             data[i:i + max_packet_size] for i in range(0, len(data), max_packet_size)
         ]
@@ -328,21 +344,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             except McuBootCommandError:
                 values = None
 
-            if not values:
+            if not values:  # pragma: no cover  # corner-cases are currently untestable without HW
                 if self._status_code == StatusCode.UNKNOWN_PROPERTY:
-                    # No external memories are supported by current device.
                     break
 
-                if self._status_code == StatusCode.INVALID_ARGUMENT:
-                    # Current memory type is not supported by the device, skip to next external memory.
-                    continue
-
-                if self._status_code == StatusCode.QSPI_NOT_CONFIGURED:
-                    # QSPI0 is not supported, skip to next external memory.
-                    continue
-
-                if self._status_code == StatusCode.MEMORY_NOT_CONFIGURED:
-                    # Un-configured external memory, skip to next external memory.
+                if self._status_code in [
+                        StatusCode.INVALID_ARGUMENT,
+                        StatusCode.QSPI_NOT_CONFIGURED, StatusCode.MEMORY_NOT_CONFIGURED
+                ]:
                     continue
 
                 assert self._status_code != StatusCode.SUCCESS  # Other Error
@@ -407,7 +416,6 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info(f"CMD: FlashEraseAll(mem_id={mem_id})")
         cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_ALL, 0, mem_id)
         response = self._process_cmd(cmd_packet)
-        assert isinstance(cmd_packet, GenericResponse)
         return response.status == StatusCode.SUCCESS
 
     def flash_erase_region(self, address: int, length: int, mem_id: int = 0) -> bool:
@@ -484,7 +492,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param index: External memory ID or internal memory region index (depends on property type)
         :return: list integers representing the property; None in case no response from device
         """
-        logger.info(f"CMD: GetProperty({PropertyTag.name(prop_tag)!r}, index={index!r})")
+        logger.info(f"CMD: GetProperty({PropertyTag.name(prop_tag, 'UNKNOWN')!r}, index={index!r})")
         cmd_packet = CmdPacket(CommandTag.GET_PROPERTY, 0, prop_tag, index)
         cmd_response = self._process_cmd(cmd_packet)
         return cmd_response.values if cmd_response.status == StatusCode.SUCCESS else None
@@ -544,8 +552,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param timeout: The maximal waiting time in [ms] for reopen connection
         :param reopen: True for reopen connection after HW reset else False
         :return: False in case of any problem; True otherwise
-        :raise ValueError: if reopen is not supported
-        :raise McuBootConnectionError: Failure to reopen the device
+        :raises ValueError: if reopen is not supported
+        :raises McuBootConnectionError: Failure to reopen the device
         """
         logger.info('CMD: Reset MCU')
         cmd_packet = CmdPacket(CommandTag.RESET, 0)
@@ -636,14 +644,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return self._read_data(CommandTag.FLASH_READ_RESOURCE, cmd_response.length)
         return None
 
-    def configure_memory(self, address: int, mem_id: ExtMemId) -> bool:
+    def configure_memory(self, address: int, mem_id: int) -> bool:
         """Configure memory.
 
         :param address: The address in memory where are locating configuration data
-        :param mem_id: External memory ID
+        :param mem_id: Memory ID
         :return: False in case of any problem; True otherwise
         """
-        logger.info(f"CMD: ConfigureMemory({ExtMemId.name(mem_id)}, address=0x{address:08X})")
+        logger.info(f"CMD: ConfigureMemory({mem_id}, address=0x{address:08X})")
         cmd_packet = CmdPacket(CommandTag.CONFIGURE_MEMORY, 0, mem_id, address)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
@@ -657,21 +665,24 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         cmd_packet = CmdPacket(CommandTag.RELIABLE_UPDATE, 0, address)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
-    def generate_key_blob(self, dek_data: bytes, count: int = 72) -> Optional[bytes]:
+    def generate_key_blob(
+            self, dek_data: bytes, key_sel: int = GenerateKeyBlobSelect.OPTMK, count: int = 72
+        ) -> Optional[bytes]:
         """Generate Key Blob.
 
         :param dek_data: Data Encryption Key as bytes
+        :param key_sel: select the BKEK used to wrap the BK (default: OPTMK/FUSES)
         :param count: Key blob count (default: 72 - AES128bit)
         :return: Key blob; None in case of an failure
         """
-        logger.info(f"CMD: GenerateKeyBlob(dek_len={len(dek_data)}, count={count})")
+        logger.info(f"CMD: GenerateKeyBlob(dek_len={len(dek_data)}, key_sel={key_sel}, count={count})")
         data_chunks = self._split_data(data=dek_data)
-        cmd_response = self._process_cmd(CmdPacket(CommandTag.GENERATE_KEY_BLOB, 1, 0, len(dek_data), 0))
+        cmd_response = self._process_cmd(CmdPacket(CommandTag.GENERATE_KEY_BLOB, 1, key_sel, len(dek_data), 0))
         if cmd_response.status != StatusCode.SUCCESS:
             return None
         if not self._send_data(CommandTag.GENERATE_KEY_BLOB, data_chunks):
             return None
-        cmd_response = self._process_cmd(CmdPacket(CommandTag.GENERATE_KEY_BLOB, 0, 0, count, 1))
+        cmd_response = self._process_cmd(CmdPacket(CommandTag.GENERATE_KEY_BLOB, 0, key_sel, count, 1))
         if cmd_response.status == StatusCode.SUCCESS:
             return self._read_data(CommandTag.GENERATE_KEY_BLOB, cmd_response.length)
         return None
@@ -754,3 +765,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if cmd_response.status == StatusCode.SUCCESS:
             return self._read_data(CommandTag.KEY_PROVISIONING, cmd_response.length)
         return None
+
+    def load_image(self, data: bytes) -> bool:
+        """Load a boot image to the device.
+
+        :param data: boot image
+        :return: False in case of any problem; True otherwise
+        """
+        logger.info(f"CMD: LoadImage(length={len(data)})")
+        data_chunks = self._split_data(data)
+        # there's no command in this case
+        self._status_code = StatusCode.SUCCESS
+        return self._send_data(CommandTag.NO_COMMAND, data_chunks)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Tests for Signature Provider interface."""
@@ -15,10 +15,10 @@ def test_types():
     assert types == ['file']
 
     class TestSP(SignatureProvider):
-        sp_type = 'test'
+        sp_type = 'test-typesp-test'
 
     types = SignatureProvider.get_types()
-    assert types == ['file', 'test']
+    assert types == ['file', 'test-typesp-test']
 
 
 def test_invalid_sp_type():

@@ -28,6 +28,8 @@
 	"testCorruptRkhRecordId": 0,
 	"testCorruptIskSignature": false,
 
+	"timestamp": "0x123456",
+
 	"commands": [
 		{"erase": {"address": "0x0", "size": "0x10000"}},
 		{"load": {"address": "0x0", "file": ".\\workspace\\output_images\\normal_boot_sign.bin"}}

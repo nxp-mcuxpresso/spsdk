@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,14 +13,15 @@ from io import SEEK_CUR
 from typing import Union
 
 from .header import Header
+from .. import SPSDKError
 
 
-class RawDataException(Exception):
+class RawDataException(SPSDKError):
     """Raw data read failed."""
 
 
 class StreamReadFailed(RawDataException):
-    """read_raw_data could not read stream."""
+    """Read_raw_data could not read stream."""
 
 
 class NotEnoughBytesException(RawDataException):

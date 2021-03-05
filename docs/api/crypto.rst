@@ -45,4 +45,3 @@ Crypto module loading helper functions
    :members:
    :undoc-members:
    :show-inheritance:
-

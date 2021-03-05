@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk.sbfile import CmdNop, CmdCall, CmdErase, CmdFill, CmdJump, CmdLoad, CmdMemEnable, CmdProg, CmdReset
-from spsdk.sbfile import VersionCheckType, CmdVersionCheck, CmdKeyStoreBackup, CmdKeyStoreRestore
+from spsdk.sbfile.commands import CmdNop, CmdCall, CmdErase, CmdFill, CmdJump, CmdLoad, CmdMemEnable, CmdProg, CmdReset
+from spsdk.sbfile.commands import VersionCheckType, CmdVersionCheck, CmdKeyStoreBackup, CmdKeyStoreRestore
 from spsdk.sbfile.commands import CmdTag, parse_command
 from spsdk.mboot import ExtMemId
 

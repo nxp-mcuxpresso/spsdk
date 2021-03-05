@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -116,6 +116,11 @@ class SetFaultAnalysisMode(DebugMailboxCommand):
         """Initialize."""
         super(SetFaultAnalysisMode, self).__init__(dm, id=6, name='SET_FA_MODE')
 
+class StartDebugSession(DebugMailboxCommand):
+    """Class for StartDebugSession."""
+    def __init__(self, dm: DebugMailbox) -> None:
+        """Initialize."""
+        super(StartDebugSession, self).__init__(dm, id=7, name='START_DBG_SESSION')
 
 class DebugAuthenticationStart(DebugMailboxCommand):
     """Class for DebugAuthenticationStart."""

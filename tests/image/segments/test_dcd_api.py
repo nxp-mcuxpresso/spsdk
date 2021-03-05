@@ -2,18 +2,13 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
 import pytest
 from spsdk.image import SegDCD, CmdWriteData, CmdCheckData, CmdNop, EnumWriteOps, EnumCheckOps
-
-
-@pytest.fixture(scope="module")
-def data_dir(data_dir):
-    return os.path.join(data_dir, "dcd")
 
 
 @pytest.fixture(scope="module")

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,11 +35,22 @@ class StatusCode(Enum):
     FLASH_COMMAND_FAILURE = (105, 'FlashCommandFailure', 'FLASH Driver: Command Failure')
     FLASH_UNKNOWN_PROPERTY = (106, 'FlashUnknownProperty', 'FLASH Driver: Unknown Property')
     FLASH_REGION_EXECUTE_ONLY = (108, 'FlashRegionExecuteOnly', 'FLASH Driver: Region Execute Only')
-    FLASH_EXEC_IN_RAM_NOT_READY = (109, 'FlashExecuteInRamFunctionNotReady',
-                                   'FLASH Driver: Execute In RAM Function Not Ready')
+    FLASH_EXEC_IN_RAM_NOT_READY = (
+        109, 'FlashExecuteInRamFunctionNotReady', 'FLASH Driver: Execute In RAM Function Not Ready')
     FLASH_COMMAND_NOT_SUPPORTED = (111, 'FlashCommandNotSupported', 'FLASH Driver: Command Not Supported')
     FLASH_OUT_OF_DATE_CFPA_PAGE = (132, 'FlashOutOfDateCfpaPage', 'FLASH Driver: Out Of Date CFPA Page')
-
+    FLASH_BLANK_IFR_PAGE_DATA = (133, 'FlashBlankIfrPageData', 'FLASH Driver: Blank IFR Page Data')
+    FLASH_ENCRYPTED_REGIONS_ERASE_NOT_DONE_AT_ONCE = (
+        134, 'FlashEncryptedRegionsEraseNotDoneAtOnce', 'FLASH Driver: Encrypted Regions Erase Not Done At Once')
+    FLASH_PROGRAM_VERIFICATION_NOT_ALLOWED = (
+        135, 'FlashProgramVerificationNotAllowed', 'FLASH Driver: Program Verification Not Allowed')
+    FLASH_HASH_CHECK_ERROR = (136, 'FlashHashCheckError', 'FLASH Driver: Hash Check Error')
+    FLASH_SEALED_FFR_REGION = (137, 'FlashSealedFfrRegion', 'FLASH Driver: Sealed FFR Region')
+    FLASH_FFR_REGION_WRITE_BROKEN = (138, 'FlashFfrRegionWriteBroken', 'FLASH Driver: FFR Region Write Broken')
+    FLASH_NMPA_UPDATE_NOT_ALLOWED = (139, 'FlashNmpaUpdateNotAllowed', 'FLASH Driver: NMPA Update Not Allowed')
+    FLASH_CMPA_CFG_DIRECT_ERASE_NOT_ALLOWED = (
+        140, 'FlashCmpaCfgDirectEraseNotAllowed', 'FLASH Driver: CMPA Cfg Direct Erase Not Allowed')
+    FLASH_FFR_BANK_IS_LOCKED = (141, 'FlashFfrBankIsLocked', 'FLASH Driver: FFR Bank Is Locked')
     # I2C driver errors.
     I2C_SLAVE_TX_UNDERRUN = (200, 'I2cSlaveTxUnderrun', 'I2C Driver: Slave Tx Underrun')
     I2C_SLAVE_RX_OVERRUN = (201, 'I2cSlaveRxOverrun', 'I2C Driver: Slave Rx Overrun')
@@ -103,6 +114,21 @@ class StatusCode(Enum):
     MEMORY_WRITE_FAILED = (10202, 'MemoryWriteFailed', 'Memory Write Failed')
     MEMORY_CUMULATIVE_WRITE = (10203, 'MemoryCumulativeWrite', 'Memory Cumulative Write')
     MEMORY_NOT_CONFIGURED = (10205, 'MemoryNotConfigured', 'Memory Not Configured')
+    MEMORY_APP_OVERLAP_WITH_EXECUTE_ONLY_REGION = (
+        10204, 'MemoryAppOverlapWithExecuteOnlyRegion', 'Memory App Overlap with exec region')
+    MEMORY_NOT_CONFIGURED = (10205, 'MemoryNotConfigured', 'Memory Not Configured')
+    MEMORY_ALIGNMENT_ERROR = (10206, 'MemoryAlignmentError', 'Memory Alignment Error')
+    MEMORY_VERIFY_FAILED = (10207, 'MemoryVerifyFailed', 'Memory Verify Failed')
+    MEMORY_WRITE_PROTECTED = (10208, 'MemoryWriteProtected', 'Memory Write Protected')
+    MEMORY_ADDRESS_ERROR = (10209, 'MemoryAddressError', 'Memory Address Error')
+    MEMORY_BLANK_CHECK_FAILED = (10210, 'MemoryBlankCheckFailed', 'Memory Black Check Failed')
+    MEMORY_BLANK_PAGE_READ_DISALLOWED = (
+        10211, 'MemoryBlankPageReadDisallowed', 'Memory Blank Page Read Disallowed')
+    MEMORY_PROTECTED_PAGE_READ_DISALLOWED = (
+        10212, 'MemoryProtectedPageReadDisallowed', 'Memory Protected Page Read Disallowed')
+    MEMORY_FFR_SPEC_REGION_WRITE_BROKEN = (
+        10213, 'MemoryFfrSpecRegionWriteBroken', 'Memory FFR Spec Region Write Broken')
+    MEMORY_UNSUPPORTED_COMMAND = (10214, 'MemoryUnsupportedCommand', 'Memory Unsupported Command')
 
     # Property store errors.
     UNKNOWN_PROPERTY = (10300, 'UnknownProperty', 'Unknown Property')
@@ -236,6 +262,16 @@ class StatusCode(Enum):
     SPIFINOR_WRITE_ALIGNMENTERROR = (22005, 'SPIFINOR_WriteAlignmentError', 'SPIFINOR: Write Alignment Error')
     SPIFINOR_COMMAND_FAILURE = (22006, 'SPIFINOR_CommandFailure', 'SPIFINOR: Command Failure')
     SPIFINOR_SFDP_NOT_FOUND = (22007, 'SPIFINOR_SFDP_NotFound', 'SPIFINOR: SFDP Not Found')
+
+    # OTP statuses.
+    OTP_INVALID_ADDRESS = (52801, 'OTP_InvalidAddress', 'OTD: Invalid OTP address')
+    OTP_PROGRAM_FAIL = (52802, 'OTP_ProgrammingFail', 'OTD: Programming failed')
+    OTP_CRC_FAIL = (52803, 'OTP_CRCFail', 'OTP: CRC check failed')
+    OTP_ERROR = (52804, 'OTP_Error', 'OTP: Error happened during OTP operation')
+    OTP_ECC_CRC_FAIL = (52805, 'OTP_EccCheckFail', 'OTP: ECC check failed during OTP operation')
+    OTP_LOCKED = (52806, 'OTP_FieldLocked', 'OTP: Field is locked when programming')
+    OTP_TIMEOUT = (52807, 'OTP_Timeout', 'OTP: Operation timed out')
+    OTP_CRC_CHECK_PASS = (52808, 'OTP_CRCCheckPass', 'OTP: CRC check passed')
 
     # FlexSPI statuses.
     FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT = (

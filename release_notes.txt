@@ -1,7 +1,7 @@
 Release Notes for Secure Provisioning SDK
 ==========================================
-Version: 1.2
-Date: 11-December-2020
+Version: 1.3
+Date: 05-March-2021
 
 Secure Provisioning SDK (SPSDK) is unified, reliable and easy to use SW library working across NXP MCU portfolio 
 providing strong foundation from quick customer prototyping up to production deployment. The library allows the user 
@@ -9,24 +9,32 @@ to connect and communicate with a device, configure the device, prepare, downloa
 operations. It is delivered in a form of python library and command line applications.
 
 Features:
-- support for Niobe4 Analog devices
-- extend support for Niobe4 Mini, Nano
-- PFRC - console script for searching for brick-conditions in PFR settings
-- custom HSM support
-- sdpshost cli utility using sdpshost communication protocol
-- remote signing for Debug Credential
-- added command read-register into sdphost cli 
-- dynamic plugin support
-- MCU Link Debugger support
-- [PFR] added CMAC-based seal 
-- [PFR] load Root of Trust from elf2sb configuration file 
-
+- support creation of SB version 3.1 (for N4Analog)
+- elftosb application based on legacy elf2sb supporting SB 3.1 support 
+- nxpdevscan - application for connected USB, UART devices discovery
+- shadowregs -  application for shadow registers management using DebugProbe
+- support USB path argument in blhost/sdphost (all supported OS)
+- nxpcertgen cli application (basicConstrains, self-signed)
+- extend blhost commands:
+    - flash-erase-all
+    - call
+    - load-image
+    - execute
+    - key-provisioning
+    - receive-sb-file
+- extend blhost commands' options:
+    - configure-memory now allows usage of internal memory
+    - extend error code in output
+    - add parameters lock/nolock into efuse-program-once command
+    - add key selector option to generate-key-blob command
+    - add nolock/lock selector to efuse-program-once command
+    - add hexdata option to write-memory command
 
 Supported devices: 
 ==================
-- LPC55S69, LPC55S28 (Niobe4) 	
-- LPC55S06 (Niobe 4 Nano)
-- LPC55S16 (Niobe4 Mini) 
+- LPC55S6x, LPC55S2x (Niobe4) 	
+- LPC55S0x (Niobe 4 Nano)
+- LPC55S1x (Niobe4 Mini) 
 - i.MX RT105x, RT106x 
 - i.MX RT595S, RT685S 
 
@@ -59,6 +67,19 @@ Revision History:
 - included Debug Authentication functionality
 - included support for debuggers
 - utility (nxpkeygen) for generating debug credential files and corresponding keys
+
+1.2
+- support for Niobe4 Analog devices
+- extend support for Niobe4 Mini, Nano
+- PFRC - console script for searching for brick-conditions in PFR settings
+- custom HSM support
+- sdpshost cli utility using sdpshost communication protocol
+- remote signing for Debug Credential
+- added command read-register into sdphost cli 
+- dynamic plugin support
+- MCU Link Debugger support
+- [PFR] added CMAC-based seal 
+- [PFR] load Root of Trust from elf2sb configuration file 
 
 Licence: 
 =========

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for serial communication with a target device using SDP protocol."""
@@ -79,7 +79,7 @@ class Uart(Interface):
         :type timeout: int, optional
         """
         super().__init__()
-        self.device = Serial(port=port, timeout=timeout // 1000, baudrate=baudrate)
+        self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
         self.expect_status = True
 
     def open(self) -> None:

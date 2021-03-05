@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -77,7 +77,7 @@ def swap16(x: int) -> int:
 
 # TODO refactor: this should not be part of the crypto module
 def pack_timestamp(value: datetime) -> int:
-    """Converts datetime to millisec since 1.1.2000.
+    """Converts datetime to millisecond since 1.1.2000.
 
     :param value: datetime to be converted
     :return: number of milliseconds since 1.1.2000  00:00:00; 64-bit integer
@@ -141,7 +141,7 @@ def ecc_public_numbers_to_bytes(public_numbers: EllipticCurvePublicNumbers, leng
     """
     x = public_numbers.x
     y = public_numbers.y
-    length = length or math.ceil(x.bit_length() // 8)
+    length = length or math.ceil(x.bit_length() / 8)
     x_bytes = x.to_bytes(length, 'big')
     y_bytes = y.to_bytes(length, 'big')
     return x_bytes + y_bytes

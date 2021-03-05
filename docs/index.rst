@@ -15,12 +15,12 @@
 
     api/crypto
     api/dat
+    api/debuggers
     api/image
     api/mboot
     api/pfr
     api/sbfile
     api/sdp
-    api/exceptions
     api/utils
 
 

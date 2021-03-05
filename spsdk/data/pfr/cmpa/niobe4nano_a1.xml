@@ -295,13 +295,13 @@
   </register>
   <register offset="0x38" width="32" name="FLASH_REMAP_SIZE" description="This 32-bit register contains the size of the image to remap, in bytes. The 12 LSBs are ignored, so the size granularity is 4KB.">
     <alias type="CMSIS" value="FLASH_REMAP_SIZE"/>
-    <bit_field offset="0" width="32" name="FLASH_REMAP_SIZE" access="RW" reset_value="0" description="This 32-bit register contains the size of the image to remap, in bytes. The 12 LSBs are ignored, so the size granularity is 4KB.">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="This 32-bit register contains the size of the image to remap, in bytes. The 12 LSBs are ignored, so the size granularity is 4KB.">
       <alias type="CMSIS" value="FLASH_CMPA_FLASH_REMAP_SIZE_FLASH_REMAP_SIZE(x)"/>
     </bit_field>
   </register>
   <register offset="0x3C" width="32" name="FLASH_REMAP_OFFSET" description="This 32-bit register contains the offset by which the image is to be remapped. The 12 LSBs are ignored, so the remap granularity is 4KB.">
     <alias type="CMSIS" value="FLASH_REMAP_OFFSET"/>
-    <bit_field offset="0" width="32" name="FLASH_REMAP_OFFSET" access="RW" reset_value="0" description="This 32-bit register contains the offset by which the image is to be remapped. The 12 LSBs are ignored, so the remap granularity is 4KB.">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="This 32-bit register contains the offset by which the image is to be remapped. The 12 LSBs are ignored, so the remap granularity is 4KB.">
       <alias type="CMSIS" value="FLASH_CMPA_FLASH_REMAP_OFFSET_FLASH_REMAP_OFFSET(x)"/>
     </bit_field>
   </register>

@@ -12,6 +12,7 @@ foundation from quick customer prototyping up to production deployment. Is follo
 
 - **Crypto** - Support for key's and certificate's operations
 - **DAT** - Covering functionality of `debug authentication` tool
+- **Debuggers** - Support for DebugMailbox Debug probes
 - **Image** - Covering functionality of `srktool`, `dcdgen`, `mkimage` and other similar tools
 - **MBoot** - Covering functionality of `blhost` tool
 - **PFR** - Support for configuration of Protected Flash Region areas (CMPA, CFPA)

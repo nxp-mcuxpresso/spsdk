@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for handling Certificate block."""
 
 import re
+from spsdk.sbfile.sb31.commands import BaseCmd
 from struct import pack, unpack_from, calcsize
-from typing import List, Optional, Union
+from typing import List, Optional, Sequence, Union
 
 from Crypto.PublicKey import ECC
 
@@ -365,12 +366,18 @@ class CertBlockV2(CertBlock):
 ########################################################################################################################
 # Certificate Block Class for SB 3.1
 ########################################################################################################################
-def get_ecc_key_bytes(key: bytes) -> bytes:
-    """Function to get ECC Key."""
-    key_obj = ECC.import_key(key)
-    point_x = key_obj.pointQ.x.to_bytes()   # type: ignore
-    point_y = key_obj.pointQ.y.to_bytes()   # type: ignore
+def get_ecc_key_bytes(key: ECC.EccKey) -> bytes:
+    """Function to get ECC Key pointQ as bytes."""
+    point_x = key.pointQ.x.to_bytes()   # type: ignore
+    point_y = key.pointQ.y.to_bytes()   # type: ignore
     return point_x + point_y
+
+
+def convert_to_ecc_key(key: Union[ECC.EccKey, bytes]) -> ECC.EccKey:
+    """Convert key into EccKey instance."""
+    if isinstance(key, ECC.EccKey):
+        return key
+    return ECC.import_key(key)
 
 
 class CertificateBlockHeader(BaseClass):
@@ -431,7 +438,7 @@ class RootKeyRecord(BaseClass):
 
     def __init__(self,
                  ca_flag: bool,
-                 root_certs: List[bytes],
+                 root_certs: Union[Sequence[ECC.EccKey], Sequence[bytes]],
                  used_root_cert: int = 0
                  ) -> None:
         """Constructor for Root key record.
@@ -441,7 +448,10 @@ class RootKeyRecord(BaseClass):
         :param used_root_cert: Used root cert number 0-3
         """
         self.ca_flag = ca_flag
-        self.root_certs = root_certs
+        self.root_certs = [
+            convert_to_ecc_key(cert)
+            for cert in root_certs
+        ]
         self.used_root_cert = used_root_cert
         self.flags = self._calculate_flags()
         self.ctrk_hash_table = self._create_ctrk_hash_table()
@@ -466,9 +476,9 @@ class RootKeyRecord(BaseClass):
         if self.used_root_cert:
             flags |= (self.used_root_cert << 8)
         flags |= (len(self.root_certs) << 4)
-        if ECC.import_key(self.root_certs[0]).curve == "NIST P-256":
+        if self.root_certs[0].curve == "NIST P-256":
             flags |= (1 << 0)
-        if ECC.import_key(self.root_certs[0]).curve == "NIST P-384":
+        if self.root_certs[0].curve == "NIST P-384":
             flags |= (1 << 1)
         return flags
 
@@ -484,7 +494,9 @@ class RootKeyRecord(BaseClass):
         if len(self.root_certs) > 1:
             for key in self.root_certs:
                 data_to_hash = get_ecc_key_bytes(key)
-                ctrk_hash = internal_backend.hash(data=data_to_hash, algorithm="sha256")
+                ctrk_hash = internal_backend.hash(
+                    data=data_to_hash, algorithm=f"sha{key.pointQ.size_in_bits()}"
+                )
                 ctrk_hash_table += ctrk_hash
         return ctrk_hash_table
 
@@ -513,8 +525,8 @@ class IskCertificate(BaseClass):
     def __init__(
             self,
             constraints: int,
-            isk_private_key: crypto.EllipticCurvePrivateKeyWithSerialization,
-            isk_cert: ECC.EccKey,
+            isk_private_key: Union[ECC.EccKey, bytes],
+            isk_cert: Union[ECC.EccKey, bytes],
             user_data: bytes = None
     ) -> None:
         """Constructor for ISK certificate.
@@ -526,25 +538,16 @@ class IskCertificate(BaseClass):
         """
         self.flags = 0
         self.constraints = constraints
-        self.isk_private_key = isk_private_key
-        self.isk_cert = isk_cert
+        self.isk_private_key = convert_to_ecc_key(isk_private_key)
+        self.isk_cert = convert_to_ecc_key(isk_cert)
         self.user_data = user_data or bytes()
         self.signature = bytes()
-        self.coordinate_length = 0
-        if self.isk_cert.curve == "NIST P-256":
-            self.coordinate_length = 32
-            self.isk_public_key = ecc_public_numbers_to_bytes(
-                self.isk_private_key.public_key().public_numbers(), length=self.coordinate_length
-            )
-        if self.isk_cert.curve == "NIST P-384":
-            self.coordinate_length = 48
-            self.isk_public_key = ecc_public_numbers_to_bytes(
-                self.isk_private_key.public_key().public_numbers(), length=self.coordinate_length
-            )
+        self.coordinate_length = self.isk_private_key.pointQ.size_in_bytes()
+        self.isk_public_key_data = get_ecc_key_bytes(self.isk_cert)
 
         self._calculate_flags()
-        self.signature_offset = calcsize("<2L") + len(self.user_data)
-        self.signature_offset += 64 if self.flags & 1 else 98
+        self.signature_offset = calcsize("<3L") + len(self.user_data)
+        self.signature_offset += 2 * self.isk_cert.pointQ.size_in_bytes()
         self.expected_size = 4 + 4 + 4 + 2 * self.coordinate_length + len(self.user_data) + 2 * self.coordinate_length
 
     def info(self) -> str:
@@ -567,25 +570,17 @@ class IskCertificate(BaseClass):
         """Function to create ISK signature."""
         # pylint: disable=invalid-name
         data = key_record_data + pack("<3L", self.signature_offset, self.constraints, self.flags)
-        data += self.isk_public_key + self.user_data
-
-        assert isinstance(self.isk_private_key, crypto.EllipticCurvePrivateKeyWithSerialization)
-        signature = bytes()
-        if self.isk_cert.curve == "NIST P-256":
-            signature = self.isk_private_key.sign(data, crypto.ec.ECDSA(crypto.hashes.SHA256()))
-        if self.isk_cert.curve == "NIST P-384":
-            signature = self.isk_private_key.sign(data, crypto.ec.ECDSA(crypto.hashes.SHA384()))
-
-        coordinate_length = 32 if self.isk_cert.curve == "NIST P-256" else 48
-        self.signature = serialize_ecc_signature(signature, coordinate_length)
+        data += self.isk_public_key_data + self.user_data
+        self.signature = internal_backend.ecc_sign(self.isk_private_key, data)
 
     def export(self) -> bytes:
         """Export ISK certificate as bytes array."""
         assert self.signature, "Signature is not set."
         data = bytes()
         data += pack("<3L", self.signature_offset, self.constraints, self.flags)
+        # data += pack("<2L", self.signature_offset)
         # if self.isk_public_key:
-        data += self.isk_public_key
+        data += self.isk_public_key_data
         if self.user_data:
             data += self.user_data
         data += self.signature
@@ -602,18 +597,22 @@ class IskCertificate(BaseClass):
         raise NotImplementedError("This operation is not supported.")
 
 
-class CertBlockV3(CertBlock):
-    """Create Certificate block."""
+class CertBlockV31(CertBlock):
+    """Create Certificate block version 3.1."""
+
+    MAGIC = b"chdr"
 
     def __init__(
-            self, root_certs: List[bytes], ca_flag: bool, used_root_cert: int = 0,
-            constraints: int = 0, isk_private_key: crypto.EllipticCurvePrivateKeyWithSerialization = None,
-            isk_cert: ECC.EccKey = None, user_data: bytes = None
+            self, root_certs: Union[Sequence[ECC.EccKey], Sequence[bytes]],
+            ca_flag: bool, version: str = "2.1",
+            used_root_cert: int = 0, constraints: int = 0,
+            isk_private_key: Union[ECC.EccKey, bytes] = None,
+            isk_cert: Union[ECC.EccKey, bytes] = None, user_data: bytes = None
     ) -> None:
         """The Constructor for Certificate block."""
         # workaround for base MasterBootImage
         self.signature_size = 0
-        self.header = CertificateBlockHeader()
+        self.header = CertificateBlockHeader(version)
         self.root_key_record = RootKeyRecord(
             ca_flag=ca_flag, used_root_cert=used_root_cert, root_certs=root_certs
         )
@@ -626,6 +625,9 @@ class CertBlockV3(CertBlock):
                 isk_cert=isk_cert, user_data=user_data
             )
         self.expected_size = self._calculate_expected_size()
+
+    def _set_ca_flag(self, value: bool) -> None:
+        self.root_key_record.ca_flag = value
 
     def _calculate_expected_size(self) -> int:
         expected_size = self.header.SIZE

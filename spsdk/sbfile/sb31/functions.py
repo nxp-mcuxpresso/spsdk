@@ -1,16 +1,132 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """File including helping functions."""
+import functools
 
-from abc import abstractmethod
-from struct import calcsize, pack, unpack_from
-from typing import Tuple
+from spsdk.utils.easy_enum import Enum
+from spsdk.utils.crypto.backend_internal import internal_backend
 
-from spsdk.sbfile.sb31.constants import EnumCmdTag
+
+class KeyDerivationMode(Enum):
+    """Modes for Key derivation."""
+    KDK = (1, 'KDK', 'Key Derivation Key mode')
+    BLK = (2, 'BLK', 'Block Key Derivation mode')
+
+
+class KeyDerivator:
+    """Engine for generating derived keys."""
+    def __init__(self, pck: bytes, timestamp: int, key_length: int, kdk_access_rights: int) -> None:
+        """Initialize the KeyDerivator.
+
+        :param pck: Part Common Key, base user key for all key derivations
+        :param timestamp: Timestamp used for creating the KeyDerivationKey
+        :param key_length: Requested key length after derivation (128/256bits)
+        :param kdk_access_rights: KeyDerivationKey access rights
+        """
+        self.pck = pck
+        self.key_length = key_length
+        self.kdk_access_rights = kdk_access_rights
+        self.timestamp = timestamp
+        self.kdk = self._derive_kdk()
+
+    def _derive_kdk(self) -> bytes:
+        """Derive the KeyDerivationKey from PCK and timestamp."""
+        return derive_kdk(self.pck, self.timestamp, self.key_length, self.kdk_access_rights)
+
+    def get_block_key(self, block_number: int) -> bytes:
+        """Derive key for particular block."""
+        return derive_block_key(self.kdk, block_number, self.key_length, self.kdk_access_rights)
+
+
+def derive_block_key(kdk: bytes, block_number: int, key_length: int, kdk_access_rights: int) -> bytes:
+    """Derive encryption AES key for given block.
+
+    :param kdk: Key Derivation Key
+    :param block_number: Block number
+    :param key_length: Required key length (128/256)
+    :param kdk_access_rights: Key Derivation Key access rights (0-3)
+    :return: AES key for given block
+    """
+    return _derive_key(
+        key=kdk, derivation_constant=block_number, kdk_access_rights=kdk_access_rights,
+        key_length=key_length, mode=KeyDerivationMode.BLK
+    )
+
+def derive_kdk(pck: bytes, timestamp: int, key_length: int, kdk_access_rights: int) -> bytes:
+    """Derive the Key Derivation Key.
+
+    :param pck: Part Common Key
+    :param timestamp: Timestamp for KDK derivation
+    :param key_length: Requested key length (128/256b)
+    :param kdk_access_rights: KDK access rights (0-3)
+    :return: Key Derivation Key
+    """
+    return _derive_key(
+        key=pck, derivation_constant=timestamp, kdk_access_rights=kdk_access_rights,
+        key_length=key_length, mode=KeyDerivationMode.KDK
+    )
+
+
+def _derive_key(
+        key: bytes, derivation_constant: int, kdk_access_rights: int,
+        mode: int, key_length: int
+) -> bytes:
+    """Derive new AES key from the provided key.
+
+    :param key: Base (original) key
+    :param derivation_constant: Derivation constant for key derivation
+    :param kdk_access_rights: Key Derivation Key access rights (0-3)
+    :param mode: Mode of derivation (1/2; see `KeyDerivationMode`)
+    :param key_length: Requested key length (128/256b)
+    :return: New (derived) AES key
+    """
+    # use partial to save typing later on
+    derivation_data = functools.partial(
+        _get_key_derivation_data,
+        derivation_constant=derivation_constant,
+        kdk_access_rights=kdk_access_rights,
+        mode=mode, key_length=key_length
+    )
+
+    result = internal_backend.cmac(data=derivation_data(iteration=1), key=key)
+    if key_length == 256:
+        result += internal_backend.cmac(data=derivation_data(iteration=2), key=key)
+    return result
+
+
+def _get_key_derivation_data(
+        derivation_constant: int, kdk_access_rights: int,
+        mode: int, key_length: int, iteration: int
+) -> bytes:
+    """Generate data for AES key derivation.
+
+    :param derivation_constant: Number for the key derivation
+    :param kdk_access_rights: KeyDerivationKey access rights (0-3)
+    :param mode: Mode for key derivation (1/2, see: `KeyDerivationMode`)
+    :param key_length: Requested key length (128/256b)
+    :param iteration: Iteration of the key derivation
+    :return: Data used for key derivation
+    :raises AssertionError: Some of the arguments are incorrect.
+    """
+    assert mode in KeyDerivationMode.tags()
+    assert kdk_access_rights in [0, 1, 2, 3]
+    assert key_length in [128, 256]
+
+    label = int.to_bytes(derivation_constant, length=12, byteorder='little')
+    context = bytes(8)
+    context += int.to_bytes(kdk_access_rights << 6, length=1, byteorder='big')
+    context += b'\x01' if mode == KeyDerivationMode.KDK else b'\x10'
+    context += bytes(1)
+    key_option = 0x20 if key_length == 128 else 0x21
+    context += int.to_bytes(key_option, length=1, byteorder='big')
+    length = int.to_bytes(key_length, length=4, byteorder='big')
+    i = int.to_bytes(iteration, length=4, byteorder='big')
+    result = label + context + length + i
+    return result
 
 
 def add_leading_zeros(byte_data: bytes, return_size: int) -> bytes:
@@ -35,95 +151,3 @@ def add_trailing_zeros(byte_data: bytes, return_size: int) -> bytes:
     size_of_zeros = return_size - len(byte_data)
     byte_data_with_padding = byte_data + bytes("\x00" * size_of_zeros, "utf8")
     return byte_data_with_padding
-
-
-class MainCmd:
-    """Functions for creating cmd intended for inheritance."""
-
-    def __eq__(self, obj: object) -> bool:
-        """Comparison of values."""
-        return isinstance(obj, self.__class__) and vars(obj) == vars(self)
-
-    def __str__(self) -> str:
-        """Get info of command."""
-        return self.info()
-
-    @abstractmethod
-    def info(self) -> str:
-        """Get info of command."""
-        raise NotImplementedError("Info must be implemented in the derived class.")
-
-    def export(self) -> bytes:
-        """Export command as bytes."""
-        raise NotImplementedError("Export must be implemented in the derived class.")
-
-    @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> object:
-        """Parse command from bytes array."""
-        raise NotImplementedError("Parse must be implemented in the derived class.")
-
-
-class BaseCmd(MainCmd):
-    """Functions for creating cmd intended for inheritance."""
-    FORMAT = "<4L"
-    SIZE = calcsize(FORMAT)
-    TAG = 0x55aaaa55
-
-    @property
-    def address(self) -> int:
-        """Get address."""
-        return self._address
-
-    @address.setter
-    def address(self, value: int) -> None:
-        """Set address."""
-        assert 0x00000000 <= value <= 0xFFFFFFFF
-        self._address = value
-
-    @property
-    def length(self) -> int:
-        """Get length."""
-        return self._length
-
-    @length.setter
-    def length(self, value: int) -> None:
-        """Set value."""
-        assert 0x00000000 <= value <= 0xFFFFFFFF
-        self._length = value
-
-    def __init__(self, address: int, length: int, cmd_tag: int = EnumCmdTag.NONE) -> None:
-        """Constructor for Commands header.
-
-        :param address: Input address
-        :param length: Input length
-        :param cmd_tag: Command tag
-        """
-        self._address = address
-        self._length = length
-        self.cmd_tag = cmd_tag
-
-    def info(self) -> str:
-        """Get info of command."""
-        raise NotImplementedError("Info must be implemented in the derived class.")
-
-    def export(self) -> bytes:
-        """Export command header as bytes array."""
-        return pack(self.FORMAT, self.TAG, self.address, self.length, self.cmd_tag)
-
-    @classmethod
-    def header_parse(cls, cmd_tag: int, data: bytes, offset: int = 0) -> Tuple[int, int]:
-        """Parse header command from bytes array.
-
-        :param data: Input data as bytes array
-        :param offset: The offset of input data
-        :param cmd_tag: Information about command tag
-        :raises ValueError: Raise if tag is not equal to required TAG
-        :raises ValueError: Raise if cmd is not equal EnumCmdTag
-        :return: Tuple
-        """
-        tag, address, length, cmd = unpack_from(cls.FORMAT, data, offset)
-        if tag != cls.TAG:
-            raise ValueError("TAG is not valid.")
-        if cmd != cmd_tag:
-            raise ValueError("Values are not same.")
-        return address, length

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,7 +27,8 @@ class USBDeviceFilter:
     The decimal number is restrictred only to have 1 - 5 digits, e.g. "65535"
     It's allowed to set the USB filter ID to decimal number "99999", however, as
     the USB VID number is four-byte hex number (max value is 65535), this will
-    lead to zero results.
+    lead to zero results. Leading zeros are not allowed e.g. 0001. This will
+    result as invalid match.
 
     vid/pid - string of vendor ID & product ID separated by ':' or ','
     Same rules apply to the number format as in VID case, except, that the
@@ -43,7 +44,16 @@ class USBDeviceFilter:
     see instance ID in device manager under Windows OS.
 
     Linux specific:
-    instance ID - TODO investigate the instance ID....
+    USB device path - HID API returns path in following form:
+    '0003:0002:00'
+
+    The first number represents the Bus, the second Device and the third interface. The Bus:Device
+    number is unique so interface is not necessary and Bus:Device should be sufficient.
+
+    The Bus:Device can be observed using 'lsusb' command. The interface can be observed using
+    'lsusb -t'. lsusb returns the Bus and Device as a 3-digit number.
+    It has been agreed, that the expected input is:
+    <Bus in dec>#<Device in dec>, e.g. 3#11
 
     Mac specific:
     USB device path - HID API returns path in roughly following form:
@@ -58,15 +68,17 @@ class USBDeviceFilter:
     So the 'usb_id' name should be 'SE Blank RT Family @14200000' and the filter should be able to
     filter out such device.
     """
-    __vid_regex = "(0[xX][0-9a-fA-F]{1,4}|[0-9]{1,5})"
-    __vid_pid_regex = "0[xX][0-9a-fA-F]{1,4}(,|:)0[xX][0-9a-fA-F]{1,4}|[0-9]{1,5}(,|:)[0-9]{1,5}"
+    # match anything starting with 0x or 0X followed by 0-9 or a-f or
+    # match either 0 or decimal number not starting with zero
+    __vid_regex = "0[xX][0-9a-fA-F]{1,4}|0|[1-9][0-9]{0,4}"
+    # same as above, except it's a combination of two numbers separated by : or ,
+    __vid_pid_regex = "0[xX][0-9a-fA-F]{1,4}(,|:)0[xX][0-9a-fA-F]{1,4}|(0|[1-9][0-9]{0,4})(,|:)(0|[1-9][0-9]{0,4})"
 
     def __init__(self, usb_id: str = None, nxp_device_names: Dict[str, Tuple[int, int]] = None):
         """Initialize the USB Device Filtering.
 
         :param usb_id: usb_id string
-        :param nxp_device_names: Dictionary holding NXP device vid/pid
-        {"device_name": [vid(int), pid(int)]}
+        :param nxp_device_names: Dictionary holding NXP device vid/pid {"device_name": [vid(int), pid(int)]}
         """
         self.usb_id = usb_id
         self.nxp_device_names = nxp_device_names or {}
@@ -106,6 +118,13 @@ class USBDeviceFilter:
             # replace the hash sign with backslash
             #usb_path = usb_path.upper()
             usb_path = usb_path.replace('#', '\\')
+
+        if platform.system() == 'Linux':
+            # The user input is expected in form of <dec_num>#<dec_num>. So we
+            # convert the path returned by HID API into this form so we can
+            # compare it
+            nums = usb_path.split(":")
+            usb_path = str.format("{}#{}", int(nums[0], 16), int(nums[1], 16))
 
         # Determine, whether given device matches one of the expected criterion
         if self.usb_id is None:

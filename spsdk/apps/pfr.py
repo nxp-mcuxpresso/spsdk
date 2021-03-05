@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -230,7 +230,7 @@ def info(device: str, revision: str, area: str, output: click.Path, open_result:
 
 
 @catch_spsdk_error
-def safe_main() -> int:
+def safe_main() -> None:
     """Call the main function."""
     sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
 

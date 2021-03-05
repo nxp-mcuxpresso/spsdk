@@ -4,10 +4,17 @@ After installing SPSDK, several applications are present directly on PATH as exe
 
 - [spsdk](spsdk_apps.py) - entry point for all available applications.
 - [blhost](blhost.py) - console script for MBoot module.
-- [sdphost](sdphost.py) - console script for SDP module.
+- [elftosb](elftosb.py) - utility for generating TrustZone, MasterBootImage and SecureBinary images.
+- [nxpcertgen](nxpcertgen.py) - utility for generating  the self-signed x.509 certificate. 
+- [nxpdebugmbox](nxpdebugmbox.py) - utility for performing the Debug Authentication.
+- [nxpdevscan](nxpdscan.py) - utility for listing all connected NXP USB and UART devices.
+- [nxpkeygen](nxpkeygen.py) - utility for generating RSA/ECC key pairs and debug credential files based on YAML configuration file.
 - [pfr](pfr.py) - simple utility for creation and analysis of protected regions - CMPA and CFPA.
-- [nxpkeygen](nxpkeygen.py) - utility for generating RSA/ECC key pairs and debug credential files based on YAML configuration file
-- [nxpdebugmbox](nxpdebugmbox.py)- utility for performing the Debug Authentication
+- [pfrc](pfrc.py) - simple utility for search of brick-conditions in PFR settings.
+- [sdphost](sdphost.py) - console script for SDP module.
+- [sdpshost](sdpshost.py) - console script for SDPS module.
+- [shadowregs](shadowregs.py) -  utility for Shadow Registers controlling.
+ 
 
 `` spsdk --help`` - lists all available commands.
 

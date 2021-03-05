@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """OpenSSL implementation for security backend."""
 
+import math
 # Used security modules
 from secrets import token_bytes
 from typing import Any, Union
@@ -14,9 +15,10 @@ from typing import Any, Union
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac, keywrap, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec, utils
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from spsdk import SPSDKError
 # Abstract Class Interface
 from .abstract import BackendClass
 
@@ -126,19 +128,19 @@ class Backend(BackendClass):
         enc = cipher.decryptor()
         return enc.update(encrypted_data) + enc.finalize()
 
-    def rsa_sign(self, priv_key: Union[rsa.RSAPrivateKey, bytes], data: bytes, algorithm: str = 'sha256') -> bytes:
+    def rsa_sign(self, private_key: Union[rsa.RSAPrivateKey, bytes], data: bytes, algorithm: str = 'sha256') -> bytes:
         """Sign input data.
 
-        :param priv_key: The private key: either rsa.RSAPrivateKey or decrypted binary data in PEM format
+        :param private_key: The private key: either rsa.RSAPrivateKey or decrypted binary data in PEM format
         :param data: Input data
         :param algorithm: Used algorithm
         :return: Signed data
         :raise ValueError: if algorithm not found
         """
-        if isinstance(priv_key, bytes):
-            priv_key = serialization.load_pem_private_key(priv_key, None, default_backend())
-        assert isinstance(priv_key, rsa.RSAPrivateKey)
-        return priv_key.sign(data=data, padding=padding.PKCS1v15(), algorithm=self._get_algorithm(algorithm))
+        if isinstance(private_key, bytes):
+            private_key = serialization.load_pem_private_key(private_key, None, default_backend())
+        assert isinstance(private_key, rsa.RSAPrivateKey)
+        return private_key.sign(data=data, padding=padding.PKCS1v15(), algorithm=self._get_algorithm(algorithm))
 
     def rsa_verify(self, pub_key_mod: int, pub_key_exp: int, signature: bytes, data: bytes,
                    algorithm: str = 'sha256') -> bool:
@@ -171,6 +173,61 @@ class Backend(BackendClass):
         """
         return rsa.RSAPublicNumbers(exponent, modulus).public_key(default_backend())
 
+    def ecc_sign(
+            self, private_key: Union[ec.EllipticCurvePrivateKey, bytes],
+            data: bytes, algorithm: str = None
+    ) -> bytes:
+        """Sign data using (EC)DSA.
+
+        :param private_key: ECC private key
+        :param data: Data to sign
+        :param algorithm: Hash algorithm, if None the hash length is determined from ECC curve size
+        :return: Signature, r and s coordinates as bytes
+        """
+        if isinstance(private_key, bytes):
+            private_key = serialization.load_pem_private_key(private_key, None, default_backend())
+        assert isinstance(private_key, ec.EllipticCurvePrivateKey)
+        hash_name = algorithm or f'sha{private_key.key_size}'
+        der_signature = private_key.sign(
+            data, signature_algorithm=ec.ECDSA(self._get_algorithm(hash_name))
+        )
+        # pylint: disable=invalid-name  # we want to use established names
+        r, s = utils.decode_dss_signature(der_signature)
+        coordinate_size = math.ceil(private_key.key_size / 8)
+        r_bytes = r.to_bytes(coordinate_size, byteorder='big')
+        s_bytes = s.to_bytes(coordinate_size, byteorder='big')
+        return r_bytes + s_bytes
+
+
+    def ecc_verify(
+            self, public_key: Union[ec.EllipticCurvePublicKey, bytes],
+            signature: bytes, data: bytes, algorithm: str = None
+    ) -> bool:
+        """Verify (EC)DSA signature.
+
+        :param public_key: ECC public key
+        :param signature: Signature to verify, r and s coordinates as bytes
+        :param data: Data to validate
+        :param algorithm: Hash algorithm, if None the hash length is determined from ECC curve size
+        :return: True if the signature is valid
+        :raises SPSDKError: Signature length is invalid
+        """
+        if isinstance(public_key, bytes):
+            public_key = serialization.load_pem_public_key(public_key, default_backend())
+        assert isinstance(public_key, ec.EllipticCurvePublicKey)
+        coordinate_size = math.ceil(public_key.key_size / 8)
+        if len(signature) != 2 * coordinate_size:
+            raise SPSDKError(f'Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}')
+        hash_name = algorithm or f'sha{public_key.key_size}'
+        der_signature = utils.encode_dss_signature(
+            int.from_bytes(signature[:coordinate_size], byteorder='big'),
+            int.from_bytes(signature[coordinate_size:], byteorder='big')
+        )
+        try:
+            public_key.verify(der_signature, data, ec.ECDSA(self._get_algorithm(hash_name)))
+            return True
+        except InvalidSignature:
+            return False
 
 ########################################################################################################################
 # SPSDK OpenSSL Backend instance

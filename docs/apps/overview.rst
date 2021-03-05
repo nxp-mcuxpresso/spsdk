@@ -14,15 +14,54 @@ Options and flags for each application and their respective sub-commands are ava
 List of applications
 ====================
 
-nxpkeygen 
+blhost
+------
+
+The blhost application  is  a utility for communication with bootloader on target.
+
+It allows user to:
+
+- apply configuration block at internal memory address to memory with ID
+- program one word of OCOTP Field.
+- read one word of OCOTP Field
+- erase region of the flash
+- erase all flash according to memory id
+- fill memory with pattern
+- get bootloader-specific property
+- write/read memory
+- reset the device
+- generate the Key Blob for a given DEK
+- receive SB file
+- load a boot image to the device
+- key provisioning
+- execute application at address
+- apply configuration block at internal memory address
+- invoke code
+
+For complete list run: ``blhost --help``
+
+
+elftosb
 ---------
 
-The nxpkeygen application allows user to:
+The tool for generating TrustZone, MasterBootImage and SecureBinary images.
 
-- generate RSA/ECC key pairs (private and public) with various key's attributes
-- generate debug credential files based on YAML configuration file
+- generate TrustZone
+- generate MasterBootImage
+- generate SecureBinary
 
-For complete list of operations run: ``nxpkeygen --help``
+For complete list run: ``elftosb --help``
+
+
+nxpcertgen
+------------
+
+The nxpcertgen application allows user to generate the self-signed x.509 certificate
+with properties given in json configuration file. The certificates are self-signed 
+and support only BasicConstrains (ca, path_length).
+
+For complete list of operations run: ``nxpcertgen --help``
+
 
 nxpdebugmbox
 ------------
@@ -35,6 +74,25 @@ The nxpkeygen application allows user to:
 - set Fault Analysis Mode
 
 For complete list of operations run: ``nxpdebugmbox --help``
+
+
+nxpdevscan 
+-----------
+
+The nxpdevscan application allows user to list all connected USB and UART devices.
+
+For complete list of operations run: ``nxpdevscan --help``
+
+
+nxpkeygen 
+----------
+
+The nxpkeygen application allows user to:
+
+- generate RSA/ECC key pairs (private and public) with various key's attributes
+- generate debug credential files based on YAML configuration file
+
+For complete list of operations run: ``nxpkeygen --help``
 
 
 pfr
@@ -90,33 +148,18 @@ Note: THIS IS AN EXPERIMENTAL UTILITY! USE WITH CAUTION !!!
 For complete list of operations run: ``sdphosts --help``
 
 
-blhost
-------
-
-The blhost application  is  a utility for communication with bootloader on target.
+shadowregs
+-----------
+The shadowreg application is a utility for Shadow Registers controlling.
 
 It allows user to:
 
-- apply configuration block at internal memory address to memory with ID
-- program one word of OCOTP Field.
-- read one word of OCOTP Field
-- erase region of the flash
-- fill memory with pattern
-- get bootloader-specific property
-- write/read memory
-- reset the device
-- generate the Key Blob for a given DEK
+- save current state of shadow registers to YML file
+- load new state of shadow registers from YML file into microcontroller
+- print all shadow registers including theirs current values
+- print the current value of one shadow register
+- set a value of one shadow register defined by parameter
+- reset connected device
+- print a list of supported devices
 
-For complete list run: ``blhost --help``
-
-
-elftosb
----------
-
-The tool for generating TrustZone, MasterBootImage and SecureBinary images.
-
-- generate TrustZone
-- generate MasterBootImage
-- generate SecureBinary
-
-For complete list run: ``elftosb --help``
+For complete list of operations run: ``shadowregs --help``

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -89,7 +89,10 @@ setup(
             'sdpshost=spsdk.apps.sdpshost:safe_main',
             'spsdk=spsdk.apps.spsdk_apps:safe_main',
             'nxpkeygen=spsdk.apps.nxpkeygen:safe_main',
-            'nxpdebugmbox=spsdk.apps.nxpdebugmbox:safe_main'
+            'nxpdebugmbox=spsdk.apps.nxpdebugmbox:safe_main',
+            'nxpcertgen=spsdk.apps.nxpcertgen:safe_main',
+            'nxpdevscan=spsdk.apps.nxpdevscan:safe_main',
+            'shadowregs=spsdk.apps.shadowregs:safe_main'
         ],
     },
 )

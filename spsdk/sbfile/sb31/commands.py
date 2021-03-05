@@ -1,29 +1,198 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for creation commands."""
 
+from abc import abstractmethod
 from struct import pack, unpack_from, calcsize
-from typing import Mapping, Type, List
+from typing import Mapping, Type, List, Tuple
 
 from spsdk.sbfile.sb31.constants import EnumCmdTag
-from spsdk.sbfile.sb31.functions import BaseCmd, MainCmd
 from spsdk.utils.misc import align_block
+from spsdk.utils.easy_enum import Enum
 
+########################################################################################################################
+# Main Class
+########################################################################################################################
+
+class MainCmd:
+    """Functions for creating cmd intended for inheritance."""
+
+    def __eq__(self, obj: object) -> bool:
+        """Comparison of values."""
+        return isinstance(obj, self.__class__) and vars(obj) == vars(self)
+
+    def __str__(self) -> str:
+        """Get info of command."""
+        return self.info()
+
+    @abstractmethod
+    def info(self) -> str:
+        """Get info of command."""
+        raise NotImplementedError("Info must be implemented in the derived class.")
+
+    def export(self) -> bytes:
+        """Export command as bytes."""
+        raise NotImplementedError("Export must be implemented in the derived class.")
+
+    @classmethod
+    def parse(cls, data: bytes, offset: int = 0) -> object:
+        """Parse command from bytes array."""
+        raise NotImplementedError("Parse must be implemented in the derived class.")
+
+
+########################################################################################################################
+# Base Command Class
+########################################################################################################################
+
+class BaseCmd(MainCmd):
+    """Functions for creating cmd intended for inheritance."""
+    FORMAT = "<4L"
+    SIZE = calcsize(FORMAT)
+    TAG = 0x55aaaa55
+
+    @property
+    def address(self) -> int:
+        """Get address."""
+        return self._address
+
+    @address.setter
+    def address(self, value: int) -> None:
+        """Set address."""
+        assert 0x00000000 <= value <= 0xFFFFFFFF
+        self._address = value
+
+    @property
+    def length(self) -> int:
+        """Get length."""
+        return self._length
+
+    @length.setter
+    def length(self, value: int) -> None:
+        """Set value."""
+        assert 0x00000000 <= value <= 0xFFFFFFFF
+        self._length = value
+
+    def __init__(self, address: int, length: int, cmd_tag: int = EnumCmdTag.NONE) -> None:
+        """Constructor for Commands header.
+
+        :param address: Input address
+        :param length: Input length
+        :param cmd_tag: Command tag
+        """
+        self._address = address
+        self._length = length
+        self.cmd_tag = cmd_tag
+
+    def info(self) -> str:
+        """Get info of command."""
+        raise NotImplementedError("Info must be implemented in the derived class.")
+
+    def export(self) -> bytes:
+        """Export command as bytes."""
+        return pack(self.FORMAT, self.TAG, self.address, self.length, self.cmd_tag)
+
+    @classmethod
+    def header_parse(cls, cmd_tag: int, data: bytes, offset: int = 0) -> Tuple[int, int]:
+        """Parse header command from bytes array.
+
+        :param data: Input data as bytes array
+        :param offset: The offset of input data
+        :param cmd_tag: Information about command tag
+        :raises ValueError: Raise if tag is not equal to required TAG
+        :raises ValueError: Raise if cmd is not equal EnumCmdTag
+        :return: Tuple
+        """
+        tag, address, length, cmd = unpack_from(cls.FORMAT, data, offset)
+        if tag != cls.TAG:
+            raise ValueError("TAG is not valid.")
+        if cmd != cmd_tag:
+            raise ValueError("Values are not same.")
+        return address, length
 
 ########################################################################################################################
 # Commands Classes version 3.1
 ########################################################################################################################
+class CmdLoadBase(BaseCmd):
+    """Base class for commands loading data."""
+    HAS_MEMORY_ID_BLOCK = True
+
+    def __init__(self, cmd_tag: int, address: int, data: bytes, memory_id: int = 0) -> None:
+        """Constructor for command.
+
+        :param cmd_tag: Command tag for the derived class
+        :param address: Address for the load command
+        :param data: Data to load
+        :param memory_id: Memory ID
+        """
+        super().__init__(address=address, length=len(data), cmd_tag=cmd_tag)
+        self.memory_id = memory_id
+        self.data = data
+
+    def export(self) -> bytes:
+        """Export command as bytes."""
+        data = super().export()
+        if self.HAS_MEMORY_ID_BLOCK:
+            data += pack("<4L", self.memory_id, 0, 0, 0)
+        data += self.data
+        data = align_block(data, alignment=16)
+        return data
+
+    def info(self) -> str:
+        """Get info about the load command."""
+        msg = f"{EnumCmdTag.name(self.cmd_tag)}: "
+        if self.HAS_MEMORY_ID_BLOCK:
+            msg += f"Address=0x{self.address:08X}, Length={self.length}, Memory ID={self.memory_id}"
+        else:
+            msg += f"Address=0x{self.address:08X}, Length={self.length}"
+        return msg
+
+
+    @classmethod
+    def _extract_data(cls, data: bytes, offset: int = 0) -> Tuple[int, int, bytes, int, int]:
+        tag, address, length, cmd = unpack_from(cls.FORMAT, data)
+        memory_id = 0
+        if tag != cls.TAG:
+            raise ValueError(f"Invalid TAG, expected: {cls.TAG}")
+        offset += BaseCmd.SIZE
+        if cls.HAS_MEMORY_ID_BLOCK:
+            memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset)
+            assert pad0 == pad1 == pad2 == 0
+            offset += 16
+        load_data = data[offset: offset + length]
+        return address, length, load_data, cmd, memory_id
+
+    @classmethod
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdLoadBase":
+        """Parse command from bytes array.
+
+        :param data: Input data as bytes array
+        :param offset: The offset of input data
+        :return: CmdLoad
+        :raises ValueError: Invalid cmd_tag was found
+        """
+        address, _, data, cmd_tag, memory_id = cls._extract_data(data, offset)
+        if cmd_tag not in [
+                EnumCmdTag.LOAD, EnumCmdTag.LOAD_CMAC, EnumCmdTag.LOAD_HASH_LOCKING,
+                EnumCmdTag.LOAD_KEY_BLOB, EnumCmdTag.PROGRAM_FUSES,
+                EnumCmdTag.PROGRAM_IFR
+        ]:
+            raise ValueError(f"Invalid cmd_tag found: {cmd_tag}")
+        if cls == CmdLoadBase:
+            return cls(cmd_tag=cmd_tag, address=address, data=data, memory_id=memory_id)
+        # pylint: disable=no-value-for-parameter
+        return cls(address=address, data=data, memory_id=memory_id)  # type: ignore
+
 class CmdErase(BaseCmd):
-    """Erase given address range."""
+    """Erase given address range. The erase will be rounded up to the sector size."""
 
     def __init__(self, address: int, length: int, memory_id: int = 0) -> None:
         """Constructor for command.
 
-        :param address:Input address
+        :param address: Input address
         :param length: Input length
         :param memory_id: Memory ID
         """
@@ -54,41 +223,17 @@ class CmdErase(BaseCmd):
         return cls(address=address, length=length, memory_id=memory_id)
 
 
-class CmdLoad(BaseCmd):
+class CmdLoad(CmdLoadBase):
     """Data to write follows the range header."""
 
-    def __init__(self, address: int, length: int, memory_id: int = 0) -> None:
+    def __init__(self, address: int, data: bytes, memory_id: int = 0) -> None:
         """Constructor for command.
 
-        :param address:Input address
-        :param length: Input length
+        :param address: Address for the load command
+        :param data: Data to load
         :param memory_id: Memory ID
         """
-        super().__init__(cmd_tag=EnumCmdTag.LOAD, address=address, length=length)
-        self.memory_id = memory_id
-
-    def info(self) -> str:
-        """Get info of command."""
-        return f"LOAD: Address=0x{self.address:08X}, Length={self.length}, Memory ID={self.memory_id}"
-
-    def export(self) -> bytes:
-        """Export command as bytes."""
-        data = super().export()
-        data += pack("<4L", self.memory_id, 0, 0, 0)
-        return data
-
-    @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdLoad":
-        """Parse command from bytes array.
-
-        :param data: Input data as bytes array
-        :param offset: The offset of input data
-        :return: CmdLoad
-        """
-        address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.LOAD)
-        memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset+16)
-        assert pad0 == pad1 == pad2 == 0
-        return cls(address=address, length=length, memory_id=memory_id)
+        super().__init__(cmd_tag=EnumCmdTag.LOAD, address=address, data=data, memory_id=memory_id)
 
 
 class CmdExecute(BaseCmd):
@@ -143,40 +288,34 @@ class CmdCall(BaseCmd):
         return cls(address=address)
 
 
-class CmdProgFuses(BaseCmd):
+class CmdProgFuses(CmdLoadBase):
     """Address will be address of fuse register."""
 
-    @property
-    def data(self) -> List[int]:
-        """Get data."""
-        return self._data
+    HAS_MEMORY_ID_BLOCK = False
 
-    @data.setter
-    def data(self, value: List[int]) -> None:
-        """Set data."""
-        assert isinstance(value, list)
-        self._data = value
-        self._length = len(self._data)
-
-    def __init__(self, address: int, data: List[int]) -> None:
+    def __init__(self, address: int, data: bytes) -> None:
         """Constructor for Command.
 
         :param address: Input address
-        :param data: Input values
+        :param data: Input data
         """
-        super().__init__(cmd_tag=EnumCmdTag.PROGRAM_FUSES, address=address, length=len(data))
-        self.data = data
+        super().__init__(cmd_tag=EnumCmdTag.PROGRAM_FUSES, address=address, data=data)
+        self.length //= 4
 
-    def info(self) -> str:
-        """Get info of command."""
-        return f"PROGRAM_FUSES: Address=0x{self.address:08X}, Values={self.data}"
-
-    def export(self) -> bytes:
-        """Export command as bytes."""
-        data = super().export()
-        for value in self.data:
-            data += pack("<L", value)
-        return data
+    @classmethod
+    def _extract_data(cls, data: bytes, offset: int = 0) -> Tuple[int, int, bytes, int, int]:
+        tag, address, length, cmd = unpack_from(cls.FORMAT, data)
+        length *= 4
+        memory_id = 0
+        if tag != cls.TAG:
+            raise ValueError(f"Invalid TAG, expected: {cls.TAG}")
+        offset += BaseCmd.SIZE
+        if cls.HAS_MEMORY_ID_BLOCK:
+            memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset)
+            assert pad0 == pad1 == pad2 == 0
+            offset += 16
+        load_data = data[offset: offset + length]
+        return address, length, load_data, cmd, memory_id
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "CmdProgFuses":
@@ -186,46 +325,24 @@ class CmdProgFuses(BaseCmd):
         :param offset: The offset of input data
         :return: CmdProgFuses
         """
-        address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.PROGRAM_FUSES)
-        values = []
-        for i in range(length):
-            values.append(unpack_from("<L", data, offset + BaseCmd.SIZE + (i * 4))[0])
-        return cls(address=address, data=values)
+        address, _, data, _, _ = cls._extract_data(data=data, offset=offset)
+        return cls(address=address, data=data)
 
 
-class CmdProgIfr(BaseCmd):
+class CmdProgIfr(CmdLoadBase):
     """Address will be the address into the IFR region."""
 
-    @property
-    def data(self) -> bytes:
-        """Get data."""
-        return self._data
+    HAS_MEMORY_ID_BLOCK = False
 
-    @data.setter
-    def data(self, value: bytes) -> None:
-        """Set data."""
-        assert isinstance(value, bytes)
-        self._data = value
-        self._length = len(self._data)
-
-    def __init__(self, data: bytes, address: int) -> None:
+    def __init__(self, address: int, data: bytes) -> None:
         """Constructor for Command.
 
         :param address: Input address
         :param data: Input data as bytes array
         """
-        super().__init__(cmd_tag=EnumCmdTag.PROGRAM_IFR, address=address, length=len(data))
-        self.data = data
-
-    def info(self) -> str:
-        """Get info of command."""
-        return f"PROGRAM_IFR: Address=0x{self.address:08X}, DataLen={len(self.data)}"
-
-    def export(self) -> bytes:
-        """Export command as bytes."""
-        data = super().export()
-        data += bytes(self.data)
-        return data
+        super().__init__(
+            cmd_tag=EnumCmdTag.PROGRAM_IFR, address=address, data=data
+        )
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "CmdProgIfr":
@@ -233,49 +350,23 @@ class CmdProgIfr(BaseCmd):
 
         :param data: Input data as bytes array
         :param offset: The offset of input data
-        :return: CmdProgIfr
+        :return: CmdProgFuses
         """
-        address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.PROGRAM_IFR)
-        offset += BaseCmd.SIZE
-        load_data = data[offset: offset + length]
-        return cls(address=address, data=load_data)
+        address, _, data, _, _ = cls._extract_data(data=data, offset=offset)
+        return cls(address=address, data=data)
 
 
-class CmdLoadCmac(BaseCmd):
+class CmdLoadCmac(CmdLoadBase):
     """Load cmac. ROM is calculating cmac from loaded data."""
 
-    def __init__(self, address: int, length: int, memory_id: int = 0) -> None:
+    def __init__(self, address: int, data: bytes, memory_id: int = 0) -> None:
         """Constructor for command.
 
-        :param address:Input address
-        :param length: Input length
+        :param address: Address for the load command
+        :param data: Data to load
         :param memory_id: Memory ID
         """
-        super().__init__(cmd_tag=EnumCmdTag.LOAD_CMAC, address=address, length=length)
-        self.memory_id = memory_id
-
-    def info(self) -> str:
-        """Get info of command."""
-        return f"LOAD_CMAC: Address=0x{self.address:08X}, Length={self.length}, Memory ID={self.memory_id}"
-
-    def export(self) -> bytes:
-        """Export command as bytes."""
-        data = super().export()
-        data += pack("<4L", self.memory_id, 0, 0, 0)
-        return data
-
-    @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdLoadCmac":
-        """Parse command from bytes array.
-
-        :param data: Input data as bytes array
-        :param offset: The offset of input data
-        :return: CmdLoadCmac
-        """
-        address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.LOAD_CMAC)
-        memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset+16)
-        assert pad0 == pad1 == pad2 == 0
-        return cls(address=address, length=length, memory_id=memory_id)
+        super().__init__(cmd_tag=EnumCmdTag.LOAD_CMAC, address=address, data=data, memory_id=memory_id)
 
 
 class CmdCopy(BaseCmd):
@@ -290,7 +381,7 @@ class CmdCopy(BaseCmd):
                  ) -> None:
         """Constructor for command.
 
-        :param address:Input address
+        :param address: Input address
         :param length: Input length
         :param destination_address: Destination address
         :param memory_id_from: Memory ID
@@ -330,51 +421,37 @@ class CmdCopy(BaseCmd):
         )
 
 
-class CmdLoadHashLocking(BaseCmd):
+class CmdLoadHashLocking(CmdLoadBase):
     """Load hash. ROM is calculating hash."""
 
-    def __init__(self, address: int, length: int, memory_id: int = 0) -> None:
+    def __init__(self, address: int, data: bytes, memory_id: int = 0) -> None:
         """Constructor for command.
 
-        :param address:Input address
-        :param length: Input length
+        :param address: Address for the load command
+        :param data: Data to load
         :param memory_id: Memory ID
         """
-        super().__init__(cmd_tag=EnumCmdTag.LOAD_HASH_LOCKING, address=address, length=length)
-        self.memory_id = memory_id
-
-    def info(self) -> str:
-        """Get info of command."""
-        return f"LOAD_HASH_LOCKING: Address=0x{self.address:08X}, Length={self.length}, Memory ID={self.memory_id}"
+        super().__init__(
+            cmd_tag=EnumCmdTag.LOAD_HASH_LOCKING, address=address,
+            data=data, memory_id=memory_id
+        )
 
     def export(self) -> bytes:
         """Export command as bytes."""
         data = super().export()
-        data += pack("<4L", self.memory_id, 0, 0, 0)
+        data += bytes(64)
         return data
-
-    @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdLoadHashLocking":
-        """Parse command from bytes array.
-
-        :param data: Input data as bytes array
-        :param offset: The offset of input data
-        :return: CmdCopy
-        """
-        address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.LOAD_HASH_LOCKING)
-        memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset+16)
-        assert pad0 == pad1 == pad2 == 0
-        return cls(address=address, length=length, memory_id=memory_id)
-
 
 class CmdLoadKeyBlob(BaseCmd):
     """Load key blob."""
     FORMAT = "<L2H2L"
 
-    NXP_CUST_KEK_INT_SK = 16
-    NXP_CUST_KEK_EXT_SK = 17
+    class KeyWraps(Enum):
+        """KeyWrap IDs used by the CmdLoadKeyBlob command."""
+        NXP_CUST_KEK_INT_SK = (16, 'NXP_CUST_KEK_INT_SK')
+        NXP_CUST_KEK_EXT_SK = (17, 'NXP_CUST_KEK_EXT_SK')
 
-    def __init__(self, offset: int, key_wrap_id: int, data: bytes) -> None:
+    def __init__(self, offset: int, data: bytes, key_wrap_id: int) -> None:
         """Constructor for command.
 
         :param offset: Input offset
@@ -390,7 +467,7 @@ class CmdLoadKeyBlob(BaseCmd):
         return f"LOAD_KEY_BLOB: Offset=0x{self.address:08X}, Length={self.length}, Key wrap ID={self.key_wrap_id}"
 
     def export(self) -> bytes:
-        """Export command header as bytes array."""
+        """Export command as bytes."""
         result_data = pack(self.FORMAT, self.TAG, self.address, self.key_wrap_id, self.length, self.cmd_tag)
         result_data += self.data
 
@@ -427,8 +504,8 @@ class CmdConfigureMemory(BaseCmd):
         return f"CONFIGURE_MEMORY: Address=0x{self.address:08X}, Memory ID={self.memory_id}"
 
     def export(self) -> bytes:
-        """Export command header as bytes array."""
-        return pack(self.FORMAT, self.TAG, self.address, self.memory_id, self.cmd_tag)
+        """Export command as bytes."""
+        return pack(self.FORMAT, self.TAG, self.memory_id, self.address, self.cmd_tag)
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "CmdConfigureMemory":
@@ -438,7 +515,7 @@ class CmdConfigureMemory(BaseCmd):
         :param offset: The offset of input data
         :return: CmdConfigureMemory
         """
-        address, memory_id = cls.header_parse(
+        memory_id, address = cls.header_parse(
             cmd_tag=EnumCmdTag.CONFIGURE_MEMORY, data=data, offset=offset
         )
         return cls(address=address, memory_id=memory_id)
@@ -447,24 +524,24 @@ class CmdConfigureMemory(BaseCmd):
 class CmdFillMemory(BaseCmd):
     """Fill memory range by pattern."""
 
-    def __init__(self, address: int, length: int, memory_id: int = 0) -> None:
+    def __init__(self, address: int, length: int, pattern: int) -> None:
         """Constructor for command.
 
-        :param address:Input address
+        :param address: Input address
         :param length: Input length
-        :param memory_id: Memory ID
+        :param pattern: Pattern for fill memory with
         """
         super().__init__(cmd_tag=EnumCmdTag.FILL_MEMORY, address=address, length=length)
-        self.memory_id = memory_id
+        self.pattern = pattern
 
     def info(self) -> str:
         """Get info of command."""
-        return f"FILL_MEMORY: Address=0x{self.address:08X}, Length={self.length}, Memory ID={self.memory_id}"
+        return f"FILL_MEMORY: Address=0x{self.address:08X}, Length={self.length}, PATTERN={hex(self.pattern)}"
 
     def export(self) -> bytes:
         """Export command as bytes."""
         data = super().export()
-        data += pack("<4L", self.memory_id, 0, 0, 0)
+        data += pack("<4L", self.pattern, 0, 0, 0)
         return data
 
     @classmethod
@@ -476,16 +553,23 @@ class CmdFillMemory(BaseCmd):
         :return: CmdErase
         """
         address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.FILL_MEMORY)
-        memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset + 16)
+        pattern, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset + 16)
         assert pad0 == pad1 == pad2 == 0
-        return cls(address=address, length=length, memory_id=memory_id)
+        return cls(address=address, length=length, pattern=pattern)
 
 
 class CmdFwVersionCheck(BaseCmd):
     """Check counter value with stored value, if values are not same, SB file is rejected."""
 
-    NONSECURE = 1
-    SECURE = 2
+    class COUNTER_ID(Enum):
+        """Counter IDs used by the CmdFwVersionCheck command."""
+        NONE = (0, 'none')
+        NONSECURE = (1, 'nonsecure')
+        SECURE = (2, 'secure')
+        RADIO = (3, 'radio')
+        SNT = (4, 'snt')
+        BOOTLOADER = (3, 'bootloader')
+
 
     def __init__(self, value: int, counter_id: int) -> None:
         """Constructor for command.
@@ -502,7 +586,7 @@ class CmdFwVersionCheck(BaseCmd):
         return f"FW_VERSION_CHECK: Value={self.value}, Counter ID={self.counter_id}"
 
     def export(self) -> bytes:
-        """Export command header as bytes array."""
+        """Export command as bytes."""
         return pack(self.FORMAT, self.TAG, self.value, self.counter_id, self.cmd_tag)
 
     @classmethod
@@ -524,7 +608,7 @@ class CmdSectionHeader(MainCmd):
     FORMAT = "<4L"
     SIZE = calcsize(FORMAT)
 
-    def __init__(self, section_uid: int = 0, section_type: int = 0, length: int = 0) -> None:
+    def __init__(self, length: int, section_uid: int = 1, section_type: int = 1) -> None:
         """Constructor for Commands section.
 
         :param section_uid: Input uid
@@ -555,11 +639,25 @@ class CmdSectionHeader(MainCmd):
         """
         if calcsize(cls.FORMAT) > len(data) - offset:
             raise ValueError("FORMAT is bigger than length of the data without offset!")
-        obj = cls()
-        (obj.section_uid, obj.section_type, obj.length, obj._pad) = unpack_from(cls.FORMAT, data, offset)
-        return obj
+        section_uid, section_type, length, _ = unpack_from(cls.FORMAT, data, offset)
+        return cls(section_uid=section_uid, section_type=section_type, length=length)
 
 
+TAG_TO_CLASS: Mapping[int, Type[BaseCmd]] = {
+    EnumCmdTag.ERASE: CmdErase,
+    EnumCmdTag.LOAD: CmdLoad,
+    EnumCmdTag.EXECUTE: CmdExecute,
+    EnumCmdTag.CALL: CmdCall,
+    EnumCmdTag.PROGRAM_FUSES: CmdProgFuses,
+    EnumCmdTag.PROGRAM_IFR: CmdProgIfr,
+    EnumCmdTag.LOAD_CMAC: CmdLoadCmac,
+    EnumCmdTag.COPY: CmdCopy,
+    EnumCmdTag.LOAD_HASH_LOCKING: CmdLoadHashLocking,
+    EnumCmdTag.LOAD_KEY_BLOB: CmdLoadKeyBlob,
+    EnumCmdTag.CONFIGURE_MEMORY: CmdConfigureMemory,
+    EnumCmdTag.FILL_MEMORY: CmdFillMemory,
+    EnumCmdTag.FW_VERSION_CHECK: CmdFwVersionCheck
+}
 ########################################################################################################################
 # Command parser from raw data
 ########################################################################################################################
@@ -571,25 +669,10 @@ def parse_command(data: bytes, offset: int = 0) -> object:
     :raises ValueError: Raise when tag is not in cmd_class
     :return: object
     """
-    cmd_class: Mapping[int, Type[BaseCmd]] = {
-        EnumCmdTag.ERASE: CmdErase,
-        EnumCmdTag.LOAD: CmdLoad,
-        EnumCmdTag.EXECUTE: CmdExecute,
-        EnumCmdTag.CALL: CmdCall,
-        EnumCmdTag.PROGRAM_FUSES: CmdProgFuses,
-        EnumCmdTag.PROGRAM_IFR: CmdProgIfr,
-        EnumCmdTag.LOAD_CMAC: CmdLoadCmac,
-        EnumCmdTag.COPY: CmdCopy,
-        EnumCmdTag.LOAD_HASH_LOCKING: CmdLoadHashLocking,
-        EnumCmdTag.LOAD_KEY_BLOB: CmdLoadKeyBlob,
-        EnumCmdTag.CONFIGURE_MEMORY: CmdConfigureMemory,
-        EnumCmdTag.FILL_MEMORY: CmdFillMemory,
-        EnumCmdTag.FW_VERSION_CHECK: CmdFwVersionCheck
-    }
     #  verify that first 4 bytes of frame are 55aaaa55
     tag = unpack_from("<L", data, offset=offset)[0]
     assert tag == BaseCmd.TAG, "Invalid tag."
     cmd_tag = unpack_from("<L", data, offset=offset + 12)[0]
-    if cmd_tag not in cmd_class:
+    if cmd_tag not in TAG_TO_CLASS:
         raise ValueError(f"Invalid command tag: {cmd_tag}")
-    return cmd_class[cmd_tag].parse(data, offset)
+    return TAG_TO_CLASS[cmd_tag].parse(data, offset)

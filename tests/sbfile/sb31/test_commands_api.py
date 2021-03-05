@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
@@ -12,27 +12,22 @@ from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.sbfile.sb31.commands import CmdErase, CmdLoad, CmdExecute, CmdCall, CmdProgFuses, CmdProgIfr, \
     CmdLoadCmac, CmdLoadHashLocking, CmdCopy, CmdFillMemory, parse_command, CmdLoadKeyBlob, CmdConfigureMemory, \
     CmdSectionHeader, CmdFwVersionCheck
-from spsdk.sbfile.sb31.functions import BaseCmd
+from spsdk.sbfile.sb31.commands import BaseCmd
 
 
 def test_cmd_erase():
     """Test address, length, memory_id, info value, size after export and parsing of CmdErase command."""
-    cmd = CmdErase(address=100, length=0, memory_id=0)
+    cmd = CmdErase(address=100, length=0xFF, memory_id=10)
     assert cmd.address == 100
-    assert cmd.length == 0
-    assert cmd.memory_id == 0
+    assert cmd.length == 0xFF
+    assert cmd.memory_id == 10
     assert cmd.info()
 
     data = cmd.export()
-    assert len(data) % 16 == 0
+    assert len(data) == 32
 
     cmd_parsed = CmdErase.parse(data=data)
-    assert cmd.address == cmd_parsed.address
-    assert cmd.length == cmd_parsed.length
-    assert cmd.memory_id == cmd_parsed.memory_id
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-    assert 0x00000000 <= cmd.length <= 0xFFFFFFFF
+    assert cmd == cmd_parsed
 
 
 def test_parse_invalid_cmd_erase_cmd_tag():
@@ -46,27 +41,22 @@ def test_parse_invalid_cmd_erase_cmd_tag():
 
 def test_cmd_load():
     """Test address, len, memory_id, info value, size after append, export and parsing of CmdLoad command."""
-    cmd = CmdLoad(address=100, length=0, memory_id=0)
+    cmd = CmdLoad(address=100, data=bytes(range(10)), memory_id=1)
     assert cmd.address == 100
-    assert cmd.length == 0
-    assert cmd.memory_id == 0
+    assert cmd.length == 10
+    assert cmd.memory_id == 1
     assert cmd.info()
 
     data = cmd.export()
-    assert len(data) % 16 == 0
+    assert len(data) == 48
 
     cmd_parsed = CmdLoad.parse(data=data)
-    assert cmd.address == cmd_parsed.address
-    assert cmd.length == cmd_parsed.length
-    assert cmd.memory_id == cmd_parsed.memory_id
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-    assert 0x00000000 <= cmd.length <= 0xFFFFFFFF
+    assert cmd == cmd_parsed
 
 
 def test_parse_invalid_cmd_load_cmd_tag():
     """CmdLoad tag validity test."""
-    cmd = CmdLoad(address=0, length=0, memory_id=0)
+    cmd = CmdLoad(address=0, data=bytes(4), memory_id=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(ValueError):
@@ -84,8 +74,6 @@ def test_cmd_execute():
 
     cmd_parsed = CmdExecute.parse(data=data)
     assert cmd == cmd_parsed
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
 
 
 def test_parse_invalid_cmd_execute_cmd_tag():
@@ -109,8 +97,6 @@ def test_cmd_call():
     cmd_parsed = CmdCall.parse(data=data)
     assert cmd == cmd_parsed
 
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-
 
 def test_parse_invalid_cmd_call_cmd_tag():
     """CmdCall tag validity test."""
@@ -123,31 +109,16 @@ def test_parse_invalid_cmd_call_cmd_tag():
 
 def test_program_cmd_progfuses():
     """Test address, values, info value, size after export and parsing of CmdProgFuses command."""
-    cmd = CmdProgFuses(address=100, data=[0, 1, 2, 3])
+    cmd = CmdProgFuses(address=100, data=bytes(12))
     assert cmd.address == 100
-    assert cmd.data == [0, 1, 2, 3]
-    assert cmd.length == 4
+    assert cmd.length == 3
     assert cmd.info()
 
-    cmd.data = [0, 1, 2, 3, 4]
-    assert cmd.length == 5
-
     data = cmd.export()
-    assert len(data) == BaseCmd.SIZE + 5 * 4
+    assert len(data) == BaseCmd.SIZE + 4 * 4
 
     cmd_parsed = CmdProgFuses.parse(data=data)
     assert cmd == cmd_parsed
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-
-
-def test_parse_invalid_cmd_progfuses_cmd_tag():
-    """CmdProgFuses tag validity test."""
-    cmd = CmdProgFuses(address=0, data=[0, 1, 2, 3])
-    cmd.cmd_tag = EnumCmdTag.LOAD
-    data = cmd.export()
-    with pytest.raises(Exception):
-        CmdProgFuses.parse(data=data)
 
 
 def test_cmd_progifr():
@@ -158,46 +129,30 @@ def test_cmd_progifr():
     assert cmd.info()
 
     data = cmd.export()
-    assert len(data) == BaseCmd.SIZE + len(cmd.data)
+    assert len(data) == BaseCmd.SIZE + len(cmd.data) + 12
 
     cmd_parsed = CmdProgIfr.parse(data=data)
     assert cmd == cmd_parsed
 
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-
-
-def test_parse_invalid_cmd_progifr_cmd_tag():
-    """CmdProgFuses tag validity test."""
-    cmd = CmdProgIfr(address=100, data=bytes([0] * 100))
-    cmd.cmd_tag = EnumCmdTag.LOAD
-    data = cmd.export()
-    with pytest.raises(Exception):
-        CmdProgFuses.parse(data=data)
-
 
 def test_cmd_loadcmac():
     """Test address, length, memory_id, info value, size after export and parsing of CmdLoadCmac command."""
-    cmd = CmdLoadCmac(address=100, length=0, memory_id=0)
+    cmd = CmdLoadCmac(address=100, data=bytes(range(10)), memory_id=0)
     assert cmd.address == 100
-    assert cmd.length == 0
+    assert cmd.length == 10
     assert cmd.memory_id == 0
     assert cmd.info()
 
     data = cmd.export()
-    assert len(data) % 16 == 0
+    assert len(data) == 48
 
     cmd_parsed = CmdLoadCmac.parse(data=data)
-    assert cmd.address == cmd_parsed.address
-    assert cmd.length == cmd_parsed.length
-    assert cmd.memory_id == cmd_parsed.memory_id
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-    assert 0x00000000 <= cmd.length <= 0xFFFFFFFF
+    assert cmd == cmd_parsed
 
 
 def test_parse_invalid_cmd_loadcmac_cmd_tag():
     """CmdLoadCmac tag validity test."""
-    cmd = CmdLoadCmac(address=0, length=0, memory_id=0)
+    cmd = CmdLoadCmac(address=0, data=bytes(10), memory_id=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(ValueError):
@@ -207,26 +162,19 @@ def test_parse_invalid_cmd_loadcmac_cmd_tag():
 def test_cmd_copy():
     """Test address, length, destination_address, memory_id_from, memory_id_to, info value,
     size after export and parsing of CmdCopy command."""
-    cmd = CmdCopy(address=100, length=0, destination_address=0, memory_id_from=0, memory_id_to=0)
+    cmd = CmdCopy(address=100, length=10, destination_address=20, memory_id_from=30, memory_id_to=40)
     assert cmd.address == 100
-    assert cmd.length == 0
-    assert cmd.destination_address == 0
-    assert cmd.memory_id_from == 0
-    assert cmd.memory_id_to == 0
+    assert cmd.length == 10
+    assert cmd.destination_address == 20
+    assert cmd.memory_id_from == 30
+    assert cmd.memory_id_to == 40
     assert cmd.info()
 
     data = cmd.export()
     assert len(data) % 16 == 0
 
     cmd_parsed = CmdCopy.parse(data=data)
-    assert cmd.address == cmd_parsed.address
-    assert cmd.length == cmd_parsed.length
-    assert cmd.destination_address == cmd_parsed.destination_address
-    assert cmd.memory_id_from == cmd_parsed.memory_id_from
-    assert cmd.memory_id_to == cmd_parsed.memory_id_to
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-    assert 0x00000000 <= cmd.length <= 0xFFFFFFFF
+    assert cmd == cmd_parsed
 
 
 def test_parse_invalid_cmd_copy_cmd_tag():
@@ -240,27 +188,22 @@ def test_parse_invalid_cmd_copy_cmd_tag():
 
 def test_cmd_loadhashlocking():
     """Test address, length, memory_id, info value, size after export and parsing of CmdHashLocking command."""
-    cmd = CmdLoadHashLocking(address=100, length=0, memory_id=0)
+    cmd = CmdLoadHashLocking(address=100, data=bytes(range(10)), memory_id=5)
     assert cmd.address == 100
-    assert cmd.length == 0
-    assert cmd.memory_id == 0
+    assert cmd.length == 10
+    assert cmd.memory_id == 5
     assert cmd.info()
 
     data = cmd.export()
-    assert len(data) % 16 == 0
+    assert len(data) == 48 + 64
 
     cmd_parsed = CmdLoadHashLocking.parse(data=data)
-    assert cmd.address == cmd_parsed.address
-    assert cmd.length == cmd_parsed.length
-    assert cmd.memory_id == cmd_parsed.memory_id
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-    assert 0x00000000 <= cmd.length <= 0xFFFFFFFF
+    assert cmd == cmd_parsed
 
 
 def test_parse_invalid_cmd_loadhashlocking_cmd_tag():
     """CmdLoadCmac tag validity test."""
-    cmd = CmdLoadHashLocking(address=0, length=0, memory_id=0)
+    cmd = CmdLoadHashLocking(address=0, data=bytes(10), memory_id=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(ValueError):
@@ -269,7 +212,7 @@ def test_parse_invalid_cmd_loadhashlocking_cmd_tag():
 
 def test_cmd_loadkeyblob():
     """Test offset, length, key_wrap, data info value, size after export and parsing of CmdLoadKeyBlob command."""
-    cmd = CmdLoadKeyBlob(offset=100, key_wrap_id=CmdLoadKeyBlob.NXP_CUST_KEK_EXT_SK, data=10 * b"x")
+    cmd = CmdLoadKeyBlob(offset=100, key_wrap_id=CmdLoadKeyBlob.KeyWraps.NXP_CUST_KEK_EXT_SK, data=10 * b"x")
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.key_wrap_id == 17
@@ -285,7 +228,7 @@ def test_cmd_loadkeyblob():
 
 def test_parse_invalid_cmd_loadkeyblob_cmd_tag():
     """CmdLoadKeyBlob tag validity test."""
-    cmd = CmdLoadKeyBlob(offset=100,  key_wrap_id=CmdLoadKeyBlob.NXP_CUST_KEK_EXT_SK, data=bytes(10))
+    cmd = CmdLoadKeyBlob(offset=100,  key_wrap_id=CmdLoadKeyBlob.KeyWraps.NXP_CUST_KEK_EXT_SK, data=bytes(10))
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(ValueError):
@@ -294,19 +237,16 @@ def test_parse_invalid_cmd_loadkeyblob_cmd_tag():
 
 def test_cmd_configurememory():
     """Test address, memory_id, info value, size after export and parsing of CmdConfigureMemory command."""
-    cmd = CmdConfigureMemory(address=100, memory_id=0)
+    cmd = CmdConfigureMemory(address=100, memory_id=10)
     assert cmd.address == 100
-    assert cmd.memory_id == 0
+    assert cmd.memory_id == 10
     assert cmd.info()
 
     data = cmd.export()
-    assert len(data) % 16 == 0
+    assert len(data) == 16
 
     cmd_parsed = CmdConfigureMemory.parse(data=data)
-    assert cmd.address == cmd_parsed.address
-    assert cmd.memory_id == cmd_parsed.memory_id
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
+    assert cmd == cmd_parsed
 
 
 def test_parse_invalid_cmd_configurememory_cmd_tag():
@@ -320,27 +260,22 @@ def test_parse_invalid_cmd_configurememory_cmd_tag():
 
 def test_cmd_fillmemory():
     """Test address, length, info value, size after export and parsing of CmdFillMemory command."""
-    cmd = CmdFillMemory(address=100, length=0, memory_id=0)
+    cmd = CmdFillMemory(address=100, length=100, pattern=0xFF1111FF)
     assert cmd.address == 100
-    assert cmd.length == 0
-    assert cmd.memory_id == 0
+    assert cmd.length == 100
+    assert cmd.pattern == 0xFF1111FF
     assert cmd.info()
 
     data = cmd.export()
-    assert len(data) % 16 == 0
+    assert len(data) == 32
 
     cmd_parsed = CmdFillMemory.parse(data=data)
-    assert cmd.address == cmd_parsed.address
-    assert cmd.length == cmd_parsed.length
-    assert cmd.memory_id == cmd_parsed.memory_id
-
-    assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
-    assert 0x00000000 <= cmd.length <= 0xFFFFFFFF
+    assert cmd == cmd_parsed
 
 
 def test_parse_invalid_cmd_fillmemory_cmd_tag():
     """CmdFillMemory tag validity test."""
-    cmd = CmdFillMemory(address=0, length=0, memory_id=0)
+    cmd = CmdFillMemory(address=0, length=0, pattern=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(ValueError):
@@ -349,7 +284,7 @@ def test_parse_invalid_cmd_fillmemory_cmd_tag():
 
 def test_cmd_fwversioncheck():
     """Test value, counter_id, info value, size after export and parsing of CmdFwVersionCheck command."""
-    cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.SECURE)
+    cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.COUNTER_ID.SECURE)
     assert cmd.value == 100
     assert cmd.counter_id == 2
     assert cmd.info()
@@ -358,15 +293,12 @@ def test_cmd_fwversioncheck():
     assert len(data) % 16 == 0
 
     cmd_parsed = CmdFwVersionCheck.parse(data=data)
-    assert cmd.value == cmd_parsed.value
-    assert cmd.counter_id == cmd_parsed.counter_id
-
-    assert 0x00000000 <= cmd.value <= 0xFFFFFFFF
+    assert cmd == cmd_parsed
 
 
 def test_parse_invalid_cmd_fwversioncheck_cmd_tag():
     """CmdFwVersionCheck tag validity test."""
-    cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.SECURE)
+    cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.COUNTER_ID.SECURE)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(ValueError):
@@ -385,22 +317,20 @@ def test_section_header_cmd():
     assert len(data) == BaseCmd.SIZE
 
     cmd_parsed = CmdSectionHeader.parse(data=data)
-    assert cmd_parsed.section_uid == 10
-    assert cmd_parsed.section_type == 10
-    assert cmd_parsed.length == 100
+    assert cmd == cmd_parsed
 
 
 def test_section_cmd_header_basic():
     """Test whether two section headers cmd are identical."""
-    section_header = CmdSectionHeader(section_uid=10)
-    section_header2 = CmdSectionHeader(section_uid=500)
+    section_header = CmdSectionHeader(length=10)
+    section_header2 = CmdSectionHeader(length=500)
 
     assert section_header != section_header2, "Two different images are the same!"
 
 
 def test_section_cmd_header_info():
     """Test presence of all keywords in info() method of section header cmd."""
-    section_header = CmdSectionHeader()
+    section_header = CmdSectionHeader(length=100)
     output = section_header.info()
     required_strings = ["UID", "Type"]
     for required_string in required_strings:
@@ -409,7 +339,7 @@ def test_section_cmd_header_info():
 
 def test_section_cmd_header_offset():
     """Section header cmd size validity test."""
-    section_header = CmdSectionHeader()
+    section_header = CmdSectionHeader(length=100)
     data = section_header.export()
     with pytest.raises(ValueError):
         CmdSectionHeader.parse(data=data, offset=50)

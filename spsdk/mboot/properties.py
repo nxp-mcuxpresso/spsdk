@@ -2,14 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Helper module for more human-friendly interpretation of the target device properties."""
 
 
-from typing import Any, List, Tuple, Type, Union
+from typing import Any, List, Optional, Tuple, Type, Union
 
 from spsdk.utils.easy_enum import Enum
 
@@ -156,7 +156,7 @@ class PropertyTag(Enum):
     RAM_START_ADDRESS = (0x0E, 'RamStartAddress', 'RAM Start Address')
     RAM_SIZE = (0x0F, 'RamSize', 'RAM Size')
     SYSTEM_DEVICE_IDENT = (0x10, 'SystemDeviceIdent', 'System Device Identification')
-    FLASH_SECURITY_STATE = (0x11, 'FlashSecurityState', 'Flash Security State')
+    FLASH_SECURITY_STATE = (0x11, 'FlashSecurityState', 'Security State')
     UNIQUE_DEVICE_IDENT = (0x12, 'UniqueDeviceIdent', 'Unique Device Identification')
     FLASH_FAC_SUPPORT = (0x13, 'FlashFacSupport', 'Flash Fac. Support')
     FLASH_ACCESS_SEGMENT_SIZE = (0x14, 'FlashAccessSegmentSize', 'Flash Access Segment Size')
@@ -421,7 +421,10 @@ class AvailableCommandsValue(PropertyValueBase):
     @property
     def tags(self) -> List[str]:
         """List of tags representing Available commands."""
-        return [tag_value for _, tag_value, _ in CommandTag if (1 << tag_value) & self.value]   # type: ignore
+        return [
+            tag_value for _, tag_value, _ in CommandTag    # type: ignore
+            if tag_value > 0 and  (1 << tag_value - 1) & self.value  # type: ignore
+        ]
 
     def __init__(self, tag: int, raw_values: List[int]) -> None:
         """Initialize the AvailableCommands-based property object.
@@ -433,11 +436,14 @@ class AvailableCommandsValue(PropertyValueBase):
         self.value = raw_values[0]
 
     def __contains__(self, item: int) -> bool:
-        return isinstance(item, int) and bool((1 << item) & self.value)
+        return isinstance(item, int) and bool((1 << item - 1) & self.value)
 
     def to_str(self) -> str:
         """Get stringified property representation."""
-        return [name for name, value, _ in CommandTag if (1 << value) & self.value] # type: ignore
+        return [
+            name for name, value, _ in CommandTag  # type: ignore
+            if value > 0 and (1 << value - 1) & self.value  # type: ignore
+        ]
 
 
 class IrqNotifierPinValue(PropertyValueBase):
@@ -567,8 +573,8 @@ PROPERTIES = {
         'kwargs': {'str_format': 'hex'}},
     PropertyTag.FLASH_SECURITY_STATE: {
         'class': BoolValue,
-        'kwargs': {'true_values': (0x00000000, 0x5AA55AA5), 'true_string': 'Unlocked',
-                   'false_values': (0x00000001, 0xC33CC33C), 'false_string': 'Locked'}},
+        'kwargs': {'true_values': (0x00000000, 0x5AA55AA5), 'true_string': 'UNSECURE',
+                   'false_values': (0x00000001, 0xC33CC33C), 'false_string': 'SECURE'}},
     PropertyTag.UNIQUE_DEVICE_IDENT: {
         'class': DeviceUidValue,
         'kwargs': {}},
@@ -608,7 +614,7 @@ PROPERTIES = {
 }
 
 
-def parse_property_value(property_tag: int, raw_values: list, ext_mem_id: int = None) -> Any:
+def parse_property_value(property_tag: int, raw_values: list, ext_mem_id: int = None) -> Optional[PropertyValueBase]:
     """Parse the property value received from the device.
 
     :param property_tag: Tag representing the property

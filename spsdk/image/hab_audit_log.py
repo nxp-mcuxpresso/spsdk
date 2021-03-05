@@ -1,18 +1,74 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Utility allowing parsing of HAB audit log data."""
 
-from typing import List, Type
+import os
+from enum import Enum as PyEnum
 from struct import unpack_from
+from typing import List, Type, Optional
 
+from spsdk.mboot import McuBoot, PropertyTag
 from spsdk.utils.easy_enum import Enum
-from .header import CmdTag
+from spsdk.utils.misc import load_binary
 from .commands import parse_command
+from .header import CmdTag
+
+# Absolute path, where the executable hab audit code is located.
+CPU_DATA_SUB_DIR = os.path.join(os.path.dirname(__file__), "data", "cpu_data")
+
+
+# pylint: disable=too-few-public-methods
+class CpuInfo:
+    """Cpu specific information, necessary for hw tests (HAB log reading)."""
+
+    def __init__(self, cpu_name: str, hab_audit_bin: str, bin_base_address: int, bin_start_address: int):
+        """Constructor of CpuInfo class."""
+        # name of the supported cpus (for example rt1020, rt1050,...)
+        self.cpu_name = cpu_name
+        # name of the hab audit executable file
+        self.hab_audit_bin = hab_audit_bin
+        # base address of the hab audit executable file
+        self.bin_base_address = bin_base_address
+        # start address of the hab audit executable file
+        self.bin_start_address = bin_start_address
+
+
+# pylint: disable=no-member
+class CpuData(PyEnum):
+    """Data for all supported cpus."""
+    MIMXRT1020 = CpuInfo(cpu_name='rt1020', hab_audit_bin='rt1020_exec_hab_audit.bin', bin_base_address=0x20200000,
+                         bin_start_address=0x20200358)
+
+    MIMXRT1050 = CpuInfo(cpu_name='rt1050', hab_audit_bin='rt1050_exec_hab_audit.bin', bin_base_address=0x20018000,
+                         bin_start_address=0x20018378)
+
+    MIMXRT1060 = CpuInfo(cpu_name='rt1060', hab_audit_bin='rt1060_exec_hab_audit.bin', bin_base_address=0x20018000,
+                         bin_start_address=0x200183A4)
+
+    @property
+    def cpu_name(self) -> str:
+        """:return: name of the cpu."""
+        return self.value.cpu_name
+
+    @property
+    def bin(self) -> str:
+        """:return: name of the hab audit binary."""
+        return self.value.hab_audit_bin
+
+    @property
+    def base_address(self) -> int:
+        """:return: base address of the hab audit bin."""
+        return self.value.bin_base_address
+
+    @property
+    def start_address(self) -> int:
+        """:return: start address of the hab audit bin."""
+        return self.value.bin_start_address
 
 
 class HabConfig(Enum):
@@ -24,7 +80,7 @@ class HabConfig(Enum):
 
 class HabState(Enum):
     """HAB state definitions."""
-    HAB_STATE_INITIAL = (0x33, 'Initialising state(transitory)')
+    HAB_STATE_INITIAL = (0x33, 'Initializing state(transitory)')
     HAB_STATE_CHECK = (0x55, 'Check state(non - secure)')
     HAB_STATE_NONSECURE = (0x66, 'Non - secure state')
     HAB_STATE_TRUSTED = (0x99, 'Trusted state')
@@ -103,6 +159,50 @@ class HabEngine(Enum):
     HAB_ENG_SW = (0xff, 'Software engine')
 
 
+def check_reserved_regions(log_addr: int, reserved_regions: list = None) -> bool:
+    """Checks if the address of the log is not in conflict with CPU reserved regions.
+
+    :param log_addr: address of the RAM, where we want to store hab log
+    :param reserved_regions: list with reserved regions
+    :return: True if the address of the log is not in conflict, otherwise return False
+    """
+    if reserved_regions is None:
+        return True
+
+    while not len(reserved_regions) % 2 and len(reserved_regions) != 0:
+        # region_min and region_max determine one reserved region <region_min,region_max>
+        region_max = reserved_regions.pop()
+        region_min = reserved_regions.pop()
+        # check conflict
+        if region_min <= log_addr <= region_max:
+            print(f"Conflict log address: - [ {hex(log_addr)} ] in region:"
+                  f" {hex(region_min)} - {hex(region_max)}")
+            return False
+    return True
+
+
+def get_hab_log_info(hab_log: Optional[bytes]) -> bool:
+    """Gets information about hab log.
+
+    It detects if the hab log is empty, invalid (4x 0xff) or prints out
+    valid hab log status.
+    :param hab_log: Log with data to test. It can be None.
+    :return: False when flashloader is not accessible or problem with
+             hab log occurred, otherwise return True.
+    """
+    if hab_log is None:
+        print('Problem during Hab log reading. Hab log is empty.')
+        return False
+    if hab_log[0:4] == b'\xFF\xFF\xFF\xFF':
+        print('Flash not accessible or application entry out of expected value')
+        return False
+
+    # first three bytes are HAB status, config and state
+    for line in parse_hab_log(hab_log[0], hab_log[1], hab_log[2], hab_log[4:]):
+        print(line)
+    return True
+
+
 def get_hab_enum_descr(enum_cls: Type[Enum], value: int) -> str:
     """Converts integer value into description of the enumeration value.
 
@@ -158,5 +258,52 @@ def parse_hab_log(hab_sts: int, hab_cfg: int, hab_state: int, data: bytes) -> Li
                 pass
 
         offset += leng
-
     return result
+
+
+def hab_audit_xip_app(cpu_data: CpuData, mboot: McuBoot, read_log_only: bool) -> Optional[bytes]:
+    """Authenticate the application in external FLASH.
+
+    The function loads application into RAM and invokes its function, that authenticates the application and read the
+    HAB log. Then the HAB log is downloaded and parsed and printed to stdout.
+    :param cpu_data: target cpu data
+    :param mboot: running flashloader
+    :param read_log_only: true to read HAB log without invoking authentication; False to authenticate and read-log
+        It is recommended to call the function firstly with parameter `True` and second time with parameter False to
+        see the difference.
+    :return: bytes contains result of the hab log, otherwise returns None when an error occurred
+    """
+    # check if the flashloader is running (not None)
+    assert mboot, "Flashloader is not running"
+
+    # get CPU data dir, hab_audit_base and hab_audit_start
+    assert cpu_data, "Can not read the log, because given cpu data were not provided."
+    cpu_data_bin_dir = cpu_data.bin
+    evk_exec_hab_audit_base = cpu_data.base_address
+    evk_exec_hab_audit_start = cpu_data.start_address
+
+    # get main directory in absolute format
+    main_dir_absolute = os.path.dirname(__file__)
+    # get hab_audit_executable bin file directory
+    exec_hab_audit_path = os.path.join(os.path.dirname(main_dir_absolute), "data", "cpu_data", cpu_data_bin_dir)
+    if not os.path.isfile(exec_hab_audit_path):
+        print('\nHAB logger not supported for the processor')
+        return None
+
+    # get executable file, that will be loaded into RAM
+    exec_hab_audit_code = load_binary(exec_hab_audit_path)
+    # find address of the buffer in RAM, where the HAB LOG will be stored
+    log_addr = evk_exec_hab_audit_base + exec_hab_audit_code.find(b'\xA5\x5A\x11\x22\x33\x44\x55\x66')
+    assert log_addr > evk_exec_hab_audit_base
+    # check if the executable binary is in collision with reserved region
+    reserved_regions = mboot.get_property(PropertyTag.RESERVED_REGIONS)
+
+    # check conflict between hab log address and any of reserved regions
+    # we need 2 values (min and max) - that is why %2 is used
+    assert check_reserved_regions(log_addr, reserved_regions), \
+        f"Log address is in conflict with reserved regions"
+    assert mboot.write_memory(evk_exec_hab_audit_base, exec_hab_audit_code, 0)
+    assert mboot.call(evk_exec_hab_audit_start | 1, 0 if read_log_only else 1)
+
+    log = mboot.read_memory(log_addr, 100, 0)
+    return log

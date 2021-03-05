@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -121,7 +121,7 @@ def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type
                                                                  'unencrypted.')
 @click.argument('path', type=click.Path(file_okay=True))
 @click.option('--force', is_flag=True, default=False,
-              help="Force overwritting of an existing file. Create destination folder, if doesn't exist already.")
+              help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.")
 @click.pass_context
 def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
     """Generate key pair for RoT or DCK.
@@ -158,9 +158,9 @@ def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
 @click.option('-e', '--elf2sb-config', type=click.File('r'), required=False,
               help='Specify Root Of Trust from configuration file used by elf2sb tool')
 @click.option('--force', is_flag=True, default=False,
-              help="Force overwritting of an existing file. Create destination folder, if doesn't exist already.")
+              help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.")
 @click.option('--plugin', type=click.Path(exists=True, file_okay=True), required=False,
-              help='External python file contaning a custom SignatureProvider implementation.')
+              help='External python file containing a custom SignatureProvider implementation.')
 @click.argument('dc_file_path', metavar='PATH', type=click.Path(file_okay=True))
 @click.pass_context
 def gendc(ctx: click.Context, plugin: click.Path, dc_file_path: str, config: click.File,
@@ -205,7 +205,7 @@ def gendc(ctx: click.Context, plugin: click.Path, dc_file_path: str, config: cli
 
 
 @catch_spsdk_error
-def safe_main() -> int:
+def safe_main() -> None:
     """Call the main function."""
     sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
 

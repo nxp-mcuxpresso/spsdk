@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""Module for RT10xx boards testing."""
 
 import os
 from datetime import datetime, timezone
@@ -16,7 +18,6 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import PrivateFormat, NoEncryption
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-
 from spsdk.crypto import generate_certificate, save_crypto_item, Encoding
 from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key
 from spsdk.image import BootImgRT, SrkTable, SrkItem, PaddingFCB, FlexSPIConfBlockFCB, MAC, hab_audit_log, \
@@ -27,6 +28,7 @@ from spsdk.sbfile.sb1 import SecureBootV1, BootSectionV1, SecureBootFlagsV1, Cmd
 from spsdk.sdp import SDP, ResponseValue, StatusCode, SdpCommandError
 from spsdk.sdp import scan_usb as sdp_scan_usb
 from spsdk.utils.easy_enum import Enum
+from enum import Enum as PyEnum
 from spsdk.utils.misc import load_binary, DebugInfo, align, align_block
 from tests.misc import compare_bin_files, write_dbg_log
 
@@ -75,21 +77,25 @@ CSF_VERSION = 0x42
 # version of the SB file
 SB_FILE_VERSION = '1.2'
 
+# direcotry to the test_rt10xx.py (this file) "./"
+MAIN_FILE_DIR = os.path.dirname(__file__)
+# direcotry to the cpu specific data for test
+DATA_DIR = os.path.join(MAIN_FILE_DIR, "data")
+
 
 class CpuParams:
-    """Processor specific parameters of the test"""
+    """Processor specific parameters of the test."""
 
-    def __init__(self, data_dir: str, data_subdir: str, com_processor_name: str, board: str, ext_flash_cfg_word0: int,
-                 exec_hab_audit_base: int, exec_hab_audit_start: int):
+    def __init__(self, data_dir: str, data_subdir: str, com_processor_name: str, board: str, cpu_data: hab_audit_log.CpuData,
+                 ext_flash_cfg_word0: int):
         """Constructor.
 
         :param data_dir: base absolute path for test data
         :param data_subdir: name of processor specific data sub-directory
         :param com_processor_name: SPSDK-specific name of the target processor for communication API (MBOOT and SDP)
         :param board: name of the board (used to select name of the source and output image)
+        :param cpu_data: contains important specific data for each cpu
         :param ext_flash_cfg_word0: configuration word 0 for external FLASH
-        :param exec_hab_audit_base: base address of the `exec_hab_audit` image; `-1` if not supported
-        :param exec_hab_audit_start: address of the `exec_hab_audit` function in internal RAM (DTCM); `-1` not supported
         """
         # ID of the test configuration
         self.id = data_subdir
@@ -106,29 +112,39 @@ class CpuParams:
         self.board = board
         self.ext_flash_cfg_word0 = ext_flash_cfg_word0
         self.ext_flash_cfg_word1 = 0  # currently zero for all RT
-        self.exec_hab_audit_base = exec_hab_audit_base
-        self.exec_hab_audit_start = exec_hab_audit_start
+        self.cpu_data = cpu_data
 
     def __str__(self) -> str:
         return self.id + ' ' + self.__class__.__name__
 
     @classmethod
-    def rt1020(cls, data_dir: str) -> 'CpuParams':
-        """Parameters for RT1020"""
-        return CpuParams(data_dir, ID_RT1020, 'MXRT20', 'evkmimxrt1020', IS25WP_FLASH_CFG_WORD0,
-                         exec_hab_audit_base=0x20008000, exec_hab_audit_start=0x2000833c)
+    def rt1020(cls) -> 'CpuParams':
+        """Parameters for RT1020."""
+        return CpuParams(DATA_DIR, ID_RT1020, 'MXRT20', 'evkmimxrt1020', hab_audit_log.CpuData.MIMXRT1020,
+                         IS25WP_FLASH_CFG_WORD0)
 
     @classmethod
-    def rt1050(cls, data_dir: str) -> 'CpuParams':
-        """Parameters for RT1050"""
-        return CpuParams(data_dir, ID_RT1050, 'MXRT50', 'evkbimxrt1050', IS26KS_FLASH_CFG_WORD0,
-                         exec_hab_audit_base=0x20018000, exec_hab_audit_start=0x20018378)
+    def rt1050(cls) -> 'CpuParams':
+        """Parameters for RT1050."""
+        return CpuParams(DATA_DIR, ID_RT1050, 'MXRT50', 'evkbimxrt1050', hab_audit_log.CpuData.MIMXRT1050,
+                         IS26KS_FLASH_CFG_WORD0)
 
     @classmethod
-    def rt1060(cls, data_dir: str) -> 'CpuParams':
-        """Parameters for RT1060"""
-        return CpuParams(data_dir, ID_RT1060, 'MXRT60', 'evkmimxrt1060', IS25WP_FLASH_CFG_WORD0,
-                         exec_hab_audit_base=0x20018000, exec_hab_audit_start=0x200183A4)
+    def rt1060(cls) -> 'CpuParams':
+        """Parameters for RT1060."""
+        return CpuParams(DATA_DIR, ID_RT1060, 'MXRT60', 'evkmimxrt1060', hab_audit_log.CpuData.MIMXRT1060,
+                         IS25WP_FLASH_CFG_WORD0)
+
+"""Maps cpu ids from CpuParams into hab_audit_log.CpuData format."""
+CpuDataMapper = {
+    # maps rt102x into hab_audit_log.CpuData.MIMXRT1020
+    ID_RT1020 : hab_audit_log.CpuData.MIMXRT1020,
+    # maps rt105x into hab_audit_log.CpuData.MIMXRT1050
+    ID_RT1050 : hab_audit_log.CpuData.MIMXRT1050,
+    # maps rt106x into hab_audit_log.CpuData.MIMXRT1060
+    ID_RT1060 : hab_audit_log.CpuData.MIMXRT1060
+}
+
 
 
 # ############################## PROCESSOR/BOARD SPECIFIC INFO ########################################
@@ -154,8 +170,7 @@ ENABLE_HAB_FUSE_MASK = 0x00000002
 
 def pytest_generate_tests(metafunc):
     """Create test configurations for all tested processors"""
-    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-    cpus = [CpuParams.rt1020(data_dir), CpuParams.rt1050(data_dir), CpuParams.rt1060(data_dir)]
+    cpus = [CpuParams.rt1020(), CpuParams.rt1050(), CpuParams.rt1060()]
     metafunc.parametrize("cpu_params", cpus, indirect=False, ids=[cpu_params.id for cpu_params in cpus])
 
 
@@ -353,51 +368,6 @@ def _burn_image_to_sd(cpu_params: CpuParams, img: BootImgRT, img_data: bytes) ->
     mboot.close()
 
 
-def hab_audit_xip_app(cpu_params: CpuParams, read_log_only: bool) -> None:
-    """Authenticate the application in external FLASH at 0x60000000
-
-    The function initialized the flashloader; initializes the external FLASH,
-    Loads application into RAM and invokes its function, that authenticates the application and read the HAB log.
-    Then the HAB log is downloaded and parsed and printed to stdout.
-    :param cpu_params: processor specific parameters of the test
-    :param read_log_only: true to read HAB log without invoking authentication; False to authenticate and read-log
-        It is recommended to call the function firstly with parameter `True` and second time with parameter False to
-        see the difference.
-    """
-    exec_hab_audit_path = os.path.join(cpu_params.data_dir, 'exec_hab_audit.bin')
-    if not os.path.isfile(exec_hab_audit_path):
-        print('\nHAB logger not supported for the processor')
-        return
-
-    mboot = init_flashloader(cpu_params)
-
-    # ### Configure external FLASH on EVK: flex-spi-nor using options on address 0x2000 ###
-    # call "%blhost%" -u 0x15A2,0x0073 -j -- fill-memory 0x2000 4 0xC0233007 word
-    assert mboot.fill_memory(INT_RAM_ADDR_DATA, 4, cpu_params.ext_flash_cfg_word0)
-    # call "%blhost%" -u 0x15A2,0x0073 -j -- fill-memory 0x2004 4 0x00000000 word
-    assert mboot.fill_memory(INT_RAM_ADDR_DATA + 4, 4, cpu_params.ext_flash_cfg_word1)
-    # call "%blhost%" -u 0x15A2,0x0073 -j -- configure-memory 9 0x2000
-    assert mboot.configure_memory(INT_RAM_ADDR_DATA, ExtMemId.FLEX_SPI_NOR)
-
-    exec_hab_audit_code = load_binary(exec_hab_audit_path)
-    # find address of the buffer in RAM, where the HAB LOG will be stored
-    log_addr = cpu_params.exec_hab_audit_base + exec_hab_audit_code.find(b'\xA5\x5A\x11\x22\x33\x44\x55\x66')
-    assert log_addr > cpu_params.exec_hab_audit_base
-    assert mboot.write_memory(cpu_params.exec_hab_audit_base, exec_hab_audit_code, 0)
-    assert mboot.call(cpu_params.exec_hab_audit_start | 1, 0 if read_log_only else 1)
-
-    log = mboot.read_memory(log_addr, 4096, 0)
-    mboot.close()
-
-    print('\n')
-    if log[0:4] == b'\xFF\xFF\xFF\xFF':
-        print('Flash not accessible or application entry out of expected value')
-    else:
-        # first three bytes are HAB status, config and state
-        for line in hab_audit_log.parse_hab_log(log[0], log[1], log[2], log[4:]):
-            print(line)
-
-
 def _init_otpmk_bee_regions(mboot: McuBoot, bee_regions: Sequence[BeeFacRegion]) -> None:
     """Initialize PRDB regions for BEE encryption using master key.
 
@@ -498,7 +468,8 @@ def _burn_image_to_flash(cpu_params: CpuParams, img: BootImgRT, img_data: bytes,
 
     if AUTHENTICATE and (img.address == EXT_FLASH_ADDR) and not otpmk_bee_regions:
         mboot.close()
-        hab_audit_xip_app(cpu_params, True)
+        test_hab_audit(cpu_params)
+
     else:
         # detect XIP image
         app_data = img.decrypted_app_data
@@ -641,10 +612,13 @@ def test_hab_audit(cpu_params: CpuParams) -> None:
     if TEST_IMG_CONTENT:
         return  # this can be used only in production mode
 
-    # read current HAB log only
-    hab_audit_xip_app(cpu_params, True)
+    mboot = init_flashloader(cpu_params)
+    # TODO: repair getting cpu_data
+    cpu_data = CpuDataMapper[cpu_params.id]
+    hab_audit_log.hab_audit_xip_app(cpu_data, mboot, read_log_only=True)
     # authenticate the application and read all HAB logs
-    hab_audit_xip_app(cpu_params, False)
+    hab_audit_log.hab_audit_xip_app(cpu_data, mboot, read_log_only=False)
+    mboot.close()
 
 
 @pytest.mark.parametrize(

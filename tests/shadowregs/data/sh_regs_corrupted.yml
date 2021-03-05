@@ -1,0 +1,52 @@
+registers:
+  REG1:
+# Reg Description:Register 1, used for testing antipole register and some computed fields.
+    name: REG1  # The name of the register
+    bitfields:
+      CRC8: 120  # The width: 8 bits
+      BITFIELD1: DISABLED # The width: 1 bits, (Possible values: DISABLED, ENABLED)
+      BITFIELD2: ENABLED # The width: 1 bits, (Possible values: DISABLED, ENABLED)
+      BITFIELD3: ENABLED # The width: 1 bits, (Possible values: DISABLED, ENABLED)
+      BITFIELD4: DISABLED # The width: 1 bits, (Possible values: DISABLED, ENABLED)
+      BITFIELD5: ENABLED # The width: 1 bits, (Possible values: DISABLED, ENABLED)
+      BITFIELD6: DISABLED # The width: 1 bits, (Possible values: DISABLED, ENABLED)
+      BITFIELD7: ENABLED # The width: 1 bits, (Possible values: DISABLED, ENABLED)
+      BITFIELD8: DISABLED # The width: 1 bits, (Possible values: DISABLED, ENABLED)
+      BITFIELD9: CLOSE # The width: 1 bits, (Possible values: CLOSE, OPEN)
+      BITFIELD10: CLOSE # The width: 1 bits, (Possible values: CLOSE, OPEN)
+      BITFIELD11: OPEN # The width: 1 bits, (Possible values: CLOSE, OPEN)
+      BITFIELD12: CLOSE # The width: 1 bits, (Possible values: CLOSE, OPEN)
+      BITFIELD13: OPEN # The width: 1 bits, (Possible values: CLOSE, OPEN)
+      BITFIELD14: OPEN # The width: 1 bits, (Possible values: CLOSE, OPEN)
+      BITFIELD15: CLOSE # The width: 1 bits, (Possible values: CLOSE, OPEN)
+      BITFIELD16: CLOSE # The width: 1 bits, (Possible values: CLOSE, OPEN)
+      BITFIELD17: 0 # The width: 1 bits
+      BITFIELD18_NONE_EXISTING: 0 # The width: 1 bits
+      RSRVD: 9 # The width: 7 bits
+  REG_NONE_EXISTING:
+# Reg Description:None existing register used for testing.
+    name: REG_NONE_EXISTING  # The name of the register
+    value: '0x5a5a5a5a' # The value of the register
+  REG2:
+# Reg Description:Register 2 used for shadow registers testing.
+    name: REG2  # The name of the register
+    bitfields:
+      BITFIELD 1: 1  # The width: 4 bits
+      BITFIELD 2: 0 # The width: 1 bits
+      BITFIELD 3: 1 # The width: 2 bits
+      BITFIELD 4: STOP # The width: 1 bits, (Possible values: STOP, RUN)
+      BITFIELD 5: STOP # The width: 1 bits, (Possible values: HALT, STOP)
+      BITFIELD 6: RED # The width: 1 bits, (Possible values: GREEN, RED)
+      RESERVED: 134 # The width: 11 bits
+  REG_INVERTED_AP:
+# Reg Description:Anti-pole (inverse) value REG1.
+    name: REG_INVERTED_AP  # The name of the register
+    value: '0xa5a5a5a5' # The value of the register
+  REG_BIG:
+# Reg Description:Testing register for long values.
+    name: REG_BIG  # The name of the register
+#    value: '0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f' # The value of the register This register has no data for testing!
+  REG_BIG_REV:
+# Reg Description:Testing register for long reversed values.
+    name: REG_BIG_REV  # The name of the register
+    value: '0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f' # The value of the register

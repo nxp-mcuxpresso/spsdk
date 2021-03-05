@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
 from binascii import unhexlify
 
-from cryptography.hazmat.backends import openssl
+import pytest
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto.backend_openssl import openssl_backend
 
 
@@ -74,7 +76,7 @@ def test_rsa_sign(data_dir):
     with open(os.path.join(data_dir, 'selfsign_privatekey_rsa2048.pem'), "rb") as key_file:
         key_data = key_file.read()
 
-    private_key = serialization.load_pem_private_key(data=key_data, password=None, backend=openssl.backend)
+    private_key = serialization.load_pem_private_key(data=key_data, password=None, backend=default_backend())
 
     signature = b'\xc2!b\xf9\xb7$<i><2\x07|\x86,\xdd\x003\x93\x95\x1a\x92?\xf5\x1c\xfce\xfd#\x02\x1b\xd5&\xec\xf8`' \
                 b'\xe1\x1ex\xfd=Ls\xaf\x81\x12[\xe8\x80n\xc17\x8b\x9a\xba\x86N\xcbCd\xfb\xe7\xfei\xcc\x90\x02\xbf)' \
@@ -100,7 +102,7 @@ def test_rsa_verify(data_dir):
         private_key = serialization.load_pem_private_key(
             data=key_file.read(),
             password=None,
-            backend=openssl.backend
+            backend=default_backend()
         )
 
     signature = b'\xc2!b\xf9\xb7$<i><2\x07|\x86,\xdd\x003\x93\x95\x1a\x92?\xf5\x1c\xfce\xfd#\x02\x1b\xd5&\xec\xf8`' \
@@ -115,3 +117,44 @@ def test_rsa_verify(data_dir):
     pub_nums = private_key.public_key().public_numbers()
     is_valid = openssl_backend.rsa_verify(pub_nums.n, pub_nums.e, signature, data)
     assert is_valid
+
+
+def test_ecc_sign_verify(data_dir):
+    with open(os.path.join(data_dir, 'ecc_secp256r1_priv_key.pem'), "rb") as key_file:
+        private_key_data = key_file.read()
+    with open(os.path.join(data_dir, 'ecc_secp256r1_pub_key.pem'), "rb") as key_file:
+        public_key_data = key_file.read()
+
+    private_key = serialization.load_pem_private_key(data=private_key_data, password=None, backend=default_backend())
+    data = b'THIS IS MESSAGE TO BE SIGNED'
+    calc_signature = openssl_backend.ecc_sign(private_key_data, data)
+    calc_signature2 = openssl_backend.ecc_sign(private_key, data)
+    # openssl utilize randomized signature thus two signatures are different
+    assert calc_signature != calc_signature2
+
+    public_key = serialization.load_pem_public_key(data=public_key_data, backend=default_backend())
+    is_valid = openssl_backend.ecc_verify(public_key=public_key, signature=calc_signature, data=data)
+    is_valid2 = openssl_backend.ecc_verify(public_key=public_key_data, signature=calc_signature2, data=data)
+    # randomized signatures are still valid
+    assert is_valid == is_valid2 == True
+
+
+def test_ecc_sign_verify_incorrect(data_dir):
+    with open(os.path.join(data_dir, 'ecc_secp256r1_priv_key.pem'), "rb") as key_file:
+        private_key_data = key_file.read()
+    with open(os.path.join(data_dir, 'ecc_secp256r1_pub_key.pem'), "rb") as key_file:
+        public_key_data = key_file.read()
+
+    private_key = serialization.load_pem_private_key(data=private_key_data, password=None, backend=default_backend())
+    data = b'THIS IS MESSAGE TO BE SIGNED'
+    calc_signature = openssl_backend.ecc_sign(private_key_data, data)
+
+    # malform the signature
+    bad_signature = calc_signature[:-2] + bytes(2)
+    is_valid = openssl_backend.ecc_verify(public_key=public_key_data, signature=bad_signature, data=data)
+    assert is_valid == False
+
+    # make signature bigger than expected
+    with pytest.raises(SPSDKError):
+        bad_signature = calc_signature + bytes(2)
+        openssl_backend.ecc_verify(public_key=public_key_data, signature=bad_signature, data=data)

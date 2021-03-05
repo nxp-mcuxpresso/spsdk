@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for general utilities used by applications."""
 
+import re
 import sys
 from functools import wraps
-from typing import Union, Any, Callable, Tuple, Optional
+from typing import Union, Any, Callable, Tuple
 
 import click
 import hexdump
@@ -140,8 +141,8 @@ def catch_spsdk_error(function: Callable) -> Callable:
         except (AssertionError, SPSDKError) as spsdk_exc:
             click.echo(f"ERROR:{spsdk_exc}")
             sys.exit(2)
-        except Exception as base_exc:  # pylint: disable=W0703
-            click.echo(f"GENERAL ERROR:{base_exc}")
+        except Exception as base_exc:  # pylint: disable=broad-except
+            click.echo(f"GENERAL ERROR: {type(base_exc).__name__}: {base_exc}")
             sys.exit(3)
 
     return wrapper
@@ -160,3 +161,28 @@ def parse_file_and_size(file_and_size: str) -> Tuple[str, int]:
         file_path = file_and_size
         file_size = -1
     return file_path, file_size
+
+
+def parse_hex_data(hex_data: str) -> bytes:
+    """Parse hex-data into bytes.
+
+    :param hex_data: input hex-data, e.g: {{1122}}, {{11 22}}
+    :raises SPSDKError: Failure to parse given input
+    :return: data parsed from input
+    """
+    hex_data = hex_data.replace(' ', '')
+    if not hex_data.startswith('{{') or not hex_data.endswith('}}'):
+        raise SPSDKError("Incorrectly formated hex-data: Need to start with {{ and end with }}")
+
+    hex_data = hex_data.replace('{{', '').replace('}}', '')
+    if len(hex_data) % 2:
+        raise SPSDKError("Incorrectly formated hex-data: Need to have even number of characters")
+    if not re.fullmatch(r"[0-9a-fA-F]*", hex_data):
+        raise SPSDKError("Incorrect hex-data: Need to have valid hex string")
+
+    str_parts = [hex_data[i: i+2] for i in range(0, len(hex_data), 2)]
+    byte_pieces = [int(part, 16) for part in str_parts]
+    result = bytes(byte_pieces)
+    if not result:
+        raise SPSDKError("Incorrect hex-data: Unable to get any data")
+    return bytes(byte_pieces)

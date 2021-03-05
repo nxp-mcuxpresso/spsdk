@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -127,6 +127,26 @@ class BackendClass(ABC):
 
         :param modulus: The RSA public key modulus
         :param exponent: The RSA public key exponent
+        """
+
+    def ecc_sign(self, private_key: bytes, data: bytes, algorithm: str = None) -> bytes:
+        """Sign data using (EC)DSA.
+
+        :param private_key: ECC private key
+        :param data: Data to sign
+        :param algorithm: Hash algorithm, if None the hash length is determined from ECC curve size
+        :return: Signature, r and s coordinates as bytes
+        """
+
+    def ecc_verify(self, public_key: bytes, signature: bytes, data: bytes, algorithm: str = None) -> bool:
+        """Verify (EC)DSA signature.
+
+        :param public_key: ECC public key
+        :param signature: Signature to verify, r and s coordinates as bytes
+        :param data: Data to validate
+        :param algorithm: Hash algorithm, if None the hash length is determined from ECC curve size
+        :return: True if the signature is valid
+        :raises SPSDKError: Signature length is invalid
         """
 
 

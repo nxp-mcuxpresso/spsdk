@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -95,12 +95,6 @@ def main() -> None:
     for clr_info in no_nxp_cp:
         print(f' - {clr_info.path}: {clr_info.copyrights}')
 
-    this_year = datetime.now().year
-    not_this_year = [item for item in clr_info_list if not any(f'{this_year} NXP' in x for x in item.copyrights)]
-    print(f'{len(not_this_year)} Files without "{this_year} NXP" copyright')
-    for clr_info in not_this_year:
-        print(f' - {clr_info.path}: {clr_info.copyrights}')
-
     no_lic = [item for item in clr_info_list if not item.license]
     print(f'{len(no_lic)} Files without license info')
     for clr_info in no_lic:
@@ -110,6 +104,12 @@ def main() -> None:
     print(f'{len(no_bsd_3)} Files without "BSD-3-Clause" license')
     for clr_info in no_bsd_3:
         print(f' - {clr_info.path}: {clr_info.license}')
+
+    this_year = datetime.now().year
+    not_this_year = [item for item in clr_info_list if not any(f'{this_year} NXP' in x for x in item.copyrights)]
+    print(f'{len(not_this_year)} Files without "{this_year} NXP" copyright')
+    for clr_info in not_this_year:
+        print(f' - {clr_info.path}: {clr_info.copyrights}')
 
 
 if __name__ == "__main__":

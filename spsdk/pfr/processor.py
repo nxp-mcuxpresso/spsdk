@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -44,6 +44,7 @@ class Processor:
     Processor is responsible for processing condition
         - parsing the condition string (lookup)
         - calling translator for individual keys (registers)
+
     Translator is responsible for looking up values for given keys
     """
 

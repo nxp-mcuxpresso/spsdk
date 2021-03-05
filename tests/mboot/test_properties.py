@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,6 +10,7 @@ from spsdk.mboot.properties import Version, BoolValue, EnumValue, IntValue, Vers
                                   AvailableCommandsValue, AvailablePeripheralsValue, ExternalMemoryAttributesValue, \
                                   DeviceUidValue, FlashReadMargin, IrqNotifierPinValue, PfrKeystoreUpdateOpt, \
                                   parse_property_value, PropertyTag
+from spsdk.mboot.commands import CommandTag
 
 
 def test_version_class():
@@ -89,3 +90,11 @@ def test_device_uid_value():
     assert value.desc == PropertyTag.desc(PropertyTag.UNIQUE_DEVICE_IDENT)
     assert value.value == 0x4B0001024B000102
     assert value.to_str() == '4B0001024B000102'
+
+
+def test_available_commands():
+    value = parse_property_value(PropertyTag.AVAILABLE_COMMANDS, [0xF])
+    assert value.tags == [1, 2, 3, 4]
+    assert all(index in value for index in [1, 2, 3, 4])
+    command_names = [CommandTag.name(i) for i in [1, 2, 3, 4]]
+    assert all(name in value.to_str() for name in command_names)

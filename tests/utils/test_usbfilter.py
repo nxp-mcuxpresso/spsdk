@@ -95,12 +95,24 @@ win_use_cases = common_use_cases + [
      b"\\\\?\\hid#vid_413c&pid_301a#a&2d263b2&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}", True),
 ]
 
-mac_uses_cases = common_use_cases + [
+mac_use_cases = common_use_cases + [
     ("SE Blank RT Family @14200000", "0x413c", "0x301a",
      b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000", True),
 ]
 
-
+linux_use_cases = [
+    ("0x1234", "0x1234", "0x0", b"0:0", True), # match in vid (hex form)
+    ("4660", "0x1234", "0x0", b"0:0", True), # match in vid (dec form)
+    ("0x1", "0x1234", "0x0", b"0:0", False), # no match - vid differs
+    ("1", "0x1234", "0x0", b"0:0", False), # no match - vid differs
+    ("", "0x1234", "0x0", b"0:0", False), # no match - empty filtering string
+    ("0x1234,0xabcd", "0x1234", "0xabcd", b"0:0", True), # match in vid,pid combination
+    ("0x1234:0xabcd", "0x1234", "0xabcd", b"0:0", True), # match in vid:pid combination
+    ("1,12345", "1", "12345", b"0:0", True), # match in vid,pid combination
+    ("1:12345", "1", "12345", b"0:0", True), # match in vid,pid combination
+    ("3#11", "0x413c", "0x301a", b"0003:000b:00", True),
+    ("2#2", "0x413c", "0x301a", b"0003:000b:00", False)
+]
 @pytest.mark.parametrize(
     "filter_usb_id,vid,pid,path,expected",
     win_use_cases
@@ -115,10 +127,21 @@ def test_usb_match_win(filter_usb_id: str, vid: str, pid: str, path: str, expect
 
 @pytest.mark.parametrize(
     "filter_usb_id,vid,pid,path,expected",
-    mac_uses_cases
+    mac_use_cases
 )
 def test_usb_match_mac(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
     with patch('platform.system', MagicMock(return_value="Darwin")):
+        usb_filter = USBDeviceFilter(usb_id=filter_usb_id)
+        g_virtual_hid_device = {"vendor_id":int(vid, 0), "product_id":int(pid, 0), "path":path}
+
+        assert usb_filter.compare(g_virtual_hid_device) == expected
+
+@pytest.mark.parametrize(
+    "filter_usb_id,vid,pid,path,expected",
+    linux_use_cases
+)
+def test_usb_match_linux(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
+    with patch('platform.system', MagicMock(return_value="Linux")):
         usb_filter = USBDeviceFilter(usb_id=filter_usb_id)
         g_virtual_hid_device = {"vendor_id":int(vid, 0), "product_id":int(pid, 0), "path":path}
 

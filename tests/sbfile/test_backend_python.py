@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
 from binascii import unhexlify
 
+import pytest
 from Crypto.PublicKey import RSA
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto.backend_internal import internal_backend
 
 
@@ -69,6 +71,21 @@ def test_aes_ctr_decrypt():
     assert calc_plain_text == plain_text
 
 
+def test_aes_encrypt():
+    key = b'1234567812345678'
+    plain_text = bytes(16)
+    cipher_text = b'\x9a\xe8\xfd\x02\xb3@(\x8a\x0e{\xbf\xf0\xf0\xbaT\xd6'
+    calc_cipher_text = internal_backend.aes_cbc_encrypt(key, plain_text)
+    assert calc_cipher_text == cipher_text
+
+
+def test_aes_encrypt_error():
+    with pytest.raises(SPSDKError):
+        internal_backend.aes_cbc_encrypt(bytes(2), bytes(16))
+    with pytest.raises(SPSDKError):
+        internal_backend.aes_cbc_encrypt(bytes(16), bytes(16), bytes(2))
+
+
 def test_rsa_sign(data_dir):
     with open(os.path.join(data_dir, 'selfsign_privatekey_rsa2048.pem'), "rb") as key_file:
         key_pem_data = key_file.read()
@@ -109,3 +126,53 @@ def test_rsa_verify(data_dir):
     data = bytes([v % 256 for v in range(0, 512)])
     is_valid = internal_backend.rsa_verify(public_key.n, public_key.e, signature, data)
     assert is_valid
+
+
+def test_ecc_verify(data_dir):
+    with open(os.path.join(data_dir, 'ecc_secp256r1_pub_key.pem'), "rb") as key_file:
+        public_key = key_file.read()
+    data = b'THIS IS MESSAGE TO BE SIGNED'
+    signature = (
+        b'\x1f\xfd\x07\xf2\xa5GJ\x08\xa11\xce\x90\xcb\x80\xa1\x8dD)\x89|Ko'
+        b'\xc3\x0f~\x8b\xd7<\xb02,DIr\x15\x0br\x98\x8c\xa7\x93\x0f\x19\x85'
+        b'V\x13\xfc\x94\x07Y\xab\xcax\xc5\x15\x07\x8d\xaeQ-mE1\xc9'
+    )
+    is_valid = internal_backend.ecc_verify(key=public_key, signature=signature, data=data)
+    assert is_valid
+
+def test_ecc_sign(data_dir):
+    with open(os.path.join(data_dir, 'ecc_secp256r1_priv_key.pem'), "rb") as key_file:
+        private_key_pem_data = key_file.read()
+    signature = (
+        b'\x1f\xfd\x07\xf2\xa5GJ\x08\xa11\xce\x90\xcb\x80\xa1\x8dD)\x89|Ko'
+        b'\xc3\x0f~\x8b\xd7<\xb02,DIr\x15\x0br\x98\x8c\xa7\x93\x0f\x19\x85'
+        b'V\x13\xfc\x94\x07Y\xab\xcax\xc5\x15\x07\x8d\xaeQ-mE1\xc9'
+    )
+    data = b'THIS IS MESSAGE TO BE SIGNED'
+    calc_signature = internal_backend.ecc_sign(private_key_pem_data, data)
+    assert calc_signature == signature
+
+
+def test_ecc_verify_wrong(data_dir):
+    with open(os.path.join(data_dir, 'ecc_secp256r1_priv_key.pem'), "rb") as key_file:
+        private_key_pem_data = key_file.read()
+    data = b'THIS IS MESSAGE TO BE SIGNED'
+    calc_signature = internal_backend.ecc_sign(private_key_pem_data, data)
+
+    # malform the signature
+    bad_signature = calc_signature[:-2] + bytes(2)
+    is_valid = internal_backend.ecc_verify(private_key_pem_data, bad_signature, data)
+    assert is_valid == False
+
+    # make signature bigger than expected
+    with pytest.raises(SPSDKError):
+        bad_signature = calc_signature + bytes(2)
+        internal_backend.ecc_verify(private_key_pem_data, bad_signature, data)
+
+
+def test_cmac():
+    data = b'THIS IS MESSAGE'
+    key = b'Sixteen byte key'
+    generated_cmac = internal_backend.cmac(data=data, key=key)
+    openssl_cmac = b'\xa2\n\xd4O\xc1\xea\x19\xd1\xff\x00{\xac\xc5xZ\x9f'
+    assert generated_cmac == openssl_cmac

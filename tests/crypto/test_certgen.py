@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for certificate management (generating certificate, CSR, validating certificate, chains)
 """
+import os
 from os import path
 from typing import List
 
@@ -13,23 +14,16 @@ import pytest
 
 from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key, \
     save_rsa_public_key, validate_ca_flag_in_cert_chain, Certificate, Encoding
-from spsdk.crypto import _get_encoding_type, load_private_key, load_certificate, load_public_key
+from spsdk.crypto import _get_encoding_type, load_private_key, load_certificate, load_public_key, ExtensionOID, NameOID
 from spsdk.crypto import validate_certificate_chain, validate_certificate, is_ca_flag_set
-from spsdk.crypto import generate_certificate, save_crypto_item, x509
+from spsdk.crypto import generate_certificate, save_crypto_item
 
+from spsdk.crypto.certificate_management import generate_name_struct
+from spsdk.utils.misc import use_working_directory
 
-def gen_name_struct(name: str) -> x509.Name:
-    """Set the issuer/subject distinguished name.
+from click.testing import CliRunner
 
-    :param name: name of issuer/subject
-    :return: ordered list of attributes of certificate
-    """
-    return x509.Name([
-        x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, "CZ"),
-        x509.NameAttribute(x509.oid.NameOID.STATE_OR_PROVINCE_NAME, "RpR"),
-        x509.NameAttribute(x509.oid.NameOID.LOCALITY_NAME, "1maje"),
-        x509.NameAttribute(x509.oid.NameOID.ORGANIZATION_NAME, name)
-    ])
+from spsdk.apps.nxpcertgen import main
 
 
 def get_certificate(data_dir, cert_file_name: str) -> Certificate:
@@ -190,7 +184,7 @@ def test_certificate_generation(tmpdir):
     assert path.isfile(path.join(tmpdir, "ca_private_key.pem"))
     assert path.isfile(path.join(tmpdir, "ca_pub_key.pem"))
 
-    subject = issuer = gen_name_struct("highest")
+    subject = issuer = generate_name_struct("highest", "CZ")
     ca_cert = generate_certificate(subject, issuer, ca_pub_key, ca_priv_key, if_ca=True)
     save_crypto_item(ca_cert, path.join(tmpdir, "ca_cert.pem"))
     assert path.isfile(path.join(tmpdir, "ca_cert.pem"))
@@ -201,7 +195,24 @@ def test_certificate_generation(tmpdir):
     srk_pub_key = generate_rsa_public_key(srk_priv_key)
     save_rsa_public_key(srk_pub_key, path.join(tmpdir, "srk_pub_key.pem"))
     assert path.isfile(path.join(tmpdir, "srk_pub_key.pem"))
-    srk_subject = gen_name_struct('srk')
+    srk_subject = generate_name_struct("srk", "UK")
     srk_cert = generate_certificate(srk_subject, issuer, srk_pub_key, ca_priv_key, if_ca=False)
     save_crypto_item(srk_cert, path.join(tmpdir, "srk1.pem"))
     assert path.isfile(path.join(tmpdir, "srk1.pem"))
+
+
+def test_certificate_generation_cli(tmpdir, data_dir):
+    with use_working_directory(data_dir):
+        cert_path = os.path.join(tmpdir, "cert.crt")
+        cmd = f'-j {os.path.join(data_dir, "certgen_config.json")} -c {cert_path}'
+        runner = CliRunner()
+        result = runner.invoke(main, cmd.split())
+        assert result.exit_code == 0
+        assert os.path.isfile(cert_path)
+
+    generated_cert = load_certificate(cert_path)
+    assert isinstance(generated_cert, Certificate)
+    assert generated_cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == 'ONE'
+    assert generated_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == 'TWO'
+    assert generated_cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS).value.ca
+    assert generated_cert.serial_number == 777

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -26,6 +26,8 @@ from .secret import BaseClass, CertificateImg, EnumAlgorithm, MAC, Signature, Sr
 ########################################################################################################################
 # Enums
 ########################################################################################################################
+from .. import SPSDKError
+
 
 class EnumWriteOps(Enum):
     """Enum definition for 'flags' control flags in 'par' parameter of Write Data command."""
@@ -792,7 +794,7 @@ class CmdUnlockCAAM(CmdUnlockAbstract):
     def __init__(self, features: int = 0):
         """Initialize.
 
-        :param features: mask of FEATURE_UNLOCK_ constants, defaults to 0
+        :param features: mask of FEATURE_UNLOCK_x constants, defaults to 0
         """
         super().__init__(EnumEngine.CAAM, features)
 
@@ -836,7 +838,7 @@ class CmdUnlockOCOTP(CmdUnlockAbstract):
     def __init__(self, features: int = 0, uid: int = 0):
         """Initialize.
 
-        :param features: mask of FEATURE_UNLOCK_ constants, defaults to 0
+        :param features: mask of FEATURE_UNLOCK_x constants, defaults to 0
         :param uid: Unique ID required by some engine/feature combinations
         """
         super().__init__(EnumEngine.OCOTP, features, uid=uid)
@@ -1123,7 +1125,7 @@ class CmdInstallKey(CmdBase):
 SignatureOrMAC = Union[MAC, Signature]
 
 
-class ExpectedSignatureOrMACError(Exception):
+class ExpectedSignatureOrMACError(SPSDKError):
     """CmdAuthData additional data block: expected Signature or MAC object."""
 
 
@@ -1223,7 +1225,7 @@ class CmdAuthData(CmdBase):
         elif self.sig_format == EnumCertFormat.CMS:
             assert isinstance(value, Signature)
         else:
-            raise ExpectedSignatureOrMACError
+            raise ExpectedSignatureOrMACError()
         self._signature = value
 
     def parse_cmd_data(self, data: bytes, offset: int) -> SignatureOrMAC:
@@ -1241,7 +1243,7 @@ class CmdAuthData(CmdBase):
         if header.tag == SegTag.SIG:
             self._signature = Signature.parse(data, offset)
             return self._signature
-        raise ExpectedSignatureOrMACError(header.tag)
+        raise ExpectedSignatureOrMACError(f'TAG = {header.tag}')
 
     @property
     def signature(self) -> Optional[SignatureOrMAC]:

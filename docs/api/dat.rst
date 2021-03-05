@@ -3,6 +3,13 @@ Debug Authentication API
 
 Debug Authentication module provides debugging for securely provisioned devices.
 
+DAT module general information
+--------------------------------
+.. automodule:: spsdk.dat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module for generating debug credentials
 ----------------------------------------
@@ -47,6 +54,14 @@ Module with commands for Debug Mailbox
 Module with common utils for DAT module
 ----------------------------------------
 .. automodule:: spsdk.dat.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module with the shadow registers control DAT support file
+----------------------------------------------------------
+.. automodule:: spsdk.dat.shadow_regs
    :members:
    :undoc-members:
    :show-inheritance:

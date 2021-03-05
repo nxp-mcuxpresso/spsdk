@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,8 +12,8 @@ import os
 from binascii import unhexlify
 
 from spsdk.mboot import McuBoot, McuBootCommandError, StatusCode, scan_usb
-from spsdk.sbfile import BootImageV20
-from spsdk.sbfile import BootSectionV2, CmdErase, CmdLoad, CmdReset
+from spsdk.sbfile.images import BootImageV20, BootSectionV2
+from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdReset
 
 # Uncomment for printing debug messages
 # import logging

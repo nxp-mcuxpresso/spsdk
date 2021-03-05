@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Segments within image module."""
@@ -592,12 +592,12 @@ class SegIVT2(BaseSegment):
     def info(self) -> str:
         """String representation of the SegIVT2."""
         msg = ""
-        msg += " format version   : 0x{:02X}\n".format(self.version)
-        msg += " IVT start address: 0x{:08X}\n".format(self.ivt_address)
-        msg += " BDT start address: 0x{:08X}\n".format(self.bdt_address)
-        msg += " DCD start address: 0x{:08X}\n".format(self.dcd_address)
-        msg += " APP entry point  : 0x{:08X}\n".format(self.app_address)
-        msg += " CSF start address: 0x{:08X}\n".format(self.csf_address)
+        msg += f" Format version   : {_format_ivt_item(self.version, digit_count=2)}\n"
+        msg += f" IVT start address: {_format_ivt_item(self.ivt_address)}\n"
+        msg += f" BDT start address: {_format_ivt_item(self.bdt_address)}\n"
+        msg += f" DCD start address: {_format_ivt_item(self.dcd_address)}\n"
+        msg += f" APP entry point  : {_format_ivt_item(self.app_address)}\n"
+        msg += f" CSF start address: {_format_ivt_item(self.csf_address)}\n"
         msg += "\n"
         return msg
 
@@ -1333,12 +1333,12 @@ class SegIVT3a(BaseSegment):
     def info(self) -> str:
         """String representation of the SegIVT3a."""
         msg = ""
-        msg += " VER:  {}\n".format(self.version)
-        msg += " IVT:  0x{:08X}\n".format(self.ivt_address)
-        msg += " BDT:  0x{:08X}\n".format(self.bdt_address)
-        msg += " DCD:  0x{:08X}\n".format(self.dcd_address)
-        msg += " CSF:  0x{:08X}\n".format(self.csf_address)
-        msg += " NEXT: 0x{:08X}\n".format(self.next)
+        msg += f" Format version   : {_format_ivt_item(self.version, digit_count=2)}\n"
+        msg += f" IVT start address: {_format_ivt_item(self.ivt_address)}\n"
+        msg += f" BDT start address: {_format_ivt_item(self.bdt_address)}\n"
+        msg += f" DCD start address: {_format_ivt_item(self.dcd_address)}\n"
+        msg += f" CSF start address: {_format_ivt_item(self.csf_address)}\n"
+        msg += f" NEXT address     : {_format_ivt_item(self.next)}\n"
         msg += "\n"
         return msg
 
@@ -1430,11 +1430,11 @@ class SegIVT3b(BaseSegment):
     def info(self) -> str:
         """String representation of the SegIVT3b."""
         msg = ""
-        msg += " IVT: 0x{:08X}\n".format(self.ivt_address)
-        msg += " BDT: 0x{:08X}\n".format(self.bdt_address)
-        msg += " DCD: 0x{:08X}\n".format(self.dcd_address)
-        msg += " SCD: 0x{:08X}\n".format(self.scd_address)
-        msg += " CSF: 0x{:08X}\n".format(self.csf_address)
+        msg += f" IVT start address: {_format_ivt_item(self.ivt_address)}\n"
+        msg += f" BDT start address: {_format_ivt_item(self.bdt_address)}\n"
+        msg += f" DCD start address: {_format_ivt_item(self.dcd_address)}\n"
+        msg += f" CSF start address: {_format_ivt_item(self.csf_address)}\n"
+        msg += f" SCD start address: {_format_ivt_item(self.scd_address)}\n"
         msg += "\n"
         return msg
 
@@ -2089,3 +2089,17 @@ class SegBIC1(BaseSegment):
         obj.validate()
 
         return obj
+
+
+def _format_ivt_item(item_address: int, digit_count: int = 8) -> str:
+    """Formats 'item_address' to hex or None if address is 0.
+
+    If provided item address is not 0, the result will be in format
+    '0x' + leading zeros + number in HEX format
+    If provided number is 0, function returns 'None'
+
+    :param item_address: Address if IVT item
+    :param digit_count: Number of digits to , defaults to 8
+    :return: Formated number
+    """
+    return f"{item_address:#0{digit_count + 2}x}" if item_address else "none"

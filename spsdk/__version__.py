@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,4 +10,4 @@
 Having the version in a separate file makes it easier to share it with setup.py
 """
 
-__version__ = "0.3.1"
+__version__ = "1.3.0"

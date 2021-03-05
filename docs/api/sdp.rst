@@ -43,3 +43,11 @@ SDP Error/Status codes
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+SDP Exceptions
+----------------
+.. automodule:: spsdk.sdp.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:

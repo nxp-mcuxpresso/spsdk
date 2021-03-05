@@ -1,21 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
 from datetime import datetime
 
-import pytest
-
 from spsdk.utils.crypto import Certificate
-
-
-@pytest.fixture(scope="module")
-def data_dir():
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 
 
 def test_basics(data_dir: str) -> None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,9 +18,9 @@ from spsdk.image import KeySourceType, KeyStore
 from spsdk.image import MasterBootImage, MasterBootImageType
 from spsdk.image import TrustZone
 from spsdk.mboot import McuBoot, scan_usb, PropertyTag, ExtMemId, KeyProvUserKeyType
-from spsdk.sbfile import BootImageV21, BootSectionV2, Certificate, CertBlockV2, SBV2xAdvancedParams
-from spsdk.sbfile import CmdErase, CmdLoad, CmdFill, CmdMemEnable
-from spsdk.utils.crypto import Otfad, KeyBlob
+from spsdk.sbfile.images import BootImageV21, BootSectionV2, CertBlockV2, SBV2xAdvancedParams
+from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdFill, CmdMemEnable
+from spsdk.utils.crypto import Otfad, KeyBlob, Certificate
 from spsdk.utils.misc import align_block, load_binary
 from tests.misc import compare_bin_files, write_dbg_log
 

@@ -2,12 +2,12 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Commands and responses used by SDP module."""
-
+import math
 from hashlib import sha256
 from struct import pack, unpack_from, unpack
 from typing import List, Optional, Union, Any, Iterator
@@ -19,6 +19,7 @@ from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo
 from .header import SegTag, Header
 from .misc import modulus_fmt, hexdump_fmt
+from .. import SPSDKError
 
 
 class EnumAlgorithm(Enum):
@@ -415,7 +416,7 @@ class MAC(BaseClass):
         return cls(header.param, nonce_bytes, mac_bytes, data[offset: offset + header.length - (Header.SIZE + 4)])
 
 
-class SRKException(Exception):
+class SRKException(SPSDKError):
     """SRK table processing exceptions."""
 
 
@@ -477,10 +478,10 @@ class SrkItem:
         if header.tag == EnumSRK.KEY_PUBLIC:
             if header.param == EnumAlgorithm.PKCS1:
                 return SrkItemRSA.parse(data, offset)
-            raise NotImplementedSRKPublicKeyType(header.param)
+            raise NotImplementedSRKPublicKeyType(f'{header.param}')
         if header.tag == EnumSRK.KEY_HASH:
             return SrkItemHash.parse(data, offset)
-        raise NotImplementedSRKItem(header.tag, header.param)
+        raise NotImplementedSRKItem(f'TAG = {header.tag}, PARAM = {header.param}')
 
     @classmethod
     def from_certificate(cls, cert: Certificate) -> 'SrkItem':
@@ -489,7 +490,7 @@ class SrkItem:
         public_key = cert.public_key()
         if isinstance(public_key, rsa.RSAPublicKey):
             return SrkItemRSA.from_certificate(cert)
-        raise NotImplementedSRKCertificate(cert)
+        raise NotImplementedSRKCertificate()
 
 
 class SrkItemHash(SrkItem):
@@ -566,7 +567,7 @@ class SrkItemHash(SrkItem):
         if header.param == EnumAlgorithm.SHA256:
             digest = rest[:sha256().digest_size]
             return cls(EnumAlgorithm.SHA256, digest)
-        raise NotImplementedSRKItem(header.tag, header.param)
+        raise NotImplementedSRKItem(f'TAG = {header.tag}, PARAM = {header.param}')
 
 
 
@@ -672,10 +673,11 @@ class SrkItemRSA(SrkItem):
         flag = 0
         try:
             key_usage = cert.extensions.get_extension_for_class(KeyUsage)
+            assert isinstance(key_usage.value, KeyUsage)
+            if key_usage.value.key_cert_sign:
+                flag = 0x80
         except ExtensionNotFound:
             pass
-        if key_usage.value.key_cert_sign:
-            flag = 0x80
 
         if isinstance(cert.public_key(), rsa.RSAPublicKey):
             public_key = cert.public_key()
@@ -683,17 +685,13 @@ class SrkItemRSA(SrkItem):
             pub_key_numbers = public_key.public_numbers()
             assert isinstance(pub_key_numbers, rsa.RSAPublicNumbers)
             # get modulus and exponent of public key since we are RSA
-            modulus_len = pub_key_numbers.n.bit_length() // 8
-            if pub_key_numbers.n.bit_length() % 8:
-                modulus_len += 1
-            exponent_len = pub_key_numbers.e.bit_length() // 8
-            if pub_key_numbers.e.bit_length() % 8:
-                exponent_len += 1
+            modulus_len = math.ceil(pub_key_numbers.n.bit_length() / 8)
+            exponent_len = math.ceil(pub_key_numbers.e.bit_length() / 8)
             modulus = pub_key_numbers.n.to_bytes(modulus_len, "big")
             exponent = pub_key_numbers.e.to_bytes(exponent_len, "big")
 
             return cls(modulus, exponent, flag)
-        raise NotImplementedSRKCertificate(cert)
+        raise NotImplementedSRKCertificate()
 
 
 class SrkTable(BaseClass):

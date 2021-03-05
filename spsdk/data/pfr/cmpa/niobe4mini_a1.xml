@@ -221,15 +221,15 @@
     <bit_field offset="8" width="4" name="ADDR2_PRG" access="RW" reset_value="0" description="Programmable portion of the base address of region 2.">
       <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_ADDR2_PRG(x)"/>
     </bit_field>
-    <reserved_bit_field offset="12" width="4" reset_value="0"/>
-    <bit_field offset="16" width="2" name="LOCK_REG0" access="RW" reset_value="0" description="Lock PRINCE region0 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
+    <reserved_bit_field offset="12" width="6" reset_value="0"/>
+<!--    <bit_field offset="16" width="2" name="LOCK_REG0" access="RW" reset_value="0" description="Lock PRINCE region0 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">-->
+<!--      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_LOCK_REG0(x)"/>-->
+<!--    </bit_field>-->
+    <bit_field offset="18" width="2" name="LOCK_REG0" access="RW" reset_value="0" description="Lock PRINCE region0 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
       <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_LOCK_REG0(x)"/>
     </bit_field>
-    <bit_field offset="18" width="2" name="LOCK_REG1" access="RW" reset_value="0" description="Lock PRINCE region1 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
+    <bit_field offset="20" width="2" name="LOCK_REG1" access="RW" reset_value="0" description="Lock PRINCE region1 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
       <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_LOCK_REG1(x)"/>
-    </bit_field>
-    <bit_field offset="20" width="2" name="LOCK_REG2" access="RW" reset_value="0" description="Lock PRINCE region2 settings. 00 - Region is not locked. 01, 10, 11 - Region is locked.">
-      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_LOCK_REG2(x)"/>
     </bit_field>
     <reserved_bit_field offset="22" width="2" reset_value="0"/>
     <bit_field offset="24" width="2" name="REG0_ERASE_CHECK_EN" access="RW" reset_value="0" description="For PRINCE region0 enable checking whether all encrypted pages are erased together. 00 - Check is disabled. 01, 10, 11 - Check is enabled.">
@@ -295,13 +295,13 @@
   </register>
   <register offset="0x38" width="32" name="FLASH_REMAP_SIZE" description="This 32-bit register contains the size of the image to remap, in bytes. The 12 LSBs are ignored, so the size granularity is 4KB.">
     <alias type="CMSIS" value="FLASH_REMAP_SIZE"/>
-    <bit_field offset="0" width="32" name="FLASH_REMAP_SIZE" access="RW" reset_value="0" description="This 32-bit register contains the size of the image to remap, in bytes. The 12 LSBs are ignored, so the size granularity is 4KB.">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="This 32-bit register contains the size of the image to remap, in bytes. The 12 LSBs are ignored, so the size granularity is 4KB.">
       <alias type="CMSIS" value="FLASH_CMPA_FLASH_REMAP_SIZE_FLASH_REMAP_SIZE(x)"/>
     </bit_field>
   </register>
   <register offset="0x3C" width="32" name="FLASH_REMAP_OFFSET" description="This 32-bit register contains the offset by which the image is to be remapped. The 12 LSBs are ignored, so the remap granularity is 4KB.">
     <alias type="CMSIS" value="FLASH_REMAP_OFFSET"/>
-    <bit_field offset="0" width="32" name="FLASH_REMAP_OFFSET" access="RW" reset_value="0" description="This 32-bit register contains the offset by which the image is to be remapped. The 12 LSBs are ignored, so the remap granularity is 4KB.">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="This 32-bit register contains the offset by which the image is to be remapped. The 12 LSBs are ignored, so the remap granularity is 4KB.">
       <alias type="CMSIS" value="FLASH_CMPA_FLASH_REMAP_OFFSET_FLASH_REMAP_OFFSET(x)"/>
     </bit_field>
   </register>

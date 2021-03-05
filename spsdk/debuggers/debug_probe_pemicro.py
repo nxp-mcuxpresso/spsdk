@@ -1,21 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Pemicro Debug probes support."""
 
 import logging
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 
 from pypemicro import PyPemicro, PEMicroException, PEMicroInterfaces
 
+from spsdk.exceptions import SPSDKError
+
 from .debug_probe import (DebugProbe,
-                          ProbeDescription,
                           DebugProbeTransferError,
                           DebugProbeNotOpenError,
                           DebugProbeError)
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.CRITICAL)
@@ -43,21 +45,23 @@ class DebugProbePemicro(DebugProbe):
         super().__init__(hardware_id, user_params)
 
         self.pemicro: Optional[PyPemicro] = None
+        self.last_access_memory = False
 
         logger.debug(f"The SPSDK Pemicro Interface has been initialized")
 
     @classmethod
-    def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> List[ProbeDescription]:
+    def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> list:
         """Get all connected probes over Pemicro.
 
         This functions returns the list of all connected probes in system by Pemicro package.
+
         :param hardware_id: None to list all probes, otherwice the the only probe with matching
             hardware id is listed.
         :param user_params: The user params dictionary
         :return: probe_description
         """
         #TODO fix problems with cyclic import
-        from .utils import DebugProbes
+        from .utils import DebugProbes, ProbeDescription
 
         pemicro = DebugProbePemicro.get_pemicro_lib()
 
@@ -77,8 +81,7 @@ class DebugProbePemicro(DebugProbe):
         The Pemicro opening function for SPSDK library to support various DEBUG PROBES.
         The function is used to initialize the connection to target and enable using debug probe
         for DAT purposes.
-        :raises ProbeNotFoundError: The probe has not found
-        :raises DebugMailBoxAPNotFoundError: The debug mailbox access port NOT found
+
         :raises DebugProbeError: The Pemicro cannot establish communication with target
         """
         try:
@@ -110,55 +113,105 @@ class DebugProbePemicro(DebugProbe):
         if self.pemicro:
             self.pemicro.close()
 
+    def mem_reg_read(self, addr: int = 0) -> int:
+        """Read 32-bit register in memory space of MCU.
+
+        This is read 32-bit register in memory space of MCU function for SPSDK library
+        to support various DEBUG PROBES.
+
+        :param addr: the register address
+        :return: The read value of addressed register (4 bytes)
+        :raises DebugProbeNotOpenError: The Pemicro probe is NOT opened
+        :raises SPSDKError: The Pemicro probe has failed during read operation
+        """
+        if self.pemicro is None:
+            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+
+        self.last_access_memory = True
+        reg = 0
+        try:
+            reg = self.pemicro.read_32bit(addr)
+        except PEMicroException as exc:
+            logger.error(f"Failed read memory({str(exc)}).")
+            raise SPSDKError(str(exc))
+        return reg
+
+    def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
+        """Write 32-bit register in memory space of MCU.
+
+        This is write 32-bit register in memory space of MCU function for SPSDK library
+        to support various DEBUG PROBES.
+
+        :param addr: the register address
+        :param data: the data to be written into register
+        :raises DebugProbeNotOpenError: The Pemicro probe is NOT opened
+        :raises SPSDKError: The Pemicro probe has failed during write operation
+        """
+        if self.pemicro is None:
+            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+
+        self.last_access_memory = True
+        try:
+            self.pemicro.write_32bit(address=addr, data=data)
+        except PEMicroException as exc:
+            logger.error(f"Failed write memory({str(exc)}).")
+            raise SPSDKError(str(exc))
+
     def dbgmlbx_reg_read(self, addr: int = 0) -> int:
         """Read debug mailbox access port register.
 
         This is read debug mailbox register function for SPSDK library to support various DEBUG PROBES.
+
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
         :raises NotImplementedError: The dbgmlbx_reg_read is NOT implemented
         """
-        return self._coresight_reg_read(addr=addr)
+        return self.coresight_reg_read(addr=addr | (self.dbgmlbx_ap_ix << self.APSEL_SHIFT))
 
     def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write debug mailbox access port register.
 
         This is write debug mailbox register function for SPSDK library to support various DEBUG PROBES.
+
         :param addr: the register address
         :param data: the data to be written into register
         :raises NotImplementedError: The dbgmlbx_reg_write is NOT implemented
         """
-        self._coresight_reg_write(addr=addr, data=data)
+        self.coresight_reg_write(addr=addr | (self.dbgmlbx_ap_ix << self.APSEL_SHIFT), data=data)
 
-    def _coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
+    def coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
         """Read coresight register over Pemicro interface.
 
         The Pemicro read coresight register function for SPSDK library to support various DEBUG PROBES.
+
         :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
         :raises DebugProbeTransferError: The IO operation failed
         :raises DebugProbeNotOpenError: The Pemicro probe is NOT opened
-
         """
         if self.pemicro is None:
             raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
 
         try:
+            if self.last_access_memory:
+                self.last_access_memory = False
+
             if access_port:
-                addr_ap = addr | ((self.dbgmlbx_ap_ix << self.APSEL_SHIFT) & self.APSEL_APBANKSEL)
-                ret = self.pemicro.read_ap_register(apselect=self.dbgmlbx_ap_ix,
-                                                    addr=addr_ap)
+                ap_ix = (addr & self.APSEL_APBANKSEL) >> self.APSEL_SHIFT
+                ret = self.pemicro.read_ap_register(apselect=ap_ix,
+                                                    addr=addr)
             else:
                 ret = self.pemicro.read_dp_register(addr=addr)
             return ret
         except PEMicroException as exc:
             raise DebugProbeTransferError(f"The Coresight read operation failed({str(exc)}).")
 
-    def _coresight_reg_write(self, access_port: bool = True, addr: int = 0, data: int = 0) -> None:
+    def coresight_reg_write(self, access_port: bool = True, addr: int = 0, data: int = 0) -> None:
         """Write coresight register over Pemicro interface.
 
         The Pemicro write coresight register function for SPSDK library to support various DEBUG PROBES.
+
         :param access_port: if True, the Access Port (AP) register will be write(default), otherwise the Debug Port
         :param addr: the register address
         :param data: the data to be written into register
@@ -169,10 +222,13 @@ class DebugProbePemicro(DebugProbe):
             raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
 
         try:
+            if self.last_access_memory:
+                self.last_access_memory = False
+
             if access_port:
-                addr_ap = addr | ((self.dbgmlbx_ap_ix << self.APSEL_SHIFT) & self.APSEL_APBANKSEL)
-                self.pemicro.write_ap_register(apselect=self.dbgmlbx_ap_ix,
-                                               addr=addr_ap,
+                ap_ix = (addr & self.APSEL_APBANKSEL) >> self.APSEL_SHIFT
+                self.pemicro.write_ap_register(apselect=ap_ix,
+                                               addr=addr,
                                                value=data)
             else:
                 self.pemicro.write_dp_register(addr=addr, value=data)
@@ -180,10 +236,27 @@ class DebugProbePemicro(DebugProbe):
         except PEMicroException as exc:
             raise DebugProbeTransferError(f"The Coresight write operation failed({str(exc)}).")
 
+    def reset(self) -> None:
+        """Reset a target.
+
+        It resets a target.
+
+        :raises DebugProbeNotOpenError: The Pemicro debug probe is not opened yet
+        """
+        if self.pemicro is None:
+            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+
+        try:
+            self.pemicro.reset_target()
+        except PEMicroException as exc:
+            logger.warning(f"The reset sequence occured some errors.")
+            self.pemicro.control_reset_line(assert_reset=False)
+
     def _get_dmbox_ap(self) -> int:
         """Search for Debug Mailbox Access Point.
 
         This is helper function to find and return the debug mailbox access port index.
+
         :return: Debug MailBox Access Port Index if found, otherwise -1
         :raises DebugProbeNotOpenError: The PEMicro probe is NOT opened
         """

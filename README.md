@@ -17,12 +17,10 @@ Architecure
     - SB - Secure Boot File [module](https://spsdk.readthedocs.io/en/latest/api/sbfile.html).
     - MBI - Master Boot Image [module](https://spsdk.readthedocs.io/en/latest/api/image.html).
     - Crypto - Cryptography [module](https://spsdk.readthedocs.io/en/latest/api/crypto.html).
-    - DAT - Debug Authentication [module](https://spsdk.readthedocs.io/en/latest/api/dat.html).
     
 - **Protocol Layer** packs or unpacks messages and images into a protocol defined by the required device counterpart.
     - BL Host [module](https://spsdk.readthedocs.io/en/latest/api/mboot.html).
     - SDP Host [module](https://spsdk.readthedocs.io/en/latest/api/sdp.html).
-    - Debug Mailbox
 
 - **Communication Layer** links SPSDK and connected devices.
 
@@ -65,14 +63,22 @@ Usage
 - See [examples](examples) directory
 - See [application](spsdk/apps) directory
 
+---
+**i.Mx RT 1050**
+
+To run examples using i.MX RT 1050 you need to download a flashloader:
+- Go to: https://www.nxp.com/webapp/sps/download/license.jsp?colCode=IMX-RT1050-FLASHLOADER
+- Review the license agreement, download and unzip the package
+- Convert the elf file into bin (For this operation you need to have MCUXpresso IDE, IAR or Keil)
+  - run ```python tools\flashloader_converter.py --elf-path <path/to/flashloader.elf> --ide-type <mcux | iar | keil> --ide-path <path/to/IDE/install/folder```
+
+---
+
 Dependencies
 ------------
 
 SPSDK requires [Python](https://www.python.org) >3.5 and <3.9 interpreter, old version 2.x is not supported !
 
-- requirements.txt
-  - list of requirements for running SPSDK core + apps
-- requirements-develop.txt
-  - requirements needed for development (running tests, checking coding style)
-- docs/requirements.txt
-  - requirements needed for generating docs
+The core dependencies are included in requirements.txt file. 
+
+The dependencies for the development and testing are included in requirements-develop.txt.

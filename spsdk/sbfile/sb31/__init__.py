@@ -4,7 +4,7 @@
 # Copyright 2019-2020 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""SB3 module of sbfile."""
+"""SB31 module of sbfile."""
 
 from spsdk.sbfile.sb31.commands import CmdErase, CmdLoad, CmdExecute, CmdCall, CmdProgFuses, CmdProgIfr, \
     CmdSectionHeader, CmdLoadCmac, CmdLoadHashLocking, CmdCopy, CmdFillMemory, parse_command, CmdLoadKeyBlob, \

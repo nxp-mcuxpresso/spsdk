@@ -2,13 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
 from spsdk.image import SegIVT2, SegAPP, SegIVT3a, SegIVT3b
+from spsdk.image.segments import _format_ivt_item
 
 
 def test_ivt2_segment_api():
@@ -155,7 +156,7 @@ def test_ivt3a_eq():
 def test_ivt3a_info():
     ivt3a = SegIVT3a(0)
     output = ivt3a.info()
-    repr_strings = ["VER", "IVT", "BDT", "DCD", "CSF", "NEXT"]
+    repr_strings = ["Format version", "IVT", "BDT", "DCD", "CSF", "NEXT"]
     for req_string in repr_strings:
         assert req_string in output, f'string {req_string} is not in the output: {output}'
 
@@ -230,3 +231,11 @@ def test_ivt3b_info():
     repr_strings = ["IVT", "BDT", "DCD", "CSF", "SCD"]
     for req_string in repr_strings:
         assert req_string in output, f'string {req_string} is not in the output: {output}'
+
+
+def test_format_ivt_item():
+    assert _format_ivt_item(0x123) == "0x00000123"
+    assert _format_ivt_item(0xabcdef) == "0x00abcdef"
+    assert _format_ivt_item(0) == "none"
+    assert _format_ivt_item(0x10, 2) == "0x10"
+    assert _format_ivt_item(0x12, 3) == "0x012"

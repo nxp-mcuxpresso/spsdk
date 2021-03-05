@@ -49,5 +49,9 @@ MBoot ErrorCodes
    :undoc-members:
    :show-inheritance:
 
-
-
+MBoot Exceptions
+-----------------
+.. automodule:: spsdk.mboot.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:

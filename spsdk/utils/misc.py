@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,8 +8,6 @@
 import contextlib
 import os
 from typing import Callable, Iterable, Iterator, Optional, TypeVar, List, Union
-
-from .crypto.common import crypto_backend
 
 # for generics
 T = TypeVar('T')  # pylint: disable=invalid-name
@@ -42,6 +40,8 @@ def align_block(data: bytes, alignment: int = 4, padding: int = 0) -> bytes:
     if not num_padding:
         return data
     if padding == -1:
+        # pylint: disable=import-outside-toplevel
+        from spsdk.utils.crypto.common import crypto_backend
         return data + crypto_backend().random_bytes(num_padding)
     return data + bytes([padding]) * num_padding
 
@@ -92,6 +92,21 @@ def load_binary(*args: str) -> bytes:
     return data
 
 
+def load_text(*path_segments: str) -> str:
+    """Loads binary file into bytes.
+
+    :param path_segments: list that consists of:
+        - absolute path
+        - optional sub-directory (any number)
+        - file name including file extension
+        All the fields together represents absolute path to the file
+    :return: content of the binary file as bytes
+    """
+    text = load_file(*path_segments, mode='r')
+    assert isinstance(text, str)
+    return text
+
+
 def load_file(*path_segments: str, mode: str = 'r') -> Union[str, bytes]:
     """Loads a file into bytes.
 
@@ -104,6 +119,7 @@ def load_file(*path_segments: str, mode: str = 'r') -> Union[str, bytes]:
     :return: content of the binary file as bytes or str (based on mode)
     """
     path = os.path.join(*path_segments)
+    path = path.replace("\\", "/")
     with open(path, mode) as f:
         return f.read()
 
@@ -117,6 +133,7 @@ def write_file(data: Union[str, bytes], *path_segments: str, mode: str = 'w') ->
     :return: number of written elements
     """
     path = os.path.join(*path_segments)
+    path = path.replace("\\", "/")
     with open(path, mode) as f:
         return f.write(data)
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for crypto operations (certificate and key management).
 
-Moreover it includes SignatureProvider as an Interface for all potential signature providers.
+Moreover, it includes SignatureProvider as an Interface for all potential signature providers.
 
 It provides following functionality:
 
@@ -50,9 +50,13 @@ from cryptography.hazmat.primitives.asymmetric.ec import *
 from cryptography.hazmat.primitives.asymmetric.rsa import *  # type: ignore
 from cryptography.hazmat.primitives.serialization import *
 import cryptography.hazmat.primitives.asymmetric.utils as utils_cryptography
+
 from cryptography.x509 import *
-from cryptography.x509.oid import *
-from cryptography.x509.base import *
+from cryptography.x509 import (
+    AuthorityInformationAccessOID, CRLEntryExtensionOID,
+    CertificatePoliciesOID, ExtendedKeyUsageOID, ExtensionOID, NameOID,
+    ObjectIdentifier, SignatureAlgorithmOID
+)
 
 from .certificate_management import *
 from .keys_management import *

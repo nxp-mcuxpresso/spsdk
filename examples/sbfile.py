@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,9 +14,9 @@
 import os
 from binascii import unhexlify
 
-from spsdk.sbfile import BootImageV20, BootImageV21, Certificate, SBV2xAdvancedParams
-from spsdk.sbfile import BootSectionV2, CmdErase, CmdLoad, CmdReset
-from spsdk.utils.crypto import CertBlockV2, KeyBlob, Otfad
+from spsdk.sbfile.images import BootImageV20, BootImageV21, SBV2xAdvancedParams, BootSectionV2
+from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdReset
+from spsdk.utils.crypto import CertBlockV2, KeyBlob, Otfad, Certificate
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

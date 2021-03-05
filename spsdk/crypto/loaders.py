@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Loading methods for keys/certificates/CSR."""
@@ -34,7 +34,7 @@ def load_private_key(file_path: str, password: bytes = None,
         :param key_data: given private keys data
         :return: loaded private key
         """
-        return {
+        return {  # type: ignore
             Encoding.PEM: load_pem_private_key,
             Encoding.DER: load_der_private_key
         }[real_encoding](key_data, password, default_backend())
@@ -57,7 +57,7 @@ def load_public_key(file_path: str, encoding: Encoding = None) -> PublicKey:
         :param key_data: given public keys data
         :return: loaded public key
         """
-        return {
+        return {  # type: ignore
             Encoding.PEM: load_pem_public_key,
             Encoding.DER: load_der_public_key
         }[real_encoding](key_data, default_backend())
@@ -80,7 +80,7 @@ def load_certificate(file_path: str, encoding: Encoding = None) -> Certificate:
         :param certificate_data: given certificate data
         :return: loaded certificate
         """
-        return {
+        return {  # type: ignore
             Encoding.PEM: load_pem_x509_certificate,
             Encoding.DER: load_der_x509_certificate
         }[real_encoding](certificate_data, default_backend())

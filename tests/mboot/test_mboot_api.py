@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 from spsdk.mboot.mcuboot import PropertyTag, StatusCode, McuBootConnectionError, CmdPacket, CommandTag, ExtMemId
-from spsdk.mboot.mcuboot import KeyProvUserKeyType
+from spsdk.mboot.mcuboot import KeyProvUserKeyType, McuBoot
+from spsdk.mboot.error_codes import StatusCode
 
 
 def test_class(mcuboot, target, config):
@@ -42,6 +43,17 @@ def test_cmd_read_memory(mcuboot, target):
     assert len(data) == 1000
 
 
+def test_cmd_read_memory_data_abort(mcuboot, target):
+    mcuboot._device.fail_step = StatusCode.FLASH_OUT_OF_DATE_CFPA_PAGE
+    mcuboot.read_memory(0, 1000)
+    assert mcuboot.status_code == StatusCode.FLASH_OUT_OF_DATE_CFPA_PAGE
+
+
+def test_cmd_read_memory_timeout(mcuboot, target):
+    mcuboot._device.fail_step = 0
+    with pytest.raises(McuBootConnectionError):
+        mcuboot.read_memory(0, 100)
+
 def test_cmd_write_memory(mcuboot, target):
     data = b'\x00' * 100
     assert mcuboot.write_memory(0, data)
@@ -72,18 +84,29 @@ def test_cmd_set_property(mcuboot, target):
 
 
 def test_cmd_receive_sb_file(mcuboot, target):
-    assert not mcuboot.receive_sb_file(b'\x00' * 1000)
-    assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND
+    mcuboot._device.fail_step = None
+    assert mcuboot.receive_sb_file(bytes(1000))
+    assert mcuboot.status_code == StatusCode.SUCCESS
 
+    mcuboot._device.fail_step = StatusCode.ROMLDR_SIGNATURE
+    assert not mcuboot.receive_sb_file(bytes(1000))
+    assert mcuboot.status_code == StatusCode.ROMLDR_SIGNATURE
+    
 
 def test_cmd_execute(mcuboot, target):
     assert not mcuboot.execute(0, 0, 0)
-    assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND
+    assert mcuboot.status_code == StatusCode.FAIL
+
+    assert mcuboot.execute(0x123, 0x0, 0x100)
+    assert mcuboot.status_code == StatusCode.SUCCESS
 
 
 def test_cmd_call(mcuboot, target):
     assert not mcuboot.call(0, 0)
-    assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND
+    assert mcuboot.status_code == StatusCode.FAIL
+
+    assert mcuboot.call(0x600, 0)
+    assert mcuboot.status_code == StatusCode.SUCCESS
 
 
 def test_cmd_reset_no_reopen(mcuboot, target):
@@ -229,3 +252,17 @@ def test_cmd_key_provisioning_read_key_store(mcuboot, target):
     data = mcuboot.kp_read_key_store()
     assert data is None
 
+
+def test_cmd_configure_memory(mcuboot, target):
+    response = mcuboot.configure_memory(address=0x100, mem_id=0)
+    assert response is True
+
+    response = mcuboot.configure_memory(address=0x100, mem_id=2)
+    assert response is False
+    response = mcuboot.configure_memory(address=0x100, mem_id=1234)
+    assert response is False
+
+
+def test_load_image(mcuboot, target):
+    assert mcuboot.load_image(bytes(1000))
+    mcuboot.status_code == StatusCode.SUCCESS

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -39,6 +39,10 @@ class McuBootCommandError(McuBootError):
     def __str__(self) -> str:
         return self.fmt.format(cmd_name=self.cmd_name, description=self.description)
 
+
+class McuBootDataAbortError(McuBootError):
+    """MBoot Module: Data phase aborted by sender."""
+    fmt = 'Mboot: Data aborted by sender'
 
 class McuBootConnectionError(McuBootError):
     """MBoot Module: Connection Exception."""

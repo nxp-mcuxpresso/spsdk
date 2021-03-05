@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
 
 from spsdk.apps import utils
+from spsdk import SPSDKError
+
+from spsdk.apps.utils import catch_spsdk_error
+from spsdk.mboot.exceptions import McuBootConnectionError
 
 
 def test_split_string():
@@ -34,3 +38,57 @@ def test_file_size_composite(input_param, exp_path, exp_size):
     path, size = utils.parse_file_and_size(input_param)
     assert path == exp_path
     assert size == exp_size
+
+
+@pytest.mark.parametrize(
+    "input_hex_data,output_bytes",
+    [
+        ("{{11223344}}", b"\x11\x22\x33\x44"),
+        ("{{11 22 33 44}}", b"\x11\x22\x33\x44"),
+        (" { { 11    22 33 44}}", b"\x11\x22\x33\x44"),
+    ]
+)
+def test_parse_hex_data(input_hex_data, output_bytes):
+    parsed_data = utils.parse_hex_data(input_hex_data)
+    assert parsed_data == output_bytes
+
+
+@pytest.mark.parametrize(
+    "input_hex_data",
+    [
+        ("{ { } }"),
+        ("11223344"),
+        ("{{11223344"),
+        ("11223344}}"),
+        ("{11223344}"),
+        ("{{123}}"),
+        ("{{11 xa}}"),
+        ("{{ab zz}}"),
+    ]
+)
+def test_parse_hex_data_error(input_hex_data):
+    with pytest.raises(SPSDKError):
+        utils.parse_hex_data(input_hex_data)
+
+
+@catch_spsdk_error
+def function_under_test(to_raise: Exception = None) -> int:
+    if to_raise is None:
+        return 0
+    raise to_raise
+
+
+def test_catch_spsdk_error():
+    with pytest.raises(SystemExit) as exc:
+        function_under_test(AssertionError())
+    assert exc.value.code == 2
+
+    with pytest.raises(SystemExit) as exc_2:
+        function_under_test(McuBootConnectionError())
+    assert exc_2.value.code == 2
+
+    with pytest.raises(SystemExit) as exc_3:
+        function_under_test(IndexError())
+    assert exc_3.value.code == 3
+    
+    assert function_under_test(None) == 0

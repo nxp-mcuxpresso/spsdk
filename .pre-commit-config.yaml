@@ -1,0 +1,9 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: local
+    hooks:
+      - id: copyright-year
+        name: Check this year's Copyright
+        entry: python tools/checker_copyright_year.py
+        language: system

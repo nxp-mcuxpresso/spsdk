@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,7 +24,26 @@ from spsdk.sdp.commands import ResponseValue
 @click.group()
 @optgroup.group('Interface configuration', cls=MutuallyExclusiveOptionGroup)
 @optgroup.option('-p', '--port', help='Serial port')
-@optgroup.option('-u', '--usb', help='USB device\'s VID:PID in hex format')
+@optgroup.option('-u', '--usb', help="""
+USB device identifier. Following formats are supported:
+<vid>, <vid:pid> or <vid,pid>, device/instance path, device name.
+vid: hex or dec string; e.g. 0x0AB12, 43794.
+
+vid/pid: hex or dec string; e.g. 0x0AB12:0x123, 1:3451
+
+device name: use 'dscan' utility to list supported device names.
+
+path - OS specific string.
+Windows:
+'device instance path' in device manager under Windows OS.
+
+Linux specific:
+Use 'Bus' and 'Device' ID observed using 'lsusb' in <bus>#<device>' form; e.g. '3#2'.
+
+Mac specific:
+Use device name and location ID from 'System report' in '<device_name> <location id>'
+form. e.g. 'SE Blank RT Family @14100000'
+""")
 @click.option('-j', '--json', 'use_json', is_flag=True, help='Use JSON output')
 @click.option('-v', '--verbose', 'log_level', flag_value=logging.INFO, help='Display more verbose output')
 @click.option('-d', '--debug', 'log_level', flag_value=logging.DEBUG, help='Display debugging info')
@@ -161,7 +180,7 @@ def decode_status_code(status_code: int = None) -> str:
 
 
 @catch_spsdk_error
-def safe_main() -> int:
+def safe_main() -> None:
     """Call the main function."""
     sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
 

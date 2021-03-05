@@ -2,34 +2,26 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for serial communication with a target device using MBoot protocol."""
 
-# This violation is suppressed due to differences in Win/Linux implementation of USB
-# pylint: disable=E1101
-
-import collections
 import logging
-import os
-import platform
 
 from struct import pack, unpack_from
-from time import time
-from typing import List, Tuple, Union
+from typing import Sequence, Union
 
 import hid
-
 from spsdk.utils.usbfilter import USBDeviceFilter
 
-from ..exceptions import McuBootConnectionError
-
 from ..commands import CmdPacket, CmdResponse, parse_cmd_response
+from ..exceptions import McuBootConnectionError, McuBootDataAbortError
 from .base import Interface
 
 logger = logging.getLogger('MBOOT:USB')
 
+# import os
 # os.environ['PYUSB_DEBUG'] = 'debug'
 # os.environ['PYUSB_LOG_FILENAME'] = 'usb.log'
 
@@ -64,7 +56,7 @@ USB_DEVICES = {
 }
 
 
-def scan_usb(device_name: str = None) -> List[Interface]:
+def scan_usb(device_name: str = None) -> Sequence[Interface]:
     """Scan connected USB devices.
 
     :param device_name: see USBDeviceFilter classes constructor for usb_id specification
@@ -79,7 +71,6 @@ def scan_usb(device_name: str = None) -> List[Interface]:
 ########################################################################################################################
 class RawHid(Interface):
     """Base class for OS specific RAW HID Interface classes."""
-
     @property
     def name(self) -> str:
         """Get the name of the device.
@@ -97,14 +88,15 @@ class RawHid(Interface):
 
         :return: True if device is open, False othervise.
         """
-        return self._opened
+        return self.device is not None and self._opened
 
     def __init__(self) -> None:
         """Initialize the USB interface object."""
+        super().__init__()
         self._opened = False
         self.vid = 0
         self.pid = 0
-        self.sn = ""
+        self.serial_number = ""
         self.vendor_name = ""
         self.product_name = ""
         self.interface_number = 0
@@ -132,13 +124,12 @@ class RawHid(Interface):
         :param raw_data: Data received
         :type raw_data: bytes
         :return: CmdResponse object or data read
-        :raises McuBootConnectionError: Transaction aborted by target
+        :raises McuBootDataAbortError: Transaction aborted by target
         """
         logger.debug(f"IN [{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         report_id, _, plen = unpack_from('<2BH', raw_data)
         if plen == 0:
-            logger.debug("Received an abort package")
-            raise McuBootConnectionError('Transaction aborted')
+            raise McuBootDataAbortError()
         data = raw_data[4: 4 + plen]
         if report_id == REPORT_ID['CMD_IN']:
             return parse_cmd_response(data)
@@ -152,26 +143,36 @@ class RawHid(Interface):
         """Open the interface."""
         logger.debug("Open Interface")
         try:
+            assert self.device
             self.device.open_path(self.path)
             self._opened = True
         except OSError:
-            raise McuBootConnectionError(f"Unable to open device VIP={self.vid} PID={self.pid} SN='{self.sn}'")
+            raise McuBootConnectionError(
+                f"Unable to open device VIP={self.vid} PID={self.pid} SN='{self.serial_number}'"
+            )
 
     def close(self) -> None:
         """Close the interface."""
         logging.debug("Close Interface")
         try:
+            assert self.device
             self.device.close()
             self._opened = False
         except OSError:
-            raise McuBootConnectionError(f"Unable to close device VIP={self.vid} PID={self.pid} SN='{self.sn}'")
+            raise McuBootConnectionError(
+                f"Unable to close device VIP={self.vid} PID={self.pid} SN='{self.serial_number}'"
+            )
 
     def write(self, packet: Union[CmdPacket, bytes]) -> None:
         """Write data on the OUT endpoint associated to the HID interfaces.
 
         :param packet: Data to send
         :raises ValueError: Raises an error if packet type is incorrect
+        :raises McuBootConnectionError: Raises an error if device is not openned for writing
         """
+        if not self.is_opened:
+            raise McuBootConnectionError(f"Device is openned for writing")
+
         if isinstance(packet, CmdPacket):
             report_id = REPORT_ID['CMD_OUT']
             data = packet.to_bytes(padding=False)
@@ -182,21 +183,28 @@ class RawHid(Interface):
             raise ValueError("Packet has to be either 'CmdPacket' or 'bytes'")
 
         raw_data = self._encode_report(report_id, data)
+        assert self.device
         self.device.write(raw_data)
 
     def read(self) -> Union[CmdResponse, bytes]:
         """Read data on the IN endpoint associated to the HID interface.
 
         :return: Return CmdResponse object.
+        :raises McuBootConnectionError: Raises an error if device is not openned for reading
         """
+        if not self.is_opened:
+            raise McuBootConnectionError(f"Device is not openned for reading")
+
+        assert self.device
         raw_data = self.device.read(1024, self.timeout)
         # NOTE: uncomment the following when using KBoot/Flashloader v2.1 and older
+        # import platform
         # if platform.system() == "Linux":
         #     raw_data += self.device.read(1024, self.timeout)
         return self._decode_report(bytes(raw_data))
 
     @staticmethod
-    def enumerate(usb_device_filter: USBDeviceFilter) -> List[Interface]:
+    def enumerate(usb_device_filter: USBDeviceFilter) -> Sequence[Interface]:
         """Get list of all connected devices which matches PyUSB.vid and PyUSB.pid.
 
         :param usb_device_filter: USBDeviceFilter object

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for NXP SPDK DebugMailbox support."""
@@ -41,7 +41,7 @@ class DebugMailbox:
         # reset line of the chip, or set the CHIP_RESET_REQ (This can be done at the
         # same time as setting the RESYNCH_REQ bit).
 
-        logger.debug(f"No reset mode: {self.reset!r}")
+        logger.debug(f"Reset mode: {self.reset!r}")
         if self.reset:
             self.debug_probe.dbgmlbx_reg_write(
                 addr=self.registers.CSW.address,
@@ -71,7 +71,6 @@ class DebugMailbox:
                 if retries == 0:
                     retries = 20
                     raise IOError("TransferTimeoutError limit exceeded!")
-                # if isinstance(e, TransferTimeoutError):
                 sleep(0.05)
 
 
