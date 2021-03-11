@@ -18,7 +18,7 @@ Following NXP devices are supported:
 
 - Windows 10, 64bit
 - Ubuntu 16.04 or above, 64bit
-- Mac OS 11.x or above, x64
+- Mac OS 10.13 or above, x64
 
 ## Installation
 
