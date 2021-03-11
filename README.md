@@ -1,51 +1,43 @@
-NXP Secure Provisioning SDK
-===========================
+# NXP Secure Provisioning SDK
 
-**Secure Provisioning SDK (SPSDK)** allows the user to connect and communicate with a device; configure the device; prepare, download, and upload data including security operations. It is delivered in a form of python library and command-line applications.
+**Secure Provisioning SDK (SPSDK)** enables connection and communication with target device for purposes of secure provisioning and programming. Delivered as python library with command-line applications for direct utilization.
 
 * [Documentation](https://spsdk.readthedocs.io)
 
-Architecure
------------
-<img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="400"/>
+<img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="600"/>
 
-**SPSDK** is a library which may be separated into the following layers based on performed functionality:
+## Supported Devices
 
-- **Application Layer** is a layer allowing SPSDK integration into various applications such as command-line utilities, GUI tools, DevOps/Automation infrastructure which is used in prototyping, production, or testing environments or any application based on specific customer needs. As a part of the library, several command-line applications are [included](spsdk/apps). 
-
-- **Library Layer** abstracts functionality related to images or messages creation and parsing including required security and cryptography functionality.
-    - SB - Secure Boot File [module](https://spsdk.readthedocs.io/en/latest/api/sbfile.html).
-    - MBI - Master Boot Image [module](https://spsdk.readthedocs.io/en/latest/api/image.html).
-    - Crypto - Cryptography [module](https://spsdk.readthedocs.io/en/latest/api/crypto.html).
-    
-- **Protocol Layer** packs or unpacks messages and images into a protocol defined by the required device counterpart.
-    - BL Host [module](https://spsdk.readthedocs.io/en/latest/api/mboot.html).
-    - SDP Host [module](https://spsdk.readthedocs.io/en/latest/api/sdp.html).
-
-- **Communication Layer** links SPSDK and connected devices.
-
-Supported Devices
-----------------
 Following NXP devices are supported:
-- [LPCXpresso55S69](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpcxpresso55s69-development-board:LPC55S69-EVK), 
-- [LPCXpresso55S16](https://www.nxp.com/design/development-boards/lpcxpresso-boards/lpcxpresso55s16-development-board:LPC55S16-EVK)
-- [LPC55S28](https://www.nxp.com/design/software/development-software/lpcxpresso55s28-development-board:LPC55S28-EVK), 
-- [LPC55S06](https://www.nxp.com/design/development-boards/lpcxpresso-boards/lpcxpresso-development-board-for-lpc55s0x-0x-family-of-mcus:LPC55S06-EVK), 
-- [i.MX RT600](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt600-crossover-mcu-with-arm-cortex-m33-and-dsp-cores:i.MX-RT600)
-- [i.MX RT1050](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1050-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1050), [i.MX RT1060](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1060-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1060)
 
-Installation
-------------
+- LPC55 [S6x](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/high-efficiency-arm-cortex-m33-based-microcontroller-family:LPC55S6x) / [S2x](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc552x-s2x-mainstream-arm-cortex-m33-based-microcontroller-family:LPC552x-S2x) / [S1x](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc551x-s1x-baseline-arm-cortex-m33-based-microcontroller-family:LPC551X-S1X) / [S0x](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x)
+- i.MX RT [1060](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1060-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1060) / [1050](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1050-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1050) / [1020](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1020-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1020) / [1010](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1010-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1010)
+- i.MX RT [600](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt600-crossover-mcu-with-arm-cortex-m33-and-dsp-cores:i.MX-RT600) / [500](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500)
+
+## Supported enviroments
+
+- Windows 10, 64bit
+- Ubuntu 16.04 or above, 64bit
+- Mac OS 10.13 or above, x64
+
+## Installation
+
 - Make sure to have Python 3.6+ installed
 - Create a virtual environment (venv, pipenv, etc.)
 
-Directly from GitHub:
+### PyPi:
+
+``` bash
+    pip install spsdk
+```
+
+### GitHub:
 
 ``` bash
     $ pip install -U https://github.com/NXPmicro/spsdk/archive/master.zip
 ```
 
-Install SPSDK from sources:
+### Sources:
 
 ``` bash
     $ git clone https://github.com/NXPmicro/spsdk.git
@@ -57,8 +49,7 @@ Install SPSDK from sources:
  
  Note: If you use pip version 20.3, please downgrade it to 20.2.4, because of new resolver functionality.
 
-Usage
------
+## Usage
 
 - See [examples](examples) directory
 - See [application](spsdk/apps) directory
@@ -74,11 +65,10 @@ To run examples using i.MX RT 1050 you need to download a flashloader:
 
 ---
 
-Dependencies
-------------
+## Dependencies
 
 SPSDK requires [Python](https://www.python.org) >3.5 and <3.9 interpreter, old version 2.x is not supported !
 
-The core dependencies are included in requirements.txt file. 
+The core dependencies are included in [requirements.txt](requirements.txt). 
 
-The dependencies for the development and testing are included in requirements-develop.txt.
+The dependencies for the development and testing are included in [requirements-develop.txt](requirements-develop.txt).
