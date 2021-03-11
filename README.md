@@ -4,7 +4,7 @@
 
 * [Documentation](https://spsdk.readthedocs.io)
 
-<img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="400"/>
+<img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="600"/>
 
 ## Supported Devices
 
