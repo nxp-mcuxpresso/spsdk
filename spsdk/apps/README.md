@@ -1,5 +1,5 @@
-NXP SPSDK Applications
-----------------------
+# SPSDK Applications
+
 After installing SPSDK, several applications are present directly on PATH as executables.
 
 - [spsdk](spsdk_apps.py) - entry point for all available applications.
