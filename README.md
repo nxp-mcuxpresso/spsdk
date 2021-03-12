@@ -4,6 +4,8 @@
 
 <img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="600"/>
 
+## Links
+
 * [PyPi](https://pypi.org/project/spsdk/)
 * [Release Notes](release_notes.txt)
 * [Documentation](https://spsdk.readthedocs.io)
