@@ -2,9 +2,10 @@
 
 **Secure Provisioning SDK (SPSDK)** enables connection and communication with target device for purposes of secure provisioning and programming. Delivered as python library with command-line applications for direct utilization.
 
-* [Documentation](https://spsdk.readthedocs.io)
-
 <img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="600"/>
+
+* [Project documentation](https://spsdk.readthedocs.io)
+* [Release Notes](release_notes.txt)
 
 ## Supported Devices
 
