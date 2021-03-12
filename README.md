@@ -1,10 +1,11 @@
 # NXP Secure Provisioning SDK
 
-**Secure Provisioning SDK (SPSDK)** enables connection and communication with target device for purposes of secure provisioning and programming. Delivered as python library with command-line applications for direct utilization.
-
-* [Documentation](https://spsdk.readthedocs.io)
+**Secure Provisioning SDK (SPSDK)** enables connection and communication with target devices for purposes of secure provisioning and programming. Delivered as python library with command-line applications for direct utilization.
 
 <img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="600"/>
+
+* [Project documentation](https://spsdk.readthedocs.io)
+* [Release Notes](release_notes.txt)
 
 ## Supported Devices
 
@@ -14,7 +15,7 @@ Following NXP devices are supported:
 - i.MX RT [1060](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1060-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1060) / [1050](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1050-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1050) / [1020](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1020-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1020) / [1010](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1010-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1010)
 - i.MX RT [600](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt600-crossover-mcu-with-arm-cortex-m33-and-dsp-cores:i.MX-RT600) / [500](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500)
 
-## Supported enviroments
+## Supported environments
 
 - Windows 10, 64bit
 - Ubuntu 16.04 or above, 64bit
@@ -47,7 +48,7 @@ Following NXP devices are supported:
 ```
 > In **Windows OS** you need to install [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
  
- Note: If you use pip version 20.3, please downgrade it to 20.2.4, because of new resolver functionality.
+ Note: If you use pip version 20.3, please downgrade it to 20.2.4, because of the new resolver functionality.
 
 ## Usage
 
@@ -67,7 +68,7 @@ To run examples using i.MX RT 1050 you need to download a flashloader:
 
 ## Dependencies
 
-SPSDK requires [Python](https://www.python.org) >3.5 and <3.9 interpreter, old version 2.x is not supported !
+SPSDK requires [Python](https://www.python.org) >3.5 and <3.9 interpreter, old version 2.x is not supported!
 
 The core dependencies are included in [requirements.txt](requirements.txt). 
 

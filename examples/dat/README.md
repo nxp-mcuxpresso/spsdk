@@ -1,7 +1,6 @@
-Creating Debug Credential with remote signing
-=============================================
+# Creating Debug Credential with the remote signing
 
-This example demonstrates how to use custom remote signing service to sign Debug Credential file
+This example demonstrates how to use a custom remote signing service to sign Debug Credential file
 
 **Important files**
 
@@ -23,7 +22,7 @@ Content of the `hsm` represents the remote side of things
   - the remaining key-value pairs are passed to the `__init__` method of concrete Signature Provider
   - e.g.: `"type=file;file_path=private_key.pem"` will instantiate `spsdk.crypto.PlainFileSP(file_path='private_key.pem')`
 - new configuration field `rot_id`:
-  - due to nature of creating Debug Credential file we need to know in advance which of the private keys will be used to perform the actual signing
+  - due to the nature of creating Debug Credential file we need to know in advance which of the private keys will be used to perform the actual signing
   - `rot_id` is a 0-based index representing the private key that will be used with respect to `rot_meta`
   - e.g.: if we want to use a private key that corresponds to public key `p1_cert0_2048.pub`, `rot_id` has to be set to `1`
 
@@ -34,5 +33,5 @@ Content of the `hsm` represents the remote side of things
    - `python hsm\sahsm.py`
 3) generate the Debug Credential file
    - `nxpkeygen gendc --config dck_rsa_2048.yml --plugin hsm/sasp.py my.dc`
-   - you may need to add the `--force` flag it you are running the example multiple times
-4) for comparison, you may try to use signing local file, to do so, comment out line 11 in yaml file and uncomment line 14 or 15 (the have the same effect)
+   - you may need to add the `--force` flag if you are running the example multiple times
+4) for comparison, you may try to use signing a local file, to do so, comment out line 11 in yaml file and uncomment line 14 or 15 (the have the same effect)

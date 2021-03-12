@@ -3,10 +3,10 @@ Release Notes for Secure Provisioning SDK
 Version: 1.3
 Date: 05-March-2021
 
-Secure Provisioning SDK (SPSDK) is unified, reliable and easy to use SW library working across NXP MCU portfolio 
-providing strong foundation from quick customer prototyping up to production deployment. The library allows the user 
+Secure Provisioning SDK (SPSDK) is a unified, reliable, and easy to use SW library working across the NXP MCU portfolio 
+providing a strong foundation from quick customer prototyping up to production deployment. The library allows the user 
 to connect and communicate with a device, configure the device, prepare, download and upload data including security 
-operations. It is delivered in a form of python library and command line applications.
+operations. It is delivered in a form of a python library and command-line applications.
 
 Features:
 - support creation of SB version 3.1 (for N4Analog)
@@ -49,25 +49,6 @@ Operating System:
 
 Revision History:
 ================
-1.0
-- support for LPC55S69 (Niobe4) and LPC55S16 (Niobe4 Mini) devices
-- support for i.MX RT105x and RT106x devices
-- support for i.MX RT595S and RT685S devices
-- connectivity to the target via UART, USB-HID.
-- support for generating, saving, loading of RSA keys with different sizes
-- genaration and management of certificate
-- CLI utility blhost for communication with boot loader on a target
-- CLI utility sdphost for communication with ROM on a target
-- CLI utility PFR for generating and parsing Protocted Flash Regions - CMPA and CFPA regions
-
-1.1
-- support for i.MX RT1170 device
-- support for elliptic-curve cryptography (ECC)
-- support for SDPS protocol
-- included Debug Authentication functionality
-- included support for debuggers
-- utility (nxpkeygen) for generating debug credential files and corresponding keys
-
 1.2
 - support for Niobe4 Analog devices
 - extend support for Niobe4 Mini, Nano
@@ -81,10 +62,25 @@ Revision History:
 - [PFR] added CMAC-based seal 
 - [PFR] load Root of Trust from elf2sb configuration file 
 
-Licence: 
+1.1
+- support for i.MX RT1170 device
+- support for elliptic-curve cryptography (ECC)
+- support for SDPS protocol
+- included Debug Authentication functionality
+- included support for debuggers
+- utility (nxpkeygen) for generating debug credential files and corresponding keys
+
+1.0
+- support for LPC55S69 (Niobe4) and LPC55S16 (Niobe4 Mini) devices
+- support for i.MX RT105x and RT106x devices
+- support for i.MX RT595S and RT685S devices
+- connectivity to the target via UART, USB-HID.
+- support for generating, saving, loading RSA keys with different sizes
+- generation and management of certificate
+- CLI utility blhost for communication with boot loader on a target
+- CLI utility sdphost for communication with ROM on a target
+- CLI utility PFR for generating and parsing Protected Flash Regions - CMPA and CFPA regions
+
+License: 
 =========
 BSD-3 License
-
-
-
-
