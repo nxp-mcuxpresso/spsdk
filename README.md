@@ -4,8 +4,11 @@
 
 <img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="600"/>
 
-* [Project documentation](https://spsdk.readthedocs.io)
+## Links
+
+* [PyPi](https://pypi.org/project/spsdk/)
 * [Release Notes](release_notes.txt)
+* [Documentation](https://spsdk.readthedocs.io)
 
 ## Supported Devices
 
@@ -23,8 +26,10 @@ Following NXP devices are supported:
 
 ## Installation
 
-- Make sure to have Python 3.6+ installed
+- Make sure to have [Python](https://www.python.org) 3.6+ installed
 - Create a virtual environment (venv, pipenv, etc.)
+
+> SPSDK is tested on Python >3.5 and <3.9 interpreter, old version 2.x is not supported
 
 ### PyPi:
 
@@ -67,8 +72,6 @@ To run examples using i.MX RT 1050 you need to download a flashloader:
 ---
 
 ## Dependencies
-
-SPSDK requires [Python](https://www.python.org) >3.5 and <3.9 interpreter, old version 2.x is not supported!
 
 The core dependencies are included in [requirements.txt](requirements.txt). 
 
