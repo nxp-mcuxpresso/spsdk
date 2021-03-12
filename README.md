@@ -4,8 +4,8 @@
 
 <img src="docs/_static/images/SPSDK-Architecture.png" alt="drawing" width="600"/>
 
-* [Release Notes](release_notes.txt)
 * [PyPi](https://pypi.org/project/spsdk/)
+* [Release Notes](release_notes.txt)
 * [Documentation](https://spsdk.readthedocs.io)
 
 ## Supported Devices
