@@ -7,7 +7,7 @@
 
 """Common cryptographic functions."""
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 
 from cryptography.hazmat.primitives.asymmetric import utils
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers
@@ -83,7 +83,7 @@ def pack_timestamp(value: datetime) -> int:
     :return: number of milliseconds since 1.1.2000  00:00:00; 64-bit integer
     """
     assert isinstance(value, datetime)
-    start = datetime(2000, 1, 1, 0, 0, 0, 0).timestamp()
+    start = datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp()
     result = int((value.timestamp() - start) * 1000000)
     assert 0 <= result <= 0xFFFFFFFFFFFFFFFF
     return result
@@ -98,7 +98,7 @@ def unpack_timestamp(value: int) -> datetime:
     """
     assert isinstance(value, int)
     assert 0 <= value <= 0xFFFFFFFFFFFFFFFF
-    start = int(datetime(2000, 1, 1, 0, 0, 0, 0).timestamp() * 1000000)
+    start = int(datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000000)
     return datetime.fromtimestamp((start + value) / 1000000)
 
 

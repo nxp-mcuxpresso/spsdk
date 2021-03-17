@@ -7,7 +7,7 @@
 
 import os
 from binascii import unhexlify
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 import pytest
@@ -177,7 +177,7 @@ def test_sb2x_builder(data_dir: str, sb_minor_ver: int, sign_bits: int, otfad: b
     mac_value = b'\x0B' * 32
 
     # this is hardcoded in the test; if not specified, current value will be used
-    timestamp = datetime.fromtimestamp(int(datetime(2020, month=1, day=31).timestamp()))
+    timestamp = datetime.fromtimestamp(int(datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc).timestamp()))
     adv_params = SBV2xAdvancedParams(dek=dek_value, mac=mac_value, nonce=bytes(16), timestamp=timestamp)
 
     # create boot image
