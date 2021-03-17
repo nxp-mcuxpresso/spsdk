@@ -6,7 +6,7 @@
 
 ## Links
 
-* [PyPi](https://pypi.org/project/spsdk/)
+* [PyPI](https://pypi.org/project/spsdk/)
 * [Release Notes](release_notes.txt)
 * [Documentation](https://spsdk.readthedocs.io)
 
