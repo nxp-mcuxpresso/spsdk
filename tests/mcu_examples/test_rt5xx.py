@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from struct import pack
 from time import sleep
 from typing import List, Optional, Tuple
@@ -625,7 +625,7 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
         sbkek_str = f.readline()
 
     adv_params =SBV2xAdvancedParams(dek=b'\xA0' * 32, mac=b'\x0B' * 32, nonce=bytes(16),
-                                    timestamp=datetime(2020, month=1, day=31))
+                                    timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc))
     # create boot image
     boot_image = BootImageV21(
         kek=bytes.fromhex(sbkek_str),
@@ -696,7 +696,7 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     sbkek = KeyStore.derive_sb_kek_key(bytes.fromhex(MASTER_KEY))
 
     adv_params = SBV2xAdvancedParams(dek=b'\xA0' * 32, mac=b'\x0B' * 32, nonce=bytes(16),
-                                     timestamp=datetime(2020, month=1, day=31))
+                                     timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc))
 
     # create SB file boot image
     boot_image = BootImageV21(
@@ -760,7 +760,7 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
         sbkek_str = f.readline()
 
     adv_params = SBV2xAdvancedParams(dek=b'\xA0' * 32, mac=b'\x0B' * 32, nonce=bytes(16),
-                                     timestamp=datetime(2020, month=1, day=31))
+                                     timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc))
 
     # create SB file boot image
     boot_image = BootImageV21(
@@ -828,7 +828,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     key_store = get_keystore(data_dir)
 
     adv_params = SBV2xAdvancedParams(dek=b'\xA0' * 32, mac=b'\x0B' * 32, nonce=bytes(16),
-                                     timestamp=datetime(2020, month=1, day=31))
+                                     timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc))
 
     # create SB file boot image
     boot_image = BootImageV21(
@@ -942,7 +942,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     key_store = get_keystore(data_dir)
 
     adv_params = SBV2xAdvancedParams(dek=b'\xA0' * 32, mac=b'\x0B' * 32, nonce=bytes(16),
-                                     timestamp=datetime(2020, month=1, day=31))
+                                     timestamp=datetime(2020, month=1, day=31, hour=0, tzinfo=timezone.utc))
 
     # create SB file boot image
     boot_image = BootImageV21(

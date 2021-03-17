@@ -842,7 +842,7 @@ def test_sb(cpu_params: CpuParams) -> None:
     :param cpu_params: processor specific parameters of the test
     """
     # timestamp is fixed for the test, do not not for production
-    timestamp = datetime(year=2020, month=4, day=24, hour=16, minute=33, second=32)
+    timestamp = datetime(year=2020, month=4, day=24, hour=15, minute=33, second=32, tzinfo=timezone.utc)
 
     # load application to add into SB
     img_name = f'{cpu_params.board}_iled_blinky_ext_FLASH_unsigned_nopadding'
@@ -879,7 +879,7 @@ def test_sb_multiple_sections(cpu_params: CpuParams) -> None:
         return  # this test case is supported only for RT1050 and RT1060
 
     # timestamp is fixed for the test, do not not for production
-    timestamp = datetime(year=2020, month=4, day=24, hour=16, minute=33, second=32)
+    timestamp = datetime(year=2020, month=4, day=24, hour=15, minute=33, second=32, tzinfo=timezone.utc)
 
     # load application to add into SB
     img_name = f'{cpu_params.board}_iled_blinky_ext_FLASH_unsigned_nofcb'
