@@ -6,9 +6,9 @@
 
 ## Links
 
-* [PyPI](https://pypi.org/project/spsdk/)
+* [PyPI][pypi-location]
 * [Release Notes](release_notes.txt)
-* [Documentation](https://spsdk.readthedocs.io)
+* [Documentation][doc-location]
 
 ## Supported Devices
 
@@ -76,3 +76,10 @@ To run examples using i.MX RT 1050 you need to download a flashloader:
 The core dependencies are included in [requirements.txt](requirements.txt). 
 
 The dependencies for the development and testing are included in [requirements-develop.txt](requirements-develop.txt).
+
+<!-- Identifiers, in alphabetical order -->
+
+[doc-location]: https://spsdk.readthedocs.io
+[pypi-location]: https://pypi.org/project/spsdk/
+
+
