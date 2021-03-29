@@ -480,6 +480,7 @@ class BootImageV21(BaseClass):
         """
         assert isinstance(value, CertBlockV2)
         self._cert_block = value
+        self._cert_block.alignment = 16
 
     @property
     def signed(self) -> bool:

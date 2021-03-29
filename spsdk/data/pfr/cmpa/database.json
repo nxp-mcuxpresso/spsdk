@@ -23,7 +23,7 @@
             "latest": "a1",
             "address": "0x3_E400"
         },
-		"lpc550x":
+        "lpc550x":
         {
             "revisions": {
                 "a1": "niobe4nano_a1.xml"
@@ -31,7 +31,7 @@
             "latest": "a1",
             "address": "0x3_E400"
         },
-		"lpc55s0x":
+        "lpc55s0x":
         {
             "revisions": {
                 "a1": "niobe4nano_a1.xml"
@@ -39,7 +39,7 @@
             "latest": "a1",
             "address": "0x3_E400"
         },
-		"lpc55s2x":
+        "lpc55s2x":
         {
             "revisions": {
                 "a1": "niobe4_a1.xml"
@@ -47,7 +47,7 @@
             "latest": "a1",
             "address": "0x9_E400"
         },
-		"lpc552x": {
+        "lpc552x": {
             "revisions": {
                 "a1": "niobe4_a1.xml"
             },
@@ -76,12 +76,23 @@
         }
     },
     "computed_registers": [
-        "ROTKH", "SHA256_DIGEST"
+        "SHA256_DIGEST"
     ],
-    "computed_fields": [
-        "INVERSE_VALUE"
+    "grouped_registers": [
+        {
+            "name": "ROTKH",
+            "width": 256,
+            "reverse": 1,
+            "description":"ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]"
+        }
+    ],
+    "computed_fields": {
+        "CC_SOCU_PIN":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
+        "CC_SOCU_DFLT":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"}
+    },
+    "ignored_fields": [
+        "FIELD"
     ],
     "seal_start": "SHA256_DIGEST0",
     "seal_count": 8
-
 }

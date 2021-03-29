@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,10 +22,12 @@ import os
 from .__version__ import __version__ as version
 from .exceptions import SPSDKError
 
-SPSDK_DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-
 __author__ = "NXP"
 __contact__ = "michal.starecek@nxp.com"
 __license__ = "BSD-3-Clause"
 __version__ = version
 __release__ = "alpha"
+
+# The SPSDK behavior settings
+SPSDK_DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+SPSDK_YML_INDENT = 2

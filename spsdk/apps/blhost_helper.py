@@ -7,6 +7,9 @@
 
 """Helper module for blhost application."""
 
+from spsdk.mboot.commands import KeyProvUserKeyType
+
+
 PROPERTIES_NAMES = {
     'list-properties':          0,
     'current-version':          1,
@@ -40,6 +43,7 @@ PROPERTIES_NAMES = {
     'ffr-keystore_update-opt':      29,
 }
 
+
 def parse_property_tag(property_tag: str) -> int:
     """Convert the property as name or stringified number into integer.
 
@@ -49,9 +53,19 @@ def parse_property_tag(property_tag: str) -> int:
     try:
         return int(property_tag, 0)
     except:
-        pass
+        return PROPERTIES_NAMES.get(property_tag, 0xFF)
+
+
+def parse_key_prov_key_type(key_type: str) -> int:
+    """Convert the key type as name or stringified number into integer.
+
+    :param key_type: Name or number of the Key type
+    :return: key type number
+    """
     try:
-        return PROPERTIES_NAMES[property_tag]
+        return int(key_type, 0)
     except:
-        pass
-    return 0xFF
+        key_type = key_type.upper()
+        key_type_int = KeyProvUserKeyType.get(key_type, 0xFF)
+        assert isinstance(key_type_int, int)
+        return key_type_int

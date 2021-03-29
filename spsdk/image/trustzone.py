@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,8 +13,9 @@ import struct
 
 from typing import Optional
 from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import format_value
 
-from .misc import parse_int, format_value
+from .misc import parse_int
 
 
 class TrustZoneType(Enum):

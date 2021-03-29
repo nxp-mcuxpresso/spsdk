@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import filecmp
@@ -13,7 +13,9 @@ import pytest
 
 from spsdk.utils.misc import (
     align, align_block, align_block_fill_random, extend_block, find_first,
-    load_binary, load_file, write_file)
+    load_binary, load_file, write_file, format_value, reverse_bytes_in_longs,
+    get_bytes_cnt_of_int, change_endianism, value_to_int, value_to_bytes,
+    value_to_bool)
 
 
 @pytest.mark.parametrize(
@@ -189,3 +191,155 @@ def test_write_file(data_dir, tmpdir):
 
     assert filecmp.cmp(os.path.join(data_dir, 'file.bin'), os.path.join(tmpdir, 'file.bin'))
     assert filecmp.cmp(os.path.join(data_dir, 'file.txt'), os.path.join(tmpdir, 'file.txt'))
+
+@pytest.mark.parametrize(
+    "value,size,expected",
+    [
+        (0, 2, "0b00"), (0, 4, "0b0000"), (0, 10, "0b00_0000_0000"),
+        (0, 8, "0x00"), (0, 16, "0x0000"),
+        (0, 32, "0x0000_0000"),
+        (0, 64, "0x0000_0000_0000_0000")
+    ]
+)
+def test_format_value(value, size, expected):
+    assert format_value(value, size) == expected
+
+def test_reg_long_reverse():
+    """Test Register Config - reverse_bytes_in_longs function."""
+    test_val = b'\x01\x02\x03\x04\x11\x12\x13\x14\x21\x22\x23\x24\x31\x32\x33\x34'
+    test_val_ret = b'\x04\x03\x02\x01\x14\x13\x12\x11\x24\x23\x22\x21\x34\x33\x32\x31'
+
+    assert reverse_bytes_in_longs(test_val) == test_val_ret
+    assert reverse_bytes_in_longs(test_val_ret) == test_val
+
+    test_val1 = b'\x01\x02\x03\x04\x11\x12'
+    with pytest.raises(ValueError):
+        reverse_bytes_in_longs(test_val1)
+
+@pytest.mark.parametrize(
+    "num, output, align_2_2n",
+    [
+        (0, 1, True),
+        (1, 1, True),
+        ((1<<8)-1, 1, True),
+        ((1<<8), 2, True),
+        ((1<<16)-1, 2, True),
+        ((1<<16), 4, True),
+        ((1<<24)-1, 4, True),
+        ((1<<24), 4, True),
+        ((1<<32)-1, 4, True),
+        ((1<<32), 8, True),
+        ((1<<64)-1, 8, True),
+        ((1<<64), 12, True),
+        ((1<<128)-1, 16, True),
+        ((1<<128), 20, True),
+        (0, 1, False),
+        (1, 1, False),
+        ((1<<8)-1, 1, False),
+        ((1<<8), 2, False),
+        ((1<<16)-1, 2, False),
+        ((1<<16), 3, False),
+        ((1<<24)-1, 3, False),
+        ((1<<24), 4, False),
+        ((1<<32)-1, 4, False),
+        ((1<<32), 5, False),
+        ((1<<64)-1, 8, False),
+        ((1<<64), 9, False),
+        ((1<<128)-1, 16, False),
+        ((1<<128), 17, False),
+    ]
+)
+def test_get_bytes_cnt(num, output, align_2_2n):
+    """Test of get_bytes_cnt_of_int function."""
+    assert output == get_bytes_cnt_of_int(num, align_2_2n)
+
+@pytest.mark.parametrize(
+    "value, res, exc",
+    [
+        (b'\x12', b'\x12', False),
+        (b'\x12\x34', b'\x34\x12', False),
+        (b'\x12\x34\x56', b'\x56\x34\x12', True),
+        (b'\x12\x34\x56\x78', b'\x78\x56\x34\x12', False),
+        (b'\x12\x34\x56\x78\x12\x34\x56\x78', b'\x78\x56\x34\x12\x78\x56\x34\x12', False),
+        (b'\x12\x34\x56\x78\x12\x34\x56', b'\x78\x56\x34\x12\x78\x56\x34', True),
+    ]
+)
+def test_change_endianism(value, res, exc):
+    """Test of change_endianism function"""
+    if not exc:
+        assert res == change_endianism(value)
+    else:
+        with pytest.raises(ValueError):
+            change_endianism(value)
+
+@pytest.mark.parametrize(
+    "value, res, exc",
+    [
+        (0, 0, False),
+        ("0", 0, False),
+        ("-1", -1, True),
+        ("0xffff", 65535, False),
+        ("ffff", 65535, False),
+        ("0xff_ff", 65535, False),
+        ("ff_ff", 65535, False),
+        ("0b111_1", 15, False),
+        ("b'111_1", 15, False),
+        (b'\xff\x00', 65280, False),
+        (bytearray(b'\xff\x00'), 65280, False),
+        ("InvalidValue", 0, True),
+    ]
+)
+def test_value_to_int(value, res, exc):
+    """Test of value_to_int function"""
+    if not exc:
+        assert res == value_to_int(value)
+    else:
+        with pytest.raises(TypeError):
+            value_to_int(value)
+
+@pytest.mark.parametrize(
+    "value, res, exc",
+    [
+        (0, b'\x00', False),
+        ("0", b'\x00', False),
+        ("-1", b'\xff', True),
+        ("0xffff", b'\xff\xff', False),
+        ("ffff", b'\xff\xff', False),
+        ("0xff_ff", b'\xff\xff', False),
+        ("0b111_1", b'\x0f', False),
+        ("ff_ff", b'\xff\xff', False),
+        ("b'111_1", b'\x0f', False),
+        (b'\xff\x00', b'\xff\x00', False),
+        (bytearray(b'\xff\x00'), b'\xff\x00', False),
+        ("InvalidValue", 0, True),
+    ]
+)
+def test_value_to_bytes(value, res, exc):
+    """Test of value_to_bytes function"""
+    if not exc:
+        assert res == value_to_bytes(value)
+    else:
+        with pytest.raises(TypeError):
+            value_to_bytes(value)
+
+
+@pytest.mark.parametrize(
+    "value, res, exc",
+    [
+        (0, False, False),
+        (False, False, False),
+        ("False", False, False),
+        (1, True, False),
+        (True, True, False),
+        ("True", True, False),
+        ("T", True, False),
+        (b'\x20', True, True),        
+    ]
+)
+def test_value_to_bool(value, res, exc):
+    """Test of value_to_bool function"""
+    if not exc:
+        assert res == value_to_bool(value)
+    else:
+        with pytest.raises(TypeError):
+            value_to_bool(value)

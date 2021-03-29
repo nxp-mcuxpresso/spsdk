@@ -4,7 +4,7 @@
 # Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for NXP SPDK DebugMailbox support."""
+"""Module for NXP SPSDK DebugMailbox support."""
 
 import logging
 from time import sleep
@@ -31,7 +31,7 @@ class DebugMailbox:
         # setup registers and register bitfields
         self.registers = REGISTERS
 
-        # Proceed with initiation (Resynchronisation request)
+        # Proceed with initiation (Resynchronization request)
 
         # The communication to the DM is initiated by the debugger.
         # It does so by writing the RESYNCH_REQ bit of the CSW (Control and Status Word)

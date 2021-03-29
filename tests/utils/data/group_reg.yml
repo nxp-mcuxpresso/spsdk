@@ -1,0 +1,3 @@
+TestRegA:
+# Reg Description: Group of TestRegA registers.
+  value: '0x01020304111213142122232431323334'  # The value width: 128b

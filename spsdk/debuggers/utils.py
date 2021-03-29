@@ -29,7 +29,7 @@ class ProbeDescription():
     """NamedTuple for DAT record of debug probe description."""
 
     def __init__(self, interface: str, hardware_id: str, description: str, probe: Type[DebugProbe]) -> None:
-        """Initialization of Debug probe dscription class.
+        """Initialization of Debug probe description class.
 
         param interface: Probe Interface.
         param hardware_id: Probe Hardware ID(Identification).
@@ -78,7 +78,7 @@ class DebugProbes(list):
     def select_probe(self, silent: bool = False) -> ProbeDescription:
         """Perform Probe selection.
 
-        :param silent: When it True, the functions selct the probe if applicable without any prints to log
+        :param silent: When it True, the functions select the probe if applicable without any prints to log
         :return: The record of selected DebugProbe
         :raises ProbeNotFoundError: No probe has been founded
         """
@@ -87,18 +87,18 @@ class DebugProbes(list):
                 print("There is no any debug probe connected in system!")
             raise ProbeNotFoundError("There is no any debug probe connected in system!")
 
-        if not silent or len(self) > 1:
+        if not silent or len(self) > 1: # pragma: no cover
             self.print()
 
         if len(self) == 1:
             # Automatically gets and use only one option\
             i_selected = 0
-        else:
+        else: # pragma: no cover
             print("Please choose the debug probe: ", end='')
             i_selected = int(input())
             if i_selected > len(self)-1:
-                print("The choosen probe index is out of range")
-                raise ProbeNotFoundError("The choosen probe index is out of range")
+                print("The chosen probe index is out of range")
+                raise ProbeNotFoundError("The chosen probe index is out of range")
 
         return self[i_selected]
 
@@ -137,8 +137,8 @@ class DebugProbeUtils():
 
         The caller could restrict the scanned interfaces by specification of hardware ID.
 
-        :param interface: None to scan all interfaces, otherwice the selected interface is scanned only.
-        :param hardware_id: None to list all probes, otherwice the the only probe with matching
+        :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
+        :param hardware_id: None to list all probes, otherwise the the only probe with matching
         :param user_params: The dictionary with optional user parameters
         hardware id is listed.
         :return: list of probe_description's
@@ -152,23 +152,3 @@ class DebugProbeUtils():
                     logger.warning(f"The {probe_key} debug probe support is not ready({str(exc)}).")
 
         return probes
-
-    @staticmethod
-    def get_probe(interface: str = None, hardware_id: str = None, user_params: Dict = None) -> DebugProbe:
-        """Function returns the instance of the debug probe by input identicication ID's.
-
-        If the Hardware ID  is not specified, the first in the list iis returned. If no probe is found in system
-        the function returns None.
-        :param interface: None to scan all interfaces, otherwice the selected interface is scanned only.
-        :param hardware_id: None to list all probes, otherwice the the only probe with matching
-        hardware id is listed.
-        :param user_params: The dictionary with optional user parameters
-        :return: instance of DebugProbe
-        :raises ProbeNotFoundError: No probe has been founded
-        """
-        probes = DebugProbeUtils.get_connected_probes(interface=interface, hardware_id=hardware_id)
-
-        if len(probes) > 0:
-            return probes[0].probe(hardware_id=hardware_id, user_params=user_params)
-
-        raise ProbeNotFoundError("The choosen probe index is out of range")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,7 @@ import struct
 from typing import Any, List, Optional, Sequence, Union
 
 from Crypto.Cipher import AES
-from crccheck.crc import Crc32Mpeg2
+from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk.crypto import SignatureProvider
 from spsdk.image.keystore import KeySourceType, KeyStore
@@ -153,6 +153,7 @@ class MultipleImageTable:
     It can be used for multicore images (one image for each core)
     or trustzone images (merging secure and non-secure image)
     """
+
     def __init__(self) -> None:
         """Initialize the Multiple Image Table."""
         self._entries: List[MultipleImageEntry] = list()
@@ -333,8 +334,8 @@ class MasterBootImage:
         # security stuff
         self.cert_block = cert_block
         if self.cert_block:
-            self.cert_block.alignment = 4  #type: ignore   # this value is used by elf-to-sb-gui
-            self.signature_len = self.cert_block.signature_size  #type: ignore
+            self.cert_block.alignment = 4  # type: ignore   # this value is used by elf-to-sb-gui
+            self.signature_len = self.cert_block.signature_size  # type: ignore
         else:
             self.signature_len = 0
         self._priv_key_pem_data = priv_key_pem_data
@@ -394,7 +395,7 @@ class MasterBootImage:
         if self._priv_key_pem_data:
             cert_blk = self.cert_block
             assert cert_blk is not None
-            if not cert_blk.verify_private_key(self._priv_key_pem_data):  #type: ignore
+            if not cert_blk.verify_private_key(self._priv_key_pem_data):  # type: ignore
                 raise ValueError('Signature verification failed, private key does not match to certificate')
 
     def info(self) -> str:
@@ -435,8 +436,9 @@ class MasterBootImage:
         if MasterBootImageType.has_crc(self.image_type):
             # calculate CRC using MPEG2 specification over all of data (app and trustzone)
             # expect for 4 bytes at CRC_BLOCK_OFFSET and put the resulting CRC there
-            crc = Crc32Mpeg2.calc(data[:self.CRC_BLOCK_OFFSET])
-            crc = Crc32Mpeg2.calc(data[self.CRC_BLOCK_OFFSET + 4:], crc)
+            crc32_function = mkPredefinedCrcFun('crc-32-mpeg')
+            crc = crc32_function(data[:self.CRC_BLOCK_OFFSET])
+            crc = crc32_function(data[self.CRC_BLOCK_OFFSET + 4:], crc)
             data[self.CRC_BLOCK_OFFSET: self.CRC_BLOCK_OFFSET + 4] = struct.pack("<I", crc)
         return bytes(data)
 
@@ -458,7 +460,7 @@ class MasterBootImage:
             encr_header = encr_data[:56] + self.ctr_init_vector
         else:
             encr_header = bytes()
-        self.cert_block.image_length = len(encr_data) + len(self.cert_block.export()) + len(encr_header)  #type: ignore
+        self.cert_block.image_length = len(encr_data) + len(self.cert_block.export()) + len(encr_header)  # type: ignore
         return self.cert_block.export() + encr_header
 
     def _hmac(self, data: bytes) -> bytes:

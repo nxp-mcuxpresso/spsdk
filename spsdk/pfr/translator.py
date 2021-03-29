@@ -8,30 +8,28 @@
 """Translator is responsible for converting stringified keys into values."""
 
 import logging
-
-import jmespath
-from .pfr import CFPA, CMPA
+from .pfr import CFPA, CMPA, PfrConfiguration
 
 
 class Translator:
     """Translates single strings (register/key names) into values."""
 
-    def __init__(self, cmpa_data: dict, cfpa_data: dict) -> None:
+    def __init__(self, cmpa: PfrConfiguration, cfpa: PfrConfiguration) -> None:
         """Initialize CMPA and CFPA data.
 
-        :param cmpa_data: data loaded from CMPA json config file
-        :param cfpa_data: data loaded from CFPA json config file
+        :param cmpa: configuration data loaded from CMPA config file
+        :param cfpa: configuration data loaded from CFPA config file
         """
         self.logger = logging.getLogger("translator")
-        self.cmpa_data = cmpa_data
+        self.cmpa_cfg = cmpa
         self.cmpa_obj = CMPA(
-            device=cmpa_data['device'], revision=cmpa_data['revision'],
-            user_config=cmpa_data['settings']
+            device=cmpa.device, revision=cmpa.revision,
+            user_config=cmpa
         )
-        self.cfpa_data = cfpa_data
+        self.cfpa_cfg = cfpa
         self.cfpa_obj = CFPA(
-            device=cfpa_data['device'], revision=cfpa_data['revision'],
-            user_config=cfpa_data['settings']
+            device=cfpa.device, revision=cfpa.revision,
+            user_config=cfpa
         )
         self.handlers = {
             'CMPA': self._cmpa_translate,
@@ -53,13 +51,12 @@ class Translator:
     def _cmpa_translate(self, key: str) -> int:
         """Handler for CMPA data."""
         self.logger.debug(f'Extracting value from {key}')
-        value = jmespath.search(key, self.cmpa_data['settings'])
-        if isinstance(value, dict):
-            reg_bytes = self.cmpa_obj._export_register(register_name=key, compute_inverses=False)
-            reg_val = int.from_bytes(bytes=reg_bytes, byteorder="little")
-            value = reg_val
+        splitted = key.split('.', maxsplit=1)
+        register = self.cmpa_obj.registers.find_reg(splitted[0])
+        if len(splitted) == 2:
+            value = register.find_bitfield(splitted[1]).get_value()
         else:
-            value = int(value, 0)
+            value = register.get_int_value()
         self.logger.debug(f"Extracted value {value:x}")
 
         return value
@@ -67,14 +64,12 @@ class Translator:
     def _cfpa_translate(self, key: str) -> int:
         """Handler for CFPA data."""
         self.logger.debug(f'Extracting value from {key}')
-
-        value = jmespath.search(key, self.cfpa_data['settings'])
-        if isinstance(value, dict):
-            reg_bytes = self.cfpa_obj._export_register(register_name=key, compute_inverses=False)
-            reg_val = int.from_bytes(bytes=reg_bytes, byteorder="little")
-            value = reg_val
+        splitted = key.split('.', maxsplit=1)
+        register = self.cfpa_obj.registers.find_reg(splitted[0])
+        if len(splitted) == 2:
+            value = register.find_bitfield(splitted[1]).get_value()
         else:
-            value = int(value, 0)
+            value = register.get_int_value()
         self.logger.debug(f"Extracted value {value:x}")
 
         return value
@@ -82,6 +77,6 @@ class Translator:
     def _util_translate(self, key: str) -> int:
         """Handler for Utils data."""
         values = {
-            'has_USD': False
+            'isUDSKeyCodeValid': False
         }
         return values[key]

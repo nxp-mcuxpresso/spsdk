@@ -13,7 +13,7 @@ import struct
 from typing import List, Optional, Tuple, Union
 
 import construct
-from crccheck.crc import Crc16
+from crcmod.predefined import mkPredefinedCrcFun
 from serial import Serial, SerialException
 from serial.tools.list_ports import comports
 
@@ -26,7 +26,7 @@ from .base import Interface
 logger = logging.getLogger("MBOOT:UART")
 
 
-def scan_uart(port: str = None, baudrate: int = 57600, timeout: int = 5000) -> List[Interface]:
+def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List[Interface]:
     """Scan connected serial ports.
 
     Returns list of serial ports with devices that respond to PING command.
@@ -35,10 +35,12 @@ def scan_uart(port: str = None, baudrate: int = 57600, timeout: int = 5000) -> L
 
     :param port: name of preferred serial port, defaults to None
     :param baudrate: speed of the UART interface, defaults to 56700
-    :param timeout: timeout in milliseconds
+    :param timeout: timeout in milliseconds, defaults to 5000
     :return: list of interfaces responding to the PING command
     :rtype: List[spsdk.mboot.interfaces.base.Interface]
     """
+    baudrate = baudrate or 57600
+    timeout = timeout or 5000
     if port:
         interface = _check_port(port, baudrate, timeout)
         return [interface] if interface else []
@@ -56,6 +58,7 @@ def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
     :rtype: Optional[Interface]
     """
     try:
+        logger.debug(f'Checking port: {port}, baudrate: {baudrate}, timeout: {timeout}')
         interface = Uart(port=port, baudrate=baudrate, timeout=timeout)
         interface.open()
         interface.close()
@@ -73,7 +76,8 @@ def calc_crc(data: bytes) -> int:
     :return: calculated CRC
     :rtype: int
     """
-    return Crc16.calc(data)
+    crc_function = mkPredefinedCrcFun('xmodem')
+    return crc_function(data)
 
 
 def to_int(data: bytes, little_endian: bool = True) -> int:

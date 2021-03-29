@@ -78,7 +78,7 @@ class DebugProbePyLink(DebugProbe):
         :param user_params: The user params dictionary
         :return: probe_description
         """
-        #TODO fix problems with cyclic import
+        #pylint: disable=import-outside-toplevel
         from .utils import DebugProbes, ProbeDescription
 
         jlink = DebugProbePyLink.get_jlink_lib()
@@ -114,15 +114,15 @@ class DebugProbePyLink(DebugProbe):
             self.pylink.open(serial_no=self.hardware_id, ip_addr=self.user_params.get("ip_address"))
             self.pylink.set_tif(pylink.enums.JLinkInterfaces.SWD)
             self.pylink.coresight_configure()
-            debugmb_ap_ix = self._get_dmbox_ap()
+            debug_mbox_ap_ix = self._get_dmbox_ap()
 
             # Select ISP - AP
             if self.dbgmlbx_ap_ix == -1:
-                if debugmb_ap_ix == -1:
+                if debug_mbox_ap_ix == -1:
                     raise DebugProbeError(f"The Debug mailbox access port is not available!")
-                self.dbgmlbx_ap_ix = debugmb_ap_ix
+                self.dbgmlbx_ap_ix = debug_mbox_ap_ix
             else:
-                if debugmb_ap_ix != self.dbgmlbx_ap_ix:
+                if debug_mbox_ap_ix != self.dbgmlbx_ap_ix:
                     logger.info(f"The detected debug mailbox accessport index is different to specified.")
 
             self._select_ap(ap_ix=self.dbgmlbx_ap_ix)
@@ -232,7 +232,7 @@ class DebugProbePyLink(DebugProbe):
 
         The PyLink read coresight register function for SPSDK library to support various DEBUG PROBES.
 
-        :param access_port: if True, the Access Port (AP) register will be read(defau1lt), otherwise the Debug Port
+        :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
         :raises DebugProbeTransferError: The IO operation failed
@@ -253,7 +253,7 @@ class DebugProbePyLink(DebugProbe):
                 request = swd.ReadRequest(addr // 4, ap=access_port)
                 response = request.send(self.pylink)
                 if access_port:
-                    sleep(0.1)  #TODO Check if this delay is necessary
+                    sleep(0.1)
                     request2 = swd.ReadRequest(3, ap=False)
                     response2 = request2.send(self.pylink)
                     return response2.data
@@ -308,7 +308,7 @@ class DebugProbePyLink(DebugProbe):
         self.pylink.reset()
 
     def _select_ap(self, ap_ix: int, address: int = 0) -> None:
-        """Helper function to selct the access port in DP.
+        """Helper function to select the access port in DP.
 
         :param ap_ix: requested Access port  index.
         :param address: requested address.

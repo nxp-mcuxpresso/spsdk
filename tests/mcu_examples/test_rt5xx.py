@@ -650,7 +650,7 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     # create boot section 0
     boot_section = BootSectionV2(
         0,
-        CmdFill(address=0x10C000, pattern=bytes.fromhex('063040C0')),
+        CmdFill(address=0x10C000, pattern=int('063040C0', 16)),
         CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
         CmdErase(address=0x8000000, length=0x10000),
         CmdLoad(address=0x8000400, data=fcb_data),
@@ -720,7 +720,7 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     # create boot section 0
     boot_section = BootSectionV2(
         0,
-        CmdFill(address=0x10C000, pattern=bytes.fromhex('063040C0')),
+        CmdFill(address=0x10C000, pattern=int('063040C0', 16)),
         CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
         CmdErase(address=0x8000000, length=0x00800),
         CmdErase(address=0x8001000, length=0x10000),
@@ -784,7 +784,7 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
     # create boot section 0
     boot_section = BootSectionV2(
         0,
-        CmdFill(address=0x10C000, pattern=bytes.fromhex('063040C0')),
+        CmdFill(address=0x10C000, pattern=int('063040C0', 16)),
         CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
         CmdErase(address=0x8000000, length=0x10000),
         CmdLoad(address=0x8000400, data=fcb_data),
@@ -871,7 +871,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     boot_section = BootSectionV2(
         0,
         # configure external FLASH
-        CmdFill(address=0x10C000, pattern=bytes.fromhex('063040C0')),
+        CmdFill(address=0x10C000, pattern=int('063040C0', 16)),
         CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
         # erase the FLASH
         CmdErase(address=0x8000000, length=0x10000),
@@ -983,7 +983,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     boot_section = BootSectionV2(
         0,
         # configure external FLASH
-        CmdFill(address=0x10C000, pattern=bytes.fromhex('063040C0')),
+        CmdFill(address=0x10C000, pattern=int('063040C0', 16)),
         CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
         # erase the FLASH
         CmdErase(address=0x8000000, length=0x10000),

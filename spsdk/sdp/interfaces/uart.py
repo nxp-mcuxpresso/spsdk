@@ -19,7 +19,7 @@ from .base import Interface
 logger = logging.getLogger("SDP:UART")
 
 
-def scan_uart(port: str = None, baudrate: int = 115200, timeout: int = 5000) -> List[Interface]:
+def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List[Interface]:
     """Scan connected serial ports.
 
     Returns list of serial ports with devices that respond to PING command.
@@ -28,10 +28,12 @@ def scan_uart(port: str = None, baudrate: int = 115200, timeout: int = 5000) -> 
 
     :param port: name of preferred serial port, defaults to None
     :param baudrate: speed of the UART interface, defaults to 56700
-    :param timeout: timeout in milliseconds
+    :param timeout: timeout in milliseconds, defaults to 5000
     :return: list of interfaces responding to the PING command
     :rtype: List[spsdk.sdp.interfaces.base.Interface]
     """
+    baudrate = baudrate or 115200
+    timeout = timeout or 5000
     if port:
         interface = _check_port(port, baudrate, timeout)
         return [interface] if interface else []
@@ -49,6 +51,7 @@ def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
     :rtype: Optional[Interface]
     """
     try:
+        logger.debug(f'Checking port: {port}, baudrate: {baudrate}, timeout: {timeout}')
         interface = Uart(port=port, baudrate=baudrate, timeout=timeout)
         return interface
     except SerialException as e:

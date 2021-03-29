@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <regs>
 	<register offset="0x400" width="32" name="TestReg" reversed="False" description="TestReg Description">
-		<bit_field offset="0xf" width="5" name="TestBitfiled" access="RW" reset_value="33" description="Test Bitfield Description">
+		<bit_field offset="0xf" width="5" name="TestBitfiled" access="RW" reset_value="30" description="Test Bitfield Description">
 			<bit_field_value name="TestEnum0" value="0b00000" description="Test Enum Description0"/>
-			<bit_field_value name="TestEnum1" value="Corruption" description="Test Enum Description1"/>
+			<bit_field_value name="TestEnum1" value="0b00001" description="Test Enum Description1"/>
 			<bit_field_value name="TestEnum2" value="0b00010" description="Test Enum Description2"/>
 			<bit_field_value name="TestEnum3" value="0b00011" description="Test Enum Description3"/>
 			<bit_field_value name="TestEnum4" value="0b00100" description="Test Enum Description4"/>

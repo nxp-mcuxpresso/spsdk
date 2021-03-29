@@ -94,7 +94,7 @@
 	</bit_field>
 	<reserved_bit_field offset="9" width="6" reset_value="0"/>
 	<bit_field offset="15" width="1" name="UUID_CHECK" access="RW" reset_value="0" description="Enforce UUID match during Debug authentication."/>
-	<bit_field offset="16" width="16" name="Inverse value of [15:0]" access="RW" reset_value="0" description="Inverse value of [15:0]"/>
+	<bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="Inverse value of [15:0]"/>
   </register>
   <register offset="0x14" width="32" name="CC_SOCU_DFLT" description=".">
   	<bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug Fixed state">
@@ -131,7 +131,7 @@
 		<bit_field_value name="CC_SOCU_DFLT_ME_CMD_EN_VALUE_1" value="0b1" description="Enabled"/>
 	</bit_field>
 	<reserved_bit_field offset="9" width="7" reset_value="0"/>
-	<bit_field offset="16" width="16" name="Inverse value of [15:0]" access="RW" reset_value="0" description="Inverse value of [15:0]"/>
+	<bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="Inverse value of [15:0]"/>
   </register>
   <register offset="0x18" width="32" name="VENDOR_USAGE" description=".">
     <reserved_bit_field offset="0" width="16" reset_value="0"/>

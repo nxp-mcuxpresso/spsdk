@@ -41,13 +41,13 @@ main.add_command(blhost_main, name='blhost')
 main.add_command(elftosb_main, name='elftosb')
 main.add_command(nxpcertgen_main, name='nxpcertgen')
 main.add_command(nxpdebugmbox_main, name='nxpdebugmbox')
-main.add_command(nxpdevscan_main, name='nxpdscan')
+main.add_command(nxpdevscan_main, name='nxpdevscan')
 main.add_command(nxpkeygen_main, name='nxpkeygen')
 main.add_command(pfr_main, name='pfr')
 main.add_command(pfrc_main, name='pfrc')
 main.add_command(sdphost_main, name='sdphost')
 main.add_command(sdpshost_main, name='sdpshost')
-main.add_command(shadowregs_main, name='shadowreg')
+main.add_command(shadowregs_main, name='shadowregs')
 
 @catch_spsdk_error
 def safe_main() -> Any:

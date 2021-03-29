@@ -43,5 +43,5 @@ radon cc --min D spsdk > %CD%\reports\radonD.txt
 radon cc --min C spsdk > %CD%\reports\radonC.txt
 @rem -------------------------------------------------------
 @rem gitcov (coverage of changed files)
-python tools\gitcov.py --verbose --coverage-report reports\coverage.xml
+python tools\gitcov.py --coverage-report reports\coverage.xml
 @if %errorlevel% gtr 0 echo "<<<### GIT-COV ERROR DETECTED #################################################>>>"

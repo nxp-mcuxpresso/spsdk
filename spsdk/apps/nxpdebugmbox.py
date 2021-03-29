@@ -24,6 +24,7 @@ from spsdk.exceptions import SPSDKError
 
 logger = logging.getLogger("DebugMBox")
 
+# pylint: disable=protected-access
 LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
 PROTOCOL_VERSIONS = ['1.0', '1.1', '2.0', '2.1', '2.2']
 

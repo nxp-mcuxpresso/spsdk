@@ -11,11 +11,13 @@ import logging
 import json
 from typing import Dict, Any
 
-from spsdk.debuggers.debug_probe import (DebugProbe,
-                          DebugProbeTransferError,
-                          DebugProbeNotOpenError,
-                          DebugProbeError,
-                          DebugProbeMemoryInterfaceNotEnabled)
+from spsdk.debuggers.debug_probe import (
+    DebugProbe,
+    DebugProbeTransferError,
+    DebugProbeNotOpenError,
+    DebugProbeError,
+    DebugProbeMemoryInterfaceNotEnabled
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ class DebugProbeVirtual(DebugProbe):
         :return: probe_description
         :raises DebugProbeError: In case of invoked test Exception.
         """
-        #TODO fix problems with cyclic import
+        #pylint: disable=import-outside-toplevel
         from spsdk.debuggers.utils import DebugProbes, ProbeDescription
 
         probes = DebugProbes()
@@ -210,7 +212,7 @@ class DebugProbeVirtual(DebugProbe):
         """Read coresight register over Virtual interface.
 
         The Virtual read coresight register function for SPSDK library to support various DEBUG PROBES.
-        :param access_port: if True, the Access Port (AP) register will be read(defau1lt), otherwise the Debug Port
+        :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
         :raises DebugProbeTransferError: The IO operation failed
@@ -268,7 +270,7 @@ class DebugProbeVirtual(DebugProbe):
     def clear(self, only_substitute: bool = False) -> None:
         """Clear the buffered values.
 
-        :param only_substitute: When set, it clers just substitute data.
+        :param only_substitute: When set, it clears just substitute data.
         """
         if not only_substitute:
             self.coresight_dp.clear()
@@ -299,7 +301,7 @@ class DebugProbeVirtual(DebugProbe):
         self.coresight_dp_substituted = substitute_data
 
     def set_coresight_ap_substitute_data(self, substitute_data: Dict) -> None:
-        """Set the coresigth AP read substitute data.
+        """Set the coresight AP read substitute data.
 
         :param substitute_data: Dictionary of list of substitute data.
         """
@@ -315,7 +317,7 @@ class DebugProbeVirtual(DebugProbe):
     def _load_subs_from_param(self, arg: str) -> Dict:
         """Get the substituted values from input arguments.
 
-        :param arg: Input string arguments with substitude values.
+        :param arg: Input string arguments with substitute values.
         :return: List of values for the substituted values.
         :raises DebugProbeError: The input string is not able do parse.
         """

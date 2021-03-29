@@ -23,15 +23,15 @@
             "latest": "a1",
             "address": "0x3_DE00"
         },
-		"lpc550x":
-		 {
+        "lpc550x":
+         {
             "revisions": {
                 "a1": "niobe4nano_a1.xml"
             },
             "latest": "a1",
             "address": "0x3_DE00"
         },
-		"lpc55s0x":
+        "lpc55s0x":
         {
             "revisions": {
                 "a1": "niobe4nano_a1.xml"
@@ -39,51 +39,66 @@
             "latest": "a1",
             "address": "0x3_DE00"
         },
-		"lpc552x":
+        "lpc552x":
         {
             "revisions": {
                 "a1": "niobe4_a1.xml"
             },
             "latest": "a1",
             "address": "0x9_DE00"
-		},
-		"lpc55s2x":
-		{
+        },
+        "lpc55s2x":
+        {
             "revisions": {
                 "a1": "niobe4_a1.xml"
-			},
+            },
             "latest": "a1",
             "address": "0x9_DE00"
-		},
-		"lpc55s3x":
+        },
+        "lpc55s3x":
         {
             "revisions": {
                 "a1": "niobe4analog_a1.xml"
-			},
+            },
             "latest": "a1",
             "address": "0x3_DC00",
             "seal_start":"CFPA_CRC32",
-            "seal_count": 1
+            "seal_count": 1,
+            "computed_fields": {
+                "VENDOR_USAGE":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
+                "DCFG_CC_SOCU_NS_PIN":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
+                "DCFG_CC_SOCU_NS_DFLT":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"}
+            }
         },
         "lpc553x":
         {
             "revisions": {
                 "a1": "niobe4analog_a1.xml"
-			},
+            },
             "latest": "a1",
             "address": "0x3_DC00",
             "seal_start": "CFPA_CRC32",
-            "seal_count": 1
+            "seal_count": 1,
+            "computed_fields": {
+                "VENDOR_USAGE":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
+                "DCFG_CC_SOCU_NS_PIN":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
+                "DCFG_CC_SOCU_NS_DFLT":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"}
+            }
         }
     },
     "computed_registers": [
         "SHA256_DIGEST"
     ],
-    "computed_fields": [
-        "INVERSE_VALUE"
-    ],
+    "computed_fields": {
+        "VENDOR_USAGE":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
+        "DCFG_CC_SOCU_PIN":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
+        "DCFG_CC_SOCU_DFLT":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"}
+    },
     "ignored_registers": [
         "PRINCE_REGION"
+    ],
+    "ignored_fields": [
+        "FIELD"
     ],
     "seal_start": "SHA256_DIGEST0",
     "seal_count": 8

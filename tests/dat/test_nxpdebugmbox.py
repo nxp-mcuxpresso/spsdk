@@ -4,7 +4,7 @@
 # Copyright 2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-""" Tests for nxpkeygen utility."""
+""" Tests for nxpdebugmbox utility."""
 
 from click.testing import CliRunner
 

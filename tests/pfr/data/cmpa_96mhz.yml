@@ -1,0 +1,87 @@
+# NXP LPC55S6X PFR CMPA configuration
+description:  # The PFR CMPA configuration description.
+  device: lpc55s6x  # The NXP device name.
+  revision: a1 # The NXP device revision.
+  type: CMPA # The PFR type (CMPA, CFPA).
+  version: 1.3.0 # The SPSDK tool version.
+  author: NXP # The author of the configuration.
+  release: alpha # The SPSDK release.
+settings: # The PFR CMPA registers configuration.
+  BOOT_CFG:
+    bitfields:  # The register bitfields
+      BOOT_SPEED: BOOT_CFG_BOOT_SPEED_VALUE_1  # Width: 2b[0-3], Description: Core clock:
+      # Possible Enumeration values:
+      # - BOOT_CFG_BOOT_SPEED_VALUE_0: Defined by NMPA.SYSTEM_SPEED_CODE
+      # - BOOT_CFG_BOOT_SPEED_VALUE_1: 96MHz FRO
+      # - BOOT_CFG_BOOT_SPEED_VALUE_2: 48MHz FRO
+  CC_SOCU_PIN:
+    bitfields:  # The register bitfields
+      NIDEN: CC_SOCU_PIN_NIDEN_VALUE_1  # Width: 1b[0-1], Description: Non Secure non-invasive debug enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_NIDEN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_NIDEN_VALUE_1: Fixed state
+      DBGEN: CC_SOCU_PIN_DBGEN_VALUE_1 # Width: 1b[0-1], Description: Non Secure debug enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_DBGEN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_DBGEN_VALUE_1: Fixed state
+      SPNIDEN: CC_SOCU_PIN_SPNIDEN_VALUE_1 # Width: 1b[0-1], Description: Secure non-invasive debug enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_SPNIDEN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_SPNIDEN_VALUE_1: Fixed state
+      SPIDEN: CC_SOCU_PIN_SPIDEN_VALUE_1 # Width: 1b[0-1], Description: Secure invasive debug enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_SPIDEN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_SPIDEN_VALUE_1: Fixed state
+      TAPEN: CC_SOCU_PIN_TAPEN_VALUE_1 # Width: 1b[0-1], Description: JTAG TAP enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_TAPEN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_TAPEN_VALUE_1: Fixed state
+      CPU1_DBGEN: CC_SOCU_PIN_CPU1_DBGEN_VALUE_1 # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) invasive debug enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_CPU1_DBGEN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_CPU1_DBGEN_VALUE_1: Fixed state
+      ISP_CMD_EN: CC_SOCU_PIN_ISP_CMD_EN_VALUE_1 # Width: 1b[0-1], Description: ISP Boot Command enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_ISP_CMD_EN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_ISP_CMD_EN_VALUE_1: Fixed state
+      PMCMD_EN: CC_SOCU_PIN_PMCMD_EN_VALUE_1 # Width: 1b[0-1], Description: Fault Analysis/Mass Erase command enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_PMCMD_EN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_PMCMD_EN_VALUE_1: Fixed state
+      CPU1_NIDEN: CC_SOCU_PIN_CPU1_NIDEN_VALUE_1 # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) non-invasive debug enable
+      # Possible Enumeration values:
+      # - CC_SOCU_PIN_CPU1_NIDEN_VALUE_0: Use DAP to enable
+      # - CC_SOCU_PIN_CPU1_NIDEN_VALUE_1: Fixed state
+  CC_SOCU_DFLT:
+    bitfields:  # The register bitfields
+      NIDEN: CC_SOCU_DFLT_NIDEN_ENABLE  # Width: 1b[0-1], Description: Non Secure non-invasive debug fixed state
+      # Possible Enumeration values:
+      # - CC_SOCU_DFLT_NIDEN_DISABLE: Disable
+      # - CC_SOCU_DFLT_NIDEN_ENABLE: Enable
+      DBGEN: CC_SOCU_DFLT_DBGEN_ENABLE # Width: 1b[0-1], Description: Non Secure debug fixed state
+      # Possible Enumeration values:
+      # - CC_SOCU_DFLT_DBGEN_DISABLE: Disable
+      # - CC_SOCU_DFLT_DBGEN_ENABLE: Enable
+      SPNIDEN: CC_SOCU_DFLT_SPNIDEN_ENABLE # Width: 1b[0-1], Description: Secure non-invasive debug fixed state
+      # Possible Enumeration values:
+      # - CC_SOCU_DFLT_SPNIDEN_DISABLE: Disable
+      # - CC_SOCU_DFLT_SPNIDEN_ENABLE: Enable
+      SPIDEN: CC_SOCU_DFLT_SPIDEN_ENABLE # Width: 1b[0-1], Description: Secure invasive debug fixed state
+      # Possible Enumeration values:
+      # - CC_SOCU_DFLT_SPIDEN_DISABLE: Disable
+      # - CC_SOCU_DFLT_SPIDEN_ENABLE: Enable
+      CPU1_DBGEN: CC_SOCU_DFLT_CPU1_DBGEN_ENABLE # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) invasive debug fixed state
+      # Possible Enumeration values:
+      # - CC_SOCU_DFLT_CPU1_DBGEN_DISABLE: Disable
+      # - CC_SOCU_DFLT_CPU1_DBGEN_ENABLE: Enable
+      CPU1_NIDEN: CC_SOCU_DFLT_CPU1_NIDEN_ENABLE # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) non-invasive debug fixed state
+      # Possible Enumeration values:
+      # - CC_SOCU_DFLT_CPU1_NIDEN_DISABLE: Disable
+      # - CC_SOCU_DFLT_CPU1_NIDEN_ENABLE: Enable
+  SECURE_BOOT_CFG:
+    bitfields:  # The register bitfields
+      SKIP_DICE: 1  # Width: 2b[0-3], Description: Skip DICE computation. 00 - Enable DICE 01,10,11 - Disable DICE
+      SEC_BOOT_EN: 1 # Width: 2b[0-3], Description: Secure boot enable. 00 - Plain image (internal flash with or without CRC) 01, 10, 11 - Boot signed images. (internal flash, RSA signed)
+  ROTKH:
+  # Reg Description: ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]
+    value: 0000000000000000000000000000000000000000000000000000000000000000  # The value width: 256b

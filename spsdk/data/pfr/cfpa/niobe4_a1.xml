@@ -92,16 +92,12 @@
       <bit_field_value name="DCFG_CC_SOCU_PIN_ISP_CMD_EN_VALUE_0" value="0b0" description="Use DAP to enable"/>
       <bit_field_value name="DCFG_CC_SOCU_PIN_ISP_CMD_EN_VALUE_1" value="0b1" description="Fixed state"/>
     </bit_field>
-    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RW" reset_value="0" description="FA Command enable">
-      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_PIN_FA_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_PIN_FA_CMD_EN_VALUE_0" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_PIN_FA_CMD_EN_VALUE_1" value="0b1" description="Fixed state"/>
+    <bit_field offset="7" width="1" name="PMCMD_EN" access="RW" reset_value="0" description="Fault Analysis/Mass Erase command enable">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_PIN_PMCMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_PMCMD_EN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_PMCMD_EN_VALUE_1" value="0b1" description="Fixed state"/>
     </bit_field>
-    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RW" reset_value="0" description="Flash Mass Erase Command enable">
-      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_PIN_ME_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_PIN_ME_CMD_EN_VALUE_0" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_PIN_ME_CMD_EN_VALUE_1" value="0b1" description="Fixed state"/>
-    </bit_field>
+    <reserved_bit_field offset="8" width="1" reset_value="0"/>
     <bit_field offset="9" width="1" name="CPU1_NIDEN" access="RW" reset_value="0" description="CPU1 (Micro cortex M33) non-invasive debug enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_PIN_CPU1_NIDEN(x)"/>
       <bit_field_value name="DCFG_CC_SOCU_PIN_CPU1_NIDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
@@ -152,16 +148,12 @@
       <bit_field_value name="DCFG_CC_SOCU_DFLT_ISP_CMD_EN_DISABLE" value="0b0" description="Disable"/>
       <bit_field_value name="DCFG_CC_SOCU_DFLT_ISP_CMD_EN_ENABLE" value="0b1" description="Enable"/>
     </bit_field>
-    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RW" reset_value="0" description="FA Command fixed state">
-      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_DFLT_FA_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_DFLT_FA_CMD_EN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="DCFG_CC_SOCU_DFLT_FA_CMD_EN_ENABLE" value="0b1" description="Enable"/>
+    <bit_field offset="7" width="1" name="PMCMD_EN" access="RW" reset_value="0" description="Fault Analysis/Mass Erase command enable">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_DFLT_PMCMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_PMCMD_EN_VALUE_0" value="0b0" description="Disable"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_PMCMD_EN_VALUE_1" value="0b1" description="Enable"/>
     </bit_field>
-    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RW" reset_value="0" description="Flash Mass Erase Command fixed state">
-      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_DFLT_ME_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_DFLT_ME_CMD_EN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="DCFG_CC_SOCU_DFLT_ME_CMD_EN_ENABLE" value="0b1" description="Enable"/>
-    </bit_field>
+    <reserved_bit_field offset="8" width="1" reset_value="0"/>
     <bit_field offset="9" width="1" name="CPU1_NIDEN" access="RW" reset_value="0" description="CPU1 (Micro cortex M33) non-invasive debug fixed state">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_DFLT_CPU1_NIDEN(x)"/>
       <bit_field_value name="DCFG_CC_SOCU_DFLT_CPU1_NIDEN_DISABLE" value="0b0" description="Disable"/>

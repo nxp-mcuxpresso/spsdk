@@ -12,6 +12,7 @@ import re
 from io import SEEK_CUR
 from typing import Union
 
+from spsdk.utils.registers import value_to_int
 from .header import Header
 from .. import SPSDKError
 
@@ -80,7 +81,7 @@ def read_raw_data(stream: Union[io.BufferedReader, io.BytesIO], length: int, ind
 
 
 def read_raw_segment(buffer: Union[io.BufferedReader, io.BytesIO], segment_tag: int, index: int = None) -> bytes:
-    """Read raw segmement."""
+    """Read raw segment."""
     hrdata = read_raw_data(buffer, Header.SIZE, index)
     length = Header.parse(hrdata, 0, segment_tag).length - Header.SIZE
     return hrdata + read_raw_data(buffer, length)
@@ -106,20 +107,6 @@ def parse_int(number: str) -> int:
     }[match.group('prefix')]
     return int(match.group('number'), base=base)
 
-
-def format_value(value: int, size: int) -> str:
-    """Convert the 'value' into either BIN or HEX string, depending on 'size'.
-
-    if 'size' is divisible by 8, function returns HEX, BIN otherwise
-    digits in result string are grouped by 4 using '_' (underscore)
-    """
-    padding = size if size % 8 else (size // 8) * 2
-    infix = 'b' if size % 8 else 'x'
-    parts = re.findall(".{1,4}", f"{value:0{padding}{infix}}"[::-1])
-    rev = "_".join(parts)[::-1]
-    return f"0{infix}{rev}"
-
-
 def dict_diff(main: dict, mod: dict) -> dict:
     """Return a difference between two dictionaries if key is not present in main, it's skipped."""
     diff = {}
@@ -132,6 +119,11 @@ def dict_diff(main: dict, mod: dict) -> dict:
             if key not in main:
                 continue
             main_value = main[key] if isinstance(main, dict) else main
-            if parse_int(main_value) != parse_int(value):
-                diff[key] = value
+            try:
+                if value_to_int(main_value) != value_to_int(value):
+                    diff[key] = value
+            except TypeError:
+                # Not a number!
+                if main_value != value:
+                    diff[key] = value
     return diff

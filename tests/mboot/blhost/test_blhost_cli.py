@@ -34,7 +34,12 @@ data_responses = {
     # efuse-read-one 0x98 with unknown error code 0xbeef (48,879)
     b'\x5a\xa4\x0c\x00\x2e\x7b\x0f\x00\x00\x02\x98\x00\x00\x00\x04\x00\x00\x00':
         b'\x5a\xa1\x5a\xa4\x0c\x00\x36\xc2\xaf\x00\x00\x02\xef\xbe\x00\x00\x00\x00\x00\x00',
+
+    # use get-property 99 as a vehicle to emulate no response from target
+    b'\x5a\xa4\x0c\x00\x55\x31\x07\x00\x00\x02\x63\x00\x00\x00\x00\x00\x00\x00':
+        b''
 }
+
 
 def test_version():
     runner = CliRunner()
@@ -77,3 +82,14 @@ def test_efuse_read_once_unknown_error(caplog):
         assert result.exit_code == 0
         assert 'Response word 1 = 4 (0x4)' not in result.output
         assert 'Unknown error code' in result.output
+
+
+def test_no_response(caplog):
+    caplog.set_level(100_000)
+    runner = CliRunner()
+    # use get-property 99 as a vehicle to emulate no response from target
+    cmd = '-p super-com get-property 99'
+    with patch('spsdk.mboot.interfaces.uart.Serial', SerialProxy.init_proxy(data_responses)):
+        result = runner.invoke(blhost.main, cmd.split())
+        assert result.exit_code == 0
+        assert 'Response status = 10004 (0x2714) No response packet from target device.' in result.output

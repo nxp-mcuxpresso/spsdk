@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union, Type
 
 from .commands import (
     CmdResponse, CommandTag, KeyProvOperation, KeyProvUserKeyType,
-    CmdPacket, GenericResponse, GenerateKeyBlobSelect
+    CmdPacket, GenericResponse, GenerateKeyBlobSelect, NoResponse
 )
 from .error_codes import StatusCode
 from .exceptions import McuBootCommandError, McuBootConnectionError, SPSDKError, McuBootDataAbortError
@@ -85,7 +85,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         except TimeoutError:
             self._status_code = StatusCode.NO_RESPONSE
             logger.debug('RX-PACKET: No Response, Timeout Error !')
-            raise McuBootConnectionError("No Response from Device")
+            response = NoResponse(cmd_tag=cmd_packet.header.tag)
 
         assert isinstance(response, CmdResponse)
         logger.debug(f'RX-PACKET: {response.info()}')
@@ -120,7 +120,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             except TimeoutError:
                 self._status_code = StatusCode.NO_RESPONSE
                 logger.debug('RX: No Response, Timeout Error !')
-                raise McuBootConnectionError("No Response from Device")
+                response = NoResponse(cmd_tag=cmd_tag)
+                break
 
             if isinstance(response, bytes):
                 data += response

@@ -85,9 +85,10 @@ def get_interface(module: str, port: str = None, usb: str = None,
     }[module]
     devices = []
     if port:
-        # it seems that the variable baudrate doesn't work properly
-        name = port.split(',')[0] if ',' in port else port
-        devices = interface_module.scan_uart(port=name, timeout=timeout)  # type: ignore
+        port_parts = port.split(',')
+        name = port_parts.pop(0)
+        baudrate = int(port_parts.pop(), 0) if port_parts else None
+        devices = interface_module.scan_uart(port=name, baudrate=baudrate, timeout=timeout)  # type: ignore
         if len(devices) != 1:
             raise SPSDKError(f"Cannot ping device on UART port '{name}'.")
     if usb:

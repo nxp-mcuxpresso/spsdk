@@ -191,12 +191,16 @@ class RawHid(Interface):
 
         :return: Return CmdResponse object.
         :raises McuBootConnectionError: Raises an error if device is not openned for reading
+        :raises TimeoutError: Time-out
         """
         if not self.is_opened:
             raise McuBootConnectionError(f"Device is not openned for reading")
 
         assert self.device
         raw_data = self.device.read(1024, self.timeout)
+        if not raw_data:
+            logger.error(self.device.error())
+            raise TimeoutError()
         # NOTE: uncomment the following when using KBoot/Flashloader v2.1 and older
         # import platform
         # if platform.system() == "Linux":

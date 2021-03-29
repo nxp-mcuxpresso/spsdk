@@ -1,9 +1,3 @@
-<!-- Identifiers, in alphabetical order -->
-
-[doc-location]: https://spsdk.readthedocs.io
-[pypi-location]: https://pypi.org/project/spsdk
-
-
 # NXP Secure Provisioning SDK
 
 **Secure Provisioning SDK (SPSDK)** enables connection and communication with target devices for purposes of secure provisioning and programming. Delivered as python library with command-line applications for direct utilization.
@@ -12,9 +6,9 @@
 
 ## Links
 
-* [PyPI][pypi-location]
+* [PyPi](https://pypi.org/project/spsdk/)
 * [Release Notes](release_notes.txt)
-* [Documentation][doc-location]
+* [Documentation](https://spsdk.readthedocs.io)
 
 ## Supported Devices
 
@@ -59,7 +53,8 @@ Following NXP devices are supported:
 ```
 > In **Windows OS** you need to install [Microsoft Visual C++ Build Tools](https://www.scivision.dev/python-windows-visual-c-14-required/)
  
- Note: If you use pip version 20.3, please downgrade it to 20.2.4, because of the new resolver functionality.
+ Note: In case of problems during instalation, please make sure that you have the latest pip version.
+ You can upgrade pip using this command: 'pip install --upgrade pip'.
 
 ## Usage
 

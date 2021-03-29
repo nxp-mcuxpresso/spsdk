@@ -9,7 +9,7 @@
 import time
 from typing import Any, List
 
-from spsdk.image.misc import format_value
+from spsdk.utils.misc import format_value
 from .debug_mailbox import DebugMailbox, logger
 
 

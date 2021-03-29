@@ -4,8 +4,7 @@
 # Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-from os import path
-import pytest
+"""Test module to test stuff around Shadow registers."""
 
 from spsdk.debuggers.utils import PROBES
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual

@@ -9,8 +9,6 @@ import os
 import sys
 from typing import List
 
-import pip  # type: ignore
-
 from setuptools import setup, find_packages  # type: ignore
 
 
@@ -22,12 +20,6 @@ def sanitize_version(version_str: str) -> str:
         6: version_str
     }
     return sanitizer[len(version_str)]
-
-
-if sys.version_info >= (3, 8, 0) and sanitize_version(pip.__version__) < '19.2.3':
-    print(f"With python {sys.version}, you're using an old version of pip: {pip.__version__}")
-    print("Please update pip using: 'python -m pip install --upgrade pip'.")
-    sys.exit(1)
 
 
 with open('requirements.txt') as req_file:
@@ -51,6 +43,11 @@ setup(
     version=version_info["__version__"],
     description='Open Source Secure Provisioning SDK for NXP MCU/MPU',
     url="https://github.com/NXPmicro/spsdk",
+    project_urls={
+        "Code": 'https://github.com/NXPmicro/spsdk',
+        "Issue tracker": 'https://github.com/NXPmicro/spsdk/issues',
+        "Documentation": 'https://spsdk.readthedocs.io',
+    },
     author="NXP",
     author_email="michal.starecek@nxp.com",
     license='BSD-3-Clause',

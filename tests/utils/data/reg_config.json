@@ -10,10 +10,24 @@
             "inverted_regs": {
                 "INVERTED_REG": "INVERTED_REG_AP"
             },
+            "computed_registers": [
+                "COMPUTED_REG"
+            ],
             "computed_fields": {
                 "COMPUTED_REG": {"TEST_FIELD1": "computed_reg_test_field1", "TEST_FIELD2": "computed_reg_test_field2"},
                 "COMPUTED_REG2": {"TEST_FIELD1": "computed_reg2_test_field1", "TEST_FIELD2": "computed_reg2_test_field2"}
-            }
+            },
+            "ignored_registers": [
+                "IGNORED_REG"
+            ],
+            "ignored_fields": [
+                "FIELD"
+            ],
+            "grouped_registers": [
+                {"name": "DeviceTest"}
+            ],
+            "seal_start": "COMPUTED_REG",
+            "seal_count": 4
         },
         "test_device2": {
             "revisions": {
@@ -29,5 +43,22 @@
                 "COMPUTED_REG2": {"TEST_FIELD1": "computed_reg2_test_field1", "TEST_FIELD2": "computed_reg2_test_field2"}
             }
         }
-    }
+    },
+    "inverted_regs": {
+                "INVERTED_REG": "INVERTED_REG_AP"
+            },
+    "computed_registers": [
+        "COMPUTED_REG_GENERAL"
+    ],
+    "ignored_registers": [
+        "IGNORED_REG_GENERAL"
+    ],
+    "ignored_fields": [
+        "FIELD_GENERAL"
+    ],
+    "grouped_registers": [
+        {"name": "Test"}
+    ],
+    "seal_start": "COMPUTED_REG2",
+    "seal_count": 8
 }

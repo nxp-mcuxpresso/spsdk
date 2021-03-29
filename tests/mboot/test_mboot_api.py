@@ -6,7 +6,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from spsdk.mboot.mcuboot import PropertyTag, StatusCode, McuBootConnectionError, CmdPacket, CommandTag, ExtMemId
+from spsdk.mboot.mcuboot import PropertyTag, StatusCode, CmdPacket, CommandTag, ExtMemId
+from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError
 from spsdk.mboot.mcuboot import KeyProvUserKeyType, McuBoot
 from spsdk.mboot.error_codes import StatusCode
 
@@ -51,8 +52,15 @@ def test_cmd_read_memory_data_abort(mcuboot, target):
 
 def test_cmd_read_memory_timeout(mcuboot, target):
     mcuboot._device.fail_step = 0
-    with pytest.raises(McuBootConnectionError):
+    mcuboot.read_memory(0, 100)
+    assert mcuboot.status_code == StatusCode.NO_RESPONSE
+
+    mcuboot._cmd_exception = True
+    with pytest.raises(McuBootCommandError) as exc_info:
         mcuboot.read_memory(0, 100)
+    mcuboot._cmd_exception = False
+    assert exc_info.value.error_value == StatusCode.NO_RESPONSE
+
 
 def test_cmd_write_memory(mcuboot, target):
     data = b'\x00' * 100

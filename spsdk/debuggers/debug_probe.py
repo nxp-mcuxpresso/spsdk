@@ -56,9 +56,9 @@ class DebugProbe():
     def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> list:
         """Functions returns the list of all connected probes in system.
 
-        There is option to look for just for one debug porbe defined by its hardware ID.
+        There is option to look for just for one debug probe defined by its hardware ID.
 
-        :param hardware_id: None to list all probes, otherwice the the only probe with
+        :param hardware_id: None to list all probes, otherwise the the only probe with
             matching hardware id is listed.
         :param user_params: The user params dictionary
         :return: ProbeDescription
@@ -180,7 +180,7 @@ class DebugProbe():
 
         It reads coresight register function for SPSDK library to support various DEBUG PROBES.
 
-        :param access_port: if True, the Access Port (AP) register will be read(defau1lt), otherwise the Debug Port
+        :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
         :raises NotImplementedError: The coresight_reg_read is NOT implemented

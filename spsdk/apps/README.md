@@ -7,7 +7,7 @@ After installing SPSDK, several applications are present directly on PATH as exe
 - [elftosb](elftosb.py) - utility for generating TrustZone, MasterBootImage and SecureBinary images.
 - [nxpcertgen](nxpcertgen.py) - utility for generating  the self-signed x.509 certificate. 
 - [nxpdebugmbox](nxpdebugmbox.py) - utility for performing the Debug Authentication.
-- [nxpdevscan](nxpdscan.py) - utility for listing all connected NXP USB and UART devices.
+- [nxpdevscan](nxpdevscan.py) - utility for listing all connected NXP USB and UART devices.
 - [nxpkeygen](nxpkeygen.py) - utility for generating RSA/ECC key pairs and debug credential files based on YAML configuration file.
 - [pfr](pfr.py) - simple utility for creation and analysis of protected regions - CMPA and CFPA.
 - [pfrc](pfrc.py) - simple utility for search of brick-conditions in PFR settings.

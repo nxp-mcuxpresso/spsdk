@@ -62,17 +62,17 @@ class Processor:
         :param condition: condition to quantify
         :return: Boolean result and values for translated keys
         """
-        self.logger.debug("Transforming condition: {}".format(condition))
+        self.logger.debug(f"Transforming condition: {condition}")
         org_node = ast.parse(condition, mode="eval")
         new_node = self.transformer.visit(org_node)
-        self.logger.debug("Transformed condition: {}".format(new_node))
+        self.logger.debug(f"Transformed condition: {new_node}")
         node_str = astunparse.unparse(new_node)
-        node_str = self._replaceIntAsHex(node_str)
-        result = eval(compile(new_node, filename="", mode="eval"))
+        node_str = self._replace_int_as_hex(node_str)
+        result = eval(compile(new_node, filename="", mode="eval")) #pylint: disable=eval-used
         return result, node_str
 
     @staticmethod
-    def _replaceIntAsHex(string: str) -> str:
+    def _replace_int_as_hex(string: str) -> str:
         """Converts all numeric occurrences in `string` in decimal form into hexadecimal form.
 
         :param string: string to process

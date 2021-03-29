@@ -15,13 +15,8 @@
         }
     </style>
     <body>
-        {% if area_name == 'CMPA' %}
-        <h1>CMPA</h1>
-        <h2>Customer Manufacturing Programable Area</h2>
-        {% elif area_name == 'CFPA' %}
-        <h1>CFPA</h1>
-        <h2>Customer In-Field Programable Area</h2>
-        {% endif %}
+        <h1>{{ heading1 }}</h1>
+        <h2>{{ heading2 }}</h2>
         <table class="outter_table">
             <thead>
                 <th>Register</th>

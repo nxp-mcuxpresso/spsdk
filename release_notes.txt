@@ -1,16 +1,51 @@
 Release Notes for Secure Provisioning SDK
 ==========================================
-Version: 1.3
-Date: 05-March-2021
+Secure Provisioning SDK (SPSDK) is a unified, reliable, and easy-to-use SW library. It targets a wide
+portfolio of NXP MCUs, providing a solid foundation from quick customer prototyping up to
+production deployment. The library allows the user to connect and communicate with a device,
+configure the device, prepare, download and upload data, including security operations. It is
+delivered in the form of a python library and command-line applications.
 
-Secure Provisioning SDK (SPSDK) is a unified, reliable, and easy to use SW library working across the NXP MCU portfolio 
-providing a strong foundation from quick customer prototyping up to production deployment. The library allows the user 
-to connect and communicate with a device, configure the device, prepare, download and upload data including security 
-operations. It is delivered in a form of a python library and command-line applications.
+Version: 1.3.1.
+Date: 29-March-2021
 
 Features:
+- [PFR] configuration template supports YAML with description, backward compatibility with JSON ensured
+- [PFR] API change: "keys" parameter has been moved from __init__ to export
+- [PRF] sub-commands renamed: (user-config -> get-cfg-template; parse -> parse-binary; generate -> generate-binary)
+- [blhost] allow key names for key-provisioning commands
+- [blhost] support for RT1170, RT1160
+- Shadow Registers tool is now top-level module
+
+Bugfixes:
+- [blhost] fix baud rate parameter
+- [PFR] fix in data for Niob4, Niobe4 Mini, Niobe4 Nano
+- bug fixes for sb 2.1 commands and options
+
+
+Supported devices:
+==================
+- LPC55S6x, LPC55S2x (Niobe4)
+- LPC55S0x (Niobe 4 Nano)
+- LPC55S1x (Niobe4 Mini)
+- i.MX RT105x, RT106x
+- i.MX RT595S, RT685S
+- i.MX RT1160(blhost), RT1170(blhost)
+
+
+System Requirements:
+===================
+Operating System:
+- Windows 
+- Mac OS 
+- Linux
+	
+
+Revision History:
+================
+1.3
 - support creation of SB version 3.1 (for N4Analog)
-- elftosb application based on legacy elf2sb supporting SB 3.1 support 
+- elftosb application based on legacy elf2sb supporting SB 3.1 support
 - nxpdevscan - application for connected USB, UART devices discovery
 - shadowregs -  application for shadow registers management using DebugProbe
 - support USB path argument in blhost/sdphost (all supported OS)
@@ -29,26 +64,7 @@ Features:
     - add key selector option to generate-key-blob command
     - add nolock/lock selector to efuse-program-once command
     - add hexdata option to write-memory command
-
-Supported devices: 
-==================
-- LPC55S6x, LPC55S2x (Niobe4) 	
-- LPC55S0x (Niobe 4 Nano)
-- LPC55S1x (Niobe4 Mini) 
-- i.MX RT105x, RT106x 
-- i.MX RT595S, RT685S 
-
-
-System Requirements:
-===================
-Operating System:
-- Windows 
-- Mac OS 
-- Linux
 	
-
-Revision History:
-================
 1.2
 - support for Niobe4 Analog devices
 - extend support for Niobe4 Mini, Nano
@@ -75,12 +91,13 @@ Revision History:
 - support for i.MX RT105x and RT106x devices
 - support for i.MX RT595S and RT685S devices
 - connectivity to the target via UART, USB-HID.
-- support for generating, saving, loading RSA keys with different sizes
-- generation and management of certificate
+- support for generating, saving, loading of RSA keys with different sizes
+- genaration and management of certificate
 - CLI utility blhost for communication with boot loader on a target
 - CLI utility sdphost for communication with ROM on a target
-- CLI utility PFR for generating and parsing Protected Flash Regions - CMPA and CFPA regions
+- CLI utility PFR for generating and parsing Protocted Flash Regions - CMPA and CFPA regions
 
-License: 
+
+Licence: 
 =========
 BSD-3 License

@@ -1,0 +1,25 @@
+# NXP LPC55S6X PFR spsdk.pfr.pfr configuration
+description:  # The PFR spsdk.pfr.pfr configuration description.
+  device: lpc55s6x  # The NXP device name.
+  revision: a1 # The NXP device revision.
+  type: CFPA # The PFR type (CMPA, CFPA).
+  version: 1.3.0 # The SPSDK tool version.
+  author: NXP # The author of the configuration.
+  release: alpha # The SPSDK release.
+settings: # The PFR spsdk.pfr.pfr registers configuration.
+  VERSION:
+# Reg Description: .
+    name: VERSION  # The name of the register
+    value: '0x00000002' # The value of the register
+  ROTKH_REVOKE:
+# Reg Description: .
+    name: ROTKH_REVOKE  # The name of the register
+    bitfields:
+      RoTK0_EN: 1  # The width: 2 bits
+      RoTK1_EN: 1 # The width: 2 bits
+      RoTK2_EN: 1 # The width: 2 bits
+      RoTK3_EN: 1 # The width: 2 bits
+  CMPA_PROG_IN_PROGRESS:
+# Reg Description: CMPA Page programming on going. This field shall be set to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.
+    name: CMPA_PROG_IN_PROGRESS  # The name of the register
+    value: '0x5cc55aa5' # The value of the register

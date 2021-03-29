@@ -19,6 +19,7 @@
     api/image
     api/mboot
     api/pfr
+    api/shadowregs
     api/sbfile
     api/sdp
     api/utils

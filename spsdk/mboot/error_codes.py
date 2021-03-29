@@ -84,7 +84,7 @@ class StatusCode(Enum):
     SECURITY_VIOLATION = (10001, 'SecurityViolation', 'Security Violation')
     ABORT_DATA_PHASE = (10002, 'AbortDataPhase', 'Abort Data Phase')
     PING_ERROR = (10003, 'PingError', 'Ping Error')
-    NO_RESPONSE = (10004, 'NoResponse', 'No Response')
+    NO_RESPONSE = (10004, 'NoResponse', 'No response packet from target device')
     NO_RESPONSE_EXPECTED = (10005, 'NoResponseExpected', 'No Response Expected')
     UNSUPPORTED_COMMAND = (10006, 'UnsupportedCommand', 'Unsupported Command')
 

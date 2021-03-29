@@ -81,11 +81,12 @@ class DebugProbePyOCD(DebugProbe):
 
         This functions returns the list of all connected probes in system by PyOCD package.
 
-        :param hardware_id: None to list all probes, otherwice the the only probe with matching
+        :param hardware_id: None to list all probes, otherwise the the only probe with matching
             hardware id is listed.
         :param user_params: The user params dictionary
         :return: probe_description
         """
+        #pylint: disable=import-outside-toplevel
         from .utils import DebugProbes, ProbeDescription
 
         probes = DebugProbes()
@@ -232,7 +233,7 @@ class DebugProbePyOCD(DebugProbe):
             if access_port.address.apsel == index:
                 return access_port
 
-        raise DebugProbeError(f"The accees port {index} is not present.")
+        raise DebugProbeError(f"The access port {index} is not present.")
 
     def _get_ap_by_addr(self, addr: int) -> Any:
         """Function returns the AP PyoCD object by address if exists.
@@ -423,12 +424,12 @@ class DebugProbePyOCD(DebugProbe):
 
         # Convert protocol to port enum.
         if protocol == PyOCDDebugProbe.Protocol.SWD:
-            iface = pylink.enums.JLinkInterfaces.SWD
+            interface = pylink.enums.JLinkInterfaces.SWD
         elif protocol == PyOCDDebugProbe.Protocol.JTAG:
-            iface = pylink.enums.JLinkInterfaces.JTAG
+            interface = pylink.enums.JLinkInterfaces.JTAG
 
         try:
-            probe._link.set_tif(iface)
+            probe._link.set_tif(interface)
             if probe.session.options.get('jlink.power'):
                 probe._link.power_on()
             #device_name = probe.session.options.get('jlink.device') or "Cortex-M4"

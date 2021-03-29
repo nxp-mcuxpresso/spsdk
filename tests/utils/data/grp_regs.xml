@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<regs>
+	<register offset="0x400" width="32" name="TestRegA0" reversed="False" description="TestRegA0 Description"></register>
+	<register offset="0x404" width="32" name="TestRegA1" reversed="False" description="TestRegA1 Description"></register>
+	<register offset="0x408" width="32" name="TestRegA2" reversed="False" description="TestRegA2 Description"></register>
+	<register offset="0x40C" width="32" name="TestRegA3" reversed="False" description="TestRegA3 Description"></register>
+	<register offset="0x400" width="32" name="TestCorrupted0Reg0" reversed="False" description="TestCorrupted0Reg0 Description"></register>
+	<register offset="0x404" width="24" name="TestCorrupted0Reg1" reversed="False" description="TestCorrupted0Reg1 Description"></register>
+	<register offset="0x500" width="32" name="TestCorrupted1Reg0" reversed="False" description="TestCorrupted1Reg0 Description"></register>
+	<register offset="0x508" width="32" name="TestCorrupted1Reg1" reversed="False" description="TestCorrupted1Reg1 Description"></register>
+	<register offset="0x500" width="32" name="TestCorrupted2Reg0" reversed="False" description="TestCorrupted2Reg0 Description"></register>
+	<register offset="0x503" width="32" name="TestCorrupted2Reg1" reversed="False" description="TestCorrupted2Reg1 Description"></register>	
+</regs>

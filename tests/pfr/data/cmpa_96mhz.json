@@ -14,8 +14,7 @@
       "TAPEN": "0b1",
       "CPU1_DBGEN": "0b1",
       "ISP_CMD_EN": "0b1",
-      "FA_CMD_EN": "0b1",
-      "ME_CMD_EN": "0b1",
+      "PMCMD_EN": "0b1",
       "CPU1_NIDEN": "0b1"
     },
     "CC_SOCU_DFLT": {
@@ -29,6 +28,7 @@
     "SECURE_BOOT_CFG": {
       "SKIP_DICE": "0b01",
       "SEC_BOOT_EN": "0b01"
-    }
+    },
+    "ROTKH": "0x0000000000000000000000000000000000000000000000000000000000000000"
   }
 }

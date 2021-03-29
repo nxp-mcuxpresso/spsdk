@@ -24,8 +24,7 @@
       "TAPEN": "0b0",
       "CPU1_DBGEN": "0b0",
       "ISP_CMD_EN": "0b1",
-      "FA_CMD_EN": "0b0",
-      "ME_CMD_EN": "0b0",
+      "PMCMD_EN": "0b0",
       "CPU1_NIDEN": "0b0",
       "UUID_CHECK": "0b0",
       "INVERSE_VALUE": "0xffbf"
@@ -38,8 +37,7 @@
       "TAPEN": "0b0",
       "CPU1_DBGEN": "0b0",
       "ISP_CMD_EN": "0b1",
-      "FA_CMD_EN": "0b0",
-      "ME_CMD_EN": "0b0",
+      "PMCMD_EN": "0b0",
       "CPU1_NIDEN": "0b0",
       "INVERSE_VALUE": "0xffbf"
     },

@@ -7,7 +7,9 @@
 """Miscellaneous functions used throughout the SPSDK."""
 import contextlib
 import os
+import re
 from typing import Callable, Iterable, Iterator, Optional, TypeVar, List, Union
+from math import ceil
 
 # for generics
 T = TypeVar('T')  # pylint: disable=invalid-name
@@ -35,8 +37,8 @@ def align_block(data: bytes, alignment: int = 4, padding: int = 0) -> bytes:
     assert isinstance(data, bytes)
     assert alignment > 0
     assert -1 <= padding <= 255
-    curr_size = len(data)
-    num_padding = align(curr_size, alignment) - curr_size
+    current_size = len(data)
+    num_padding = align(current_size, alignment) - current_size
     if not num_padding:
         return data
     if padding == -1:
@@ -59,9 +61,9 @@ def extend_block(data: bytes, length: int, padding: int = 0) -> bytes:
     :param padding: 8-bit value value to be used as a padding
     :return: block extended with padding
     """
-    curr_len = len(data)
-    assert length >= curr_len
-    num_padding = length - curr_len
+    current_len = len(data)
+    assert length >= current_len
+    num_padding = length - current_len
     if not num_padding:
         return data
     return data + bytes([padding]) * num_padding
@@ -233,3 +235,154 @@ class DebugInfo:
     def info(self) -> str:
         """:return: multi-line text with log; empty string if nothing logged or log disabled."""
         return "\n".join(self.lines)
+
+
+def format_value(value: int, size: int, delimeter: str = '_', use_prefix: bool = True) -> str:
+    """Convert the 'value' into either BIN or HEX string, depending on 'size'.
+
+    if 'size' is divisible by 8, function returns HEX, BIN otherwise
+    digits in result string are grouped by 4 using 'delimeter' (underscore)
+    """
+    padding = size if size % 8 else (size // 8) * 2
+    infix = 'b' if size % 8 else 'x'
+    parts = re.findall(".{1,4}", f"{value:0{padding}{infix}}"[::-1])
+    rev = delimeter.join(parts)[::-1]
+    prefix = f"0{infix}" if use_prefix else ""
+    return f"{prefix}{rev}"
+
+
+def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True) -> int:
+    """Returns count of bytes needed to store handled integer.
+
+    :param value: Input integer value.
+    :param align_to_2n: The result will be aligned to standard sizes 1,2,4,8,12,16,20.
+    :return: Number of bytes needed to store integer.
+    """
+    cnt = 0
+    if value == 0:
+        return 1
+
+    while value != 0:
+        value >>= 8
+        cnt += 1
+
+    if align_to_2n and cnt > 2:
+        cnt = int(ceil(cnt / 4)) * 4
+
+    return cnt
+
+
+def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) -> int:
+    """Function loads value from lot of formats to integer.
+
+    :param value: Input value.
+    :param default: Default Value in case of invalid input.
+    :return: Value in Integer.
+    :raise TypeError: Unsupported input type.
+    """
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, (bytes, bytearray)):
+        return int.from_bytes(value, "big")
+
+    if isinstance(value, str) and value != "":
+        # Remove possible underscore in HEX format
+        not_decimal = value.find("_") >= 0
+        value = value.replace("_", "")
+        value = value.replace("b'", "0b")
+        if value.lower().startswith('0x'):
+            return int(value, 16)
+        if value.lower().startswith('0b'):
+            return int(value, 2)
+        if value.isdecimal() and not not_decimal:
+            return int(value)
+        if value[0] != '-':
+            try:
+                # try to decode hex string without '0x' prefix
+                return int(value, 16)
+            except: # pylint: disable=bare-except
+                pass
+
+    if default is not None:
+        return default
+    raise TypeError(f"Invalid input number type({type(value)}) with value ({value})")
+
+
+def value_to_bytes(value: Union[bytes, bytearray, int, str], align_to_2n: bool = True) -> bytes:
+    """Function loads value from lot of formats.
+
+    :param value: Input value.
+    :param align_to_2n: When is set, the function aligns length of return array to 1,2,4,8,12 etc.
+    :return: Value in bytes.
+    """
+    if isinstance(value, bytes):
+        return value
+
+    if isinstance(value, bytearray):
+        return bytes(value)
+
+    value = value_to_int(value)
+    return value.to_bytes(get_bytes_cnt_of_int(value, align_to_2n), "big")
+
+
+def value_to_bool(value: Union[bool, int, str]) -> bool:
+    """Function decode bool value from various formats.
+
+    :param value: Input value.
+    :return: Boolean value.
+    :raise TypeError: Unsupported input type.
+    """
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, int):
+        return bool(value)
+
+    if isinstance(value, str):
+        return value in ("True", "T", "1")
+
+    raise TypeError(f"Invalid input Boolean type({type(value)}) with value ({value})")
+
+
+def reverse_bytes_in_longs(arr: bytes) -> bytes:
+    """The function reverse byte order in longs from input bytes.
+
+    :param arr: Input array.
+    :return: New array with reversed bytes.
+    :raises ValueError: Raises when invalid value is in input.
+    """
+    arr_len = len(arr)
+    if arr_len % 4 != 0:
+        raise ValueError("The input array is not in modulo 4!")
+
+    result = bytearray()
+
+    for x in range(0, arr_len, 4):
+        word = bytearray(arr[x:x+4])
+        word.reverse()
+        result.extend(word)
+    return bytes(result)
+
+
+def change_endianism(bin_data: bytes) -> bytes:
+    """Convert binary format used in files to binary used in register object.
+
+    :param bin_data: input binary array.
+    :return: Converted array (practically little to big endianism).
+    :raises ValueError: Invalid value on input.
+    """
+    data = bytearray(bin_data)
+    length = len(data)
+    if length == 1:
+        return data
+
+    if length == 2:
+        data.reverse()
+        return data
+
+    # The length of 24 bits is not supported yet
+    if length == 3:
+        raise ValueError("Unsupported length (3) for change endianism.")
+
+    return reverse_bytes_in_longs(data)

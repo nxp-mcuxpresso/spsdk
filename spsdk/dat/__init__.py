@@ -10,4 +10,3 @@ from .debug_mailbox import DebugMailbox
 from .debug_credential import DebugCredential
 from .dac_packet import DebugAuthenticationChallenge
 from .dar_packet import DebugAuthenticateResponse
-from .shadow_regs import ShadowRegisters

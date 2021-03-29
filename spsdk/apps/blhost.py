@@ -16,7 +16,7 @@ import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import __version__ as spsdk_version, SPSDKError
-from spsdk.apps.blhost_helper import parse_property_tag
+from spsdk.apps.blhost_helper import parse_key_prov_key_type, parse_property_tag
 from spsdk.apps.utils import (
     INT, get_interface, format_raw_data, catch_spsdk_error,
     parse_file_and_size, parse_hex_data
@@ -323,7 +323,6 @@ def read_memory(ctx: click.Context, address: int, byte_count: int,
     )
 
 
-
 @main.command()
 @click.argument('sb_file', metavar='FILE', type=click.File('rb'), required=True)
 @click.pass_context
@@ -407,7 +406,6 @@ def generate_key_blob(ctx: click.Context, dek_file: click.File, blob_file: click
             blob_file.write(write_response)  # type: ignore
 
 
-
 @main.group()
 @click.pass_context
 def key_provisioning(ctx: click.Context) -> None:
@@ -424,43 +422,64 @@ def enroll(ctx: click.Context) -> None:
 
 
 @key_provisioning.command(name='set_user_key')
-@click.argument('key_type', metavar='TYPE', type=INT(), required=True)
+@click.argument('key_type', metavar='TYPE', type=str, required=True)
 @click.argument('file_and_size', metavar='FILE[,SIZE]', type=str, required=True)
 @click.pass_context
-def set_user_key(ctx: click.Context, key_type: int, file_and_size: str) -> None:
+def set_user_key(ctx: click.Context, key_type: str, file_and_size: str) -> None:
     """Send the user key specified by <type> to bootloader.
 
     \b
     TYPE  - Type of user key
     FILE  - Binary file containing user key plaintext
     SIZE  - If not specified, the entire <file> will be sent. Otherwise, only send
-            the first <size> bytes. The valid options of <type> and
-            corresponding <size> are documented in the target's Reference
-            Manual or User Manual.
+            the first <size> bytes.
+    Available KEY TYPES:
+     2 or 'OTFADKEK'    OTFAD key
+     3 or 'SBKEK'       SB file encryption key
+     7 or 'PRINCE0'     Prince region 0 encryption key
+     8 or 'PRINCE1'     Prince region 1 encryption key
+     9 or 'PRINCE2'     Prince region 2 encryption key
+    11 or 'USERKEK'     User/Boot-image encryption key
+    12 or 'UDS'         Universal Device Secret for DICE
+    Note: The valid options of <type> and corresponding <size> are documented
+          in the target's Reference Manual or User Manual.
+    Note: Names are case insensitive
     """
     file_path, size = parse_file_and_size(file_and_size)
-
+    key_type_int = parse_key_prov_key_type(key_type)
     with open(file_path, 'rb') as key_file:
         key_data = key_file.read(size)
 
     with McuBoot(ctx.obj['interface']) as mboot:
-        response = mboot.kp_set_user_key(key_type=key_type, key_data=key_data)  # type: ignore
+        response = mboot.kp_set_user_key(key_type=key_type_int, key_data=key_data)  # type: ignore
         display_output([], mboot.status_code, ctx.obj['use_json'])
 
 
 @key_provisioning.command(name='set_key')
-@click.argument('key_type', metavar='TYPE', type=int, required=True)
+@click.argument('key_type', metavar='TYPE', type=str, required=True)
 @click.argument('key_size', metavar='SIZE', type=int, required=True)
 @click.pass_context
-def set_key(ctx: click.Context, key_type: int, key_size: int) -> None:
+def set_key(ctx: click.Context, key_type: str, key_size: int) -> None:
     """Generate <size> bytes of the key specified by <type>.
 
     \b
-    TYPE  - type of key to generate
+    TYPE  - type of key to generate,
     SIZE  - size of key to generate
+    Available KEY TYPES:
+     2 or 'OTFADKEK'    OTFAD key
+     3 or 'SBKEK'       SB file encryption key
+     7 or 'PRINCE0'     Prince region 0 encryption key
+     8 or 'PRINCE1'     Prince region 1 encryption key
+     9 or 'PRINCE2'     Prince region 2 encryption key
+    11 or 'USERKEK'     User/Boot-image encryption key
+    12 or 'UDS'         Universal Device Secret for DICE
+    Note: The valid options of <type> and corresponding <size> are documented
+          in the target's Reference Manual or User Manual.
+    Note: Names are case insensitive
     """
+    key_type_int = parse_key_prov_key_type(key_type)
     with McuBoot(ctx.obj['interface']) as mboot:
-        response = mboot.kp_set_intrinsic_key(key_type, key_size)
+        response = mboot.kp_set_intrinsic_key(key_type_int, key_size)
         display_output([], mboot.status_code, ctx.obj['use_json'])
 
 

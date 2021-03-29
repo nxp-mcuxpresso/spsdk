@@ -1,0 +1,13 @@
+# NXP LPC55S6X PFR CMPA configuration
+description:  # The PFR CMPA configuration description.
+  device: invalid # The NXP device name.
+  revision: a1 # The NXP device revision.
+  type: CMPA # The PFR type (CMPA, CFPA).
+  version: 0.3.1 # The SPSDK tool version.
+  author: NXP # The author of the configuration.
+  release: alpha # The SPSDK release.
+settings: # The PFR CMPA registers configuration.
+  REG:
+# Reg Description: Test Register
+    name: REG  # The name of the register
+    value: '0x00000000' # The value of the register

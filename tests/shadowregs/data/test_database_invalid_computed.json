@@ -11,7 +11,7 @@
             },
             "computed_fields": {
                 "REG1": {"CMP1": "comalg_dcfg_cc_socu_invalid", "CRC8": "comalg_dcfg_cc_socu_crc8"},
-                "REG2": {"RESERVED": "comalg_do_nothig"}
+                "REG2": {"RESERVED": "comalg_do_nothing"}
             }
         }
     }

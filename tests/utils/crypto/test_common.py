@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+""" Test of common crypto utilities module."""
 
+from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
 from spsdk.utils.crypto import Counter
+from spsdk.utils.crypto.common import ecc_public_numbers_to_bytes, EllipticCurvePublicNumbers
 
 
 def test_counter():
+    """Test of Counter."""
     # simple counter with nonce only
     cntr = Counter(bytes([0] * 16))
     assert cntr.value == bytes([0] * 16)
@@ -32,3 +36,9 @@ def test_counter():
     assert cntr.value == bytes([0] * 15 + [4])
     cntr.increment(256)
     assert cntr.value == bytes([0] * 14 + [1, 4])
+
+def test_ecc_public_numbers_to_bytes():
+    """Test conversion ECC public numbers to bytes."""
+    ecc = EllipticCurvePublicNumbers(0x1234567890ABCDEF, 0xEFCDAB9078563412, SECP256R1())
+    assert ecc_public_numbers_to_bytes(ecc) == b'\x12\x34\x56\x78\x90\xab\xcd\xef\xef\xcd\xab\x90\x78\x56\x34\x12'
+    assert ecc_public_numbers_to_bytes(ecc, 8) == b'\x12\x34\x56\x78\x90\xab\xcd\xef\xef\xcd\xab\x90\x78\x56\x34\x12'

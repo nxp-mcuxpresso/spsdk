@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Commands used by SBFile module."""
-
+import math
 from abc import abstractmethod
 from struct import pack, unpack_from, calcsize
 from typing import Any, Mapping, Optional, Type
 
-from crccheck.crc import Crc32Mpeg2
+from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk.mboot import ExtMemId
 from spsdk.utils.crypto.abstract import BaseClass
@@ -156,6 +156,7 @@ class CmdBaseClass(BaseClass):
 
 class CmdNop(CmdBaseClass):
     """Command NOP class."""
+
     def __init__(self) -> None:
         """Initialize Command Nop."""
         super().__init__(EnumCmdTag.NOP)
@@ -246,7 +247,8 @@ class CmdLoad(CmdBaseClass):
         self.data = SecBootBlckSize.align_block_fill_random(self.data)
         # update header
         self._header.count = len(self.data)
-        self._header.data = Crc32Mpeg2.calc(self.data, 0xFFFFFFFF)
+        crc32_function = mkPredefinedCrcFun('crc-32-mpeg')
+        self._header.data = crc32_function(self.data, 0xFFFFFFFF)
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> 'CmdLoad':
@@ -262,7 +264,8 @@ class CmdLoad(CmdBaseClass):
         offset += CmdHeader.SIZE
         header_count = SecBootBlckSize.align(header.count)
         cmd_data = data[offset: offset + header_count]
-        if header.data != Crc32Mpeg2.calc(cmd_data, 0xFFFFFFFF):
+        crc32_function = mkPredefinedCrcFun('crc-32-mpeg')
+        if header.data != crc32_function(cmd_data, 0xFFFFFFFF):
             raise ValueError('Invalid CRC in the command header')
         obj = CmdLoad(header.address, cmd_data)
         obj.header.data = header.data
@@ -295,24 +298,28 @@ class CmdFill(CmdBaseClass):
             size += CmdHeader.SIZE - (size % CmdHeader.SIZE)
         return size
 
-    def __init__(self, address: int, pattern: bytes) -> None:
+    def __init__(self, address: int, pattern: int, length: Optional[int] = None) -> None:
         """Initialize Command Fill.
 
         :param address: to write data
         :param pattern: data to be written
+        :param length: length of data to be filled, defaults to 4
         :raise ValueError: raised when size is not aligned to 4 bytes
         """
         super().__init__(EnumCmdTag.FILL)
-        assert isinstance(pattern, (bytes, bytearray))
-        if len(pattern) < 4:
-            raise ValueError('pattern must be at least 4 bytes long')
-        if len(pattern) % 4:
-            raise ValueError('pattern size must be aligned to 4 bytes')
+        length = length or 4
+        if length % 4:
+            raise ValueError('Length of memory range to fill must be a multiple of 4')
+        pattern_bytes = pattern.to_bytes(math.ceil(pattern.bit_length() / 8), 'big')
+        if len(pattern_bytes) not in [1, 2, 4]:
+            raise ValueError('Pattern must be 1, 2 or 4 bytes long')
+        replicate = 4 // len(pattern_bytes)
+        final_pattern = replicate * pattern_bytes
         self.address = address
-        self._pattern = bytes(pattern)
+        self._pattern = final_pattern
         # update header
-        self._header.data = unpack_from("<L", self._pattern)[0]
-        self._header.count = len(self._pattern)
+        self._header.data = unpack_from(">L", self._pattern)[0]
+        self._header.count = length
 
     @property
     def pattern(self) -> bytes:
@@ -327,9 +334,6 @@ class CmdFill(CmdBaseClass):
         # export cmd
         data = super().export(dbg_info)
         # export additional data
-        if len(self._pattern) > 4:
-            data += bytes(self._pattern[4:])
-            dbg_info.append_binary_data('pattern', self._pattern[4:])
         data = SecBootBlckSize.align_block_fill_random(data)
         return data
 
@@ -345,7 +349,7 @@ class CmdFill(CmdBaseClass):
         assert header.tag == EnumCmdTag.FILL
         # The last 4 bytes of header are part of pattern value
         offset += CmdHeader.SIZE - 4
-        return cls(header.address, data[offset: offset + header.count])
+        return cls(header.address, header.data, header.count)
 
 
 class CmdJump(CmdBaseClass):
@@ -375,19 +379,19 @@ class CmdJump(CmdBaseClass):
     @property
     def spreg(self) -> Optional[int]:
         """Return command's Stack Pointer."""
-        if self._header.flags == 1:
+        if self._header.flags == 2:
             return self._header.count
 
         return None
 
     @spreg.setter
-    def spreg(self, value: Optional[int]) -> None:
+    def spreg(self, value: Optional[int] = None) -> None:
         """Set command's Stack Pointer."""
         if value is None:
             self._header.flags = 0
             self._header.count = 0
         else:
-            self._header.flags = 1
+            self._header.flags = 2
             self._header.count = value
 
     def __init__(self, address: int = 0, argument: int = 0, spreg: Optional[int] = None) -> None:
@@ -524,6 +528,7 @@ class CmdErase(CmdBaseClass):
 
 class CmdReset(CmdBaseClass):
     """Command Reset class."""
+
     def __init__(self) -> None:
         """Initialize Command Reset."""
         super().__init__(EnumCmdTag.RESET)
@@ -606,6 +611,7 @@ class CmdMemEnable(CmdBaseClass):
 
 class CmdProg(CmdBaseClass):
     """Command Program class."""
+
     def __init__(self) -> None:
         """Initialize Cmd Program."""
         super().__init__(EnumCmdTag.PROG)

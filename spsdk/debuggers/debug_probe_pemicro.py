@@ -55,12 +55,12 @@ class DebugProbePemicro(DebugProbe):
 
         This functions returns the list of all connected probes in system by Pemicro package.
 
-        :param hardware_id: None to list all probes, otherwice the the only probe with matching
+        :param hardware_id: None to list all probes, otherwise the the only probe with matching
             hardware id is listed.
         :param user_params: The user params dictionary
         :return: probe_description
         """
-        #TODO fix problems with cyclic import
+        #pylint: disable=import-outside-toplevel
         from .utils import DebugProbes, ProbeDescription
 
         pemicro = DebugProbePemicro.get_pemicro_lib()
@@ -93,16 +93,16 @@ class DebugProbePemicro(DebugProbe):
         try:
             self.pemicro.open(debug_hardware_name_ip_or_serialnum=self.hardware_id)
             self.pemicro.connect(PEMicroInterfaces.SWD)  # type: ignore
-            debugmb_dbgmlbx_ap_ix = self._get_dmbox_ap()
+            dbgmlbx_ap_ix = self._get_dmbox_ap()
         except PEMicroException as exc:
             raise DebugProbeError(f"Pemicro cannot establish communication with target({str(exc)}).")
 
         if self.dbgmlbx_ap_ix == -1:
-            if debugmb_dbgmlbx_ap_ix == -1:
+            if dbgmlbx_ap_ix == -1:
                 raise DebugProbeError(f"The Debug mailbox access port is not available!")
-            self.dbgmlbx_ap_ix = debugmb_dbgmlbx_ap_ix
+            self.dbgmlbx_ap_ix = dbgmlbx_ap_ix
         else:
-            if debugmb_dbgmlbx_ap_ix != self.dbgmlbx_ap_ix:
+            if dbgmlbx_ap_ix != self.dbgmlbx_ap_ix:
                 logger.info(f"The detected debug mailbox accessport index is different to specified.")
 
     def close(self) -> None:
@@ -249,7 +249,7 @@ class DebugProbePemicro(DebugProbe):
         try:
             self.pemicro.reset_target()
         except PEMicroException as exc:
-            logger.warning(f"The reset sequence occured some errors.")
+            logger.warning(f"The reset sequence occurred some errors.")
             self.pemicro.control_reset_line(assert_reset=False)
 
     def _get_dmbox_ap(self) -> int:

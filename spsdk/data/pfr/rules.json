@@ -43,8 +43,8 @@
     },
     {
         "req_id": "2.1",
-        "desc": "This CMPA_PROG_IN_PROGRESS must be always 0x00000000. Only ROM bootlader is allowed to write anything to this field.",
-        "msg": "The CMPA_PROG_IN_PROGESS must be set to 0!",
+        "desc": "This CMPA_PROG_IN_PROGRESS must be always 0x00000000. Only ROM bootloader is allowed to write anything to this field.",
+        "msg": "The CMPA_PROG_IN_PROGRESS must be set to 0!",
         "cond": "CFPA.CMPA_PROG_IN_PROGRESS != 0"
     },
     {

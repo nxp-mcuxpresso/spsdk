@@ -4,7 +4,7 @@
 # Copyright 2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Tests for nxpkeygen utility."""
+"""Tests for shadow registers utility."""
 import os
 
 from click.testing import CliRunner
@@ -163,7 +163,8 @@ def test_command_line_interface_setreg_exe():
     """Test for printregs execution menu options."""
     runner = CliRunner()
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f'-dev imxrt595 -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} setreg -r DCFG_CC_SOCU -v 12345678'
+    cmd = f'-dev imxrt595 -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug}'
+    cmd += f' setreg -r DCFG_CC_SOCU -v 12345678'
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 0
@@ -273,7 +274,8 @@ def test_command_line_interface_setreg_exe_fail():
     runner = CliRunner()
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]} '\
                    '-o subs_mem={"1074987040":["Exception"]}'
-    cmd = f'-dev imxrt595 -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} setreg -r CUST_WR_RD_LOCK0 -v 12345678'
+    cmd = f'-dev imxrt595 -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug}'
+    cmd += f' setreg -r CUST_WR_RD_LOCK0 -v 12345678'
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 1
@@ -287,3 +289,12 @@ def test_command_line_interface_getreg_exe_fail():
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 1
+
+def test_command_line_interface_generate_html(tmpdir):
+    """Test for info execution menu options."""
+    runner = CliRunner()
+    cmd = f'-dev imxrt595 info -o {tmpdir}/imxrt_info.html'
+    result = runner.invoke(main, cmd.split())
+
+    assert result.exit_code == 0, result.output
+    assert os.path.isfile(f'{tmpdir}/imxrt_info.html')

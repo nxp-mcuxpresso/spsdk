@@ -19,6 +19,7 @@ from .exceptions import McuBootError
 # McuBoot Commands and Responses Tags
 ########################################################################################################################
 
+
 class CommandTag(Enum):
     """McuBoot Commands."""
 
@@ -75,13 +76,13 @@ class KeyProvOperation(Enum):
 
 class KeyProvUserKeyType(Enum):
     """Enumeration of supported user keys in PUF. Keys are SoC specific, not all will be supported for the processor."""
-    OTFADKEK = (2, "Key for OTFAD encryption")  # used on RTxxx
-    SBKEK = (3, "Key for SB file encryption")  # Available on LPC55Sxx and RTxxx
-    PRINCE_REGION_0 = (7, "TODO description")  # LPC55Sxx
-    PRINCE_REGION_1 = (8, "TODO description")  # LPC55Sxx
-    PRINCE_REGION_2 = (9, "TODO description")  # LPC55Sxx
-    USERKEK = (11, "Encrypted boot image key")  # LPC55Sxx and RTxxx
-    UDS = (12, "TODO description")  # LPC55Sxx and RTxxx
+    OTFADKEK = (2, "OTFADKEK", "Key for OTFAD encryption")  # used on RTxxx
+    SBKEK = (3, "SBKEK", "Key for SB file encryption")  # Available on LPC55Sxx and RTxxx
+    PRINCE_REGION_0 = (7, "PRINCE0", "Key for Prince region 0")  # LPC55Sxx
+    PRINCE_REGION_1 = (8, "PRINCE1", "Key for Prince region 1")  # LPC55Sxx
+    PRINCE_REGION_2 = (9, "PRINCE2", "Key for Prince region 2")  # LPC55Sxx
+    USERKEK = (11, "USERKEK", "Encrypted boot image key")  # LPC55Sxx and RTxxx
+    UDS = (12, "UDS", "Universal Device Secret for DICE")  # LPC55Sxx and RTxxx
 
 
 class GenerateKeyBlobSelect(Enum):
@@ -348,6 +349,19 @@ class KeyProvisioningResponse(CmdResponse):
         tag = ResponseTag.name(self.header.tag)
         status = StatusCode.get(self.status, f'Unknown[0x{self.status:08X}]')
         return f"Tag={tag}, Status={status}, Length={self.length}"
+
+
+class NoResponse(CmdResponse):
+    """Special internal case when no response is provided by the target."""
+
+    def __init__(self, cmd_tag: int) -> None:
+        """Create a NoResponse to an command that was issued, indicated by its tag.
+
+        :param cmd_tag: Tag of the command that preceded the no-response from target
+        """
+        header = CmdHeader(tag=cmd_tag, flags=0, reserved=0, params_count=0)
+        raw_data = pack('<L', StatusCode.NO_RESPONSE)
+        super().__init__(header, raw_data)
 
 
 def parse_cmd_response(data: bytes, offset: int = 0) -> CmdResponse:

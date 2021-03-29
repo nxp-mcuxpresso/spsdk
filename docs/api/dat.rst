@@ -57,11 +57,3 @@ Module with common utils for DAT module
    :members:
    :undoc-members:
    :show-inheritance:
-
-
-Module with the shadow registers control DAT support file
-----------------------------------------------------------
-.. automodule:: spsdk.dat.shadow_regs
-   :members:
-   :undoc-members:
-   :show-inheritance:
