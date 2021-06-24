@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.mboot.mcuboot import PropertyTag
+import pytest
+
+from spsdk.mboot.mcuboot import PropertyTag, _clamp_down_memory_id
+
 
 def test_data_splitting(mcuboot):
     """Test splitting data in MBOOT.
@@ -24,7 +27,6 @@ def test_data_splitting(mcuboot):
     assert len(data_out) == 1
     assert len(data_out[0]) == 4 * max_packet_size
 
-
     mcuboot._device._need_data_split = True
 
     data_in = bytes(4 * max_packet_size)
@@ -33,9 +35,18 @@ def test_data_splitting(mcuboot):
     assert len(data_out) == 4
     assert all(len(chunk) == max_packet_size for chunk in data_out)
 
-    # data size is misaligned 
+    # data size is misaligned
     data_in = bytes(max_packet_size + 10)
     data_out = mcuboot._split_data(data_in)
     assert len(data_out) == 2
     assert len(data_out[0]) == max_packet_size
     assert len(data_out[1]) == 10
+
+
+@pytest.mark.parametrize(
+    "memory_id, clamped_mem_id",
+    [(0, 0), (1, 0), (0xA, 0), (256, 256), (1000, 1000), (0x102, 0x102)],
+)
+def test_memory_id_clamp_down(memory_id, clamped_mem_id):
+    new_memory_id = _clamp_down_memory_id(memory_id)
+    assert new_memory_id == clamped_mem_id

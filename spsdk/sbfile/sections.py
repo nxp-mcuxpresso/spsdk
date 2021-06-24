@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,13 @@ from typing import Iterator, List, Optional
 from spsdk.utils.crypto import CertBlockV2, Counter
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.common import calc_cypher_block_count, crypto_backend
-from .commands import CmdHeader, CmdBaseClass, EnumCmdTag, EnumSectionFlag, parse_command
+from .commands import (
+    CmdHeader,
+    CmdBaseClass,
+    EnumCmdTag,
+    EnumSectionFlag,
+    parse_command,
+)
 
 
 ########################################################################################################################
@@ -23,6 +29,7 @@ from .commands import CmdHeader, CmdBaseClass, EnumCmdTag, EnumSectionFlag, pars
 
 class BootSectionV2(BaseClass):
     """Boot Section V2."""
+
     HMAC_SIZE = 32
 
     @property
@@ -115,8 +122,13 @@ class BootSectionV2(BaseClass):
         return nfo
 
     # pylint: disable=too-many-locals
-    def export(self, dek: bytes = b'', mac: bytes = b'', counter: Optional[Counter] = None,
-               dbg_info: Optional[List[str]] = None) -> bytes:
+    def export(
+        self,
+        dek: bytes = b"",
+        mac: bytes = b"",
+        counter: Optional[Counter] = None,
+        dbg_info: Optional[List[str]] = None,
+    ) -> bytes:
         """Serialize Boot Section object.
 
         :param dek: The DEK value in bytes (required)
@@ -128,9 +140,9 @@ class BootSectionV2(BaseClass):
         """
         cmd_dbg_info: Optional[List[str]] = None
         if dbg_info is not None:
-            dbg_info.append('[bootable_section]')
+            dbg_info.append("[bootable_section]")
             cmd_dbg_info = list()
-            cmd_dbg_info.append('[commands]')
+            cmd_dbg_info.append("[commands]")
         if not isinstance(dek, bytes):
             raise Exception()
         if not isinstance(mac, bytes):
@@ -138,34 +150,38 @@ class BootSectionV2(BaseClass):
         if not isinstance(counter, Counter):
             raise Exception()
         # Export commands
-        commands_data = b''
+        commands_data = b""
         for cmd in self._commands:
             cmd_data = cmd.export()
             commands_data += cmd_data
             if cmd_dbg_info is not None:
-                cmd_dbg_info.append(f'[command:{type(cmd).__name__}]')
+                cmd_dbg_info.append(f"[command:{type(cmd).__name__}]")
                 cmd_dbg_info.append(cmd_data.hex())
         if len(commands_data) % 16:
-            commands_data += b'\x00' * (16 - (len(commands_data) % 16))
+            commands_data += b"\x00" * (16 - (len(commands_data) % 16))
         # Encrypt header
         self._header.data = self.hmac_count
         self._header.count = len(commands_data) // 16
-        encrypted_header = crypto_backend().aes_ctr_encrypt(dek, self._header.export(), counter.value)
+        encrypted_header = crypto_backend().aes_ctr_encrypt(
+            dek, self._header.export(), counter.value
+        )
         hmac_data = crypto_backend().hmac(mac, encrypted_header)
         counter.increment(1 + (self.hmac_count + 1) * 2)
         if dbg_info:
-            dbg_info.append('[header]')
+            dbg_info.append("[header]")
             dbg_info.append(self._header.export().hex())
-            dbg_info.append('[encrypted_header]')
+            dbg_info.append("[encrypted_header]")
             dbg_info.append(encrypted_header.hex())
-            dbg_info.append('[hmac]')
+            dbg_info.append("[hmac]")
             dbg_info.append(hmac_data.hex())
             if cmd_dbg_info:
                 dbg_info.extend(cmd_dbg_info)
         # Encrypt commands
-        encrypted_commands = b''
+        encrypted_commands = b""
         for index in range(0, len(commands_data), 16):
-            encrypted_block = crypto_backend().aes_ctr_encrypt(dek, commands_data[index: index + 16], counter.value)
+            encrypted_block = crypto_backend().aes_ctr_encrypt(
+                dek, commands_data[index : index + 16], counter.value
+            )
             encrypted_commands += encrypted_block
             counter.increment()
         # Calculate HMAC of commands
@@ -173,7 +189,11 @@ class BootSectionV2(BaseClass):
         hmac_count = self._header.data
         block_size = (self._header.count // hmac_count) * 16
         while hmac_count > 0:
-            enc_block = encrypted_commands[index:] if hmac_count == 1 else encrypted_commands[index: index + block_size]
+            enc_block = (
+                encrypted_commands[index:]
+                if hmac_count == 1
+                else encrypted_commands[index : index + block_size]
+            )
             hmac_data += crypto_backend().hmac(mac, enc_block)
             hmac_count -= 1
             index += len(enc_block)
@@ -181,8 +201,15 @@ class BootSectionV2(BaseClass):
 
     # pylint: disable=too-many-locals
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, plain_sect: bool = False,
-              dek: bytes = b'', mac: bytes = b'', counter: Optional[Counter] = None) -> 'BootSectionV2':
+    def parse(
+        cls,
+        data: bytes,
+        offset: int = 0,
+        plain_sect: bool = False,
+        dek: bytes = b"",
+        mac: bytes = b"",
+        counter: Optional[Counter] = None,
+    ) -> "BootSectionV2":
         """Parse Boot Section from bytes.
 
         :param data: Raw data of parsed image
@@ -201,8 +228,8 @@ class BootSectionV2(BaseClass):
         if not isinstance(counter, Counter):
             raise Exception()
         # Get Header specific data
-        header_encrypted = data[offset: offset + CmdHeader.SIZE]
-        header_hmac_data = data[offset + CmdHeader.SIZE: offset + CmdHeader.SIZE + cls.HMAC_SIZE]
+        header_encrypted = data[offset : offset + CmdHeader.SIZE]
+        header_hmac_data = data[offset + CmdHeader.SIZE : offset + CmdHeader.SIZE + cls.HMAC_SIZE]
         offset += CmdHeader.SIZE + cls.HMAC_SIZE
         # Check header HMAC
         if header_hmac_data != crypto_backend().hmac(mac, header_encrypted):
@@ -214,9 +241,9 @@ class BootSectionV2(BaseClass):
         header = CmdHeader.parse(header_decrypted)
         counter.increment((header.data + 1) * 2)
         # Get HMAC data
-        hmac_data = data[offset: offset + (cls.HMAC_SIZE * header.data)]
+        hmac_data = data[offset : offset + (cls.HMAC_SIZE * header.data)]
         offset += cls.HMAC_SIZE * header.data
-        encrypted_commands = data[offset: offset + (header.count * 16)]
+        encrypted_commands = data[offset : offset + (header.count * 16)]
         # Check HMAC
         hmac_index = 0
         hmac_count = header.data
@@ -225,19 +252,22 @@ class BootSectionV2(BaseClass):
         while hmac_count > 0:
             if hmac_count == 1:
                 block_size = section_size
-            hmac_block = crypto_backend().hmac(mac, data[offset: offset + block_size])
-            if hmac_block != hmac_data[hmac_index: hmac_index + cls.HMAC_SIZE]:
+            hmac_block = crypto_backend().hmac(mac, data[offset : offset + block_size])
+            if hmac_block != hmac_data[hmac_index : hmac_index + cls.HMAC_SIZE]:
                 raise Exception()
             hmac_count -= 1
             hmac_index += cls.HMAC_SIZE
             section_size -= block_size
             offset += block_size
         # Decrypt commands
-        decrypted_commands = b''
+        decrypted_commands = b""
         for hmac_index in range(0, len(encrypted_commands), 16):
-            encr_block = encrypted_commands[hmac_index: hmac_index + 16]
-            decrypted_block = encr_block if plain_sect else crypto_backend().aes_ctr_decrypt(dek, encr_block,
-                                                                                             counter.value)
+            encr_block = encrypted_commands[hmac_index : hmac_index + 16]
+            decrypted_block = (
+                encr_block
+                if plain_sect
+                else crypto_backend().aes_ctr_decrypt(dek, encr_block, counter.value)
+            )
             decrypted_commands += decrypted_block
             counter.increment()
         # ...
@@ -252,8 +282,9 @@ class BootSectionV2(BaseClass):
 
 class CertSectionV2(BaseClass):
     """Certificate Section V2 class."""
+
     HMAC_SIZE = 32
-    SECT_MARK = unpack_from('<L', b'sign')[0]
+    SECT_MARK = unpack_from("<L", b"sign")[0]
 
     @property
     def cert_block(self) -> CertBlockV2:
@@ -274,7 +305,9 @@ class CertSectionV2(BaseClass):
     def __init__(self, cert_block: CertBlockV2):
         """Initialize CertBlockV2."""
         assert isinstance(cert_block, CertBlockV2)
-        self._header = CmdHeader(EnumCmdTag.TAG, EnumSectionFlag.CLEARTEXT | EnumSectionFlag.LAST_SECT)
+        self._header = CmdHeader(
+            EnumCmdTag.TAG, EnumSectionFlag.CLEARTEXT | EnumSectionFlag.LAST_SECT
+        )
         self._header.address = self.SECT_MARK
         self._header.count = cert_block.raw_size // 16
         self._header.data = 1
@@ -287,7 +320,9 @@ class CertSectionV2(BaseClass):
         """Get object info."""
         return self.cert_block.info()
 
-    def export(self, dek: bytes = b'', mac: bytes = b'', counter: Optional[Counter] = None) -> bytes:
+    def export(
+        self, dek: bytes = b"", mac: bytes = b"", counter: Optional[Counter] = None
+    ) -> bytes:
         """Serialize Certificate Section object.
 
         :param dek: The DEK value in bytes (required)
@@ -316,8 +351,14 @@ class CertSectionV2(BaseClass):
         return result
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0,
-              dek: bytes = b'', mac: bytes = b'', counter: Optional[Counter] = None) -> 'CertSectionV2':
+    def parse(
+        cls,
+        data: bytes,
+        offset: int = 0,
+        dek: bytes = b"",
+        mac: bytes = b"",
+        counter: Optional[Counter] = None,
+    ) -> "CertSectionV2":
         """Parse Certificate Section from bytes array.
 
         :param data: Raw data of parsed image
@@ -337,11 +378,11 @@ class CertSectionV2(BaseClass):
         if not isinstance(counter, Counter):
             raise AttributeError()
         index = offset
-        header_encrypted = data[index: index + CmdHeader.SIZE]
+        header_encrypted = data[index : index + CmdHeader.SIZE]
         index += CmdHeader.SIZE
-        header_hmac = data[index: index + cls.HMAC_SIZE]
+        header_hmac = data[index : index + cls.HMAC_SIZE]
         index += cls.HMAC_SIZE
-        cert_block_hmac = data[index: index + cls.HMAC_SIZE]
+        cert_block_hmac = data[index : index + cls.HMAC_SIZE]
         index += cls.HMAC_SIZE
         if header_hmac != crypto_backend().hmac(mac, header_encrypted):
             raise Exception("Invalid Header HMAC")
@@ -355,7 +396,7 @@ class CertSectionV2(BaseClass):
             raise Exception(f"Invalid Section Mark: 0x{header.address:08X}")
         # Parse Certificate Block
         cert_block = CertBlockV2.parse(data, index)
-        if cert_block_hmac != crypto_backend().hmac(mac, data[index: index + cert_block.raw_size]):
+        if cert_block_hmac != crypto_backend().hmac(mac, data[index : index + cert_block.raw_size]):
             raise Exception("Invalid Certificate Block HMAC")
         index += cert_block.raw_size
         cert_section_obj = cls(cert_block)

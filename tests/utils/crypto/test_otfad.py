@@ -16,17 +16,23 @@ def test_otfad_keyblob(data_dir):
     """ Test generation of key blob for OTFAD """
     # generate key blob using random keys
     key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF)
-    gen_blob = key_blob.export(kek=bytes.fromhex('50F66BB4F23B855DCD8FEFC0DA59E963'))
+    gen_blob = key_blob.export(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
     assert gen_blob is not None
     # generate key blob using fixed keys
-    key = bytes.fromhex('B1A0C56AF31E98CD6936A79D9E6F829D')
+    key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
     counter = bytes.fromhex("5689fab8b4bfb264")
     zeros = bytes(4)  # zero_fill and crc are '0' just for this test; in reality should be random
-    key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter,
-                       zero_fill=zeros, crc=zeros)
-    gen_blob = key_blob.export(kek=bytes.fromhex('50F66BB4F23B855DCD8FEFC0DA59E963'))
+    key_blob = KeyBlob(
+        start_addr=0x08001000,
+        end_addr=0x0800F3FF,
+        key=key,
+        counter_iv=counter,
+        zero_fill=zeros,
+        crc=zeros,
+    )
+    gen_blob = key_blob.export(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
 
-    with open(os.path.join(data_dir, 'otfad_keyblob.bin'), "rb") as f:
+    with open(os.path.join(data_dir, "otfad_keyblob.bin"), "rb") as f:
         keyblob_bin = f.read()
     assert gen_blob == keyblob_bin
 
@@ -34,16 +40,16 @@ def test_otfad_keyblob(data_dir):
     assert key_blob.info()
 
     # test image encryption
-    with open(os.path.join(data_dir, 'boot_image.bin'), "rb") as f:
+    with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
         plain_image = f.read()
     encr_image = key_blob.encrypt_image(0x08001000, plain_image, True)
-    with open(os.path.join(data_dir, 'otfad_image.bin'), "rb") as f:
+    with open(os.path.join(data_dir, "otfad_image.bin"), "rb") as f:
         otfad_image = f.read()
     assert encr_image == otfad_image
 
     # check key blob is created with random bytes for zero_fill and crc
     key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
-    gen_blob = key_blob.export(kek=bytes.fromhex('50F66BB4F23B855DCD8FEFC0DA59E963'))
+    gen_blob = key_blob.export(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
     assert gen_blob != keyblob_bin
 
     # start address not aligned
@@ -65,13 +71,13 @@ def test_otfad_keyblob(data_dir):
 def test_otfad(data_dir):
     """Test OTFAD generator"""
     otfad = Otfad()
-    key = bytes.fromhex('B1A0C56AF31E98CD6936A79D9E6F829D')
+    key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
     counter = bytes.fromhex("5689fab8b4bfb264")
     key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
     otfad.add_key_blob(key_blob)
     assert otfad[0] == key_blob
-    with open(os.path.join(data_dir, 'boot_image.bin'), "rb") as f:
-       image = f.read()
+    with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
+        image = f.read()
 
     # invalid address
     with pytest.raises(ValueError):
@@ -79,7 +85,7 @@ def test_otfad(data_dir):
 
     encr_image = otfad.encrypt_image(image, 0x08001000, True)
     otfad.encrypt_image(image, 0x08001000, False)  # TODO finish the test
-    with open(os.path.join(data_dir, 'otfad_image.bin'), "rb") as f:
+    with open(os.path.join(data_dir, "otfad_image.bin"), "rb") as f:
         otfad_image = f.read()
     assert encr_image == otfad_image
 

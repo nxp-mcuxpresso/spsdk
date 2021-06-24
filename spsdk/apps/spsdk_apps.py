@@ -31,23 +31,24 @@ from .utils import catch_spsdk_error
 
 
 @click.group()
-@click.version_option(spsdk_version, '--version')
+@click.version_option(spsdk_version, "--version")
 def main() -> int:
     """Main entry point for all SPSDK applications."""
     return 0
 
 
-main.add_command(blhost_main, name='blhost')
-main.add_command(elftosb_main, name='elftosb')
-main.add_command(nxpcertgen_main, name='nxpcertgen')
-main.add_command(nxpdebugmbox_main, name='nxpdebugmbox')
-main.add_command(nxpdevscan_main, name='nxpdevscan')
-main.add_command(nxpkeygen_main, name='nxpkeygen')
-main.add_command(pfr_main, name='pfr')
-main.add_command(pfrc_main, name='pfrc')
-main.add_command(sdphost_main, name='sdphost')
-main.add_command(sdpshost_main, name='sdpshost')
-main.add_command(shadowregs_main, name='shadowregs')
+main.add_command(blhost_main, name="blhost")
+main.add_command(elftosb_main, name="elftosb")
+main.add_command(nxpcertgen_main, name="nxpcertgen")
+main.add_command(nxpdebugmbox_main, name="nxpdebugmbox")
+main.add_command(nxpdevscan_main, name="nxpdevscan")
+main.add_command(nxpkeygen_main, name="nxpkeygen")
+main.add_command(pfr_main, name="pfr")
+main.add_command(pfrc_main, name="pfrc")
+main.add_command(sdphost_main, name="sdphost")
+main.add_command(sdpshost_main, name="sdpshost")
+main.add_command(shadowregs_main, name="shadowregs")
+
 
 @catch_spsdk_error
 def safe_main() -> Any:

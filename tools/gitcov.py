@@ -20,14 +20,16 @@ from xml.etree import ElementTree as et
 logger = logging.getLogger()
 # Modify logger to proper format
 LOG_HANDLER = logging.StreamHandler()
-LOG_HANDLER.setFormatter(logging.Formatter('%(message)s'))
+LOG_HANDLER.setFormatter(logging.Formatter("%(message)s"))
 logger.addHandler(LOG_HANDLER)
 
+
 class MyFormatter(
-        argparse.ArgumentDefaultsHelpFormatter,
-        argparse.RawDescriptionHelpFormatter,
+    argparse.ArgumentDefaultsHelpFormatter,
+    argparse.RawDescriptionHelpFormatter,
 ):
     """Class customizing behavior for argparse."""
+
 
 def parse_input(input_args: Sequence[str] = None) -> argparse.Namespace:
     """Parse default configuration file and process user inputs."""
@@ -41,48 +43,84 @@ def parse_input(input_args: Sequence[str] = None) -> argparse.Namespace:
     Check test coverage of changed lines of code.
 !!! For accurate results, make sure to update your reference branch     !!!
 !!! The name of reference branch is passed as 'parent_branch' parameter !!!""",
-        formatter_class=MyFormatter
+        formatter_class=MyFormatter,
     )
     parser.add_argument(
-        "-p", "--repo-path", required=False, default=gitcov_config["repo-path"],
-        help="Path to root of repository"
+        "-p",
+        "--repo-path",
+        required=False,
+        default=gitcov_config["repo-path"],
+        help="Path to root of repository",
     )
     parser.add_argument(
-        "-m", "--module", required=False, default=gitcov_config["module"],
-        help="Module for branch coverage analysis"
+        "-m",
+        "--module",
+        required=False,
+        default=gitcov_config["module"],
+        help="Module for branch coverage analysis",
     )
     parser.add_argument(
-        "-cr", "--coverage-report", required=False, default=gitcov_config["coverage-report"],
-        help="File containing the XML coverage report"
+        "-cr",
+        "--coverage-report",
+        required=False,
+        default=gitcov_config["coverage-report"],
+        help="File containing the XML coverage report",
     )
     parser.add_argument(
-        "-cc", "--coverage-cutoff", required=False, default=gitcov_config.getfloat("coverage-cutoff"),
-        help="Cutoff for success", type=float
+        "-cc",
+        "--coverage-cutoff",
+        required=False,
+        default=gitcov_config.getfloat("coverage-cutoff"),
+        help="Cutoff for success",
+        type=float,
     )
     parser.add_argument(
-        "-b", "--parent-branch", required=False, default=gitcov_config["parent-branch"],
-        help="Branch to compare HEAD to"
+        "-b",
+        "--parent-branch",
+        required=False,
+        default=gitcov_config["parent-branch"],
+        help="Branch to compare HEAD to",
     )
     parser.add_argument(
-        "-i", "--include-merges", default=config.BOOLEAN_STATES[gitcov_config["include-merges"]],
-        action="store_true", required=False, help="Include files brought in by merge commits"
+        "-i",
+        "--include-merges",
+        default=config.BOOLEAN_STATES[gitcov_config["include-merges"]],
+        action="store_true",
+        required=False,
+        help="Include files brought in by merge commits",
     )
     parser.add_argument(
-        "-v", "--verbose", default=config.BOOLEAN_STATES[gitcov_config["verbose"]],
-        required=False, action='store_true', help="Verbose output"
+        "-v",
+        "--verbose",
+        default=config.BOOLEAN_STATES[gitcov_config["verbose"]],
+        required=False,
+        action="store_true",
+        help="Verbose output",
     )
     parser.add_argument(
-        "-d", "--debug", default=config.BOOLEAN_STATES[gitcov_config["debug"]],
-        required=False, action='store_true', help="Debugging output"
+        "-d",
+        "--debug",
+        default=config.BOOLEAN_STATES[gitcov_config["debug"]],
+        required=False,
+        action="store_true",
+        help="Debugging output",
     )
     parser.add_argument(
-        "-f", "--full-file-test", default=config.BOOLEAN_STATES[gitcov_config["full-file-test"]],
-        required=False, action='store_true', help="Enable full file test instead of branch changes"
+        "-f",
+        "--full-file-test",
+        default=config.BOOLEAN_STATES[gitcov_config["full-file-test"]],
+        required=False,
+        action="store_true",
+        help="Enable full file test instead of branch changes",
     )
     parser.add_argument(
-        "-c", "--config-file", required=False,
-        help=("""Path to config .ini file.
-        You can create your custom config file by copy-modify the gitcov-defaults.ini""")
+        "-c",
+        "--config-file",
+        required=False,
+        help=(
+            """Path to config .ini file.
+        You can create your custom config file by copy-modify the gitcov-defaults.ini"""
+        ),
     )
 
     args = parser.parse_args(input_args)
@@ -108,14 +146,18 @@ def parse_input(input_args: Sequence[str] = None) -> argparse.Namespace:
     args.repo_path = path.abspath(args.repo_path)
     if not path.isabs(args.coverage_report):
         args.coverage_report = path.normpath(path.join(args.repo_path, args.coverage_report))
-    assert path.isfile(args.coverage_report), f"Coverage report '{args.coverage_report}' doesn't exist"
+    assert path.isfile(
+        args.coverage_report
+    ), f"Coverage report '{args.coverage_report}' doesn't exist"
 
     args.skip_files = gitcov_config.get("skip-files").replace("\n", "").split(",")
 
     return args
 
 
-def get_changed_files(repo_path: str, include_merges: bool, parent_branch: str = None) -> Sequence[str]:
+def get_changed_files(
+    repo_path: str, include_merges: bool, parent_branch: str = None
+) -> Sequence[str]:
     """Get a list of changed files.
 
     :param repo_path: Path to the root of the repository
@@ -137,7 +179,7 @@ def get_changed_files(repo_path: str, include_merges: bool, parent_branch: str =
 
     # fetch changed files that are potentionally not committed yet
     logger.info("Fetching uncommitted files\n")
-    cmd = f"git diff --name-status"
+    cmd = "git diff --name-status"
     logger.debug(f"Executing: {cmd}")
     uncommitted = subprocess.check_output(cmd.split(), cwd=repo_path).decode("utf-8")
     logger.debug(f"Result:\n{uncommitted}")
@@ -145,7 +187,7 @@ def get_changed_files(repo_path: str, include_merges: bool, parent_branch: str =
 
     # fetch staged new files
     logger.info("Fetching new files... those need to be stagged\n")
-    cmd = f"git diff --name-status --cached"
+    cmd = "git diff --name-status --cached"
     logger.debug(f"Executing: {cmd}")
     staged = subprocess.check_output(cmd.split(), cwd=repo_path).decode("utf-8")
     logger.debug(f"Result:\n{staged}")
@@ -201,7 +243,9 @@ def _cov_branch_category(line: et.Element) -> str:
     return category
 
 
-def extract_coverage(cov_report: et.ElementTree, file_path: str, line_numbers: Sequence[int] = None) -> dict:
+def extract_coverage(
+    cov_report: et.ElementTree, file_path: str, line_numbers: Sequence[int] = None
+) -> dict:
     """Extract coverage data for a given file.
 
     :param cov_report: Parsed xml coverage report
@@ -210,7 +254,10 @@ def extract_coverage(cov_report: et.ElementTree, file_path: str, line_numbers: S
     :return: Coverage data for a given file
     """
     lines_elem = cov_report.findall(f".//*/class[@filename='{file_path}']/lines/line")
-    data: dict = {"statement": {"hit": [], "miss": []}, "branch": {"hit": [], "miss": [], "partial": []}}
+    data: dict = {
+        "statement": {"hit": [], "miss": []},
+        "branch": {"hit": [], "miss": [], "partial": []},
+    }
     for item in lines_elem:
         line_num = int(item.attrib["number"])
         if line_numbers and line_num not in line_numbers:
@@ -220,16 +267,18 @@ def extract_coverage(cov_report: et.ElementTree, file_path: str, line_numbers: S
             data["branch"][_cov_branch_category(item)].append(line_num)
     return data
 
+
 def uncovered_changed_lines(statement_lines: list, branch_lines: list, changed_lines: list) -> set:
     """Get the set of changed lines which are not covered."""
     all_bad_lines = set(statement_lines).union(set(branch_lines))
-    return  all_bad_lines.intersection(set(changed_lines))
+    return all_bad_lines.intersection(set(changed_lines))
+
 
 def calc_statement_coverage(statement_data: dict) -> float:
     """Calculate result statement coverage."""
     hit = len(statement_data["hit"])
     total = hit + len(statement_data["miss"])
-    return (hit/total) if total else -1
+    return (hit / total) if total else -1
 
 
 def calc_branch_coverage(branch_data: dict) -> float:
@@ -266,6 +315,7 @@ def is_skipped(file_path: str, skip_patterns: Sequence[str]) -> bool:
     """Find whether file should qualifies given filer patterns."""
     return any(skip_pattern in file_path for skip_pattern in skip_patterns)
 
+
 def get_parent_commit() -> str:
     """Returns commit of parent branch.
 
@@ -283,7 +333,7 @@ def get_parent_commit() -> str:
     # M ---A----B-----C
     # B1    \---D--E
     # B2         \---F--G
-    # 
+    #
     # With the above scenario, we want to identify changes between B2 and
     # point we branched of - commit D.
     # To achieve this, the process is following:
@@ -306,31 +356,38 @@ def get_parent_commit() -> str:
     # Check all branches D is part of
     # D is part of B1 and B2 branches
     # We are on a crossroad -> return D sha
-    current_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
+    current_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
     logging.debug(f"Initial sha: {current_sha}")
     while 1:
 
-        current_branches = subprocess.check_output(["git", "branch", "-a", "--contains", current_sha])
+        current_branches = subprocess.check_output(
+            ["git", "branch", "-a", "--contains", current_sha]
+        ).decode("utf-8")
 
-        branches = list(filter(None, current_branches.decode('utf-8').split('\n')))
+        branches = list(filter(None, current_branches.split("\n")))
         logging.debug(f"All branches containing sha {current_sha}: {branches}")
 
-        current_branch = subprocess.check_output(["git", "branch", "--show-current"]).strip()
+        current_branch = (
+            subprocess.check_output(["git", "branch", "--show-current"]).strip().decode("utf-8")
+        )
         logging.debug(f"We are on branch: {current_branch}")
 
         on_crossroad = False
         for branch in branches:
-            if current_branch.decode('utf-8') not in branch:
+            if current_branch not in branch:
                 on_crossroad = True
                 break
 
         if on_crossroad is True:
             break
 
-        current_sha = subprocess.check_output(["git", "rev-parse", current_sha + b'^']).strip()
+        current_sha = (
+            subprocess.check_output(["git", "rev-parse", current_sha + "^"]).strip().decode("utf-8")
+        )
         logging.debug(f"Parent sha: {current_sha}")
 
     return current_sha
+
 
 def main(argv: Sequence[str] = None) -> int:
     """Main function."""
@@ -343,8 +400,9 @@ def main(argv: Sequence[str] = None) -> int:
     logger.debug(args)
 
     files = get_changed_files(
-        repo_path=args.repo_path, parent_branch=args.parent_branch,
-        include_merges=args.include_merges
+        repo_path=args.repo_path,
+        parent_branch=args.parent_branch,
+        include_merges=args.include_merges,
     )
     files = [f for f in files if f.startswith(args.module)]
     logger.debug(f"files to process: {len(files)}: {files}\n")
@@ -356,12 +414,13 @@ def main(argv: Sequence[str] = None) -> int:
         git_numbers = extract_linenumber(args.repo_path, f, args.parent_branch)
         # the coverage.xml removes the module name from path
         sanitized_name = f.replace(f"{args.module}/", "")
-        cov_numbers = extract_coverage(cov_report, sanitized_name, None if args.full_file_test else git_numbers)
+        cov_numbers = extract_coverage(
+            cov_report, sanitized_name, None if args.full_file_test else git_numbers
+        )
         statement_cov, branch_cov = calc_coverage(cov_numbers)
         changed_uncovered_lines = uncovered_changed_lines(
-            cov_numbers['statement']['miss'],
-            cov_numbers['branch']['miss'],
-            git_numbers)
+            cov_numbers["statement"]["miss"], cov_numbers["branch"]["miss"], list(git_numbers)
+        )
         no_fails = statement_cov * branch_cov in (1.0, -1.0)
         critical_fails = not no_fails and not is_skipped_file
 
@@ -380,7 +439,7 @@ def main(argv: Sequence[str] = None) -> int:
         if is_skipped_file:
             logger.info(f"The file is skipped and will not contribute to the error counter.")
             if logger.level > logging.DEBUG:
-                logger.info("") # Just add a new line
+                logger.info("")  # Just add a new line
                 continue
 
         logger.debug(f"git lines: {git_numbers}")
@@ -389,12 +448,16 @@ def main(argv: Sequence[str] = None) -> int:
         if no_fails:
             logger.info(f"File is fully covered.\n")
         else:
-            changed_uncovered_lines_msg = changed_uncovered_lines if changed_uncovered_lines != set() else "None"
+            changed_uncovered_lines_msg = (
+                changed_uncovered_lines if changed_uncovered_lines != set() else "None"
+            )
             logger.info(f"changed uncovered lines: {changed_uncovered_lines_msg}")
             logger.info(f"uncovered lines: {cov_numbers['statement']['miss']}")
             logger.info(f"uncovered branches: {cov_numbers['branch']['miss']}")
             logger.info(f"partially covered branches: {cov_numbers['branch']['partial']}")
-            logger.info(f"Statement coverage: {stringify_pass(statement_cov, args.coverage_cutoff)}")
+            logger.info(
+                f"Statement coverage: {stringify_pass(statement_cov, args.coverage_cutoff)}"
+            )
             logger.info(f"Branch coverage: {stringify_pass(branch_cov, args.coverage_cutoff)}\n")
 
         # Return back log level to default value

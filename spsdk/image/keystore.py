@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,14 +14,18 @@ from spsdk.utils.easy_enum import Enum
 
 class KeySourceType(Enum):
     """Device key source."""
-    OTP = (0, 'Device keys stored in OTP')
-    KEYSTORE = (1, 'Device keys stored in KeyStore')
+
+    OTP = (0, "Device keys stored in OTP")
+    KEYSTORE = (1, "Device keys stored in KeyStore")
 
 
 class KeyStore:
     """Provide info about KeyStore for MaterBootImage."""
+
     # size of key store in bytes
-    KEY_STORE_SIZE = 1424  # TODO size can be device-specific, the current value is valid for RT5xx and RT6xx
+    KEY_STORE_SIZE = (
+        1424  # TODO size can be device-specific, the current value is valid for RT5xx and RT6xx
+    )
 
     @property
     def key_source(self) -> KeySourceType:
@@ -37,8 +41,12 @@ class KeyStore:
         """
         if key_store:
             if len(key_store) != self.KEY_STORE_SIZE:
-                raise ValueError(f"Invalid key-store size, expected is {str(self.KEY_STORE_SIZE)} bytes")
-            assert key_source == KeySourceType.KEYSTORE, "KeyStore can be initialized only if key_source == KEYSTORE"
+                raise ValueError(
+                    f"Invalid key-store size, expected is {str(self.KEY_STORE_SIZE)} bytes"
+                )
+            assert (
+                key_source == KeySourceType.KEYSTORE
+            ), "KeyStore can be initialized only if key_source == KEYSTORE"
 
         self._key_source = key_source
         self._key_store = key_store
@@ -49,8 +57,10 @@ class KeyStore:
 
     def info(self) -> str:
         """Information about key store in text form."""
-        msg = f"Device key source:    {KeySourceType.name(self.key_source)}\n" + \
-              f"Device key store len: {str(len(self.export()))}"
+        msg = (
+            f"Device key source:    {KeySourceType.name(self.key_source)}\n"
+            + f"Device key store len: {str(len(self.export()))}"
+        )
         return msg
 
     @staticmethod

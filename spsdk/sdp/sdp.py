@@ -2,21 +2,21 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module implementing the SDP communication protocol."""
-
 import logging
-from typing import Optional, Tuple, Mapping
+import math
+from typing import Mapping, Optional, Tuple
 
-from .commands import CommandTag, CmdPacket, ResponseValue
+from .commands import CmdPacket, CommandTag, ResponseValue
 from .error_codes import StatusCode
-from .exceptions import SdpCommandError, SdpConnectionError
+from .exceptions import SdpCommandError, SdpConnectionError, SdpError
 from .interfaces import Interface
 
-logger = logging.getLogger('SDP')
+logger = logging.getLogger("SDP")
 
 
 ########################################################################################################################
@@ -27,13 +27,18 @@ class SDP:
 
     @property
     def status_code(self) -> StatusCode:
-        """Get status code of the last operation."""
+        """Get status code from SDP."""
         return self._status_code
 
     @property
-    def response_value(self) -> int:
-        """Get the response value from last operation."""
-        return self._response_value
+    def hab_status(self) -> int:
+        """Get the response value from hab."""
+        return self._hab_status
+
+    @property
+    def cmd_status(self) -> int:
+        """Get the response value from the command."""
+        return self._cmd_status
 
     @property
     def is_opened(self) -> bool:
@@ -49,12 +54,13 @@ class SDP:
         :param device: Interface to a device
         :param cmd_exception: True if commands should raise in exception, defaults to False
         """
-        self._response_value = 0
+        self._hab_status = 0
         self._cmd_exception = cmd_exception
         self._status_code = StatusCode.SUCCESS
+        self._cmd_status = 0
         self._device = device
 
-    def __enter__(self) -> 'SDP':
+    def __enter__(self) -> "SDP":
         self.open()
         return self
 
@@ -80,10 +86,10 @@ class SDP:
         :raises SdpConnectionError: Timeout or Connection error
         """
         if not self.is_opened:
-            logger.info('RX-CMD: Device Disconnected')
-            raise SdpConnectionError('Device Disconnected !')
+            logger.info("RX-CMD: Device Disconnected")
+            raise SdpConnectionError("Device Disconnected !")
 
-        logger.debug(f'TX-PACKET: {cmd_packet.info()}')
+        logger.debug(f"TX-PACKET: {cmd_packet.info()}")
         self._status_code = StatusCode.SUCCESS
 
         try:
@@ -91,12 +97,12 @@ class SDP:
             response = self._device.read()
         except Exception as e:
             logger.debug(e)
-            logger.info('RX-CMD: Timeout Error')
-            raise SdpConnectionError('Timeout Error')
+            logger.info("RX-CMD: Timeout Error")
+            raise SdpConnectionError("Timeout Error")
 
-        logger.info(f'RX-PACKET: {response.info()}')
+        logger.info(f"RX-PACKET: {response.info()}")
         if response.hab:
-            self._response_value = response.value
+            self._hab_status = response.value
             if response.value != ResponseValue.UNLOCKED:
                 self._status_code = StatusCode.HAB_IS_LOCKED
 
@@ -110,10 +116,10 @@ class SDP:
         """
         try:
             response = self._device.read()
-            logger.info(f'RX-PACKET: {response.info()}')
+            logger.info(f"RX-PACKET: {response.info()}")
         except:
-            logger.info('RX-CMD: Timeout Error')
-            raise SdpConnectionError('Timeout Error')
+            logger.info("RX-CMD: Timeout Error")
+            raise SdpConnectionError("Timeout Error")
 
         return response.value
 
@@ -126,21 +132,21 @@ class SDP:
         :raises SdpConnectionError: Timeout or Connection error
         """
         MAX_LENGTH = 64
-        data = b''
+        data = b""
         remaining = length - len(data)
         while remaining > 0:
             try:
                 self._device.expect_status = False
                 response = self._device.read(min(remaining, MAX_LENGTH))
             except:
-                logger.info('RX-CMD: Timeout Error')
-                raise SdpConnectionError('Timeout Error')
+                logger.info("RX-CMD: Timeout Error")
+                raise SdpConnectionError("Timeout Error")
 
             if not response.hab:
                 data += response.raw_data
             else:
-                logger.debug(f'RX-DATA: {response.info()}')
-                self._response_value = response.value
+                logger.debug(f"RX-DATA: {response.info()}")
+                self._hab_status = response.value
                 if response.value == ResponseValue.LOCKED:
                     self._status_code = StatusCode.HAB_IS_LOCKED
             remaining = length - len(data)
@@ -156,10 +162,10 @@ class SDP:
         :raises SdpConnectionError: Timeout or Connection error
         """
         if not self.is_opened:
-            logger.info('TX-DATA: Device Disconnected')
-            raise SdpConnectionError('Device Disconnected !')
+            logger.info("TX-DATA: Device Disconnected")
+            raise SdpConnectionError("Device Disconnected !")
 
-        logger.debug(f'TX-PACKET: {cmd_packet.info()}')
+        logger.debug(f"TX-PACKET: {cmd_packet.info()}")
         self._status_code = StatusCode.SUCCESS
         ret_val = True
 
@@ -171,32 +177,42 @@ class SDP:
             self._device.write(data)
 
             # Read HAB state (locked / unlocked)
-            response = self._device.read()
-            logger.debug(f'RX-DATA: {response.info()}')
-            self._response_value = response.value
+            hab_response = self._device.read()
+            logger.debug(f"RX-DATA: {hab_response.info()}")
+            self._hab_status = hab_response.value
             # TODO: Is this condition necessary?
-            if response.value != ResponseValue.UNLOCKED:
-                self._status_code = StatusCode.HAB_IS_LOCKED
+            if hab_response.value != ResponseValue.UNLOCKED:
+                self._hab_status = StatusCode.HAB_IS_LOCKED
 
             # Read Command Status
-            response = self._device.read()
-            logger.debug(f'RX-DATA: {response.info()}')
-            if cmd_packet.tag == CommandTag.WRITE_DCD and response.value != ResponseValue.WRITE_DATA_OK:
+            cmd_response = self._device.read()
+            logger.debug(f"RX-DATA: {cmd_response.info()}")
+            self._cmd_status = cmd_response.value
+            if (
+                cmd_packet.tag == CommandTag.WRITE_DCD
+                and cmd_response.value != ResponseValue.WRITE_DATA_OK
+            ):
                 self._status_code = StatusCode.WRITE_DCD_FAILURE
                 ret_val = False
-            elif cmd_packet.tag == CommandTag.WRITE_CSF and response.value != ResponseValue.WRITE_DATA_OK:
+            elif (
+                cmd_packet.tag == CommandTag.WRITE_CSF
+                and cmd_response.value != ResponseValue.WRITE_DATA_OK
+            ):
                 self._status_code = StatusCode.WRITE_CSF_FAILURE
                 ret_val = False
-            elif cmd_packet.tag == CommandTag.WRITE_FILE and response.value != ResponseValue.WRITE_FILE_OK:
+            elif (
+                cmd_packet.tag == CommandTag.WRITE_FILE
+                and cmd_response.value != ResponseValue.WRITE_FILE_OK
+            ):
                 self._status_code = StatusCode.WRITE_IMAGE_FAILURE
                 ret_val = False
 
         except:
-            logger.info('RX-CMD: Timeout Error')
-            raise SdpConnectionError('Timeout Error')
+            logger.info("RX-CMD: Timeout Error")
+            raise SdpConnectionError("Timeout Error")
 
         if not ret_val and self._cmd_exception:
-            raise SdpCommandError('SendData', self.status_code)
+            raise SdpCommandError("SendData", self.status_code)
 
         return ret_val
 
@@ -214,7 +230,9 @@ class SDP:
             return self._read_data(length)
         return None
 
-    def read_safe(self, address: int, length: int, data_format: int = 32) -> Optional[bytes]:
+    def read_safe(
+        self, address: int, length: int = None, data_format: int = 32, align_count: bool = False
+    ) -> Optional[bytes]:
         """Read value from reg/mem at specified address.
 
         This method is safe, because is validating input arguments and prevents fault execution.
@@ -222,16 +240,23 @@ class SDP:
         :param address: Start address of first register
         :param length: Count of bytes
         :param data_format: Register access format 8, 16, 32 bits
+        :param align_count: Align the count to data_format , default False
         :return: Return bytes if success else None.
-        :raises ValueError: If the address is not properly aligned
+        :raises SdpError: If the address is not properly aligned
         """
+        if data_format not in [8, 16, 32]:
+            raise SdpError(f"Invalid data format '{data_format}'. Valid options are 8, 16, 32")
         # Check if start address value is aligned
         if (address % (data_format // 8)) > 0:
-            raise ValueError(f"Address 0x{address:08X} not aligned to {data_format} bits")
-        # Align count value if doesn't
-        align = length % (data_format // 8)
-        if align > 0:
-            length += (data_format // 8) - align
+            raise SdpError(f"Address 0x{address:08X} not aligned to {data_format} bits")
+
+        # if length is not specified, use byte-size of data_format
+        length = length or data_format // 8
+
+        # Align length value if requested
+        if align_count:
+            byte_alignment = data_format // 8
+            length = math.ceil(length / byte_alignment) * byte_alignment
 
         return self.read(address, length, data_format)
 
@@ -245,7 +270,9 @@ class SDP:
         :return: Return True if success else False.
         :raises SdpCommandError: If command failed and the 'cmd_exception' is set to True
         """
-        logger.info(f"TX-CMD: Write(address=0x{address:08X}, value=0x{value:08X}, count={count}, format={data_format})")
+        logger.info(
+            f"TX-CMD: Write(address=0x{address:08X}, value=0x{value:08X}, count={count}, format={data_format})"
+        )
         cmd_packet = CmdPacket(CommandTag.WRITE_REGISTER, address, data_format, count, value)
         if not self._process_cmd(cmd_packet):
             return False
@@ -253,7 +280,7 @@ class SDP:
         if status != ResponseValue.WRITE_DATA_OK:
             self._status_code = StatusCode.WRITE_REGISTER_FAILURE
             if self._cmd_exception:
-                raise SdpCommandError('WriteRegister', self.status_code)
+                raise SdpCommandError("WriteRegister", self.status_code)
             return False
         return True
 
@@ -267,11 +294,13 @@ class SDP:
         :param count: Count of bytes (max 4)
         :param data_format: Register access format 8, 16, 32 bits
         :return: Return True if success else False.
-        :raises ValueError: If the address is not properly aligned
+        :raises SdpError: If the address is not properly aligned or invalid data_format
         """
+        if data_format not in [8, 16, 32]:
+            raise SdpError(f"Invalid data format '{data_format}'. Valid options are 8, 16, 32")
         # Check if start address value is aligned
         if (address % (data_format // 8)) > 0:
-            raise ValueError(f"Address 0x{address:08X} not aligned to {data_format} bits")
+            raise SdpError(f"Address 0x{address:08X} not aligned to {data_format} bits")
         # Align count value if doesn't
         align = count % (data_format // 8)
         if align > 0:
@@ -320,7 +349,7 @@ class SDP:
         :return: Return True if success else False.
         :raises SdpCommandError: If command failed and the 'cmd_exception' is set to True
         """
-        logger.info('TX-CMD: Skip DCD')
+        logger.info("TX-CMD: Skip DCD")
         cmd_packet = CmdPacket(CommandTag.SKIP_DCD_HEADER, 0, 0, 0)
         if not self._process_cmd(cmd_packet):
             return False
@@ -328,7 +357,7 @@ class SDP:
         if status != ResponseValue.SKIP_DCD_HEADER_OK:
             self._status_code = StatusCode.SKIP_DCD_HEADER_FAILURE
             if self._cmd_exception:
-                raise SdpCommandError('SkipDcdHeader', self.status_code)
+                raise SdpCommandError("SkipDcdHeader", self.status_code)
             return False
         return True
 
@@ -347,7 +376,7 @@ class SDP:
 
         :return: Return status value if success else None
         """
-        logger.info('TX-CMD: ReadStatus')
+        logger.info("TX-CMD: ReadStatus")
         if self._process_cmd(CmdPacket(CommandTag.ERROR_STATUS, 0, 0, 0)):
             return self._read_status()
         return None

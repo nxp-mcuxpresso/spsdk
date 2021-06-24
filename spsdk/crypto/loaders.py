@@ -8,17 +8,29 @@
 
 from typing import Callable, Any, Union
 
-from spsdk.crypto import default_backend, RSAPrivateKeyWithSerialization, RSAPublicKey, Certificate, \
-    load_pem_x509_certificate, load_der_x509_certificate, load_pem_public_key, load_der_public_key, \
-    load_pem_private_key, load_der_private_key, Encoding, EllipticCurvePrivateKeyWithSerialization, \
-    EllipticCurvePublicKey
+from spsdk.crypto import (
+    default_backend,
+    RSAPrivateKeyWithSerialization,
+    RSAPublicKey,
+    Certificate,
+    load_pem_x509_certificate,
+    load_der_x509_certificate,
+    load_pem_public_key,
+    load_der_public_key,
+    load_pem_private_key,
+    load_der_private_key,
+    Encoding,
+    EllipticCurvePrivateKeyWithSerialization,
+    EllipticCurvePublicKey,
+)
 
 PrivateKey = Union[RSAPrivateKeyWithSerialization, EllipticCurvePrivateKeyWithSerialization]
 PublicKey = Union[RSAPublicKey, EllipticCurvePublicKey]
 
 
-def load_private_key(file_path: str, password: bytes = None,
-                     encoding: Encoding = None) -> PrivateKey:
+def load_private_key(
+    file_path: str, password: bytes = None, encoding: Encoding = None
+) -> PrivateKey:
     """Load private key from file.
 
     :param file_path: path to file, where private key is stored
@@ -36,7 +48,7 @@ def load_private_key(file_path: str, password: bytes = None,
         """
         return {  # type: ignore
             Encoding.PEM: load_pem_private_key,
-            Encoding.DER: load_der_private_key
+            Encoding.DER: load_der_private_key,
         }[real_encoding](key_data, password, default_backend())
 
     return generic_load(file_path, solve)
@@ -59,7 +71,7 @@ def load_public_key(file_path: str, encoding: Encoding = None) -> PublicKey:
         """
         return {  # type: ignore
             Encoding.PEM: load_pem_public_key,
-            Encoding.DER: load_der_public_key
+            Encoding.DER: load_der_public_key,
         }[real_encoding](key_data, default_backend())
 
     return generic_load(file_path, solve)
@@ -82,7 +94,7 @@ def load_certificate(file_path: str, encoding: Encoding = None) -> Certificate:
         """
         return {  # type: ignore
             Encoding.PEM: load_pem_x509_certificate,
-            Encoding.DER: load_der_x509_certificate
+            Encoding.DER: load_der_x509_certificate,
         }[real_encoding](certificate_data, default_backend())
 
     return generic_load(file_path, solve)
@@ -110,7 +122,7 @@ def _get_encoding_type(file: str) -> Encoding:
     :return: encoding type (Encoding.PEM, Encoding.DER)
     """
     try:
-        with open(file, 'r') as f:
+        with open(file, "r") as f:
             f.read()
     except UnicodeDecodeError:
         encoding = Encoding.DER

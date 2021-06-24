@@ -6,52 +6,58 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """The test file for PFR API."""
 
-import os
 import filecmp
-from spsdk.pfr.exceptions import SPSDKPfrRotkhIsNotPresent
-import pytest
+import os
 
+import pytest
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from ruamel.yaml import YAML
 
+import spsdk
+from spsdk.apps.pfr import _extract_public_keys
 from spsdk.exceptions import SPSDKError
 from spsdk.pfr import (
     CFPA,
     CMPA,
     PfrConfiguration,
+    SPSDKPfrConfigError,
     SPSDKPfrConfigReadError,
-    SPSDKPfrConfigError
+    SPSDKPfrError,
+    SPSDKPfrRotkhIsNotPresent,
 )
-from spsdk.utils.misc import load_file
+from spsdk.pfr.pfr import BaseConfigArea
+from spsdk.utils.misc import load_file, use_working_directory
 
 
 def test_generate_cmpa(data_dir):
     """Test PFR tool - Generating CMPA binary."""
-    binary = load_file(data_dir, 'CMPA_96MHz.bin', mode='rb')
+    binary = load_file(data_dir, "CMPA_96MHz.bin", mode="rb")
     key = load_pem_private_key(
-        load_file(data_dir, 'selfsign_privatekey_rsa2048.pem', mode='rb'),
-        password=None, backend=default_backend())
+        load_file(data_dir, "selfsign_privatekey_rsa2048.pem", mode="rb"),
+        password=None,
+        backend=default_backend(),
+    )
 
-    pfr_cfg_json = PfrConfiguration(os.path.join(data_dir, 'cmpa_96mhz.json'))
-    cmpa_json = CMPA('lpc55s6x', user_config=pfr_cfg_json)
+    pfr_cfg_json = PfrConfiguration(os.path.join(data_dir, "cmpa_96mhz.json"))
+    cmpa_json = CMPA("lpc55s6x", user_config=pfr_cfg_json)
     assert binary == cmpa_json.export(add_seal=False, keys=[key.public_key()])
 
-    pfr_cfg_yml = PfrConfiguration(os.path.join(data_dir, 'cmpa_96mhz.yml'))
-    cmpa_yml = CMPA('lpc55s6x', user_config=pfr_cfg_yml)
+    pfr_cfg_yml = PfrConfiguration(os.path.join(data_dir, "cmpa_96mhz.yml"))
+    cmpa_yml = CMPA("lpc55s6x", user_config=pfr_cfg_yml)
     assert binary == cmpa_yml.export(add_seal=False, keys=[key.public_key()])
 
 
 def test_generate_cfpa(data_dir):
     """Test PFR tool - Generating CFPA binary."""
-    binary = load_file(data_dir, 'CFPA_test.bin', mode='rb')
+    binary = load_file(data_dir, "CFPA_test.bin", mode="rb")
 
-    pfr_cfg_json = PfrConfiguration(os.path.join(data_dir, 'cfpa_test.json'))
-    cfpa_json = CFPA('lpc55s6x', user_config=pfr_cfg_json)
+    pfr_cfg_json = PfrConfiguration(os.path.join(data_dir, "cfpa_test.json"))
+    cfpa_json = CFPA("lpc55s6x", user_config=pfr_cfg_json)
     assert cfpa_json.export(add_seal=True) == binary
 
-    pfr_cfg_yml = PfrConfiguration(os.path.join(data_dir, 'cfpa_test.yml'))
-    cfpa_yml = CFPA('lpc55s6x', user_config=pfr_cfg_yml)
+    pfr_cfg_yml = PfrConfiguration(os.path.join(data_dir, "cfpa_test.yml"))
+    cfpa_yml = CFPA("lpc55s6x", user_config=pfr_cfg_yml)
     assert cfpa_yml.export(add_seal=True) == binary
 
 
@@ -64,130 +70,253 @@ def test_supported_devices():
 
 def test_seal_cfpa():
     """Test PFR tool - Test CFPA seal."""
-    cfpa = CFPA('lpc55s6x')
+    cfpa = CFPA("lpc55s6x")
 
     data = cfpa.export(add_seal=False)
     assert len(data) == 512
-    assert data[0x1e0:] == bytes(32)
+    assert data[0x1E0:] == bytes(32)
 
     data = cfpa.export(add_seal=True)
     assert len(data) == 512
-    assert data[0x1e0:] == CFPA.MARK * 8
+    assert data[0x1E0:] == CFPA.MARK * 8
 
 
 def test_seal_cmpa_n4analog():
     """Test PFR tool - Test CMPA seal on Niobe 4Analog."""
-    cfpa = CFPA('lpc55s3x')
+    cfpa = CFPA("lpc55s3x")
 
     data = cfpa.export(add_seal=False)
     assert len(data) == 512
-    assert data[0x1e0:] == bytes(32)
+    assert data[0x1E0:] == bytes(32)
 
     data = cfpa.export(add_seal=True)
     assert len(data) == 512
-    assert data[0x1ec:0x1f0] == CFPA.MARK
+    assert data[0x1EC:0x1F0] == CFPA.MARK
 
 
 def test_basic_cmpa():
     """Test PFR tool - Test CMPA basis."""
-    CMPA('lpc55s6x')
+    CMPA("lpc55s6x")
 
 
 def test_config_cfpa():
     """Test PFR tool - Test CFPA configuration."""
-    cfpa = CFPA('lpc55s6x')
+    cfpa = CFPA("lpc55s6x")
     config = cfpa.generate_config()
     config2 = cfpa.generate_config(exclude_computed=False)
 
     assert config != config2
 
-    cfpa2 = CFPA('lpc55s6x', user_config=PfrConfiguration(config2))
-    cfpa2.parse(bytes(512), exclude_computed=False)
+    cfpa2 = CFPA("lpc55s6x", user_config=PfrConfiguration(config2))
+    cfpa2.parse(bytes(512))
     out = cfpa2.get_yaml_config(exclude_computed=False)
     assert out == config2
 
 
 def test_config_cmpa():
     """Test PFR tool - Test CMPA configuration."""
-    cmpa = CMPA('lpc55s6x')
+    cmpa = CMPA("lpc55s6x")
     config = cmpa.generate_config()
     config2 = cmpa.generate_config(exclude_computed=False)
 
     assert config != config2
 
-    cmpa2 = CMPA('lpc55s6x', user_config=PfrConfiguration(config2))
-    cmpa2.parse(bytes(512), exclude_computed=False)
+    cmpa2 = CMPA("lpc55s6x", user_config=PfrConfiguration(config2))
+    cmpa2.parse(bytes(512))
     out = cmpa2.get_yaml_config(exclude_computed=False)
 
     assert out == config2
+
 
 def test_config_cmpa_yml(tmpdir):
     """Test PFR tool - Test CMPA configuration from YAML."""
     yaml = YAML()
     yaml.indent(sequence=4, offset=2)
-    cmpa = CMPA('lpc55s6x')
+    cmpa = CMPA("lpc55s6x")
     config = cmpa.get_yaml_config(exclude_computed=True)
-    with open(tmpdir+"\\config.yml", 'w') as yml_file:
+    with open(tmpdir + "/config.yml", "w") as yml_file:
         yaml.dump(config, yml_file)
 
     config2 = cmpa.get_yaml_config(exclude_computed=False)
-    with open(tmpdir+"\\config2.yml", 'w') as yml_file:
+    with open(tmpdir + "/config2.yml", "w") as yml_file:
         yaml.dump(config2, yml_file)
 
-    assert not filecmp.cmp(tmpdir+"\\config.yml", tmpdir+"\\config2.yml")
+    assert not filecmp.cmp(tmpdir + "/config.yml", tmpdir + "/config2.yml")
 
-    cmpa2 = CMPA('lpc55s6x')
-    cmpa2_pfr_cfg = PfrConfiguration(tmpdir+"\\config.yml")
+    cmpa2 = CMPA("lpc55s6x")
+    cmpa2_pfr_cfg = PfrConfiguration(tmpdir + "/config.yml")
     cmpa2.set_config(cmpa2_pfr_cfg)
     out_config = cmpa2.get_yaml_config(exclude_computed=True)
-    with open(tmpdir+"\\out_config.yml", 'w') as yml_file:
+    with open(tmpdir + "/out_config.yml", "w") as yml_file:
         yaml.dump(out_config, yml_file)
 
-    assert filecmp.cmp(tmpdir+"\\config.yml", tmpdir+"\\out_config.yml")
+    assert filecmp.cmp(tmpdir + "/config.yml", tmpdir + "/out_config.yml")
 
-    cmpa2_pfr_cfg = PfrConfiguration(tmpdir+"\\config2.yml")
+    cmpa2_pfr_cfg = PfrConfiguration(tmpdir + "/config2.yml")
     cmpa2.set_config(cmpa2_pfr_cfg, raw=True)
     out_config2 = cmpa2.get_yaml_config(exclude_computed=False)
-    with open(tmpdir+"\\out_config2.yml", 'w') as yml_file:
+    with open(tmpdir + "/out_config2.yml", "w") as yml_file:
         yaml.dump(out_config2, yml_file)
 
-    assert filecmp.cmp(tmpdir+"\\config2.yml", tmpdir+"\\out_config2.yml")
+    assert filecmp.cmp(tmpdir + "/config2.yml", tmpdir + "/out_config2.yml")
+
 
 def test_load_config():
     """Test just initialization of PFR config."""
     assert PfrConfiguration()
 
+
+def test_load_config_initialized():
+    """Test initialization of PFR config by another PFR config."""
+    empty_cfg = PfrConfiguration()
+    new_cfg = PfrConfiguration(empty_cfg)
+    assert empty_cfg == new_cfg
+    new_cfg.device = "Test Device"
+    new_cfg.revision = "Test Revision"
+    new_cfg.revision = "Test Type"
+    new_cfg.settings = {"Reg": {"value": 0}}
+    new_cfg1 = PfrConfiguration(new_cfg)
+    assert new_cfg1 == new_cfg
+    new_cfg2 = PfrConfiguration(config=new_cfg, device="Dev", revision="Rev", cfg_type="Typ")
+    assert new_cfg2 != new_cfg
+    assert new_cfg2.device == "Dev"
+    assert new_cfg2.revision == "Rev"
+    assert new_cfg2.type == "Typ"
+
+
+def test_load_cfg_obsolete_data():
+    """Test of loading of obsolete style of data."""
+    cfg_dict = {"description": {"device": "dev", "revision": "rev", "type": "typ"}, "settings": {}}
+    assert PfrConfiguration(cfg_dict)
+    cfg_dict["settings"]["REG"] = "my_value"
+    cfg_dict["settings"]["REG1"] = 0
+    cfg = PfrConfiguration(cfg_dict)
+    assert cfg
+    assert cfg.settings["REG"]["value"] == "my_value"
+    assert cfg.settings["REG1"]["value"] == 0
+
+
+def test_load_cfg_obsolete_data1():
+    """Test of loading of obsolete style of data."""
+    cfg_dict = {"description": {"device": "dev", "revision": "rev", "type": "typ"}, "settings": {}}
+    assert PfrConfiguration(cfg_dict)
+    cfg_dict["settings"]["REG"] = 0
+    cfg = PfrConfiguration(cfg_dict)
+    assert cfg
+    assert cfg.settings["REG"]["value"] == 0
+
+
+def test_load_cfg_obsolete_data_bitfields():
+    """Test of loading of obsolete style of data."""
+    cfg_dict = {
+        "description": {"device": "dev", "revision": "rev", "type": "typ"},
+        "settings": {
+            "REG": {
+                "BITF1": "bitf_val1",
+                "BITF2": "bitf_val2",
+            }
+        },
+    }
+    cfg = PfrConfiguration(cfg_dict)
+    assert cfg
+    assert cfg.settings["REG"]["bitfields"]["BITF1"] == "bitf_val1"
+
+
+def test_load_cfg_obsolete_data_bitfields1():
+    """Test of loading of obsolete style of data."""
+    cfg_dict = {
+        "description": {"device": "dev", "revision": "rev", "type": "typ"},
+        "settings": {
+            "REG": [],
+            "REG1": {
+                "BITF1": "bitf_val1",
+                "BITF2": "bitf_val2",
+            },
+        },
+    }
+    cfg = PfrConfiguration(cfg_dict)
+    assert cfg
+    assert "REG" not in cfg.settings.keys()
+    assert cfg.settings["REG1"]["bitfields"]["BITF1"] == "bitf_val1"
+
+
+def test_load_cfg_none_obsolete():
+    """Test of loading of none obsolete style of data."""
+    cfg_dict = {
+        "description": {"device": "dev", "revision": "rev", "type": "typ"},
+        "settings": {
+            "REG": {
+                "bitfields": {
+                    "BITF1": "bitf_val1",
+                    "BITF2": "bitf_val2",
+                }
+            }
+        },
+    }
+    cfg = PfrConfiguration(cfg_dict)
+    assert cfg
+    assert cfg.settings["REG"]["bitfields"]["BITF1"] == "bitf_val1"
+
+
+def test_cfg_compare():
+    """Test the comparision capability of PFR configuration."""
+    assert PfrConfiguration() != 1
+    assert PfrConfiguration(device="1") != PfrConfiguration(device="2")
+    assert PfrConfiguration(revision="1") != PfrConfiguration(revision="2")
+    assert PfrConfiguration(cfg_type="1") != PfrConfiguration(cfg_type="2")
+    cfg_dict = {
+        "description": {"device": "dev", "revision": "rev", "type": "typ"},
+        "settings": {
+            "REG": {
+                "BITF1": "bitf_val1",
+                "BITF2": "bitf_val2",
+            }
+        },
+    }
+    cfg_dict2 = {
+        "description": {"device": "dev", "revision": "rev", "type": "typ"},
+        "settings": {
+            "REG": {
+                "BITF1": "bitf_val1",
+                "BITF2": "bitf_val2x",
+            }
+        },
+    }
+    assert PfrConfiguration(cfg_dict) != PfrConfiguration(cfg_dict2)
+
+
 def test_load_config_invalid(data_dir):
     """Test PFR tool - PFR Configuration Invalid cases."""
     with pytest.raises(SPSDKPfrConfigReadError):
-        PfrConfiguration(data_dir+"/invalid_file")
+        PfrConfiguration(data_dir + "/invalid_file")
 
     with pytest.raises(SPSDKPfrConfigReadError):
-        PfrConfiguration(data_dir+"/invalid_file.yml")
+        PfrConfiguration(data_dir + "/invalid_file.yml")
 
     with pytest.raises(SPSDKPfrConfigReadError):
-        PfrConfiguration(data_dir+"/invalid_file.json")
+        PfrConfiguration(data_dir + "/invalid_file.json")
 
     with pytest.raises(SPSDKPfrConfigReadError):
-        PfrConfiguration(data_dir+"/empty_json.json")
+        PfrConfiguration(data_dir + "/empty_json.json")
 
     with pytest.raises(SPSDKPfrConfigReadError):
-        PfrConfiguration(data_dir+"/empty_json1.json")
+        PfrConfiguration(data_dir + "/empty_json1.json")
 
     with pytest.raises(SPSDKPfrConfigReadError):
-        PfrConfiguration(data_dir+"/empty_yml.yml")
+        PfrConfiguration(data_dir + "/empty_yml.yml")
 
     with pytest.raises(SPSDKPfrConfigReadError):
-        PfrConfiguration(data_dir+"/empty_file")
+        PfrConfiguration(data_dir + "/empty_file")
+
 
 def test_set_config_invalid(data_dir):
     """Test invalid cases for set_config."""
     cmpa = CMPA(device="lpc55s6x")
-    cfg = PfrConfiguration(data_dir+"/bad_dev.yml")
+    cfg = PfrConfiguration(data_dir + "/bad_dev.yml")
     with pytest.raises(SPSDKPfrConfigError):
         cmpa.set_config(cfg)
 
-    cfg = PfrConfiguration(data_dir+"/bad_rev.yml")
+    cfg = PfrConfiguration(data_dir + "/bad_rev.yml")
     with pytest.raises(SPSDKPfrConfigError):
         cmpa.set_config(cfg)
 
@@ -202,46 +331,141 @@ def test_set_config_invalid(data_dir):
     cfg.device = cmpa.device
     cfg.revision = cmpa.revision
     cfg.type = "CMPA"
-    cfg.file_type = "INV"
+    cfg.settings = None
     with pytest.raises(SPSDKPfrConfigError):
         cmpa.set_config(cfg)
+
+
+def test_set_config_rev_latest(data_dir):
+    """Test invalid cases for set_config."""
+    pfr_cfg = PfrConfiguration(data_dir + "/latest_rev.yml")
+    cmpa = CMPA(user_config=pfr_cfg)
+    cmpa.set_config(pfr_cfg)
+    assert cmpa
+
 
 def test_invalid_computed_field_handler():
     """Test invalid case for computed filed handler."""
     cmpa = CMPA(device="lpc55s6x")
-    fields = {"test_field":"invalid_handler"}
+    fields = {"test_field": "invalid_handler"}
 
     with pytest.raises(SPSDKError):
-        cmpa.reg_computed_fields_handler(b'\x00', fields)
+        cmpa.reg_computed_fields_handler(b"\x00", fields)
+
 
 def test_get_bitfields_ignore():
     """Test invalid case for computed filed handler."""
     cmpa = CMPA(device="lpc55s6x")
-    cmpa.config.config.pop('ignored_fields', None)
+    cmpa.config.config.pop("ignored_fields", None)
     assert cmpa.generate_config()
+
 
 def test_json_yml_configs(data_dir):
     """Test of JSON and YML configuration, it must be equal."""
-    cmpa_json = CMPA('lpc55s6x', user_config=PfrConfiguration(f"{data_dir}/cmpa_96mhz.json"))
-    cmpa_yml = CMPA('lpc55s6x', user_config=PfrConfiguration(f"{data_dir}/cmpa_96mhz.yml"))
+    cmpa_json = CMPA("lpc55s6x", user_config=PfrConfiguration(f"{data_dir}/cmpa_96mhz.json"))
+    cmpa_yml = CMPA("lpc55s6x", user_config=PfrConfiguration(f"{data_dir}/cmpa_96mhz.yml"))
 
     assert cmpa_yml.get_yaml_config(False) == cmpa_json.get_yaml_config(False)
-    assert cmpa_yml.get_json_config(False) == cmpa_json.get_json_config(False)
+    assert cmpa_yml.get_yaml_config(True) == cmpa_json.get_yaml_config(True)
 
-def test_without_ignored_bitfields(data_dir):
-    """Test of CMPA configuration without ignored bitfields."""
-    cmpa = CMPA('lpc55s6x', user_config=PfrConfiguration(f"{data_dir}/cmpa_96mhz.yml"))
-
-    cmpa_with_ignored_bitfields_yml = cmpa.get_yaml_config(False)
-    cmpa_with_ignored_bitfields_json = cmpa.get_json_config(False)
-    cmpa.config.config.pop("ignored_fields")
-    cmpa_without_ignored_bitfields_yml = cmpa.get_yaml_config(False)
-    cmpa_without_ignored_bitfields_json = cmpa.get_json_config(False)
-    assert cmpa_with_ignored_bitfields_yml != cmpa_without_ignored_bitfields_yml
-    assert cmpa_with_ignored_bitfields_json != cmpa_without_ignored_bitfields_json
 
 def test_missing_rotkh():
     """Simple test to check right functionality of missing ROTKH."""
-    cfpa = CFPA('lpc55s6x')
+    cfpa = CFPA("lpc55s6x")
     with pytest.raises(SPSDKPfrRotkhIsNotPresent):
         cfpa.export(keys=["Invalid"])
+
+
+def test_n4a_binary_ec256(data_dir):
+    """Test silicon niobe4analog EC 256. Binary generation/ROTKH computation"""
+    cfpa = CMPA("lpc55s3x")
+    keys_path = [
+        data_dir + "/ec_secp256r1_cert0.pem",
+        data_dir + "/ec_secp256r1_cert1.pem",
+        data_dir + "/ec_secp256r1_cert2.pem",
+        data_dir + "/ec_secp256r1_cert3.pem",
+    ]
+
+    data = cfpa.export(keys=_extract_public_keys(keys_path, password=None))
+
+    assert len(data) == 512
+    with open(data_dir + "/n4a_CMPA.bin", "rb") as binary:
+        assert data == binary.read()
+
+
+def test_n4a_binary_ec384(data_dir):
+    """Test silicon niobe4analog EC 384. Binary generation/ROTKH computation"""
+    cfpa = CMPA("lpc55s3x")
+    keys_path = [
+        data_dir + "/ec_secp384r1_cert0.pem",
+        data_dir + "/ec_secp384r1_cert1.pem",
+        data_dir + "/ec_secp384r1_cert2.pem",
+        data_dir + "/ec_secp384r1_cert3.pem",
+    ]
+
+    data = cfpa.export(keys=_extract_public_keys(keys_path, password=None))
+
+    assert len(data) == 512
+    with open(data_dir + "/n4a_CMPA_384.bin", "rb") as binary:
+        assert data == binary.read()
+
+
+def test_invalid_key_size(data_dir):
+    """Test Invalid Key size for ROTKH computation"""
+    cfpa = CMPA("lpc55s6x")
+    keys_path = [
+        data_dir + "/ec_secp384r1_cert0.pem",
+        data_dir + "/ec_secp384r1_cert1.pem",
+        data_dir + "/ec_secp384r1_cert2.pem",
+        data_dir + "/ec_secp384r1_cert3.pem",
+    ]
+
+    with pytest.raises(SPSDKPfrError):
+        cfpa.export(keys=_extract_public_keys(keys_path, password=None))
+
+
+def test_config_cmpa_without_bc(data_dir):
+    """Test PFR tool - Test CMPA configuration."""
+    bc_pfr_data = CMPA.CONFIG_DIR
+    CMPA.CONFIG_DIR = data_dir
+    cmpa = CMPA("lpc55s6x")
+    CMPA.CONFIG_DIR = bc_pfr_data
+    assert cmpa.bc_cfg == None
+
+
+@pytest.mark.parametrize(
+    "dev,type,ret",
+    [
+        ("Valid", "Valid", None),
+        (None, "Valid", "device"),
+        ("Valid", None, "type"),
+    ],
+)
+def test_config_is_invalid(dev, type, ret):
+    """Simple test to check is_invalid functionality."""
+    cfg = PfrConfiguration()
+    cfg.device = dev
+    cfg.type = type
+    res = cfg.is_invalid()
+    if ret:
+        assert res
+        assert ret in res
+    else:
+        assert not res
+
+
+def test_config_various_revisions():
+    """Simple test to check is_invalid functionality."""
+    cfg = PfrConfiguration()
+    cfg.device = "lpc55s6x"
+    cfg.revision = None
+    cfg.type = "CMPA"
+    cfg.settings = {"BOOT_CFG": {"value": 0}}
+    cmpa = CMPA(user_config=cfg)
+    assert cmpa
+    assert cmpa.revision
+    cmpa.set_config(cfg)
+    assert cmpa.revision
+    cfg.revision = "latest"
+    cmpa.set_config(cfg)
+    assert cmpa.revision

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,10 +11,9 @@ import pytest
 from spsdk.image import CmdWriteData, CmdNop, EnumWriteOps
 
 
-@pytest.mark.parametrize("input_data", [
-    [(0, 1)],  # input data as list
-    ((0, 1),)  # input data as tuple
-])
+@pytest.mark.parametrize(
+    "input_data", [[(0, 1)], ((0, 1),)]  # input data as list  # input data as tuple
+)
 def test_write_value_cmd_basic(input_data):
     """ Basic test with input data in format: list """
     cmd = CmdWriteData(data=input_data)
@@ -48,7 +47,7 @@ def test_write_value_cmd_clear():
     cmd = CmdWriteData()
     assert cmd._header.length == 4
     assert cmd._header.size == 4
-    cmd.append(0xff, 5)
+    cmd.append(0xFF, 5)
     assert cmd._header.length == 12
     assert cmd._header.size == 4
     cmd.clear()

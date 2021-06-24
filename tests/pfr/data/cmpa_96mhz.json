@@ -1,6 +1,6 @@
 {
   "device": "lpc55s6x",
-  "revision": "a1",
+  "revision": "1b",
   "type": "cmpa",
   "settings": {
     "BOOT_CFG": {
@@ -12,18 +12,18 @@
       "SPNIDEN": "0b1",
       "SPIDEN": "0b1",
       "TAPEN": "0b1",
-      "CPU1_DBGEN": "0b1",
+      "MCM33_DBGEN": "0b1",
       "ISP_CMD_EN": "0b1",
-      "PMCMD_EN": "0b1",
-      "CPU1_NIDEN": "0b1"
+      "FA_ME_CMD_EN": "0b1",
+      "MCM33_NIDEN": "0b1"
     },
     "CC_SOCU_DFLT": {
       "NIDEN": "0b1",
       "DBGEN": "0b1",
       "SPNIDEN": "0b1",
       "SPIDEN": "0b1",
-      "CPU1_DBGEN": "0b1",
-      "CPU1_NIDEN": "0b1"
+      "MCM33_DBGEN": "0b1",
+      "MCM33_NIDEN": "0b1"
     },
     "SECURE_BOOT_CFG": {
       "SKIP_DICE": "0b01",

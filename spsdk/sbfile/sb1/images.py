@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,13 +24,18 @@ from ..misc import BcdVersion3Format, SecBootBlckSize, BcdVersion3
 class SecureBootV1(BaseClass):
     """SB file 1.x."""
 
-    def __init__(self, version: str = '1.0', flags: int = 0, drive_tag: int = 0,
-                 product_version: BcdVersion3Format = BcdVersion3.DEFAULT,
-                 component_version: BcdVersion3Format = BcdVersion3.DEFAULT,
-                 dek: Optional[bytes] = None,
-                 mac: Optional[bytes] = None,
-                 digest: bytes = b'\0' * 20,
-                 timestamp: Optional[datetime] = None):
+    def __init__(
+        self,
+        version: str = "1.0",
+        flags: int = 0,
+        drive_tag: int = 0,
+        product_version: BcdVersion3Format = BcdVersion3.DEFAULT,
+        component_version: BcdVersion3Format = BcdVersion3.DEFAULT,
+        dek: Optional[bytes] = None,
+        mac: Optional[bytes] = None,
+        digest: bytes = b"\0" * 20,
+        timestamp: Optional[datetime] = None,
+    ):
         """Initialize Secure Boot Image V1.x.
 
         :param version: string in format #.#
@@ -48,10 +53,15 @@ class SecureBootV1(BaseClass):
         """
         self._dek = dek if dek else crypto_backend().random_bytes(32)
         self._mac = mac if mac else crypto_backend().random_bytes(32)
-        self._header = SecureBootHeaderV1(version=version, product_version=product_version,
-                                          component_version=component_version,
-                                          flags=flags, drive_tag=drive_tag, digest=digest,
-                                          timestamp=timestamp)
+        self._header = SecureBootHeaderV1(
+            version=version,
+            product_version=product_version,
+            component_version=component_version,
+            flags=flags,
+            drive_tag=drive_tag,
+            digest=digest,
+            timestamp=timestamp,
+        )
         self._sections_hdr_table: List[SectionHeaderItemV1] = list()
         self._sections: List[BootSectionV1] = []
         self._signature = None
@@ -114,7 +124,7 @@ class SecureBootV1(BaseClass):
         :raise ValueError: if the settings is not consistent
         """
         if not self._sections:
-            raise ValueError('At least one section must be defined')
+            raise ValueError("At least one section must be defined")
 
     def update(self) -> None:
         """Update content."""
@@ -129,8 +139,11 @@ class SecureBootV1(BaseClass):
                 last = False
 
         # update section header table
-        ofs_blocks = SecBootBlckSize.to_num_blocks(self._header.size + len(self._sections) * SectionHeaderItemV1.SIZE +
-                                                   BootSectionHeaderV1.SIZE)
+        ofs_blocks = SecBootBlckSize.to_num_blocks(
+            self._header.size
+            + len(self._sections) * SectionHeaderItemV1.SIZE
+            + BootSectionHeaderV1.SIZE
+        )
         new_hdr_table: List[SectionHeaderItemV1] = list()
         for sect in self._sections:
             sect_blcks = SecBootBlckSize.to_num_blocks(sect.size - BootSectionHeaderV1.SIZE)
@@ -142,8 +155,12 @@ class SecureBootV1(BaseClass):
         # update image size
         self._header.image_blocks = SecBootBlckSize.to_num_blocks(self.size)
 
-    def export(self, header_padding8: Optional[bytes] = None, auth_padding: Optional[bytes] = None,
-               dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(
+        self,
+        header_padding8: Optional[bytes] = None,
+        auth_padding: Optional[bytes] = None,
+        dbg_info: DebugInfo = DebugInfo.disabled(),
+    ) -> bytes:
         """Serialization to binary form.
 
         :param header_padding8: optional header padding, 8-bytes; recommended to use None to apply random value
@@ -153,23 +170,23 @@ class SecureBootV1(BaseClass):
         """
         self.update()
         self.validate()
-        dbg_info.append_section('SB-FILE-1.x')
+        dbg_info.append_section("SB-FILE-1.x")
         data = self._header.export(padding8=header_padding8, dbg_info=dbg_info)
         # header table
-        dbg_info.append_section('Sections-Header-Table')
+        dbg_info.append_section("Sections-Header-Table")
         for sect_hdr in self._sections_hdr_table:
             sect_hdr_data = sect_hdr.export()
-            dbg_info.append_binary_data('Section-Header-Item', sect_hdr_data)
+            dbg_info.append_binary_data("Section-Header-Item", sect_hdr_data)
             data += sect_hdr_data
         # sections
-        dbg_info.append_section('Sections')
+        dbg_info.append_section("Sections")
         for sect in self._sections:
             sect_data = sect.export(dbg_info)
             assert len(sect_data) == sect.size
             data += sect_data
         # authentication: SHA1
-        auth_code = crypto_backend().hash(data, 'sha1')
-        dbg_info.append_binary_section('SHA1', auth_code)
+        auth_code = crypto_backend().hash(data, "sha1")
+        dbg_info.append_binary_section("SHA1", auth_code)
         data += auth_code
         # padding
         padding_len = align(len(auth_code), SecBootBlckSize.BLOCK_SIZE) - len(auth_code)
@@ -177,11 +194,11 @@ class SecureBootV1(BaseClass):
             auth_padding = crypto_backend().random_bytes(padding_len)
         assert padding_len == len(auth_padding)
         data += auth_padding
-        dbg_info.append_binary_section('padding', auth_padding)
+        dbg_info.append_binary_section("padding", auth_padding)
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'SecureBootV1':
+    def parse(cls, data: bytes, offset: int = 0) -> "SecureBootV1":
         """Convert binary data into the instance (deserialization).
 
         :param data: given binary data to be converted
@@ -207,8 +224,8 @@ class SecureBootV1(BaseClass):
             obj.append(boot_sect)
             cur_pos += boot_sect.size
         # authentication code
-        sha1_auth = crypto_backend().hash(data[offset:cur_pos], 'sha1')
-        if sha1_auth != data[cur_pos: cur_pos + len(sha1_auth)]:
-            raise ValueError('Authentication failure: digest does not match')
+        sha1_auth = crypto_backend().hash(data[offset:cur_pos], "sha1")
+        if sha1_auth != data[cur_pos : cur_pos + len(sha1_auth)]:
+            raise ValueError("Authentication failure: digest does not match")
         # done
         return obj

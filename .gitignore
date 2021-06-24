@@ -122,3 +122,6 @@ venv*
 # IDE
 .vscode
 .idea
+
+# PyPI
+pip-wheel-metadata

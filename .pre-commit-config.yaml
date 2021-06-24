@@ -7,3 +7,11 @@ repos:
         name: Check this year's Copyright
         entry: python tools/checker_copyright_year.py
         language: system
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
+  - repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort

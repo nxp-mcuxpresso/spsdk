@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -34,8 +34,13 @@ class SBV2xAdvancedParams:
         nonce[13] &= 0x7F
         return bytes(nonce)
 
-    def __init__(self, dek: Optional[bytes] = None, mac: Optional[bytes] = None, nonce: Optional[bytes] = None,
-                 timestamp: Optional[datetime] = None):
+    def __init__(
+        self,
+        dek: Optional[bytes] = None,
+        mac: Optional[bytes] = None,
+        nonce: Optional[bytes] = None,
+        timestamp: Optional[datetime] = None,
+    ):
         """Initialize SBV2xAdvancedParams.
 
         :param dek: DEK key
@@ -78,6 +83,7 @@ class SBV2xAdvancedParams:
 ########################################################################################################################
 class BootImageV20(BaseClass):
     """Boot Image V2.0 class."""
+
     # Image specific data
     # size of the MAC key
     HEADER_MAC_SIZE = 32
@@ -86,9 +92,16 @@ class BootImageV20(BaseClass):
 
     KEY_BLOB_SIZE = 80
 
-    def __init__(self, signed: bool, kek: bytes, *sections: BootSectionV2,
-                 product_version: str = '1.0.0', component_version: str = '1.0.0',
-                 build_number: int = 0, advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams()) -> None:
+    def __init__(
+        self,
+        signed: bool,
+        kek: bytes,
+        *sections: BootSectionV2,
+        product_version: str = "1.0.0",
+        component_version: str = "1.0.0",
+        build_number: int = 0,
+        advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams(),
+    ) -> None:
         """Initialize Secure Boot Image V2.0.
 
         :param signed: True if image is signed, False otherwise
@@ -108,9 +121,15 @@ class BootImageV20(BaseClass):
         self._dek: bytes = advanced_params.dek
         self._mac: bytes = advanced_params.mac
         assert len(self._dek) == self.HEADER_MAC_SIZE and len(self._mac) == self.HEADER_MAC_SIZE
-        self._header = ImageHeaderV2(version='2.0', product_version=product_version,
-                                     component_version=component_version, build_number=build_number, flags=flags,
-                                     nonce=advanced_params.nonce, timestamp=advanced_params.timestamp)
+        self._header = ImageHeaderV2(
+            version="2.0",
+            product_version=product_version,
+            component_version=component_version,
+            build_number=build_number,
+            flags=flags,
+            nonce=advanced_params.nonce,
+            timestamp=advanced_params.timestamp,
+        )
         self._cert_section: Optional[CertSectionV2] = None
         self._boot_sections: List[BootSectionV2] = []
         # Generate nonce
@@ -247,7 +266,9 @@ class BootImageV20(BaseClass):
         self._header.header_blocks = calc_cypher_block_count(self._header.SIZE)
         self._header.max_section_mac_count = 0
         if self.signed:
-            self._header.offset_to_certificate_block = self._header.SIZE + self.HEADER_MAC_SIZE + self.KEY_BLOB_SIZE
+            self._header.offset_to_certificate_block = (
+                self._header.SIZE + self.HEADER_MAC_SIZE + self.KEY_BLOB_SIZE
+            )
             self._header.offset_to_certificate_block += CmdHeader.SIZE + CertSectionV2.HMAC_SIZE * 2
             self._header.max_section_mac_count = 1
         for boot_sect in self._boot_sections:
@@ -285,7 +306,7 @@ class BootImageV20(BaseClass):
             raise TypeError()
         duplicate_uid = find_first(self._boot_sections, lambda bs: bs.uid == section.uid)
         if duplicate_uid is not None:
-            raise ValueError(f'Boot section with duplicate UID: {str(section.uid)}')
+            raise ValueError(f"Boot section with duplicate UID: {str(section.uid)}")
         self._boot_sections.append(section)
 
     def export(self, padding: Optional[bytes] = None) -> bytes:
@@ -298,7 +319,7 @@ class BootImageV20(BaseClass):
         assert len(self.dek) == 32 and len(self.mac) == 32
         # validate params
         if not self._boot_sections:
-            raise ValueError('No boot section')
+            raise ValueError("No boot section")
         if self.signed and (self._cert_section is None):
             raise ValueError("Certificate section is required for signed images")
         # update internals
@@ -326,16 +347,18 @@ class BootImageV20(BaseClass):
         if self.signed:
             private_key_pem_data = self.private_key_pem_data
             if private_key_pem_data is None:
-                raise ValueError('Private key not assigned, cannot sign the image')
+                raise ValueError("Private key not assigned, cannot sign the image")
             certificate_block = self.cert_block
-            assert (certificate_block is not None) and certificate_block.verify_private_key(private_key_pem_data)
+            assert (certificate_block is not None) and certificate_block.verify_private_key(
+                private_key_pem_data
+            )
             data += crypto_backend().rsa_sign(private_key_pem_data, data)
         assert len(data) == self.raw_size
         return data
 
     # pylint: disable=too-many-locals
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, kek: bytes = bytes()) -> 'BootImageV20':
+    def parse(cls, data: bytes, offset: int = 0, kek: bytes = bytes()) -> "BootImageV20":
         """Parse image from bytes.
 
         :param data: Raw data of parsed image
@@ -346,13 +369,13 @@ class BootImageV20(BaseClass):
         :raise Exception: raised when there is invalid header version
         :raise Exception: raised when signature is incorrect
         """
-        assert kek, 'kek cannot be empty'
+        assert kek, "kek cannot be empty"
         index = offset
-        header_raw_data = data[index: index + ImageHeaderV2.SIZE]
+        header_raw_data = data[index : index + ImageHeaderV2.SIZE]
         index += ImageHeaderV2.SIZE
-        header_mac_data = data[index: index + cls.HEADER_MAC_SIZE]
+        header_mac_data = data[index : index + cls.HEADER_MAC_SIZE]
         index += cls.HEADER_MAC_SIZE
-        key_blob = data[index: index + cls.KEY_BLOB_SIZE]
+        key_blob = data[index : index + cls.KEY_BLOB_SIZE]
         index += cls.KEY_BLOB_SIZE
         key_blob_unwrap = crypto_backend().aes_key_unwrap(kek, key_blob[:-8])
         dek = key_blob_unwrap[:32]
@@ -362,8 +385,8 @@ class BootImageV20(BaseClass):
             raise Exception()
         # Parse Header
         header = ImageHeaderV2.parse(header_raw_data)
-        if header.version != '2.0':
-            raise Exception(f'Invalid Header Version: {header.version} instead 2.0')
+        if header.version != "2.0":
+            raise Exception(f"Invalid Header Version: {header.version} instead 2.0")
         image_size = header.image_blocks * 16
         # Initialize counter
         assert header.nonce
@@ -371,21 +394,26 @@ class BootImageV20(BaseClass):
         counter.increment(calc_cypher_block_count(index - offset))
         # ...
         signed = header.flags == 0x08
-        adv_params = SBV2xAdvancedParams(dek=dek, mac=mac, nonce=header.nonce, timestamp=header.timestamp)
-        obj = cls(signed,
-                  kek=kek,
-                  product_version=str(header.product_version),
-                  component_version=str(header.component_version),
-                  build_number=header.build_number,
-                  advanced_params=adv_params)
+        adv_params = SBV2xAdvancedParams(
+            dek=dek, mac=mac, nonce=header.nonce, timestamp=header.timestamp
+        )
+        obj = cls(
+            signed,
+            kek=kek,
+            product_version=str(header.product_version),
+            component_version=str(header.component_version),
+            build_number=header.build_number,
+            advanced_params=adv_params,
+        )
         # Parse Certificate section
         if header.flags == 0x08:
             cert_sect = CertSectionV2.parse(data, index, dek=dek, mac=mac, counter=counter)
             obj._cert_section = cert_sect
             index += cert_sect.raw_size
             # Check Signature
-            if not cert_sect.cert_block.verify_data(data[offset + image_size:],
-                                                    data[offset: offset + image_size]):
+            if not cert_sect.cert_block.verify_data(
+                data[offset + image_size :], data[offset : offset + image_size]
+            ):
                 raise Exception()
         # Parse Boot Sections
         while index < (image_size + offset):
@@ -400,13 +428,20 @@ class BootImageV20(BaseClass):
 ########################################################################################################################
 class BootImageV21(BaseClass):
     """Boot Image V2.1 class."""
+
     # Image specific data
     HEADER_MAC_SIZE = 32
     KEY_BLOB_SIZE = 80
 
-    def __init__(self, kek: bytes, *sections: BootSectionV2,
-                 product_version: str = '1.0.0', component_version: str = '1.0.0',
-                 build_number: int = 0, advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams()) -> None:
+    def __init__(
+        self,
+        kek: bytes,
+        *sections: BootSectionV2,
+        product_version: str = "1.0.0",
+        component_version: str = "1.0.0",
+        build_number: int = 0,
+        advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams(),
+    ) -> None:
         """Initialize Secure Boot Image V2.1.
 
         :param kek: key to wrap DEC and MAC keys
@@ -419,12 +454,20 @@ class BootImageV21(BaseClass):
         :param sections: Boot sections
         """
         self._kek = kek
-        self._private_key_pem_data: Optional[bytes] = None  # this should be assigned for export, not needed for parsing
+        self._private_key_pem_data: Optional[
+            bytes
+        ] = None  # this should be assigned for export, not needed for parsing
         self._dek = advanced_params.dek
         self._mac = advanced_params.mac
-        self._header = ImageHeaderV2(version='2.1', product_version=product_version,
-                                     component_version=component_version, build_number=build_number, flags=0x08,
-                                     nonce=advanced_params.nonce, timestamp=advanced_params.timestamp)
+        self._header = ImageHeaderV2(
+            version="2.1",
+            product_version=product_version,
+            component_version=component_version,
+            build_number=build_number,
+            flags=0x08,
+            nonce=advanced_params.nonce,
+            timestamp=advanced_params.timestamp,
+        )
         self._cert_block: Optional[CertBlockV2] = None
         self._boot_sections: List[BootSectionV2] = []
         # ...
@@ -545,7 +588,9 @@ class BootImageV21(BaseClass):
         # ...
         self._header.image_blocks = calc_cypher_block_count(self.raw_size)
         self._header.header_blocks = calc_cypher_block_count(self._header.SIZE)
-        self._header.offset_to_certificate_block = self._header.SIZE + self.HEADER_MAC_SIZE + self.KEY_BLOB_SIZE
+        self._header.offset_to_certificate_block = (
+            self._header.SIZE + self.HEADER_MAC_SIZE + self.KEY_BLOB_SIZE
+        )
         # Get HMAC count
         self._header.max_section_mac_count = 0
         for boot_sect in self._boot_sections:
@@ -583,8 +628,9 @@ class BootImageV21(BaseClass):
         self._boot_sections.append(section)
 
     # pylint: disable=too-many-locals
-    def export(self, padding: Optional[bytes] = None,
-               dbg_info: Optional[List[str]] = None) -> bytes:
+    def export(
+        self, padding: Optional[bytes] = None, dbg_info: Optional[List[str]] = None
+    ) -> bytes:
         """Serialize image object.
 
         :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
@@ -598,63 +644,77 @@ class BootImageV21(BaseClass):
         if not self._boot_sections:
             raise ValueError("At least one Boot Section must be added")
         if self.cert_block is None:
-            raise ValueError('Certificate is not assigned')
+            raise ValueError("Certificate is not assigned")
         if self.private_key_pem_data is None:
-            raise ValueError('Private key not assigned, cannot sign the image')
+            raise ValueError("Private key not assigned, cannot sign the image")
         # Update internals
         if dbg_info is not None:
-            dbg_info.append('[sb_file]')
+            dbg_info.append("[sb_file]")
         bs_dbg_info: Optional[List[str]] = list() if dbg_info else None
         self.update()
         # Export Boot Sections
         bs_data = bytes()
         # TODO: implement helper method for get key size in bytes. Now is working only with internal backend
-        bs_offset = (ImageHeaderV2.SIZE + self.HEADER_MAC_SIZE + self.KEY_BLOB_SIZE + self.cert_block.raw_size +
-                     self.cert_block.signature_size)
+        bs_offset = (
+            ImageHeaderV2.SIZE
+            + self.HEADER_MAC_SIZE
+            + self.KEY_BLOB_SIZE
+            + self.cert_block.raw_size
+            + self.cert_block.signature_size
+        )
         assert self._header.nonce
         counter = Counter(self._header.nonce, calc_cypher_block_count(bs_offset))
         for sect in self._boot_sections:
-            bs_data += sect.export(dek=self.dek, mac=self.mac, counter=counter, dbg_info=bs_dbg_info)
+            bs_data += sect.export(
+                dek=self.dek, mac=self.mac, counter=counter, dbg_info=bs_dbg_info
+            )
         # Export Header
         signed_data = self._header.export(padding=padding)
         if dbg_info:
-            dbg_info.append('[header]')
+            dbg_info.append("[header]")
             dbg_info.append(signed_data.hex())
         #  Add HMAC data
         first_bs_hmac_count = self._boot_sections[0].hmac_count
-        hmac_data = bs_data[CmdHeader.SIZE: CmdHeader.SIZE + (first_bs_hmac_count * 32) + 32]
+        hmac_data = bs_data[CmdHeader.SIZE : CmdHeader.SIZE + (first_bs_hmac_count * 32) + 32]
         hmac = crypto_backend().hmac(self.mac, hmac_data)
         signed_data += hmac
         if dbg_info:
-            dbg_info.append('[hmac]')
+            dbg_info.append("[hmac]")
             dbg_info.append(hmac.hex())
         # Add KeyBlob data
         key_blob = crypto_backend().aes_key_wrap(self.kek, self.dek + self.mac)
-        key_blob += b'\00' * (self.KEY_BLOB_SIZE - len(key_blob))
+        key_blob += b"\00" * (self.KEY_BLOB_SIZE - len(key_blob))
         signed_data += key_blob
         if dbg_info:
-            dbg_info.append('[key_blob]')
+            dbg_info.append("[key_blob]")
             dbg_info.append(key_blob.hex())
         # Add Certificates data
         signed_data += self.cert_block.export()
         if dbg_info:
-            dbg_info.append('[cert_block]')
+            dbg_info.append("[cert_block]")
             dbg_info.append(self.cert_block.export().hex())
         # Add Signature data
-        assert self.cert_block.verify_private_key(self.private_key_pem_data)  # verify private key matches certificate
+        assert self.cert_block.verify_private_key(
+            self.private_key_pem_data
+        )  # verify private key matches certificate
         signature = crypto_backend().rsa_sign(self.private_key_pem_data, signed_data)
         if dbg_info:
-            dbg_info.append('[signature]')
+            dbg_info.append("[signature]")
             dbg_info.append(signature.hex())
-            dbg_info.append('[boot_sections]')
+            dbg_info.append("[boot_sections]")
             assert bs_dbg_info
             dbg_info.extend(bs_dbg_info)
         return signed_data + signature + bs_data
 
     # pylint: disable=too-many-locals
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, kek: bytes = bytes(),
-              plain_sections: bool = False) -> 'BootImageV21':
+    def parse(
+        cls,
+        data: bytes,
+        offset: int = 0,
+        kek: bytes = bytes(),
+        plain_sections: bool = False,
+    ) -> "BootImageV21":
         """Parse image from bytes.
 
         :param data: Raw data of parsed image
@@ -665,13 +725,13 @@ class BootImageV21(BaseClass):
         :raise Exception: raised when header is in incorrect format
         :raise Exception: raised when signature is incorrect
         """
-        assert kek, 'kek cannot be empty'
+        assert kek, "kek cannot be empty"
         index = offset
-        header_raw_data = data[index: index + ImageHeaderV2.SIZE]
+        header_raw_data = data[index : index + ImageHeaderV2.SIZE]
         index += ImageHeaderV2.SIZE
         # TODO not used right now: hmac_data = data[index: index + cls.HEADER_MAC_SIZE]
         index += cls.HEADER_MAC_SIZE
-        key_blob = data[index: index + cls.KEY_BLOB_SIZE]
+        key_blob = data[index : index + cls.KEY_BLOB_SIZE]
         index += cls.KEY_BLOB_SIZE
         key_blob_unwrap = crypto_backend().aes_key_unwrap(kek, key_blob[:-8])
         dek = key_blob_unwrap[:32]
@@ -684,7 +744,9 @@ class BootImageV21(BaseClass):
         cert_block = CertBlockV2.parse(data, index)
         index += cert_block.raw_size
         # Verify Signature
-        if not cert_block.verify_data(data[index: index + cert_block.signature_size], data[offset: index]):
+        if not cert_block.verify_data(
+            data[index : index + cert_block.signature_size], data[offset:index]
+        ):
             raise Exception()
         index += cert_block.signature_size
         # Check first Boot Section HMAC
@@ -695,13 +757,19 @@ class BootImageV21(BaseClass):
         assert header.nonce
         counter = Counter(header.nonce)
         counter.increment(calc_cypher_block_count(index - offset))
-        boot_section = BootSectionV2.parse(data, index, dek=dek, mac=mac, counter=counter, plain_sect=plain_sections)
-        adv_params = SBV2xAdvancedParams(dek=dek, mac=mac, nonce=header.nonce, timestamp=header.timestamp)
-        obj = cls(kek=kek,
-                  product_version=str(header.product_version),
-                  component_version=str(header.component_version),
-                  build_number=header.build_number,
-                  advanced_params=adv_params)
+        boot_section = BootSectionV2.parse(
+            data, index, dek=dek, mac=mac, counter=counter, plain_sect=plain_sections
+        )
+        adv_params = SBV2xAdvancedParams(
+            dek=dek, mac=mac, nonce=header.nonce, timestamp=header.timestamp
+        )
+        obj = cls(
+            kek=kek,
+            product_version=str(header.product_version),
+            component_version=str(header.component_version),
+            build_number=header.build_number,
+            advanced_params=adv_params,
+        )
         obj.cert_block = cert_block
         obj.add_boot_section(boot_section)
         return obj

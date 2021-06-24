@@ -8,6 +8,7 @@
 """OpenSSL implementation for security backend."""
 
 import math
+
 # Used security modules
 from secrets import token_bytes
 from typing import Any, Union
@@ -19,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec, utils
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from spsdk import SPSDKError
+
 # Abstract Class Interface
 from .abstract import BackendClass
 
@@ -32,12 +34,12 @@ class Backend(BackendClass):
     @property
     def name(self) -> str:
         """Name of the backend."""
-        return 'SPSDK OpenSSL'
+        return "SPSDK OpenSSL"
 
     @property
     def version(self) -> str:
         """Version of the backend."""
-        return '0.1'
+        return "0.1"
 
     def random_bytes(self, length: int) -> bytes:
         """Return a random byte string with specified length.
@@ -57,11 +59,11 @@ class Backend(BackendClass):
         """
         algo_cls = getattr(hashes, name.upper(), None)  # hack: get class object by name
         if algo_cls is None:
-            raise ValueError(f'Unsupported algorithm: hashes.{name}'.format(name=name.upper()))
+            raise ValueError(f"Unsupported algorithm: hashes.{name}".format(name=name.upper()))
 
         return algo_cls()  # pylint: disable=not-callable
 
-    def hash(self, data: bytes, algorithm: str = 'sha256') -> bytes:
+    def hash(self, data: bytes, algorithm: str = "sha256") -> bytes:
         """Return a HASH from input data with specified algorithm.
 
         :param data: Input data in bytes
@@ -73,7 +75,7 @@ class Backend(BackendClass):
         hash_obj.update(data)
         return hash_obj.finalize()
 
-    def hmac(self, key: bytes, data: bytes, algorithm: str = 'sha256') -> bytes:
+    def hmac(self, key: bytes, data: bytes, algorithm: str = "sha256") -> bytes:
         """Return a HMAC from data with specified key and algorithm.
 
         :param key: The key in bytes format
@@ -128,7 +130,12 @@ class Backend(BackendClass):
         enc = cipher.decryptor()
         return enc.update(encrypted_data) + enc.finalize()
 
-    def rsa_sign(self, private_key: Union[rsa.RSAPrivateKey, bytes], data: bytes, algorithm: str = 'sha256') -> bytes:
+    def rsa_sign(
+        self,
+        private_key: Union[rsa.RSAPrivateKey, bytes],
+        data: bytes,
+        algorithm: str = "sha256",
+    ) -> bytes:
         """Sign input data.
 
         :param private_key: The private key: either rsa.RSAPrivateKey or decrypted binary data in PEM format
@@ -140,10 +147,20 @@ class Backend(BackendClass):
         if isinstance(private_key, bytes):
             private_key = serialization.load_pem_private_key(private_key, None, default_backend())
         assert isinstance(private_key, rsa.RSAPrivateKey)
-        return private_key.sign(data=data, padding=padding.PKCS1v15(), algorithm=self._get_algorithm(algorithm))
+        return private_key.sign(
+            data=data,
+            padding=padding.PKCS1v15(),
+            algorithm=self._get_algorithm(algorithm),
+        )
 
-    def rsa_verify(self, pub_key_mod: int, pub_key_exp: int, signature: bytes, data: bytes,
-                   algorithm: str = 'sha256') -> bool:
+    def rsa_verify(
+        self,
+        pub_key_mod: int,
+        pub_key_exp: int,
+        signature: bytes,
+        data: bytes,
+        algorithm: str = "sha256",
+    ) -> bool:
         """Verify input data.
 
         :param pub_key_mod: The public key modulus
@@ -157,8 +174,12 @@ class Backend(BackendClass):
         public_key = rsa.RSAPublicNumbers(pub_key_exp, pub_key_mod).public_key(default_backend())
         assert isinstance(public_key, rsa.RSAPublicKey)
         try:
-            public_key.verify(signature=signature, data=data, padding=padding.PKCS1v15(),
-                              algorithm=self._get_algorithm(algorithm))
+            public_key.verify(
+                signature=signature,
+                data=data,
+                padding=padding.PKCS1v15(),
+                algorithm=self._get_algorithm(algorithm),
+            )
         except InvalidSignature:
             return False
 
@@ -174,8 +195,10 @@ class Backend(BackendClass):
         return rsa.RSAPublicNumbers(exponent, modulus).public_key(default_backend())
 
     def ecc_sign(
-            self, private_key: Union[ec.EllipticCurvePrivateKey, bytes],
-            data: bytes, algorithm: str = None
+        self,
+        private_key: Union[ec.EllipticCurvePrivateKey, bytes],
+        data: bytes,
+        algorithm: str = None,
     ) -> bytes:
         """Sign data using (EC)DSA.
 
@@ -187,21 +210,23 @@ class Backend(BackendClass):
         if isinstance(private_key, bytes):
             private_key = serialization.load_pem_private_key(private_key, None, default_backend())
         assert isinstance(private_key, ec.EllipticCurvePrivateKey)
-        hash_name = algorithm or f'sha{private_key.key_size}'
+        hash_name = algorithm or f"sha{private_key.key_size}"
         der_signature = private_key.sign(
             data, signature_algorithm=ec.ECDSA(self._get_algorithm(hash_name))
         )
         # pylint: disable=invalid-name  # we want to use established names
         r, s = utils.decode_dss_signature(der_signature)
         coordinate_size = math.ceil(private_key.key_size / 8)
-        r_bytes = r.to_bytes(coordinate_size, byteorder='big')
-        s_bytes = s.to_bytes(coordinate_size, byteorder='big')
+        r_bytes = r.to_bytes(coordinate_size, byteorder="big")
+        s_bytes = s.to_bytes(coordinate_size, byteorder="big")
         return r_bytes + s_bytes
 
-
     def ecc_verify(
-            self, public_key: Union[ec.EllipticCurvePublicKey, bytes],
-            signature: bytes, data: bytes, algorithm: str = None
+        self,
+        public_key: Union[ec.EllipticCurvePublicKey, bytes],
+        signature: bytes,
+        data: bytes,
+        algorithm: str = None,
     ) -> bool:
         """Verify (EC)DSA signature.
 
@@ -217,11 +242,13 @@ class Backend(BackendClass):
         assert isinstance(public_key, ec.EllipticCurvePublicKey)
         coordinate_size = math.ceil(public_key.key_size / 8)
         if len(signature) != 2 * coordinate_size:
-            raise SPSDKError(f'Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}')
-        hash_name = algorithm or f'sha{public_key.key_size}'
+            raise SPSDKError(
+                f"Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}"
+            )
+        hash_name = algorithm or f"sha{public_key.key_size}"
         der_signature = utils.encode_dss_signature(
-            int.from_bytes(signature[:coordinate_size], byteorder='big'),
-            int.from_bytes(signature[coordinate_size:], byteorder='big')
+            int.from_bytes(signature[:coordinate_size], byteorder="big"),
+            int.from_bytes(signature[coordinate_size:], byteorder="big"),
         )
         try:
             public_key.verify(der_signature, data, ec.ECDSA(self._get_algorithm(hash_name)))
@@ -229,7 +256,8 @@ class Backend(BackendClass):
         except InvalidSignature:
             return False
 
+
 ########################################################################################################################
 # SPSDK OpenSSL Backend instance
 ########################################################################################################################
-openssl_backend = Backend()     # pylint: disable=invalid-name
+openssl_backend = Backend()  # pylint: disable=invalid-name

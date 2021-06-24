@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,18 +18,18 @@ def test_size_sbfile1x():
     assert SecBootBlckSize.to_num_blocks(16 * 65537) == 65537
     with pytest.raises(ValueError):
         SecBootBlckSize.to_num_blocks(1)
-    assert len(SecBootBlckSize.align_block_fill_random(b'1')) == 16
+    assert len(SecBootBlckSize.align_block_fill_random(b"1")) == 16
 
 
 def test_bcd_version3():
     """Test `BcdVersion3` class"""
     # default value
     version = BcdVersion3()
-    assert str(version) == '1.0.0'
+    assert str(version) == "1.0.0"
     assert version.nums == [1, 0, 0]
     # explicit value
     version = BcdVersion3(0x987, 0x654, 0x321)
-    assert str(version) == '987.654.321'
+    assert str(version) == "987.654.321"
     assert version.nums == [0x987, 0x654, 0x321]
     # invalid value
     with pytest.raises(ValueError):
@@ -41,10 +41,10 @@ def test_bcd_version3():
     with pytest.raises(ValueError):
         BcdVersion3(0xF1, 0, 0)
     # conversion from string
-    fs_version = BcdVersion3.from_str('987.654.321')
+    fs_version = BcdVersion3.from_str("987.654.321")
     assert fs_version == version
     # conversion from string
-    fs_version = BcdVersion3.to_version('987.654.321')
+    fs_version = BcdVersion3.to_version("987.654.321")
     assert fs_version == version
     # conversion from BcdVersion3
     fs_version = BcdVersion3.to_version(fs_version)

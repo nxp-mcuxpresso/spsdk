@@ -31,7 +31,12 @@ class Counter:
         """Initial vector for AES encryption."""
         return self._nonce + self._ctr.to_bytes(4, self._ctr_byteorder_encoding)
 
-    def __init__(self, nonce: bytes, ctr_value: int = None, ctr_byteorder_encoding: str = 'little'):
+    def __init__(
+        self,
+        nonce: bytes,
+        ctr_value: int = None,
+        ctr_byteorder_encoding: str = "little",
+    ):
         """Constructor.
 
         :param nonce: last for bytes are used as initial value for counter
@@ -39,7 +44,7 @@ class Counter:
         :param ctr_byteorder_encoding: way how the counter is encoded into output value: either 'little' or 'big'
         """
         assert isinstance(nonce, bytes) and len(nonce) == 16
-        assert ctr_byteorder_encoding in ['little', 'big']
+        assert ctr_byteorder_encoding in ["little", "big"]
         self._nonce = nonce[:-4]
         self._ctr_byteorder_encoding = ctr_byteorder_encoding
         self._ctr = int.from_bytes(nonce[-4:], ctr_byteorder_encoding)
@@ -114,7 +119,10 @@ def matches_key_and_cert(priv_key: bytes, cert: Certificate) -> bool:
     cert_pub_key = cert.public_key()  # public key of last certificate
     assert isinstance(cert_pub_key, RSAPublicKey)
     return crypto_backend().rsa_verify(
-        cert_pub_key.public_numbers().n, cert_pub_key.public_numbers().e, signature, bytes()
+        cert_pub_key.public_numbers().n,
+        cert_pub_key.public_numbers().e,
+        signature,
+        bytes(),
     )
 
 
@@ -122,17 +130,19 @@ def serialize_ecc_signature(signature: bytes, coordinate_length: int) -> bytes:
     """Re-format ECC ANS.1 DER signature into the format used by ROM code."""
     r, s = utils.decode_dss_signature(signature)
 
-    #TODO: dirty hack, this needs fixing!
+    # TODO: dirty hack, this needs fixing!
     min_len = math.ceil(r.bit_length() / 8)
     if min_len > coordinate_length:
         coordinate_length = 48
 
-    r_bytes = r.to_bytes(coordinate_length, 'big')
-    s_bytes = s.to_bytes(coordinate_length, 'big')
+    r_bytes = r.to_bytes(coordinate_length, "big")
+    s_bytes = s.to_bytes(coordinate_length, "big")
     return r_bytes + s_bytes
 
 
-def ecc_public_numbers_to_bytes(public_numbers: EllipticCurvePublicNumbers, length: int = None) -> bytes:
+def ecc_public_numbers_to_bytes(
+    public_numbers: EllipticCurvePublicNumbers, length: int = None
+) -> bytes:
     """Converts public numbers from ECC key into bytes.
 
     :param public_numbers: instance of ecc public numbers
@@ -142,6 +152,6 @@ def ecc_public_numbers_to_bytes(public_numbers: EllipticCurvePublicNumbers, leng
     x = public_numbers.x
     y = public_numbers.y
     length = length or math.ceil(x.bit_length() / 8)
-    x_bytes = x.to_bytes(length, 'big')
-    y_bytes = y.to_bytes(length, 'big')
+    x_bytes = x.to_bytes(length, "big")
+    y_bytes = y.to_bytes(length, "big")
     return x_bytes + y_bytes

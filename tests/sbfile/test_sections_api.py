@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,15 +11,13 @@ import pytest
 
 from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdReset
 from spsdk.sbfile.sections import BootSectionV2, CertSectionV2
-from spsdk.utils.crypto import CertBlockV2, Certificate,crypto_backend, Counter
+from spsdk.utils.crypto import CertBlockV2, Certificate, crypto_backend, Counter
 
 
 def test_boot_section_v2():
     boot_section = BootSectionV2(
-        0,
-        CmdErase(address=0, length=100000),
-        CmdLoad(address=0, data=b'0123456789'),
-        CmdReset())
+        0, CmdErase(address=0, length=100000), CmdLoad(address=0, data=b"0123456789"), CmdReset()
+    )
 
     assert boot_section.uid == 0
     assert not boot_section.is_last
@@ -34,11 +32,13 @@ def test_boot_section_v2():
     assert BootSectionV2.parse(data, 0, False, dek, mac, Counter(nonce))
 
     with pytest.raises(Exception):
-        assert BootSectionV2.parse(data, 0, False, dek, crypto_backend().random_bytes(32), Counter(nonce))
+        assert BootSectionV2.parse(
+            data, 0, False, dek, crypto_backend().random_bytes(32), Counter(nonce)
+        )
 
 
 def _create_cert_block_v2(data_dir: str) -> CertBlockV2:
-    with open(os.path.join(data_dir, 'selfsign_v3.der.crt'), 'rb') as f:
+    with open(os.path.join(data_dir, "selfsign_v3.der.crt"), "rb") as f:
         cert_data = f.read()
 
     cb = CertBlockV2()

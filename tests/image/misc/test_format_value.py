@@ -8,6 +8,7 @@ import io
 import pytest
 from spsdk.image.misc import read_raw_data, NotEnoughBytesException
 
+
 def test_read_raw_segment():
     stream = io.BytesIO()
     with pytest.raises(ValueError):

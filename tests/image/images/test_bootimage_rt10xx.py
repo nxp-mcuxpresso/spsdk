@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,7 +27,7 @@ def test_bootimage_rt10xx_basic():
 def test_bootimage_rt10xx_missing_ivt():
     # IVT header not found
     with pytest.raises(ValueError):
-        BootImgRT.parse(b'00000000')
+        BootImgRT.parse(b"00000000")
 
 
 def test_bootimage_rt10xx_aead_nonce_len():
@@ -43,13 +43,12 @@ def test_bootimage_rt10xx_add_encrypted_image():
     """Test add_image with encryption parameters"""
     img = BootImgRT(0x20000000)
     test_app_data = bytes([0]) * 1024
-    img.add_image(test_app_data, address=0x20000000, dek_key=b'')
+    img.add_image(test_app_data, address=0x20000000, dek_key=b"")
     assert len(img.dek_key) == 16
     # test invalid dek key length
     img = BootImgRT(0x20000000)
     with pytest.raises(ValueError):
-        img.add_image(test_app_data, address=0x20000000, dek_key=b'x')
+        img.add_image(test_app_data, address=0x20000000, dek_key=b"x")
     # test image already added
     with pytest.raises(ValueError):
-        img.add_image(test_app_data, address=0x20000000, dek_key=b'0123456789123456')
-
+        img.add_image(test_app_data, address=0x20000000, dek_key=b"0123456789123456")

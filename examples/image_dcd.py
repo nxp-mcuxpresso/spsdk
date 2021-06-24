@@ -1,16 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """This example shows various ways how to create/parse Device Configuration Data (DCD)."""
 
 from os import mkdir, path
-from spsdk.image import SegDCD, CmdWriteData, CmdCheckData, CmdNop, EnumWriteOps, EnumCheckOps
+from spsdk.image import (
+    SegDCD,
+    CmdWriteData,
+    CmdCheckData,
+    CmdNop,
+    EnumWriteOps,
+    EnumCheckOps,
+)
 
-TEMP_DIR = path.join(path.dirname(path.abspath(__file__)), 'temp')
+TEMP_DIR = path.join(path.dirname(path.abspath(__file__)), "temp")
 
 
 # Example-01: Create DCD object from TXT data
@@ -39,6 +46,7 @@ def dcd_from_txt() -> SegDCD:
 # Example-02: Create DCD object from BIN data
 def dcd_from_bin() -> SegDCD:
     """Create DCD from binary data (from binary file)."""
+    # fmt: off
     data = bytes([
         0xd2, 0x00, 0xb4, 0x41, 0xcc, 0x00, 0x24, 0x04, 0x30, 0x34, 0x00, 0x04, 0x4f, 0x40, 0x00, 0x05,
         0x30, 0x34, 0x00, 0x04, 0x4f, 0x40, 0x00, 0x05, 0x30, 0x34, 0x00, 0x04, 0x4f, 0x40, 0x00, 0x05,
@@ -53,6 +61,7 @@ def dcd_from_bin() -> SegDCD:
         0xcf, 0x00, 0x10, 0x1c, 0x30, 0x79, 0x00, 0xc4, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05,
         0xc0, 0x00, 0x04, 0x00,
     ])
+    # fmt: on
     return SegDCD.parse(data)
 
 
@@ -60,16 +69,27 @@ def dcd_from_bin() -> SegDCD:
 def dcd_in_python() -> SegDCD:
     """Create DCD in python code."""
     dcd = SegDCD(enabled=True)
-    dcd.append(CmdWriteData(ops=EnumWriteOps.WRITE_VALUE, data=((0x30340004, 0x4F400005),
-                                                                (0x30340004, 0x4F400005),
-                                                                (0x30340004, 0x4F400005),
-                                                                (0x30340004, 0x4F400005))))
+    dcd.append(
+        CmdWriteData(
+            ops=EnumWriteOps.WRITE_VALUE,
+            data=(
+                (0x30340004, 0x4F400005),
+                (0x30340004, 0x4F400005),
+                (0x30340004, 0x4F400005),
+                (0x30340004, 0x4F400005),
+            ),
+        )
+    )
     dcd.append(CmdWriteData(ops=EnumWriteOps.CLEAR_BITMASK, data=((0x307900C4, 0x00000001),)))
     dcd.append(CmdWriteData(ops=EnumWriteOps.SET_BITMASK, data=((0x307900C4, 0x00000001),)))
     dcd.append(CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001))
-    dcd.append(CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001, count=5))
+    dcd.append(
+        CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001, count=5)
+    )
     dcd.append(CmdCheckData(ops=EnumCheckOps.ANY_CLEAR, address=0x307900C4, mask=0x00000001))
-    dcd.append(CmdCheckData(ops=EnumCheckOps.ANY_CLEAR, address=0x307900C4, mask=0x00000001, count=5))
+    dcd.append(
+        CmdCheckData(ops=EnumCheckOps.ANY_CLEAR, address=0x307900C4, mask=0x00000001, count=5)
+    )
     dcd.append(CmdCheckData(ops=EnumCheckOps.ALL_SET, address=0x307900C4, mask=0x00000001))
     dcd.append(CmdCheckData(ops=EnumCheckOps.ALL_SET, address=0x307900C4, mask=0x00000001, count=5))
     dcd.append(CmdCheckData(ops=EnumCheckOps.ANY_SET, address=0x307900C4, mask=0x00000001))
@@ -92,11 +112,11 @@ def main() -> None:
     mkdir(TEMP_DIR)
 
     # Store DCD object into TXT file
-    with open(f'{TEMP_DIR}/dcd.txt', 'w') as f_txt:
+    with open(f"{TEMP_DIR}/dcd.txt", "w") as f_txt:
         f_txt.write(dcd_01.export_txt())
 
     # Store DCD object into BIN file
-    with open(f'{TEMP_DIR}/dcd.bin', 'wb') as f_bin:
+    with open(f"{TEMP_DIR}/dcd.bin", "wb") as f_bin:
         f_bin.write(dcd_01.export())
 
 

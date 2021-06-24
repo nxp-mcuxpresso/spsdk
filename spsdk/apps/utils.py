@@ -24,7 +24,8 @@ from spsdk.sdp.interfaces import Interface as SDPInterface
 
 class INT(click.ParamType):
     """Type that allows integers in bin, hex, oct format including _ as a visual separator."""
-    name = 'integer'
+
+    name = "integer"
 
     def __init__(self, base: int = 0) -> None:
         """Initialize custom INT param class.
@@ -58,8 +59,9 @@ class INT(click.ParamType):
             self.fail(f"{value!r} is not a valid integer", param, ctx)
 
 
-def get_interface(module: str, port: str = None, usb: str = None,
-                  timeout: int = 5000) -> Union[MBootInterface, SDPInterface]:
+def get_interface(
+    module: str, port: str = None, usb: str = None, timeout: int = 5000
+) -> Union[MBootInterface, SDPInterface]:
     """Get appropriate interface.
 
     'port' and 'usb' parameters are mutually exclusive; one of them is required.
@@ -79,20 +81,17 @@ def get_interface(module: str, port: str = None, usb: str = None,
     if port is not None and usb is not None:
         raise ValueError("Only one of 'port' or 'uart' must be specified.")
 
-    interface_module = {
-        'mboot': MBootInterfaceModule,
-        'sdp': SDPInterfaceModule
-    }[module]
+    interface_module = {"mboot": MBootInterfaceModule, "sdp": SDPInterfaceModule}[module]
     devices = []
     if port:
-        port_parts = port.split(',')
+        port_parts = port.split(",")
         name = port_parts.pop(0)
         baudrate = int(port_parts.pop(), 0) if port_parts else None
         devices = interface_module.scan_uart(port=name, baudrate=baudrate, timeout=timeout)  # type: ignore
         if len(devices) != 1:
             raise SPSDKError(f"Cannot ping device on UART port '{name}'.")
     if usb:
-        vid_pid = usb.replace(',', ':')
+        vid_pid = usb.replace(",", ":")
         devices = interface_module.scan_usb(vid_pid)  # type: ignore
         if len(devices) == 0:
             raise SPSDKError(f"Cannot find USB device '{format_vid_pid(vid_pid)}'")
@@ -104,7 +103,7 @@ def get_interface(module: str, port: str = None, usb: str = None,
 
 def _split_string(string: str, length: int) -> list:
     """Split the string into chunks of same length."""
-    return [string[i:i + length] for i in range(0, len(string), length)]
+    return [string[i : i + length] for i in range(0, len(string), length)]
 
 
 def format_raw_data(data: bytes, use_hexdump: bool = False, line_length: int = 16) -> str:
@@ -116,17 +115,17 @@ def format_raw_data(data: bytes, use_hexdump: bool = False, line_length: int = 1
     :return: formatted string (multilined if necessary)
     """
     if use_hexdump:
-        return hexdump.hexdump(data, result='return')
+        return hexdump.hexdump(data, result="return")
     data_string = data.hex()
     parts = [_split_string(line, 2) for line in _split_string(data_string, line_length * 2)]
-    result = '\n'.join(' '.join(line) for line in parts)
+    result = "\n".join(" ".join(line) for line in parts)
     return result
 
 
 def format_vid_pid(dec_version: str) -> str:
     """Format VID:PID information in more human-readable format."""
-    if ':' in dec_version:
-        vid, pid = dec_version.split(':')
+    if ":" in dec_version:
+        vid, pid = dec_version.split(":")
         return f"{int(vid, 0):#06x}:{int(pid, 0):#06x}"
     return dec_version
 
@@ -155,8 +154,8 @@ def parse_file_and_size(file_and_size: str) -> Tuple[str, int]:
     :param file_and_size: original param that possibly contains size constrain
     :return: Tuple of path as str and size as int (if present)
     """
-    if ',' in file_and_size:
-        file_path, size = file_and_size.split(',')
+    if "," in file_and_size:
+        file_path, size = file_and_size.split(",")
         file_size = int(size, 0)
     else:
         file_path = file_and_size
@@ -171,17 +170,17 @@ def parse_hex_data(hex_data: str) -> bytes:
     :raises SPSDKError: Failure to parse given input
     :return: data parsed from input
     """
-    hex_data = hex_data.replace(' ', '')
-    if not hex_data.startswith('{{') or not hex_data.endswith('}}'):
+    hex_data = hex_data.replace(" ", "")
+    if not hex_data.startswith("{{") or not hex_data.endswith("}}"):
         raise SPSDKError("Incorrectly formated hex-data: Need to start with {{ and end with }}")
 
-    hex_data = hex_data.replace('{{', '').replace('}}', '')
+    hex_data = hex_data.replace("{{", "").replace("}}", "")
     if len(hex_data) % 2:
         raise SPSDKError("Incorrectly formated hex-data: Need to have even number of characters")
     if not re.fullmatch(r"[0-9a-fA-F]*", hex_data):
         raise SPSDKError("Incorrect hex-data: Need to have valid hex string")
 
-    str_parts = [hex_data[i: i+2] for i in range(0, len(hex_data), 2)]
+    str_parts = [hex_data[i : i + 2] for i in range(0, len(hex_data), 2)]
     byte_pieces = [int(part, 16) for part in str_parts]
     result = bytes(byte_pieces)
     if not result:

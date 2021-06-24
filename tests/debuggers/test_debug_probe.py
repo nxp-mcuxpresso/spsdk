@@ -9,16 +9,19 @@ import pytest
 import spsdk
 import spsdk.debuggers.debug_probe as DP
 
+
 def test_probe_ap_address():
     """Test of Debug Probe Interface - Test get AP index from address."""
     assert DP.DebugProbe.get_coresight_ap_address(8, 8) == 0x08000008
     with pytest.raises((spsdk.SPSDKError, ValueError)):
         assert DP.DebugProbe.get_coresight_ap_address(256, 8) == 0xFF000008
 
+
 def test_probe_get_connected_probes():
     """Test of Debug Probe Interface - Test getting of connected probes."""
     with pytest.raises(NotImplementedError):
         DP.DebugProbe.get_connected_probes()
+
 
 def test_probe_not_implemented():
     """Test of Debug Probe Interface - Test of none implemented API."""

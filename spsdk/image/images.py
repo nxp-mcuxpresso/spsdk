@@ -27,16 +27,33 @@ from .commands import EnumInsKey, EnumCertFormat, EnumAlgorithm, EnumAuthDat, En
 from .header import Header, Header2, UnparsedException
 from .misc import read_raw_data, read_raw_segment, NotEnoughBytesException
 from .secret import Signature, CertificateImg, MAC, SrkTable
-from .segments import SegTag, SegIVT2, SegBDT, SegAPP, SegDCD, SegCSF, SegIVT3a, SegIVT3b, SegBDS3a, SegBDS3b, \
-    SegBIC1, AbstractFCB, FlexSPIConfBlockFCB, PaddingFCB, SegBEE
+from .segments import (
+    SegTag,
+    SegIVT2,
+    SegBDT,
+    SegAPP,
+    SegDCD,
+    SegCSF,
+    SegIVT3a,
+    SegIVT3b,
+    SegBDS3a,
+    SegBDS3b,
+    SegBIC1,
+    AbstractFCB,
+    FlexSPIConfBlockFCB,
+    PaddingFCB,
+    SegBEE,
+)
 
 
 ########################################################################################################################
 # i.MX Boot Image Classes
 ########################################################################################################################
 
+
 class EnumAppType(Enum):
     """Type of the application image."""
+
     SCFW = 1
     M4_0 = 2
     M4_1 = 3
@@ -90,8 +107,12 @@ class BootImgBase:
         raise NotImplementedError()
 
     @classmethod
-    def parse(cls, stream: Union[bytes, bytearray, BufferedReader, BytesIO], step: int = 0x100,
-              size: Optional[int] = None) -> 'BootImgBase':
+    def parse(
+        cls,
+        stream: Union[bytes, bytearray, BufferedReader, BytesIO],
+        step: int = 0x100,
+        size: Optional[int] = None,
+    ) -> "BootImgBase":
         """Parse of IMX Boot Image Base."""
         raise NotImplementedError()
 
@@ -117,7 +138,9 @@ class BootImgRT(BootImgBase):
     # IVT offset for other memories
     IVT_OFFSET_OTHER = 0x400
     # supported IVT offsets
-    IVT_OFFSETS = (IVT_OFFSET_OTHER, IVT_OFFSET_NOR_FLASH)
+    IVT_OFFSETS = (0, IVT_OFFSET_OTHER, IVT_OFFSET_NOR_FLASH)
+    # possible FCB offsets
+    FCB_OFFSETS = (0, 0x400)
     # list of supported versions
     VERSIONS = (0x40, 0x41, 0x42, 0x43)
     # The offset and align value of APP segment (for XIP and non-XIP image)
@@ -130,8 +153,13 @@ class BootImgRT(BootImgBase):
     # The length of DEK key section; Note: Dek key is just 16 bytes
     DEK_SIZE = 0x200  # TODO this is sector size alignment???
 
-    def __init__(self, address: int, offset: int = IVT_OFFSET_NOR_FLASH, version: int = 0x40,
-                 plugin: bool = False):
+    def __init__(
+        self,
+        address: int,
+        offset: int = IVT_OFFSET_NOR_FLASH,
+        version: int = 0x40,
+        plugin: bool = False,
+    ):
         """Initialize boot image object.
 
         :param address: The start address of img in target memory, where the image is executed
@@ -277,7 +305,9 @@ class BootImgRT(BootImgBase):
         :param data: FlexSPIConfBlockFCB or binary data representing
         :raise ValueError: if data are not valid Flex SPI configuration block
         """
-        self.fcb = data if isinstance(data, FlexSPIConfBlockFCB) else FlexSPIConfBlockFCB.parse(data)
+        self.fcb = (
+            data if isinstance(data, FlexSPIConfBlockFCB) else FlexSPIConfBlockFCB.parse(data)
+        )
 
     @property
     def bee(self) -> SegBEE:
@@ -294,8 +324,11 @@ class BootImgRT(BootImgBase):
         Please mind: the offset include FCB block (even the FCB block is not exported)
         The offset is 0x2000 for XIP images and 0x1000 for non-XIP images
         """
-        return BootImgRT.XIP_APP_OFFSET if (self.ivt_offset == self.IVT_OFFSET_NOR_FLASH) \
+        return (
+            BootImgRT.XIP_APP_OFFSET
+            if (self.ivt_offset == self.IVT_OFFSET_NOR_FLASH)
             else BootImgRT.NON_XIP_APP_OFFSET
+        )
 
     @property
     def size(self) -> int:
@@ -350,7 +383,9 @@ class BootImgRT(BootImgBase):
         csf = self.enabled_csf
         if csf:
             for cmd in csf.commands:
-                if isinstance(cmd, CmdInstallKey) and (cmd.certificate_format == EnumCertFormat.BLOB):
+                if isinstance(cmd, CmdInstallKey) and (
+                    cmd.certificate_format == EnumCertFormat.BLOB
+                ):
                     return cmd.cmd_data_location
         return -1
 
@@ -373,7 +408,9 @@ class BootImgRT(BootImgBase):
         if self.hab_encrypted:
             # calculate address of a DEK key
             for cmd in csf.commands:
-                if isinstance(cmd, CmdInstallKey) and (cmd.certificate_format == EnumCertFormat.BLOB):
+                if isinstance(cmd, CmdInstallKey) and (
+                    cmd.certificate_format == EnumCertFormat.BLOB
+                ):
                     cmd.cmd_data_location = self.address + self.bdt.app_length
             #
             self.bdt.app_length += self.DEK_SIZE  # to include DEK
@@ -389,14 +426,16 @@ class BootImgRT(BootImgBase):
         # Print FCB
         msg = "#" * 60 + "\n"
         msg += "# FCB (Flash Configuration Block)\n"
+        msg += "#" * 60 + "\n\n"
         msg += self.fcb.info()
         # Print BEE
         if self.bee_encrypted:
-            msg = "#" * 60 + "\n"
+            msg += "#" * 60 + "\n"
             msg += "# BEE (Encrypted XIP configuration)\n"
+            msg += "#" * 60 + "\n\n"
             msg += self.bee.info()
         # Print IVT
-        msg = "#" * 60 + "\n"
+        msg += "#" * 60 + "\n"
         msg += "# IVT (Image Vector Table)\n"
         msg += "#" * 60 + "\n\n"
         msg += self.ivt.info()
@@ -420,8 +459,14 @@ class BootImgRT(BootImgBase):
             msg += csf.info()
         return msg
 
-    def add_image(self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = -1,
-                  dek_key: Optional[bytes] = None, nonce: Optional[bytes] = None) -> None:
+    def add_image(
+        self,
+        data: bytes,
+        img_type: EnumAppType = EnumAppType.APP,
+        address: int = -1,
+        dek_key: Optional[bytes] = None,
+        nonce: Optional[bytes] = None,
+    ) -> None:
         """Add specific image into the main boot image.
 
         :param data: Raw data of img
@@ -438,20 +483,22 @@ class BootImgRT(BootImgBase):
         """
         assert img_type == EnumAppType.APP
         if self.app.data:
-            raise ValueError('Image was already added')
-        entry_addr = unpack_from('<I', data, 4)[0]
+            raise ValueError("Image was already added")
+        entry_addr = unpack_from("<I", data, 4)[0]
         if entry_addr == 0:  # there can be padding for images located in RAM, see flashloader
             entry_addr = address
-            assert entry_addr > 0, 'entry_addr not detected from image, must be specified explicitly'
+            assert (
+                entry_addr > 0
+            ), "entry_addr not detected from image, must be specified explicitly"
         elif (address >= 0) and (address != entry_addr):
-            raise ValueError('entry_address does not match with the image')
+            raise ValueError("entry_address does not match with the image")
         self._ivt.app_address = entry_addr
         self.app.data = data
         if dek_key is not None:  # encrypted?
             # initialize DEK key
             self._dek_key = bytes([0]) * MAC.AES128_BLK_LEN if len(dek_key) == 0 else dek_key
             if len(self._dek_key) != MAC.AES128_BLK_LEN:
-                raise ValueError(f'Invalid dek_key length, expected {MAC.AES128_BLK_LEN} bytes')
+                raise ValueError(f"Invalid dek_key length, expected {MAC.AES128_BLK_LEN} bytes")
             # initialize NONCE
             if nonce:
                 self._nonce = nonce
@@ -459,7 +506,7 @@ class BootImgRT(BootImgBase):
             if self._nonce is None:
                 self._nonce = crypto_backend().random_bytes(nonce_len)
             elif len(self._nonce) != nonce_len:
-                raise ValueError(f'Invalid nonce length, expected {nonce_len} bytes')
+                raise ValueError(f"Invalid nonce length, expected {nonce_len} bytes")
             # encrypt APP
             assert self.hab_encrypted
             self.app.data = self._hab_encrypt_app_data(align_block(data, MAC.AES128_BLK_LEN))
@@ -475,9 +522,16 @@ class BootImgRT(BootImgBase):
         self.dcd = SegDCD.parse(data)
         assert self.dcd  # must be enabled to include DCD into export
 
-    def add_csf_standard_auth(self, version: int, srk_table: SrkTable, src_key_index: int,
-                              csf_cert: bytes, csf_priv_key: bytes,
-                              img_cert: bytes, img_priv_key: bytes) -> None:
+    def add_csf_standard_auth(
+        self,
+        version: int,
+        srk_table: SrkTable,
+        src_key_index: int,
+        csf_cert: bytes,
+        csf_priv_key: bytes,
+        img_cert: bytes,
+        img_priv_key: bytes,
+    ) -> None:
         """Add CSF with standard authentication.
 
         Before calling, application image and address must be assigned
@@ -494,30 +548,51 @@ class BootImgRT(BootImgBase):
         assert 0 <= src_key_index < len(srk_table)
         csf = SegCSF(version=version, enabled=True)
         # install SRK
-        cmd_ins = CmdInstallKey(EnumInsKey.CLR, EnumCertFormat.SRK, EnumAlgorithm.SHA256, src_key_index, 0)
+        cmd_ins = CmdInstallKey(
+            EnumInsKey.CLR, EnumCertFormat.SRK, EnumAlgorithm.SHA256, src_key_index, 0
+        )
         cmd_ins.cmd_data_reference = srk_table
         csf.append_command(cmd_ins)
         # install CSF certificate
         cmd_ins = CmdInstallKey(EnumInsKey.CSF, EnumCertFormat.X509, EnumAlgorithm.ANY, 0, 1)
         cert = x509.load_pem_x509_certificate(csf_cert, default_backend())
-        cmd_ins.cmd_data_reference = CertificateImg(version=version, data=cert.public_bytes(Encoding.DER))
+        cmd_ins.cmd_data_reference = CertificateImg(
+            version=version, data=cert.public_bytes(Encoding.DER)
+        )
         csf.append_command(cmd_ins)
         # authenticate content of the CSF segment
-        cmd_auth = CmdAuthData(EnumAuthDat.CLR, 1, EnumCertFormat.CMS, EnumEngine.DCP,
-                               certificate=cert, private_key_pem_data=csf_priv_key)
+        cmd_auth = CmdAuthData(
+            EnumAuthDat.CLR,
+            1,
+            EnumCertFormat.CMS,
+            EnumEngine.DCP,
+            certificate=cert,
+            private_key_pem_data=csf_priv_key,
+        )
         cmd_auth.cmd_data_reference = Signature(version=version)
         csf.append_command(cmd_auth)
         # install image certificate
         cmd_ins = CmdInstallKey(EnumInsKey.CLR, EnumCertFormat.X509, EnumAlgorithm.ANY, 0, 2)
         cert = x509.load_pem_x509_certificate(img_cert, default_backend())
-        cmd_ins.cmd_data_reference = CertificateImg(version=version, data=cert.public_bytes(Encoding.DER))
+        cmd_ins.cmd_data_reference = CertificateImg(
+            version=version, data=cert.public_bytes(Encoding.DER)
+        )
         csf.append_command(cmd_ins)
         # authenticate image data
-        cmd_auth = CmdAuthData(EnumAuthDat.CLR, 2, EnumCertFormat.CMS, EnumEngine.DCP,
-                               certificate=cert, private_key_pem_data=img_priv_key)
+        cmd_auth = CmdAuthData(
+            EnumAuthDat.CLR,
+            2,
+            EnumCertFormat.CMS,
+            EnumEngine.DCP,
+            certificate=cert,
+            private_key_pem_data=img_priv_key,
+        )
         cmd_auth.append(self.address + self.ivt_offset, SegIVT2.SIZE + BootImgRT.BDT_SIZE)
         if self.dcd:
-            cmd_auth.append(self.address + self.ivt_offset + SegIVT2.SIZE + BootImgRT.BDT_SIZE, self.dcd.size)
+            cmd_auth.append(
+                self.address + self.ivt_offset + SegIVT2.SIZE + BootImgRT.BDT_SIZE,
+                self.dcd.size,
+            )
         app_data = self.app.data
         assert app_data is not None
         cmd_auth.append(self.address + self.app_offset, align(len(app_data), 16))
@@ -560,7 +635,7 @@ class BootImgRT(BootImgBase):
         dek = self.dek_key
         assert dek is not None
         aesccm = AESCCM(dek, tag_length=MAC.AES128_BLK_LEN)
-        encr = aesccm.encrypt(self._nonce, app_data, b'')
+        encr = aesccm.encrypt(self._nonce, app_data, b"")
         assert len(encr) == len(app_data) + 16
         self._mac = encr[-16:]
         return encr[:-16]
@@ -581,12 +656,19 @@ class BootImgRT(BootImgBase):
         dek = self.dek_key
         assert mac and self._nonce and dek
         aesccm = AESCCM(dek, tag_length=MAC.AES128_BLK_LEN)
-        res = aesccm.decrypt(self._nonce, app_data + mac, b'')
+        res = aesccm.decrypt(self._nonce, app_data + mac, b"")
         return res
 
-    def add_csf_encrypted(self, version: int, srk_table: SrkTable, src_key_index: int,
-                          csf_cert: bytes, csf_priv_key: bytes,
-                          img_cert: bytes, img_priv_key: bytes) -> None:
+    def add_csf_encrypted(
+        self,
+        version: int,
+        srk_table: SrkTable,
+        src_key_index: int,
+        csf_cert: bytes,
+        csf_priv_key: bytes,
+        img_cert: bytes,
+        img_priv_key: bytes,
+    ) -> None:
         """Add CSF with image encryption.
 
         Before calling, application image and address must be assigned
@@ -603,27 +685,45 @@ class BootImgRT(BootImgBase):
         assert 0 <= src_key_index < len(srk_table)
         csf = SegCSF(version=version, enabled=True)
         # install SRK
-        cmd_ins = CmdInstallKey(EnumInsKey.CLR, EnumCertFormat.SRK, EnumAlgorithm.SHA256, src_key_index, 0)
+        cmd_ins = CmdInstallKey(
+            EnumInsKey.CLR, EnumCertFormat.SRK, EnumAlgorithm.SHA256, src_key_index, 0
+        )
         cmd_ins.cmd_data_reference = srk_table
         csf.append_command(cmd_ins)
         # install CSF certificate
         cmd_ins = CmdInstallKey(EnumInsKey.CSF, EnumCertFormat.X509, EnumAlgorithm.ANY, 0, 1)
         cert = x509.load_pem_x509_certificate(csf_cert, default_backend())
-        cmd_ins.cmd_data_reference = CertificateImg(version=version, data=cert.public_bytes(Encoding.DER))
+        cmd_ins.cmd_data_reference = CertificateImg(
+            version=version, data=cert.public_bytes(Encoding.DER)
+        )
         csf.append_command(cmd_ins)
         # authenticate content of the CSF segment
-        cmd_auth = CmdAuthData(EnumAuthDat.CLR, 1, EnumCertFormat.CMS, EnumEngine.DCP,
-                               certificate=cert, private_key_pem_data=csf_priv_key)
+        cmd_auth = CmdAuthData(
+            EnumAuthDat.CLR,
+            1,
+            EnumCertFormat.CMS,
+            EnumEngine.DCP,
+            certificate=cert,
+            private_key_pem_data=csf_priv_key,
+        )
         cmd_auth.cmd_data_reference = Signature(version=version)
         csf.append_command(cmd_auth)
         # install image certificate
         cmd_ins = CmdInstallKey(EnumInsKey.CLR, EnumCertFormat.X509, EnumAlgorithm.ANY, 0, 2)
         cert = x509.load_pem_x509_certificate(img_cert, default_backend())
-        cmd_ins.cmd_data_reference = CertificateImg(version=version, data=cert.public_bytes(Encoding.DER))
+        cmd_ins.cmd_data_reference = CertificateImg(
+            version=version, data=cert.public_bytes(Encoding.DER)
+        )
         csf.append_command(cmd_ins)
         # authenticate image data
-        cmd_auth = CmdAuthData(EnumAuthDat.CLR, 2, EnumCertFormat.CMS,
-                               EnumEngine.DCP, certificate=cert, private_key_pem_data=img_priv_key)
+        cmd_auth = CmdAuthData(
+            EnumAuthDat.CLR,
+            2,
+            EnumCertFormat.CMS,
+            EnumEngine.DCP,
+            certificate=cert,
+            private_key_pem_data=img_priv_key,
+        )
         cmd_auth.append(self.address + self.ivt_offset, SegIVT2.SIZE + BootImgRT.BDT_SIZE)
         app_data = self.app.data
         assert app_data is not None
@@ -633,8 +733,14 @@ class BootImgRT(BootImgBase):
         cmd_ins = CmdInstallKey(EnumInsKey.ABS, EnumCertFormat.BLOB, EnumAlgorithm.ANY, 0, 0)
         csf.append_command(cmd_ins)
         # check encrypted data
-        cmd_auth = CmdAuthData(EnumAuthDat.CLR, 0, EnumCertFormat.AEAD,
-                               EnumEngine.DCP, certificate=cert, private_key_pem_data=img_priv_key)
+        cmd_auth = CmdAuthData(
+            EnumAuthDat.CLR,
+            0,
+            EnumCertFormat.AEAD,
+            EnumEngine.DCP,
+            certificate=cert,
+            private_key_pem_data=img_priv_key,
+        )
         assert app_data is not None
         cmd_auth.append(self.address + self.app_offset, align(len(app_data), 16))
         cmd_auth.cmd_data_reference = MAC(version=version, nonce_len=0xD, mac_len=16)
@@ -650,13 +756,13 @@ class BootImgRT(BootImgBase):
         :raise ValueError: if any BEE region is configured for images not located in the FLASH
         """
         if not self.fcb.enabled:
-            return b''
+            return b""
         data = self.fcb.export(dbg_info=dbg_info)
         assert len(data) == self.fcb.space
         if self.ivt_offset == self.IVT_OFFSET_NOR_FLASH:
             data += self.bee.export(dbg_info=dbg_info)
         elif self.bee.space > 0:
-            raise ValueError('BEE can be configured only for XIP images located in FLASH')
+            raise ValueError("BEE can be configured only for XIP images located in FLASH")
         return data
 
     def _bee_encrypt_img_data(self, data: bytes) -> bytes:
@@ -670,15 +776,20 @@ class BootImgRT(BootImgBase):
             return data
 
         if self.ivt_offset != self.IVT_OFFSET_NOR_FLASH:
-            raise ValueError('BEE encryption is supported only for NOR FLASH')
+            raise ValueError("BEE encryption is supported only for NOR FLASH")
         if self.hab_encrypted:
-            raise ValueError('BEE encryption cannot be used for HAB encrypted images')
+            raise ValueError("BEE encryption cannot be used for HAB encrypted images")
 
         # encrypt
-        return data[:self.ivt_offset] + self.bee.encrypt_data(self.address + self.ivt_offset, data[self.ivt_offset:])
+        return data[: self.ivt_offset] + self.bee.encrypt_data(
+            self.address + self.ivt_offset, data[self.ivt_offset :]
+        )
 
-    def export(self, zulu: datetime = datetime.now(timezone.utc),
-               dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(
+        self,
+        zulu: datetime = datetime.now(timezone.utc),
+        dbg_info: DebugInfo = DebugInfo.disabled(),
+    ) -> bytes:
         """Export image as bytes array.
 
         :param zulu: optional UTC datetime; should be used only if you need fixed datetime for the test
@@ -689,29 +800,29 @@ class BootImgRT(BootImgBase):
         """
         csf = self.enabled_csf
         if csf:
-            csf.update_signatures(zulu, b'', 0)  # dummy call to provide size of the CSF section
+            csf.update_signatures(zulu, b"", 0)  # dummy call to provide size of the CSF section
         elif self.dek_key is not None:
-            raise ValueError('CSF must be assigned for encrypted images')
+            raise ValueError("CSF must be assigned for encrypted images")
 
         self._update()
-        dbg_info.append_section('RT10xxBootableImage')
+        dbg_info.append_section("RT10xxBootableImage")
         # FCB + BEE
         data = self._export_fcb_bee(dbg_info)
 
         # IVT
         ivt_data = self.ivt.export()
         data += ivt_data
-        dbg_info.append_binary_section('IVT', ivt_data)
+        dbg_info.append_binary_section("IVT", ivt_data)
         # BDT
         bdt_data = self.bdt.export()
         data += bdt_data
-        dbg_info.append_binary_section('BDT', bdt_data)
+        dbg_info.append_binary_section("BDT", bdt_data)
         # DCD
         if (self.dcd is not None) and self.dcd.enabled:
             assert self.dcd.padding_len == 0  # no padding
             dcd_data = self.dcd.export()
             data += dcd_data
-            dbg_info.append_binary_section('DCD', dcd_data)
+            dbg_info.append_binary_section("DCD", dcd_data)
         # padding before APP
         app_alignment = self.app_offset if self.fcb.enabled else self.app_offset - self.ivt_offset
         assert app_alignment >= len(data)
@@ -719,11 +830,11 @@ class BootImgRT(BootImgBase):
         # APP
         app_data = self.app.export()
         data += app_data
-        dbg_info.append_binary_section('APP', app_data)
+        dbg_info.append_binary_section("APP", app_data)
         # CSF
         if csf:
             if dbg_info:
-                dbg_info.append_section('CSF')
+                dbg_info.append_section("CSF")
             base_data_addr = self.address if self.fcb.enabled else self.address + self.ivt_offset
             csf.update_signatures(zulu, data, base_data_addr)
             data += csf.export(dbg_info=dbg_info)
@@ -731,7 +842,9 @@ class BootImgRT(BootImgBase):
         return self._bee_encrypt_img_data(data)
 
     @classmethod
-    def _find_ivt_pos(cls, strm: Union[BufferedReader, BytesIO], size: Optional[int] = None) -> Tuple[Header, int, int]:
+    def _find_ivt_pos(
+        cls, strm: Union[BufferedReader, BytesIO], size: Optional[int] = None
+    ) -> Tuple[Header, int, int]:
         """Search IVT start position in the image; used by parser.
 
         :param strm: of image data; start seeking from current position
@@ -745,7 +858,7 @@ class BootImgRT(BootImgBase):
         if size:
             end_pos = min(start_pos + size, end_pos)
 
-        for ivt_ofs in [0] + list(cls.IVT_OFFSETS):
+        for ivt_ofs in cls.IVT_OFFSETS:
 
             if start_pos + ivt_ofs > end_pos:
                 break
@@ -761,8 +874,39 @@ class BootImgRT(BootImgBase):
         raise ValueError("IVT not found")
 
     @classmethod
-    def parse(cls, stream: Union[bytes, bytearray, BufferedReader, BytesIO], step: int = 0,
-              size: Optional[int] = None) -> 'BootImgRT':
+    def _find_fcb_pos(
+        cls, stream: Union[BufferedReader, BytesIO], size: Optional[int] = None
+    ) -> Optional[int]:
+        """Search for FCB start position.
+
+        :param stream: data to search through
+        :param size: maximal size to search through; default: whole stream
+        :return: Starting location of FCB, None if FCB is not found
+        """
+        start_pos = stream.seek(0)
+        end_pos = stream.seek(0, SEEK_END)
+
+        if size:
+            end_pos = min(start_pos + size, end_pos)
+
+        for possible_offset in cls.FCB_OFFSETS:
+            current_pos = start_pos + possible_offset
+            if current_pos > end_pos:
+                break
+            stream.seek(current_pos)
+            data = read_raw_data(stream, len(FlexSPIConfBlockFCB.TAG))
+            if data == FlexSPIConfBlockFCB.TAG:
+                return current_pos
+
+        return None
+
+    @classmethod
+    def parse(
+        cls,
+        stream: Union[bytes, bytearray, BufferedReader, BytesIO],
+        step: int = 0,
+        size: Optional[int] = None,
+    ) -> "BootImgRT":
         """Parse bootable RT image from stream buffer or bytes array.
 
         :param stream: The stream buffer or bytes array
@@ -775,7 +919,7 @@ class BootImgRT(BootImgBase):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise TypeError(" Not correct value type: \"{}\" !".format(type(stream)))
+            raise TypeError(' Not correct value type: "{}" !'.format(type(stream)))
 
         header, start_pos, end_pos = cls._find_ivt_pos(stream, size)
 
@@ -794,9 +938,7 @@ class BootImgRT(BootImgBase):
         # Parse DCD
         if obj.ivt.dcd_address:
             stream.seek(start_pos + obj.ivt.dcd_address - obj.ivt.ivt_address)
-            dcd_obj = SegDCD.parse(read_raw_segment(stream, SegTag.DCD))
-            obj.dcd = dcd_obj
-            dcd_obj.padding = (obj.ivt.app_address - obj.ivt.dcd_address) - dcd_obj.size
+            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD))
         # Parse APP
         if obj.ivt.csf_address > 0:
             app_size = obj.ivt.csf_address - obj.ivt.ivt_address - (obj.app_offset - obj.ivt_offset)
@@ -817,14 +959,12 @@ class BootImgRT(BootImgBase):
 
         # Parse FCB
         fcb_size = FlexSPIConfBlockFCB().size
-        if start_pos >= fcb_size:
-            fcb_data = read_raw_data(stream, fcb_size, 0)
-            if fcb_data == b'\x00' * fcb_size:  # test if empty
-                obj.fcb = PaddingFCB(fcb_size)
-            else:
-                obj.set_flexspi_fcb(fcb_data)
+        fcb_position = cls._find_fcb_pos(stream)
+        if fcb_position is not None:
+            fcb_data = read_raw_data(stream, fcb_size, fcb_position)
+            obj.set_flexspi_fcb(fcb_data)
         else:
-            obj.fcb = PaddingFCB(0, enabled=False)
+            obj.fcb = PaddingFCB(fcb_size, enabled=True)
 
         return obj
 
@@ -832,6 +972,7 @@ class BootImgRT(BootImgBase):
 ########################################################################################################################
 # Boot Image V2 (i.MX6, i.MX7)
 ########################################################################################################################
+
 
 class BootImg2(BootImgBase):
     """IMX Boot Image v2."""
@@ -842,8 +983,7 @@ class BootImg2(BootImgBase):
     APP_ALIGN = 0x1000
     # The value of img head size
     #           offset | size
-    HEAD_SIZE = {0x400: 0xC00,
-                 0x100: 0x300}
+    HEAD_SIZE = {0x400: 0xC00, 0x100: 0x300}
 
     @property
     def version(self) -> int:
@@ -915,7 +1055,13 @@ class BootImg2(BootImgBase):
         result += self.csf.space
         return result
 
-    def __init__(self, address: int = 0, offset: int = 0x400, version: int = 0x41, plugin: bool = False) -> None:
+    def __init__(
+        self,
+        address: int = 0,
+        offset: int = 0x400,
+        version: int = 0x41,
+        plugin: bool = False,
+    ) -> None:
         """Initialize boot image object.
 
         :param address: The start address of img in target memory
@@ -991,7 +1137,9 @@ class BootImg2(BootImgBase):
             msg += self.csf.info()
         return msg
 
-    def add_image(self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = 0) -> None:
+    def add_image(
+        self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = 0
+    ) -> None:
         """Add specific image into the main boot image.
 
         :param data: Raw data of img
@@ -1004,7 +1152,7 @@ class BootImg2(BootImgBase):
             if address != 0:
                 self.address = address
         else:
-            raise Exception('Unknown data type !')
+            raise Exception("Unknown data type !")
 
     def export(self) -> bytes:
         """Export image as bytes array.
@@ -1021,8 +1169,12 @@ class BootImg2(BootImgBase):
         return data
 
     @classmethod
-    def parse(cls, stream: Union[bytes, bytearray, BufferedReader, BytesIO],
-              step: int = 0x100, size: int = None) -> 'BootImg2':
+    def parse(
+        cls,
+        stream: Union[bytes, bytearray, BufferedReader, BytesIO],
+        step: int = 0x100,
+        size: int = None,
+    ) -> "BootImg2":
         """Parse image from stream buffer or bytes array.
 
         :param stream: The stream buffer or bytes array
@@ -1049,16 +1201,18 @@ class BootImg2(BootImgBase):
         imx_image = False
         while start_index < (last_index - Header.SIZE):
             header = Header.parse(read_raw_data(stream, Header.SIZE, no_seek=True))
-            if header.tag == SegTag.IVT2 or \
-                    header.length == SegIVT2.SIZE or \
-                    header.param in (0x40, 0x41, 0x42, 0x43):
+            if (
+                header.tag == SegTag.IVT2
+                or header.length == SegIVT2.SIZE
+                or header.param in (0x40, 0x41, 0x42, 0x43)
+            ):
                 imx_image = True
                 break
 
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception('Not an i.MX Boot Image!')
+            raise Exception("Not an i.MX Boot Image!")
 
         obj = BootImg2()
         if header.param:
@@ -1081,8 +1235,11 @@ class BootImg2(BootImgBase):
             obj.dcd.padding = (obj.ivt.app_address - obj.ivt.dcd_address) - obj.dcd.size
         # Parse APP
         app_start = start_index + (obj.ivt.app_address - obj.ivt.ivt_address)
-        app_size = obj.ivt.csf_address - obj.ivt.app_address if obj.ivt.csf_address else \
-            obj.bdt.app_length - (obj.bdt.app_start - obj.ivt.app_address)
+        app_size = (
+            obj.ivt.csf_address - obj.ivt.app_address
+            if obj.ivt.csf_address
+            else obj.bdt.app_length - (obj.bdt.app_start - obj.ivt.app_address)
+        )
         app_size = img_size - app_start if app_size > (img_size - app_start) else app_size
         obj.app.data = read_raw_data(stream, app_size, app_start)
         obj.app.padding = 0
@@ -1102,6 +1259,7 @@ class BootImg2(BootImgBase):
 # Boot Image V2b (i.MX8M)
 ########################################################################################################################
 
+
 class BootImg8m(BootImgBase):
     """IMX Boot Image."""
 
@@ -1111,8 +1269,7 @@ class BootImg8m(BootImgBase):
     APP_ALIGN = 0x1000
     # The value of img head size
     #           offset | size
-    HEAD_SIZE = {0x400: 0xC00,
-                 0x100: 0x300}
+    HEAD_SIZE = {0x400: 0xC00, 0x100: 0x300}
 
     @property
     def version(self) -> int:
@@ -1184,7 +1341,13 @@ class BootImg8m(BootImgBase):
         result += self.csf.space
         return result
 
-    def __init__(self, address: int = 0, offset: int = 0x400, version: int = 0x41, plugin: bool = False) -> None:
+    def __init__(
+        self,
+        address: int = 0,
+        offset: int = 0x400,
+        version: int = 0x41,
+        plugin: bool = False,
+    ) -> None:
         """Initialize boot image object.
 
         :param address: The start address of img in target memory
@@ -1260,7 +1423,9 @@ class BootImg8m(BootImgBase):
             msg += self.csf.info()
         return msg
 
-    def add_image(self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = 0) -> None:
+    def add_image(
+        self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = 0
+    ) -> None:
         """Add specific image into the main boot image.
 
         :param data: Raw data of img
@@ -1273,7 +1438,7 @@ class BootImg8m(BootImgBase):
             if address != 0:
                 self.address = address
         else:
-            raise Exception('Unknown data type !')
+            raise Exception("Unknown data type !")
 
     def export(self) -> bytes:
         """Export Image as bytes array.
@@ -1290,8 +1455,12 @@ class BootImg8m(BootImgBase):
         return data
 
     @classmethod
-    def parse(cls, stream: Union[bytes, bytearray, BufferedReader, BytesIO],
-              step: int = 0x100, size: int = None) -> BootImgBase:
+    def parse(
+        cls,
+        stream: Union[bytes, bytearray, BufferedReader, BytesIO],
+        step: int = 0x100,
+        size: int = None,
+    ) -> BootImgBase:
         """Parse image from stream buffer or bytes array.
 
         :param stream: The stream buffer or bytes array
@@ -1318,16 +1487,18 @@ class BootImg8m(BootImgBase):
         imx_image = False
         while start_index < (last_index - Header.SIZE):
             header = Header.parse(read_raw_data(stream, Header.SIZE, no_seek=True))
-            if header.tag == SegTag.IVT2 or \
-                    header.length == SegIVT2.SIZE or \
-                    header.param in (0x40, 0x41, 0x42, 0x43):
+            if (
+                header.tag == SegTag.IVT2
+                or header.length == SegIVT2.SIZE
+                or header.param in (0x40, 0x41, 0x42, 0x43)
+            ):
                 imx_image = True
                 break
 
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception('Not an i.MX Boot Image!')
+            raise Exception("Not an i.MX Boot Image!")
 
         obj = cls(version=header.param)
         img_size = last_index - start_index
@@ -1347,8 +1518,11 @@ class BootImg8m(BootImgBase):
             obj.dcd.padding = (obj.ivt.app_address - obj.ivt.dcd_address) - obj.dcd.size
         # Parse APP
         app_start = start_index + (obj.ivt.app_address - obj.ivt.ivt_address)
-        app_size = obj.ivt.csf_address - obj.ivt.app_address if obj.ivt.csf_address else \
-            obj.bdt.app_length - (obj.bdt.app_start - obj.ivt.app_address)
+        app_size = (
+            obj.ivt.csf_address - obj.ivt.app_address
+            if obj.ivt.csf_address
+            else obj.bdt.app_length - (obj.bdt.app_start - obj.ivt.app_address)
+        )
         app_size = img_size - app_start if app_size > (img_size - app_start) else app_size
         obj.app.data = read_raw_data(stream, app_size, app_start)
         obj.app.padding = 0
@@ -1365,6 +1539,7 @@ class BootImg8m(BootImgBase):
 # Boot Image V3a: i.MX8QXP-A0
 ########################################################################################################################
 
+
 class BootImg3a(BootImgBase):
     """i.MX Boot Image v3a."""
 
@@ -1374,11 +1549,11 @@ class BootImg3a(BootImgBase):
     IMG_TYPE_DATA = 0x04
 
     SCFW_FLAGS_APP = 0x01355FC4
-    SCFW_FLAGS_M4_0 = 0x4a5162
-    SCFW_FLAGS_M4_1 = 0x4f52a3
+    SCFW_FLAGS_M4_0 = 0x4A5162
+    SCFW_FLAGS_M4_1 = 0x4F52A3
     SCFW_FLAGS_SCFW = 0x1
 
-    INITIAL_LOAD_ADDR_SCU_ROM = 0x2000e000
+    INITIAL_LOAD_ADDR_SCU_ROM = 0x2000E000
     INITIAL_LOAD_ADDR_AP_ROM = 0x00110000
     INITIAL_LOAD_ADDR_FLEXSPI = 0x08000000
 
@@ -1390,8 +1565,7 @@ class BootImg3a(BootImgBase):
     APP_ALIGN = 0x1200
     # The value of img head size
     #           offset | size
-    HEAD_SIZE = {0x400: 0xC400,
-                 0x1000: 0x1400}
+    HEAD_SIZE = {0x400: 0xC400, 0x1000: 0x1400}
 
     PADDING_VAL = 0x00
 
@@ -1450,8 +1624,10 @@ class BootImg3a(BootImgBase):
         self._ivt[0].version = 0x01
         self._ivt[1].version = 0x01
         self._bdt = [SegBDS3a(), SegBDS3a()]
-        self.app = [[SegAPP() for _ in range(SegBDS3a.IMAGES_MAX_COUNT)],
-                    [SegAPP() for _ in range(SegBDS3a.IMAGES_MAX_COUNT)]]
+        self.app = [
+            [SegAPP() for _ in range(SegBDS3a.IMAGES_MAX_COUNT)],
+            [SegAPP() for _ in range(SegBDS3a.IMAGES_MAX_COUNT)],
+        ]
         self._dcd = SegDCD()
         self._csf = SegCSF()
         self._plg = False
@@ -1470,46 +1646,62 @@ class BootImg3a(BootImgBase):
             self.bdt[container].padding = 0
 
             # Set IVT section
-            self.ivt[container].ivt_address = (self.address[container] + self.offset +  # type: ignore
-                                               container * self.ivt[container].size)
-            self.ivt[container].bdt_address = (self.ivt[container].ivt_address +
-                                               self.ivt[container].space * (self.COUNT_OF_CONTAINERS - container) +
-                                               container * self.bdt[container].size)
+            self.ivt[container].ivt_address = (
+                self.address[container]  # type: ignore
+                + self.offset  # type: ignore
+                + container * self.ivt[container].size  # type: ignore
+            )
+            self.ivt[container].bdt_address = (
+                self.ivt[container].ivt_address
+                + self.ivt[container].space * (self.COUNT_OF_CONTAINERS - container)
+                + container * self.bdt[container].size
+            )
 
             if container == 0:
                 if self.dcd:
-                    self.ivt[container].dcd_address = self.ivt[container].bdt_address + self.bdt[container].space * 2
+                    self.ivt[container].dcd_address = (
+                        self.ivt[container].bdt_address + self.bdt[container].space * 2
+                    )
                     if self.csf.enabled:
-                        self.ivt[container].csf_address = self.ivt[container].dcd_address + self.dcd.space
+                        self.ivt[container].csf_address = (
+                            self.ivt[container].dcd_address + self.dcd.space
+                        )
                     else:
                         self.ivt[container].csf_address = 0
                 else:
                     self.ivt[container].dcd_address = 0
                     if self.csf.enabled:
-                        self.ivt[container].csf_address = self.ivt[container].bdt_address + \
-                                                          self.bdt[container].space * 2
+                        self.ivt[container].csf_address = (
+                            self.ivt[container].bdt_address + self.bdt[container].space * 2
+                        )
                     else:
                         self.ivt[container].csf_address = 0
             else:
                 self.ivt[container].dcd_address = 0
                 self.ivt[container].csf_address = 0
 
-            self.app[container][0].padding = self._compute_padding(self.bdt[container].images[0].image_size,
-                                                                   self.SECTOR_SIZE)
+            self.app[container][0].padding = self._compute_padding(
+                self.bdt[container].images[0].image_size, self.SECTOR_SIZE
+            )
             if self.bdt[container].images_count != 0:
                 self.bdt[container].boot_data_size = self.bdt[container].size
                 if container == 0:
                     self.bdt[container].images[0].image_source = self.APP_ALIGN
                 else:
                     last_image_index = self.bdt[container - 1].images_count - 1
-                    last_image_address = self.bdt[container - 1].images[last_image_index].image_source
-                    self.bdt[container].images[0].image_source = (last_image_address +
-                                                                  self.app[container - 1][last_image_index].space)
+                    last_image_address = (
+                        self.bdt[container - 1].images[last_image_index].image_source
+                    )
+                    self.bdt[container].images[0].image_source = (
+                        last_image_address + self.app[container - 1][last_image_index].space
+                    )
             for i in range(self.bdt[container].images_count - 1):
-                self.bdt[container].images[i + 1].image_source = self.bdt[container].images[i].image_source + \
-                                                                 self.app[container][i].space
-                self.app[container][i + 1].padding = self._compute_padding(self.bdt[container].images[i + 1].image_size,
-                                                                           self.SECTOR_SIZE)
+                self.bdt[container].images[i + 1].image_source = (
+                    self.bdt[container].images[i].image_source + self.app[container][i].space
+                )
+                self.app[container][i + 1].padding = self._compute_padding(
+                    self.bdt[container].images[i + 1].image_size, self.SECTOR_SIZE
+                )
             if container == self.COUNT_OF_CONTAINERS - 1:
                 self.app[container][self.bdt[container].images_count - 1].padding = 0
                 # Set BDT section
@@ -1549,7 +1741,9 @@ class BootImg3a(BootImgBase):
             msg += self.csf.info()
         return msg
 
-    def add_image(self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = 0) -> None:
+    def add_image(
+        self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = 0
+    ) -> None:
         """Add specific image into the main boot image.
 
         :param data: Raw data of image
@@ -1577,8 +1771,9 @@ class BootImg3a(BootImgBase):
             self.bdt[0].images[image_index].image_size = len(data)
             self.bdt[0].images[image_index].rom_flags = 0
             self.bdt[0].images[image_index].hab_flags = self.IMG_TYPE_EXEC
-            self.bdt[0].images[image_index].scfw_flags = self.SCFW_FLAGS_M4_0 if img_type == EnumAppType.M4_0 else \
-                self.SCFW_FLAGS_M4_1
+            self.bdt[0].images[image_index].scfw_flags = (
+                self.SCFW_FLAGS_M4_0 if img_type == EnumAppType.M4_0 else self.SCFW_FLAGS_M4_1
+            )
             self.bdt[0].images_count += 1
 
             self.app[0][image_index].data = data
@@ -1586,8 +1781,8 @@ class BootImg3a(BootImgBase):
 
         elif img_type == EnumAppType.SCFW:
             image_index = self.bdt[0].images_count
-            self.bdt[0].images[image_index].image_destination = 0x1ffe0000
-            self.bdt[0].images[image_index].image_entry = 0x1ffe0000
+            self.bdt[0].images[image_index].image_destination = 0x1FFE0000
+            self.bdt[0].images[image_index].image_entry = 0x1FFE0000
             self.bdt[0].images[image_index].image_size = len(data)
             self.bdt[0].images[image_index].rom_flags = 0
             self.bdt[0].images[image_index].hab_flags = self.IMG_TYPE_EXEC
@@ -1596,12 +1791,15 @@ class BootImg3a(BootImgBase):
 
             self.app[0][image_index].data = data
             self.app[0][image_index].padding = self._compute_padding(len(data), self.SECTOR_SIZE)
-            self._sdc_address = (self.bdt[0].images[image_index].image_destination + len(data) +
-                                 self._compute_padding(len(data), self.IMG_AUTO_ALIGN))
+            self._sdc_address = (
+                self.bdt[0].images[image_index].image_destination
+                + len(data)
+                + self._compute_padding(len(data), self.IMG_AUTO_ALIGN)
+            )
 
         elif img_type == EnumAppType.SCD:
             if self._sdc_address == 0:
-                raise Exception('SCFW have to be define before SCD!')
+                raise Exception("SCFW have to be define before SCD!")
             image_index = self.bdt[0].images_count
             self.bdt[0].images[image_index].image_destination = self._sdc_address
             self.bdt[0].images[image_index].image_entry = 0
@@ -1615,7 +1813,7 @@ class BootImg3a(BootImgBase):
             self.app[0][image_index].padding = self._compute_padding(len(data), self.SECTOR_SIZE)
 
         else:
-            raise Exception('Unknown data type!')
+            raise Exception("Unknown data type!")
 
     def export(self) -> bytes:
         """Export Image as binary blob."""
@@ -1628,7 +1826,9 @@ class BootImg3a(BootImgBase):
         if self.dcd:
             data += self.dcd.export()
         data += self.csf.export()
-        data += bytes([self.PADDING_VAL] * self._compute_padding(len(data), self.APP_ALIGN - self.offset))
+        data += bytes(
+            [self.PADDING_VAL] * self._compute_padding(len(data), self.APP_ALIGN - self.offset)
+        )
 
         for container in range(self.COUNT_OF_CONTAINERS):
             for image in range(self.bdt[container].images_count):
@@ -1637,8 +1837,12 @@ class BootImg3a(BootImgBase):
         return data
 
     @classmethod
-    def parse(cls, stream: Union[bytes, bytearray, BufferedReader, BytesIO],
-              step: int = 0x100, size: int = None) -> BootImgBase:
+    def parse(
+        cls,
+        stream: Union[bytes, bytearray, BufferedReader, BytesIO],
+        step: int = 0x100,
+        size: int = None,
+    ) -> BootImgBase:
         """Parse image from stream buffer or bytes array.
 
         :param stream: The stream buffer or bytes array
@@ -1665,15 +1869,18 @@ class BootImg3a(BootImgBase):
         imx_image = False
         while start_index < (last_index - Header.SIZE):
             header = Header.parse(read_raw_data(stream, Header.SIZE, no_seek=True))
-            if header.tag == SegTag.IVT3 or header.length == SegIVT3a.SIZE or \
-                    header.param in (0x43,):
+            if (
+                header.tag == SegTag.IVT3
+                or header.length == SegIVT3a.SIZE
+                or header.param in (0x43,)
+            ):
                 imx_image = True
                 break
 
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception('Not an i.MX Boot Image!')
+            raise Exception("Not an i.MX Boot Image!")
 
         obj = cls(version=header.param)
         # TODO: not used right now: img_size = last_index - start_index
@@ -1697,7 +1904,9 @@ class BootImg3a(BootImgBase):
         for container in range(obj.COUNT_OF_CONTAINERS):
             for i in range(obj.bdt[container].images_count):
                 stream.seek(obj.bdt[container].images[i].image_source - obj.offset, 0)
-                obj.app[container][i].data = read_raw_data(stream, obj.bdt[container].images[i].image_size)
+                obj.app[container][i].data = read_raw_data(
+                    stream, obj.bdt[container].images[i].image_size
+                )
 
         return obj
 
@@ -1705,6 +1914,7 @@ class BootImg3a(BootImgBase):
 ########################################################################################################################
 # Boot Image V3b: i.MX8QM-A0
 ########################################################################################################################
+
 
 class BootImg3b(BootImgBase):
     """IMX Boot Image v3b."""
@@ -1716,11 +1926,11 @@ class BootImg3b(BootImgBase):
 
     SCFW_FLAGS_A53 = 0x1354014
     SCFW_FLAGS_A72 = 0x1354065
-    SCFW_FLAGS_M4_0 = 0x4a5162
-    SCFW_FLAGS_M4_1 = 0x4f52a3
+    SCFW_FLAGS_M4_0 = 0x4A5162
+    SCFW_FLAGS_M4_1 = 0x4F52A3
     SCFW_FLAGS_SCFW = 0x1
 
-    INITIAL_LOAD_ADDR_SCU_ROM = 0x2000e000
+    INITIAL_LOAD_ADDR_SCU_ROM = 0x2000E000
     INITIAL_LOAD_ADDR_AP_ROM = 0x00110000
     INITIAL_LOAD_ADDR_FLEXSPI = 0x08000000
 
@@ -1736,8 +1946,7 @@ class BootImg3b(BootImgBase):
     PADDING_VAL = 0x00
     # The value of img head size
     #           offset | size
-    HEAD_SIZE = {0x400: 0xC400,
-                 0x1000: 0x1400}
+    HEAD_SIZE = {0x400: 0xC400, 0x1000: 0x1400}
 
     COUNT_OF_CONTAINERS = 2
 
@@ -1795,8 +2004,10 @@ class BootImg3b(BootImgBase):
         super().__init__(address, offset)
         self._ivt = [SegIVT3b(version), SegIVT3b(version)]
         self._bdt = [SegBDS3b(), SegBDS3b()]
-        self.app = [[SegAPP() for _ in range(SegBDS3b.IMAGES_MAX_COUNT)],
-                    [SegAPP() for _ in range(SegBDS3b.IMAGES_MAX_COUNT)]]
+        self.app = [
+            [SegAPP() for _ in range(SegBDS3b.IMAGES_MAX_COUNT)],
+            [SegAPP() for _ in range(SegBDS3b.IMAGES_MAX_COUNT)],
+        ]
         self._dcd = SegDCD()
         self.scd = SegAPP()
         self._csf = SegCSF()
@@ -1807,7 +2018,9 @@ class BootImg3b(BootImgBase):
 
     @staticmethod
     def _compute_padding(image_size: int, sector_size: int) -> int:
-        return ((image_size // sector_size + (image_size % sector_size > 0)) * sector_size) - image_size
+        return (
+            (image_size // sector_size + (image_size % sector_size > 0)) * sector_size
+        ) - image_size
 
     def _update(self) -> None:
         # Set zero padding for IVT and BDT sections
@@ -1816,58 +2029,81 @@ class BootImg3b(BootImgBase):
             self.bdt[container].padding = 0
 
             # Set IVT section
-            self.ivt[container].ivt_address = (self.address[container] + self.offset +  # type: ignore
-                                               container * self.ivt[container].size)
-            self.ivt[container].bdt_address = (self.ivt[container].ivt_address +
-                                               self.ivt[container].space * (2 - container) +
-                                               container * self.bdt[container].size)
+            self.ivt[container].ivt_address = (
+                self.address[container]  # type: ignore
+                + self.offset  # type: ignore
+                + container * self.ivt[container].size  # type: ignore
+            )
+            self.ivt[container].bdt_address = (
+                self.ivt[container].ivt_address
+                + self.ivt[container].space * (2 - container)
+                + container * self.bdt[container].size
+            )
             if container == 0:
                 if self.dcd:
-                    self.ivt[container].dcd_address = self.ivt[container].bdt_address + self.bdt[container].space * 2
+                    self.ivt[container].dcd_address = (
+                        self.ivt[container].bdt_address + self.bdt[container].space * 2
+                    )
                     if self.csf.enabled:
-                        self.ivt[container].csf_address = self.ivt[container].dcd_address + self.dcd.space
+                        self.ivt[container].csf_address = (
+                            self.ivt[container].dcd_address + self.dcd.space
+                        )
                     else:
                         self.ivt[container].csf_address = 0
                 else:
                     self.ivt[container].dcd_address = 0
                     if self.csf.enabled:
-                        self.ivt[container].csf_address = self.ivt[container].bdt_address + \
-                                                          self.bdt[container].space * 2
+                        self.ivt[container].csf_address = (
+                            self.ivt[container].bdt_address + self.bdt[container].space * 2
+                        )
                     else:
                         self.ivt[container].csf_address = 0
             else:
                 self.ivt[container].dcd_address = 0
                 self.ivt[container].csf_address = 0
 
-            self.app[container][0].padding = self._compute_padding(self.bdt[container].images[0].image_size,
-                                                                   self.SECTOR_SIZE)
+            self.app[container][0].padding = self._compute_padding(
+                self.bdt[container].images[0].image_size, self.SECTOR_SIZE
+            )
             if self.bdt[container].images_count != 0:
                 self.bdt[container].boot_data_size = self.bdt[container].size
                 if container == 0:
                     self.bdt[container].images[0].image_source = self.APP_ALIGN
                 else:
                     last_image_index = self.bdt[container - 1].images_count - 1
-                    last_image_address = self.bdt[container - 1].images[last_image_index].image_source
-                    self.bdt[container].images[0].image_source = (last_image_address +
-                                                                  self.app[container - 1][last_image_index].space)
+                    last_image_address = (
+                        self.bdt[container - 1].images[last_image_index].image_source
+                    )
+                    self.bdt[container].images[0].image_source = (
+                        last_image_address + self.app[container - 1][last_image_index].space
+                    )
             next_image_address = 0
             for i in range(self.bdt[container].images_count - 1):
-                self.bdt[container].images[i + 1].image_source = self.bdt[container].images[i].image_source + \
-                                                                 self.app[container][i].space
+                self.bdt[container].images[i + 1].image_source = (
+                    self.bdt[container].images[i].image_source + self.app[container][i].space
+                )
                 self.app[container][i + 1].padding = self._compute_padding(
-                    self.bdt[container].images[i + 1].image_size, self.SECTOR_SIZE)
-                next_image_address = self.bdt[container].images[i + 1].image_source + self.app[container][i + 1].space
+                    self.bdt[container].images[i + 1].image_size, self.SECTOR_SIZE
+                )
+                next_image_address = (
+                    self.bdt[container].images[i + 1].image_source
+                    + self.app[container][i + 1].space
+                )
 
             if container == 0:
                 if self.bdt[container].scd.image_destination != 0:
                     self.bdt[container].scd.image_source = next_image_address
-                    self.scd.padding = self._compute_padding(self.bdt[0].scd.image_size, self.SECTOR_SIZE)
+                    self.scd.padding = self._compute_padding(
+                        self.bdt[0].scd.image_size, self.SECTOR_SIZE
+                    )
                     next_image_address += self.scd.space
                     # Set BDT section
 
                 if self.csf.enabled:
                     self.bdt[container].csf.image_source = next_image_address
-                    self.csf.padding = self._compute_padding(self.bdt[0].csf.image_size, self.SECTOR_SIZE)
+                    self.csf.padding = self._compute_padding(
+                        self.bdt[0].csf.image_size, self.SECTOR_SIZE
+                    )
                     next_image_address += self.csf.space
                     # Set BDT section
 
@@ -1906,7 +2142,9 @@ class BootImg3b(BootImgBase):
             msg += self.csf.info()
         return msg
 
-    def add_image(self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = 0) -> None:
+    def add_image(
+        self, data: bytes, img_type: EnumAppType = EnumAppType.APP, address: int = 0
+    ) -> None:
         """Add specific image into the main boot image.
 
         :param data: Raw data of image
@@ -1944,18 +2182,23 @@ class BootImg3b(BootImgBase):
             elif img_type == EnumAppType.M4_1:
                 self.bdt[0].images[image_index].flags = self.SCFW_FLAGS_M4_1
 
-            self.app[0][image_index].padding = ((len(data) // self.SECTOR_SIZE +
-                                                 (len(data) % self.SECTOR_SIZE > 0)) * self.SECTOR_SIZE) - len(data)
+            self.app[0][image_index].padding = (
+                (len(data) // self.SECTOR_SIZE + (len(data) % self.SECTOR_SIZE > 0))
+                * self.SECTOR_SIZE
+            ) - len(data)
             self.bdt[0].images_count += 1
 
         elif img_type == EnumAppType.SCFW:
             image_index = self.bdt[0].images_count
-            self.bdt[0].images[image_index].image_destination = 0x30fe0000
-            self.bdt[0].images[image_index].image_entry = 0x1ffe0000
+            self.bdt[0].images[image_index].image_destination = 0x30FE0000
+            self.bdt[0].images[image_index].image_entry = 0x1FFE0000
             self.bdt[0].images[image_index].image_size = len(data)
             self.bdt[0].images[image_index].flags = self.SCFW_FLAGS_SCFW
-            self._scd_address = (self.bdt[0].images[image_index].image_destination + len(data) +
-                                 self._compute_padding(len(data), self.IMG_AUTO_ALIGN))
+            self._scd_address = (
+                self.bdt[0].images[image_index].image_destination
+                + len(data)
+                + self._compute_padding(len(data), self.IMG_AUTO_ALIGN)
+            )
             self.bdt[0].images_count += 1
 
             self.app[0][image_index].data = data
@@ -1963,7 +2206,7 @@ class BootImg3b(BootImgBase):
 
         elif img_type == EnumAppType.SCD:
             if self._scd_address == 0:
-                raise Exception('SCFW have to be define before SCD!')
+                raise Exception("SCFW have to be define before SCD!")
             self.scd.data = data
             self.scd.padding = self._compute_padding(len(data), self.SECTOR_SIZE)
             self.bdt[0].scd.image_destination = self._scd_address
@@ -1972,7 +2215,7 @@ class BootImg3b(BootImgBase):
             self.ivt[0].scd_address = self.bdt[0].scd.image_destination
 
         else:
-            raise Exception('Unknown image type!')
+            raise Exception("Unknown image type!")
 
     def export(self) -> bytes:
         """Export."""
@@ -1985,7 +2228,9 @@ class BootImg3b(BootImgBase):
         data += self.bdt[1].export()
         if self.dcd:
             data += self.dcd.export()
-        data += bytes([self.PADDING_VAL] * self._compute_padding(len(data), self.APP_ALIGN - self.offset))
+        data += bytes(
+            [self.PADDING_VAL] * self._compute_padding(len(data), self.APP_ALIGN - self.offset)
+        )
 
         for container in range(self.COUNT_OF_CONTAINERS):
             for i in range(self.bdt[container].images_count):
@@ -2000,8 +2245,12 @@ class BootImg3b(BootImgBase):
         return data
 
     @classmethod
-    def parse(cls, stream: Union[bytes, bytearray, BufferedReader, BytesIO],
-              step: int = 0x100, size: int = None) -> BootImgBase:
+    def parse(
+        cls,
+        stream: Union[bytes, bytearray, BufferedReader, BytesIO],
+        step: int = 0x100,
+        size: int = None,
+    ) -> BootImgBase:
         """Parse image from stream buffer or bytes array.
 
         :param stream: The stream buffer or bytes array
@@ -2028,15 +2277,18 @@ class BootImg3b(BootImgBase):
         imx_image = False
         while start_index < (last_index - Header.SIZE):
             header = Header.parse(read_raw_data(stream, Header.SIZE, no_seek=True))
-            if header.tag == SegTag.IVT2 or header.length == SegIVT3b.SIZE or \
-                    header.param in (0x43,):
+            if (
+                header.tag == SegTag.IVT2
+                or header.length == SegIVT3b.SIZE
+                or header.param in (0x43,)
+            ):
                 imx_image = True
                 break
 
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception('Not an i.MX Boot Image!')
+            raise Exception("Not an i.MX Boot Image!")
 
         obj = cls(version=header.param)
         # TODO: not used right now: img_size = last_index - start_index
@@ -2056,7 +2308,9 @@ class BootImg3b(BootImgBase):
         for container in range(obj.COUNT_OF_CONTAINERS):
             for i in range(obj.bdt[container].images_count):
                 stream.seek(obj.bdt[container].images[i].image_source - obj.offset, 0)
-                obj.app[container][i].data = read_raw_data(stream, obj.bdt[container].images[i].image_size)
+                obj.app[container][i].data = read_raw_data(
+                    stream, obj.bdt[container].images[i].image_size
+                )
         # Parse SCD
         if obj.bdt[0].scd.image_source != 0:
             stream.seek(obj.bdt[0].scd.image_source - obj.offset, 0)
@@ -2072,6 +2326,7 @@ class BootImg3b(BootImgBase):
 ########################################################################################################################
 # Boot Image V4: i.MX8DM, i.MX8QM_B0, i.MX8QXP_B0
 ########################################################################################################################
+
 
 class BootImg4(BootImgBase):
     """i.MX Boot Image v4."""
@@ -2124,8 +2379,12 @@ class BootImg4(BootImgBase):
         return data
 
     @classmethod
-    def parse(cls, stream: Union[bytes, bytearray, BufferedReader, BytesIO],
-              step: int = 0x100, size: int = None) -> BootImgBase:
+    def parse(
+        cls,
+        stream: Union[bytes, bytearray, BufferedReader, BytesIO],
+        step: int = 0x100,
+        size: int = None,
+    ) -> BootImgBase:
         """Parse image from stream buffer or bytes array.
 
         :param stream: The stream buffer or bytes array
@@ -2139,7 +2398,7 @@ class BootImg4(BootImgBase):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise TypeError(" Not correct value type: \"{}\" !".format(type(stream)))
+            raise TypeError(' Not correct value type: "{}" !'.format(type(stream)))
 
         start_index = stream.tell()
         last_index = stream.seek(0, SEEK_END)
@@ -2158,7 +2417,7 @@ class BootImg4(BootImgBase):
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception(' Not an i.MX Boot Image !')
+            raise Exception(" Not an i.MX Boot Image !")
 
         # TODO: not used right now: img_size = last_index - start_index
         obj = cls()
@@ -2175,6 +2434,7 @@ class BootImg4(BootImgBase):
 ########################################################################################################################
 # i.MX Kernel Image Classes
 ########################################################################################################################
+
 
 class KernelImg:
     """IMX Kernel Image."""
@@ -2219,8 +2479,13 @@ class KernelImg:
         assert isinstance(value, SegCSF)
         self._csf = value
 
-    def __init__(self, address: int = 0, app: Optional[bytes] = None,
-                 csf: Union[SegCSF, Any] = None, version: int = 0x41) -> None:
+    def __init__(
+        self,
+        address: int = 0,
+        app: Optional[bytes] = None,
+        csf: Union[SegCSF, Any] = None,
+        version: int = 0x41,
+    ) -> None:
         """Initialize the IMX Kernel Image."""
         self._ivt = SegIVT2(version)
         self._ivt.app_address = address
@@ -2228,10 +2493,10 @@ class KernelImg:
         self._csf = SegCSF() if csf is None else csf
 
     def __str__(self) -> str:
-        return ''
+        return ""
 
     def __repr__(self) -> str:
-        return ''
+        return ""
 
     def _update(self) -> None:
         pass
@@ -2259,8 +2524,12 @@ class KernelImg:
 # i.MX Image Public Methods
 ########################################################################################################################
 
-def parse(stream: Union[bytes, bytearray, BufferedReader, BytesIO],
-          step: int = 0x100, size: int = None) -> BootImgBase:
+
+def parse(
+    stream: Union[bytes, bytearray, BufferedReader, BytesIO],
+    step: int = 0x100,
+    size: int = None,
+) -> BootImgBase:
     """Common parser for all versions of i.MX boot images.
 
     :param stream: stream buffer to image
@@ -2274,7 +2543,7 @@ def parse(stream: Union[bytes, bytearray, BufferedReader, BytesIO],
         stream = BytesIO(stream)
 
     if not isinstance(stream, (BufferedReader, BytesIO)):
-        raise TypeError(" Not correct value type: \"{}\" !".format(type(stream)))
+        raise TypeError(' Not correct value type: "{}" !'.format(type(stream)))
 
     # calculate stream size
     start_index = stream.tell()
@@ -2287,13 +2556,25 @@ def parse(stream: Union[bytes, bytearray, BufferedReader, BytesIO],
     while start_index < (last_index - Header.SIZE):
         raw = read_raw_data(stream, Header.SIZE, no_seek=True)
 
-        if raw[0] == SegTag.IVT2 and ((raw[1] << 8) | raw[2]) == SegIVT2.SIZE and raw[3] in (0x40, 0x41, 0x42):
+        if (
+            raw[0] == SegTag.IVT2
+            and ((raw[1] << 8) | raw[2]) == SegIVT2.SIZE
+            and raw[3] in (0x40, 0x41, 0x42)
+        ):
             return BootImg2.parse(stream)
 
-        if raw[0] == SegTag.IVT2 and ((raw[1] << 8) | raw[2]) == SegIVT3b.SIZE and raw[3] in (0x43,):
+        if (
+            raw[0] == SegTag.IVT2
+            and ((raw[1] << 8) | raw[2]) == SegIVT3b.SIZE
+            and raw[3] in (0x43,)
+        ):
             return BootImg3b.parse(stream)
 
-        if raw[0] == SegTag.IVT3 and ((raw[1] << 8) | raw[2]) == SegIVT3a.SIZE and raw[3] in (0x43,):
+        if (
+            raw[0] == SegTag.IVT3
+            and ((raw[1] << 8) | raw[2]) == SegIVT3a.SIZE
+            and raw[3] in (0x43,)
+        ):
             return BootImg3a.parse(stream)
 
         if raw[3] == SegTag.BIC1:
@@ -2301,4 +2582,4 @@ def parse(stream: Union[bytes, bytearray, BufferedReader, BytesIO],
 
         start_index = stream.seek(step, SEEK_CUR)
 
-    raise Exception(' Not an i.MX Boot Image !')
+    raise Exception(" Not an i.MX Boot Image !")

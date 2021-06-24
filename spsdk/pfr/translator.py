@@ -22,19 +22,13 @@ class Translator:
         """
         self.logger = logging.getLogger("translator")
         self.cmpa_cfg = cmpa
-        self.cmpa_obj = CMPA(
-            device=cmpa.device, revision=cmpa.revision,
-            user_config=cmpa
-        )
+        self.cmpa_obj = CMPA(device=cmpa.device, revision=cmpa.revision, user_config=cmpa)
         self.cfpa_cfg = cfpa
-        self.cfpa_obj = CFPA(
-            device=cfpa.device, revision=cfpa.revision,
-            user_config=cfpa
-        )
+        self.cfpa_obj = CFPA(device=cfpa.device, revision=cfpa.revision, user_config=cfpa)
         self.handlers = {
-            'CMPA': self._cmpa_translate,
-            'CFPA': self._cfpa_translate,
-            'UTIL': self._util_translate
+            "CMPA": self._cmpa_translate,
+            "CFPA": self._cfpa_translate,
+            "UTIL": self._util_translate,
         }
 
     def translate(self, key: str) -> int:
@@ -43,15 +37,15 @@ class Translator:
         :param key: Register's (key's) stringified name
         :return: Register's (key's) value
         """
-        area, value = key.split('.', maxsplit=1)
+        area, value = key.split(".", maxsplit=1)
         self.logger.debug(f"Area designator: {area}")
         self.logger.debug(f"Register designator: {value}")
         return self.handlers[area](value)
 
     def _cmpa_translate(self, key: str) -> int:
         """Handler for CMPA data."""
-        self.logger.debug(f'Extracting value from {key}')
-        splitted = key.split('.', maxsplit=1)
+        self.logger.debug(f"Extracting value from {key}")
+        splitted = key.split(".", maxsplit=1)
         register = self.cmpa_obj.registers.find_reg(splitted[0])
         if len(splitted) == 2:
             value = register.find_bitfield(splitted[1]).get_value()
@@ -63,8 +57,8 @@ class Translator:
 
     def _cfpa_translate(self, key: str) -> int:
         """Handler for CFPA data."""
-        self.logger.debug(f'Extracting value from {key}')
-        splitted = key.split('.', maxsplit=1)
+        self.logger.debug(f"Extracting value from {key}")
+        splitted = key.split(".", maxsplit=1)
         register = self.cfpa_obj.registers.find_reg(splitted[0])
         if len(splitted) == 2:
             value = register.find_bitfield(splitted[1]).get_value()
@@ -76,7 +70,5 @@ class Translator:
 
     def _util_translate(self, key: str) -> int:
         """Handler for Utils data."""
-        values = {
-            'isUDSKeyCodeValid': False
-        }
+        values = {"isUDSKeyCodeValid": False}
         return values[key]

@@ -1,6 +1,6 @@
 {
   "device": "lpc55s6x",
-  "revision": "a1",
+  "revision": "1b",
   "type": "cmpa",
   "settings": {
     "BOOT_CFG": {
@@ -61,7 +61,6 @@
       "ADDR2_PRG": "0b0000",
       "LOCK_REG0": "0b00",
       "LOCK_REG1": "0b00",
-      "LOCK_REG2": "0b00",
       "REG0_ERASE_CHECK_EN": "0b00",
       "REG1_ERASE_CHECK_EN": "0b00",
       "REG2_ERASE_CHECK_EN": "0b00"

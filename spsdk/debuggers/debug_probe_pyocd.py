@@ -25,13 +25,15 @@ from pyocd.utility.sequencer import CallSequence
 from pyocd.coresight.discovery import ADIVersion, ADIv5Discovery, ADIv6Discovery
 from pyocd.probe.debug_probe import DebugProbe as PyOCDDebugProbe
 
-from .debug_probe import (DebugProbe,
-                          ProbeNotFoundError,
-                          DebugMailBoxAPNotFoundError,
-                          DebugProbeTransferError,
-                          DebugProbeNotOpenError,
-                          DebugProbeError,
-                          DebugProbeMemoryInterfaceAPNotFoundError)
+from .debug_probe import (
+    DebugProbe,
+    ProbeNotFoundError,
+    DebugMailBoxAPNotFoundError,
+    DebugProbeTransferError,
+    DebugProbeNotOpenError,
+    DebugProbeError,
+    DebugProbeMemoryInterfaceAPNotFoundError,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -45,15 +47,16 @@ def set_logger(level: int) -> None:
     """
     logger.setLevel(level)
 
+    logging.getLogger("pyocd.board.board").setLevel(logging.CRITICAL)
+    logging.getLogger("pyocd.core.coresight_target").setLevel(level)
+    logging.getLogger("pyocd.probe.common").setLevel(level)
+    logging.getLogger("pyocd.utility").setLevel(level)
+    logging.getLogger("pyocd.core").setLevel(level)
+    logging.getLogger("pyocd.coresight").setLevel(level)
 
-    logging.getLogger('pyocd.board.board').setLevel(logging.CRITICAL)
-    logging.getLogger('pyocd.core.coresight_target').setLevel(level)
-    logging.getLogger('pyocd.probe.common').setLevel(level)
-    logging.getLogger('pyocd.utility').setLevel(level)
-    logging.getLogger('pyocd.core').setLevel(level)
-    logging.getLogger('pyocd.coresight').setLevel(level)
 
 set_logger(logging.CRITICAL)
+
 
 class DebugProbePyOCD(DebugProbe):
     """Class to define PyOCD package interface for NXP SPSDK."""
@@ -86,16 +89,17 @@ class DebugProbePyOCD(DebugProbe):
         :param user_params: The user params dictionary
         :return: probe_description
         """
-        #pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         from .utils import DebugProbes, ProbeDescription
 
         probes = DebugProbes()
-        connected_probes = ConnectHelper.get_all_connected_probes(blocking=False, unique_id=hardware_id)
+        connected_probes = ConnectHelper.get_all_connected_probes(
+            blocking=False, unique_id=hardware_id
+        )
         for probe in connected_probes:
-            probes.append(ProbeDescription("PyOCD",
-                                           probe.unique_id,
-                                           probe.description,
-                                           DebugProbePyOCD))
+            probes.append(
+                ProbeDescription("PyOCD", probe.unique_id, probe.description, DebugProbePyOCD)
+            )
 
         return probes
 
@@ -111,7 +115,9 @@ class DebugProbePyOCD(DebugProbe):
         :raises DebugProbeError: The PyOCD cannot establish communication with target
         """
         try:
-            self.pyocd_session = ConnectHelper.session_with_chosen_probe(blocking=False, unique_id=self.hardware_id)
+            self.pyocd_session = ConnectHelper.session_with_chosen_probe(
+                blocking=False, unique_id=self.hardware_id
+            )
 
             if self.pyocd_session is None:
                 raise ProbeNotFoundError("No probe available!")
@@ -334,24 +340,26 @@ class DebugProbePyOCD(DebugProbe):
                     return access_port
             else:
                 if isinstance(access_port, MEM_AP):
-                    logger.debug(f"Found Memory interface access port {access_port.short_description}")
+                    logger.debug(
+                        f"Found Memory interface access port {access_port.short_description}"
+                    )
                     self.mem_ap_ix = access_port.address.apsel
                     return access_port
 
         return None
 
     # pylint: disable=unused-argument
-    def will_init_target(self, target: Any, init_sequence: 'CallSequence') -> None:
+    def will_init_target(self, target: Any, init_sequence: "CallSequence") -> None:
         """Initialize target.
 
         Modification of initialization sequence to allow do debug authentication operations.
         """
         # modify the (coresight_target.py) mutable call sequence
-        init_sequence.remove_task('load_svd')
-        init_sequence.replace_task('dp_init',           self.dp_init_sequence)      # pylint: disable=bad-whitespace
-        init_sequence.replace_task('create_discoverer', self._create_discoverer)
-        init_sequence.remove_task('check_for_cores')
-        init_sequence.remove_task('create_flash')
+        init_sequence.remove_task("load_svd")
+        init_sequence.replace_task("dp_init", self.dp_init_sequence)
+        init_sequence.replace_task("create_discoverer", self._create_discoverer)
+        init_sequence.remove_task("check_for_cores")
+        init_sequence.remove_task("create_flash")
 
     # pylint: disable=protected-access
     def _create_discoverer(self) -> None:
@@ -382,20 +390,20 @@ class DebugProbePyOCD(DebugProbe):
 
         if isinstance(probe, JLinkProbe):
             return CallSequence(
-                ('get_probe_capabilities', debug_probe._get_probe_capabilities),
-                ('connect', self._connect_jlink),
-                ('clear_sticky_err', debug_probe.clear_sticky_err),
-                ('power_up_debug', debug_probe.power_up_debug),
-                ('check_version', debug_probe._check_version),
-                )
+                ("get_probe_capabilities", debug_probe._get_probe_capabilities),
+                ("connect", self._connect_jlink),
+                ("clear_sticky_err", debug_probe.clear_sticky_err),
+                ("power_up_debug", debug_probe.power_up_debug),
+                ("check_version", debug_probe._check_version),
+            )
 
         return CallSequence(
-            ('get_probe_capabilities', debug_probe._get_probe_capabilities),
-            ('connect', debug_probe._connect),
-            ('clear_sticky_err', debug_probe.clear_sticky_err),
-            ('power_up_debug', debug_probe.power_up_debug),
-            ('check_version', debug_probe._check_version),
-            )
+            ("get_probe_capabilities", debug_probe._get_probe_capabilities),
+            ("connect", debug_probe._connect),
+            ("clear_sticky_err", debug_probe.clear_sticky_err),
+            ("power_up_debug", debug_probe.power_up_debug),
+            ("check_version", debug_probe._check_version),
+        )
 
     # pylint: disable=protected-access
     def _connect_jlink(self) -> None:
@@ -430,10 +438,10 @@ class DebugProbePyOCD(DebugProbe):
 
         try:
             probe._link.set_tif(interface)
-            if probe.session.options.get('jlink.power'):
+            if probe.session.options.get("jlink.power"):
                 probe._link.power_on()
-            #device_name = probe.session.options.get('jlink.device') or "Cortex-M4"
-            #probe._link.connect(device_name, speed=200)
+            # device_name = probe.session.options.get('jlink.device') or "Cortex-M4"
+            # probe._link.connect(device_name, speed=200)
             probe._link.coresight_configure()
             probe._protocol = protocol
         except JLinkException as exc:
@@ -451,19 +459,20 @@ class DebugProbePyOCD(DebugProbe):
         # Report on DP version.
         debug_probe.dpidr = probe.dpidr = __read_idr(probe)
         mindp = " MINDP" if probe.dpidr.mindp else ""
-        logger.info(f"DP IDR = 0x{probe.dpidr.idr:08X} (v{probe.dpidr.version}{mindp} rev{probe.dpidr.revision})")
+        logger.info(
+            f"DP IDR = 0x{probe.dpidr.idr:08X} (v{probe.dpidr.version}{mindp} rev{probe.dpidr.revision})"
+        )
 
     class DMBoxADIv5Discovery(ADIv5Discovery):
         """Custom discoverer class based of ADIv5Discovery."""
 
         def discover(self) -> CallSequence:
             """Setup list of calls to perform the components discovery."""
-            #pylint: disable=bad-whitespace
             return CallSequence(
-                ('find_aps',            self._find_aps),
-                ('create_aps',          self._create_aps),
-                ('find_components',     self._find_components),
-                ('create_cores',     	self._create_cores)
+                ("find_aps", self._find_aps),
+                ("create_aps", self._create_aps),
+                ("find_components", self._find_components),
+                ("create_cores", self._create_cores),
             )
 
         def _find_components(self) -> None:
@@ -482,7 +491,7 @@ class DebugProbePyOCD(DebugProbe):
         def discover(self) -> CallSequence:
             """Setup list of calls to perform the components discovery."""
             return CallSequence(
-                ('find_root_components', self._find_root_components),
+                ("find_root_components", self._find_root_components),
             )
 
     ## Map from ADI version to the discovery class.

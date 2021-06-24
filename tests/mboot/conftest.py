@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,12 @@ from .virtual_device import VirtualDevice
 
 
 def pytest_addoption(parser):
-    parser.addoption("--target", action="store", default="VIRTUAL", help="Device: VIRTUAL, IMXRT, ... or 'VID:PID'")
+    parser.addoption(
+        "--target",
+        action="store",
+        default="VIRTUAL",
+        help="Device: VIRTUAL, IMXRT, ... or 'VID:PID'",
+    )
 
 
 @pytest.fixture(scope="module")
@@ -23,9 +28,9 @@ def target(request):
 
 @pytest.fixture(scope="module")
 def config(target):
-    devices_dir = path.join(path.dirname(path.abspath(__file__)), 'devices')
-    if target == 'VIRTUAL':
-        config = DevConfig(path.join(devices_dir, 'virtual_device.yaml'))
+    devices_dir = path.join(path.dirname(path.abspath(__file__)), "devices")
+    if target == "VIRTUAL":
+        config = DevConfig(path.join(devices_dir, "virtual_device.yaml"))
     else:
         config = None
     return config
@@ -33,12 +38,12 @@ def config(target):
 
 @pytest.fixture(scope="module")
 def device(target, config):
-    if target == 'VIRTUAL':
+    if target == "VIRTUAL":
         device = VirtualDevice(config=config)
     else:
         devs = scan_usb(target)
         if not devs:
-            raise Exception(f'Device {target} not connected')
+            raise Exception(f"Device {target} not connected")
         device = devs[0]
     return device
 

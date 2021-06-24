@@ -13,25 +13,30 @@ from .commands import CommandTag, KeyProvUserKeyType, GenerateKeyBlobSelect
 from .memories import ExtMemPropTags, ExtMemId
 from .properties import PropertyTag, PeripheryTag, Version, parse_property_value
 from .interfaces import scan_usb
-from .exceptions import McuBootError, McuBootCommandError, McuBootConnectionError, McuBootDataAbortError
+from .exceptions import (
+    McuBootError,
+    McuBootCommandError,
+    McuBootConnectionError,
+    McuBootDataAbortError,
+)
 from .error_codes import StatusCode
 
 __all__ = [
     # global methods
-    'scan_usb',
-    'parse_property_value',
+    "scan_usb",
+    "parse_property_value",
     # classes
-    'McuBoot',
-    'Version',
+    "McuBoot",
+    "Version",
     # enums
-    'PropertyTag',
-    'PeripheryTag',
-    'CommandTag',
-    'StatusCode',
-    'ExtMemId',
-    'KeyProvUserKeyType',
+    "PropertyTag",
+    "PeripheryTag",
+    "CommandTag",
+    "StatusCode",
+    "ExtMemId",
+    "KeyProvUserKeyType",
     # exceptions
-    'McuBootError',
-    'McuBootCommandError',
-    'McuBootConnectionError'
+    "McuBootError",
+    "McuBootCommandError",
+    "McuBootConnectionError",
 ]

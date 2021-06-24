@@ -35,7 +35,7 @@ class BackendClass(ABC):
         """
 
     @abstractmethod
-    def hash(self, data: bytes, algorithm: str = 'sha256') -> bytes:
+    def hash(self, data: bytes, algorithm: str = "sha256") -> bytes:
         """Return a HASH from input data with specified algorithm.
 
         :param data: Input data in bytes
@@ -43,7 +43,7 @@ class BackendClass(ABC):
         """
 
     @abstractmethod
-    def hmac(self, key: bytes, data: bytes, algorithm: str = 'sha256') -> bytes:
+    def hmac(self, key: bytes, data: bytes, algorithm: str = "sha256") -> bytes:
         """Return a HMAC from data with specified key and algorithm.
 
         :param key: The key in bytes format
@@ -103,7 +103,7 @@ class BackendClass(ABC):
     #     :param iv_data: Initialization vector data
     #     """
 
-    def rsa_sign(self, private_key: bytes, data: bytes, algorithm: str = 'sha256') -> bytes:
+    def rsa_sign(self, private_key: bytes, data: bytes, algorithm: str = "sha256") -> bytes:
         """Sign input data.
 
         :param private_key: The private key
@@ -111,8 +111,14 @@ class BackendClass(ABC):
         :param algorithm: Used algorithm
         """
 
-    def rsa_verify(self, pub_key_mod: int, pub_key_exp: int, signature: bytes, data: bytes,
-                   algorithm: str = 'sha256') -> bool:
+    def rsa_verify(
+        self,
+        pub_key_mod: int,
+        pub_key_exp: int,
+        signature: bytes,
+        data: bytes,
+        algorithm: str = "sha256",
+    ) -> bool:
         """Verify input data.
 
         :param pub_key_mod: The private key modulus
@@ -138,7 +144,9 @@ class BackendClass(ABC):
         :return: Signature, r and s coordinates as bytes
         """
 
-    def ecc_verify(self, public_key: bytes, signature: bytes, data: bytes, algorithm: str = None) -> bool:
+    def ecc_verify(
+        self, public_key: bytes, signature: bytes, data: bytes, algorithm: str = None
+    ) -> bool:
         """Verify (EC)DSA signature.
 
         :param public_key: ECC public key
@@ -153,7 +161,7 @@ class BackendClass(ABC):
 ########################################################################################################################
 # Abstract Class for Data Classes
 ########################################################################################################################
-#TODO Refactor: this calss should not be part of crypto module
+# TODO Refactor: this calss should not be part of crypto module
 class BaseClass(ABC):
     """Abstract Class for Data Classes."""
 
@@ -174,5 +182,5 @@ class BaseClass(ABC):
 
     @classmethod
     @abstractmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'BaseClass':
+    def parse(cls, data: bytes, offset: int = 0) -> "BaseClass":
         """Deserialize object from bytes array."""

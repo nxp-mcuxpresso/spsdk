@@ -1,6 +1,7 @@
 # docs
-sphinx==2.4.1
+sphinx==3.5.4
 sphinx_rtd_theme
 sphinx-autodoc-annotation
 sphinx_autodoc_typehints
 recommonmark
+sphinx-click

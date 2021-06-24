@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -36,7 +36,7 @@ def test_set_cmd_info():
     req_strings = ["Set Command ITM", "HASH Algo", "Engine", "Engine Conf"]
 
     for req_string in req_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_set_cmd_export_parse():

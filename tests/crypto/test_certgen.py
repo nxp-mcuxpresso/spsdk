@@ -12,9 +12,23 @@ from typing import List
 
 import pytest
 
-from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key, \
-    save_rsa_public_key, validate_ca_flag_in_cert_chain, Certificate, Encoding
-from spsdk.crypto import _get_encoding_type, load_private_key, load_certificate, load_public_key, ExtensionOID, NameOID
+from spsdk.crypto import (
+    generate_rsa_private_key,
+    generate_rsa_public_key,
+    save_rsa_private_key,
+    save_rsa_public_key,
+    validate_ca_flag_in_cert_chain,
+    Certificate,
+    Encoding,
+)
+from spsdk.crypto import (
+    _get_encoding_type,
+    load_private_key,
+    load_certificate,
+    load_public_key,
+    ExtensionOID,
+    NameOID,
+)
 from spsdk.crypto import validate_certificate_chain, validate_certificate, is_ca_flag_set
 from spsdk.crypto import generate_certificate, save_crypto_item
 
@@ -32,10 +46,7 @@ def get_certificate(data_dir, cert_file_name: str) -> Certificate:
 
 
 def get_certificates(data_dir, cert_file_names: List[str]) -> List[Certificate]:
-    cert_list = [
-        get_certificate(data_dir, cert_name)
-        for cert_name in cert_file_names
-    ]
+    cert_list = [get_certificate(data_dir, cert_name) for cert_name in cert_file_names]
     return cert_list
 
 
@@ -58,7 +69,7 @@ def keys_generation(data_dir):
         ("NXPEnterpriseCA4.crt", True),
         ("NXPInternalPolicyCAG2.crt", True),
         ("NXPROOTCAG2.crt", True),
-    ]
+    ],
 )
 def test_is_cert(data_dir, file_name, expect_cer):
     cert_path = path.join(data_dir, file_name)
@@ -68,10 +79,7 @@ def test_is_cert(data_dir, file_name, expect_cer):
 
 @pytest.mark.parametrize(
     "file_name, password, expect_priv_key",
-    [
-        ('CA1_sha256_2048_65537_v3_ca_key.pem', b'test', True),
-        ('ca.pem', b'test', False)
-    ]
+    [("CA1_sha256_2048_65537_v3_ca_key.pem", b"test", True), ("ca.pem", b"test", False)],
 )
 def test_is_key_priv(data_dir, file_name, password, expect_priv_key):
     key_path = path.join(data_dir, file_name)
@@ -90,8 +98,8 @@ def test_is_key_priv(data_dir, file_name, password, expect_priv_key):
         ("ca_key.pem", False),
         ("NXPEnterpriseCA4.crt", False),
         ("NXPInternalPolicyCAG2.crt", False),
-        ("NXPROOTCAG2.crt", False)
-    ]
+        ("NXPROOTCAG2.crt", False),
+    ],
 )
 def test_is_key_pub(data_dir, file_name, expect_pub_key):
     key_path = path.join(data_dir, file_name)
@@ -110,8 +118,8 @@ def test_is_key_pub(data_dir, file_name, expect_pub_key):
         ("ca_key.pem", Encoding.PEM),
         ("NXPEnterpriseCA4.crt", Encoding.PEM),
         ("NXPInternalPolicyCAG2.crt", Encoding.PEM),
-        ("NXPROOTCAG2.crt", Encoding.PEM)
-    ]
+        ("NXPROOTCAG2.crt", Encoding.PEM),
+    ],
 )
 def test_get_encoding_type(data_dir, file_name, expected_encoding):
     file = path.join(data_dir, file_name)
@@ -142,7 +150,9 @@ def test_validate_invalid_cert(data_dir):
 
 def test_certificate_chain_verification(data_dir):
     chain = ["satyr.crt", "NXPEnterpriseCA4.crt", "NXPInternalPolicyCAG2.crt", "NXPROOTCAG2.crt"]
-    chain_cert = [get_certificate(data_dir, file_name) for file_name in chain if file_name.startswith('NXP')]
+    chain_cert = [
+        get_certificate(data_dir, file_name) for file_name in chain if file_name.startswith("NXP")
+    ]
     assert all(validate_certificate_chain(chain_cert))
 
     list_cert_files = ["img.pem", "srk.pem", "ca.pem"]
@@ -212,7 +222,7 @@ def test_certificate_generation_cli(tmpdir, data_dir):
 
     generated_cert = load_certificate(cert_path)
     assert isinstance(generated_cert, Certificate)
-    assert generated_cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == 'ONE'
-    assert generated_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == 'TWO'
+    assert generated_cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == "ONE"
+    assert generated_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == "TWO"
     assert generated_cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS).value.ca
     assert generated_cert.serial_number == 777

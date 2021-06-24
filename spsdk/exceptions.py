@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,7 @@
 class SPSDKError(Exception):
     """Secure Provisioning SDK Base Exception."""
 
-    fmt = 'SPSDK: {description}'
+    fmt = "SPSDK: {description}"
 
     def __init__(self, desc: str = None) -> None:
         """Initialize the base SPSDK Exception."""

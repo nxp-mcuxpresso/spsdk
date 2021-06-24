@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -37,7 +37,7 @@ def test_init_cmd_info():
     output = cmd.info()
     req_strings = ["Initialize Command ", "Engine:", "Value: "]
     for req_string in req_strings:
-        assert req_string in output, f'string {req_string} is not int output: {output}'
+        assert req_string in output, f"string {req_string} is not int output: {output}"
 
 
 def test_init_cmd_export_parse_no_data():
@@ -57,8 +57,8 @@ def test_init_cmd_export_parse_with_data():
 
 def test_init_cmd_export_parse_with_offset():
     # raw_data is made from appending 5,6 into cmdinit
-    raw_data = b'\xb4\x00\x0c\x00\x00\x00\x00\x05\x00\x00\x00\x06'
-    raw_data = b'\x01\x02\x03\x04' + raw_data
+    raw_data = b"\xb4\x00\x0c\x00\x00\x00\x00\x05\x00\x00\x00\x06"
+    raw_data = b"\x01\x02\x03\x04" + raw_data
     cmd = CmdInitialize.parse(raw_data, offset=4)
     assert len(cmd) == 2
     assert isinstance(cmd, CmdInitialize)
@@ -91,5 +91,3 @@ def test_init_cmd_equality():
     assert cmd != nop
     assert cmd == cmd
     assert cmd != cmd_other
-
-

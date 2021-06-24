@@ -6,31 +6,39 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """The shadow registers control DAT support file."""
 import logging
-from typing import Any
 import math
+from typing import Any
 
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap as CM
 
-from spsdk import __version__, __release__, __author__, SPSDK_YML_INDENT
-from spsdk.utils.registers import Registers, RegsRegister
-from spsdk.utils.reg_config import RegConfig
-from spsdk.utils.misc import change_endianism, value_to_bytes, reverse_bytes_in_longs
-from spsdk.dat.dm_commands import StartDebugSession
-
-from spsdk.exceptions import SPSDKError
-from spsdk.debuggers.debug_probe import (DebugProbe, DebugProbeError)
+from spsdk import SPSDK_YML_INDENT, __author__, __release__, __version__
 from spsdk.dat.debug_mailbox import DebugMailbox
+from spsdk.dat.dm_commands import StartDebugSession
+from spsdk.debuggers.debug_probe import DebugProbe, DebugProbeError
+from spsdk.debuggers.utils import test_ahb_access
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.misc import change_endianism, reverse_bytes_in_longs, value_to_bytes
+from spsdk.utils.reg_config import RegConfig
+from spsdk.utils.registers import Registers, RegsRegister
 
 logger = logging.getLogger(__name__)
+
 
 class IoVerificationError(SPSDKError):
     """The error during write verification - exception for use with SPSDK."""
 
-class ShadowRegisters():
+
+class ShadowRegisters:
     """SPSDK support to control the shadow registers."""
 
-    def __init__(self, debug_probe: DebugProbe, config: RegConfig, device: str, revision: str = "latest") -> None:
+    def __init__(
+        self,
+        debug_probe: DebugProbe,
+        config: RegConfig,
+        device: str,
+        revision: str = "latest",
+    ) -> None:
         """Initialization of Shadow register class."""
         self.probe = debug_probe
         self.config = config
@@ -42,15 +50,16 @@ class ShadowRegisters():
         rev = rev if rev != "latest" else config.get_latest_revision(self.device)
         self.regs.load_registers_from_xml(
             config.get_data_file(self.device, rev),
-            grouped_regs=config.get_grouped_registers(self.device))
+            grouped_regs=config.get_grouped_registers(self.device),
+        )
 
         # Set the computed field handler
-        for reg, fields  in self.config.get_computed_fields(self.device).items():
+        for reg, fields in self.config.get_computed_fields(self.device).items():
             reg_obj = self.regs.find_reg(reg)
             reg_obj.add_setvalue_hook(self.reg_computed_fields_handler, fields)
 
         # Set the antipolize handler
-        for reg, antipole_reg  in self.config.get_antipole_regs(self.device).items():
+        for reg, antipole_reg in self.config.get_antipole_regs(self.device).items():
             src = self.regs.find_reg(reg)
             dst = self.regs.find_reg(antipole_reg)
             src.add_setvalue_hook(self.reg_antipolize_src_handler, dst)
@@ -71,7 +80,9 @@ class ShadowRegisters():
         if verify:
             readback = self.probe.mem_reg_read(addr)
             if readback != data:
-                raise IoVerificationError(f"The written data 0x{data:08X} to 0x{addr:08X} address are invalid.")
+                raise IoVerificationError(
+                    f"The written data 0x{data:08X} to 0x{addr:08X} address are invalid."
+                )
 
     def reload_registers(self) -> None:
         """Reload all the values in managed registers."""
@@ -120,8 +131,11 @@ class ShadowRegisters():
             addresses = range(start_address, end_address, 4)
 
             for i, addr in enumerate(addresses):
-                val = data_aligned[i*4:i*4+4]
-                self._write_shadow_reg(addr, int.from_bytes(change_endianism(val) if reg.reverse else val, "big"))
+                val = data_aligned[i * 4 : i * 4 + 4]
+                self._write_shadow_reg(
+                    addr,
+                    int.from_bytes(change_endianism(val) if reg.reverse else val, "big"),
+                )
 
             reg.set_value(value, raw=True)
 
@@ -178,18 +192,21 @@ class ShadowRegisters():
         data = CM()
 
         description = CM()
-        description.yaml_set_start_comment(f"NXP {self.device.upper()} Shadow registers configuration", indent=2)
+        description.yaml_set_start_comment(
+            f"NXP {self.device.upper()} Shadow registers configuration", indent=2
+        )
         description.insert(1, "device", self.device, comment="The NXP device name.")
-        description.insert(2, "version", __version__, comment="The SPSDK Shadow register tool version.")
+        description.insert(
+            2, "version", __version__, comment="The SPSDK Shadow register tool version."
+        )
         description.insert(3, "author", __author__, comment="The author of the configuration.")
         description.insert(4, "release", __release__, comment="The SPSDK release.")
 
-        data['description'] = description
-        data['registers'] = self.regs.create_yml_config(
-            exclude_regs=antipole_regs,
-            exclude_fields=computed_fields,
-            indent=2)
-        with open(file_name, "w", encoding='utf8') as out_file:
+        data["description"] = description
+        data["registers"] = self.regs.create_yml_config(
+            exclude_regs=antipole_regs, exclude_fields=computed_fields, indent=2
+        )
+        with open(file_name, "w", encoding="utf8") as out_file:
             yaml.dump(data, out_file)
 
     def load_yml_config(self, file_name: str, raw: bool = False) -> None:
@@ -202,17 +219,17 @@ class ShadowRegisters():
         antipole_regs = None if raw else list(self.config.get_antipole_regs(self.device).values())
         computed_fields = None if raw else self.config.get_computed_fields(self.device)
         try:
-            with open(file_name, "r", encoding='utf8') as yml_config_file:
+            with open(file_name, "r", encoding="utf8") as yml_config_file:
                 yaml = YAML()
                 yaml.indent(sequence=4, offset=2)
                 data = yaml.load(yml_config_file)
         except FileNotFoundError:
             raise SPSDKError("File with YML configuration doesn't exists.")
 
-        self.regs.load_yml_config(data['registers'], antipole_regs, computed_fields)
+        self.regs.load_yml_config(data["registers"], antipole_regs, computed_fields)
         if not raw:
             # Just update only configured registers
-            exclude_hooks = list(set(self.regs.get_reg_names())-set(data['registers'].keys()))
+            exclude_hooks = list(set(self.regs.get_reg_names()) - set(data["registers"].keys()))
             self.regs.run_hooks(exclude_hooks)
 
         logger.debug(f"The shadow registers has been loaded from configuration.")
@@ -225,7 +242,7 @@ class ShadowRegisters():
         :return: Antipolized value.
         """
         dst_reg: RegsRegister = context
-        newval = [0]*len(val)
+        newval = [0] * len(val)
         for i, val_byte in enumerate(val):
             newval[i] = val_byte ^ 0xFF
         dst_reg.set_value(bytes(newval), raw=True)
@@ -241,7 +258,7 @@ class ShadowRegisters():
         """
         src_reg: RegsRegister = context
         val = src_reg.get_value()
-        newval = [0]*len(val)
+        newval = [0] * len(val)
         for i, val_byte in enumerate(val):
             newval[i] = val_byte ^ 0xFF
         return bytes(newval)
@@ -282,15 +299,15 @@ class ShadowRegisters():
             k += 1
             for i in range(8):
                 bit = (crc & 0x80) != 0
-                if (carry & (0x80>>i)) != 0:
+                if (carry & (0x80 >> i)) != 0:
                     bit = not bit
                 crc <<= 1
                 if bit:
                     crc ^= 0x07
-            crc &= 0xff
+            crc &= 0xFF
         if is_final:
-            return (crc & 0xff) ^ 0x55
-        return crc & 0xff
+            return (crc & 0xFF) ^ 0x55
+        return crc & 0xFF
 
     @staticmethod
     def comalg_dcfg_cc_socu_crc8(val: bytes) -> bytes:
@@ -299,7 +316,7 @@ class ShadowRegisters():
         :param val: Input DCFG_CC_SOCU Value.
         :return: Returns the value of DCFG_CC_SOCU with computed CRC8 field.
         """
-        ret = [0]*4
+        ret = [0] * 4
         ret[0:3] = val[0:3]
         in_val = bytearray(val[0:3])
         in_val.reverse()
@@ -308,14 +325,14 @@ class ShadowRegisters():
 
     @staticmethod
     def comalg_dcfg_cc_socu_rsvd(val: bytes) -> bytes:
-        """Function fill up the DCFG_CC_SOCU RSVD filed by 0x40 to satisfy MCU needs.
+        """Function fill up the DCFG_CC_SOCU RSVD filed by 0x80 to satisfy MCU needs.
 
         :param val: Input DCFG_CC_SOCU Value.
         :return: Returns the value of DCFG_CC_SOCU with computed CRC8 field.
         """
         new_val = bytearray(val)
         new_val[0] &= ~0xFE
-        new_val[0] |= 0x40
+        new_val[0] |= 0x80
         return new_val
 
     @staticmethod
@@ -338,54 +355,28 @@ def enable_debug(probe: DebugProbe, ap_mem: int = 0) -> bool:
     """
     debug_enabled = False
     try:
-        def test_ahb_access(ap_mem: int) -> bool:
-            logger.debug("step T.1: Activate the correct AP")
-            probe.coresight_reg_write(access_port=False, addr=2*4, data=ap_mem)
-
-            logger.debug("step T.2: Set the AP access size and address mode")
-            probe.coresight_reg_write(access_port=True,
-                                      addr=probe.get_coresight_ap_address(ap_mem, 0*4),
-                                      data=0x22000012)
-
-            logger.debug("step T.3: Set the initial AHB address to access")
-            probe.coresight_reg_write(access_port=True,
-                                      addr=probe.get_coresight_ap_address(ap_mem, 1*4),
-                                      data=0xE000ED00)
-
-            logger.debug("step T.4: Access the memory system at that address")
-            try:
-                chip_id = probe.coresight_reg_read(access_port=True,
-                                                   addr=probe.get_coresight_ap_address(ap_mem, 3*4))
-                logger.debug(f"ChipID={chip_id:08X}")
-            except DebugProbeError:
-                chip_id = 0xFFFFFFFF
-                logger.debug(f"ChipID can't be read")
-
-            # Check if the device is locked
-            return chip_id not in (0xFFFFFFFF, 0)
-
         logger.debug("step 3: Check if AHB is enabled")
 
-        if not test_ahb_access(ap_mem):
+        if not test_ahb_access(probe, ap_mem):
             logger.debug("Locked Device. Launching unlock sequence.")
 
             # Start debug mailbox system
             StartDebugSession(dm=DebugMailbox(debug_probe=probe)).run()
 
             # Recheck the AHB access
-            if test_ahb_access(ap_mem):
-                logger.debug(f"Access granted")
+            if test_ahb_access(probe, ap_mem):
+                logger.debug("Access granted")
                 debug_enabled = True
             else:
-                logger.debug(f"Enable debug operation failed!")
+                logger.debug("Enable debug operation failed!")
         else:
             logger.debug("Unlocked Device")
             debug_enabled = True
 
     except AttributeError as exc:
-        raise SPSDKError(f"Invalid input parameters({str(exc)})")
+        raise SPSDKError(f"Invalid input parameters({str(exc)})") from exc
 
     except DebugProbeError as exc:
-        raise SPSDKError(f"Can't unlock device ({str(exc)})")
+        raise SPSDKError(f"Can't unlock device ({str(exc)})") from exc
 
     return debug_enabled

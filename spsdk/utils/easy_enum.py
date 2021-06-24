@@ -1,5 +1,5 @@
 # Copyright 2019 Martin Olejar
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,11 +21,12 @@ __contact__ = "martin.olejar@gmail.com"
 __version__ = "0.4.0"
 __license__ = "Apache 2.0"
 __status__ = "Development"
-__all__ = ['Enum']
+__all__ = ["Enum"]
 
 from typing import Sequence, Union
 
 EnumKeyType = Union[str, int]
+
 
 class MetaEnum(type):
     """Meta Class for Enum Type."""
@@ -34,7 +35,9 @@ class MetaEnum(type):
         cls = super().__new__(mcs, name, bases, attrs)
         cls._items_ = list()
         for attr, value in attrs.items():
-            if attr in set(dir(type(name, (object,), {}))) or (attr.startswith('_') and attr.endswith('_')):
+            if attr in set(dir(type(name, (object,), {}))) or (
+                attr.startswith("_") and attr.endswith("_")
+            ):
                 continue
             if isinstance(value, (classmethod, staticmethod)):
                 continue
@@ -46,7 +49,7 @@ class MetaEnum(type):
                 setattr(cls, attr, value[0])
             else:
                 assert isinstance(value, int)
-                cls._items_.append((attr, value, ''))
+                cls._items_.append((attr, value, ""))
         return cls
 
     def __getitem__(cls, key):
@@ -54,15 +57,15 @@ class MetaEnum(type):
             for name, value, _ in cls._items_:
                 if key.upper() == name.upper():
                     return value
-            raise KeyError("\'%s\' has no item with name \'%s\'" % (cls.__name__, key))
+            raise KeyError("'%s' has no item with name '%s'" % (cls.__name__, key))
 
         if isinstance(key, int):
             for name, value, _ in cls._items_:
                 if key == value:
                     return name
-            raise KeyError("\'%s\' has no item with value \'%d\'" % (cls.__name__, key))
+            raise KeyError("'%s' has no item with value '%d'" % (cls.__name__, key))
 
-        raise TypeError("\'%s\' has no item with type \'%r\'" % (cls.__name__, type(key)))
+        raise TypeError("'%s' has no item with type '%r'" % (cls.__name__, type(key)))
 
     def __iter__(cls):
         return (item for item in cls._items_)
@@ -95,7 +98,7 @@ class Enum(metaclass=MetaEnum):
             return default
 
     @classmethod
-    def desc(cls, key: EnumKeyType, default: str = '') -> str:
+    def desc(cls, key: EnumKeyType, default: str = "") -> str:
         """Description of the specified value.
 
         :param key: either value or name (name is case INSENSITIVE)
@@ -116,7 +119,7 @@ class Enum(metaclass=MetaEnum):
                     return desc
             return default
 
-        raise TypeError("\'%s\' has no item with type \'%r\'" % (cls.__name__, type(key)))
+        raise TypeError("'%s' has no item with type '%r'" % (cls.__name__, type(key)))
 
     @classmethod
     def name(cls, key: int, default: str = None) -> str:
@@ -133,7 +136,7 @@ class Enum(metaclass=MetaEnum):
                 return name
 
         if default is None:
-            raise KeyError('Enumeration not supported: ' + str(key))
+            raise KeyError("Enumeration not supported: " + str(key))
 
         return default
 
@@ -144,7 +147,7 @@ class Enum(metaclass=MetaEnum):
         return [tag for _, tag, _ in cls._items_]
 
     @classmethod
-    def from_int(cls, value: int) -> 'Enum':
+    def from_int(cls, value: int) -> "Enum":
         """Converts integer value into enumeration.
 
         Note: the method does two things:
@@ -155,6 +158,8 @@ class Enum(metaclass=MetaEnum):
         :raises ValueError: if specified value does not match any enumeration value
         """
         if value not in cls.tags():
-            raise ValueError(f'the following integer value is not defined within the enumeration: {str(value)}')
+            raise ValueError(
+                f"the following integer value is not defined within the enumeration: {str(value)}"
+            )
 
         return value

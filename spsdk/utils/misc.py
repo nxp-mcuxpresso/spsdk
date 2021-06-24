@@ -12,7 +12,7 @@ from typing import Callable, Iterable, Iterator, Optional, TypeVar, List, Union
 from math import ceil
 
 # for generics
-T = TypeVar('T')  # pylint: disable=invalid-name
+T = TypeVar("T")  # pylint: disable=invalid-name
 
 
 def align(number: int, alignment: int = 4) -> int:
@@ -44,6 +44,7 @@ def align_block(data: bytes, alignment: int = 4, padding: int = 0) -> bytes:
     if padding == -1:
         # pylint: disable=import-outside-toplevel
         from spsdk.utils.crypto.common import crypto_backend
+
         return data + crypto_backend().random_bytes(num_padding)
     return data + bytes([padding]) * num_padding
 
@@ -89,7 +90,7 @@ def load_binary(*args: str) -> bytes:
         All the fields together represents absolute path to the file
     :return: content of the binary file as bytes
     """
-    data = load_file(*args, mode='rb')
+    data = load_file(*args, mode="rb")
     assert isinstance(data, bytes)
     return data
 
@@ -104,12 +105,12 @@ def load_text(*path_segments: str) -> str:
         All the fields together represents absolute path to the file
     :return: content of the binary file as bytes
     """
-    text = load_file(*path_segments, mode='r')
+    text = load_file(*path_segments, mode="r")
     assert isinstance(text, str)
     return text
 
 
-def load_file(*path_segments: str, mode: str = 'r') -> Union[str, bytes]:
+def load_file(*path_segments: str, mode: str = "r") -> Union[str, bytes]:
     """Loads a file into bytes.
 
     :param path_segments: list that consists of:
@@ -126,7 +127,7 @@ def load_file(*path_segments: str, mode: str = 'r') -> Union[str, bytes]:
         return f.read()
 
 
-def write_file(data: Union[str, bytes], *path_segments: str, mode: str = 'w') -> int:
+def write_file(data: Union[str, bytes], *path_segments: str, mode: str = "w") -> int:
     """Writes data into a file.
 
     :param data: data to write
@@ -167,7 +168,7 @@ class DebugInfo:
     """
 
     @classmethod
-    def disabled(cls) -> 'DebugInfo':
+    def disabled(cls) -> "DebugInfo":
         """Return an instance of DebugInfo with disabled message collecting."""
         return DebugInfo(enabled=False)
 
@@ -197,15 +198,15 @@ class DebugInfo:
 
         :param name: of the section
         """
-        self.append(f'[{name}]')
+        self.append(f"[{name}]")
 
     def append_hex_data(self, data: bytes) -> None:
         """Append binary data in HEX form.
 
         :param data: to be logged
         """
-        self.append('hex=' + data.hex())
-        self.append('len=' + str(len(data)) + '=' + hex(len(data)))
+        self.append("hex=" + data.hex())
+        self.append("len=" + str(len(data)) + "=" + hex(len(data)))
 
     def append_binary_section(self, section_name: str, data: bytes) -> None:
         """Append section and binary data.
@@ -223,7 +224,7 @@ class DebugInfo:
         :param data: binary data (up to 8 bytes)
         """
         assert len(data) <= 16
-        self.append(data_name + '=' + data.hex())
+        self.append(data_name + "=" + data.hex())
 
     @property
     def lines(self) -> Iterable[str]:
@@ -237,14 +238,14 @@ class DebugInfo:
         return "\n".join(self.lines)
 
 
-def format_value(value: int, size: int, delimeter: str = '_', use_prefix: bool = True) -> str:
+def format_value(value: int, size: int, delimeter: str = "_", use_prefix: bool = True) -> str:
     """Convert the 'value' into either BIN or HEX string, depending on 'size'.
 
     if 'size' is divisible by 8, function returns HEX, BIN otherwise
     digits in result string are grouped by 4 using 'delimeter' (underscore)
     """
     padding = size if size % 8 else (size // 8) * 2
-    infix = 'b' if size % 8 else 'x'
+    infix = "b" if size % 8 else "x"
     parts = re.findall(".{1,4}", f"{value:0{padding}{infix}}"[::-1])
     rev = delimeter.join(parts)[::-1]
     prefix = f"0{infix}" if use_prefix else ""
@@ -291,17 +292,17 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) 
         not_decimal = value.find("_") >= 0
         value = value.replace("_", "")
         value = value.replace("b'", "0b")
-        if value.lower().startswith('0x'):
+        if value.lower().startswith("0x"):
             return int(value, 16)
-        if value.lower().startswith('0b'):
+        if value.lower().startswith("0b"):
             return int(value, 2)
         if value.isdecimal() and not not_decimal:
             return int(value)
-        if value[0] != '-':
+        if value[0] != "-":
             try:
                 # try to decode hex string without '0x' prefix
                 return int(value, 16)
-            except: # pylint: disable=bare-except
+            except:  # pylint: disable=bare-except
                 pass
 
     if default is not None:
@@ -359,7 +360,7 @@ def reverse_bytes_in_longs(arr: bytes) -> bytes:
     result = bytearray()
 
     for x in range(0, arr_len, 4):
-        word = bytearray(arr[x:x+4])
+        word = bytearray(arr[x : x + 4])
         word.reverse()
         result.extend(word)
     return bytes(result)

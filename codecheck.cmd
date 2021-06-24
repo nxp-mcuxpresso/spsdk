@@ -45,3 +45,16 @@ radon cc --min C spsdk > %CD%\reports\radonC.txt
 @rem gitcov (coverage of changed files)
 python tools\gitcov.py --coverage-report reports\coverage.xml
 @if %errorlevel% gtr 0 echo "<<<### GIT-COV ERROR DETECTED #################################################>>>"
+@rem -------------------------------------------------------
+@rem deps_licenses (check if all dependencies are approved)
+python tools\checker_dependencies.py check > %CD%\reports\dependencies.txt
+@if %errorlevel% gtr 0 echo "<<<### UN-APPROVED DEPENDENCIES DETECTED ######################################>>>"
+@rem -------------------------------------------------------
+@rem mypy: python typing tests (modules tested: tools)
+mypy tools >%CD%\reports\mypy_tools.txt
+@if errorlevel 1 echo "<<<### MYPY PROBLEM DETECTED IN TOOLS ###############################################>>>"
+@rem -------------------------------------------------------
+@rem pylint (spsdk tools only, errors only)
+pylint tools -E > %CD%\reports\pylint_tools.txt
+@if errorlevel 1 echo "<<<### PYLINT ERROR DETECTED IN TOOLS ###############################################>>>"
+@rem -------------------------------------------------------

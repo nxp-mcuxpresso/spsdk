@@ -15,8 +15,19 @@ from typing import Dict, List, Optional, Iterator, Sequence, Tuple, Union
 
 from spsdk.utils.misc import align, align_block, extend_block, DebugInfo
 from .bee import BeeRegionHeader, BEE_ENCR_BLOCK_SIZE
-from .commands import CmdBase, CmdWriteData, CmdCheckData, CmdUnlock, \
-    CmdNop, CmdAuthData, EnumWriteOps, EnumCheckOps, EnumEngine, CmdTag, parse_command
+from .commands import (
+    CmdBase,
+    CmdWriteData,
+    CmdCheckData,
+    CmdUnlock,
+    CmdNop,
+    CmdAuthData,
+    EnumWriteOps,
+    EnumCheckOps,
+    EnumEngine,
+    CmdTag,
+    parse_command,
+)
 from .header import Header, Header2, SegTag, CorruptedException
 from .misc import size_fmt
 from .secret import BaseClass, MAC
@@ -27,6 +38,7 @@ logger = logging.getLogger("IMAGE:SEGMENTS")
 ########################################################################################################################
 # Base Segment Class
 ########################################################################################################################
+
 
 class BaseSegment(ABC):
     """Base segment."""
@@ -60,7 +72,7 @@ class BaseSegment(ABC):
 
     def _padding_export(self) -> bytes:
         """Padding binary data, see `padding_len` for length."""
-        return bytes([self.PADDING_VALUE] * self.padding_len) if self.padding_len > 0 else b''
+        return bytes([self.PADDING_VALUE] * self.padding_len) if self.padding_len > 0 else b""
 
     def __init__(self) -> None:
         """Initialize the base  segment."""
@@ -78,7 +90,7 @@ class BaseSegment(ABC):
         raise NotImplementedError()
 
     @classmethod
-    def parse(cls, buffer: bytes) -> 'BaseSegment':
+    def parse(cls, buffer: bytes) -> "BaseSegment":
         """Parse interfaces."""
         raise NotImplementedError()
 
@@ -95,6 +107,8 @@ class BaseSegment(ABC):
 ########################################################################################################################
 class AbstractFCB(BaseSegment):
     """Abstract class, predecessor for all FCB classes."""
+
+    TAG = b"FCB"
 
     def __init__(self) -> None:
         """Constructor."""
@@ -130,8 +144,9 @@ class AbstractFCB(BaseSegment):
 
 class SegFCB(AbstractFCB, ABC):
     """FCB."""
+
     SIZE = 1024
-    FINGERPRINT = b'NFCB'
+    FINGERPRINT = b"NFCB"
 
     @property
     def crc(self) -> int:
@@ -151,18 +166,26 @@ class SegFCB(AbstractFCB, ABC):
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Export to binary form."""
-        data = pack('<Is2I2HI', self.crc, self.FINGERPRINT, self.version, self.search_start_page, self.search_stride,
-                    self.search_count, self.firmware_copies)
+        data = pack(
+            "<Is2I2HI",
+            self.crc,
+            self.FINGERPRINT,
+            self.version,
+            self.search_start_page,
+            self.search_stride,
+            self.search_count,
+            self.firmware_copies,
+        )
         # Reserved 40 bytes for future use, must be set to 0
-        data += b'\x00' * 40
+        data += b"\x00" * 40
         if self.firmware_info_table:
             data += self.firmware_info_table
         # Reserved 128 bytes, must be set to 0
-        data += b'\x00' * 128
+        data += b"\x00" * 128
         if self.config_block:
             data += self.config_block
         # Reserved 256 bytes, must be set to 0
-        data += b'\x00' * 256
+        data += b"\x00" * 256
         return data
 
 
@@ -190,7 +213,7 @@ class PaddingFCB(AbstractFCB):
 
     def info(self) -> str:
         """Return text description of the instance."""
-        return f'PaddingFCB: {self.size} bytes'
+        return f"PaddingFCB: {self.size} bytes"
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Export to binary form (serialization).
@@ -199,22 +222,23 @@ class PaddingFCB(AbstractFCB):
         :return: binary representation
         """
         if not self.enabled:
-            return b''
+            return b""
 
         result = self._padding_byte * self._size + self._padding_export()
-        dbg_info.append_section(f'FCB-padding: {len(result)} bytes')
+        dbg_info.append_section(f"FCB-padding: {len(result)} bytes")
         return result
 
 
 # pylint: disable=too-many-instance-attributes
 class FlexSPIConfBlockFCB(AbstractFCB):
     """Flex SPI configuration block; FCB."""
+
     # tag used in header to be able identify the block
-    TAG = b'FCFB'
+    TAG = b"FCFB"
     # default version
-    VERSION = b'V\x01\x00\x00'
+    VERSION = b"V\x01\x00\x00"
     # format for the export
-    FORMAT = '<6BH7I5I4B2I4I6I4H'
+    FORMAT = "<6BH7I5I4B2I4I6I4H"
 
     def __init__(self) -> None:
         """Initialize FlexSPIConfBlockFCB."""
@@ -303,12 +327,12 @@ class FlexSPIConfBlockFCB(AbstractFCB):
         # [07E:16-bit] 0 – busy bit is 1 if device is busy; 1 – busy bit is 0 if device is busy
         self.busy_bit_polarity = 0
         # [080:256B] Lookup table
-        self.lookup_table = b'\x00' * 256
+        self.lookup_table = b"\x00" * 256
         # [180:48B] Customized LUT sequence
-        self.lut_custom_seq = b'\x00' * 48
+        self.lut_custom_seq = b"\x00" * 48
         # [1B0:16B] reserved
-        self.reserved_padding1 = b'\x00' * 16
-        self.reserved_padding2 = b'\x00' * 64
+        self.reserved_padding1 = b"\x00" * 16
+        self.reserved_padding2 = b"\x00" * 64
 
     @property
     def size(self) -> int:
@@ -316,12 +340,18 @@ class FlexSPIConfBlockFCB(AbstractFCB):
         if not self.enabled:
             return 0
 
-        return len(self.export_header()) + calcsize(self.FORMAT) + len(self.lookup_table) + len(self.lut_custom_seq) + \
-               len(self.reserved_padding1) + len(self.reserved_padding2)
+        return (
+            len(self.export_header())
+            + calcsize(self.FORMAT)
+            + len(self.lookup_table)
+            + len(self.lut_custom_seq)
+            + len(self.reserved_padding1)
+            + len(self.reserved_padding2)
+        )
 
     def export_header(self) -> bytes:
         """Export FCB header info binary form."""
-        return self.TAG + self.version[::-1] + b'\x00\x00\x00\x00'
+        return self.TAG + self.version[::-1] + b"\x00\x00\x00\x00"
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Export into binary form.
@@ -330,48 +360,85 @@ class FlexSPIConfBlockFCB(AbstractFCB):
         :return: binary representation used in the bootable image
         """
         if not self.enabled:
-            return b''
+            return b""
 
         data = self.export_header()
-        data += pack(self.FORMAT,
-                     # B
-                     self.read_sample_clk_src, self.cs_hold_time, self.cs_setup_time, self.column_address_width,
-                     self.device_mode_cfg_enable, self.device_mode_type,
-                     # H
-                     self.wait_time_cfg_commands,
-                     # I
-                     self.device_mode_seq, self.device_mode_arg, self.config_cmd_enable,
-                     self.config_cmd_0, self.config_cmd_1, self.config_cmd_2, 0,
-                     # I
-                     self.cfg_cmd_arg_0, self.cfg_cmd_arg_1, self.cfg_cmd_arg_2, 0,
-                     self.controller_misc_option,
-                     # B
-                     self.device_type, self.sflash_pad_type, self.serial_clk_freq, self.lut_custom_seq_enable,
-                     # I
-                     0, 0,
-                     # I
-                     self.sflash_a1_size, self.sflash_a2_size, self.sflash_b1_size, self.sflash_b2_size,
-                     # I
-                     self.cs_pad_setting_override, self.sclk_pad_setting_override, self.data_pad_setting_override,
-                     self.dqs_pad_setting_override, self.timeout_in_ms, self.command_interval,
-                     # H
-                     self.data_valid_time_dlla, self.data_valid_time_dllb, self.busy_offset, self.busy_bit_polarity)
-        data += self.lookup_table + self.lut_custom_seq + self.reserved_padding1 + self.reserved_padding2
+        data += pack(
+            self.FORMAT,
+            # B
+            self.read_sample_clk_src,
+            self.cs_hold_time,
+            self.cs_setup_time,
+            self.column_address_width,
+            self.device_mode_cfg_enable,
+            self.device_mode_type,
+            # H
+            self.wait_time_cfg_commands,
+            # I
+            self.device_mode_seq,
+            self.device_mode_arg,
+            self.config_cmd_enable,
+            self.config_cmd_0,
+            self.config_cmd_1,
+            self.config_cmd_2,
+            0,
+            # I
+            self.cfg_cmd_arg_0,
+            self.cfg_cmd_arg_1,
+            self.cfg_cmd_arg_2,
+            0,
+            self.controller_misc_option,
+            # B
+            self.device_type,
+            self.sflash_pad_type,
+            self.serial_clk_freq,
+            self.lut_custom_seq_enable,
+            # I
+            0,
+            0,
+            # I
+            self.sflash_a1_size,
+            self.sflash_a2_size,
+            self.sflash_b1_size,
+            self.sflash_b2_size,
+            # I
+            self.cs_pad_setting_override,
+            self.sclk_pad_setting_override,
+            self.data_pad_setting_override,
+            self.dqs_pad_setting_override,
+            self.timeout_in_ms,
+            self.command_interval,
+            # H
+            self.data_valid_time_dlla,
+            self.data_valid_time_dllb,
+            self.busy_offset,
+            self.busy_bit_polarity,
+        )
+        data += (
+            self.lookup_table
+            + self.lut_custom_seq
+            + self.reserved_padding1
+            + self.reserved_padding2
+        )
 
-        dbg_info.append_binary_section('FCB', data)
+        dbg_info.append_binary_section("FCB", data)
 
         if self.padding_len > 0:
             data += self._padding_export()
-            dbg_info.append_section(f'FCB-padding: {self.padding_len} bytes')
+            dbg_info.append_section(f"FCB-padding: {self.padding_len} bytes")
 
         return data
 
     def info(self) -> str:
         """String representation of the FlexSPIConfBlockFCB."""
-        return "[FCB]\n" + f'{self.size} bytes\n' if self.enabled else "No FCB\n"
+        if not self.enabled:
+            return " No FCB\n\n"
+        msg = f" Length: {self.size} bytes\n"
+        msg += "\n"
+        return msg
 
     @classmethod
-    def parse(cls, buffer: bytes) -> 'FlexSPIConfBlockFCB':
+    def parse(cls, buffer: bytes) -> "FlexSPIConfBlockFCB":
         """Parse binary data and creates instance of the class.
 
         :param buffer: data to be parsed
@@ -379,53 +446,83 @@ class FlexSPIConfBlockFCB(AbstractFCB):
         :raise ValueError: if data are not valid Flex SPI configuration block
         """
         if buffer[:4] != FlexSPIConfBlockFCB.TAG:
-            raise ValueError('TAG does not match: ' + buffer[:4].hex())
+            raise ValueError("TAG does not match: " + buffer[:4].hex())
 
         version = buffer[7:3:-1]
-        if (version[0] != ord('V')) or (version[1] != 1) or (version[2] not in range(0, 9)) or \
-                (version[3] not in range(0, 9)):
-            raise ValueError('Invalid version number format')
+        if (
+            (version[0] != ord("V"))
+            or (version[1] != 1)
+            or (version[2] not in range(0, 9))
+            or (version[3] not in range(0, 9))
+        ):
+            raise ValueError("Invalid version number format")
 
         result = FlexSPIConfBlockFCB()
         if len(buffer) < result.size:
-            raise ValueError('Insufficient data length')
+            raise ValueError("Insufficient data length")
 
         offset = len(result.export_header())
         result.version = version
         (  # B
-            result.read_sample_clk_src, result.cs_hold_time, result.cs_setup_time, result.column_address_width,
-            result.device_mode_cfg_enable, result.device_mode_type,
+            result.read_sample_clk_src,
+            result.cs_hold_time,
+            result.cs_setup_time,
+            result.column_address_width,
+            result.device_mode_cfg_enable,
+            result.device_mode_type,
             # H
             result.wait_time_cfg_commands,
             # I
-            result.device_mode_seq, result.device_mode_arg, result.config_cmd_enable,
-            result.config_cmd_0, result.config_cmd_1, result.config_cmd_2, _reserved1,
+            result.device_mode_seq,
+            result.device_mode_arg,
+            result.config_cmd_enable,
+            result.config_cmd_0,
+            result.config_cmd_1,
+            result.config_cmd_2,
+            _reserved1,
             # I
-            result.cfg_cmd_arg_0, result.cfg_cmd_arg_1, result.cfg_cmd_arg_2, _reserved2,
+            result.cfg_cmd_arg_0,
+            result.cfg_cmd_arg_1,
+            result.cfg_cmd_arg_2,
+            _reserved2,
             result.controller_misc_option,
             # B
-            result.device_type, result.sflash_pad_type, result.serial_clk_freq, result.lut_custom_seq_enable,
+            result.device_type,
+            result.sflash_pad_type,
+            result.serial_clk_freq,
+            result.lut_custom_seq_enable,
             # I
-            _reserved3, _reserved4,
+            _reserved3,
+            _reserved4,
             # I
-            result.sflash_a1_size, result.sflash_a2_size, result.sflash_b1_size, result.sflash_b2_size,
+            result.sflash_a1_size,
+            result.sflash_a2_size,
+            result.sflash_b1_size,
+            result.sflash_b2_size,
             # I
-            result.cs_pad_setting_override, result.sclk_pad_setting_override, result.data_pad_setting_override,
-            result.dqs_pad_setting_override, result.timeout_in_ms, result.command_interval,
+            result.cs_pad_setting_override,
+            result.sclk_pad_setting_override,
+            result.data_pad_setting_override,
+            result.dqs_pad_setting_override,
+            result.timeout_in_ms,
+            result.command_interval,
             # H
-            result.data_valid_time_dlla, result.data_valid_time_dllb, result.busy_offset, result.busy_bit_polarity
+            result.data_valid_time_dlla,
+            result.data_valid_time_dllb,
+            result.busy_offset,
+            result.busy_bit_polarity,
         ) = unpack_from(FlexSPIConfBlockFCB.FORMAT, buffer, offset)
         offset += calcsize(FlexSPIConfBlockFCB.FORMAT)
         # lookup table
-        result.lookup_table = buffer[offset:offset + len(result.lookup_table)]
+        result.lookup_table = buffer[offset : offset + len(result.lookup_table)]
         offset += len(result.lookup_table)
         # lookup table
-        result.lut_custom_seq = buffer[offset:offset + len(result.lut_custom_seq)]
+        result.lut_custom_seq = buffer[offset : offset + len(result.lut_custom_seq)]
         offset += len(result.lut_custom_seq)
         # reserved padding
-        result.reserved_padding1 = buffer[offset:offset + len(result.reserved_padding1)]
+        result.reserved_padding1 = buffer[offset : offset + len(result.reserved_padding1)]
         offset += len(result.reserved_padding1)
-        result.reserved_padding2 = buffer[offset:offset + len(result.reserved_padding2)]
+        result.reserved_padding2 = buffer[offset : offset + len(result.reserved_padding2)]
 
         return result
 
@@ -433,6 +530,7 @@ class FlexSPIConfBlockFCB(AbstractFCB):
 ########################################################################################################################
 # KIB and PRDB (i.MX-RT) for BEE Encrypted XIP mode
 ########################################################################################################################
+
 
 class SegBEE(BaseSegment):
     """BEE keys and regions segment."""
@@ -464,7 +562,7 @@ class SegBEE(BaseSegment):
 
     def info(self) -> str:
         """:return: test description of the instance."""
-        result = f'BEE Segment, with {len(self._regions)} regions\n'
+        result = f"BEE Segment, with {len(self._regions)} regions\n"
         for region in self._regions:
             result += region.info()
         return result
@@ -484,7 +582,9 @@ class SegBEE(BaseSegment):
             region.validate()
             total_facs += len(region.fac_regions)
         if total_facs > self.max_facs:
-            raise ValueError(f'Totally {total_facs} FAC regions, but only {self.max_facs} supported')
+            raise ValueError(
+                f"Totally {total_facs} FAC regions, but only {self.max_facs} supported"
+            )
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Serialization to binary representation.
@@ -494,19 +594,19 @@ class SegBEE(BaseSegment):
         """
         self.update()
         self.validate()
-        result = b''
+        result = b""
         for index, region in enumerate(self._regions):
-            dbg_info.append_section(f'BEE Region {index}')
+            dbg_info.append_section(f"BEE Region {index}")
             result += region.export(dbg_info=dbg_info)
         if self.padding_len:
             result += self._padding_export()
             if self.size == 0:
-                dbg_info.append_section(f'BEE-padding {self.padding_len} bytes')
+                dbg_info.append_section(f"BEE-padding {self.padding_len} bytes")
 
         return result
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, decrypt_keys: List[bytes] = list()) -> 'SegBEE':
+    def parse(cls, data: bytes, offset: int = 0, decrypt_keys: List[bytes] = list()) -> "SegBEE":
         """Deserialization.
 
         :param data: binary data to be parsed
@@ -535,7 +635,7 @@ class SegBEE(BaseSegment):
         result = bytes()
         offset = 0
         while offset < len(data):
-            blck = data[offset:offset + BEE_ENCR_BLOCK_SIZE]
+            blck = data[offset : offset + BEE_ENCR_BLOCK_SIZE]
             for region in self._regions:
                 blck = region.encrypt_block(start_addr + offset, blck)
             result += blck
@@ -549,7 +649,7 @@ class SegBEE(BaseSegment):
 class SegIVT2(BaseSegment):
     """Image Vector Table, IVT2 segment."""
 
-    FORMAT = '<7L'
+    FORMAT = "<7L"
     SIZE = Header.SIZE + calcsize(FORMAT)
 
     @property
@@ -586,7 +686,11 @@ class SegIVT2(BaseSegment):
 
     def __repr__(self) -> str:
         return "IVT2 <IVT:0x{:X}, BDT:0x{:X}, DCD:0x{:X}, APP:0x{:X}, CSF:0x{:X}>".format(
-            self.ivt_address, self.bdt_address, self.dcd_address, self.app_address, self.csf_address
+            self.ivt_address,
+            self.bdt_address,
+            self.dcd_address,
+            self.app_address,
+            self.csf_address,
         )
 
     def info(self) -> str:
@@ -609,11 +713,15 @@ class SegIVT2(BaseSegment):
         if self.ivt_address == 0 or self.bdt_address == 0 or self.bdt_address < self.ivt_address:
             raise ValueError("Not valid IVT/BDT address")
         if self.dcd_address and self.dcd_address < self.ivt_address:
-            raise ValueError("Not valid DCD address: 0x{:X} < 0x{:X}".format(self.dcd_address, self.ivt_address))
+            raise ValueError(
+                "Not valid DCD address: 0x{:X} < 0x{:X}".format(self.dcd_address, self.ivt_address)
+            )
         # TODO: resolve commented code: if self.app_address and self.app_address < self.ivt_address:
         #  raise ValueError("Not valid APP address: 0x{:X} < 0x{:X}".format(self.app_address, self.ivt_address))
         if self.csf_address and self.csf_address < self.ivt_address:
-            raise ValueError("Not valid CSF address: 0x{:X} < 0x{:X}".format(self.csf_address, self.ivt_address))
+            raise ValueError(
+                "Not valid CSF address: 0x{:X} < 0x{:X}".format(self.csf_address, self.ivt_address)
+            )
         if self.padding > 0:
             raise ValueError("IVT padding should be zero: {}".format(self.padding))
 
@@ -625,13 +733,21 @@ class SegIVT2(BaseSegment):
         self.validate()
 
         data = self._header.export()
-        data += pack(self.FORMAT, self.app_address, self.rs1, self.dcd_address, self.bdt_address, self.ivt_address,
-                     self.csf_address, self.rs2)
+        data += pack(
+            self.FORMAT,
+            self.app_address,
+            self.rs1,
+            self.dcd_address,
+            self.bdt_address,
+            self.ivt_address,
+            self.csf_address,
+            self.rs2,
+        )
 
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegIVT2':
+    def parse(cls, data: bytes) -> "SegIVT2":
         """Parse segment from bytes array.
 
         :param data: The bytes array of IVT2 segment
@@ -640,13 +756,15 @@ class SegIVT2(BaseSegment):
         header = Header.parse(data, 0, SegTag.IVT2)
         obj = cls(header.param)
         # Parse IVT items
-        (obj.app_address,
-         obj.rs1,
-         obj.dcd_address,
-         obj.bdt_address,
-         obj.ivt_address,
-         obj.csf_address,
-         obj.rs2) = unpack_from(cls.FORMAT, data, header.size)
+        (
+            obj.app_address,
+            obj.rs1,
+            obj.dcd_address,
+            obj.bdt_address,
+            obj.ivt_address,
+            obj.csf_address,
+            obj.rs2,
+        ) = unpack_from(cls.FORMAT, data, header.size)
         # Calculate IVT padding (should be zero)
         obj.padding = obj.bdt_address - obj.ivt_address - obj.size
         # Validate parsed values
@@ -656,7 +774,8 @@ class SegIVT2(BaseSegment):
 
 class SegBDT(BaseSegment):
     """Boot Data Table segment."""
-    FORMAT = '<3L'
+
+    FORMAT = "<3L"
     SIZE = calcsize(FORMAT)
 
     @property
@@ -687,11 +806,13 @@ class SegBDT(BaseSegment):
         self.plugin = plugin
 
     def __repr__(self) -> str:
-        return "BDT <ADDR: 0x{:X}, LEN: {} Bytes, Plugin: {}>".format(self.app_start, self.app_length, self.plugin)
+        return "BDT <ADDR: 0x{:X}, LEN: {} Bytes, Plugin: {}>".format(
+            self.app_start, self.app_length, self.plugin
+        )
 
     def info(self) -> str:
         """String representation of the SegBDT."""
-        msg = f" Start      :  0x{self.app_start:08X}\n"
+        msg = f" Start      : 0x{self.app_start:08X}\n"
         msg += f" App Length : {size_fmt(self.app_length)} ({self.app_length} Bytes)\n"
         msg += f" Plugin     : {'YES' if self.plugin else 'NO'}\n"
         msg += "\n"
@@ -708,7 +829,7 @@ class SegBDT(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegBDT':
+    def parse(cls, data: bytes) -> "SegBDT":
         """Parse segment from bytes array.
 
         :param data: The bytes array of BDT segment
@@ -758,7 +879,7 @@ class SegAPP(BaseSegment):
 
         :return: bytes
         """
-        data = b''
+        data = b""
         if self._data:
             data += bytes(self._data)
         data += self._padding_export()
@@ -766,16 +887,16 @@ class SegAPP(BaseSegment):
 
 
 _SEG_DCD_COMMANDS = {
-    'WriteValue': ('write', EnumWriteOps.WRITE_VALUE),
-    'WriteClearBits': ('write', EnumWriteOps.WRITE_CLEAR_BITS),
-    'ClearBitMask': ('write', EnumWriteOps.CLEAR_BITMASK),
-    'SetBitMask': ('write', EnumWriteOps.SET_BITMASK),
-    'CheckAllClear': ('check', EnumCheckOps.ALL_CLEAR),
-    'CheckAllSet': ('check', EnumCheckOps.ALL_SET),
-    'CheckAnyClear': ('check', EnumCheckOps.ANY_CLEAR),
-    'CheckAnySet': ('check', EnumCheckOps.ANY_SET),
-    'Unlock': None,
-    'Nop': None
+    "WriteValue": ("write", EnumWriteOps.WRITE_VALUE),
+    "WriteClearBits": ("write", EnumWriteOps.WRITE_CLEAR_BITS),
+    "ClearBitMask": ("write", EnumWriteOps.CLEAR_BITMASK),
+    "SetBitMask": ("write", EnumWriteOps.SET_BITMASK),
+    "CheckAllClear": ("check", EnumCheckOps.ALL_CLEAR),
+    "CheckAllSet": ("check", EnumCheckOps.ALL_SET),
+    "CheckAnyClear": ("check", EnumCheckOps.ANY_CLEAR),
+    "CheckAnySet": ("check", EnumCheckOps.ANY_SET),
+    "Unlock": None,
+    "Nop": None,
 }
 
 
@@ -786,7 +907,12 @@ class SegDCD(BaseSegment):
     """
 
     # list of supported DCD commands
-    _COMMANDS: Tuple[CmdTag, ...] = (CmdTag.WRT_DAT, CmdTag.CHK_DAT, CmdTag.NOP, CmdTag.UNLK)
+    _COMMANDS: Tuple[CmdTag, ...] = (
+        CmdTag.WRT_DAT,
+        CmdTag.CHK_DAT,
+        CmdTag.NOP,
+        CmdTag.UNLK,
+    )
 
     @property
     def header(self) -> Header:
@@ -860,23 +986,25 @@ class SegDCD(BaseSegment):
 
     def export_txt(self, txt_data: str = None) -> str:
         """Export txt of Device configuration data (DCD) segment."""
-        write_ops = ('WriteValue', 'WriteClearBits', 'ClearBitMask', 'SetBitMask')
-        check_ops = ('CheckAllClear', 'CheckAllSet', 'CheckAnyClear', 'CheckAnySet')
+        write_ops = ("WriteValue", "WriteClearBits", "ClearBitMask", "SetBitMask")
+        check_ops = ("CheckAllClear", "CheckAllSet", "CheckAnyClear", "CheckAnySet")
         if txt_data is None:
             txt_data = ""
 
         for cmd in self._commands:
             if isinstance(cmd, CmdWriteData):
                 for (address, value) in cmd:
-                    txt_data += "{0:s} {1:d} 0x{2:08X} 0x{3:08X}\n".format(write_ops[cmd.ops], cmd.num_bytes, address,
-                                                                           value)
+                    txt_data += "{0:s} {1:d} 0x{2:08X} 0x{3:08X}\n".format(
+                        write_ops[cmd.ops], cmd.num_bytes, address, value
+                    )
             elif isinstance(cmd, CmdCheckData):
-                txt_data += "{0:s} {1:d} 0x{2:08X} 0x{3:08X}".format(check_ops[cmd.ops], cmd.num_bytes, cmd.address,
-                                                                     cmd.mask)
+                txt_data += "{0:s} {1:d} 0x{2:08X} 0x{3:08X}".format(
+                    check_ops[cmd.ops], cmd.num_bytes, cmd.address, cmd.mask
+                )
                 txt_data += " {0:d}\n".format(cmd.count) if cmd.count else "\n"
 
             elif isinstance(cmd, CmdUnlock):
-                txt_data += "Unlock {0:s}".format(EnumEngine[cmd.engine]) # type: ignore
+                txt_data += "Unlock {0:s}".format(EnumEngine[cmd.engine])  # type: ignore
                 cnt = 1
                 for value in cmd:
                     if cnt > 6:
@@ -885,13 +1013,13 @@ class SegDCD(BaseSegment):
                     txt_data += " 0x{0:08X}".format(value)
                     cnt += 1
 
-                txt_data += '\n'
+                txt_data += "\n"
 
             else:
                 txt_data += "Nop\n"
 
             # Split with new line every group of commands
-            txt_data += '\n'
+            txt_data += "\n"
 
         return txt_data
 
@@ -900,7 +1028,7 @@ class SegDCD(BaseSegment):
 
         :return: bytes
         """
-        data = b''
+        data = b""
         if self.enabled:
             data = self._header.export()
             for command in self._commands:
@@ -911,7 +1039,7 @@ class SegDCD(BaseSegment):
         return data
 
     @classmethod
-    def parse_txt(cls, text: str) -> 'SegDCD':
+    def parse_txt(cls, text: str) -> "SegDCD":
         """Parse segment from text file.
 
         :param text: The string with DCD commands
@@ -920,7 +1048,7 @@ class SegDCD(BaseSegment):
         return SegDcdBuilder().build(text)
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegDCD':
+    def parse(cls, data: bytes) -> "SegDCD":
         """Parse segment from bytes array.
 
         :param data: The bytes array of DCD segment
@@ -947,7 +1075,9 @@ class SegDcdBuilder:
     def __init__(self) -> None:
         """Initialize SegDcdBuilder."""
         self.line_cnt = 0  # current line number to be displayed in the error message
-        self.cmd_write: Optional[CmdWriteData] = None  # this is cache to merge several write commands of same type
+        self.cmd_write: Optional[
+            CmdWriteData
+        ] = None  # this is cache to merge several write commands of same type
 
     def _parse_cmd(self, dcd_obj: SegDCD, cmd: List[str]) -> None:
         """Parse one command.
@@ -961,20 +1091,22 @@ class SegDcdBuilder:
         # ----------------------------
         cmd_tuple = _SEG_DCD_COMMANDS[cmd[0]]
         if cmd_tuple is None:
-            if cmd[0] == 'Nop':
+            if cmd[0] == "Nop":
                 if self.cmd_write is not None:
                     dcd_obj.append(self.cmd_write)
                     self.cmd_write = None
 
                 dcd_obj.append(CmdNop())
 
-            elif cmd[0] == 'Unlock':
+            elif cmd[0] == "Unlock":
                 if self.cmd_write is not None:
                     dcd_obj.append(self.cmd_write)
                     self.cmd_write = None
 
                 if cmd[1] not in EnumEngine:
-                    raise SyntaxError("Unlock CMD: wrong engine parameter at line %d" % (self.line_cnt - 1))
+                    raise SyntaxError(
+                        "Unlock CMD: wrong engine parameter at line %d" % (self.line_cnt - 1)
+                    )
 
                 engine = EnumEngine.from_int(EnumEngine[cmd[1]])
                 args = [int(value, 0) for value in cmd[2:]]
@@ -982,9 +1114,11 @@ class SegDcdBuilder:
             else:
                 assert False, "unknown command"
 
-        elif cmd_tuple[0] == 'write':
+        elif cmd_tuple[0] == "write":
             if len(cmd) < 4:
-                raise SyntaxError("Write CMD: not enough arguments at line %d" % (self.line_cnt - 1))
+                raise SyntaxError(
+                    "Write CMD: not enough arguments at line %d" % (self.line_cnt - 1)
+                )
 
             ops = cmd_tuple[1]
             numbytes = int(cmd[1])
@@ -1003,7 +1137,9 @@ class SegDcdBuilder:
 
         else:
             if len(cmd) < 4:
-                raise SyntaxError("Check CMD: not enough arguments at line %d" % (self.line_cnt - 1))
+                raise SyntaxError(
+                    "Check CMD: not enough arguments at line %d" % (self.line_cnt - 1)
+                )
 
             if self.cmd_write is not None:
                 dcd_obj.append(self.cmd_write)
@@ -1026,13 +1162,13 @@ class SegDcdBuilder:
         dcd_obj = SegDCD(enabled=True)
         cmd_mline = False
         cmd: List[str] = []
-        for line in text.split('\n'):
-            line = line.rstrip('\0')
+        for line in text.split("\n"):
+            line = line.rstrip("\0")
             line = line.lstrip()
             # increment line counter
             self.line_cnt += 1
             # ignore comments
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
             # check if multi-line command
             if cmd_mline:
@@ -1041,10 +1177,10 @@ class SegDcdBuilder:
             else:
                 cmd = line.split()
                 if cmd[0] not in _SEG_DCD_COMMANDS:
-                    logger.error(f'Unknown DCD command ignored: {cmd}')
+                    logger.error(f"Unknown DCD command ignored: {cmd}")
                     continue
             #
-            if cmd[-1] == '\\':
+            if cmd[-1] == "\\":
                 cmd = cmd[:-1]
                 cmd_mline = True
                 continue
@@ -1065,7 +1201,14 @@ class SegCSF(BaseSegment):
 
     # list of supported CSF commands
     _COMMANDS: Tuple[CmdTag, ...] = (
-        CmdTag.WRT_DAT, CmdTag.CHK_DAT, CmdTag.NOP, CmdTag.SET, CmdTag.INIT, CmdTag.UNLK, CmdTag.INS_KEY, CmdTag.AUT_DAT
+        CmdTag.WRT_DAT,
+        CmdTag.CHK_DAT,
+        CmdTag.NOP,
+        CmdTag.SET,
+        CmdTag.INIT,
+        CmdTag.UNLK,
+        CmdTag.INS_KEY,
+        CmdTag.AUT_DAT,
     )
 
     @classmethod
@@ -1200,9 +1343,9 @@ class SegCSF(BaseSegment):
         """
         self.update(True)
         data = self._header.export()
-        dbg_info.append_binary_section('header', data)
+        dbg_info.append_binary_section("header", data)
         for command in self.commands:
-            dbg_info.append_section(f'COMMAND: {CmdTag.desc(command.tag)}')
+            dbg_info.append_section(f"COMMAND: {CmdTag.desc(command.tag)}")
             cmd_data = command.export(dbg_info)
             data += cmd_data
         return data
@@ -1232,14 +1375,14 @@ class SegCSF(BaseSegment):
         :param dbg_info: optional list of strings to produce debug information about exported data
         :return: bytes
         """
-        data = b''
+        data = b""
         if self.enabled:
             data = self._export_base(dbg_info)
-            dbg_info.append_section('CSF-DATA: CERTIFICATES and SIGNATURES')
+            dbg_info.append_section("CSF-DATA: CERTIFICATES and SIGNATURES")
             cmd_data_by_offset = sorted(self._cmd_data.items(), key=lambda t: str(t[0]).zfill(8))
             for offset, cmd_data in cmd_data_by_offset:
                 data = extend_block(data, offset)
-                dbg_info.append_section(f'CMD-DATA: {type(cmd_data).__name__}')
+                dbg_info.append_section(f"CMD-DATA: {type(cmd_data).__name__}")
                 data += cmd_data.export(dbg_info=dbg_info)
             # padding
             data += self._padding_export()
@@ -1261,7 +1404,7 @@ class SegCSF(BaseSegment):
         return result
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'SegCSF':
+    def parse(cls, data: bytes, offset: int = 0) -> "SegCSF":
         """Parse segment from bytes array.
 
         :param data: The bytes array of CSF segment
@@ -1279,7 +1422,9 @@ class SegCSF(BaseSegment):
                 cmd_obj = parse_command(data, offset + index)
                 obj.append_command(cmd_obj)
             except ValueError:
-                raise CorruptedException("Failed to parse command at position: " + hex(offset + index))
+                raise CorruptedException(
+                    "Failed to parse command at position: " + hex(offset + index)
+                )
             index += cmd_obj.size
 
         for cmd in obj.commands:
@@ -1294,10 +1439,11 @@ class SegCSF(BaseSegment):
 # Boot Image V3 Segments (i.MX8QM-Ax, i.MX8QXP-Ax)
 ########################################################################################################################
 
+
 class SegIVT3a(BaseSegment):
     """IVT3a segment."""
 
-    FORMAT = '<1L5Q'
+    FORMAT = "<1L5Q"
     SIZE = Header.SIZE + calcsize(FORMAT)
 
     @property
@@ -1359,13 +1505,20 @@ class SegIVT3a(BaseSegment):
         self.validate()
 
         data = self.header.export()
-        data += pack(self.FORMAT, self.version, self.dcd_address, self.bdt_address, self.ivt_address,
-                     self.csf_address, self.next)
+        data += pack(
+            self.FORMAT,
+            self.version,
+            self.dcd_address,
+            self.bdt_address,
+            self.ivt_address,
+            self.csf_address,
+            self.next,
+        )
         data += self._padding_export()
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegIVT3a':
+    def parse(cls, data: bytes) -> "SegIVT3a":
         """Parse segment from bytes array.
 
         :param data: The bytes array of IVT3a segment
@@ -1374,12 +1527,14 @@ class SegIVT3a(BaseSegment):
         header = Header.parse(data, 0, SegTag.IVT3)
         obj = cls(header.param)
 
-        (obj.version,
-         obj.dcd_address,
-         obj.bdt_address,
-         obj.ivt_address,
-         obj.csf_address,
-         obj.next) = unpack_from(cls.FORMAT, data, header.size)
+        (
+            obj.version,
+            obj.dcd_address,
+            obj.bdt_address,
+            obj.ivt_address,
+            obj.csf_address,
+            obj.next,
+        ) = unpack_from(cls.FORMAT, data, header.size)
 
         obj.validate()
 
@@ -1389,7 +1544,7 @@ class SegIVT3a(BaseSegment):
 class SegIVT3b(BaseSegment):
     """IVT3b segment."""
 
-    FORMAT = '<1L7Q'
+    FORMAT = "<1L7Q"
     SIZE = Header.SIZE + calcsize(FORMAT)
 
     @property
@@ -1424,7 +1579,11 @@ class SegIVT3b(BaseSegment):
 
     def __repr__(self) -> str:
         return "IVT3b <IVT:0x{:X}, BDT:0x{:X}, DCD:0x{:X}, CSF:0x{:X}, SCD:0x{:X}>".format(
-            self.ivt_address, self.bdt_address, self.dcd_address, self.csf_address, self.scd_address
+            self.ivt_address,
+            self.bdt_address,
+            self.dcd_address,
+            self.csf_address,
+            self.scd_address,
         )
 
     def info(self) -> str:
@@ -1457,13 +1616,22 @@ class SegIVT3b(BaseSegment):
         self.validate()
 
         data = self.header.export()
-        data += pack(self.FORMAT, self.rs1, self.dcd_address, self.bdt_address, self.ivt_address, self.csf_address,
-                     self.scd_address, self.rs2h, self.rs2l)
+        data += pack(
+            self.FORMAT,
+            self.rs1,
+            self.dcd_address,
+            self.bdt_address,
+            self.ivt_address,
+            self.csf_address,
+            self.scd_address,
+            self.rs2h,
+            self.rs2l,
+        )
         data += self._padding_export()
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegIVT3b':
+    def parse(cls, data: bytes) -> "SegIVT3b":
         """Parse segment from bytes array.
 
         :param data: The bytes array of IVT3b segment
@@ -1472,14 +1640,16 @@ class SegIVT3b(BaseSegment):
         header = Header.parse(data, 0, SegTag.IVT2)
         obj = cls(header.param)
 
-        (obj.rs1,
-         obj.dcd_address,
-         obj.bdt_address,
-         obj.ivt_address,
-         obj.csf_address,
-         obj.scd_address,
-         obj.rs2h,
-         obj.rs2l) = unpack_from(cls.FORMAT, data, header.size)
+        (
+            obj.rs1,
+            obj.dcd_address,
+            obj.bdt_address,
+            obj.ivt_address,
+            obj.csf_address,
+            obj.scd_address,
+            obj.rs2h,
+            obj.rs2l,
+        ) = unpack_from(cls.FORMAT, data, header.size)
 
         obj.validate()
 
@@ -1489,7 +1659,7 @@ class SegIVT3b(BaseSegment):
 class SegIDS3a(BaseSegment):
     """IDS3a segment."""
 
-    FORMAT = '<3Q4L'
+    FORMAT = "<3Q4L"
     SIZE = calcsize(FORMAT)
 
     @property
@@ -1510,8 +1680,13 @@ class SegIDS3a(BaseSegment):
 
     def __repr__(self) -> str:
         return "IDS3a <IN:0x{:X}, OUT:0x{:X}, ENTRY:0x{:X}, SIZE:{}B, HAB:0x{:X}, SCFW:0x{:X}, ROM:0x{:X}>".format(
-            self.image_source, self.image_destination, self.image_entry, self.image_size, self.hab_flags,
-            self.scfw_flags, self.rom_flags
+            self.image_source,
+            self.image_destination,
+            self.image_entry,
+            self.image_size,
+            self.hab_flags,
+            self.scfw_flags,
+            self.rom_flags,
         )
 
     def info(self) -> str:
@@ -1532,33 +1707,37 @@ class SegIDS3a(BaseSegment):
 
         :return: bytes
         """
-        data = pack(self.FORMAT,
-                    self.image_source,
-                    self.image_destination,
-                    self.image_entry,
-                    self.image_size,
-                    self.hab_flags,
-                    self.scfw_flags,
-                    self.rom_flags)
+        data = pack(
+            self.FORMAT,
+            self.image_source,
+            self.image_destination,
+            self.image_entry,
+            self.image_size,
+            self.hab_flags,
+            self.scfw_flags,
+            self.rom_flags,
+        )
         data += self._padding_export()
 
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegIDS3a':
+    def parse(cls, data: bytes) -> "SegIDS3a":
         """Parse segment from bytes array.
 
         :param data: The bytes array of IDS3a segment
         :return: SegIDS3a object
         """
         obj = cls()
-        (obj.image_source,
-         obj.image_destination,
-         obj.image_entry,
-         obj.image_size,
-         obj.hab_flags,
-         obj.scfw_flags,
-         obj.rom_flags) = unpack_from(obj.FORMAT, data)
+        (
+            obj.image_source,
+            obj.image_destination,
+            obj.image_entry,
+            obj.image_size,
+            obj.hab_flags,
+            obj.scfw_flags,
+            obj.rom_flags,
+        ) = unpack_from(obj.FORMAT, data)
 
         return obj
 
@@ -1566,7 +1745,7 @@ class SegIDS3a(BaseSegment):
 class SegBDS3a(BaseSegment):
     """BDS3a segment."""
 
-    FORMAT = '<4L'
+    FORMAT = "<4L"
     HEADER_SIZE = calcsize(FORMAT)
     IMAGES_MAX_COUNT = 6
     SIZE = HEADER_SIZE + SegIDS3a.SIZE * IMAGES_MAX_COUNT
@@ -1611,11 +1790,13 @@ class SegBDS3a(BaseSegment):
 
         :return: bytes
         """
-        data = pack(self.FORMAT,
-                    self.images_count,
-                    self.boot_data_size,
-                    self.boot_data_flag,
-                    self.reserved)
+        data = pack(
+            self.FORMAT,
+            self.images_count,
+            self.boot_data_size,
+            self.boot_data_flag,
+            self.reserved,
+        )
 
         for i in range(self.IMAGES_MAX_COUNT):
             data += self.images[i].export()
@@ -1624,27 +1805,30 @@ class SegBDS3a(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegBDS3a':
+    def parse(cls, data: bytes) -> "SegBDS3a":
         """Parse segment from bytes array.
 
         :param data: The bytes array of BDS3a segment
         :return: SegBDS3a object
         """
         obj = cls()
-        (obj.images_count,
-         obj.boot_data_size,
-         obj.boot_data_flag,
-         obj.reserved) = unpack_from(cls.FORMAT, data)
+        (
+            obj.images_count,
+            obj.boot_data_size,
+            obj.boot_data_flag,
+            obj.reserved,
+        ) = unpack_from(cls.FORMAT, data)
 
         for i in range(obj.images_count):
-            obj.images[i] = SegIDS3a.parse(data[cls.HEADER_SIZE + i * SegIDS3a.SIZE:])
+            obj.images[i] = SegIDS3a.parse(data[cls.HEADER_SIZE + i * SegIDS3a.SIZE :])
 
         return obj
 
 
 class SegIDS3b(BaseSegment):
     """IDS3b segment."""
-    FORMAT = '<3Q2L'
+
+    FORMAT = "<3Q2L"
     SIZE = calcsize(FORMAT)
 
     @property
@@ -1663,7 +1847,11 @@ class SegIDS3b(BaseSegment):
 
     def __repr__(self) -> str:
         return "IDS3b <IN:0x{:X}, OUT:0x{:X}, ENTRY:0x{:X}, SIZE:{}B, FLAGS:0x{:X}>".format(
-            self.image_source, self.image_destination, self.image_entry, self.image_size, self.flags
+            self.image_source,
+            self.image_destination,
+            self.image_entry,
+            self.image_size,
+            self.flags,
         )
 
     def info(self) -> str:
@@ -1681,32 +1869,41 @@ class SegIDS3b(BaseSegment):
 
         :return: bytes
         """
-        data = pack(self.FORMAT,
-                    self.image_source, self.image_destination, self.image_entry, self.image_size, self.flags)
+        data = pack(
+            self.FORMAT,
+            self.image_source,
+            self.image_destination,
+            self.image_entry,
+            self.image_size,
+            self.flags,
+        )
         data += self._padding_export()
 
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegIDS3b':
+    def parse(cls, data: bytes) -> "SegIDS3b":
         """Parse segment from bytes array.
 
         :param data: The bytes array of IDS3b segment
         :return: SegIDS3b object
         """
         ids = cls()
-        (ids.image_source,
-         ids.image_destination,
-         ids.image_entry,
-         ids.image_size,
-         ids.flags) = unpack_from(cls.FORMAT, data)
+        (
+            ids.image_source,
+            ids.image_destination,
+            ids.image_entry,
+            ids.image_size,
+            ids.flags,
+        ) = unpack_from(cls.FORMAT, data)
 
         return ids
 
 
 class SegBDS3b(BaseSegment):
     """BDS3b segment."""
-    FORMAT = '<4L'
+
+    FORMAT = "<4L"
     HEADER_SIZE = calcsize(FORMAT)
     IMAGES_MAX_COUNT = 4
     SIZE = calcsize(FORMAT) + SegIDS3b.SIZE * (IMAGES_MAX_COUNT + 3)
@@ -1763,11 +1960,13 @@ class SegBDS3b(BaseSegment):
 
         :return: bytes
         """
-        data = pack(self.FORMAT,
-                    self.images_count,
-                    self.boot_data_size,
-                    self.boot_data_flag,
-                    self.reserved)
+        data = pack(
+            self.FORMAT,
+            self.images_count,
+            self.boot_data_size,
+            self.boot_data_flag,
+            self.reserved,
+        )
 
         for i in range(self.IMAGES_MAX_COUNT):
             data += self.images[i].export()
@@ -1781,17 +1980,19 @@ class SegBDS3b(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegBDS3b':
+    def parse(cls, data: bytes) -> "SegBDS3b":
         """Parse segment from bytes array.
 
         :param data: The bytes array of BDS3b segment
         :return: SegBDS3b object
         """
         obj = cls()
-        (obj.images_count,
-         obj.boot_data_size,
-         obj.boot_data_flag,
-         obj.reserved) = unpack_from(obj.FORMAT, data)
+        (
+            obj.images_count,
+            obj.boot_data_size,
+            obj.boot_data_flag,
+            obj.reserved,
+        ) = unpack_from(obj.FORMAT, data)
 
         offset = cls.HEADER_SIZE
         for i in range(obj.images_count):
@@ -1811,9 +2012,11 @@ class SegBDS3b(BaseSegment):
 # Boot Image V4 Segments (i.MX8DM, i.MX8QM-Bx, i.MX8QXP-Bx)
 ########################################################################################################################
 
+
 class SegBIM(BaseSegment):
     """BootImage segment."""
-    FORMAT = '<2L2Q2L'
+
+    FORMAT = "<2L2Q2L"
     SIZE = calcsize(FORMAT) + 64 + 32
 
     @property
@@ -1835,7 +2038,11 @@ class SegBIM(BaseSegment):
 
     def __repr__(self) -> str:
         return "BIM <OFFSET:{}, SIZE:{}B, LOAD:0x{:X}, ENTRY:0x{:X}, FLAGS:0x{:X}>".format(
-            self.image_offset, self.image_size, self.load_address, self.entry_address, self.hab_flags
+            self.image_offset,
+            self.image_size,
+            self.load_address,
+            self.entry_address,
+            self.hab_flags,
         )
 
     def info(self) -> str:
@@ -1845,9 +2052,11 @@ class SegBIM(BaseSegment):
         msg += " Load:       0x{:X}\n".format(self.load_address)
         msg += " Entry:      0x{:X}\n".format(self.entry_address)
         if self.image_hash:
-            msg += " HASH:       {}\n".format(''.join(['{:02X}'.format(i) for i in self.image_hash]))
+            msg += " HASH:       {}\n".format(
+                "".join(["{:02X}".format(i) for i in self.image_hash])
+            )
         if self.image_iv:
-            msg += " IV:         {}\n".format(''.join(['{:02X}'.format(i) for i in self.image_iv]))
+            msg += " IV:         {}\n".format("".join(["{:02X}".format(i) for i in self.image_iv]))
         msg += " Hash Flags: 0x{:08X}\n".format(self.hab_flags)
         msg += " Meta Data:  0x{:08X}\n".format(self.meta_data)
         msg += "\n"
@@ -1858,37 +2067,41 @@ class SegBIM(BaseSegment):
 
         :return: bytes
         """
-        data = pack(self.FORMAT,
-                    self.image_offset,
-                    self.image_size,
-                    self.load_address,
-                    self.entry_address,
-                    self.hab_flags,
-                    self.meta_data)
+        data = pack(
+            self.FORMAT,
+            self.image_offset,
+            self.image_size,
+            self.load_address,
+            self.entry_address,
+            self.hab_flags,
+            self.meta_data,
+        )
 
         data += self._padding_export()
 
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegBIM':
+    def parse(cls, data: bytes) -> "SegBIM":
         """Parse segment from bytes array.
 
         :param data: The bytes array of BootImage segment
         :return: SegBootImage object
         """
         obj = cls()
-        (obj.image_offset,
-         obj.image_size,
-         obj.load_address,
-         obj.entry_address,
-         obj.hab_flags,
-         obj.meta_data) = unpack_from(obj.FORMAT, data)
+        (
+            obj.image_offset,
+            obj.image_size,
+            obj.load_address,
+            obj.entry_address,
+            obj.hab_flags,
+            obj.meta_data,
+        ) = unpack_from(obj.FORMAT, data)
 
         offset = calcsize(cls.FORMAT)
-        obj.image_hash = data[offset:offset + 64]
+        obj.image_hash = data[offset : offset + 64]
         offset += 64
-        obj.image_iv = data[offset:offset + 32]
+        obj.image_iv = data[offset : offset + 32]
 
         return obj
 
@@ -1896,7 +2109,7 @@ class SegBIM(BaseSegment):
 class SegSIGB(BaseSegment):
     """SignatureBlock segment."""
 
-    FORMAT = '<4HL'
+    FORMAT = "<4HL"
     SIZE = Header2.SIZE + calcsize(FORMAT)
 
     @property
@@ -1926,7 +2139,10 @@ class SegSIGB(BaseSegment):
 
     def __repr__(self) -> str:
         return "SIGB <SRK:0x{:X}, CERT:0x{:X}, BLOB:0x{:X}, SIG:0x{:X}>".format(
-            self.srk_table_offset, self.cert_offset, self.blob_offset, self.signature_offset
+            self.srk_table_offset,
+            self.cert_offset,
+            self.blob_offset,
+            self.signature_offset,
         )
 
     def info(self) -> str:
@@ -1944,14 +2160,20 @@ class SegSIGB(BaseSegment):
         :return: bytes
         """
         data = self._header.export()
-        data += pack(self.FORMAT,
-                     self.srk_table_offset, self.cert_offset, self.blob_offset, self.signature_offset, self.reserved)
+        data += pack(
+            self.FORMAT,
+            self.srk_table_offset,
+            self.cert_offset,
+            self.blob_offset,
+            self.signature_offset,
+            self.reserved,
+        )
         data += self._padding_export()
 
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegSIGB':
+    def parse(cls, data: bytes) -> "SegSIGB":
         """Parse segment from bytes array.
 
         :param data: The bytes array of SignatureBlock segment
@@ -1960,13 +2182,16 @@ class SegSIGB(BaseSegment):
         header = Header2.parse(data, 0, SegTag.SIGB)
         obj = cls(header.param)
 
-        (obj.srk_table_offset,
-         obj.cert_offset,
-         obj.blob_offset,
-         obj.signature_offset,
-         obj.reserved) = unpack_from(obj.FORMAT, data)
+        (
+            obj.srk_table_offset,
+            obj.cert_offset,
+            obj.blob_offset,
+            obj.signature_offset,
+            obj.reserved,
+        ) = unpack_from(obj.FORMAT, data)
 
         return obj
+
 
 # pylint: disable=too-many-instance-attributes
 class SegBIC1(BaseSegment):
@@ -1974,7 +2199,7 @@ class SegBIC1(BaseSegment):
 
     MAX_NUM_IMGS = 6
 
-    FORMAT = '<LH2B2H'
+    FORMAT = "<LH2B2H"
     SIZE = Header.SIZE + calcsize(FORMAT) + MAX_NUM_IMGS * SegBIM.SIZE + SegSIGB.SIZE + 8
 
     @property
@@ -2013,7 +2238,11 @@ class SegBIC1(BaseSegment):
 
     def __repr__(self) -> str:
         return "BIC1 <FLAGS:0x{:X}, SWV:0x{:X}, FUSEV:0x{:X}, COUNT:{}, SBO:0x{:X}>".format(
-            self.flags, self.sw_version, self.fuse_version, self.images_count, self.sig_blk_offset
+            self.flags,
+            self.sw_version,
+            self.fuse_version,
+            self.images_count,
+            self.sig_blk_offset,
         )
 
     def info(self) -> str:
@@ -2045,22 +2274,24 @@ class SegBIC1(BaseSegment):
         self.validate()
 
         data = self._header.export()
-        data += pack(self.FORMAT,
-                     self.flags,
-                     self.sw_version,
-                     self.fuse_version,
-                     self.images_count,
-                     self.sig_blk_offset,
-                     self.reserved)
+        data += pack(
+            self.FORMAT,
+            self.flags,
+            self.sw_version,
+            self.fuse_version,
+            self.images_count,
+            self.sig_blk_offset,
+            self.reserved,
+        )
         for image in self.images:
             data += image.export()
         data += self.sig_blk_hdr.export()
-        data += pack('<L', self.sig_blk_size)
+        data += pack("<L", self.sig_blk_size)
         data += self._padding_export()
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> 'SegBIC1':
+    def parse(cls, data: bytes) -> "SegBIC1":
         """Parse segment from bytes array.
 
         :param data: The bytes array of BIC1 segment
@@ -2070,12 +2301,14 @@ class SegBIC1(BaseSegment):
         offset = header.size
         obj = cls(header.param)
 
-        (obj.flags,
-         obj.sw_version,
-         obj.fuse_version,
-         obj.images_count,
-         obj.sig_blk_offset,
-         obj.reserved) = unpack_from(cls.FORMAT, data, offset)
+        (
+            obj.flags,
+            obj.sw_version,
+            obj.fuse_version,
+            obj.images_count,
+            obj.sig_blk_offset,
+            obj.reserved,
+        ) = unpack_from(cls.FORMAT, data, offset)
 
         offset += calcsize(cls.FORMAT)
         for i in range(obj.images_count):
@@ -2084,7 +2317,7 @@ class SegBIC1(BaseSegment):
 
         obj.sig_blk_hdr = SegSIGB.parse(data[offset:])
         offset += SegSIGB.SIZE
-        obj.sig_blk_size = unpack_from('<L', data, offset)[0]
+        obj.sig_blk_size = unpack_from("<L", data, offset)[0]
 
         obj.validate()
 

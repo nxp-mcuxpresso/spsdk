@@ -7,28 +7,24 @@
 """ Tests for registers utility."""
 
 import os
-import filecmp
+from typing import List
+
 import pytest
+from ruamel.yaml import YAML
 
 from spsdk.utils.exceptions import (
-    SPSDKRegsError, SPSDKRegsErrorRegisterGroupMishmash, SPSDKRegsErrorRegisterNotFound,
+    SPSDKRegsError,
     SPSDKRegsErrorBitfieldNotFound,
-    SPSDKRegsErrorEnumNotFound
+    SPSDKRegsErrorEnumNotFound,
+    SPSDKRegsErrorRegisterGroupMishmash,
+    SPSDKRegsErrorRegisterNotFound,
 )
-from spsdk.utils.registers import (
-    Registers,
-    RegsRegister,
-    RegsBitField,
-    RegsEnum,
-)
-
-from spsdk.utils.reg_config import RegConfig
-
 from spsdk.utils.misc import use_working_directory
-from ruamel.yaml import YAML
+from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
 TEST_DEVICE_NAME = "TestDevice1"
 TEST_REG_NAME = "TestReg"
+TEST_REG_BC_NAME = "TestRegBc"
 TEST_REG_OFFSET = 1024
 TEST_REG_WIDTH = 32
 TEST_REG_DESCR = "TestReg Description"
@@ -37,8 +33,9 @@ TEST_REG_ACCESS = "RW"
 TEST_REG_VALUE = 0xA5A5A5A5
 
 TEST_BITFIELD_NAME = "TestBitfiled"
-TEST_BITFILED_OFFSET = 0x0F
-TEST_BITFILED_WIDTH = 5
+TEST_BITFIELD_BC_NAME = "TestBitfiledBc"
+TEST_BITFIELD_OFFSET = 0x0F
+TEST_BITFIELD_WIDTH = 5
 TEST_BITFIELD_RESET_VAL = 30
 TEST_BITFIELD_ACCESS = "RW"
 TEST_BITFIELD_DESCR = "Test Bitfield Description"
@@ -46,16 +43,70 @@ TEST_BITFIELD_SAVEVAL = 29
 TEST_BITFIELD_OUTOFRANGEVAL = 70
 
 TEST_ENUM_NAME = "TestEnum"
+TEST_ENUM_BC_NAME = "TestEnumBc"
 TEST_ENUM_VALUE_BIN = "0b10001"
 TEST_ENUM_VALUE_HEX = "0x11"
 TEST_ENUM_VALUE_STRINT = "017"
 TEST_ENUM_VALUE_INT = 17
-TEST_ENUM_VALUE_BYTES = b'\x11'
+TEST_ENUM_VALUE_BYTES = b"\x11"
 TEST_ENUM_RES_VAL = "0b01_0001"
 TEST_ENUM_DESCR = "Test Enum Description"
 TEST_ENUM_MAXWIDTH = 6
 
 TEST_XML_FILE = "unit_test.xml"
+
+
+def create_simple_regs():
+    """Create siple reg structure with basic cases."""
+    regs = Registers(TEST_DEVICE_NAME)
+
+    reg1 = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+
+    reg2 = RegsRegister(
+        TEST_REG_NAME + "_2",
+        TEST_REG_OFFSET + 4,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR + "_2",
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+
+    bitfield1 = RegsBitField(
+        reg2,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
+
+    bitfield2 = RegsBitField(
+        reg2,
+        TEST_BITFIELD_NAME + "_2",
+        TEST_BITFIELD_OFFSET + TEST_BITFIELD_WIDTH,
+        1,
+        ".",
+        0,
+        TEST_BITFIELD_ACCESS,
+    )
+    enum1 = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR, 1)
+    enum2 = RegsEnum(TEST_ENUM_NAME + "_2", 0, TEST_ENUM_DESCR + "_2", 1)
+    bitfield2.add_enum(enum1)
+    bitfield2.add_enum(enum2)
+    reg2.add_bitfield(bitfield1)
+    reg2.add_bitfield(bitfield2)
+    regs.add_register(reg1)
+    regs.add_register(reg2)
+
+    return regs
 
 
 def test_basic_regs(tmpdir):
@@ -64,7 +115,14 @@ def test_basic_regs(tmpdir):
 
     assert regs.dev_name == TEST_DEVICE_NAME
 
-    reg1 = RegsRegister(TEST_REG_NAME, TEST_REG_OFFSET, TEST_REG_WIDTH, TEST_REG_DESCR, TEST_REG_REV, TEST_REG_ACCESS)
+    reg1 = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
     with pytest.raises(SPSDKRegsErrorRegisterNotFound):
         regs.find_reg("NonExisting")
@@ -113,20 +171,24 @@ def test_basic_regs(tmpdir):
 
 def test_register():
     """Basic registers test."""
-    parent_reg = RegsRegister(TEST_REG_NAME,
-                              TEST_REG_OFFSET,
-                              TEST_REG_WIDTH,
-                              TEST_REG_DESCR,
-                              TEST_REG_REV,
-                              TEST_REG_ACCESS)
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
-    bitfield = RegsBitField(parent_reg,
-                            TEST_BITFIELD_NAME,
-                            TEST_BITFILED_OFFSET,
-                            TEST_BITFILED_WIDTH,
-                            TEST_BITFIELD_DESCR,
-                            TEST_BITFIELD_RESET_VAL,
-                            TEST_BITFIELD_ACCESS)
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
 
     enum = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR)
     bitfield.add_enum(enum)
@@ -147,14 +209,41 @@ def test_register():
     assert TEST_ENUM_DESCR in printed_str
 
 
+def test_register_duplicate():
+    """Test registers add duplicate."""
+    reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+    reg1 = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+    regs = Registers(TEST_DEVICE_NAME)
+    regs.add_register(reg)
+
+    with pytest.raises(SPSDKRegsError):
+        regs.add_register(reg1)
+
+
 def test_register_invalid_val():
     """Invalid value register test."""
-    reg = RegsRegister(TEST_REG_NAME,
-                       TEST_REG_OFFSET,
-                       TEST_REG_WIDTH,
-                       TEST_REG_DESCR,
-                       TEST_REG_REV,
-                       TEST_REG_ACCESS)
+    reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
     val = reg.get_value()
     reg.set_value("Invalid")
@@ -225,20 +314,24 @@ def test_enum_invalidval():
 
 def test_bitfield():
     """Basic bitfield test."""
-    parent_reg = RegsRegister(TEST_REG_NAME,
-                              TEST_REG_OFFSET,
-                              TEST_REG_WIDTH,
-                              TEST_REG_DESCR,
-                              TEST_REG_REV,
-                              TEST_REG_ACCESS)
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
-    bitfield = RegsBitField(parent_reg,
-                            TEST_BITFIELD_NAME,
-                            TEST_BITFILED_OFFSET,
-                            TEST_BITFILED_WIDTH,
-                            TEST_BITFIELD_DESCR,
-                            TEST_BITFIELD_RESET_VAL,
-                            TEST_BITFIELD_ACCESS)
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
 
     enum = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR)
     bitfield.add_enum(enum)
@@ -258,20 +351,24 @@ def test_bitfield():
 
 def test_bitfield_find():
     """Test bitfield find function."""
-    parent_reg = RegsRegister(TEST_REG_NAME,
-                              TEST_REG_OFFSET,
-                              TEST_REG_WIDTH,
-                              TEST_REG_DESCR,
-                              TEST_REG_REV,
-                              TEST_REG_ACCESS)
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
-    bitfield = RegsBitField(parent_reg,
-                            TEST_BITFIELD_NAME,
-                            TEST_BITFILED_OFFSET,
-                            TEST_BITFILED_WIDTH,
-                            TEST_BITFIELD_DESCR,
-                            TEST_BITFIELD_RESET_VAL,
-                            TEST_BITFIELD_ACCESS)
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
 
     enum = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR)
     bitfield.add_enum(enum)
@@ -286,28 +383,34 @@ def test_bitfield_find():
 
 def test_bitfields_names():
     """Test bitfield get names function."""
-    parent_reg = RegsRegister(TEST_REG_NAME,
-                              TEST_REG_OFFSET,
-                              TEST_REG_WIDTH,
-                              TEST_REG_DESCR,
-                              TEST_REG_REV,
-                              TEST_REG_ACCESS)
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
-    bitfield = RegsBitField(parent_reg,
-                            TEST_BITFIELD_NAME,
-                            TEST_BITFILED_OFFSET,
-                            TEST_BITFILED_WIDTH,
-                            TEST_BITFIELD_DESCR,
-                            TEST_BITFIELD_RESET_VAL,
-                            TEST_BITFIELD_ACCESS)
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
 
-    bitfield1 = RegsBitField(parent_reg,
-                             TEST_BITFIELD_NAME+"1",
-                             TEST_BITFILED_OFFSET,
-                             TEST_BITFILED_WIDTH,
-                             TEST_BITFIELD_DESCR,
-                             TEST_BITFIELD_RESET_VAL,
-                             TEST_BITFIELD_ACCESS)
+    bitfield1 = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME + "1",
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
 
     assert parent_reg.get_bitfield_names() == []
 
@@ -319,9 +422,9 @@ def test_bitfields_names():
     names = parent_reg.get_bitfield_names()
     assert len(names) == 2
     assert TEST_BITFIELD_NAME in names
-    assert TEST_BITFIELD_NAME+"1" in names
+    assert TEST_BITFIELD_NAME + "1" in names
 
-    ex_names = parent_reg.get_bitfield_names([TEST_BITFIELD_NAME+"1"])
+    ex_names = parent_reg.get_bitfield_names([TEST_BITFIELD_NAME + "1"])
     assert len(ex_names) == 1
     assert TEST_BITFIELD_NAME in ex_names
 
@@ -331,20 +434,24 @@ def test_bitfields_names():
 
 def test_bitfield_has_enums():
     """Test bitfield has enums function."""
-    parent_reg = RegsRegister(TEST_REG_NAME,
-                              TEST_REG_OFFSET,
-                              TEST_REG_WIDTH,
-                              TEST_REG_DESCR,
-                              TEST_REG_REV,
-                              TEST_REG_ACCESS)
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
-    bitfield = RegsBitField(parent_reg,
-                            TEST_BITFIELD_NAME,
-                            TEST_BITFILED_OFFSET,
-                            TEST_BITFILED_WIDTH,
-                            TEST_BITFIELD_DESCR,
-                            TEST_BITFIELD_RESET_VAL,
-                            TEST_BITFIELD_ACCESS)
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
 
     parent_reg.add_bitfield(bitfield)
 
@@ -359,20 +466,24 @@ def test_bitfield_has_enums():
 
 def test_bitfield_value():
     """Test bitfield functionality about values."""
-    parent_reg = RegsRegister(TEST_REG_NAME,
-                              TEST_REG_OFFSET,
-                              TEST_REG_WIDTH,
-                              TEST_REG_DESCR,
-                              TEST_REG_REV,
-                              TEST_REG_ACCESS)
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
-    bitfield = RegsBitField(parent_reg,
-                            TEST_BITFIELD_NAME,
-                            TEST_BITFILED_OFFSET,
-                            TEST_BITFILED_WIDTH,
-                            TEST_BITFIELD_DESCR,
-                            TEST_BITFIELD_RESET_VAL,
-                            TEST_BITFIELD_ACCESS)
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
 
     bitfield.set_value(TEST_BITFIELD_SAVEVAL)
     assert bitfield.get_value() == TEST_BITFIELD_SAVEVAL
@@ -383,68 +494,109 @@ def test_bitfield_value():
 
 def test_bitfield_invalidvalue():
     """Test bitfield INVALID value."""
-    parent_reg = RegsRegister(TEST_REG_NAME,
-                              TEST_REG_OFFSET,
-                              TEST_REG_WIDTH,
-                              TEST_REG_DESCR,
-                              TEST_REG_REV,
-                              TEST_REG_ACCESS)
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
-    bitfield = RegsBitField(parent_reg,
-                            TEST_BITFIELD_NAME,
-                            TEST_BITFILED_OFFSET,
-                            TEST_BITFILED_WIDTH,
-                            TEST_BITFIELD_DESCR,
-                            "InvalidValue",
-                            TEST_BITFIELD_ACCESS)
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        "InvalidValue",
+        TEST_BITFIELD_ACCESS,
+    )
 
     assert bitfield.get_value() == 0
 
 
 def test_bitfield_enums():
     """Test bitfield enums."""
-    parent_reg = RegsRegister(TEST_REG_NAME,
-                              TEST_REG_OFFSET,
-                              TEST_REG_WIDTH,
-                              TEST_REG_DESCR,
-                              TEST_REG_REV,
-                              TEST_REG_ACCESS)
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
 
-    bitfield = RegsBitField(parent_reg,
-                            TEST_BITFIELD_NAME,
-                            TEST_BITFILED_OFFSET,
-                            TEST_BITFILED_WIDTH,
-                            TEST_BITFIELD_DESCR,
-                            TEST_BITFIELD_RESET_VAL,
-                            TEST_BITFIELD_ACCESS)
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
 
     parent_reg.add_bitfield(bitfield)
 
     enums = []
-    for index in range((1 << TEST_BITFILED_WIDTH)-1):
-        enum = RegsEnum(f"{TEST_ENUM_NAME}{index}", index, f"{TEST_ENUM_DESCR}{index}", TEST_BITFILED_WIDTH)
+    for index in range((1 << TEST_BITFIELD_WIDTH) - 1):
+        enum = RegsEnum(
+            f"{TEST_ENUM_NAME}{index}", index, f"{TEST_ENUM_DESCR}{index}", TEST_BITFIELD_WIDTH
+        )
         enums.append(enum)
         bitfield.add_enum(enum)
 
     enum_names = bitfield.get_enum_names()
 
-    for index in range((1 << TEST_BITFILED_WIDTH)-1):
+    for index in range((1 << TEST_BITFIELD_WIDTH) - 1):
         assert index == bitfield.get_enum_constant(f"{TEST_ENUM_NAME}{index}")
         assert enums[index].name in enum_names
 
-    for index in range((1 << TEST_BITFILED_WIDTH)):
+    for index in range((1 << TEST_BITFIELD_WIDTH)):
         bitfield.set_value(index)
-        if index < (1 << TEST_BITFILED_WIDTH)-1:
+        if index < (1 << TEST_BITFIELD_WIDTH) - 1:
             assert f"{TEST_ENUM_NAME}{index}" == bitfield.get_enum_value()
         else:
             assert index == bitfield.get_enum_value()
 
-    for index in range((1 << TEST_BITFILED_WIDTH)-1):
+    for index in range((1 << TEST_BITFIELD_WIDTH) - 1):
         bitfield.set_enum_value(f"{TEST_ENUM_NAME}{index}")
+        assert index == bitfield.get_value()
+
+    for index in range((1 << TEST_BITFIELD_WIDTH) - 1):
+        bitfield.set_enum_value(f"{index}")
         assert index == bitfield.get_value()
 
     with pytest.raises(SPSDKRegsErrorEnumNotFound):
         bitfield.get_enum_constant("Invalid name")
+
+
+def test_bitfield_enums_invalid_name():
+    """Test bitfield enums with invalid enum name."""
+    parent_reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+
+    bitfield = RegsBitField(
+        parent_reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
+
+    parent_reg.add_bitfield(bitfield)
+    bitfield.add_enum(RegsEnum(f"{TEST_ENUM_NAME}", 0, f"{TEST_ENUM_DESCR}", TEST_BITFIELD_WIDTH))
+    with pytest.raises(SPSDKRegsErrorEnumNotFound):
+        bitfield.set_enum_value(f"Invalid Enum name")
 
 
 def test_registers_xml(data_dir, tmpdir):
@@ -470,237 +622,33 @@ def test_registers_xml_bad_format(data_dir):
     regs = Registers(TEST_DEVICE_NAME)
 
     with pytest.raises(SPSDKRegsError):
-        regs.load_registers_from_xml(data_dir+"/bad_format.xml")
+        regs.load_registers_from_xml(data_dir + "/bad_format.xml")
 
 
-def test_registers_corrupted_xml(data_dir, tmpdir):
+def test_registers_corrupted_xml(data_dir):
     """Test registers XML support with invalid data."""
     regs = Registers(TEST_DEVICE_NAME)
 
-    with use_working_directory(data_dir):
-        regs.load_registers_from_xml("registers_corr.xml")
-
-    with use_working_directory(tmpdir):
-        regs.write_xml("registers_corr.xml")
-
-    assert not filecmp.cmp(os.path.join(data_dir, "registers_corr.xml"), os.path.join(tmpdir, "registers_corr.xml"))
-
-    regs.clear()
-
-    with use_working_directory(tmpdir):
-        regs.load_registers_from_xml("registers_corr.xml")
-        regs.write_xml("registers_corr1.xml")
-
-    assert filecmp.cmp(os.path.join(tmpdir, "registers_corr.xml"), os.path.join(tmpdir, "registers_corr1.xml"))
-
-    # Without clear - Cannot add register with same name as is already added
-    with use_working_directory(tmpdir):
-        regs.load_registers_from_xml("registers_corr.xml")
-        regs.write_xml("registers_corr1.xml")
-
-    assert filecmp.cmp(os.path.join(tmpdir, "registers_corr.xml"), os.path.join(tmpdir, "registers_corr1.xml"))
-
-
-def test_reg_config_get_devices(data_dir):
-    """Test Register Config - get_devices function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-    devices = reg_config.get_devices()
-
-    assert "test_device1" in devices
-    assert "test_device2" in devices
-
-
-def test_reg_config_get_devices_class(data_dir):
-    """Test Register Config - get_devices class function."""
-    devices = RegConfig.devices(os.path.join(data_dir, "reg_config.json"))
-
-    assert "test_device1" in devices
-    assert "test_device2" in devices
-
-
-def test_reg_config_get_latest_revision(data_dir):
-    """Test Register Config - get_latest_revision function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    rev = reg_config.get_latest_revision("test_device1")
-    assert rev == "x1"
-
-    rev = reg_config.get_latest_revision("test_device2")
-    assert rev == "b0"
-
-
-def test_reg_config_get_revisions(data_dir):
-    """Test Register Config - get_revisions function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    revs = reg_config.get_revisions("test_device1")
-    assert "x0" in revs
-    assert "x1" in revs
-
-    revs = reg_config.get_revisions("test_device2")
-    assert "b0" in revs
-
-
-def test_reg_config_get_address(data_dir):
-    """Test Register Config - get_address function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    addr = reg_config.get_address("test_device1")
-    assert addr == "0xA5A5_1234"
-
-    addr = reg_config.get_address("test_device2", remove_underscore=True)
-    assert addr == "0x40000000"
-
-
-def test_reg_config_get_data_file(data_dir):
-    """Test Register Config - get_data_file function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    data_file = reg_config.get_data_file("test_device1", "x0")
-    assert os.path.join(data_dir, "test_device1_x0.xml") == data_file
-
-    data_file = reg_config.get_data_file("test_device1", "x1")
-    assert os.path.join(data_dir, "test_device1_x1.xml") == data_file
-
-    data_file = reg_config.get_data_file("test_device2", "b0")
-    assert os.path.join(data_dir, "test_device2_b0.xml") == data_file
-
-
-def test_reg_config_get_antipole_regs(data_dir):
-    """Test Register Config - get_antipole_regs function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    antipole = reg_config.get_antipole_regs("test_device1")
-    assert antipole["INVERTED_REG"] == "INVERTED_REG_AP"
-
-    antipole = reg_config.get_antipole_regs("test_device2")
-    assert antipole["INVERTED_REG"] == "INVERTED_REG_AP"
-
-    antipole = reg_config.get_antipole_regs()
-    assert antipole["INVERTED_REG"] == "INVERTED_REG_AP"
-
-
-def test_reg_config_get_computed_regs(data_dir):
-    """Test Register Config - get_computed_registers function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    computed_regs = reg_config.get_computed_registers("test_device1")
-    assert "COMPUTED_REG" in computed_regs
-
-    computed_regs = reg_config.get_computed_registers("test_device2")
-    assert "COMPUTED_REG_GENERAL" in computed_regs
-
-    computed_regs = reg_config.get_computed_registers("invalid_device")
-    assert "COMPUTED_REG_GENERAL" in computed_regs
-
-    computed_regs = reg_config.get_computed_registers()
-    assert "COMPUTED_REG_GENERAL" in computed_regs
-
-
-def test_reg_config_get_seal_start_address(data_dir):
-    """Test Register Config - get_seal_start_address function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    seal_address = reg_config.get_seal_start_address("test_device1")
-    assert seal_address == "COMPUTED_REG"
-
-    seal_address = reg_config.get_seal_start_address("test_device2")
-    assert seal_address == "COMPUTED_REG2"
-
-    seal_address = reg_config.get_seal_start_address("invalid_device")
-    assert seal_address == "COMPUTED_REG2"
-
-    seal_address = reg_config.get_seal_start_address()
-    assert seal_address == "COMPUTED_REG2"
-
-
-def test_reg_config_get_seal_count(data_dir):
-    """Test Register Config - get_seal_count function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    seal_count = reg_config.get_seal_count("test_device1")
-    assert seal_count == 4
-
-    seal_count = reg_config.get_seal_count("test_device2")
-    assert seal_count == 8
-
-    seal_count = reg_config.get_seal_count("invalid_device")
-    assert seal_count == 8
-
-    seal_count = reg_config.get_seal_count()
-    assert seal_count == 8
-
-
-def test_reg_config_get_ignored_registers(data_dir):
-    """Test Register Config - get_ignored_registers function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    ignored_registers = reg_config.get_ignored_registers("test_device1")
-    assert "IGNORED_REG" in ignored_registers
-
-    ignored_registers = reg_config.get_ignored_registers("test_device2")
-    assert "IGNORED_REG_GENERAL" in ignored_registers
-
-    ignored_registers = reg_config.get_ignored_registers("invalid_device")
-    assert "IGNORED_REG_GENERAL" in ignored_registers
-
-    ignored_registers = reg_config.get_ignored_registers()
-    assert "IGNORED_REG_GENERAL" in ignored_registers
-
-
-def test_reg_config_get_ignored_fields(data_dir):
-    """Test Register Config - get_ignored_fields function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    ignored_fields = reg_config.get_ignored_fields("test_device1")
-    assert "FIELD" in ignored_fields
-
-    ignored_fields = reg_config.get_ignored_fields("test_device2")
-    assert "FIELD_GENERAL" in ignored_fields
-
-    ignored_fields = reg_config.get_ignored_fields("invalid_device")
-    assert "FIELD_GENERAL" in ignored_fields
-
-    ignored_fields = reg_config.get_ignored_fields()
-    assert "FIELD_GENERAL" in ignored_fields
-
-
-def test_reg_config_get_computed_fields(data_dir):
-    """Test Register Config - get_computed_fields function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    computed_fields = reg_config.get_computed_fields("test_device1")
-    assert computed_fields["COMPUTED_REG"]["TEST_FIELD1"] == "computed_reg_test_field1"
-    assert computed_fields["COMPUTED_REG"]["TEST_FIELD2"] == "computed_reg_test_field2"
-    assert computed_fields["COMPUTED_REG2"]["TEST_FIELD1"] == "computed_reg2_test_field1"
-    assert computed_fields["COMPUTED_REG2"]["TEST_FIELD2"] == "computed_reg2_test_field2"
-
-
-def test_reg_config_get_grouped_registers(data_dir):
-    """Test Register Config - get_grouped_registers function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    grouped_registers = reg_config.get_grouped_registers("test_device1")
-    assert grouped_registers[0]["name"] == "DeviceTest"
-    grouped_registers = reg_config.get_grouped_registers("test_device2")
-    assert grouped_registers[0]["name"] == "Test"
+    with pytest.raises(SPSDKRegsError):
+        with use_working_directory(data_dir):
+            regs.load_registers_from_xml("registers_corr.xml")
+
+    with pytest.raises(SPSDKRegsError):
+        with use_working_directory(data_dir):
+            regs.load_registers_from_xml("registers_corr2.xml")
 
 
 def test_basic_grouped_register(data_dir):
     """Test basic functionality of register grouping functionality"""
     regs = Registers(TEST_DEVICE_NAME)
 
-    group = [
-        {
-            "name": "TestRegA"
-        }
-    ]
+    group = [{"name": "TestRegA"}]
 
     regs.load_registers_from_xml(data_dir + "/grp_regs.xml", grouped_regs=group)
 
     reg = regs.find_reg("TestRegA")
     assert reg.offset == 0x400
-    assert reg.width == 4*32
+    assert reg.width == 4 * 32
 
     reg.set_value("01020304_11121314_21222324_31323334")
     assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
@@ -718,18 +666,13 @@ def test_basic_grouped_register_reversed_value(data_dir):
     """Test basic functionality of register grouping functionality with reversed value"""
     regs = Registers(TEST_DEVICE_NAME)
 
-    group = [
-        {
-            "name": "TestRegA",
-            "reverse": "True"
-        }
-    ]
+    group = [{"name": "TestRegA", "reverse": "True"}]
 
     regs.load_registers_from_xml(data_dir + "/grp_regs.xml", grouped_regs=group)
 
     reg = regs.find_reg("TestRegA")
     assert reg.offset == 0x400
-    assert reg.width == 4*32
+    assert reg.width == 4 * 32
 
     reg.set_value("0x01020304_11121314_21222324_31323334")
     assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
@@ -753,8 +696,8 @@ def test_basic_grouped_register_reversed_value(data_dir):
         [{"name": "TestCorrupted1Reg"}],
         [{"name": "TestCorrupted1Reg", "width": 64}],
         [{"name": "TestRegA", "access": "R"}],
-        [{"name": "TestCorrupted2Reg", "width": 32}]
-    ]
+        [{"name": "TestCorrupted2Reg", "width": 32}],
+    ],
 )
 def test_grouped_register_invalid_params(data_dir, group_reg):
     """Test of register grouping with invalid width"""
@@ -768,14 +711,10 @@ def test_load_grouped_register_value(data_dir):
     """Simply test to handle load of individual registers into grouped from YML."""
     regs = Registers(TEST_DEVICE_NAME)
 
-    group = [
-        {
-            "name": "TestRegA"
-        }
-    ]
+    group = [{"name": "TestRegA"}]
     regs.load_registers_from_xml(data_dir + "/grp_regs.xml", grouped_regs=group)
     yaml = YAML()
-    with open(data_dir+"/group_reg.yml", "r") as yml_file:
+    with open(data_dir + "/group_reg.yml", "r") as yml_file:
         data = yaml.load(yml_file)
     regs.load_yml_config(data)
     reg = regs.find_reg("TestRegA")
@@ -790,14 +729,10 @@ def test_load_grouped_register_value_compatibility(data_dir):
     """Simply test to handle load of individual registers into grouped from YML."""
     regs = Registers(TEST_DEVICE_NAME)
 
-    group = [
-        {
-            "name": "TestRegA"
-        }
-    ]
+    group = [{"name": "TestRegA"}]
     regs.load_registers_from_xml(data_dir + "/grp_regs.xml", grouped_regs=group)
     yaml = YAML()
-    with open(data_dir+"/group_none_reg.yml", "r") as yml_file:
+    with open(data_dir + "/group_none_reg.yml", "r") as yml_file:
         data = yaml.load(yml_file)
     regs.load_yml_config(data)
     reg = regs.find_reg("TestRegA")
@@ -806,3 +741,246 @@ def test_load_grouped_register_value_compatibility(data_dir):
     assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
     assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
     assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x31323334"
+
+
+def test_backward_compatibility_regs():
+    """Simple test for backward compatibility for registers names in configuration."""
+
+    def bc_reg(reg: RegsRegister) -> List[str]:
+        """Test translator for bc compatibility."""
+        return [TEST_REG_BC_NAME]
+
+    regs = Registers(TEST_DEVICE_NAME)
+    reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+    regs.add_register(reg)
+
+    assert regs.get_bc_reg("Invalid") is None
+    regs.enable_backward_compatibility(bc_reg)
+
+    assert regs.get_bc_reg(TEST_REG_BC_NAME) == TEST_REG_NAME
+    assert regs.get_bc_reg("Invalid") is None
+
+
+def test_backward_compatibility_bitfields():
+    """Simple test for backward compatibility for bitfields names in configuration."""
+
+    def bc_bitfield(reg: RegsRegister, bitfield: RegsBitField) -> List[str]:
+        """Test translator for bc compatibility."""
+        return [TEST_BITFIELD_BC_NAME]
+
+    reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+
+    bitfield = RegsBitField(
+        reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
+    reg.add_bitfield(bitfield)
+
+    assert reg.get_bc_bitfield("Invalid") is None
+    reg.enable_backward_compatibility(bc_bitfield)
+
+    assert reg.get_bc_bitfield(TEST_BITFIELD_BC_NAME) == TEST_BITFIELD_NAME
+    assert reg.get_bc_bitfield("Invalid") is None
+
+
+def test_backward_compatibility_enums():
+    """Simple test for backward compatibility for enum names in configuration."""
+
+    def bc_enum(reg: RegsRegister, bitfield: RegsBitField, enum: RegsEnum) -> List[str]:
+        """Test translator for bc compatibility."""
+        return [TEST_ENUM_BC_NAME]
+
+    reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+
+    bitfield = RegsBitField(
+        reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
+
+    enum = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR, TEST_BITFIELD_WIDTH)
+    reg.add_bitfield(bitfield)
+    bitfield.add_enum(enum)
+
+    assert bitfield.get_bc_enum("Invalid") is None
+    bitfield.enable_backward_compatibility(bc_enum)
+
+    assert bitfield.get_bc_enum(TEST_ENUM_BC_NAME) == TEST_ENUM_NAME
+    assert bitfield.get_bc_enum("Invalid") is None
+
+
+def test_backward_compatibility_enums_global():
+    """Simple test for backward compatibility for enum names in configuration."""
+
+    def bc_enum(reg: RegsRegister, bitfield: RegsBitField, enum: RegsEnum) -> List[str]:
+        """Test translator for bc compatibility."""
+        return [TEST_ENUM_BC_NAME]
+
+    regs = Registers(TEST_DEVICE_NAME)
+
+    reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+
+    bitfield = RegsBitField(
+        reg,
+        TEST_BITFIELD_NAME,
+        TEST_BITFIELD_OFFSET,
+        TEST_BITFIELD_WIDTH,
+        TEST_BITFIELD_DESCR,
+        TEST_BITFIELD_RESET_VAL,
+        TEST_BITFIELD_ACCESS,
+    )
+
+    enum = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR, TEST_BITFIELD_WIDTH)
+    reg.add_bitfield(bitfield)
+    bitfield.add_enum(enum)
+
+    regs.add_register(reg)
+
+    assert bitfield.get_bc_enum("Invalid") is None
+    regs.enable_backward_compatibility_enums(bc_enum)
+
+    assert bitfield.get_bc_enum(TEST_ENUM_BC_NAME) == TEST_ENUM_NAME
+    assert bitfield.get_bc_enum("Invalid") is None
+
+
+def test_backward_compatibility_regs_yml():
+    """Simple test for backward compatibility for registers names in configuration."""
+
+    def bc_reg(reg: RegsRegister) -> List[str]:
+        """Test translator for bc compatibility."""
+        if reg.name == TEST_REG_NAME:
+            return [TEST_REG_BC_NAME]
+
+        return []
+
+    yml = {TEST_REG_BC_NAME: {"value": 0x01}}
+
+    regs = Registers(TEST_DEVICE_NAME)
+    reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+    regs.add_register(reg)
+
+    assert regs.get_bc_reg(TEST_REG_BC_NAME) is None
+    regs.enable_backward_compatibility(bc_reg)
+
+    regs.load_yml_config(yml)
+    assert reg.get_int_value() == 0x01
+
+
+def test_backward_nodata_yml():
+    """Simple test for backward compatibility for registers names in configuration."""
+
+    yml = {TEST_REG_NAME: {"invalid_key": 0x01}}
+
+    regs = Registers(TEST_DEVICE_NAME)
+    reg = RegsRegister(
+        TEST_REG_NAME,
+        TEST_REG_OFFSET,
+        TEST_REG_WIDTH,
+        TEST_REG_DESCR,
+        TEST_REG_REV,
+        TEST_REG_ACCESS,
+    )
+    regs.add_register(reg)
+    regs.load_yml_config(yml)
+    assert reg.get_int_value() != 0x01
+
+
+def test_create_yml():
+    """Simple test to create YML record."""
+    regs = create_simple_regs()
+    yml = regs.create_yml_config()
+
+    assert TEST_REG_NAME in yml.keys()
+    assert TEST_REG_NAME + "_2" in yml.keys()
+    assert "value" in yml[TEST_REG_NAME].keys()
+    assert yml[TEST_REG_NAME]["value"] == "0x00000000"
+    assert "bitfields" in yml[TEST_REG_NAME + "_2"].keys()
+    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
+    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == 30
+    assert TEST_BITFIELD_NAME + "_2" in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
+    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME + "_2"] == TEST_ENUM_NAME
+
+
+def test_create_yml_excluded_regs():
+    """Simple test to create YML record."""
+    regs = create_simple_regs()
+    yml = regs.create_yml_config(exclude_regs=[TEST_REG_NAME + "_2"])
+
+    assert TEST_REG_NAME in yml.keys()
+    assert "value" in yml[TEST_REG_NAME].keys()
+    assert yml[TEST_REG_NAME]["value"] == "0x00000000"
+    assert TEST_REG_NAME + "_2" not in yml.keys()
+
+
+def test_create_yml_excluded_fields():
+    """Simple test to create YML record."""
+    regs = create_simple_regs()
+    yml = regs.create_yml_config(
+        exclude_fields={TEST_REG_NAME + "_2": {TEST_BITFIELD_NAME + "_2": ""}}
+    )
+
+    assert TEST_REG_NAME in yml.keys()
+    assert "value" in yml[TEST_REG_NAME].keys()
+    assert yml[TEST_REG_NAME]["value"] == "0x00000000"
+    assert TEST_REG_NAME + "_2" in yml.keys()
+    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
+    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == 30
+    assert TEST_BITFIELD_NAME + "_2" not in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
+
+
+def test_create_yml_ignored_fields():
+    """Simple test to create YML record."""
+    regs = create_simple_regs()
+    yml = regs.create_yml_config(ignored_fields=[TEST_BITFIELD_NAME + "_2"])
+
+    assert TEST_REG_NAME in yml.keys()
+    assert "value" in yml[TEST_REG_NAME].keys()
+    assert yml[TEST_REG_NAME]["value"] == "0x00000000"
+    assert TEST_REG_NAME + "_2" in yml.keys()
+    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
+    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == 30
+    assert TEST_BITFIELD_NAME + "_2" not in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()

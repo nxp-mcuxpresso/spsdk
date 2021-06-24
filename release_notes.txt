@@ -6,50 +6,89 @@ production deployment. The library allows the user to connect and communicate wi
 configure the device, prepare, download and upload data, including security operations. It is
 delivered in the form of a python library and command-line applications.
 
-Version: 1.3.1.
-Date: 29-March-2021
+Version: 1.4.0
+==============
+Date: 25-June-2021
 
-Features:
+- version flag added for all command-line application
+- support for Python 3.9 added
+- [blhost] following sub-commands added:
+    - list-memory
+    - flash-program-once
+    - set-property
+    - flash-erase-all-unsecure
+    - flash-security-disable
+    - flash-read-resource
+    - reliable-update
+    - fuse-program
+    - flash-image
+    - program-aeskey
+- [blhost] memoryId calmp-down for mapped external memories added
+- [elftosb] support for SB 2.1 added
+- [elftosb] basic support for BD configuration file added
+- [nxpdebugmbox] debug port enabled check added
+- [nxpkeygen] new sub-command added to nxpkeygen to create a template for configuration YML file for DC keys
+- [nxpkeygen] new sub-command added to create a template for configuration YML file for DC keys
+- [pfr] default JSON config file generation removed, but still accepted as an input. The preferred is the YML configuration format.
+- [docs] Read The Docs documentation improvements
+
+Bugfixes:
+- wrong DCD size by BootImgRT.parse
+- cmdKeyStoreBackupRestore wrong param description
+- [blhost] typo in McuBootConnectionError exception
+- [blhost] mcuBoot Uart doesn't close the device after failed ping command
+- [blhost] assertion error when connection lost during fuses readout
+- [blhost] sub-command  flash-read-resource fails when the length is not aligned
+- [pfr] incorrect keys hash computation for LPC55S3x
+- [pfr] wrong LPC55S69 silicon revision
+- [pfr] parse does not show PRINCE IV fields
+- [sdphost] running spdhost --help fails
+- [shadowreg] bad DEV_TEST_BIT in shadow registers
+
+Supported devices
+=================
+
+- i.MX RT1170, RT1160
+- i.MX RT1064, RT1060, RT1050, RT1020, RT1010
+- i.MX RT685S, RT595S
+- LPC55S6x, LPC55S3x, LPC55S2x, LPC55S1x, LPC55S0x
+
+Note: More details in devices.txt
+
+System Requirements
+===================
+
+- Windows 10, 64-bit
+- Ubuntu 16.04 or above, 64-bit
+- Mac OS 10.13 or above, x64, M1
+
+Supported Environment
+=====================
+
+Python 3.6+ interpreter, old version 2.x is not supported
+
+
+Revision History
+================
+
+1.3.1
 - [PFR] configuration template supports YAML with description, backward compatibility with JSON ensured
 - [PFR] API change: "keys" parameter has been moved from __init__ to export
 - [PRF] sub-commands renamed: (user-config -> get-cfg-template; parse -> parse-binary; generate -> generate-binary)
 - [blhost] allow key names for key-provisioning commands
 - [blhost] support for RT1170, RT1160
-- Shadow Registers tool is now top-level module
-
-Bugfixes:
+- shadow registers tool is now top-level module
 - [blhost] fix baud rate parameter
-- [PFR] fix in data for Niob4, Niobe4 Mini, Niobe4 Nano
-- bug fixes for sb 2.1 commands and options
+- [PFR] fix in data for LPC55S6x, LPC55S1x, LPC55S0x
+- [blhost] communication stack breaks down on RT1170 after unsuccessful key-prov enroll command
 
-
-Supported devices:
-==================
-- LPC55S6x, LPC55S2x (Niobe4)
-- LPC55S0x (Niobe 4 Nano)
-- LPC55S1x (Niobe4 Mini)
-- i.MX RT105x, RT106x
-- i.MX RT595S, RT685S
-- i.MX RT1160(blhost), RT1170(blhost)
-
-
-System Requirements:
-===================
-Operating System:
-- Windows 
-- Mac OS 
-- Linux
-	
-
-Revision History:
-================
 1.3
-- support creation of SB version 3.1 (for N4Analog)
+- support creation of SB version 3.1
 - elftosb application based on legacy elf2sb supporting SB 3.1 support
 - nxpdevscan - application for connected USB, UART devices discovery
 - shadowregs -  application for shadow registers management using DebugProbe
 - support USB path argument in blhost/sdphost (all supported OS)
-- nxpcertgen cli application (basicConstrains, self-signed)
+- nxpcertgen CLI application (basicConstrains, self-signed)
 - extend blhost commands:
     - flash-erase-all
     - call
@@ -59,24 +98,24 @@ Revision History:
     - receive-sb-file
 - extend blhost commands' options:
     - configure-memory now allows usage of internal memory
-    - extend error code in output
+    - extend error code in the output
     - add parameters lock/nolock into efuse-program-once command
-    - add key selector option to generate-key-blob command
+    - add key selector option to the generate-key-blob command
     - add nolock/lock selector to efuse-program-once command
-    - add hexdata option to write-memory command
-	
+    - add hexdata option to the write-memory command
+
 1.2
-- support for Niobe4 Analog devices
-- extend support for Niobe4 Mini, Nano
-- PFRC - console script for searching for brick-conditions in PFR settings
+- support for LPC55S3x devices
+- extend support for LPC55S1x, LPC55S0x
+- PFRC - console script for searching for brick conditions in PFR settings
 - custom HSM support
-- sdpshost cli utility using sdpshost communication protocol
+- sdpshost CLI utility using sdpshost communication protocol
 - remote signing for Debug Credential
-- added command read-register into sdphost cli 
+- added command read-register into sdphost CLI
 - dynamic plugin support
 - MCU Link Debugger support
-- [PFR] added CMAC-based seal 
-- [PFR] load Root of Trust from elf2sb configuration file 
+- [PFR] added CMAC-based seal
+- [PFR] load Root of Trust from elf2sb configuration file
 
 1.1
 - support for i.MX RT1170 device
@@ -87,17 +126,17 @@ Revision History:
 - utility (nxpkeygen) for generating debug credential files and corresponding keys
 
 1.0
-- support for LPC55S69 (Niobe4) and LPC55S16 (Niobe4 Mini) devices
+- support for LPC55S69 and LPC55S16 devices
 - support for i.MX RT105x and RT106x devices
 - support for i.MX RT595S and RT685S devices
 - connectivity to the target via UART, USB-HID.
-- support for generating, saving, loading of RSA keys with different sizes
-- genaration and management of certificate
+- support for generating, saving, loading RSA keys with different sizes
+- generation and management of certificate
 - CLI utility blhost for communication with boot loader on a target
 - CLI utility sdphost for communication with ROM on a target
-- CLI utility PFR for generating and parsing Protocted Flash Regions - CMPA and CFPA regions
+- CLI utility PFR for generating and parsing Protected Flash Regions - CMPA and CFPA regions
 
 
-Licence: 
+License:
 =========
 BSD-3 License

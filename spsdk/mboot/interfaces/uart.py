@@ -14,7 +14,7 @@ from typing import List, Optional, Tuple, Union
 
 import construct
 from crcmod.predefined import mkPredefinedCrcFun
-from serial import Serial, SerialException
+from serial import Serial
 from serial.tools.list_ports import comports
 
 from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
@@ -37,14 +37,15 @@ def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> Li
     :param baudrate: speed of the UART interface, defaults to 56700
     :param timeout: timeout in milliseconds, defaults to 5000
     :return: list of interfaces responding to the PING command
-    :rtype: List[spsdk.mboot.interfaces.base.Interface]
     """
     baudrate = baudrate or 57600
     timeout = timeout or 5000
     if port:
         interface = _check_port(port, baudrate, timeout)
         return [interface] if interface else []
-    all_ports = [_check_port(comport.device, baudrate, timeout) for comport in comports(include_links=True)]
+    all_ports = [
+        _check_port(comport.device, baudrate, timeout) for comport in comports(include_links=True)
+    ]
     return list(filter(None, all_ports))
 
 
@@ -55,15 +56,14 @@ def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
     :param baudrate: speed of the UART interface, defaults to 56700
     :param timeout: timeout in milliseconds
     :return: None if device doesn't respond to PING, instance of Interface if it does
-    :rtype: Optional[Interface]
     """
     try:
-        logger.debug(f'Checking port: {port}, baudrate: {baudrate}, timeout: {timeout}')
+        logger.debug(f"Checking port: {port}, baudrate: {baudrate}, timeout: {timeout}")
         interface = Uart(port=port, baudrate=baudrate, timeout=timeout)
         interface.open()
         interface.close()
         return interface
-    except (AssertionError, SerialException, TimeoutError) as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.debug(f"{type(e).__name__}: {e}")
         return None
 
@@ -72,11 +72,9 @@ def calc_crc(data: bytes) -> int:
     """Calculate CRC from the data.
 
     :param data: data to calculate CRC from
-    :type data: bytes
     :return: calculated CRC
-    :rtype: int
     """
-    crc_function = mkPredefinedCrcFun('xmodem')
+    crc_function = mkPredefinedCrcFun("xmodem")
     return crc_function(data)
 
 
@@ -84,28 +82,26 @@ def to_int(data: bytes, little_endian: bool = True) -> int:
     """Convert bytes into single integer.
 
     :param data: bytes to convert
-    :type data: bytes
     :param little_endian: indicate byte ordering in data, defaults to True
-    :type little_endian: bool, optional
     :return: integer
-    :rtype: int
     """
-    byte_order = 'little' if little_endian else 'big'
+    byte_order = "little" if little_endian else "big"
     return int.from_bytes(data, byteorder=byte_order)
+
 
 #: Version of protocol used in serial communication
 PROTOCOL_VERSION = construct.Struct(
-    'bugfix' / construct.Int8ul,
-    'minor' / construct.Int8ul,
-    'major' / construct.Int8ul,
-    'name' / construct.Int8ul
+    "bugfix" / construct.Int8ul,
+    "minor" / construct.Int8ul,
+    "major" / construct.Int8ul,
+    "name" / construct.Int8ul,
 )
 
 #: Type of frame used for pig response
 PING_RESPONSE = construct.Struct(
-    'version' / PROTOCOL_VERSION,
-    'options' / construct.Int16ul,
-    'crc' / construct.Int16ul
+    "version" / PROTOCOL_VERSION,
+    "options" / construct.Int16ul,
+    "crc" / construct.Int16ul,
 )
 
 MAX_PING_RESPONSE_DUMMY_BYTES = 50
@@ -139,41 +135,58 @@ class Uart(Interface):
         """Initialize the UART interface.
 
         :param port: name of the serial port, defaults to None
-        :type port: str, optional
         :param baudrate: baudrate of the serial port, defaults to 57600
-        :type baudrate: int, optional
         :param timeout: read/write timeout in milliseconds, defaults to 2000
-        :type timeout: int, optional
+        :raises McuBootConnectionError: when the port could not be opened
         """
         super().__init__()
-        self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
-        self.close()
-        self.protocol_version = None
-        self.options = None
+        try:
+            self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
+            self.close()
+            self.protocol_version = None
+            self.options = None
+        except Exception as e:
+            raise McuBootConnectionError(str(e)) from e
 
     def open(self) -> None:
-        """Open the UART interface."""
-        self.device.open()
-        self.ping()
+        """Open the UART interface.
+
+        :raises McuBootConnectionError: In any case of fail of UART open operation.
+        """
+        try:
+            self.device.open()
+            self.ping()
+        except Exception as exc:
+            self.device.close()
+            raise McuBootConnectionError("UART Interface open operation fails.") from exc
 
     def close(self) -> None:
-        """Close the UART interface."""
-        self.device.close()
+        """Close the UART interface.
+
+        :raises McuBootConnectionError: In any case of fail of UART close operation.
+        """
+        try:
+            self.device.close()
+        except Exception as e:
+            raise McuBootConnectionError(str(e)) from e
 
     def info(self) -> str:
         """Return information about the UART interface.
 
         :return: Description of UART interface
-        :rtype: str
+        :raises McuBootConnectionError: When no port is available
         """
-        return self.device.port
+        try:
+            return self.device.port
+        except Exception as e:
+            raise McuBootConnectionError(str(e)) from e
 
     def read(self) -> Union[CmdResponse, bytes]:
         """Read data from device.
 
         :return: read data
-        :rtype: Union[spsdk.mboot.commands.CmdResponse, bytes]
         :raises McuBootDataAbortError: Indicates data transmission abort
+        :raises McuBootConnectionError: When received invalid CRC
         """
         _, frame_type = self._read_frame_header()
         length = to_int(self._read(2))
@@ -184,7 +197,8 @@ class Uart(Interface):
         data = self._read(length)
         self._send_ack()
         calculated_crc = self._calc_frame_crc(data, frame_type)
-        assert crc == calculated_crc, "Received invalid CRC"
+        if crc != calculated_crc:
+            raise McuBootConnectionError("Received invalid CRC")
         if frame_type == FPType.CMD:
             return parse_cmd_response(data)
         return data
@@ -193,7 +207,6 @@ class Uart(Interface):
         """Write data to the device; data might be in form of 'CmdPacket' or bytes.
 
         :param packet: Packet to send
-        :type packet: Union[spsdk.mboot.commands.CmdPacket, bytes]
         """
         if isinstance(packet, CmdPacket):
             data = packet.to_bytes(padding=False)
@@ -210,8 +223,12 @@ class Uart(Interface):
         :param length: Number of bytes to read
         :return: Data read from the device
         :raises TimeoutError: Time-out
+        :raises McuBootConnectionError: When reading data from device fails
         """
-        data = self.device.read(length)
+        try:
+            data = self.device.read(length)
+        except Exception as e:
+            raise McuBootConnectionError(str(e)) from e
         if not data:
             raise TimeoutError()
         logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
@@ -221,25 +238,26 @@ class Uart(Interface):
         """Send data to device.
 
         :param data: Data to send
-        :type data: bytes
+        :raises McuBootConnectionError: When sending the data fails
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
-        self.device.reset_input_buffer()
-        self.device.reset_output_buffer()
-        self.device.write(data)
-        self.device.flush()
+        try:
+            self.device.reset_input_buffer()
+            self.device.reset_output_buffer()
+            self.device.write(data)
+            self.device.flush()
+        except Exception as e:
+            raise McuBootConnectionError(str(e)) from e
 
     def _send_ack(self) -> None:
-        ack_frame = struct.pack('<BB', self.FRAME_START_BYTE, FPType.ACK)
+        ack_frame = struct.pack("<BB", self.FRAME_START_BYTE, FPType.ACK)
         self._send_frame(ack_frame, wait_for_ack=False)
 
     def _send_frame(self, frame: bytes, wait_for_ack: bool = True) -> None:
         """Send a frame to UART.
 
         :param frame: Data to send
-        :type frame: bytes
         :param wait_for_ack: Wait for ACK frame from device, defaults to True
-        :type wait_for_ack: bool, optional
         """
         self._write(frame)
         if wait_for_ack:
@@ -251,80 +269,97 @@ class Uart(Interface):
         :param expected_frame_type: Check if the frame_type is exactly as expected
         :return: Tuple of integers representing frame header and frame type
         :raises McuBootDataAbortError: Target sens Data Abort frame
-        :raises AssertionError: Unexpected frame header or frame type (if specified)
+        :raises McuBootConnectionError: Unexpected frame header or frame type (if specified)
+        :raises McuBootConnectionError: When received invalid ACK
         """
         header = to_int(self._read(1))
-        assert header == self.FRAME_START_BYTE, \
-            f"Received invalid frame header '{header:#X}' expected '{self.FRAME_START_BYTE:#X}'"
+        if header != self.FRAME_START_BYTE:
+            raise McuBootConnectionError(
+                f"Received invalid frame header '{header:#X}' expected '{self.FRAME_START_BYTE:#X}'"
+            )
         frame_type = to_int(self._read(1))
         if frame_type == FPType.ABORT:
             raise McuBootDataAbortError()
         if expected_frame_type:
-            assert frame_type == expected_frame_type, \
-                f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type:#X}'"
+            if frame_type != expected_frame_type:
+                raise McuBootConnectionError(
+                    f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type:#X}'"
+                )
         return header, frame_type
 
     def _create_frame(self, data: bytes, frame_type: int) -> bytes:
         """Encapsulate data into frame."""
         crc = self._calc_frame_crc(data, frame_type)
         frame = struct.pack(
-            f'<BBHH{len(data)}B',
-            self.FRAME_START_BYTE, frame_type, len(data), crc, *data)
+            f"<BBHH{len(data)}B",
+            self.FRAME_START_BYTE,
+            frame_type,
+            len(data),
+            crc,
+            *data,
+        )
         return frame
 
     def _calc_frame_crc(self, data: bytes, frame_type: int) -> int:
         """Calculate the CRC of a frame.
 
         :param data: frame data
-        :type data: bytes
         :param frame_type: frame type
-        :type frame_type: int
         :return: calculated CRC
-        :rtype: int
         """
         crc_data = struct.pack(
-            f'<BBH{len(data)}B',
-            self.FRAME_START_BYTE, frame_type, len(data), *data)
+            f"<BBH{len(data)}B", self.FRAME_START_BYTE, frame_type, len(data), *data
+        )
         return calc_crc(crc_data)
 
     def ping(self) -> None:
         """Ping the target device, retrieve protocol version.
 
-        :raises AssertionError: If the target device doesn't respond to ping
+        :raises McuBootConnectionError: If the target device doesn't respond to ping
         :raises McuBootConnectionError: If the start frame is not received
+        :raises McuBootConnectionError: If the header is invalid
+        :raises McuBootConnectionError: If the frame type is invalid
+        :raises McuBootConnectionError: If the ping response is not received
+        :raises McuBootConnectionError: If crc does not match
         """
-        ping = struct.pack('<BB', self.FRAME_START_BYTE, FPType.PING)
+        ping = struct.pack("<BB", self.FRAME_START_BYTE, FPType.PING)
         self._send_frame(ping, wait_for_ack=False)
 
         # after power cycle, MBoot v 3.0+ may respond to first command with a leading dummy data
         # we read data from UART until the FRAME_START_BYTE byte
-        start_byte = b''
+        start_byte = b""
         for i in range(MAX_PING_RESPONSE_DUMMY_BYTES):
             start_byte = self._read(1)
-            assert start_byte, f"Failed to receive initial byte"
+            if start_byte is None:
+                raise McuBootConnectionError("Failed to receive initial byte")
 
-            if start_byte == self.FRAME_START_BYTE.to_bytes(length=1, byteorder='little'):
+            if start_byte == self.FRAME_START_BYTE.to_bytes(length=1, byteorder="little"):
                 logger.debug(f"FRAME_START_BYTE received in {i + 1}. attempt.")
                 break
         else:
-            raise McuBootConnectionError(f"Failed to receive FRAME_START_BYTE")
+            raise McuBootConnectionError("Failed to receive FRAME_START_BYTE")
 
         header = to_int(start_byte)
-        assert header == self.FRAME_START_BYTE
+        if header != self.FRAME_START_BYTE:
+            raise McuBootConnectionError("Header is invalid")
         frame_type = to_int(self._read(1))
-        assert frame_type == FPType.PINGR
+        if frame_type != FPType.PINGR:
+            raise McuBootConnectionError("Frame type is invalid")
 
         response_data = self._read(8)
-        assert response_data, f"Failed to receive ping response"
+        if response_data is None:
+            raise McuBootConnectionError("Failed to receive ping response")
         response = PING_RESPONSE.parse(response_data)
 
         # ping response has different crc computation than the other responses
         # that's why we can't use calc_frame_crc method
         # crc data for ping excludes the last 2B of response data, which holds the CRC from device
-        crc_data = struct.pack(f'<BB{len(response_data) -2}B', header, frame_type, *response_data[:-2])
+        crc_data = struct.pack(
+            f"<BB{len(response_data) -2}B", header, frame_type, *response_data[:-2]
+        )
         crc = calc_crc(crc_data)
-        assert crc == response.crc, \
-            f"Received CRC doesn't match"
+        if crc != response.crc:
+            raise McuBootConnectionError("Received CRC doesn't match")
 
         self.protocol_version = response.version
         self.options = response.options

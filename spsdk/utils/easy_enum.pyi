@@ -8,11 +8,13 @@ from enum import IntEnum
 EnumKeyType = Union[str, int]
 
 # forward for Enum type
-TEnumType = TypeVar('TEnumType', bound='Enum')
+TEnumType = TypeVar("TEnumType", bound="Enum")
 
 class Enum(IntEnum):
     @classmethod
-    def get(cls: Type[TEnumType], key: EnumKeyType, default:Optional[EnumKeyType] = None) -> Optional[EnumKeyType]:
+    def get(
+        cls: Type[TEnumType], key: EnumKeyType, default: Optional[EnumKeyType] = None
+    ) -> Optional[EnumKeyType]:
         """Converts enumeration value to name OR name to enumeration value
 
         :param key: either value or name (name is case INSENSITIVE)
@@ -20,9 +22,8 @@ class Enum(IntEnum):
         :return: name for value; value for name
         """
         pass
-
     @classmethod
-    def desc(cls: Type[TEnumType], key: EnumKeyType, default: str = '') -> str:
+    def desc(cls: Type[TEnumType], key: EnumKeyType, default: str = "") -> str:
         """Description of the specified value
 
         :param key: either value or name (name is case INSENSITIVE)
@@ -30,7 +31,6 @@ class Enum(IntEnum):
         :return: description of the value; empty string if description was not specified
         """
         pass
-
     # noinspection PyMethodOverriding
     @classmethod
     def name(cls: Type[TEnumType], key: int, default: Optional[str] = None) -> str:  # type: ignore
@@ -41,18 +41,14 @@ class Enum(IntEnum):
         :return: description of the value; empty string if description was not specified
         """
         pass
-
     @classmethod
     def tags(cls: Type[TEnumType]) -> Sequence[TEnumType]:
         pass
-
     @classmethod
     def from_int(cls: Type[TEnumType], value: int) -> TEnumType:
         pass
-
     def __iter__(self) -> Iterator[Tuple[str, int, str]]:
         """Deprecated, use self.tags() instead"""
         pass
-
     def __contains__(self, tag: EnumKeyType) -> bool:
         pass

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,12 @@ from struct import pack, unpack_from, calcsize
 from typing import Optional
 
 from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.crypto.common import swap16, unpack_timestamp, pack_timestamp, crypto_backend
+from spsdk.utils.crypto.common import (
+    swap16,
+    unpack_timestamp,
+    pack_timestamp,
+    crypto_backend,
+)
 from .misc import BcdVersion3
 
 
@@ -23,14 +28,21 @@ from .misc import BcdVersion3
 class ImageHeaderV2(BaseClass):
     """Image Header V2 class."""
 
-    FORMAT = '<16s4s4s2BH4I4H4sQ12HI4s'
+    FORMAT = "<16s4s4s2BH4I4H4sQ12HI4s"
     SIZE = calcsize(FORMAT)
-    SIGNATURE1 = b'STMP'
-    SIGNATURE2 = b'sgtl'
+    SIGNATURE1 = b"STMP"
+    SIGNATURE2 = b"sgtl"
 
-    def __init__(self, version: str = '2.0', product_version: str = '1.0.0', component_version: str = '1.0.0',
-                 build_number: int = 0, flags: int = 0x08, nonce: Optional[bytes] = None,
-                 timestamp: Optional[datetime] = None) -> None:
+    def __init__(
+        self,
+        version: str = "2.0",
+        product_version: str = "1.0.0",
+        component_version: str = "1.0.0",
+        build_number: int = 0,
+        flags: int = 0x08,
+        nonce: Optional[bytes] = None,
+        timestamp: Optional[datetime] = None,
+    ) -> None:
         """Initialize Image Header Version 2.x.
 
         :param version: The image version value (default: 2.0)
@@ -52,7 +64,11 @@ class ImageHeaderV2(BaseClass):
         self.key_blob_block = 8
         self.key_blob_block_count = 5
         self.max_section_mac_count = 0  # will be calculated in the BootImage later
-        self.timestamp = timestamp if timestamp is not None else datetime.fromtimestamp(int(datetime.now().timestamp()))
+        self.timestamp = (
+            timestamp
+            if timestamp is not None
+            else datetime.fromtimestamp(int(datetime.now().timestamp()))
+        )
         self.product_version: BcdVersion3 = BcdVersion3.to_version(product_version)
         self.component_version: BcdVersion3 = BcdVersion3.to_version(component_version)
         self.build_number = build_number
@@ -62,7 +78,7 @@ class ImageHeaderV2(BaseClass):
 
     def flags_desc(self) -> str:
         """Return flag description."""
-        return 'Signed' if self.flags == 0x8 else 'Unsigned'
+        return "Signed" if self.flags == 0x8 else "Unsigned"
 
     def info(self) -> str:
         """Get info of Header as string."""
@@ -94,7 +110,7 @@ class ImageHeaderV2(BaseClass):
         """
         if not isinstance(self.nonce, bytes) or len(self.nonce) != 16:
             raise AttributeError()
-        major_version, minor_version = [int(v) for v in self.version.split('.')]
+        major_version, minor_version = [int(v) for v in self.version.split(".")]
         product_version_words = [swap16(v) for v in self.product_version.nums]
         component_version_words = [swap16(v) for v in self.product_version.nums]
         if padding is None:
@@ -102,41 +118,50 @@ class ImageHeaderV2(BaseClass):
         else:
             assert len(padding) == 8
 
-        result = pack(self.FORMAT,
-                      self.nonce,
-                      # padding 8 bytes
-                      padding,
-                      self.SIGNATURE1,
-                      # header version
-                      major_version, minor_version,
-                      self.flags,
-                      self.image_blocks,
-                      self.first_boot_tag_block,
-                      self.first_boot_section_id,
-                      self.offset_to_certificate_block,
-                      self.header_blocks,
-                      self.key_blob_block,
-                      self.key_blob_block_count,
-                      self.max_section_mac_count,
-                      self.SIGNATURE2,
-                      pack_timestamp(self.timestamp),
-                      # product version
-                      product_version_words[0], 0,
-                      product_version_words[1], 0,
-                      product_version_words[2], 0,
-                      # component version
-                      component_version_words[0], 0,
-                      component_version_words[1], 0,
-                      component_version_words[2], 0,
-                      self.build_number,
-                      # padding[4]
-                      padding[4:])
+        result = pack(
+            self.FORMAT,
+            self.nonce,
+            # padding 8 bytes
+            padding,
+            self.SIGNATURE1,
+            # header version
+            major_version,
+            minor_version,
+            self.flags,
+            self.image_blocks,
+            self.first_boot_tag_block,
+            self.first_boot_section_id,
+            self.offset_to_certificate_block,
+            self.header_blocks,
+            self.key_blob_block,
+            self.key_blob_block_count,
+            self.max_section_mac_count,
+            self.SIGNATURE2,
+            pack_timestamp(self.timestamp),
+            # product version
+            product_version_words[0],
+            0,
+            product_version_words[1],
+            0,
+            product_version_words[2],
+            0,
+            # component version
+            component_version_words[0],
+            0,
+            component_version_words[1],
+            0,
+            component_version_words[2],
+            0,
+            self.build_number,
+            # padding[4]
+            padding[4:],
+        )
         assert len(result) == self.SIZE
         return result
 
     # pylint: disable=too-many-locals
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'ImageHeaderV2':
+    def parse(cls, data: bytes, offset: int = 0) -> "ImageHeaderV2":
         """Deserialization from binary form.
 
         :param data: binary representation
@@ -152,7 +177,8 @@ class ImageHeaderV2(BaseClass):
             _,
             signature1,
             # header version
-            major_version, minor_version,
+            major_version,
+            minor_version,
             flags,
             image_blocks,
             first_boot_tag_block,
@@ -165,12 +191,22 @@ class ImageHeaderV2(BaseClass):
             signature2,
             raw_timestamp,
             # product version
-            pv0, _, pv1, _, pv2, _,
+            pv0,
+            _,
+            pv1,
+            _,
+            pv2,
+            _,
             # component version
-            cv0, _, cv1, _, cv2, _,
+            cv0,
+            _,
+            cv1,
+            _,
+            cv2,
+            _,
             build_number,
             # padding1
-            _
+            _,
         ) = unpack_from(cls.FORMAT, data, offset)
 
         # check header signature 1
@@ -181,11 +217,13 @@ class ImageHeaderV2(BaseClass):
         if signature2 != cls.SIGNATURE2:
             raise Exception()
 
-        obj = cls(version=f'{major_version}.{minor_version}',
-                  flags=flags,
-                  product_version=f'{swap16(pv0):X}.{swap16(pv1):X}.{swap16(pv2):X}',
-                  component_version=f'{swap16(cv0):X}.{swap16(cv1):X}.{swap16(cv2):X}',
-                  build_number=build_number)
+        obj = cls(
+            version=f"{major_version}.{minor_version}",
+            flags=flags,
+            product_version=f"{swap16(pv0):X}.{swap16(pv1):X}.{swap16(pv2):X}",
+            component_version=f"{swap16(cv0):X}.{swap16(cv1):X}.{swap16(cv2):X}",
+            build_number=build_number,
+        )
 
         obj.nonce = nonce
         obj.image_blocks = image_blocks

@@ -7,28 +7,37 @@
 """Module for DebugMailbox Debug probes support."""
 
 import logging
-from typing import Dict, Any, Type
-import prettytable
+from typing import Any, Dict, Type
+
 import colorama
+import prettytable
+
+from spsdk.debuggers.debug_probe import DebugProbe, DebugProbeError, ProbeNotFoundError
+from spsdk.debuggers.debug_probe_jlink import DebugProbePyLink
+from spsdk.debuggers.debug_probe_pemicro import DebugProbePemicro
 
 # Import all supported debug probe classes
 from spsdk.debuggers.debug_probe_pyocd import DebugProbePyOCD
-from spsdk.debuggers.debug_probe_jlink import DebugProbePyLink
-from spsdk.debuggers.debug_probe_pemicro import DebugProbePemicro
-from spsdk.debuggers.debug_probe import DebugProbeError, ProbeNotFoundError, DebugProbe
 
 PROBES = {
-    "pyocd":   DebugProbePyOCD,
-    "jlink":   DebugProbePyLink,
+    "pyocd": DebugProbePyOCD,
+    "jlink": DebugProbePyLink,
     "pemicro": DebugProbePemicro,
 }
 
 logger = logging.getLogger(__name__)
 
-class ProbeDescription():
+
+class ProbeDescription:
     """NamedTuple for DAT record of debug probe description."""
 
-    def __init__(self, interface: str, hardware_id: str, description: str, probe: Type[DebugProbe]) -> None:
+    def __init__(
+        self,
+        interface: str,
+        hardware_id: str,
+        description: str,
+        probe: Type[DebugProbe],
+    ) -> None:
         """Initialization of Debug probe description class.
 
         param interface: Probe Interface.
@@ -49,6 +58,7 @@ class ProbeDescription():
         """
         return self.probe(hardware_id=self.hardware_id, user_params=user_params)
 
+
 class DebugProbes(list):
     """Helper class for debug probe selection. This class accepts only ProbeDescription object."""
 
@@ -61,7 +71,7 @@ class DebugProbes(list):
         if isinstance(item, ProbeDescription):
             super(DebugProbes, self).append(item)
         else:
-            raise TypeError('The list accepts only ProbeDescription object')
+            raise TypeError("The list accepts only ProbeDescription object")
 
     def insert(self, index: int, item: ProbeDescription) -> None:
         """Overriding build-in function by check the type.
@@ -73,7 +83,7 @@ class DebugProbes(list):
         if isinstance(item, ProbeDescription):
             super(DebugProbes, self).insert(index, item)
         else:
-            raise TypeError('The list accepts only ProbeDescription object')
+            raise TypeError("The list accepts only ProbeDescription object")
 
     def select_probe(self, silent: bool = False) -> ProbeDescription:
         """Perform Probe selection.
@@ -87,16 +97,16 @@ class DebugProbes(list):
                 print("There is no any debug probe connected in system!")
             raise ProbeNotFoundError("There is no any debug probe connected in system!")
 
-        if not silent or len(self) > 1: # pragma: no cover
+        if not silent or len(self) > 1:  # pragma: no cover
             self.print()
 
         if len(self) == 1:
             # Automatically gets and use only one option\
             i_selected = 0
-        else: # pragma: no cover
-            print("Please choose the debug probe: ", end='')
+        else:  # pragma: no cover
+            print("Please choose the debug probe: ", end="")
             i_selected = int(input())
-            if i_selected > len(self)-1:
+            if i_selected > len(self) - 1:
                 print("The chosen probe index is out of range")
                 raise ProbeNotFoundError("The chosen probe index is out of range")
 
@@ -108,31 +118,37 @@ class DebugProbes(list):
 
         # Print all PyOCD probes and then Pemicro with local index
         table = prettytable.PrettyTable(["#", "Interface", "Id", "Description"])
-        table.align = 'l'
+        table.align = "l"
         table.header = True
         table.border = True
         table.hrules = prettytable.HEADER
         table.vrules = prettytable.NONE
         i = 0
         for probe in self:
-            table.add_row([
-                colorama.Fore.YELLOW + str(i),
-                colorama.Fore.WHITE + probe.interface,
-                colorama.Fore.CYAN + probe.hardware_id,
-                colorama.Fore.GREEN + probe.description,
-                ])
+            table.add_row(
+                [
+                    colorama.Fore.YELLOW + str(i),
+                    colorama.Fore.WHITE + probe.interface,
+                    colorama.Fore.CYAN + probe.hardware_id,
+                    colorama.Fore.GREEN + probe.description,
+                ]
+            )
             i += 1
         print(table)
-        print(colorama.Style.RESET_ALL, end='')
+        print(colorama.Style.RESET_ALL, end="")
 
-class DebugProbeUtils():
+
+class DebugProbeUtils:
     """The SPSDK debug probes utilities class.
 
     The SPSDK debug probes utilities, that helps user to find and open the real
     hardware debug probe to establish connection with hardware.
     """
+
     @staticmethod
-    def get_connected_probes(interface: str = None, hardware_id: str = None, user_params: Dict = None) -> DebugProbes:
+    def get_connected_probes(
+        interface: str = None, hardware_id: str = None, user_params: Dict = None
+    ) -> DebugProbes:
         """Functions returns the list of all connected probes in system.
 
         The caller could restrict the scanned interfaces by specification of hardware ID.
@@ -152,3 +168,42 @@ class DebugProbeUtils():
                     logger.warning(f"The {probe_key} debug probe support is not ready({str(exc)}).")
 
         return probes
+
+
+def test_ahb_access(probe: DebugProbe, ap_mem: int = 0) -> bool:
+    """The function safely test the access of debug probe to AHB in target.
+
+    :param probe: Probe object to use for test.
+    :param ap_mem: Index of memory access port., defaults to 0
+    :return: True is access to AHB is granted, False otherwise.
+    """
+    ahb_enabled = False
+    logger.debug("step T.1: Activate the correct AP")
+    probe.coresight_reg_write(access_port=False, addr=2 * 4, data=ap_mem)
+
+    logger.debug("step T.2: Set the AP access size and address mode")
+    probe.coresight_reg_write(
+        access_port=True,
+        addr=probe.get_coresight_ap_address(ap_mem, 0 * 4),
+        data=0x22000012,
+    )
+
+    logger.debug("step T.3: Set the initial AHB address to access")
+    probe.coresight_reg_write(
+        access_port=True,
+        addr=probe.get_coresight_ap_address(ap_mem, 1 * 4),
+        data=0x20000000,
+    )
+
+    logger.debug("step T.4: Access the memory system at that address")
+    try:
+        value = probe.coresight_reg_read(
+            access_port=True, addr=probe.get_coresight_ap_address(ap_mem, 3 * 4)
+        )
+        logger.debug(f"Read value at 0x2000_0000 is {value:08X}")
+        ahb_enabled = True
+
+    except DebugProbeError:
+        logger.debug("Chip has NOT enabled AHB access.")
+
+    return ahb_enabled

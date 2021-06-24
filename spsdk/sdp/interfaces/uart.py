@@ -8,12 +8,14 @@
 """Module for serial communication with a target device using SDP protocol."""
 
 import logging
-from typing import Union, List, Optional
+from typing import List, Optional, Union
 
-from serial import Serial, SerialException
+from serial import Serial
 from serial.tools.list_ports import comports
 
 from spsdk.sdp.commands import CmdPacket, CmdResponse
+from spsdk.sdp.exceptions import SdpConnectionError
+
 from .base import Interface
 
 logger = logging.getLogger("SDP:UART")
@@ -30,14 +32,15 @@ def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> Li
     :param baudrate: speed of the UART interface, defaults to 56700
     :param timeout: timeout in milliseconds, defaults to 5000
     :return: list of interfaces responding to the PING command
-    :rtype: List[spsdk.sdp.interfaces.base.Interface]
     """
     baudrate = baudrate or 115200
     timeout = timeout or 5000
     if port:
         interface = _check_port(port, baudrate, timeout)
         return [interface] if interface else []
-    all_ports = [_check_port(comport.device, baudrate, timeout) for comport in comports(include_links=True)]
+    all_ports = [
+        _check_port(comport.device, baudrate, timeout) for comport in comports(include_links=True)
+    ]
     return list(filter(None, all_ports))
 
 
@@ -48,13 +51,12 @@ def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
     :param baudrate: speed of the UART interface, defaults to 56700
     :param timeout: timeout in milliseconds
     :return: None if device can't be openned, instance of Interface if it does
-    :rtype: Optional[Interface]
     """
     try:
-        logger.debug(f'Checking port: {port}, baudrate: {baudrate}, timeout: {timeout}')
+        logger.debug(f"Checking port: {port}, baudrate: {baudrate}, timeout: {timeout}")
         interface = Uart(port=port, baudrate=baudrate, timeout=timeout)
         return interface
-    except SerialException as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.error(str(e))
         return None
 
@@ -62,6 +64,7 @@ def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
 ########################################################################################################################
 # UART Interface Class
 ########################################################################################################################
+
 
 class Uart(Interface):
     """UART interface."""
@@ -75,29 +78,49 @@ class Uart(Interface):
         """Initialize the UART interface.
 
         :param port: name of the serial port, defaults to None
-        :type port: str, optional
         :param baudrate: speed of the UART interface, defaults to 115200
-        :type baudrate: int, optional
         :param timeout: read/write timeout in milliseconds, defaults to 1000
-        :type timeout: int, optional
+        :raises SdpConnectionError: when there is no port available
         """
         super().__init__()
-        self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
-        self.expect_status = True
+        try:
+            self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
+            self.expect_status = True
+        except Exception as e:
+            raise SdpConnectionError(str(e)) from e
 
     def open(self) -> None:
-        """Open the UART interface."""
+        """Open the UART interface.
+
+        :raises SdpConnectionError: when opening device fails
+        """
         if not self.device.is_open:
-            self.device.open()
+            try:
+                self.device.open()
+            except Exception as e:
+                raise SdpConnectionError(str(e)) from e
 
     def close(self) -> None:
-        """Close the UART interface."""
+        """Close the UART interface.
+
+        :raises SdpConnectionError: when closing device fails
+        """
         if self.device.is_open:
-            self.device.close()
+            try:
+                self.device.close()
+            except Exception as e:
+                raise SdpConnectionError(str(e)) from e
 
     def info(self) -> str:
-        """Return information about the UART interface."""
-        return self.device.port
+        """Return information about the UART interface.
+
+        :return: information about the UART interface
+        :raises SdpConnectionError: when information can not be collected from device
+        """
+        try:
+            return self.device.port
+        except Exception as e:
+            raise SdpConnectionError(str(e)) from e
 
     def conf(self, config: dict) -> None:
         """Configure device.
@@ -109,7 +132,6 @@ class Uart(Interface):
         """Read data from device.
 
         :return: data read from device
-        :rtype: spsdk.sdp.commands.CmdResponse
         """
         hab_info = self._read(length or 4)
         # raw_data = self._read(4) if self.expect_status else hab_info
@@ -120,7 +142,6 @@ class Uart(Interface):
         """Write data to the device; data might be in format of 'CmdPacket' or bytes.
 
         :param packet: Packet to send
-        :type packet: Union[spsdk.sdp.commands.CmdPacket, bytes]
         """
         self.expect_status = True
         if isinstance(packet, CmdPacket):
@@ -133,22 +154,29 @@ class Uart(Interface):
         """Read 'length' amount of bytes from the device.
 
         :param length: Number of bytes to read
-        :type length: int
         :return: Data read
-        :rtype: bytes
+        :raises SdpConnectionError: when read from device fails
         """
-        data = self.device.read(length)
-        logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
-        return data
+        try:
+            data = self.device.read(length)
+            if not data:
+                raise Exception("No response from SDP device.")
+            logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
+            return data
+        except Exception as e:
+            raise SdpConnectionError(str(e)) from e
 
     def _write(self, data: bytes) -> None:
         """Send data to device.
 
         :param data: Data to send
-        :type data: bytes
+        :raises SdpConnectionError: when send data to device fails
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
-        self.device.reset_input_buffer()
-        self.device.reset_output_buffer()
-        self.device.write(data)
-        self.device.flush()
+        try:
+            self.device.reset_input_buffer()
+            self.device.reset_output_buffer()
+            self.device.write(data)
+            self.device.flush()
+        except Exception as e:
+            raise SdpConnectionError(str(e)) from e

@@ -13,23 +13,45 @@ import sys
 
 import click
 
-from spsdk.pfr.pfr import PfrConfiguration
+from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import catch_spsdk_error
-from spsdk.pfr import Translator, Processor, PFR_DATA_FOLDER
+from spsdk.pfr import PFR_DATA_FOLDER, Processor, Translator
+from spsdk.pfr.pfr import PfrConfiguration
 
-
-RULES_FILE = os.path.join(PFR_DATA_FOLDER, 'rules.json')
+RULES_FILE = os.path.join(PFR_DATA_FOLDER, "rules.json")
 
 
 @click.command()
-@click.option('-m', '--cmpa-config', required=True, type=click.Path(),
-              help='Path to CMPA config json file')
-@click.option('-f', '--cfpa-config', required=True, type=click.Path(),
-              help='Path to CFPA config json file')
-@click.option('-r', '--rules-file', required=False, type=click.File('r'),
-              default=RULES_FILE, help='Custom file containing checker rules')
-@click.option('-d', '--debug', is_flag=True, default=False, help='Enable debugging output')
-def main(cmpa_config: click.Path, cfpa_config: click.Path, rules_file: click.File, debug: bool) -> None:
+@click.option(
+    "-m",
+    "--cmpa-config",
+    required=True,
+    type=click.Path(),
+    help="Path to CMPA config json file",
+)
+@click.option(
+    "-f",
+    "--cfpa-config",
+    required=True,
+    type=click.Path(),
+    help="Path to CFPA config json file",
+)
+@click.option(
+    "-r",
+    "--rules-file",
+    required=False,
+    type=click.File("r"),
+    default=RULES_FILE,
+    help="Custom file containing checker rules",
+)
+@click.option("-d", "--debug", is_flag=True, default=False, help="Enable debugging output")
+@click.version_option(spsdk_version, "--version")
+def main(
+    cmpa_config: click.Path,
+    cfpa_config: click.Path,
+    rules_file: click.File,
+    debug: bool,
+) -> None:
     """Utility to search for brick-conditions in PFR settings."""
     logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
@@ -44,16 +66,19 @@ def main(cmpa_config: click.Path, cfpa_config: click.Path, rules_file: click.Fil
         try:
             click.echo("Requirement: {}".format(rule["req_id"]))
             click.echo(f"{rule['desc']}...")
-            result, condition = processor.process(rule['cond'])
+            result, condition = processor.process(rule["cond"])
             click.echo(f"Brick condition: {rule['cond']}")
             click.echo(condition)
-            click.echo(f"FAIL: you are going to brick your device\n{rule['msg']}" if result \
-                else "OK: Brick condition not fulfilled")
+            click.echo(
+                f"FAIL: you are going to brick your device\n{rule['msg']}"
+                if result
+                else "OK: Brick condition not fulfilled"
+            )
         except SyntaxError as e:
             click.echo(f"\nERROR: Unable to parse: '{e}'")
         except (KeyError, ValueError, TypeError) as e:
             click.echo(f"\nERROR: Unable to lookup identifier: {e}")
-        except Exception as e: # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             click.echo(f"Error e({e}) while evaluating {rule['cond']}")
         click.echo("-" * 40)
 

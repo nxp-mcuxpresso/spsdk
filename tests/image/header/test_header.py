@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,8 +11,7 @@ from spsdk.image.header import Header, SegTag, Header2, CmdHeader
 
 
 def test_basic_header_without_length():
-    """ Basic test for header without length
-    """
+    """Basic test for header without length"""
     tested_header = Header(SegTag.IVT2)
     assert tested_header.tag == SegTag.IVT2
     assert tested_header.param == 0
@@ -22,12 +21,11 @@ def test_basic_header_without_length():
     output = tested_header.info()
     repr_strings = ["TAG", "PARAM", "LEN"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_basic_header_with_length():
-    """  Basic Test for header with length
-    """
+    """Basic Test for header with length"""
     tested_header = Header(SegTag.IVT2, length=10)
     assert tested_header.tag == SegTag.IVT2
     assert tested_header.param == 0
@@ -35,8 +33,7 @@ def test_basic_header_with_length():
 
 
 def test_unpacking_packing_header_without_length():
-    """ Test for header (without length) for packing and unpacking
-    """
+    """Test for header (without length) for packing and unpacking"""
     tested_header = Header(SegTag.IVT2)
     packed_header = tested_header.export()
     unpacked = tested_header.parse(packed_header)
@@ -44,8 +41,7 @@ def test_unpacking_packing_header_without_length():
 
 
 def test_unpacking_packing_header_with_length():
-    """ Test for header (with length) for packing and unpacking
-    """
+    """Test for header (with length) for packing and unpacking"""
     tested_header = Header(SegTag.IVT2, length=10)
     packed_header = tested_header.export()
     unpacked = tested_header.parse(packed_header)
@@ -53,8 +49,7 @@ def test_unpacking_packing_header_with_length():
 
 
 def test_basic_header2_without_length():
-    """ Basic Test for header2 without length
-    """
+    """Basic Test for header2 without length"""
     tested_header2 = Header2(SegTag.IVT2)
     assert tested_header2.tag == SegTag.IVT2
     assert tested_header2.param == 0
@@ -62,8 +57,7 @@ def test_basic_header2_without_length():
 
 
 def test_basic_header2_with_length():
-    """ Basic Test for header2 with length
-    """
+    """Basic Test for header2 with length"""
     tested_header2 = Header2(SegTag.IVT2, length=20)
     assert tested_header2.tag == SegTag.IVT2
     assert tested_header2.param == 0
@@ -71,8 +65,7 @@ def test_basic_header2_with_length():
 
 
 def test_unpacking_packing_header2_with_length():
-    """ Test for header2 (with length) for packing and unpacking
-    """
+    """Test for header2 (with length) for packing and unpacking"""
     tested_header2 = Header2(SegTag.IVT2, length=20)
     packed_header2 = tested_header2.export()
     unpacked2 = tested_header2.parse(packed_header2)
@@ -80,8 +73,7 @@ def test_unpacking_packing_header2_with_length():
 
 
 def test_unpacking_header2_without_length():
-    """ Test for header for packing and unpacking
-    """
+    """Test for header for packing and unpacking"""
     tested_header2 = Header2(SegTag.IVT2)
     packed_header2 = tested_header2.export()
     unpacked2 = tested_header2.parse(packed_header2)
@@ -89,8 +81,7 @@ def test_unpacking_header2_without_length():
 
 
 def test_comparision_header_with_length():
-    """ Test for comparing header and header 2 (with lenght) for packing and unpacking
-    """
+    """Test for comparing header and header 2 (with lenght) for packing and unpacking"""
     tested_header2 = Header2(SegTag.IVT2, length=20)
     tested_header = Header(SegTag.IVT2, length=20)
     packed_header2 = tested_header2.export()
@@ -102,8 +93,7 @@ def test_comparision_header_with_length():
 
 
 def test_comparision_header_without_length():
-    """ Test for comparing header and header 2 (without lenght) for packing and unpacking
-    """
+    """Test for comparing header and header 2 (without lenght) for packing and unpacking"""
     tested_header2 = Header2(SegTag.IVT2)
     tested_header = Header(SegTag.IVT2)
     packed_header2 = tested_header2.export()
@@ -117,10 +107,10 @@ def test_comparision_header_without_length():
 def test_parse_invalid_command():
     # invalid required_tag: not CmdTag
     with pytest.raises(AssertionError):
-        CmdHeader.parse(b'', 0, required_tag=-1)
+        CmdHeader.parse(b"", 0, required_tag=-1)
     # invalid zero length
     with pytest.raises(AssertionError):
-        CmdHeader.parse(b'\xFF\x00\x00\x00', 0, required_tag=None)
+        CmdHeader.parse(b"\xFF\x00\x00\x00", 0, required_tag=None)
     # invalid tag: not CmdTag
     with pytest.raises(AssertionError):
-        CmdHeader.parse(b'\xFF\x04\x00\x00', 0, required_tag=None)
+        CmdHeader.parse(b"\xFF\x04\x00\x00", 0, required_tag=None)

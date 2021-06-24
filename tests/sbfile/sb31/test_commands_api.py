@@ -9,9 +9,23 @@
 import pytest
 
 from spsdk.sbfile.sb31.constants import EnumCmdTag
-from spsdk.sbfile.sb31.commands import CmdErase, CmdLoad, CmdExecute, CmdCall, CmdProgFuses, CmdProgIfr, \
-    CmdLoadCmac, CmdLoadHashLocking, CmdCopy, CmdFillMemory, parse_command, CmdLoadKeyBlob, CmdConfigureMemory, \
-    CmdSectionHeader, CmdFwVersionCheck
+from spsdk.sbfile.sb31.commands import (
+    CmdErase,
+    CmdLoad,
+    CmdExecute,
+    CmdCall,
+    CmdProgFuses,
+    CmdProgIfr,
+    CmdLoadCmac,
+    CmdLoadHashLocking,
+    CmdCopy,
+    CmdFillMemory,
+    parse_command,
+    CmdLoadKeyBlob,
+    CmdConfigureMemory,
+    CmdSectionHeader,
+    CmdFwVersionCheck,
+)
 from spsdk.sbfile.sb31.commands import BaseCmd
 
 
@@ -162,7 +176,9 @@ def test_parse_invalid_cmd_loadcmac_cmd_tag():
 def test_cmd_copy():
     """Test address, length, destination_address, memory_id_from, memory_id_to, info value,
     size after export and parsing of CmdCopy command."""
-    cmd = CmdCopy(address=100, length=10, destination_address=20, memory_id_from=30, memory_id_to=40)
+    cmd = CmdCopy(
+        address=100, length=10, destination_address=20, memory_id_from=30, memory_id_to=40
+    )
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.destination_address == 20
@@ -212,7 +228,9 @@ def test_parse_invalid_cmd_loadhashlocking_cmd_tag():
 
 def test_cmd_loadkeyblob():
     """Test offset, length, key_wrap, data info value, size after export and parsing of CmdLoadKeyBlob command."""
-    cmd = CmdLoadKeyBlob(offset=100, key_wrap_id=CmdLoadKeyBlob.KeyWraps.NXP_CUST_KEK_EXT_SK, data=10 * b"x")
+    cmd = CmdLoadKeyBlob(
+        offset=100, key_wrap_id=CmdLoadKeyBlob.KeyWraps.NXP_CUST_KEK_EXT_SK, data=10 * b"x"
+    )
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.key_wrap_id == 17
@@ -228,7 +246,9 @@ def test_cmd_loadkeyblob():
 
 def test_parse_invalid_cmd_loadkeyblob_cmd_tag():
     """CmdLoadKeyBlob tag validity test."""
-    cmd = CmdLoadKeyBlob(offset=100,  key_wrap_id=CmdLoadKeyBlob.KeyWraps.NXP_CUST_KEK_EXT_SK, data=bytes(10))
+    cmd = CmdLoadKeyBlob(
+        offset=100, key_wrap_id=CmdLoadKeyBlob.KeyWraps.NXP_CUST_KEK_EXT_SK, data=bytes(10)
+    )
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(ValueError):
@@ -348,83 +368,98 @@ def test_section_cmd_header_offset():
 def test_parse_command_function():
     """Test parse command function."""
     # CmdErase(address=100, length=0, memory_id=0)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00' \
-           b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    data = (
+        b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    )
     parse = parse_command(data)
     assert isinstance(parse, CmdErase)
 
     # CmdLoad(address=100, length=0, memory_id=0)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00' \
-           b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    data = (
+        b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    )
     parse = parse_command(data)
     assert isinstance(parse, CmdLoad)
 
     # CmdExecute(address=100)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00'
+    data = b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00"
     parse = parse_command(data)
     assert isinstance(parse, CmdExecute)
 
     # CmdCall(address=100)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00'
+    data = b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00"
     parse = parse_command(data)
     assert isinstance(parse, CmdCall)
 
     # CmdProgFuses(address=100, data=[0, 1, 2, 3])
-    data = b'U\xaa\xaaUd\x00\x00\x00\x05\x00\x00\x00\x05\x00\x00\x00' \
-           b'\x00\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00' \
-           b'\x00\x00\x04\x00\x00\x00'
+    data = (
+        b"U\xaa\xaaUd\x00\x00\x00\x05\x00\x00\x00\x05\x00\x00\x00"
+        b"\x00\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00"
+        b"\x00\x00\x04\x00\x00\x00"
+    )
     parse = parse_command(data)
     assert isinstance(parse, CmdProgFuses)
 
     # CmdProgIfr(address=100, data=(b"\x00" * 100))
-    data = b'U\xaa\xaaUd\x00\x00\x00d\x00\x00\x00\x06\x00\x00\x00'
+    data = b"U\xaa\xaaUd\x00\x00\x00d\x00\x00\x00\x06\x00\x00\x00"
     parse = parse_command(data)
     assert isinstance(parse, CmdProgIfr)
 
     # CmdLoadCmac(address=100, length=0, memory_id=0)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00' \
-           b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    data = (
+        b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    )
     parse = parse_command(data)
     assert isinstance(parse, CmdLoadCmac)
 
     # CmdCopy(address=100, length=0, destination_address=0, memory_id_from=0, memory_id_to=0)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00' \
-           b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    data = (
+        b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    )
     parse = parse_command(data)
     assert isinstance(parse, CmdCopy)
 
     # CmdLoadHashLocking(address=100, length=0, memory_id=0)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00' \
-           b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    data = (
+        b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\t\x00\x00\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    )
     parse = parse_command(data)
     assert isinstance(parse, CmdLoadHashLocking)
 
     # CmdLoadKeyBlob(offset=100, key_wrap_id=CmdLoadKeyBlob.NXP_CUST_KEK_EXT_SK, data=10 * b"x")
-    data = b'U\xaa\xaaUd\x00\x11\x00\n\x00\x00\x00\n\x00\x00\x00xxxxxxxxxx' \
-           b'\x00\x00\x00\x00\x00\x00'
+    data = (
+        b"U\xaa\xaaUd\x00\x11\x00\n\x00\x00\x00\n\x00\x00\x00xxxxxxxxxx" b"\x00\x00\x00\x00\x00\x00"
+    )
     parse = parse_command(data)
     assert isinstance(parse, CmdLoadKeyBlob)
 
     # CmdConfigureMemory(address=100, memory_id=0)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x0b\x00\x00\x00'
+    data = b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x0b\x00\x00\x00"
     parse = parse_command(data)
     assert isinstance(parse, CmdConfigureMemory)
 
     # CmdFillMemory(address=100, memory_id=0)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x0c\x00\x00\x00' \
-           b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    data = (
+        b"U\xaa\xaaUd\x00\x00\x00\x00\x00\x00\x00\x0c\x00\x00\x00"
+        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    )
     parse = parse_command(data)
     assert isinstance(parse, CmdFillMemory)
 
     # CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.SECURE)
-    data = b'U\xaa\xaaUd\x00\x00\x00\x02\x00\x00\x00\r\x00\x00\x00'
+    data = b"U\xaa\xaaUd\x00\x00\x00\x02\x00\x00\x00\r\x00\x00\x00"
     parse = parse_command(data)
     assert isinstance(parse, CmdFwVersionCheck)
 
 
 def test_invalid_parse_command_function():
     """Test invalid parse command function."""
-    invalid_data = b'U\xaa\xaaUd\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00'
+    invalid_data = b"U\xaa\xaaUd\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00"
     with pytest.raises(ValueError):
         parse_command(invalid_data)
     invalid_data = bytes(CmdSectionHeader.SIZE)

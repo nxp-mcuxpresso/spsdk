@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -32,7 +32,7 @@ def test_create_image_api():
 
 
 def test_parse_image_api(data_dir):
-    with open(os.path.join(data_dir, 'imx7d_uboot.imx'), 'rb') as f:
+    with open(os.path.join(data_dir, "imx7d_uboot.imx"), "rb") as f:
         image = BootImg2.parse(f.read())
 
     assert isinstance(image, BootImg2)

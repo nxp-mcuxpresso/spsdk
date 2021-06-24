@@ -5,39 +5,47 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image.hab_audit_log import hab_audit_xip_app, parse_hab_log, CpuData, \
-    get_hab_enum_descr, check_reserved_regions, get_hab_log_info
+from spsdk.image.hab_audit_log import (
+    hab_audit_xip_app,
+    parse_hab_log,
+    CpuData,
+    get_hab_enum_descr,
+    check_reserved_regions,
+    get_hab_log_info,
+)
 from spsdk.utils.easy_enum import Enum
+
 # from spsdk.utils.serial_proxy import SerialProxy
 from spsdk.mboot.interfaces import Uart
 from spsdk.mboot import McuBoot
 from unittest.mock import patch
+
 # responses from rt1020 for mcu emulating
 from spsdk.utils.serial_proxy import SimpleReadSerialProxy
 
 
 class TestEnum(Enum):
-    TEST = (0xA5, 'Test descr')
+    TEST = (0xA5, "Test descr")
 
 
 def test_get_hab_enum_descr():
     """Test `get_hab_enum_descr`"""
     # test known value
     t = get_hab_enum_descr(TestEnum, 0xA5)
-    assert t == 'Test descr  (0xa5)'
+    assert t == "Test descr  (0xa5)"
 
     # test unknown value
     t = get_hab_enum_descr(TestEnum, 0xFF)
-    assert t == '0xff = Unknown value'
+    assert t == "0xff = Unknown value"
 
 
 def test_parse_hab_log():
     """Test `parse_hab_log` function. """
-    lines = parse_hab_log(0xF0, 0xCC, 0xAA, b'')
+    lines = parse_hab_log(0xF0, 0xCC, 0xAA, b"")
     assert lines
-    lines = parse_hab_log(51, 240, 102, b'\xdb\x00\x08\x43\x33\x22\x0a\x00')
+    lines = parse_hab_log(51, 240, 102, b"\xdb\x00\x08\x43\x33\x22\x0a\x00")
     assert lines
-    lines = parse_hab_log(51, 240, 102, b'\xdb\x00\x08\x43\x33\x22\x0a\x00' + b'\x00' * 60)
+    lines = parse_hab_log(51, 240, 102, b"\xdb\x00\x08\x43\x33\x22\x0a\x00" + b"\x00" * 60)
     assert lines
 
 
@@ -54,24 +62,26 @@ def test_hab_audit_xip_app_simple(data_dir):
 
     bin_data = bytes()
     for match in matches:
-        found = match.group('data')
-        bin_data += bytes(int(value, 16) for value in found.split(' '))
+        found = match.group("data")
+        bin_data += bytes(int(value, 16) for value in found.split(" "))
 
-    with patch('spsdk.mboot.interfaces.uart.Serial', SimpleReadSerialProxy.init_data_proxy(bin_data)):
-        with McuBoot(Uart(port='totally-legit-port')) as mboot:
+    with patch(
+        "spsdk.mboot.interfaces.uart.Serial", SimpleReadSerialProxy.init_data_proxy(bin_data)
+    ):
+        with McuBoot(Uart(port="totally-legit-port")) as mboot:
             # test valid use case
             log = hab_audit_xip_app(CpuData.MIMXRT1020, mboot, read_log_only=True)
-            assert log[:4] != b'\xFF' * 4
+            assert log[:4] != b"\xFF" * 4
 
 
 def test_get_hab_log_info():
     """Test `get_hab_log_info` function. """
     # checks the situation when hab log is valid
-    assert get_hab_log_info(b'\xAA\xBB\xCC\xDD')
+    assert get_hab_log_info(b"\xAA\xBB\xCC\xDD")
     # checks the situation when hab log is empty
     assert not get_hab_log_info(None)
     # checks the situation when flashloader is not accessible
-    assert not get_hab_log_info(b'\xFF\xFF\xFF\xFF')
+    assert not get_hab_log_info(b"\xFF\xFF\xFF\xFF")
 
 
 def test_check_reserved_regions():

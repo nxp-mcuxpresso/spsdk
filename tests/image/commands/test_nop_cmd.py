@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,7 +24,7 @@ def test_nop_cmd_eq():
 
 def test_nop_cmd_info():
     cmd = CmdNop()
-    assert "Command \"No Operation" in cmd.info()
+    assert 'Command "No Operation' in cmd.info()
 
 
 def test_nop_export_parse():
@@ -32,5 +32,3 @@ def test_nop_export_parse():
     data = cmd.export()
     assert len(data) == 4
     assert cmd == CmdNop.parse(data)
-
-

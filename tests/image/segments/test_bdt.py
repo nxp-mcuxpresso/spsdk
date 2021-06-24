@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -34,7 +34,7 @@ def test_bdt_eq_repr():
     output = repr(bdt)
     repr_strings = ["BDT", "LEN", "Plugin:"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
     assert bdt != bdt_other
     assert bdt != ivt2
@@ -51,7 +51,7 @@ def test_bdt_info():
     output = bdt.info()
     info_strings = ["Start", "App Length", "Plugin"]
     for info_string in info_strings:
-        assert info_string in output, f'string {info_string} is not in the output: {output}'
+        assert info_string in output, f"string {info_string} is not in the output: {output}"
 
     bdt1 = SegBDT()
     # set nonzero values
@@ -62,7 +62,4 @@ def test_bdt_info():
     output = bdt1.info()
     info_strings = ["Start", "App Length", "Plugin"]
     for info_string in info_strings:
-        assert info_string in output, f'string {info_string} is not in the output: {output}'
-
-
-
+        assert info_string in output, f"string {info_string} is not in the output: {output}"

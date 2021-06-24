@@ -68,7 +68,8 @@ class Processor:
         self.logger.debug(f"Transformed condition: {new_node}")
         node_str = astunparse.unparse(new_node)
         node_str = self._replace_int_as_hex(node_str)
-        result = eval(compile(new_node, filename="", mode="eval")) #pylint: disable=eval-used
+        # pylint: disable=eval-used
+        result = eval(compile(new_node, filename="", mode="eval"))
         return result, node_str
 
     @staticmethod

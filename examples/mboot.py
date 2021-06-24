@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -38,5 +38,5 @@ def main() -> None:
         print(prop)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

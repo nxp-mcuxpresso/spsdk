@@ -13,6 +13,6 @@ import pytest
 @pytest.fixture(scope="module")
 def data_dir(request):
     logging.debug(f"data_dir for module: {request.fspath}")
-    data_path = path.join(path.dirname(request.fspath), 'data')
+    data_path = path.join(path.dirname(request.fspath), "data")
     logging.debug(f"data_dir: {data_path}")
     return data_path

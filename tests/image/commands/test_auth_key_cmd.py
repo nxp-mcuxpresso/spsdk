@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -44,7 +44,9 @@ def test_auth_data_cmd_length_data():
 
 
 def test_auth_data_cmd_pop_append():
-    cmd = CmdAuthData(flags=EnumAuthDat.CLR, key_index=3, engine=EnumEngine.CSU, engine_cfg=1, location=1)
+    cmd = CmdAuthData(
+        flags=EnumAuthDat.CLR, key_index=3, engine=EnumEngine.CSU, engine_cfg=1, location=1
+    )
     cmd.append(3, 10)
     assert cmd.size == 20
     cmd.pop(0)
@@ -53,7 +55,7 @@ def test_auth_data_cmd_pop_append():
 
 def test_auth_data_cmd_export_parse():
     cmd = CmdAuthData()
-    cmd.append(0xbaba, 0xdeda)
+    cmd.append(0xBABA, 0xDEDA)
     data = cmd.export()
     assert len(data) == 20
     assert len(data) == cmd.size
@@ -61,8 +63,10 @@ def test_auth_data_cmd_export_parse():
 
 
 def test_auth_data_cmd_get_set_iter():
-    cmd = CmdAuthData(flags=EnumAuthDat.CLR, key_index=3, engine=EnumEngine.CSU, engine_cfg=1, location=1)
-    cmd.append(0xbaba, 0xdeda)
+    cmd = CmdAuthData(
+        flags=EnumAuthDat.CLR, key_index=3, engine=EnumEngine.CSU, engine_cfg=1, location=1
+    )
+    cmd.append(0xBABA, 0xDEDA)
     cmd[0] = (5, 6)
     assert cmd[0] == (5, 6)
     cmd.append(9, 8)
@@ -74,19 +78,31 @@ def test_auth_data_cmd_get_set_iter():
 
 
 def test_auth_data_cmd_info():
-    cmd = CmdAuthData(flags=EnumAuthDat.CLR, key_index=3, engine=EnumEngine.CSU, engine_cfg=1, location=1)
+    cmd = CmdAuthData(
+        flags=EnumAuthDat.CLR, key_index=3, engine=EnumEngine.CSU, engine_cfg=1, location=1
+    )
     cmd.append(3, 10)
     output = cmd.info()
-    req_strings = ["Command \"Authenticate Data", "Flag:", "Key index:", "Engine:", "Engine Conf:", "Location:",
-                   "Start:", "Length:"]
+    req_strings = [
+        'Command "Authenticate Data',
+        "Flag:",
+        "Key index:",
+        "Engine:",
+        "Engine Conf:",
+        "Location:",
+        "Start:",
+        "Length:",
+    ]
     for req_string in req_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_auth_data_cmd_equality():
     cmd = CmdAuthData()
     nop = CmdNop()
-    cmd_other = CmdAuthData(flags=EnumAuthDat.ABS, key_index=2, engine=EnumEngine.DCP, engine_cfg=1, location=1)
+    cmd_other = CmdAuthData(
+        flags=EnumAuthDat.ABS, key_index=2, engine=EnumEngine.DCP, engine_cfg=1, location=1
+    )
     assert cmd != nop
     assert cmd == cmd
     assert cmd != cmd_other

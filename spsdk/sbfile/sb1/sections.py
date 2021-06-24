@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,17 @@ from spsdk.utils.misc import DebugInfo
 from .commands import parse_v1_command
 from .headers import BootSectionHeaderV1, SecureBootFlagsV1
 from ..commands import CmdBaseClass
-from ..commands import CmdNop, CmdErase, CmdLoad, CmdFill, CmdJump, CmdCall, CmdReset, CmdMemEnable, CmdProg
+from ..commands import (
+    CmdNop,
+    CmdErase,
+    CmdLoad,
+    CmdFill,
+    CmdJump,
+    CmdCall,
+    CmdReset,
+    CmdMemEnable,
+    CmdProg,
+)
 from ..misc import SecBootBlckSize
 
 
@@ -81,7 +91,7 @@ class BootSectionV1(BaseClass):
         result = "[BootSection-V1]\n"
         result += f"ID: {self._header.section_id}\n"
         result += f"NumBlocks: {self._header.num_blocks}\n"
-        result += self._header.info() + '\n'
+        result += self._header.info() + "\n"
         result += "[BootSection-commands]\n"
         for cmd in self._commands:
             result += cmd.info()
@@ -97,7 +107,20 @@ class BootSectionV1(BaseClass):
 
         :param cmd: to be added
         """
-        assert isinstance(cmd, (CmdNop, CmdErase, CmdLoad, CmdFill, CmdJump, CmdCall, CmdReset, CmdMemEnable, CmdProg))
+        assert isinstance(
+            cmd,
+            (
+                CmdNop,
+                CmdErase,
+                CmdLoad,
+                CmdFill,
+                CmdJump,
+                CmdCall,
+                CmdReset,
+                CmdMemEnable,
+                CmdProg,
+            ),
+        )
         self._commands.append(cmd)
 
     def update(self) -> None:
@@ -107,17 +130,17 @@ class BootSectionV1(BaseClass):
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Return binary representation of the class (serialization)."""
         self.update()
-        dbg_info.append_section('Section')
+        dbg_info.append_section("Section")
         data = self._header.export()
-        dbg_info.append_binary_data('Section-header', data)
-        dbg_info.append_section('Commands')
+        dbg_info.append_binary_data("Section-header", data)
+        dbg_info.append_section("Commands")
         for cmd in self._commands:
             cmd_data = cmd.export(dbg_info)
             data += cmd_data
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'BootSectionV1':
+    def parse(cls, data: bytes, offset: int = 0) -> "BootSectionV1":
         """Deserialization from binary format.
 
         :param data: to be parsed

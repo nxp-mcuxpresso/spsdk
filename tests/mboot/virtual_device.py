@@ -10,7 +10,13 @@ from struct import pack
 
 import pytest
 
-from spsdk.mboot.commands import CommandTag, CmdPacket, ResponseTag, parse_cmd_response, KeyProvOperation
+from spsdk.mboot.commands import (
+    CommandTag,
+    CmdPacket,
+    ResponseTag,
+    parse_cmd_response,
+    KeyProvOperation,
+)
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.interfaces import Interface
 from spsdk.mboot.memories import ExtMemId
@@ -20,7 +26,7 @@ from spsdk.mboot.exceptions import McuBootDataAbortError
 # Helper functions
 ########################################################################################################################
 def pack_response(tag, *params):
-    return True, pack(f'<4B{len(params)}I', tag, 0, 0, len(params), *params)
+    return True, pack(f"<4B{len(params)}I", tag, 0, 0, len(params), *params)
 
 
 def set_error_code(step_index: int, fail_step: int) -> int:
@@ -42,8 +48,8 @@ def cmd_call(*args, **kwargs):
 def cmd_configure_memory(*args, **kwargs):
     assert len(args) == 2
     memory_id, address = args
-    assert address >= 0 
-    status = StatusCode.FAIL if memory_id not in ExtMemId.tags() + [0] else StatusCode.SUCCESS 
+    assert address >= 0
+    status = StatusCode.FAIL if memory_id not in ExtMemId.tags() + [0] else StatusCode.SUCCESS
     return pack_response(ResponseTag.GENERIC, status, CommandTag.CONFIGURE_MEMORY)
 
 
@@ -57,7 +63,7 @@ def cmd_flash_erase_all(*args, **_kwargs):
 
 def cmd_flash_erase_region(*args, **kwargs):
     assert len(args) == 3
-    cfg = kwargs['config']
+    cfg = kwargs["config"]
     address, length, mem_id = args
     # TODO: check arguments
     if address < cfg.flash_start_address or address >= cfg.flash_start_address + cfg.flash_size:
@@ -79,10 +85,10 @@ def cmd_execute(*args, **kwargs):
 def cmd_read_memory(*args, **kwargs):
     assert len(args) == 3
     address, length, mem_id = args
-    cfg = kwargs['config']
-    response_index = kwargs['index']
-    fail_step = kwargs['fail_step']
-    caller = kwargs['full_ref']
+    cfg = kwargs["config"]
+    response_index = kwargs["index"]
+    fail_step = kwargs["fail_step"]
+    caller = kwargs["full_ref"]
 
     if fail_step is not None:
         if response_index == 0:
@@ -97,9 +103,9 @@ def cmd_read_memory(*args, **kwargs):
         # TODO: check arguments
         return pack_response(ResponseTag.READ_MEMORY, StatusCode.SUCCESS, length)
     if response_index == 1:
-        return False, b'\x00' * cfg.max_packet_size
+        return False, b"\x00" * cfg.max_packet_size
     elif response_index > 1 and (response_index - 1) * cfg.max_packet_size < length:
-        return False, b'\x00' * cfg.max_packet_size
+        return False, b"\x00" * cfg.max_packet_size
     return pack_response(ResponseTag.GENERIC, StatusCode.SUCCESS, CommandTag.READ_MEMORY)
 
 
@@ -134,7 +140,7 @@ def cmd_load_image(*args, **kwargs):
 
 def cmd_get_property(*args, **kwargs):
     assert len(args) == 2
-    cfg = kwargs['config']
+    cfg = kwargs["config"]
     tag, mem_id = args
     values = cfg.get_property_values(tag)
     if values:
@@ -151,9 +157,9 @@ def cmd_set_property(*args, **kwargs):
 
 def cmd_receive_sb_file(*args, **kwargs):
     assert len(args) == 1
-    response_index = kwargs['index']
-    fail_step = kwargs['fail_step']
-    caller = kwargs['full_ref']
+    response_index = kwargs["index"]
+    fail_step = kwargs["fail_step"]
+    caller = kwargs["full_ref"]
     if not fail_step:
         return pack_response(ResponseTag.GENERIC, StatusCode.SUCCESS, CommandTag.RECEIVE_SB_FILE)
     # introducing failures
@@ -172,21 +178,15 @@ def cmd_reset(*args, **kwargs):
 
 def cmd_generate_keyblob(*args, index, fail_step, **kwargs):
     response = {
-        0: pack_response(
-            ResponseTag.KEY_BLOB_RESPONSE,
-            set_error_code(index, fail_step),
-            20
-        ),
+        0: pack_response(ResponseTag.KEY_BLOB_RESPONSE, set_error_code(index, fail_step), 20),
         1: pack_response(
-            ResponseTag.GENERIC,
-            set_error_code(index, fail_step),
-            CommandTag.GENERATE_KEY_BLOB
-        ) if args[2] == 0 else (False, bytes(20)),
-        2: pack_response(
-            ResponseTag.GENERIC,
-            set_error_code(index, fail_step),
-            CommandTag.GENERATE_KEY_BLOB
+            ResponseTag.GENERIC, set_error_code(index, fail_step), CommandTag.GENERATE_KEY_BLOB
         )
+        if args[2] == 0
+        else (False, bytes(20)),
+        2: pack_response(
+            ResponseTag.GENERIC, set_error_code(index, fail_step), CommandTag.GENERATE_KEY_BLOB
+        ),
     }[index]
     return response
 
@@ -196,8 +196,7 @@ def cmd_generate_keyblob(*args, index, fail_step, **kwargs):
 ######################################
 def cmd_key_prov_no_data(index, fail_step):
     return pack_response(
-        ResponseTag.KEY_PROVISIONING_RESPONSE, 
-        set_error_code(index, fail_step), 20
+        ResponseTag.KEY_PROVISIONING_RESPONSE, set_error_code(index, fail_step), 20
     )
 
 
@@ -205,10 +204,8 @@ def cmd_key_prov_write(index, fail_step):
     return {
         0: cmd_key_prov_no_data(index, fail_step),
         1: pack_response(
-            ResponseTag.GENERIC,
-            set_error_code(index, fail_step),
-            CommandTag.KEY_PROVISIONING
-        )
+            ResponseTag.GENERIC, set_error_code(index, fail_step), CommandTag.KEY_PROVISIONING
+        ),
     }[index]
 
 
@@ -217,10 +214,8 @@ def cmd_key_prov_read(index, fail_step):
         0: cmd_key_prov_no_data(index, fail_step),
         1: (False, bytes(20)),
         2: pack_response(
-            ResponseTag.GENERIC,
-            set_error_code(index, fail_step),
-            CommandTag.KEY_PROVISIONING
-        )
+            ResponseTag.GENERIC, set_error_code(index, fail_step), CommandTag.KEY_PROVISIONING
+        ),
     }[index]
 
 
@@ -267,7 +262,7 @@ class VirtualDevice(Interface):
         CommandTag.CONFIGURE_MEMORY: cmd_configure_memory,
         CommandTag.RELIABLE_UPDATE: None,
         CommandTag.GENERATE_KEY_BLOB: cmd_generate_keyblob,
-        CommandTag.KEY_PROVISIONING: cmd_key_provisioning
+        CommandTag.KEY_PROVISIONING: cmd_key_provisioning,
     }
 
     @property
@@ -277,7 +272,7 @@ class VirtualDevice(Interface):
     @property
     def need_data_split(self) -> bool:
         return self._need_data_split
-    
+
     def __init__(self, config, **kwargs):
         super().__init__(**kwargs)
         self._opened = False
@@ -297,15 +292,19 @@ class VirtualDevice(Interface):
 
     def read(self, timeout=1000):
         if self._dev_conf.valid_cmd(self._cmd_tag):
-            cmd, raw_data = self.CMD[self._cmd_tag](*self._cmd_params,
-                                                    index=self._response_index,
-                                                    config=self._dev_conf,
-                                                    fail_step=self.fail_step,
-                                                    full_ref=self)
+            cmd, raw_data = self.CMD[self._cmd_tag](
+                *self._cmd_params,
+                index=self._response_index,
+                config=self._dev_conf,
+                fail_step=self.fail_step,
+                full_ref=self,
+            )
             self._response_index += 1
         else:
-            cmd, raw_data = pack_response(ResponseTag.GENERIC, StatusCode.UNKNOWN_COMMAND, self._cmd_tag)
-        logging.debug(f"RAW-IN [{len(raw_data)}]: " + ', '.join(f"{b:02X}" for b in raw_data))
+            cmd, raw_data = pack_response(
+                ResponseTag.GENERIC, StatusCode.UNKNOWN_COMMAND, self._cmd_tag
+            )
+        logging.debug(f"RAW-IN [{len(raw_data)}]: " + ", ".join(f"{b:02X}" for b in raw_data))
         return parse_cmd_response(raw_data) if cmd else raw_data
 
     def write(self, packet):
@@ -318,8 +317,8 @@ class VirtualDevice(Interface):
             self._cmd_data = packet
             raw_data = packet
         else:
-            raise Exception('Not valid packet type !')
-        logging.debug(f"RAW-OUT[{len(raw_data)}]: " + ', '.join(f"{b:02X}" for b in raw_data))
+            raise Exception("Not valid packet type !")
+        logging.debug(f"RAW-OUT[{len(raw_data)}]: " + ", ".join(f"{b:02X}" for b in raw_data))
 
     def info(self):
         return "Virtual Device"

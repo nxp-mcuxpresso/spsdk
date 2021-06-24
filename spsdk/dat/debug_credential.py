@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,20 +12,35 @@ from typing import Any, List, Type
 
 from spsdk import crypto
 from spsdk.crypto import SignatureProvider
-from spsdk.dat.utils import ecc_public_numbers_to_bytes, ecc_key_to_bytes, rsa_key_to_bytes
+from spsdk.dat.utils import (
+    ecc_public_numbers_to_bytes,
+    ecc_key_to_bytes,
+    rsa_key_to_bytes,
+)
 from spsdk.utils.crypto.backend_internal import internal_backend
 
 
 class DebugCredential:
     """Base class for DebugCredential."""
-    # Subclasses override the following invalid class member values
-    FORMAT = 'INVALID_FORMAT'
-    FORMAT_NO_SIG = 'INVALID_FORMAT'
-    VERSION = '0.0'
 
-    def __init__(self, socc: int, uuid: bytes, rot_meta: bytes, dck_pub: bytes,
-                 cc_socu: int, cc_vu: int, cc_beacon: int, rot_pub: bytes, signature: bytes = None,
-                 signature_provider: SignatureProvider = None) -> None:
+    # Subclasses override the following invalid class member values
+    FORMAT = "INVALID_FORMAT"
+    FORMAT_NO_SIG = "INVALID_FORMAT"
+    VERSION = "0.0"
+
+    def __init__(
+        self,
+        socc: int,
+        uuid: bytes,
+        rot_meta: bytes,
+        dck_pub: bytes,
+        cc_socu: int,
+        cc_vu: int,
+        cc_beacon: int,
+        rot_pub: bytes,
+        signature: bytes = None,
+        signature_provider: SignatureProvider = None,
+    ) -> None:
         """Initialize the DebugCredential object.
 
         :param socc: The SoC Class that this credential applies to
@@ -59,9 +74,16 @@ class DebugCredential:
         assert self.signature, "Debug Credential Signature is not set, call the .sign method first"
         data = pack(
             self.FORMAT,
-            *[int(v) for v in self.VERSION.split('.')],
-            self.socc, self.uuid, self.rot_meta, self.dck_pub, self.cc_socu,
-            self.cc_vu, self.cc_beacon, self.rot_pub, self.signature
+            *[int(v) for v in self.VERSION.split(".")],
+            self.socc,
+            self.uuid,
+            self.rot_meta,
+            self.dck_pub,
+            self.cc_socu,
+            self.cc_vu,
+            self.cc_beacon,
+            self.rot_pub,
+            self.signature,
         )
         return data
 
@@ -89,9 +111,15 @@ class DebugCredential:
         """Collects data meant for signing."""
         data = pack(
             self.FORMAT_NO_SIG,
-            *[int(v) for v in self.VERSION.split('.')],
-            self.socc, self.uuid, self.rot_meta, self.dck_pub,
-            self.cc_socu, self.cc_vu, self.cc_beacon, self.rot_pub
+            *[int(v) for v in self.VERSION.split(".")],
+            self.socc,
+            self.uuid,
+            self.rot_meta,
+            self.dck_pub,
+            self.cc_socu,
+            self.cc_vu,
+            self.cc_beacon,
+            self.rot_pub,
         )
         return data
 
@@ -104,7 +132,7 @@ class DebugCredential:
 
         :return: binary representing the rot-meta data
         """
-        raise NotImplementedError('Derived class has to implement this method.')
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @staticmethod
     def _get_dck(dck_key_path: str) -> bytes:
@@ -112,7 +140,7 @@ class DebugCredential:
 
         :return: binary representing the DCK key
         """
-        raise NotImplementedError('Derived class has to implement this method.')
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @staticmethod
     def _get_rot_pub(rot_pub_id: int, rot_pub_keys: List[str]) -> bytes:
@@ -120,38 +148,44 @@ class DebugCredential:
 
         :return: binary representing the rotk public key
         """
-        raise NotImplementedError('Derived class has to implement this method.')
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
-    def _get_class(cls, version: str, socc: int) -> 'Type[DebugCredential]':
+    def _get_class(cls, version: str, socc: int) -> "Type[DebugCredential]":
         if socc == 4:
             return _n4analog_version_mapping[version]
         return _version_mapping[version]
 
     @classmethod
-    def create_from_yaml_config(cls, version: str, yaml_config: dict) -> 'DebugCredential':
+    def create_from_yaml_config(cls, version: str, yaml_config: dict) -> "DebugCredential":
         """Create a debugcredential object out of yaml configuration.
 
         :return: DebugCredential object
         """
-        socc = yaml_config['socc']
+        socc = yaml_config["socc"]
         klass = DebugCredential._get_class(version=version, socc=socc)
         dc_obj = klass(
-            socc=yaml_config['socc'], uuid=bytes.fromhex(yaml_config['uuid']),
-            rot_meta=klass._get_rot_meta(used_root_cert=yaml_config['rot_id'], rot_pub_keys=yaml_config['rot_meta']),
-            dck_pub=klass._get_dck(yaml_config['dck']),
-            cc_socu=yaml_config['cc_socu'],
-            cc_vu=yaml_config['cc_vu'], cc_beacon=yaml_config['cc_beacon'],
-            rot_pub=klass._get_rot_pub(yaml_config['rot_id'], yaml_config['rot_meta']),
+            socc=yaml_config["socc"],
+            uuid=bytes.fromhex(yaml_config["uuid"]),
+            rot_meta=klass._get_rot_meta(
+                used_root_cert=yaml_config["rot_id"],
+                rot_pub_keys=yaml_config["rot_meta"],
+            ),
+            dck_pub=klass._get_dck(yaml_config["dck"]),
+            cc_socu=yaml_config["cc_socu"],
+            cc_vu=yaml_config["cc_vu"],
+            cc_beacon=yaml_config["cc_beacon"],
+            rot_pub=klass._get_rot_pub(yaml_config["rot_id"], yaml_config["rot_meta"]),
             signature_provider=SignatureProvider.create(
                 # if the yaml_config doesn't contain 'sign_provider' assume file-type
-                yaml_config.get('sign_provider') or f'type=file;file_path={yaml_config["rotk"]}'
-            )
+                yaml_config.get("sign_provider")
+                or f'type=file;file_path={yaml_config["rotk"]}'
+            ),
         )
         return dc_obj
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'DebugCredential':
+    def parse(cls, data: bytes, offset: int = 0) -> "DebugCredential":
         """Parse the debug credential.
 
         :param data: Raw data as bytes
@@ -184,10 +218,9 @@ class DebugCredentialRSA(DebugCredential):
         for index, rot_key in enumerate(rot_pub_keys):
             rot = crypto.load_public_key(file_path=rot_key)
             assert isinstance(rot, crypto.RSAPublicKey)
-            data = rsa_key_to_bytes(
-                key=rot, exp_length=3, modulus_length=None)
+            data = rsa_key_to_bytes(key=rot, exp_length=3, modulus_length=None)
             result = internal_backend.hash(data)
-            rot_meta[index * 32:(index + 1) * 32] = result
+            rot_meta[index * 32 : (index + 1) * 32] = result
         return bytes(rot_meta)
 
     @staticmethod
@@ -229,7 +262,9 @@ class DebugCredentialECC(DebugCredential):
         assert self.signature, "Debug Credential Signature is not set in base class"
         r, s = crypto.utils_cryptography.decode_dss_signature(self.signature)
         public_numbers = crypto.EllipticCurvePublicNumbers(r, s, self.CURVE)
-        self.signature = ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=self.CORD_LENGTH)
+        self.signature = ecc_public_numbers_to_bytes(
+            public_numbers=public_numbers, length=self.CORD_LENGTH
+        )
 
     @staticmethod
     def _get_rot_meta(used_root_cert: int, rot_pub_keys: List[str]) -> bytes:
@@ -245,7 +280,7 @@ class DebugCredentialECC(DebugCredential):
             rot = crypto.load_public_key(file_path=rot_key)
             assert isinstance(rot, crypto.EllipticCurvePublicKey)
             data = ecc_key_to_bytes(key=rot, length=66)
-            rot_meta[index * 132:(index + 1) * 132] = data
+            rot_meta[index * 132 : (index + 1) * 132] = data
         return bytes(rot_meta)
 
     @staticmethod
@@ -273,46 +308,50 @@ class DebugCredentialECC(DebugCredential):
         pub_key_path = rot_pub_keys[rot_pub_id]
         pub_key = crypto.load_public_key(pub_key_path)
         assert isinstance(pub_key, crypto.EllipticCurvePublicKey)
-        curve_index = {
-            256: 1, 386: 2, 521: 3
-        }[pub_key.curve.key_size]
-        return pack('<2H', rot_pub_id, curve_index)
+        curve_index = {256: 1, 386: 2, 521: 3}[pub_key.curve.key_size]
+        return pack("<2H", rot_pub_id, curve_index)
 
 
 class DebugCredentialRSA2048(DebugCredentialRSA):
     """DebugCredential class for RSA 2048."""
+
     FORMAT_NO_SIG = "<2HL16s128s260s3L260s"
     FORMAT = FORMAT_NO_SIG + "256s"
-    VERSION = '1.0'
+    VERSION = "1.0"
 
 
 class DebugCredentialRSA4096(DebugCredentialRSA):
     """DebugCredential class for RSA 4096."""
+
     FORMAT_NO_SIG = "<2HL16s128s516s3L516s"
     FORMAT = FORMAT_NO_SIG + "512s"
-    VERSION = '1.1'
+    VERSION = "1.1"
 
 
 class DebugCredentialECC256(DebugCredentialECC):
     """DebugCredential class for ECC 256."""
-    VERSION = '2.0'
+
+    VERSION = "2.0"
     CURVE = crypto.ec.SECP256R1()
 
 
 class DebugCredentialECC384(DebugCredentialECC):
     """DebugCredential class for ECC 384."""
-    VERSION = '2.1'
+
+    VERSION = "2.1"
     CURVE = crypto.ec.SECP384R1()
 
 
 class DebugCredentialECC521(DebugCredentialECC):
     """DebugCredential class for ECC 521."""
-    VERSION = '2.2'
+
+    VERSION = "2.2"
     CURVE = crypto.ec.SECP521R1()
 
 
 class N4AnalogMixin(DebugCredentialECC):
-    """Niobe4Analog Class."""
+    """LPC55s3x Class."""
+
     HASH_LENGTH = 0
     KEY_LENGTH = 0
     CORD_LENGTH = 0
@@ -363,7 +402,7 @@ class N4AnalogMixin(DebugCredentialECC):
         msg += f"CC_SOCC : {hex(self.cc_socu)}\n"
         msg += f"CC_VU   : {hex(self.cc_vu)}\n"
         msg += f"BEACON  : {self.cc_beacon}\n"
-        if self.rot_meta[3] == b'\x80':
+        if self.rot_meta[3] == b"\x80":
             msg += f"CA FLAG IS SET \n"
         ctrk_records_num = self.rot_meta[0] >> 4
         if ctrk_records_num == 1:
@@ -375,12 +414,12 @@ class N4AnalogMixin(DebugCredentialECC):
     @property
     def FORMAT(self) -> str:  # type: ignore
         """Formatting string."""
-        return f'<2HL16s3L{len(self.rot_meta)}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s'
+        return f"<2HL16s3L{len(self.rot_meta)}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s"
 
     @property
     def FORMAT_NO_SIG(self) -> str:  # type: ignore
         """Formatting string without signature."""
-        return f'<2HL16s3L{len(self.rot_meta)}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s'
+        return f"<2HL16s3L{len(self.rot_meta)}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s"
 
     @staticmethod
     def create_ctrk_table(rot_pub_keys: List[str]) -> bytes:
@@ -393,7 +432,7 @@ class N4AnalogMixin(DebugCredentialECC):
             assert isinstance(pub_key, crypto.EllipticCurvePublicKey)
             key_length = pub_key.key_size
             data = ecc_key_to_bytes(key=pub_key, length=key_length // 8)
-            ctrk_hash = internal_backend.hash(data=data, algorithm=f'sha{key_length}')
+            ctrk_hash = internal_backend.hash(data=data, algorithm=f"sha{key_length}")
             ctrk_table += ctrk_hash
         return ctrk_table
 
@@ -401,39 +440,53 @@ class N4AnalogMixin(DebugCredentialECC):
     def calculate_flags(used_root_cert: int, rot_pub_keys: List[str]) -> bytes:
         """Calculates flags in rotmeta."""
         flags = 0
-        flags |= (1 << 31)
-        flags |= (used_root_cert << 8)
-        flags |= (len(rot_pub_keys) << 4)
-        return pack('<L', flags)
+        flags |= 1 << 31
+        flags |= used_root_cert << 8
+        flags |= len(rot_pub_keys) << 4
+        return pack("<L", flags)
 
     def export(self) -> bytes:
         """Export to binary form (serialization)."""
         data = pack(
             self.FORMAT,
-            *[int(v) for v in self.VERSION.split('.')],
-            self.socc, self.uuid, self.cc_socu, self.cc_vu,
-            self.cc_beacon, self.rot_meta, self.rot_pub,
-            self.dck_pub, self.signature)
+            *[int(v) for v in self.VERSION.split(".")],
+            self.socc,
+            self.uuid,
+            self.cc_socu,
+            self.cc_vu,
+            self.cc_beacon,
+            self.rot_meta,
+            self.rot_pub,
+            self.dck_pub,
+            self.signature,
+        )
         return data
 
     def _get_data_to_sign(self) -> bytes:
         """Collects data meant for signing."""
         data = pack(
             self.FORMAT_NO_SIG,
-            *[int(v) for v in self.VERSION.split('.')],
-            self.socc, self.uuid, self.cc_socu, self.cc_vu, self.cc_beacon,
-            self.rot_meta, self.rot_pub, self.dck_pub)
+            *[int(v) for v in self.VERSION.split(".")],
+            self.socc,
+            self.uuid,
+            self.cc_socu,
+            self.cc_vu,
+            self.cc_beacon,
+            self.rot_meta,
+            self.rot_pub,
+            self.dck_pub,
+        )
         return data
 
     def __eq__(self, other: Any) -> bool:
         self_vars = vars(self)
-        del self_vars['signature_provider']
+        del self_vars["signature_provider"]
         other_vars = vars(other)
-        del other_vars['signature_provider']
+        del other_vars["signature_provider"]
         return isinstance(other, DebugCredential) and other_vars == self_vars
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'DebugCredential':
+    def parse(cls, data: bytes, offset: int = 0) -> "DebugCredential":
         """Parse the debug credential.
 
         :param data: Raw data as bytes
@@ -442,7 +495,14 @@ class N4AnalogMixin(DebugCredentialECC):
         """
         format_head = "<2HL16s4L"
         (
-            version_major, version_minor, socc, uuid, cc_socu, cc_vu, beacon, flags
+            version_major,
+            version_minor,
+            socc,
+            uuid,
+            cc_socu,
+            cc_vu,
+            beacon,
+            flags,
         ) = unpack_from(format_head, data)
         assert flags & 0x8000_0000
         records_num = (flags & 0xF0) >> 4
@@ -451,38 +511,53 @@ class N4AnalogMixin(DebugCredentialECC):
         if records_num > 1:
             rot_meta_len += records_num * cls.HASH_LENGTH
             ctrk_format = f"<{records_num * cls.HASH_LENGTH}s"
-            ctrk_hash_table = unpack_from(ctrk_format, data, offset=offset + calcsize(format_head))[0]
+            ctrk_hash_table = unpack_from(ctrk_format, data, offset=offset + calcsize(format_head))[
+                0
+            ]
         rot_meta = pack("<L", flags) + ctrk_hash_table
         format_tail = f"<{cls.HASH_LENGTH * 2}s{cls.HASH_LENGTH * 2}s{cls.HASH_LENGTH * 2}s"
-        rot_pub, dck_pub, signature = unpack_from(format_tail, data, offset + calcsize(format_head) + len(rot_meta) - 4)
+        rot_pub, dck_pub, signature = unpack_from(
+            format_tail, data, offset + calcsize(format_head) + len(rot_meta) - 4
+        )
 
-        return cls(socc=socc, uuid=uuid, rot_meta=rot_meta, dck_pub=dck_pub,
-                   cc_socu=cc_socu, cc_vu=cc_vu, cc_beacon=beacon, rot_pub=rot_pub, signature=signature)
+        return cls(
+            socc=socc,
+            uuid=uuid,
+            rot_meta=rot_meta,
+            dck_pub=dck_pub,
+            cc_socu=cc_socu,
+            cc_vu=cc_vu,
+            cc_beacon=beacon,
+            rot_pub=rot_pub,
+            signature=signature,
+        )
 
 
 class DebugCredentialECC256N4Analog(N4AnalogMixin):
-    """DebugCredential class for Niobe4Analog for version 2.0 (p256)."""
+    """DebugCredential class for LPC55s3x for version 2.0 (p256)."""
+
     HASH_LENGTH = 32
     CORD_LENGTH = 32
     KEY_LENGTH = 256
 
 
 class DebugCredentialECC384N4Analog(N4AnalogMixin):
-    """DebugCredential class for Niobe4Analog for version 2.1 (p384)."""
+    """DebugCredential class for LPC55s3x for version 2.1 (p384)."""
+
     HASH_LENGTH = 48
     CORD_LENGTH = 48
     KEY_LENGTH = 384
 
 
 _version_mapping = {
-    '1.0': DebugCredentialRSA2048,
-    '1.1': DebugCredentialRSA4096,
-    '2.0': DebugCredentialECC256,
-    '2.1': DebugCredentialECC384,
-    '2.2': DebugCredentialECC521,
+    "1.0": DebugCredentialRSA2048,
+    "1.1": DebugCredentialRSA4096,
+    "2.0": DebugCredentialECC256,
+    "2.1": DebugCredentialECC384,
+    "2.2": DebugCredentialECC521,
 }
 
 _n4analog_version_mapping = {
-    '2.0': DebugCredentialECC256N4Analog,
-    '2.1': DebugCredentialECC384N4Analog
+    "2.0": DebugCredentialECC256N4Analog,
+    "2.1": DebugCredentialECC384N4Analog,
 }

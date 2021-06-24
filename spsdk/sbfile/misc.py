@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -48,7 +48,9 @@ class SecBootBlckSize:
         :raise ValueError: is size not aligned to block boundary
         """
         if not SecBootBlckSize.is_aligned(size):
-            raise ValueError(f'Invalid size {size}, expected number aligned to BLOCK size {SecBootBlckSize.BLOCK_SIZE}')
+            raise ValueError(
+                f"Invalid size {size}, expected number aligned to BLOCK size {SecBootBlckSize.BLOCK_SIZE}"
+            )
         return size // SecBootBlckSize.BLOCK_SIZE
 
     @staticmethod
@@ -62,14 +64,14 @@ class SecBootBlckSize:
 
 
 # the type represents input formats for BcdVersion3 value, see BcdVersion3.to_version
-BcdVersion3Format = Union['BcdVersion3', str]
+BcdVersion3Format = Union["BcdVersion3", str]
 
 
 class BcdVersion3:
     """Version in format #.#.#, where # is BCD number (1-4 digits)."""
 
     # default value
-    DEFAULT = '999.999.999'
+    DEFAULT = "999.999.999"
 
     @staticmethod
     def _check_number(num: int) -> bool:
@@ -80,10 +82,10 @@ class BcdVersion3:
         :raise ValueError: if number format is not valid
         """
         if not 0 <= num <= 0x9999:
-            raise ValueError('Invalid number range')
+            raise ValueError("Invalid number range")
         for index in range(4):
             if (num >> 4 * index) & 0xF > 0x9:
-                raise ValueError('Invalid number, contains digit > 9')
+                raise ValueError("Invalid number, contains digit > 9")
         return True
 
     @staticmethod
@@ -100,14 +102,14 @@ class BcdVersion3:
         return result
 
     @staticmethod
-    def from_str(text: str) -> 'BcdVersion3':
+    def from_str(text: str) -> "BcdVersion3":
         """Convert string to BcdVersion instance.
 
         :param text: version in format #.#.#, where # is 1-4 decimal digits
         :return: BcdVersion3 instance
         :raise: ValueError: if format is not valid
         """
-        parts = text.split('.')
+        parts = text.split(".")
         assert len(parts) == 3
         major = BcdVersion3._num_from_str(parts[0])
         minor = BcdVersion3._num_from_str(parts[1])
@@ -115,7 +117,7 @@ class BcdVersion3:
         return BcdVersion3(major, minor, service)
 
     @staticmethod
-    def to_version(input_version: BcdVersion3Format) -> 'BcdVersion3':
+    def to_version(input_version: BcdVersion3Format) -> "BcdVersion3":
         """Convert different input formats into BcdVersion3 instance.
 
         :param input_version: either directly BcdVersion3 or string
@@ -126,7 +128,7 @@ class BcdVersion3:
             return input_version
         if isinstance(input_version, str):
             return BcdVersion3.from_str(input_version)
-        raise ValueError('unsupported format')
+        raise ValueError("unsupported format")
 
     def __init__(self, major: int = 1, minor: int = 0, service: int = 0):
         """Initialize BcdVersion3.
@@ -135,23 +137,30 @@ class BcdVersion3:
         :param minor: number in BCD format, 1-4 decimal digits
         :param service: number in BCD format, 1-4 decimal digits
         """
-        assert all([BcdVersion3._check_number(major), BcdVersion3._check_number(minor),
-                    BcdVersion3._check_number(service)])
+        assert all(
+            [
+                BcdVersion3._check_number(major),
+                BcdVersion3._check_number(minor),
+                BcdVersion3._check_number(service),
+            ]
+        )
         self.major = major
         self.minor = minor
         self.service = service
 
     def __str__(self) -> str:
-        return f'{self.major:X}.{self.minor:X}.{self.service:X}'
+        return f"{self.major:X}.{self.minor:X}.{self.service:X}"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + ': ' + self.__str__()
+        return self.__class__.__name__ + ": " + self.__str__()
 
     def __eq__(self, other: Any) -> bool:
-        return (isinstance(other, BcdVersion3) and
-                (self.major == other.major) and
-                (self.minor == other.minor) and
-                (self.service == other.service))
+        return (
+            isinstance(other, BcdVersion3)
+            and (self.major == other.major)
+            and (self.minor == other.minor)
+            and (self.service == other.service)
+        )
 
     @property
     def nums(self) -> Sequence[int]:

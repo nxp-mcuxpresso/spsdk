@@ -9,16 +9,33 @@
 from datetime import datetime, timedelta
 from typing import Union, List
 
-from spsdk.apps.utils import catch_spsdk_error
-from spsdk.crypto import x509, InvalidSignature, Encoding, default_backend, \
-    hashes, RSAPrivateKey, RSAPublicKey, ExtensionOID, \
-    Certificate, CertificateSigningRequest, padding, EllipticCurvePublicKey, EllipticCurvePrivateKey
+from spsdk.crypto import (
+    x509,
+    InvalidSignature,
+    Encoding,
+    default_backend,
+    hashes,
+    RSAPrivateKey,
+    RSAPublicKey,
+    ExtensionOID,
+    Certificate,
+    CertificateSigningRequest,
+    padding,
+    EllipticCurvePublicKey,
+    EllipticCurvePrivateKey,
+)
 
 
-def generate_certificate(subject: x509.Name, issuer: x509.Name,
-                         subject_public_key: Union[EllipticCurvePublicKey, RSAPublicKey],
-                         issuer_private_key: Union[EllipticCurvePrivateKey, RSAPrivateKey], serial_number: int = None,
-                         if_ca: bool = True, duration: int = 3650, path_length: int = 2) -> Certificate:
+def generate_certificate(
+    subject: x509.Name,
+    issuer: x509.Name,
+    subject_public_key: Union[EllipticCurvePublicKey, RSAPublicKey],
+    issuer_private_key: Union[EllipticCurvePrivateKey, RSAPrivateKey],
+    serial_number: int = None,
+    if_ca: bool = True,
+    duration: int = 3650,
+    path_length: int = 2,
+) -> Certificate:
     """Generate certificate.
 
     :param subject: subject name that the CA issues the certificate to
@@ -31,18 +48,28 @@ def generate_certificate(subject: x509.Name, issuer: x509.Name,
     :param path_length: The maximum path length for certificates subordinate to this certificate.
     :return: certificate
     """
-    crt = x509.CertificateBuilder(subject_name=subject, issuer_name=issuer,
-                                  not_valid_before=datetime.utcnow(),
-                                  not_valid_after=datetime.utcnow() + timedelta(days=duration),
-                                  public_key=subject_public_key, extensions=[],
-                                  serial_number=serial_number or x509.random_serial_number())
+    crt = x509.CertificateBuilder(
+        subject_name=subject,
+        issuer_name=issuer,
+        not_valid_before=datetime.utcnow(),
+        not_valid_after=datetime.utcnow() + timedelta(days=duration),
+        public_key=subject_public_key,
+        extensions=[],
+        serial_number=serial_number or x509.random_serial_number(),
+    )
 
-    crt = crt.add_extension(x509.BasicConstraints(ca=if_ca, path_length=path_length if if_ca else None), critical=True)
+    crt = crt.add_extension(
+        x509.BasicConstraints(ca=if_ca, path_length=path_length if if_ca else None),
+        critical=True,
+    )
     return crt.sign(issuer_private_key, hashes.SHA256(), default_backend())
 
 
-def save_crypto_item(item: Union[Certificate, CertificateSigningRequest], file_path: str,
-                     encoding_type: Encoding = Encoding.PEM) -> None:
+def save_crypto_item(
+    item: Union[Certificate, CertificateSigningRequest],
+    file_path: str,
+    encoding_type: Encoding = Encoding.PEM,
+) -> None:
     """Save the certificate/CSR into file.
 
     :param item: certificate or certificate signing request
@@ -74,12 +101,17 @@ def validate_certificate(subject_certificate: Certificate, issuer_certificate: C
     :return: true/false whether certificate is valid or not
     """
     issuer_pub_key = get_public_key_from_certificate(issuer_certificate)
-    cert_to_check = x509.load_pem_x509_certificate(convert_certificate_into_bytes(subject_certificate),
-                                                   default_backend())
+    cert_to_check = x509.load_pem_x509_certificate(
+        convert_certificate_into_bytes(subject_certificate), default_backend()
+    )
 
     try:
-        issuer_pub_key.verify(cert_to_check.signature, cert_to_check.tbs_certificate_bytes,
-                              padding.PKCS1v15(), cert_to_check.signature_hash_algorithm)
+        issuer_pub_key.verify(
+            cert_to_check.signature,
+            cert_to_check.tbs_certificate_bytes,
+            padding.PKCS1v15(),
+            cert_to_check.signature_hash_algorithm,
+        )
     except InvalidSignature:
         return False
     else:
@@ -116,7 +148,9 @@ def get_public_key_from_certificate(certificate: Certificate) -> RSAPublicKey:
     return public_key
 
 
-def convert_certificate_into_bytes(certificate: Certificate, encoding: Encoding = Encoding.PEM) -> bytes:
+def convert_certificate_into_bytes(
+    certificate: Certificate, encoding: Encoding = Encoding.PEM
+) -> bytes:
     """Convert certificates into bytes.
 
     :param certificate: certificate item
@@ -134,7 +168,9 @@ def generate_name_struct(common_name: str, country: str) -> x509.Name:
     :param country: string representing country
     :return: ordered list of attributes of certificate
     """
-    return x509.Name([
-        x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, common_name),
-        x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, country)
-    ])
+    return x509.Name(
+        [
+            x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, common_name),
+            x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, country),
+        ]
+    )

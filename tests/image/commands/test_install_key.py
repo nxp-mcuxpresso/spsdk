@@ -2,12 +2,11 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import CmdNop, CmdInstallKey, \
-    EnumInsKey, EnumCertFormat, EnumAlgorithm
+from spsdk.image import CmdNop, CmdInstallKey, EnumInsKey, EnumCertFormat, EnumAlgorithm
 
 
 def test_install_key_cmd_base():
@@ -29,7 +28,9 @@ def test_install_key_cmd_repr():
     representation = repr(cmd)
     req_strings = ["CmdInstallKey"]
     for req_string in req_strings:
-        assert req_string in representation, f'string {req_string} is not in the output: {representation}'
+        assert (
+            req_string in representation
+        ), f"string {req_string} is not in the output: {representation}"
 
 
 def test_install_key_cmd_equality():
@@ -53,7 +54,15 @@ def test_install_key_cmd_export_parse():
 def test_install_key_cmd_info():
     cmd = CmdInstallKey()
     output = cmd.info()
-    req_strings = ["Command \"Install Key", "Flag", "CertFormat", "Algorithm", "SrcKeyIdx", "TgtKeyIdx", "Location"]
+    req_strings = [
+        'Command "Install Key',
+        "Flag",
+        "CertFormat",
+        "Algorithm",
+        "SrcKeyIdx",
+        "TgtKeyIdx",
+        "Location",
+    ]
 
     for req_string in req_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"

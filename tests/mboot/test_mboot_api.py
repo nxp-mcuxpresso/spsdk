@@ -6,10 +6,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from spsdk.mboot.mcuboot import PropertyTag, StatusCode, CmdPacket, CommandTag, ExtMemId
-from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError
-from spsdk.mboot.mcuboot import KeyProvUserKeyType, McuBoot
+
 from spsdk.mboot.error_codes import StatusCode
+from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, McuBootError
+from spsdk.mboot.mcuboot import (
+    CmdPacket,
+    CommandTag,
+    ExtMemId,
+    KeyProvUserKeyType,
+    PropertyTag,
+    StatusCode,
+)
 
 
 def test_class(mcuboot, target, config):
@@ -20,7 +27,7 @@ def test_class(mcuboot, target, config):
     with pytest.raises(McuBootConnectionError):
         mcuboot._read_data(CommandTag.READ_MEMORY, 1000)
     with pytest.raises(McuBootConnectionError):
-        mcuboot._send_data(CommandTag.WRITE_MEMORY, [b'00000000'])
+        mcuboot._send_data(CommandTag.WRITE_MEMORY, [b"00000000"])
     assert not mcuboot.is_opened
     mcuboot.open()
 
@@ -63,7 +70,7 @@ def test_cmd_read_memory_timeout(mcuboot, target):
 
 
 def test_cmd_write_memory(mcuboot, target):
-    data = b'\x00' * 100
+    data = b"\x00" * 100
     assert mcuboot.write_memory(0, data)
     assert mcuboot.status_code == StatusCode.SUCCESS
 
@@ -74,9 +81,9 @@ def test_cmd_fill_memory(mcuboot, target):
 
 
 def test_cmd_flash_security_disable(mcuboot, target):
-    assert mcuboot.flash_security_disable(b'12345678')
+    assert mcuboot.flash_security_disable(b"12345678")
     with pytest.raises(ValueError):
-        mcuboot.flash_security_disable(b'123456789')
+        mcuboot.flash_security_disable(b"123456789")
 
 
 def test_cmd_get_property(mcuboot, target, config):
@@ -99,7 +106,7 @@ def test_cmd_receive_sb_file(mcuboot, target):
     mcuboot._device.fail_step = StatusCode.ROMLDR_SIGNATURE
     assert not mcuboot.receive_sb_file(bytes(1000))
     assert mcuboot.status_code == StatusCode.ROMLDR_SIGNATURE
-    
+
 
 def test_cmd_execute(mcuboot, target):
     assert not mcuboot.execute(0, 0, 0)
@@ -169,7 +176,7 @@ def test_cmd_flash_read_once(mcuboot, target):
 
 
 def test_cmd_flash_program_once(mcuboot, target):
-    assert not mcuboot.flash_program_once(0, b'\x00\x00\x00\x00')
+    assert not mcuboot.flash_program_once(0, b"\x00\x00\x00\x00")
     assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND
 
 
@@ -274,3 +281,8 @@ def test_cmd_configure_memory(mcuboot, target):
 def test_load_image(mcuboot, target):
     assert mcuboot.load_image(bytes(1000))
     mcuboot.status_code == StatusCode.SUCCESS
+
+
+def test_cmd_flash_read_resource(mcuboot):
+    with pytest.raises(McuBootError):
+        mcuboot.flash_read_resource(address=1, length=3)

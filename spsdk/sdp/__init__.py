@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,15 +18,15 @@ from .commands import ResponseValue
 
 __all__ = [
     # Methods
-    'scan_usb',
+    "scan_usb",
     # Classes
-    'SDP',
-    'SDPS',
+    "SDP",
+    "SDPS",
     # Enums
-    'ResponseValue',
-    'StatusCode',
+    "ResponseValue",
+    "StatusCode",
     # Errors
-    'SdpError',
-    'SdpCommandError',
-    'SdpConnectionError',
+    "SdpError",
+    "SdpCommandError",
+    "SdpConnectionError",
 ]

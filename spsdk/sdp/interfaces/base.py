@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +10,10 @@
 from abc import ABC
 from typing import Any
 
+
 class Interface(ABC):
     """Base class for all Interface classes."""
+
     expect_status = True
 
     @property

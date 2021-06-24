@@ -8,7 +8,9 @@
 """SerialProxy serves as patch replacement for serial.Serial class."""
 
 import logging
-from typing import Dict, Type   # pylint: disable=unused-import  # Type is necessary for Mypy
+
+# pylint: disable=unused-import  # Type is necessary for Mypy
+from typing import Dict, Type
 
 logger = logging.getLogger("SerialProxy")
 
@@ -21,15 +23,18 @@ class SerialProxy:
     """
 
     responses: Dict[bytes, bytes] = dict()
+    ignore_ack: bool = False
 
     @classmethod
-    def init_proxy(cls, data: Dict[bytes, bytes]) -> 'Type[SerialProxy]':
+    def init_proxy(cls, data: Dict[bytes, bytes], ignore_ack: bool = False) -> "Type[SerialProxy]":
         """Initialized response dictionary of write and read bytes.
 
         :param data: Dictionary of write and read bytes
+        :param ignore_ack: Don't modify internal buffer upon receiving a ACK packet
         :return: SerialProxy class with configured data
         """
         cls.responses = data
+        cls.ignore_ack = ignore_ack
         return cls
 
     def __init__(self, port: str, timeout: int, baudrate: int):
@@ -61,6 +66,9 @@ class SerialProxy:
         :param data: Bytes to write, key in responses
         """
         logger.debug(f"I got: {data!r}")
+        if self.ignore_ack and data == b"\x5a\xa1":
+            logger.debug("ACK received and ignored")
+            return
         self.buffer = self.responses[data]
         logger.debug(f"setting buffer to: '{self.buffer!r}'")
 
@@ -99,7 +107,7 @@ class SimpleReadSerialProxy(SerialProxy):
     FULL_BUFFER = bytes()
 
     @classmethod
-    def init_data_proxy(cls, data: bytes) -> 'Type[SimpleReadSerialProxy]':
+    def init_data_proxy(cls, data: bytes) -> "Type[SimpleReadSerialProxy]":
         """Initialized response dictionary of write and read bytes.
 
         :param data: Dictionary of write and read bytes

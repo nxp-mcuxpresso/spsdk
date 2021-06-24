@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,12 +17,14 @@ from ..exceptions import SPSDKError
 ########################################################################################################################
 class SdpError(SPSDKError):
     """SDP Module: Base Exception."""
-    fmt = 'SDP: {description}'
+
+    fmt = "SDP: {description}"
 
 
 class SdpCommandError(SdpError):
     """SDP Module: Command Exception."""
-    fmt = 'SDP: {cmd_name} interrupted -> {description}'
+
+    fmt = "SDP: {cmd_name} interrupted -> {description}"
 
     def __init__(self, cmd: str, value: int):
         """Initialize the Exception object.
@@ -41,4 +43,5 @@ class SdpCommandError(SdpError):
 
 class SdpConnectionError(SdpError):
     """SDP Module: Connection Exception."""
-    fmt = 'SDP: Connection issue -> {description}'
+
+    fmt = "SDP: Connection issue -> {description}"

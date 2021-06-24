@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,6 +14,7 @@ from spsdk.image.segments import SegFCB, FlexSPIConfBlockFCB
 
 def test_base_exceptions():
     from spsdk.image.segments import BaseSegment
+
     base = BaseSegment()
     with pytest.raises(NotImplementedError):
         base.info()
@@ -25,5 +26,6 @@ def test_base_exceptions():
 
 def test_base():
     from spsdk.image.segments import BaseSegment
+
     base = BaseSegment()
     assert base.size == 0

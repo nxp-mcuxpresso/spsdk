@@ -2,104 +2,122 @@
     "devices": {
         "lpc55s6x": {
             "revisions": {
-                "a1": "niobe4_a1.xml"
+                "0a": "lpc55s6x_0a.xml",
+                "1b": "lpc55s6x_1b.xml"
             },
-            "latest": "a1",
+            "latest": "1b",
             "address": "0x9_DE00"
         },
-        "lpc551x":
-        {
+        "lpc551x": {
             "revisions": {
-                "a1": "niobe4mini_a1.xml"
+                "a": "lpc551x_a.xml"
             },
-            "latest": "a1",
+            "latest": "a",
             "address": "0x3_DE00"
         },
-        "lpc55s1x":
-        {
+        "lpc55s1x": {
             "revisions": {
-                "a1": "niobe4mini_a1.xml"
+                "a": "lpc55s1x_a.xml"
             },
-            "latest": "a1",
+            "latest": "a",
             "address": "0x3_DE00"
         },
-        "lpc550x":
-         {
+        "lpc550x": {
             "revisions": {
-                "a1": "niobe4nano_a1.xml"
+                "a": "lpc550x_a.xml"
             },
-            "latest": "a1",
+            "latest": "a",
             "address": "0x3_DE00"
         },
-        "lpc55s0x":
-        {
+        "lpc55s0x": {
             "revisions": {
-                "a1": "niobe4nano_a1.xml"
+                "a": "lpc55s0x_a.xml"
             },
-            "latest": "a1",
+            "latest": "a",
             "address": "0x3_DE00"
         },
-        "lpc552x":
-        {
+        "lpc552x": {
             "revisions": {
-                "a1": "niobe4_a1.xml"
+                "0a": "lpc552x_1b.xml",
+                "1b": "lpc552x_1b.xml"
             },
-            "latest": "a1",
+            "latest": "1b",
             "address": "0x9_DE00"
         },
-        "lpc55s2x":
-        {
+        "lpc55s2x": {
             "revisions": {
-                "a1": "niobe4_a1.xml"
+                "0a": "lpc55s2x_1b.xml",
+                "1b": "lpc55s2x_1b.xml"
             },
-            "latest": "a1",
+            "latest": "1b",
             "address": "0x9_DE00"
         },
-        "lpc55s3x":
-        {
+        "lpc55s3x": {
             "revisions": {
-                "a1": "niobe4analog_a1.xml"
+                "0a": "lpc55s3x_0a.xml"
             },
-            "latest": "a1",
-            "address": "0x3_DC00",
-            "seal_start":"CFPA_CRC32",
-            "seal_count": 1,
-            "computed_fields": {
-                "VENDOR_USAGE":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
-                "DCFG_CC_SOCU_NS_PIN":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
-                "DCFG_CC_SOCU_NS_DFLT":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"}
-            }
-        },
-        "lpc553x":
-        {
-            "revisions": {
-                "a1": "niobe4analog_a1.xml"
-            },
-            "latest": "a1",
+            "latest": "0a",
             "address": "0x3_DC00",
             "seal_start": "CFPA_CRC32",
-            "seal_count": 1,
-            "computed_fields": {
-                "VENDOR_USAGE":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
-                "DCFG_CC_SOCU_NS_PIN":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
-                "DCFG_CC_SOCU_NS_DFLT":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"}
-            }
+            "seal_count": 1
+        },
+        "lpc553x": {
+            "revisions": {
+                "0a": "lpc553x_0a.xml"
+            },
+            "latest": "0a",
+            "address": "0x3_DC00",
+            "seal_start": "CFPA_CRC32",
+            "seal_count": 1
         }
     },
     "computed_registers": [
         "SHA256_DIGEST"
     ],
     "computed_fields": {
-        "VENDOR_USAGE":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
-        "DCFG_CC_SOCU_PIN":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"},
-        "DCFG_CC_SOCU_DFLT":{"INVERSE_VALUE": "pfr_reg_inverse_high_half"}
+        "VENDOR_USAGE": {
+            "INVERSE_VALUE": "pfr_reg_inverse_high_half"
+        },
+        "DCFG_CC_SOCU_PIN": {
+            "INVERSE_VALUE": "pfr_reg_inverse_high_half"
+        },
+        "DCFG_CC_SOCU_DFLT": {
+            "INVERSE_VALUE": "pfr_reg_inverse_high_half"
+        }
     },
     "ignored_registers": [
-        "PRINCE_REGION"
-    ],
-    "ignored_fields": [
-        "FIELD"
+        "PRINCE_REGION0_IV_CODE",
+        "PRINCE_REGION1_IV_CODE",
+        "PRINCE_REGION2_IV_CODE"
     ],
     "seal_start": "SHA256_DIGEST0",
-    "seal_count": 8
+    "seal_count": 8,
+    "backward_compatibility": {
+        "DCFG_CC_SOCU_PIN": {
+            "bitfields": {
+                "MCM33_DBGEN": [
+                    "CPU1_DBGEN"
+                ],
+                "MCM33_NIDEN": [
+                    "CPU1_NIDEN"
+                ],
+                "FA_ME_CMD_EN": [
+                    "PMCMD_EN"
+                ]
+            }
+        },
+        "DCFG_CC_SOCU_DFLT": {
+            "bitfields": {
+                "MCM33_DBGEN": [
+                    "CPU1_DBGEN"
+                ],
+                "MCM33_NIDEN": [
+                    "CPU1_NIDEN"
+                ],
+                "FA_ME_CMD_EN": [
+                    "PMCMD_EN"
+                ]
+            }
+        }
+    }
 }

@@ -12,6 +12,7 @@ from spsdk.sbfile.sb31.commands import BaseCmd, MainCmd, CmdErase, CmdLoadKeyBlo
 from spsdk.sbfile.sb31.functions import add_trailing_zeros, add_leading_zeros
 from spsdk.sbfile.sb31.functions import _get_key_derivation_data, KeyDerivator
 
+
 def test_invalid_header_parse():
     """Test invalid header parse function."""
     valid_tag = BaseCmd.TAG  # TAG = 0x55aaaa55
@@ -54,6 +55,7 @@ def test_value_range():
     assert 0x00000000 <= cmd.address <= 0xFFFFFFFF
     assert 0x00000000 <= cmd.length <= 0xFFFFFFFF
 
+
 #
 # def test_padding():
 #     cmd = CmdLoadKeyBlob(
@@ -63,34 +65,35 @@ def test_value_range():
 #
 #     assert cmd.data == bytes(16)
 
+
 @pytest.mark.parametrize(
+    ["derivation_constant", "kdk_access_rights", "mode", "key_length", "iteration", "result"],
     [
-        'derivation_constant', 'kdk_access_rights', 'mode',
-        'key_length', 'iteration', 'result'
+        (15, 3, 2, 256, 1, "0F00000000000000000000000000000000000000c01000210000010000000001"),
+        (15, 3, 2, 256, 2, "0F00000000000000000000000000000000000000c01000210000010000000002"),
+        (
+            0x27C0E97C,
+            3,
+            1,
+            256,
+            1,
+            "7ce9c02700000000000000000000000000000000c00100210000010000000001",
+        ),
     ],
-    [
-        (15, 3, 2, 256, 1, '0F00000000000000000000000000000000000000c01000210000010000000001'),
-        (15, 3, 2, 256, 2, '0F00000000000000000000000000000000000000c01000210000010000000002'),
-        (0x27C0E97C, 3, 1, 256, 1, '7ce9c02700000000000000000000000000000000c00100210000010000000001'),
-    ]
 )
 def test_get_key_derivation_data(
-        derivation_constant, kdk_access_rights, mode,
-        key_length, iteration, result
+    derivation_constant, kdk_access_rights, mode, key_length, iteration, result
 ):
     derivation_data = _get_key_derivation_data(
-        derivation_constant, kdk_access_rights,
-        mode, key_length, iteration)
+        derivation_constant, kdk_access_rights, mode, key_length, iteration
+    )
     assert derivation_data == bytes.fromhex(result)
 
 
 def test_key_derivator():
     pck = bytes.fromhex("24e517d4ac417737235b6efc9afced8224e517d4ac417737235b6efc9afced82")
-    derivator = KeyDerivator(
-        pck=pck, timestamp=0x27C0E97C, kdk_access_rights=3, key_length=128
-    )
+    derivator = KeyDerivator(pck=pck, timestamp=0x27C0E97C, kdk_access_rights=3, key_length=128)
     assert derivator.kdk == bytes.fromhex("751d0802bc9eb9adb42b68d40880aa6e")
     assert derivator.get_block_key(10) == bytearray.fromhex("40902f79dd0ec371307f7069590ad07a")
     assert derivator.get_block_key(13) == bytearray.fromhex("69362b5634b99b689a7c43df76f15b63")
     assert derivator.get_block_key(6) == bytearray.fromhex("4c28803b5de193c21f31e6fa10c76b03")
-

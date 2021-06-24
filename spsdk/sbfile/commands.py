@@ -8,7 +8,7 @@
 """Commands used by SBFile module."""
 import math
 from abc import abstractmethod
-from struct import pack, unpack_from, calcsize
+from struct import calcsize, pack, unpack_from
 from typing import Any, Mapping, Optional, Type
 
 from crcmod.predefined import mkPredefinedCrcFun
@@ -18,6 +18,7 @@ from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.common import swap16
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo
+
 from .misc import SecBootBlckSize
 
 
@@ -26,6 +27,7 @@ from .misc import SecBootBlckSize
 ########################################################################################################################
 class EnumCmdTag(Enum):
     """Command tags."""
+
     NOP = 0x0
     TAG = 0x1
     LOAD = 0x2
@@ -36,13 +38,14 @@ class EnumCmdTag(Enum):
     RESET = 0x8
     MEM_ENABLE = 0x9
     PROG = 0xA
-    FW_VERSION_CHECK = (0xB, 'Check FW version fuse value')
-    WR_KEYSTORE_TO_NV = (0xC, 'Restore key-store restore to non-volatile memory')
-    WR_KEYSTORE_FROM_NV = (0xD, 'Backup key-store from non-volatile memory')
+    FW_VERSION_CHECK = (0xB, "Check FW version fuse value")
+    WR_KEYSTORE_TO_NV = (0xC, "Restore key-store restore to non-volatile memory")
+    WR_KEYSTORE_FROM_NV = (0xD, "Backup key-store from non-volatile memory")
 
 
 class EnumSectionFlag(Enum):
     """Section flags."""
+
     BOOTABLE = 0x0001
     CLEARTEXT = 0x0002
     LAST_SECT = 0x8000
@@ -53,14 +56,15 @@ class EnumSectionFlag(Enum):
 ########################################################################################################################
 class CmdHeader:
     """SBFile command header."""
-    FORMAT = '<2BH3L'
+
+    FORMAT = "<2BH3L"
     SIZE = calcsize(FORMAT)
 
     @property
     def crc(self) -> int:
         """Calculate CRC for the header data."""
         raw_data = self._raw_data(crc=0)
-        checksum = 0x5a
+        checksum = 0x5A
         for i in range(1, self.SIZE):
             checksum = (checksum + raw_data[i]) & 0xFF
         return checksum
@@ -79,8 +83,10 @@ class CmdHeader:
 
     def __str__(self) -> str:
         tag = EnumCmdTag.get(self.tag, f"0x{self.tag:02X}")
-        return f"tag={tag}, flags=0x{self.flags:04X}, " \
-               f"address=0x{self.address:08X}, count=0x{self.count:08X}, data=0x{self.data:08X}"
+        return (
+            f"tag={tag}, flags=0x{self.flags:04X}, "
+            f"address=0x{self.address:08X}, count=0x{self.count:08X}, data=0x{self.data:08X}"
+        )
 
     def _raw_data(self, crc: int) -> bytes:
         """Return raw data of the header with specified CRC.
@@ -95,7 +101,7 @@ class CmdHeader:
         return self._raw_data(self.crc)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdHeader':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdHeader":
         """Parse command header from bytes.
 
         :param data: Input data as bytes
@@ -107,9 +113,11 @@ class CmdHeader:
         if calcsize(cls.FORMAT) > len(data) - offset:
             raise Exception()
         obj = cls(EnumCmdTag.NOP)
-        (crc, obj.tag, obj.flags, obj.address, obj.count, obj.data) = unpack_from(cls.FORMAT, data, offset)
+        (crc, obj.tag, obj.flags, obj.address, obj.count, obj.data) = unpack_from(
+            cls.FORMAT, data, offset
+        )
         if crc != obj.crc:
-            raise ValueError('CRC does not match')
+            raise ValueError("CRC does not match")
         return obj
 
 
@@ -135,22 +143,22 @@ class CmdBaseClass(BaseClass):
         return CmdHeader.SIZE  # this is default implementation
 
     def __str__(self) -> str:
-        return 'Command: ' + str(self._header)  # default implementation: use command name
+        return "Command: " + str(self._header)  # default implementation: use command name
 
     def info(self) -> str:
         """Return text info about the instance."""
-        return self.__str__() + '\n'  # default implementation is same as __str__
+        return self.__str__() + "\n"  # default implementation is same as __str__
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Return object serialized into bytes."""
-        dbg_info.append_section('Command:' + EnumCmdTag.name(self.header.tag))
+        dbg_info.append_section("Command:" + EnumCmdTag.name(self.header.tag))
         cmd_data = self._header.export()  # default implementation
-        dbg_info.append_binary_data('cmd-header', cmd_data)
+        dbg_info.append_binary_data("cmd-header", cmd_data)
         return cmd_data
 
     @classmethod
     @abstractmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdBaseClass':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdBaseClass":
         """Deserialize object from binary."""
 
 
@@ -162,7 +170,7 @@ class CmdNop(CmdBaseClass):
         super().__init__(EnumCmdTag.NOP)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdNop':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdNop":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -185,7 +193,7 @@ class CmdTag(CmdBaseClass):
         super().__init__(EnumCmdTag.TAG)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdTag':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdTag":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -238,7 +246,7 @@ class CmdLoad(CmdBaseClass):
         """Export command as binary."""
         self._update_data()
         result = super().export(dbg_info)
-        dbg_info.append_binary_section('load-data', self.data)
+        dbg_info.append_binary_section("load-data", self.data)
         return result + self.data
 
     def _update_data(self) -> None:
@@ -247,11 +255,11 @@ class CmdLoad(CmdBaseClass):
         self.data = SecBootBlckSize.align_block_fill_random(self.data)
         # update header
         self._header.count = len(self.data)
-        crc32_function = mkPredefinedCrcFun('crc-32-mpeg')
+        crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         self._header.data = crc32_function(self.data, 0xFFFFFFFF)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdLoad':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdLoad":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -263,10 +271,10 @@ class CmdLoad(CmdBaseClass):
         assert header.tag == EnumCmdTag.LOAD
         offset += CmdHeader.SIZE
         header_count = SecBootBlckSize.align(header.count)
-        cmd_data = data[offset: offset + header_count]
-        crc32_function = mkPredefinedCrcFun('crc-32-mpeg')
+        cmd_data = data[offset : offset + header_count]
+        crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         if header.data != crc32_function(cmd_data, 0xFFFFFFFF):
-            raise ValueError('Invalid CRC in the command header')
+            raise ValueError("Invalid CRC in the command header")
         obj = CmdLoad(header.address, cmd_data)
         obj.header.data = header.data
         obj.header.flags = header.flags
@@ -276,6 +284,7 @@ class CmdLoad(CmdBaseClass):
 
 class CmdFill(CmdBaseClass):
     """Command Fill class."""
+
     PADDING_VALUE = 0x00
 
     @property
@@ -309,10 +318,10 @@ class CmdFill(CmdBaseClass):
         super().__init__(EnumCmdTag.FILL)
         length = length or 4
         if length % 4:
-            raise ValueError('Length of memory range to fill must be a multiple of 4')
-        pattern_bytes = pattern.to_bytes(math.ceil(pattern.bit_length() / 8), 'big')
+            raise ValueError("Length of memory range to fill must be a multiple of 4")
+        pattern_bytes = pattern.to_bytes(math.ceil(pattern.bit_length() / 8), "big")
         if len(pattern_bytes) not in [1, 2, 4]:
-            raise ValueError('Pattern must be 1, 2 or 4 bytes long')
+            raise ValueError("Pattern must be 1, 2 or 4 bytes long")
         replicate = 4 // len(pattern_bytes)
         final_pattern = replicate * pattern_bytes
         self.address = address
@@ -327,7 +336,9 @@ class CmdFill(CmdBaseClass):
         return self._pattern
 
     def __str__(self) -> str:
-        return f"FILL: Address=0x{self.address:08X}, Pattern=" + " ".join(f'{byte:02X}' for byte in self._pattern)
+        return f"FILL: Address=0x{self.address:08X}, Pattern=" + " ".join(
+            f"{byte:02X}" for byte in self._pattern
+        )
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Return command in binary form (serialization)."""
@@ -338,7 +349,7 @@ class CmdFill(CmdBaseClass):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdFill':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdFill":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -354,6 +365,7 @@ class CmdFill(CmdBaseClass):
 
 class CmdJump(CmdBaseClass):
     """Command Jump class."""
+
     @property
     def address(self) -> int:
         """Return address of the command Jump."""
@@ -408,7 +420,7 @@ class CmdJump(CmdBaseClass):
         return nfo
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdJump':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdJump":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -458,7 +470,7 @@ class CmdCall(CmdBaseClass):
         return f"CALL: Address=0x{self.address:08X}, Argument=0x{self.argument:08X}"
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdCall':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdCall":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -472,6 +484,7 @@ class CmdCall(CmdBaseClass):
 
 class CmdErase(CmdBaseClass):
     """Command Erase class."""
+
     @property
     def address(self) -> int:
         """Return command's address."""
@@ -511,10 +524,12 @@ class CmdErase(CmdBaseClass):
         self.flags = flags
 
     def __str__(self) -> str:
-        return f"ERASE: Address=0x{self.address:08X}, Length={self.length}, Flags=0x{self.flags:08X}"
+        return (
+            f"ERASE: Address=0x{self.address:08X}, Length={self.length}, Flags=0x{self.flags:08X}"
+        )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdErase':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdErase":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -534,7 +549,7 @@ class CmdReset(CmdBaseClass):
         super().__init__(EnumCmdTag.RESET)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdReset':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdReset":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -548,6 +563,7 @@ class CmdReset(CmdBaseClass):
 
 class CmdMemEnable(CmdBaseClass):
     """Command to configure certain memory."""
+
     @property
     def address(self) -> int:
         """Return command's address."""
@@ -597,7 +613,7 @@ class CmdMemEnable(CmdBaseClass):
         return f"MEM-ENABLE: Address=0x{self.address:08X}, Size={self.size}, MemType=0x{self.mem_type:08X}"
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdMemEnable':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdMemEnable":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -617,7 +633,7 @@ class CmdProg(CmdBaseClass):
         super().__init__(EnumCmdTag.PROG)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdProg':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdProg":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -631,6 +647,7 @@ class CmdProg(CmdBaseClass):
 
 class VersionCheckType(Enum):
     """Select type of the version check: either secure or non-secure firmware to be checked."""
+
     SECURE_VERSION = 0
     NON_SECURE_VERSION = 1
 
@@ -664,10 +681,13 @@ class CmdVersionCheck(CmdBaseClass):
         return self.header.count
 
     def __str__(self) -> str:
-        return super().__str__() + f' type={VersionCheckType.name(self.type)}, version={str(self.version)}'
+        return (
+            super().__str__()
+            + f" type={VersionCheckType.name(self.type)}, version={str(self.version)}"
+        )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdVersionCheck':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdVersionCheck":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -685,7 +705,7 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
     """Shared, abstract implementation for key-store backup and restore command."""
 
     # bit mask for controller ID inside flags
-    ROM_MEM_DEVICE_ID_MASK = 0xff00
+    ROM_MEM_DEVICE_ID_MASK = 0xFF00
     # shift for controller ID inside flags
     ROM_MEM_DEVICE_ID_SHIFT = 8
 
@@ -693,9 +713,9 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
     @abstractmethod
     def cmd_id(cls) -> EnumCmdTag:
         """Return command ID."""
-        raise NotImplementedError('abstract method')
+        raise NotImplementedError("abstract method")
 
-    def __init__(self, address: int, controller_id: int):
+    def __init__(self, address: int, controller_id: ExtMemId):
         """Initialize CmdKeyStoreBackupRestore.
 
         :param address: where to backup key-store or source for restoring key-store
@@ -705,9 +725,12 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
         assert 0 <= address <= 0xFFFFFFFF
         self.header.address = address
         assert 0 <= controller_id <= 0xFF
-        self.header.flags = ((self.header.flags & ~self.ROM_MEM_DEVICE_ID_MASK) |
-                             ((controller_id << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK))
-        self.header.count = 4  # this is useless, but it is kept for backward compatibility with elftosb
+        self.header.flags = (self.header.flags & ~self.ROM_MEM_DEVICE_ID_MASK) | (
+            (controller_id << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK
+        )
+        self.header.count = (
+            4  # this is useless, but it is kept for backward compatibility with elftosb
+        )
 
     @property
     def address(self) -> int:
@@ -720,7 +743,7 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
         return (self.header.flags & self.ROM_MEM_DEVICE_ID_MASK) >> self.ROM_MEM_DEVICE_ID_SHIFT
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdKeyStoreBackupRestore':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdKeyStoreBackupRestore":
         """Parse command from bytes.
 
         :param data: Input data as bytes
@@ -731,7 +754,7 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
         assert header.tag == cls.cmd_id()
         address = header.address
         controller_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
-        return cls(address, controller_id)
+        return cls(address, controller_id)  # type: ignore
 
 
 class CmdKeyStoreBackup(CmdKeyStoreBackupRestore):
@@ -782,5 +805,5 @@ def parse_command(data: bytes, offset: int = 0) -> CmdBaseClass:
     """
     header_tag = data[offset + 1]
     if header_tag not in _CMD_CLASS:
-        raise ValueError(f'Unsupported command: {str(header_tag)}')
+        raise ValueError(f"Unsupported command: {str(header_tag)}")
     return _CMD_CLASS[header_tag].parse(data, offset)

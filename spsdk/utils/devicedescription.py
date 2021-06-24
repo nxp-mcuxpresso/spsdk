@@ -27,6 +27,7 @@ class DeviceDescription(ABC):
     use it, create your own class inheriting from this class and redefining
     the methods listed in this class!
     """
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({vars(self)})"
 
@@ -34,9 +35,10 @@ class DeviceDescription(ABC):
         """Should return the string from info function."""
         return self.info()
 
-    @abstractmethod # pragma: no cover
+    @abstractmethod  # pragma: no cover
     def info(self) -> str:
         """Shall return a string describing the device, e.g. Name: <name>; ID: <id>."""
+
 
 class UartDeviceDescription(DeviceDescription):
     """Simple container holding information about UART device.
@@ -45,6 +47,7 @@ class UartDeviceDescription(DeviceDescription):
     this container will be the same all the time compared to specific UART API
     implementations.
     """
+
     def __init__(self, name: str = None, dev_type: str = None) -> None:
         """Construtor.
 
@@ -60,6 +63,7 @@ class UartDeviceDescription(DeviceDescription):
         """Returns a formatted device description string."""
         return "Port: {}\nType: {}".format(self.name, self.dev_type)
 
+
 class USBDeviceDescription(DeviceDescription):
     """Simple container holding information about USB device.
 
@@ -67,12 +71,16 @@ class USBDeviceDescription(DeviceDescription):
     this container will be the same all the time compared to specific USB API
     implementations.
     """
+
     def __init__(
-            self,
-            vid: int, pid: int, path: str,
-            product_string: str,
-            manufacturer_string: str,
-            name: str) -> None:
+        self,
+        vid: int,
+        pid: int,
+        path: str,
+        product_string: str,
+        manufacturer_string: str,
+        name: str,
+    ) -> None:
         """Constructor.
 
         :vid: Vendor ID
@@ -94,16 +102,18 @@ class USBDeviceDescription(DeviceDescription):
 
     def info(self) -> str:
         """Returns a formatted device description string."""
-        return "{} - {}\n".format(self.product_string, self.manufacturer_string) + \
-            "Vendor ID: 0x{:04x}\n".format(self.vid) + \
-            "Product ID: 0x{:04x}\n".format(self.pid) + \
-            "Path: {}\n".format(self.path) + \
-            "Name: {}".format(self.name)
+        return (
+            "{} - {}\n".format(self.product_string, self.manufacturer_string)
+            + "Vendor ID: 0x{:04x}\n".format(self.vid)
+            + "Product ID: 0x{:04x}\n".format(self.pid)
+            + "Path: {}\n".format(self.path)
+            + "Name: {}".format(self.name)
+        )
+
 
 def get_usb_device_name(
-        vid: int,
-        pid: int,
-        device_names: Dict[str, Tuple[int, int]] = None) -> List[str]:
+    vid: int, pid: int, device_names: Dict[str, Tuple[int, int]] = None
+) -> List[str]:
     """Returns 'name' device identifier based on VID/PID, from dicts.
 
     Searches provided dictionary for device name based on VID/PID. If the dict
@@ -152,8 +162,8 @@ def convert_usb_path(hid_api_usb_path: bytes) -> str:
     """
     if platform.system() == "Windows":
         device_manager_path = hid_api_usb_path.decode("utf-8").upper()
-        device_manager_path = device_manager_path.replace('#', "\\")
-        result = re.search(r'\\\\\?\\(.+?)\\{', device_manager_path)
+        device_manager_path = device_manager_path.replace("#", "\\")
+        result = re.search(r"\\\\\?\\(.+?)\\{", device_manager_path)
         if result:
             device_manager_path = result.group(1)
 
@@ -163,14 +173,16 @@ def convert_usb_path(hid_api_usb_path: bytes) -> str:
         # we expect the path in form of <bus>#<device>, HID API returns
         # <bus>:<device>:<interface>
         linux_path = hid_api_usb_path.decode("utf-8")
-        linux_path_parts = linux_path.split(':')
+        linux_path_parts = linux_path.split(":")
 
         if len(linux_path_parts) > 1:
-            linux_path = str.format("{}#{}", int(linux_path_parts[0], 16), int(linux_path_parts[1], 16))
+            linux_path = str.format(
+                "{}#{}", int(linux_path_parts[0], 16), int(linux_path_parts[1], 16)
+            )
 
         return linux_path
 
     if platform.system() == "Darwin":
         return hid_api_usb_path.decode("utf-8")
 
-    return ''
+    return ""

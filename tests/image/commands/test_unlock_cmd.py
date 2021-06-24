@@ -2,12 +2,11 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import (CmdNop, CmdUnlock, CmdUnlockCAAM, CmdUnlockOCOTP,
-                         CmdUnlockSNVS, EnumEngine)
+from spsdk.image import CmdNop, CmdUnlock, CmdUnlockCAAM, CmdUnlockOCOTP, CmdUnlockSNVS, EnumEngine
 from spsdk.image.header import CmdHeader
 
 
@@ -44,12 +43,14 @@ def test_unlock_cmd_info():
     output = cmd.info()
     req_strings = ["Unlock Command", "Features:", "UID:"]
     for req_string in req_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_unlock_snvs():
     """Test Unlock SNVS command"""
-    cmd = CmdUnlockSNVS(CmdUnlockSNVS.FEATURE_UNLOCK_LP_SWR | CmdUnlockSNVS.FEATURE_UNLOCK_ZMK_WRITE)
+    cmd = CmdUnlockSNVS(
+        CmdUnlockSNVS.FEATURE_UNLOCK_LP_SWR | CmdUnlockSNVS.FEATURE_UNLOCK_ZMK_WRITE
+    )
     assert cmd.engine == EnumEngine.SNVS
     assert cmd.size == CmdHeader.SIZE + 4
     assert cmd.unlock_lp_swr
@@ -84,11 +85,10 @@ def test_unlock_caam():
 
 def test_unlock_ocotp():
     cmd = CmdUnlockOCOTP(
-        features=
-            CmdUnlockOCOTP.FEATURE_UNLOCK_FLD_RTN |
-            CmdUnlockOCOTP.FEATURE_UNLOCK_JTAG |
-            CmdUnlockOCOTP.FEATURE_UNLOCK_SCS,
-        uid=0x123456789
+        features=CmdUnlockOCOTP.FEATURE_UNLOCK_FLD_RTN
+        | CmdUnlockOCOTP.FEATURE_UNLOCK_JTAG
+        | CmdUnlockOCOTP.FEATURE_UNLOCK_SCS,
+        uid=0x123456789,
     )
 
     assert cmd.unlock_fld_rtn
@@ -123,7 +123,7 @@ def test_need_uid():
         CmdUnlock.need_uid(EnumEngine.CAAM, 0b001),
         CmdUnlock.need_uid(EnumEngine.CAAM, 0b010),
         CmdUnlock.need_uid(EnumEngine.CAAM, 0b100),
-        CmdUnlock.need_uid(EnumEngine.ANY, 0b1111)
+        CmdUnlock.need_uid(EnumEngine.ANY, 0b1111),
     ]
     assert all(positive)
     assert not all(negative)

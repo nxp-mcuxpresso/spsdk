@@ -1,0 +1,338 @@
+{
+    "licenses": [
+        "Apache 2.0",
+        "Apache License 2.0",
+        "Apache License, Version 2.0",
+        "BSD",
+        "BSD (3 clause)",
+        "BSD or Apache License, Version 2.0",
+        "BSD, Public Domain",
+        "BSD-3-Clause",
+        "MIT",
+        "MIT license",
+        "PSF",
+        "Public Domain",
+        "Public domain",
+        "The MIT License: http://www.opensource.org/licenses/mit-license.php"
+    ],
+    "packages": [
+        {
+            "name": "Jinja2",
+            "license": "BSD-3-Clause",
+            "home_page": "https://palletsprojects.com/p/jinja/",
+            "is_manual": false
+        },
+        {
+            "name": "MarkupSafe",
+            "license": "BSD-3-Clause",
+            "home_page": "https://palletsprojects.com/p/markupsafe/",
+            "is_manual": false
+        },
+        {
+            "name": "PyYAML",
+            "license": "MIT",
+            "home_page": "https://pyyaml.org/",
+            "is_manual": false
+        },
+        {
+            "name": "appdirs",
+            "license": "MIT",
+            "home_page": "http://github.com/ActiveState/appdirs",
+            "is_manual": false
+        },
+        {
+            "name": "argparse-addons",
+            "license": "MIT",
+            "home_page": "https://github.com/eerimoq/argparse_addons",
+            "is_manual": true
+        },
+        {
+            "name": "asn1crypto",
+            "license": "MIT",
+            "home_page": "https://github.com/wbond/asn1crypto",
+            "is_manual": false
+        },
+        {
+            "name": "astunparse",
+            "license": "BSD",
+            "home_page": "https://github.com/simonpercivall/astunparse",
+            "is_manual": false
+        },
+        {
+            "name": "bincopy",
+            "license": "MIT",
+            "home_page": "https://github.com/eerimoq/bincopy",
+            "is_manual": true
+        },
+        {
+            "name": "bitstring",
+            "license": "The MIT License: http://www.opensource.org/licenses/mit-license.php",
+            "home_page": "https://github.com/scott-griffiths/bitstring",
+            "is_manual": false
+        },
+        {
+            "name": "cffi",
+            "license": "MIT",
+            "home_page": "http://cffi.readthedocs.org",
+            "is_manual": false
+        },
+        {
+            "name": "click",
+            "license": "BSD-3-Clause",
+            "home_page": "https://palletsprojects.com/p/click/",
+            "is_manual": false
+        },
+        {
+            "name": "click",
+            "license": "BSD-3-Clause",
+            "home_page": "https://palletsprojects.com/p/click/",
+            "is_manual": false
+        },
+        {
+            "name": "click-option-group",
+            "license": "BSD-3-Clause",
+            "home_page": "https://github.com/click-contrib/click-option-group",
+            "is_manual": false
+        },
+        {
+            "name": "cmsis-pack-manager",
+            "license": "Apache License 2.0",
+            "home_page": "https://github.com/pyocd/cmsis-pack-manager",
+            "is_manual": true
+        },
+        {
+            "name": "colorama",
+            "license": "BSD",
+            "home_page": "https://github.com/tartley/colorama",
+            "is_manual": false
+        },
+        {
+            "name": "commentjson",
+            "license": "MIT",
+            "home_page": "https://github.com/vaidik/commentjson",
+            "is_manual": true
+        },
+        {
+            "name": "construct",
+            "license": "MIT",
+            "home_page": "http://construct.readthedocs.org",
+            "is_manual": false
+        },
+        {
+            "name": "crcmod",
+            "license": "MIT",
+            "home_page": "http://crcmod.sourceforge.net/",
+            "is_manual": false
+        },
+        {
+            "name": "cryptography",
+            "license": "BSD or Apache License, Version 2.0",
+            "home_page": "https://github.com/pyca/cryptography",
+            "is_manual": false
+        },
+        {
+            "name": "future",
+            "license": "MIT",
+            "home_page": "https://python-future.org",
+            "is_manual": false
+        },
+        {
+            "name": "hexdump",
+            "license": "Public Domain",
+            "home_page": "https://bitbucket.org/techtonik/hexdump/",
+            "is_manual": false
+        },
+        {
+            "name": "hidapi",
+            "license": "BSD",
+            "home_page": "https://github.com/trezor/cython-hidapi",
+            "is_manual": true
+        },
+        {
+            "name": "humanfriendly",
+            "license": "MIT",
+            "home_page": "https://github.com/xolox/python-humanfriendly",
+            "is_manual": false
+        },
+        {
+            "name": "importlib-metadata",
+            "license": "Apache License, Version 2.0",
+            "home_page": "https://github.com/python/importlib_metadata",
+            "is_manual": true
+        },
+        {
+            "name": "intelhex",
+            "license": "BSD",
+            "home_page": "https://github.com/python-intelhex/intelhex",
+            "is_manual": false
+        },
+        {
+            "name": "intervaltree",
+            "license": "Apache License, Version 2.0",
+            "home_page": "https://github.com/chaimleib/intervaltree",
+            "is_manual": false
+        },
+        {
+            "name": "lark-parser",
+            "license": "MIT",
+            "home_page": "https://github.com/erezsh/lark",
+            "is_manual": false
+        },
+        {
+            "name": "milksnake",
+            "license": "Apache License 2.0",
+            "home_page": "https://github.com/getsentry/milksnake",
+            "is_manual": false
+        },
+        {
+            "name": "munch",
+            "license": "MIT",
+            "home_page": "https://github.com/Infinidat/munch",
+            "is_manual": false
+        },
+        {
+            "name": "naturalsort",
+            "license": "MIT",
+            "home_page": "https://github.com/xolox/python-naturalsort",
+            "is_manual": true
+        },
+        {
+            "name": "oscrypto",
+            "license": "MIT",
+            "home_page": "https://github.com/wbond/oscrypto",
+            "is_manual": false
+        },
+        {
+            "name": "prettytable",
+            "license": "BSD (3 clause)",
+            "home_page": "https://github.com/jazzband/prettytable",
+            "is_manual": false
+        },
+        {
+            "name": "psutil",
+            "license": "BSD",
+            "home_page": "https://github.com/giampaolo/psutil",
+            "is_manual": false
+        },
+        {
+            "name": "pycparser",
+            "license": "BSD",
+            "home_page": "https://github.com/eliben/pycparser",
+            "is_manual": false
+        },
+        {
+            "name": "pycryptodome",
+            "license": "BSD, Public Domain",
+            "home_page": "https://www.pycryptodome.org",
+            "is_manual": false
+        },
+        {
+            "name": "pyelftools",
+            "license": "Public domain",
+            "home_page": "https://github.com/eliben/pyelftools",
+            "is_manual": false
+        },
+        {
+            "name": "pylink-square",
+            "license": "Apache 2.0",
+            "home_page": "http://www.github.com/Square/pylink",
+            "is_manual": false
+        },
+        {
+            "name": "pyocd",
+            "license": "Apache 2.0",
+            "home_page": "https://github.com/mbedmicro/pyOCD",
+            "is_manual": false
+        },
+        {
+            "name": "pyocd-pemicro",
+            "license": "BSD-3-Clause",
+            "home_page": "https://github.com/pyocd/pyocd-pemicro",
+            "is_manual": false
+        },
+        {
+            "name": "pypemicro",
+            "license": "BSD-3-Clause",
+            "home_page": "https://github.com/nxpmicro/pypemicro",
+            "is_manual": false
+        },
+        {
+            "name": "pyreadline",
+            "license": "BSD",
+            "home_page": "https://github.com/pyreadline/pyreadline",
+            "is_manual": false
+        },
+        {
+            "name": "pyserial",
+            "license": "BSD",
+            "home_page": "https://github.com/pyserial/pyserial",
+            "is_manual": false
+        },
+        {
+            "name": "pyusb",
+            "license": "BSD-3-Clause",
+            "home_page": "https://pyusb.github.io/pyusb",
+            "is_manual": true
+        },
+        {
+            "name": "pywinusb",
+            "license": "BSD",
+            "home_page": "https://github.com/rene-aguirre/pywinusb",
+            "is_manual": false
+        },
+        {
+            "name": "ruamel.yaml",
+            "license": "MIT license",
+            "home_page": "https://sourceforge.net/p/ruamel-yaml/code/ci/default/tree",
+            "is_manual": false
+        },
+        {
+            "name": "ruamel.yaml.clib",
+            "license": "MIT",
+            "home_page": "https://sourceforge.net/p/ruamel-yaml-clib/code/ci/default/tree",
+            "is_manual": false
+        },
+        {
+            "name": "setuptools",
+            "license": "MIT",
+            "home_page": "https://github.com/pypa/setuptools",
+            "is_manual": true
+        },
+        {
+            "name": "six",
+            "license": "MIT",
+            "home_page": "https://github.com/benjaminp/six",
+            "is_manual": false
+        },
+        {
+            "name": "sortedcontainers",
+            "license": "Apache 2.0",
+            "home_page": "http://www.grantjenks.com/docs/sortedcontainers/",
+            "is_manual": false
+        },
+        {
+            "name": "typing-extensions",
+            "license": "PSF",
+            "home_page": "https://github.com/python/typing/tree/master/typing_extensions",
+            "is_manual": false
+        },
+        {
+            "name": "wcwidth",
+            "license": "MIT",
+            "home_page": "https://github.com/jquast/wcwidth",
+            "is_manual": false
+        },
+        {
+            "name": "wheel",
+            "license": "MIT",
+            "home_page": "https://github.com/pypa/wheel",
+            "is_manual": false
+        },
+        {
+            "name": "zipp",
+            "license": "MIT",
+            "home_page": "https://github.com/jaraco/zipp",
+            "is_manual": true
+        }
+    ]
+}

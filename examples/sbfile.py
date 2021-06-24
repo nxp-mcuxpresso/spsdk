@@ -14,13 +14,18 @@
 import os
 from binascii import unhexlify
 
-from spsdk.sbfile.images import BootImageV20, BootImageV21, SBV2xAdvancedParams, BootSectionV2
+from spsdk.sbfile.images import (
+    BootImageV20,
+    BootImageV21,
+    SBV2xAdvancedParams,
+    BootSectionV2,
+)
 from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdReset
 from spsdk.utils.crypto import CertBlockV2, KeyBlob, Otfad, Certificate
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(THIS_DIR, 'data')
+DATA_DIR = os.path.join(THIS_DIR, "data")
 
 
 ########################################################################################################################
@@ -28,7 +33,7 @@ DATA_DIR = os.path.join(THIS_DIR, 'data')
 ########################################################################################################################
 def gen_cert_block() -> CertBlockV2:
     """Generate a Certification Block."""
-    with open(f'{DATA_DIR}/selfsign_v3.der.crt', 'rb') as cert_file:
+    with open(f"{DATA_DIR}/selfsign_v3.der.crt", "rb") as cert_file:
         cert_data = cert_file.read()
 
     cert_obj = Certificate(cert_data)
@@ -45,7 +50,7 @@ def gen_cert_block() -> CertBlockV2:
 ########################################################################################################################
 def gen_boot_section() -> BootSectionV2:
     """Generate a Boot Section withput encryption."""
-    with open(f'{DATA_DIR}/boot_image.bin', 'rb') as boot_image_file:
+    with open(f"{DATA_DIR}/boot_image.bin", "rb") as boot_image_file:
         boot_data = boot_image_file.read()
 
     boot_section = BootSectionV2(
@@ -53,23 +58,32 @@ def gen_boot_section() -> BootSectionV2:
         CmdErase(address=0, length=100000),
         CmdLoad(address=0, data=boot_data),
         CmdReset(),
-        hmac_count=10)
+        hmac_count=10,
+    )
 
     return boot_section
 
 
 def gen_boot_section_otfad() -> BootSectionV2:
     """Generate a Boot Section with content encrypted by OTFAD."""
-    with open(f'{DATA_DIR}/boot_image.bin', 'rb') as boot_image_file:
+    with open(f"{DATA_DIR}/boot_image.bin", "rb") as boot_image_file:
         boot_data = boot_image_file.read()
 
     otfad = Otfad()
-    key = bytes.fromhex('B1A0C56AF31E98CD6936A79D9E6F829D')
+    key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
     counter = bytes.fromhex("5689fab8b4bfb264")
-    otfad.add_key_blob(KeyBlob(0x08001000, 0x0800F3FF, key, counter,
-                               zero_fill=bytes(4), crc=bytes(4)))  # zero_fill and crc should be used only for testing !
+    otfad.add_key_blob(
+        KeyBlob(
+            0x08001000,
+            0x0800F3FF,
+            key,
+            counter,
+            zero_fill=bytes(4),
+            crc=bytes(4),
+        )
+    )  # zero_fill and crc should be used only for testing !
     enc_image = otfad.encrypt_image(boot_data, 0x08001000, True)
-    key_blobs = otfad.encrypt_key_blobs(kek=bytes.fromhex('50F66BB4F23B855DCD8FEFC0DA59E963'))
+    key_blobs = otfad.encrypt_key_blobs(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
     assert len(key_blobs) == 256
 
     boot_section = BootSectionV2(
@@ -78,7 +92,7 @@ def gen_boot_section_otfad() -> BootSectionV2:
         CmdLoad(address=0x08001000, data=enc_image),
         CmdLoad(address=0x08000000, data=key_blobs),
         CmdReset(),
-        hmac_count=10
+        hmac_count=10,
     )
 
     return boot_section
@@ -89,10 +103,10 @@ def gen_boot_section_otfad() -> BootSectionV2:
 ########################################################################################################################
 
 # Input values
-KEK_VALUE = unhexlify('AC701E99BD3492E419B756EADC0985B3D3D0BC0FDB6B057AA88252204C2DA732')
-DEK_VALUE = b'\xA0' * 32  # it is recommended to use random value
-MAC_VALUE = b'\x0B' * 32  # it is recommended to use random value
-with open(f'{DATA_DIR}/selfsign_privatekey_rsa2048.pem', "rb") as key_file:
+KEK_VALUE = unhexlify("AC701E99BD3492E419B756EADC0985B3D3D0BC0FDB6B057AA88252204C2DA732")
+DEK_VALUE = b"\xA0" * 32  # it is recommended to use random value
+MAC_VALUE = b"\x0B" * 32  # it is recommended to use random value
+with open(f"{DATA_DIR}/selfsign_privatekey_rsa2048.pem", "rb") as key_file:
     PRIVATE_KEY_PEM_DATA = key_file.read()
 
 
@@ -115,12 +129,14 @@ def gen_boot_image_20() -> bytes:
     boot_section = gen_boot_section()
     adv_params = SBV2xAdvancedParams(dek=DEK_VALUE, mac=MAC_VALUE)
     # create boot image
-    boot_image = BootImageV20(signed=True,
-                              kek=KEK_VALUE,
-                              product_version='1.0.0',
-                              component_version='1.0.0',
-                              build_number=1,
-                              advanced_params=adv_params)
+    boot_image = BootImageV20(
+        signed=True,
+        kek=KEK_VALUE,
+        product_version="1.0.0",
+        component_version="1.0.0",
+        build_number=1,
+        advanced_params=adv_params,
+    )
 
     # add certificate block
     boot_image.cert_block = gen_cert_block()
@@ -140,12 +156,14 @@ def gen_boot_image_21() -> bytes:
     # advanced parameters
     adv_params = SBV2xAdvancedParams(dek=DEK_VALUE, mac=MAC_VALUE)
     # create boot image
-    boot_image = BootImageV21(KEK_VALUE,
-                              boot_section,
-                              product_version='1.0.0',
-                              component_version='1.0.0',
-                              build_number=1,
-                              advanced_params=adv_params)
+    boot_image = BootImageV21(
+        KEK_VALUE,
+        boot_section,
+        product_version="1.0.0",
+        component_version="1.0.0",
+        build_number=1,
+        advanced_params=adv_params,
+    )
 
     # add certificate block
     boot_image.cert_block = gen_cert_block()
@@ -159,13 +177,13 @@ def gen_boot_image_21() -> bytes:
 def main() -> None:
     """Main."""
     # parse simple SB2.1 file generated by elftosb.exe
-    with open(f'{DATA_DIR}/test_output_sb_2_1_from_elftosb.sb2', "rb") as f:
+    with open(f"{DATA_DIR}/test_output_sb_2_1_from_elftosb.sb2", "rb") as f:
         sb_file = f.read()
     img_obj21 = BootImageV21.parse(sb_file, kek=KEK_VALUE)
     print(img_obj21.info())
 
     # parse SB2.1 file with OTFAD generated by elftosb.exe
-    with open(f'{DATA_DIR}/otfad/test_output_sb_2_1_from_elftosb_OTFAD.sb2', "rb") as f:
+    with open(f"{DATA_DIR}/otfad/test_output_sb_2_1_from_elftosb_OTFAD.sb2", "rb") as f:
         sb_file = f.read()
     img_obj21 = BootImageV21.parse(sb_file, kek=KEK_VALUE)
     print(img_obj21.info())
@@ -192,5 +210,5 @@ def main() -> None:
     print(img_obj21.info())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

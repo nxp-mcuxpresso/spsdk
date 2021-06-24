@@ -7,8 +7,23 @@
 
 import pytest
 
-from spsdk.sbfile.commands import CmdNop, CmdCall, CmdErase, CmdFill, CmdJump, CmdLoad, CmdMemEnable, CmdProg, CmdReset
-from spsdk.sbfile.commands import VersionCheckType, CmdVersionCheck, CmdKeyStoreBackup, CmdKeyStoreRestore
+from spsdk.sbfile.commands import (
+    CmdNop,
+    CmdCall,
+    CmdErase,
+    CmdFill,
+    CmdJump,
+    CmdLoad,
+    CmdMemEnable,
+    CmdProg,
+    CmdReset,
+)
+from spsdk.sbfile.commands import (
+    VersionCheckType,
+    CmdVersionCheck,
+    CmdKeyStoreBackup,
+    CmdKeyStoreRestore,
+)
 from spsdk.sbfile.commands import CmdTag, parse_command
 from spsdk.mboot import ExtMemId
 
@@ -38,12 +53,12 @@ def test_tag_cmd():
 
 
 def test_load_cmd():
-    cmd = CmdLoad(address=100, data=b'\x00' * 100)
+    cmd = CmdLoad(address=100, data=b"\x00" * 100)
     assert cmd.address == 100
     assert cmd.data == bytearray([0] * 100)
     assert cmd.info()
 
-    cmd.data = cmd.data + b'\x10'
+    cmd.data = cmd.data + b"\x10"
     assert len(cmd.data) == 101
 
     data = cmd.export()
@@ -56,8 +71,8 @@ def test_load_cmd():
 
 def test_load_cmd_preexisting():
     data = (
-        b'\x1c\x02\x00\x00\n\x00\x00\x00\x10\x00\x00\x00_3<\xd8'
-        b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\xbb\xffT\x0f+r'
+        b"\x1c\x02\x00\x00\n\x00\x00\x00\x10\x00\x00\x00_3<\xd8"
+        b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\xbb\xffT\x0f+r"
     )
     cmd = parse_command(data)
     assert isinstance(cmd, CmdLoad)
@@ -68,7 +83,7 @@ def test_load_cmd_preexisting():
 def test_fill_cmd_byte_word():
     cmd = CmdFill(address=100, pattern=1, length=4)
     assert cmd.address == 100
-    assert cmd.pattern == b'\x01\x01\x01\x01'
+    assert cmd.pattern == b"\x01\x01\x01\x01"
 
     data = cmd.export()
     assert len(data) == 16
@@ -81,7 +96,7 @@ def test_fill_cmd_byte_word():
 def test_fill_cmd_half_word():
     cmd = CmdFill(address=100, pattern=258, length=12)
     assert cmd.address == 100
-    assert cmd.pattern == b'\x01\x02\x01\x02'
+    assert cmd.pattern == b"\x01\x02\x01\x02"
 
     data = cmd.export()
     assert len(data) == 16
@@ -94,7 +109,7 @@ def test_fill_cmd_half_word():
 def test_fill_cmd_whole_word():
     cmd = CmdFill(address=100, pattern=16909060, length=8)
     assert cmd.address == 100
-    assert cmd.pattern == b'\x01\x02\x03\x04'
+    assert cmd.pattern == b"\x01\x02\x03\x04"
 
     data = cmd.export()
     assert len(data) == 16
@@ -107,7 +122,7 @@ def test_fill_cmd_whole_word():
 def test_fill_cmd_length_not_defined():
     cmd = CmdFill(address=100, pattern=16909060)
     assert cmd.address == 100
-    assert cmd.pattern == b'\x01\x02\x03\x04'
+    assert cmd.pattern == b"\x01\x02\x03\x04"
 
     data = cmd.export()
     assert len(data) == 16
@@ -276,4 +291,4 @@ def test_keystore_restore():
 
 def test_parse_invalid_command_tag():
     with pytest.raises(ValueError):
-        parse_command(b'\xEE' * 16)
+        parse_command(b"\xEE" * 16)

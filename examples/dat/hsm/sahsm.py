@@ -9,7 +9,7 @@
 import base64
 import os
 
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
 
 from spsdk import crypto
 
@@ -17,8 +17,8 @@ APP = Flask(__name__)
 THIS_DIR = os.path.dirname(__file__)
 
 
-@APP.route('/signer/<int:num>', methods=['GET'])
-def signer(num: int) -> dict:
+@APP.route("/signer/<int:num>", methods=["GET"])
+def signer(num: int) -> Response:
     """Route (API) that performing the signing.
 
     :param num: Index of the key to use (rot_id)
@@ -30,14 +30,15 @@ def signer(num: int) -> dict:
     # in this example we assume RSA keys
     assert isinstance(private_key, crypto.RSAPrivateKey)
 
-    data_to_sign = base64.b64decode(request.args['data'])
+    data_to_sign = base64.b64decode(request.args["data"])
     signature = private_key.sign(
         data=data_to_sign,
         padding=crypto.padding.PKCS1v15(),
-        algorithm=crypto.hashes.SHA256()
+        algorithm=crypto.hashes.SHA256(),
     )
     data = base64.b64encode(signature)
-    return jsonify({'signature': data.decode('utf-8')})
+    return jsonify({"signature": data.decode("utf-8")})
+
 
 if __name__ == "__main__":
     APP.run(debug=True)

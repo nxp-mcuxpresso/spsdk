@@ -8,6 +8,8 @@
 """NXP USB Device Scanner API."""
 
 
+import logging
+from spsdk.sdp.exceptions import SdpConnectionError
 from typing import Dict, Sequence, Type
 
 import hid
@@ -17,15 +19,19 @@ from spsdk.mboot.interfaces.uart import scan_uart as mb_scan_uart
 from spsdk.sdp import SDP
 from spsdk.sdp.interfaces.uart import Uart as SDP_Uart
 
-from .devicedescription import (DeviceDescription, UartDeviceDescription,
-                                USBDeviceDescription, convert_usb_path,
-                                get_usb_device_name)
-
+from .devicedescription import (
+    DeviceDescription,
+    UartDeviceDescription,
+    USBDeviceDescription,
+    convert_usb_path,
+    get_usb_device_name,
+)
 
 NXP_USB_DEVICE_VIDS = [
     0x1FC9,
     0x15A2,
 ]
+
 
 def search_nxp_usb_devices(extend_vid_list: list = None) -> Sequence[DeviceDescription]:
     """Searches all NXP USB devices based on their Vendor ID.
@@ -52,15 +58,14 @@ def search_nxp_usb_devices(extend_vid_list: list = None) -> Sequence[DeviceDescr
                 manufacturer_string = usb_device.get("manufacturer_string")
                 name = ", ".join(get_usb_device_name(vid, pid, None))
                 usb_dev = USBDeviceDescription(
-                    vid, pid, path,
-                    product_string,
-                    manufacturer_string,
-                    name)
+                    vid, pid, path, product_string, manufacturer_string, name
+                )
 
                 nxp_usb_devices.append(usb_dev)
                 break
 
     return nxp_usb_devices
+
 
 def search_nxp_uart_devices() -> Sequence[DeviceDescription]:
     """Returns a list of all NXP devices connected via UART.
@@ -84,13 +89,19 @@ def search_nxp_uart_devices() -> Sequence[DeviceDescription]:
         # sufficient, to say, that the interface is SDP compared to mboot, where
         # ping command must be sent.
         # So we create an SDP interface and try to read the status code. If
-        # we get a response, we are connecte to an SDP device.
-        sdp_com = SDP(SDP_Uart(port=port, timeout=50))
-        if sdp_com.read_status() is not None:
-            uart_dev = UartDeviceDescription(name=port, dev_type="SDP device")
-            retval.append(uart_dev)
+        # we get a response, we are connected to an SDP device.
+        try:
+            sdp_com = SDP(SDP_Uart(port=port, timeout=50))
+            if sdp_com.read_status() is not None:
+                uart_dev = UartDeviceDescription(name=port, dev_type="SDP device")
+                retval.append(uart_dev)
+        except SdpConnectionError as e:
+            logging.debug(f"Exception {type(e).__name__} occurred while reading status via SDP. \
+Arguments: {e.args}")
+            pass
 
     return retval
+
 
 # This function has been left for potential future uses. At the moment it's
 # not clear, how do we identify different devices with SDP protocol, as

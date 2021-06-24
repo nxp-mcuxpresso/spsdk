@@ -26,6 +26,7 @@ from spsdk.utils.easy_enum import Enum
 ########################################################################################################################
 class MasterBootImageType(Enum):
     """Enumeration of various types of MBIs."""
+
     PLAIN_IMAGE = (0x00, "Plain Image (either XIP or Load-to-RAM)")
     SIGNED_RAM_IMAGE = (0x01, "Plain Signed Load-to-RAM Image")
     CRC_RAM_IMAGE = (0x02, "Plain CRC Load-to-RAM Image")
@@ -37,30 +38,39 @@ class MasterBootImageType(Enum):
     @staticmethod
     def is_xip(image_type: int) -> bool:
         """True is the image type is executed in place (XIP)."""
-        return image_type in [MasterBootImageType.PLAIN_IMAGE,
-                              MasterBootImageType.SIGNED_XIP_IMAGE,
-                              MasterBootImageType.CRC_XIP_IMAGE,
-                              MasterBootImageType.SIGNED_XIP_NXP_IMAGE]
+        return image_type in [
+            MasterBootImageType.PLAIN_IMAGE,
+            MasterBootImageType.SIGNED_XIP_IMAGE,
+            MasterBootImageType.CRC_XIP_IMAGE,
+            MasterBootImageType.SIGNED_XIP_NXP_IMAGE,
+        ]
 
     @staticmethod
     def is_copied_to_ram(image_type: int) -> bool:
         """True is the image type is copied and executed in RAM."""
-        return image_type in [MasterBootImageType.CRC_RAM_IMAGE,
-                              MasterBootImageType.SIGNED_RAM_IMAGE,
-                              MasterBootImageType.ENCRYPTED_RAM_IMAGE]
+        return image_type in [
+            MasterBootImageType.CRC_RAM_IMAGE,
+            MasterBootImageType.SIGNED_RAM_IMAGE,
+            MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+        ]
 
     @staticmethod
     def has_crc(image_type: int) -> bool:
         """True is the image type contains CRC; False otherwise."""
-        return image_type in [MasterBootImageType.CRC_XIP_IMAGE, MasterBootImageType.CRC_RAM_IMAGE]
+        return image_type in [
+            MasterBootImageType.CRC_XIP_IMAGE,
+            MasterBootImageType.CRC_RAM_IMAGE,
+        ]
 
     @staticmethod
     def is_signed(image_type: int) -> bool:
         """True is the image type is signed; False otherwise."""
-        return image_type in [MasterBootImageType.SIGNED_XIP_IMAGE,
-                              MasterBootImageType.SIGNED_RAM_IMAGE,
-                              MasterBootImageType.ENCRYPTED_RAM_IMAGE,
-                              MasterBootImageType.SIGNED_XIP_NXP_IMAGE]
+        return image_type in [
+            MasterBootImageType.SIGNED_XIP_IMAGE,
+            MasterBootImageType.SIGNED_RAM_IMAGE,
+            MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+            MasterBootImageType.SIGNED_XIP_NXP_IMAGE,
+        ]
 
     @staticmethod
     def is_encrypted(image_type: int) -> bool:
@@ -70,7 +80,9 @@ class MasterBootImageType(Enum):
     @staticmethod
     def has_hmac(image_type: int) -> bool:
         """Whether the image contains HMAC."""
-        return MasterBootImageType.is_signed(image_type) and MasterBootImageType.is_copied_to_ram(image_type)
+        return MasterBootImageType.is_signed(image_type) and MasterBootImageType.is_copied_to_ram(
+            image_type
+        )
 
 
 class MultipleImageEntry:
@@ -78,8 +90,9 @@ class MultipleImageEntry:
 
     It also contains a corresponding image (binary)
     """
+
     # flag to simply copy load segment into target memory
-    LTI_LOAD = (1 << 0)
+    LTI_LOAD = 1 << 0
 
     def __init__(self, img: bytes, dst_addr: int, flags: int = LTI_LOAD):
         """Constructor.
@@ -199,7 +212,7 @@ class MultipleImageTable:
                         the value matches source address for the first image
         :return: images with relocation table
         """
-        assert self._entries, 'There must be at least one entry for export'
+        assert self._entries, "There must be at least one entry for export"
         src_addr = start_addr
         result = bytes()
         for entry in self.entries:
@@ -285,16 +298,25 @@ class MasterBootImage:
         certificate_len = len(self._certificate(plain_data))
         hmac_data_len = len(self._hmac(self.data))
         key_store_len = len(self.key_store.export()) if self.key_store else 0
-        return len(plain_data) + hmac_data_len + key_store_len + certificate_len + self.signature_len
+        return (
+            len(plain_data) + hmac_data_len + key_store_len + certificate_len + self.signature_len
+        )
 
     # pylint: disable=too-many-arguments
-    def __init__(self, app: Union[bytes, bytearray],
-                 load_addr: int,
-                 image_type: MasterBootImageType = MasterBootImageType.PLAIN_IMAGE,
-                 trust_zone: Optional[TrustZone] = None, app_table: Optional[MultipleImageTable] = None,
-                 cert_block: Optional[CertBlock] = None, priv_key_pem_data: Optional[bytes] = None,
-                 hmac_key: Union[bytes, str] = None, key_store: KeyStore = None,
-                 enable_hw_user_mode_keys: bool = False, ctr_init_vector: bytes = None) -> None:
+    def __init__(
+        self,
+        app: Union[bytes, bytearray],
+        load_addr: int,
+        image_type: MasterBootImageType = MasterBootImageType.PLAIN_IMAGE,
+        trust_zone: Optional[TrustZone] = None,
+        app_table: Optional[MultipleImageTable] = None,
+        cert_block: Optional[CertBlock] = None,
+        priv_key_pem_data: Optional[bytes] = None,
+        hmac_key: Union[bytes, str] = None,
+        key_store: KeyStore = None,
+        enable_hw_user_mode_keys: bool = False,
+        ctr_init_vector: bytes = None,
+    ) -> None:
         """Constructor.
 
         :param app: input image (binary)
@@ -319,7 +341,7 @@ class MasterBootImage:
         if not isinstance(app, (bytes, bytearray)):
             raise TypeError("app must be binary data (bytes, bytearray)")
         if app_table and not MasterBootImageType.is_copied_to_ram(image_type):
-            raise ValueError('app_table can be used only for images loaded to RAM')
+            raise ValueError("app_table can be used only for images loaded to RAM")
         assert load_addr >= 0
         self.load_addr = load_addr
         self.image_type = image_type
@@ -364,26 +386,40 @@ class MasterBootImage:
         # security stuff
         if MasterBootImageType.is_signed(self.image_type):
             if not self.cert_block:
-                raise ValueError("Certificate block must be specified for signed image (cert_block)")
+                raise ValueError(
+                    "Certificate block must be specified for signed image (cert_block)"
+                )
             if not self._priv_key_pem_data:
                 raise ValueError("Private Key must be specified for signed image (priv_key_path)")
         else:
             if self.cert_block:
-                raise ValueError("Certificate block must be specified only for signed image (cert_block)")
+                raise ValueError(
+                    "Certificate block must be specified only for signed image (cert_block)"
+                )
             if self._priv_key_pem_data:
-                raise ValueError("Private Key must be specified only for signed image (priv_key_path)")
+                raise ValueError(
+                    "Private Key must be specified only for signed image (priv_key_path)"
+                )
 
         if MasterBootImageType.is_encrypted(self.image_type):
-            if not self.ctr_init_vector or (len(self.ctr_init_vector) != self._CTR_INIT_VECTOR_SIZE):
-                raise ValueError(f"Invalid length of CTR init vector, expected {str(self._CTR_INIT_VECTOR_SIZE)} bytes")
+            if not self.ctr_init_vector or (
+                len(self.ctr_init_vector) != self._CTR_INIT_VECTOR_SIZE
+            ):
+                raise ValueError(
+                    f"Invalid length of CTR init vector, expected {str(self._CTR_INIT_VECTOR_SIZE)} bytes"
+                )
 
         # hmac
         if MasterBootImageType.has_hmac(self.image_type):
             if not self.hmac_key:
-                raise ValueError("HMAC key must be specified for load-to-ram signed images (hmac_key)")
+                raise ValueError(
+                    "HMAC key must be specified for load-to-ram signed images (hmac_key)"
+                )
         else:
             if self.hmac_key:
-                raise ValueError("HMAC user key cannot be applied into selected image (hmac_user_key)")
+                raise ValueError(
+                    "HMAC user key cannot be applied into selected image (hmac_user_key)"
+                )
             if self.key_store:
                 raise ValueError("KeyStore cannot be applied into selected image (key_store)")
 
@@ -396,7 +432,9 @@ class MasterBootImage:
             cert_blk = self.cert_block
             assert cert_blk is not None
             if not cert_blk.verify_private_key(self._priv_key_pem_data):  # type: ignore
-                raise ValueError('Signature verification failed, private key does not match to certificate')
+                raise ValueError(
+                    "Signature verification failed, private key does not match to certificate"
+                )
 
     def info(self) -> str:
         """Text description of the instance."""
@@ -404,7 +442,9 @@ class MasterBootImage:
         msg += "Image type       : {}\n".format(MasterBootImageType.desc(self.image_type))
         msg += "Img load addr    : {}\n".format(hex(self.load_addr))
         msg += "Image length     : {}\n".format(len(self.data))
-        msg += "HW user mode keys: {}\n".format("enabled" if self.enable_hw_user_mode_keys else "disabled")
+        msg += "HW user mode keys: {}\n".format(
+            "enabled" if self.enable_hw_user_mode_keys else "disabled"
+        )
         msg += "TrustZone        : {}\n".format(TrustZoneType.desc(self.trust_zone.type))
         if self.cert_block:
             msg += "[Certificate Block]\n"
@@ -425,21 +465,25 @@ class MasterBootImage:
 
     def _update_ivt(self, data: bytes) -> bytes:
         data = bytearray(data)
-        data[self.IMAGE_LENGTH_OFFSET: self.IMAGE_LENGTH_OFFSET + 4] = struct.pack("<I", self.total_len)
+        data[self.IMAGE_LENGTH_OFFSET : self.IMAGE_LENGTH_OFFSET + 4] = struct.pack(
+            "<I", self.total_len
+        )
         # flags
         flags = self._calculate_flags()
-        data[self.IMAGE_FLAGS_OFFSET: self.IMAGE_FLAGS_OFFSET + 4] = struct.pack("<I", flags)
+        data[self.IMAGE_FLAGS_OFFSET : self.IMAGE_FLAGS_OFFSET + 4] = struct.pack("<I", flags)
         #
-        data[self.LOAD_ADDR_OFFSET: self.LOAD_ADDR_OFFSET + 4] = struct.pack("<I", self.load_addr)
+        data[self.LOAD_ADDR_OFFSET : self.LOAD_ADDR_OFFSET + 4] = struct.pack("<I", self.load_addr)
         if MasterBootImageType.is_signed(self.image_type):
-            data[self.CERTIFICATE_OFFSET: self.CERTIFICATE_OFFSET + 4] = struct.pack("<I", self.app_len)
+            data[self.CERTIFICATE_OFFSET : self.CERTIFICATE_OFFSET + 4] = struct.pack(
+                "<I", self.app_len
+            )
         if MasterBootImageType.has_crc(self.image_type):
             # calculate CRC using MPEG2 specification over all of data (app and trustzone)
             # expect for 4 bytes at CRC_BLOCK_OFFSET and put the resulting CRC there
-            crc32_function = mkPredefinedCrcFun('crc-32-mpeg')
-            crc = crc32_function(data[:self.CRC_BLOCK_OFFSET])
-            crc = crc32_function(data[self.CRC_BLOCK_OFFSET + 4:], crc)
-            data[self.CRC_BLOCK_OFFSET: self.CRC_BLOCK_OFFSET + 4] = struct.pack("<I", crc)
+            crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
+            crc = crc32_function(data[: self.CRC_BLOCK_OFFSET])
+            crc = crc32_function(data[self.CRC_BLOCK_OFFSET + 4 :], crc)
+            data[self.CRC_BLOCK_OFFSET : self.CRC_BLOCK_OFFSET + 4] = struct.pack("<I", crc)
         return bytes(data)
 
     def _certificate(self, encr_data: bytes) -> bytes:
@@ -508,17 +552,21 @@ class MasterBootImage:
             assert (cb is not None) and cb.verify_private_key(self._priv_key_pem_data)  # type: ignore
             # encrypt
             encr_data = self._encrypt(data)
-            encr_data = (self._update_ivt(encr_data[:self.HMAC_OFFSET]) +  # header
-                         encr_data[self.HMAC_OFFSET:self.app_len] +  # encrypted image
-                         self._certificate(encr_data) +  # certificate + encoded image header + CTR init vector
-                         encr_data[self.app_len:])  # TZ encoded data
+            encr_data = (
+                self._update_ivt(encr_data[: self.HMAC_OFFSET])
+                + encr_data[self.HMAC_OFFSET : self.app_len]  # header
+                + self._certificate(encr_data)  # encrypted image
+                + encr_data[self.app_len :]  # certificate + encoded image header + CTR init vector
+            )  # TZ encoded data
             encr_data += crypto_backend().rsa_sign(self._priv_key_pem_data, encr_data)  # signature
             # hmac + key store
             if MasterBootImageType.has_hmac(self.image_type):
-                hmac_keystore = self._hmac(encr_data[:self.HMAC_OFFSET])
+                hmac_keystore = self._hmac(encr_data[: self.HMAC_OFFSET])
                 if self.key_store:
                     hmac_keystore += self.key_store.export()
-                encr_data = encr_data[:self.HMAC_OFFSET] + hmac_keystore + encr_data[self.HMAC_OFFSET:]
+                encr_data = (
+                    encr_data[: self.HMAC_OFFSET] + hmac_keystore + encr_data[self.HMAC_OFFSET :]
+                )
             return bytes(encr_data)
 
         return bytes(data)
@@ -530,7 +578,7 @@ class MasterBootImage:
 
 
 class MasterBootImageManifest:
-    """MasterBootImage Manifest used in Niobe4Analog."""
+    """MasterBootImage Manifest used in LPC55s3x."""
 
     MAGIC = b"imgm"
     # FORMAT = "<4s2H3L"
@@ -539,8 +587,9 @@ class MasterBootImageManifest:
     FORMAT_VERSION = 0x0001_0000
     DIGEST_PRESENT_FLAG = 0x8000_0000
 
-    def __init__(self, firmware_version: int, trust_zone: TrustZone,
-                 sign_hash_len: int = None) -> None:
+    def __init__(
+        self, firmware_version: int, trust_zone: TrustZone, sign_hash_len: int = None
+    ) -> None:
         """Initialize MBI Manifest object.
 
         :param firmware_version: firmware version
@@ -574,22 +623,28 @@ class MasterBootImageManifest:
             self.FORMAT_VERSION,
             self.firmware_version,
             self.total_length,
-            self.flags
+            self.flags,
         )
         return data
 
 
 class MasterBootImageN4Analog(MasterBootImage):
-    """Master Boot Image layout specific for Niobe4Analog."""
+    """Master Boot Image layout specific for LPC55s3x."""
 
-    # flag indication presence of dual boot version (Used by Niobe4Analog)
+    # flag indication presence of dual boot version (Used by LPC55s3x)
     _DUAL_BOOT_VERSION_FLAG = 0x400
 
-    def __init__(self, app: bytes, load_addr: int,
-                 dual_boot_version: int = None, firmware_version: int = 1,
-                 sign_hash_len: int = 0,
-                 signature_provider: SignatureProvider = None, **kwargs: Any) -> None:
-        """Initialize MBI for Niobe4Analog.
+    def __init__(
+        self,
+        app: bytes,
+        load_addr: int,
+        dual_boot_version: int = None,
+        firmware_version: int = 1,
+        sign_hash_len: int = 0,
+        signature_provider: SignatureProvider = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize MBI for LPC55s3x.
 
         :param app: application binary
         :param load_addr: Addres where to load application
@@ -606,8 +661,9 @@ class MasterBootImageN4Analog(MasterBootImage):
         assert self.trust_zone, "TrustZone was not set in parent class!"
         if MasterBootImageType.is_signed(self.image_type):
             self.manifest = MasterBootImageManifest(
-                firmware_version, sign_hash_len=sign_hash_len,
-                trust_zone=self.trust_zone
+                firmware_version,
+                sign_hash_len=sign_hash_len,
+                trust_zone=self.trust_zone,
             )
 
     def _calculate_flags(self) -> int:

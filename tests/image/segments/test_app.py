@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -25,8 +25,8 @@ def test_app_segment_api():
     data_exported = app.export()
     assert len(data_exported) == 20
 
-    app.data = b'\x01\x02\x03\x04\x05'
-    assert app._data == b'\x01\x02\x03\x04\x05'
+    app.data = b"\x01\x02\x03\x04\x05"
+    assert app._data == b"\x01\x02\x03\x04\x05"
 
 
 def test_app_export():
@@ -55,4 +55,4 @@ def test_app_eq_info_repr():
     output = repr(app_other)
     repr_strings = ["Bytes", "LEN", "APP"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"

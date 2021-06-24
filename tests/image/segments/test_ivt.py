@@ -78,7 +78,7 @@ def test_ivt2_repr():
     output = repr(ivt2)
     repr_strings = ["BDT", "IVT2", "DCD", "APP", "CSF"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_ivt2_equality():
@@ -142,7 +142,7 @@ def test_ivt3a_repr():
     output = repr(ivt3a)
     repr_strings = ["IVT3a", "BDT", "DCD", "CSF"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_ivt3a_eq():
@@ -158,7 +158,7 @@ def test_ivt3a_info():
     output = ivt3a.info()
     repr_strings = ["Format version", "IVT", "BDT", "DCD", "CSF", "NEXT"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_ivt3b_segment_api():
@@ -222,7 +222,7 @@ def test_ivt3b_repr():
     output = repr(ivt3b)
     repr_strings = ["IVT3b", "BDT", "DCD", "CSF", "SCD"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_ivt3b_info():
@@ -230,12 +230,12 @@ def test_ivt3b_info():
     output = ivt3b.info()
     repr_strings = ["IVT", "BDT", "DCD", "CSF", "SCD"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_format_ivt_item():
     assert _format_ivt_item(0x123) == "0x00000123"
-    assert _format_ivt_item(0xabcdef) == "0x00abcdef"
+    assert _format_ivt_item(0xABCDEF) == "0x00abcdef"
     assert _format_ivt_item(0) == "none"
     assert _format_ivt_item(0x10, 2) == "0x10"
     assert _format_ivt_item(0x12, 3) == "0x012"

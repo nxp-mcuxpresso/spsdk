@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,11 +14,11 @@ def _log_test_output(dbg_info: DebugInfo) -> None:
 
     :param dbg_info: instance used for logging
     """
-    dbg_info.append_section('SECTION')
-    dbg_info.append('-test-line-')
-    dbg_info.append_binary_section('bin', b'\x00\x11\x22\xFF')
-    dbg_info.append_binary_data('data', b'\x00\x11\x22')
-    dbg_info.append_hex_data(b'\x00\x11\x22\x00\x11\x22\x00\x11\x22\x00\x11\x22')
+    dbg_info.append_section("SECTION")
+    dbg_info.append("-test-line-")
+    dbg_info.append_binary_section("bin", b"\x00\x11\x22\xFF")
+    dbg_info.append_binary_data("data", b"\x00\x11\x22")
+    dbg_info.append_hex_data(b"\x00\x11\x22\x00\x11\x22\x00\x11\x22\x00\x11\x22")
 
 
 def test_debug_info() -> None:
@@ -27,14 +27,14 @@ def test_debug_info() -> None:
     assert dbg_info.enabled
     _log_test_output(dbg_info)
     assert dbg_info.lines == [
-        '[SECTION]',
-        '-test-line-',
-        '[bin]',
-        'hex=001122ff',
-        'len=4=0x4',
-        'data=001122',
-        'hex=001122001122001122001122',
-        'len=12=0xc',
+        "[SECTION]",
+        "-test-line-",
+        "[bin]",
+        "hex=001122ff",
+        "len=4=0x4",
+        "data=001122",
+        "hex=001122001122001122001122",
+        "len=12=0xc",
     ]
 
 
@@ -44,4 +44,4 @@ def test_debug_info_disabled() -> None:
     assert not dbg_info.enabled
     _log_test_output(dbg_info)
     assert dbg_info.lines == []
-    assert dbg_info.info() == ''
+    assert dbg_info.info() == ""

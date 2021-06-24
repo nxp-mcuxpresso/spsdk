@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ def test_SegBDSa_repr():
     output = repr(bds3a)
     repr_strings = ["BDS3a ", "IMAGES", "SIZE", "FLAG"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_SegBDSa_info():
@@ -23,7 +23,7 @@ def test_SegBDSa_info():
     info_msg = bds3a.info()
     repr_strings = ["IMAGES", "DFLAGS", "IMAGE"]
     for req_string in repr_strings:
-        assert req_string in info_msg, f'string {req_string} is not in the output: {info_msg}'
+        assert req_string in info_msg, f"string {req_string} is not in the output: {info_msg}"
 
 
 def test_SegBDSa_export_parse():
@@ -43,7 +43,7 @@ def test_SegBDSb_repr():
     output = repr(bds3b)
     repr_strings = ["BDS3b", "IMAGES", "SIZE", "FLAG"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_SegBDSb_info():
@@ -51,14 +51,14 @@ def test_SegBDSb_info():
     info_msg = bds3b.info()
     repr_strings = ["IMAGES", "DFLAGS", "IMAGE"]
     for req_string in repr_strings:
-        assert req_string in info_msg, f'string {req_string} is not in the output: {info_msg}'
+        assert req_string in info_msg, f"string {req_string} is not in the output: {info_msg}"
 
     bds3b.scd.image_source = 0x400FC010
     bds3b.csf.image_source = 0x400FC010
     info_msg = bds3b.info()
     repr_strings = ["SCD", "CSF"]
     for req_string in repr_strings:
-        assert req_string in info_msg, f'string {req_string} is not in the output: {info_msg}'
+        assert req_string in info_msg, f"string {req_string} is not in the output: {info_msg}"
 
 
 def test_SegBDS3b_export_parse():

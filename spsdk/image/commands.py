@@ -31,68 +31,78 @@ from .. import SPSDKError
 
 class EnumWriteOps(Enum):
     """Enum definition for 'flags' control flags in 'par' parameter of Write Data command."""
-    WRITE_VALUE = (0, 'Write value')
-    WRITE_CLEAR_BITS = (1, 'Write clear bits')
-    CLEAR_BITMASK = (2, 'Clear bitmask')
-    SET_BITMASK = (3, 'Set bitmask')
+
+    WRITE_VALUE = (0, "Write value")
+    WRITE_CLEAR_BITS = (1, "Write clear bits")
+    CLEAR_BITMASK = (2, "Clear bitmask")
+    SET_BITMASK = (3, "Set bitmask")
 
 
 class EnumCheckOps(Enum):
     """Enum definition for 'par' parameter of Check Data command."""
-    ALL_CLEAR = (0, 'All bits clear')
-    ALL_SET = (1, 'All bits set')
-    ANY_CLEAR = (2, 'Any bit clear')
-    ANY_SET = (3, 'Any bit set')
+
+    ALL_CLEAR = (0, "All bits clear")
+    ALL_SET = (1, "All bits set")
+    ANY_CLEAR = (2, "Any bit clear")
+    ANY_SET = (3, "Any bit set")
 
 
 class EnumCertFormat(Enum):
     """Certificate format tags."""
-    SRK = (0x03, 'SRK certificate format')
-    X509 = (0x09, 'X.509v3 certificate format')
-    CMS = (0xC5, 'CMS/PKCS#7 signature format')
-    BLOB = (0xBB, 'SHW-specific wrapped key format')
-    AEAD = (0xA3, 'Proprietary AEAD MAC format')
+
+    SRK = (0x03, "SRK certificate format")
+    X509 = (0x09, "X.509v3 certificate format")
+    CMS = (0xC5, "CMS/PKCS#7 signature format")
+    BLOB = (0xBB, "SHW-specific wrapped key format")
+    AEAD = (0xA3, "Proprietary AEAD MAC format")
 
 
 class EnumInsKey(Enum):
     """Flags for Install Key commands."""
-    CLR = (0, 'No flags set')
-    ABS = (1, 'Absolute certificate address')
-    CSF = (2, 'Install CSF key')
-    DAT = (4, 'Key binds to Data Type')
-    CFG = (8, 'Key binds to Configuration')
-    FID = (16, 'Key binds to Fabrication UID')
-    MID = (32, 'Key binds to Manufacturing ID')
-    CID = (64, 'Key binds to Caller ID')
-    HSH = (128, 'Certificate hash present')
+
+    CLR = (0, "No flags set")
+    ABS = (1, "Absolute certificate address")
+    CSF = (2, "Install CSF key")
+    DAT = (4, "Key binds to Data Type")
+    CFG = (8, "Key binds to Configuration")
+    FID = (16, "Key binds to Fabrication UID")
+    MID = (32, "Key binds to Manufacturing ID")
+    CID = (64, "Key binds to Caller ID")
+    HSH = (128, "Certificate hash present")
 
 
 class EnumAuthDat(Enum):
     """Flags for Authenticate Data commands."""
-    CLR = (0, 'No flags set')
-    ABS = (1, 'Absolute signature address')
+
+    CLR = (0, "No flags set")
+    ABS = (1, "Absolute signature address")
 
 
 class EnumEngine(Enum):
     """Engine plugin tags."""
-    ANY = (0x00, 'First compatible engine will be selected (no engine configuration parameters are allowed)')
-    SCC = (0x03, 'Security controller')
-    RTIC = (0x05, 'Run-time integrity checker')
-    SAHARA = (0x06, 'Crypto accelerator')
-    CSU = (0x0A, 'Central Security Unit')
-    SRTC = (0x0C, 'Secure clock')
-    DCP = (0x1B, 'Data Co-Processor')
-    CAAM = (0x1D, 'Cryptographic Acceleration and Assurance Module')
-    SNVS = (0x1E, 'Secure Non-Volatile Storage')
-    OCOTP = (0x21, 'Fuse controller')
-    DTCP = (0x22, 'DTCP co-processor')
-    ROM = (0x36, 'Protected ROM area')
-    HDCP = (0x24, 'HDCP co-processor')
-    SW = (0xFF, 'Software engine')
+
+    ANY = (
+        0x00,
+        "First compatible engine will be selected (no engine configuration parameters are allowed)",
+    )
+    SCC = (0x03, "Security controller")
+    RTIC = (0x05, "Run-time integrity checker")
+    SAHARA = (0x06, "Crypto accelerator")
+    CSU = (0x0A, "Central Security Unit")
+    SRTC = (0x0C, "Secure clock")
+    DCP = (0x1B, "Data Co-Processor")
+    CAAM = (0x1D, "Cryptographic Acceleration and Assurance Module")
+    SNVS = (0x1E, "Secure Non-Volatile Storage")
+    OCOTP = (0x21, "Fuse controller")
+    DTCP = (0x22, "DTCP co-processor")
+    ROM = (0x36, "Protected ROM area")
+    HDCP = (0x24, "HDCP co-processor")
+    SW = (0xFF, "Software engine")
 
 
 class EnumCAAM(Enum):
     """CAAM Engine Configuration."""
+
     DEFAULT = 0x00
     IN_SWAP8 = 0x01
     IN_SWAP16 = 0x02
@@ -104,13 +114,15 @@ class EnumCAAM(Enum):
 
 class EnumItm(Enum):
     """Engine configuration flags of Set command."""
-    MID = (0x01, 'Manufacturing ID (MID) fuse locations')
-    ENG = (0x03, 'Preferred engine for a given algorithm')
+
+    MID = (0x01, "Manufacturing ID (MID) fuse locations")
+    ENG = (0x03, "Preferred engine for a given algorithm")
 
 
 ########################################################################################################################
 # Abstract Class
 ########################################################################################################################
+
 
 class CmdBase:
     """Base class for all commands."""
@@ -156,7 +168,7 @@ class CmdBase:
         :param value: offset to set
         :raises TypeError: if cmd-data not supported by the command
         """
-        raise TypeError('cmd-data not supported by the command')
+        raise TypeError("cmd-data not supported by the command")
 
     @property
     def cmd_data_reference(self) -> Optional[BaseClass]:
@@ -177,7 +189,7 @@ class CmdBase:
         :param value: to be set
         :raise TypeError: if reference not supported by the command
         """
-        raise TypeError('cmd-data not supported by the command')
+        raise TypeError("cmd-data not supported by the command")
 
     def parse_cmd_data(self, data: bytes, offset: int) -> Any:
         """Parse additional command data from binary data.
@@ -186,7 +198,7 @@ class CmdBase:
         :param offset: start position in data to parse
         :raises TypeError: if cmd_data is not supported by the command
         """
-        raise TypeError('cmd-data not supported by the command')
+        raise TypeError("cmd-data not supported by the command")
 
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, self.__class__) and vars(other) == vars(self)
@@ -196,7 +208,9 @@ class CmdBase:
 
     def info(self) -> str:
         """Text representation of the command."""
-        return f'Command "{CmdTag.desc(self.tag)}"   [Tag={str(self.tag)}, length={str(self.size)}]\n'
+        return (
+            f'Command "{CmdTag.desc(self.tag)}"   [Tag={str(self.tag)}, length={str(self.size)}]\n'
+        )
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Export to binary form (serialization).
@@ -205,11 +219,11 @@ class CmdBase:
         :return: binary representation of the command
         """
         hdr_data = self._header.export()
-        dbg_info.append_binary_data('header', hdr_data)
+        dbg_info.append_binary_data("header", hdr_data)
         return hdr_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdBase':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdBase":
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -222,6 +236,7 @@ class CmdBase:
 ########################################################################################################################
 # HAB Commands
 ########################################################################################################################
+
 
 class CmdWriteData(CmdBase):
     """Write data command."""
@@ -252,8 +267,12 @@ class CmdWriteData(CmdBase):
         self._header.param &= ~(0x3 << 3)
         self._header.param |= int(value) << 3
 
-    def __init__(self, numbytes: int = 4, ops: int = EnumWriteOps.WRITE_VALUE,
-                 data: Iterable[Tuple[int, int]] = None) -> None:
+    def __init__(
+        self,
+        numbytes: int = 4,
+        ops: int = EnumWriteOps.WRITE_VALUE,
+        data: Iterable[Tuple[int, int]] = None,
+    ) -> None:
         """Initialize Write Data command.
 
         :param numbytes: number of bytes. Must be value: 1, 2 or 4
@@ -288,8 +307,9 @@ class CmdWriteData(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
-        msg += "Write Data Command (Ops: {0:s}, Bytes: {1:d})\n".format(EnumWriteOps.name(self.ops),
-                                                                        self.num_bytes)
+        msg += "Write Data Command (Ops: {0:s}, Bytes: {1:d})\n".format(
+            EnumWriteOps.name(self.ops), self.num_bytes
+        )
         for cmd in self._data:
             msg += "- Address: 0x{0:08X}, Value: 0x{1:08X}\n".format(cmd[0], cmd[1])
         msg += "-" * 60 + "\n"
@@ -326,7 +346,7 @@ class CmdWriteData(CmdBase):
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdWriteData':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdWriteData":
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -368,8 +388,14 @@ class CmdCheckData(CmdBase):
         self._header.param &= ~(0x3 << 3)
         self._header.param |= int(value) << 3
 
-    def __init__(self, numbytes: int = 4, ops: int = EnumCheckOps.ALL_SET, address: int = 0, mask: int = 0,
-                 count: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        numbytes: int = 4,
+        ops: int = EnumCheckOps.ALL_SET,
+        address: int = 0,
+        mask: int = 0,
+        count: Optional[int] = None,
+    ) -> None:
         """Initialize the check data command.
 
         :param numbytes: number of bytes
@@ -388,15 +414,20 @@ class CmdCheckData(CmdBase):
         self._header.length += 4 + 4 + (4 if count else 0)
 
     def __repr__(self) -> str:
-        return "CmdCheckData <{}/{}, ADDR=0x{:X}, MASK=0x{:X}>".format(EnumCheckOps[self.ops],  # type: ignore
-                                                                       self.num_bytes, self.address, self.mask)
+        return "CmdCheckData <{}/{}, ADDR=0x{:X}, MASK=0x{:X}>".format(
+            EnumCheckOps[self.ops],  # type: ignore
+            self.num_bytes,
+            self.address,
+            self.mask,
+        )
 
     def info(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
-        msg += "Check Data Command (Ops: {0:s}, Bytes: {1:d})\n".format(EnumCheckOps[self.ops],  # type: ignore
-                                                                        self.num_bytes)
+        msg += "Check Data Command (Ops: {0:s}, Bytes: {1:d})\n".format(
+            EnumCheckOps[self.ops], self.num_bytes  # type: ignore
+        )
         msg += "- Address: 0x{0:08X}, Mask: 0x{1:08X}".format(self.address, self.mask)
         if self.count:
             msg += ", Count: {0:d}".format(self.count)
@@ -417,7 +448,7 @@ class CmdCheckData(CmdBase):
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdCheckData':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdCheckData":
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -457,7 +488,7 @@ class CmdNop(CmdBase):
         return msg
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdNop':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdNop":
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -503,8 +534,13 @@ class CmdSet(CmdBase):
         assert value in EnumEngine
         self._engine = value
 
-    def __init__(self, itm: EnumItm = EnumItm.ENG, hash_alg: EnumAlgorithm = EnumAlgorithm.ANY,
-                 engine: EnumEngine = EnumEngine.ANY, engine_cfg: int = 0):
+    def __init__(
+        self,
+        itm: EnumItm = EnumItm.ENG,
+        hash_alg: EnumAlgorithm = EnumAlgorithm.ANY,
+        engine: EnumEngine = EnumEngine.ANY,
+        engine_cfg: int = 0,
+    ):
         """Initialize the set command."""
         assert itm in EnumItm
         super().__init__(CmdTag.SET, itm)
@@ -515,8 +551,10 @@ class CmdSet(CmdBase):
 
     def __repr__(self) -> str:
         return "CmdSet <{}, {}, {}, eng_cfg=0x{:X}>".format(
-            EnumItm.name(self.itm), EnumAlgorithm.name(self.hash_algorithm), EnumEngine.name(self.engine),
-            self.engine_cfg
+            EnumItm.name(self.itm),
+            EnumAlgorithm.name(self.hash_algorithm),
+            EnumEngine.name(self.engine),
+            self.engine_cfg,
         )
 
     def info(self) -> str:
@@ -524,7 +562,9 @@ class CmdSet(CmdBase):
         msg = "-" * 60 + "\n"
         msg += super().info()
         msg += "Set Command ITM : {EnumItm.name(self.itm)}\n"
-        msg += f"HASH Algo      : {self.hash_algorithm} ({EnumAlgorithm.desc(self.hash_algorithm)})\n"
+        msg += (
+            f"HASH Algo      : {self.hash_algorithm} ({EnumAlgorithm.desc(self.hash_algorithm)})\n"
+        )
         msg += f"Engine         : {self.engine} ({EnumEngine.desc(self.engine)})\n"
         msg += f"Engine Conf    : {hex(self.engine_cfg)})\n"
         msg += "-" * 60 + "\n"
@@ -538,11 +578,11 @@ class CmdSet(CmdBase):
         """
         raw_data = super().export(dbg_info=dbg_info)
         raw_data += pack("4B", 0x00, self.hash_algorithm, self.engine, self.engine_cfg)
-        dbg_info.append_binary_data('data', raw_data)
+        dbg_info.append_binary_data("data", raw_data)
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdSet':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdSet":
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -551,7 +591,12 @@ class CmdSet(CmdBase):
         """
         header = CmdHeader.parse(data, offset, CmdTag.SET)
         (_, alg, eng, cfg) = unpack_from("4B", data, offset + CmdHeader.SIZE)
-        return CmdSet(EnumItm.from_int(header.param), EnumAlgorithm.from_int(alg), EnumEngine.from_int(eng), cfg)
+        return CmdSet(
+            EnumItm.from_int(header.param),
+            EnumAlgorithm.from_int(alg),
+            EnumEngine.from_int(eng),
+            cfg,
+        )
 
 
 class CmdInitialize(CmdBase):
@@ -631,7 +676,7 @@ class CmdInitialize(CmdBase):
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdInitialize':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdInitialize":
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -671,7 +716,9 @@ class CmdUnlockAbstract(CmdBase, ABC):
     def __repr__(self) -> str:
         return "{} <{}, {}, {}>".format(
             self.__class__.__name__,
-            EnumEngine.desc(self.engine), self.features, self.uid
+            EnumEngine.desc(self.engine),
+            self.features,
+            self.uid,
         )
 
     @property
@@ -702,12 +749,12 @@ class CmdUnlockAbstract(CmdBase, ABC):
     def need_uid(engine: EnumEngine, features: int) -> bool:
         """Return True if given Engine and Feature requires UID."""
         overall_condition = False
-        ocotp_condition = (engine == EnumEngine.OCOTP and bool(features & 0b1101))
+        ocotp_condition = engine == EnumEngine.OCOTP and bool(features & 0b1101)
         overall_condition |= ocotp_condition
         return overall_condition
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdUnlockAbstract':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdUnlockAbstract":
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -738,11 +785,11 @@ class CmdUnlockAbstract(CmdBase, ABC):
         # assert self.size == CmdHeader.SIZE + 4
         raw_data = super().export(dbg_info=dbg_info)
         data = pack(">L", self.features)
-        dbg_info.append_binary_data('features', data)
+        dbg_info.append_binary_data("features", data)
         raw_data += data
         if self._need_uid:
             data = pack(">Q", self.uid)
-            dbg_info.append_binary_data('uid', data)
+            dbg_info.append_binary_data("uid", data)
             raw_data += data
         return raw_data
 
@@ -784,6 +831,7 @@ class CmdUnlockSNVS(CmdUnlockAbstract):
 
 class CmdUnlockCAAM(CmdUnlockAbstract):
     """Command Unlock for Cryptographic Acceleration and Assurance Module ."""
+
     # Leave Job Ring and DECO Master IP unlocked
     FEATURE_UNLOCK_MID = 1
     # Leave RNG unititialized
@@ -823,17 +871,18 @@ class CmdUnlockCAAM(CmdUnlockAbstract):
         msg += "-" * 60 + "\n"
         return msg
 
+
 class CmdUnlockOCOTP(CmdUnlockAbstract):
     """Command Unlock for On-Chip One-time programable memory (fuses)."""
-    #pylint: disable = bad-whitespace
+
     # Leave Field Return activation unlocked.
-    FEATURE_UNLOCK_FLD_RTN  = 1
+    FEATURE_UNLOCK_FLD_RTN = 1
     # Leave SRK revocation unlocked.
-    FEATURE_UNLOCK_SRK_RVK  = 2
+    FEATURE_UNLOCK_SRK_RVK = 2
     # Leave SCS register unlocked.
-    FEATURE_UNLOCK_SCS      = 4
+    FEATURE_UNLOCK_SCS = 4
     # Unlock JTAG using SCS HAB_JDE bit.
-    FEATURE_UNLOCK_JTAG     = 8
+    FEATURE_UNLOCK_JTAG = 8
 
     def __init__(self, features: int = 0, uid: int = 0):
         """Initialize.
@@ -868,7 +917,6 @@ class CmdUnlockOCOTP(CmdUnlockAbstract):
         """Unlock JTAG using SCS HAB_JDE bit."""
         return self.features & self.FEATURE_UNLOCK_JTAG != 0
 
-
     def info(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
@@ -881,6 +929,7 @@ class CmdUnlockOCOTP(CmdUnlockAbstract):
             msg += f"UID : {hex(self.uid)}\n"
         msg += "-" * 60 + "\n"
         return msg
+
 
 class CmdUnlock(CmdUnlockAbstract):
     """Generic unlock engine command."""
@@ -907,9 +956,15 @@ class CmdUnlock(CmdUnlockAbstract):
 class CmdInstallKey(CmdBase):
     """Install key command."""
 
-    def __init__(self, flags: EnumInsKey = EnumInsKey.CLR, cert_fmt: EnumCertFormat = EnumCertFormat.SRK,
-                 hash_alg: EnumAlgorithm = EnumAlgorithm.ANY, src_index: int = 0, tgt_index: int = 0,
-                 location: int = 0) -> None:
+    def __init__(
+        self,
+        flags: EnumInsKey = EnumInsKey.CLR,
+        cert_fmt: EnumCertFormat = EnumCertFormat.SRK,
+        hash_alg: EnumAlgorithm = EnumAlgorithm.ANY,
+        src_index: int = 0,
+        tgt_index: int = 0,
+        location: int = 0,
+    ) -> None:
         """Constructor.
 
         :param flags: from EnumInsKey
@@ -983,7 +1038,12 @@ class CmdInstallKey(CmdBase):
         :param value: source key (verification key, KEK) index
         """
         if self._cert_fmt == EnumCertFormat.SRK:
-            assert value in (0, 1, 2, 3)  # RT10xx supports just 4 SRK keys; this might need update for other devices
+            assert value in (
+                0,
+                1,
+                2,
+                3,
+            )  # RT10xx supports just 4 SRK keys; this might need update for other devices
         else:
             assert value in (0, 2, 3, 4, 5)
         self._src_index = value
@@ -1018,7 +1078,9 @@ class CmdInstallKey(CmdBase):
     @property
     def needs_cmd_data_reference(self) -> bool:
         """Whether the command contains a reference to an additional data."""
-        if self.flags == EnumInsKey.ABS:  # reference is an absolute address; instance not assigned; used for DEK key
+        if (
+            self.flags == EnumInsKey.ABS
+        ):  # reference is an absolute address; instance not assigned; used for DEK key
             assert self._certificate_ref is None
             return False
         return True
@@ -1072,25 +1134,33 @@ class CmdInstallKey(CmdBase):
         self._certificate_ref = value
 
     def __repr__(self) -> str:
-        return "CmdInstallKey <{}, {}, {}, {}, {}, 0x{:X}>". \
-            format(EnumInsKey[self.flags], EnumCertFormat[self.certificate_format],  # type: ignore
-                   EnumAlgorithm[self.hash_algorithm],  # type: ignore
-                   self.source_index, self.target_index, self.cmd_data_location)
+        return "CmdInstallKey <{}, {}, {}, {}, {}, 0x{:X}>".format(
+            EnumInsKey[self.flags],  # type: ignore
+            EnumCertFormat[self.certificate_format],  # type: ignore
+            EnumAlgorithm[self.hash_algorithm],  # type: ignore
+            self.source_index,
+            self.target_index,
+            self.cmd_data_location,
+        )
 
     def info(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
         msg += " Flag      : {:d} ({})\n".format(self.flags, EnumInsKey.desc(self.flags))
-        msg += " CertFormat: {:d} ({})\n".format(self.certificate_format,
-                                                 EnumCertFormat.desc(self.certificate_format))  # type: ignore
-        msg += " Algorithm : {:d} ({})\n".format(self.hash_algorithm,
-                                                 EnumAlgorithm.desc(self.hash_algorithm))  # type: ignore
+        msg += " CertFormat: {:d} ({})\n".format(
+            self.certificate_format, EnumCertFormat.desc(self.certificate_format)
+        )  # type: ignore
+        msg += " Algorithm : {:d} ({})\n".format(
+            self.hash_algorithm, EnumAlgorithm.desc(self.hash_algorithm)
+        )  # type: ignore
         msg += " SrcKeyIdx : {:d} (Source key index) \n".format(self.source_index)
         msg += " TgtKeyIdx : {:d} (Target key index) \n".format(self.target_index)
-        msg += " Location  : 0x{:08X} (Start address of certificate(s) to install) \n".format(self.cmd_data_location)
+        msg += " Location  : 0x{:08X} (Start address of certificate(s) to install) \n".format(
+            self.cmd_data_location
+        )
         if self.certificate_ref:
-            msg += '[related-certificate]\n'
+            msg += "[related-certificate]\n"
             msg += self.certificate_ref.info()
         msg += "-" * 60 + "\n"
         return msg
@@ -1102,10 +1172,16 @@ class CmdInstallKey(CmdBase):
         :return: binary representation of the command
         """
         raw_data = super().export(dbg_info=dbg_info)
-        data = pack(">4BL", self.certificate_format, self.hash_algorithm, self.source_index, self.target_index,
-                    self.cmd_data_location)
+        data = pack(
+            ">4BL",
+            self.certificate_format,
+            self.hash_algorithm,
+            self.source_index,
+            self.target_index,
+            self.cmd_data_location,
+        )
         raw_data += data
-        dbg_info.append_binary_data('data', data)
+        dbg_info.append_binary_data("data", data)
         return raw_data
 
     @classmethod
@@ -1117,8 +1193,17 @@ class CmdInstallKey(CmdBase):
         :return: parse command
         """
         header = CmdHeader.parse(data, offset, CmdTag.INS_KEY)
-        protocol, algorithm, src_index, tgt_index, location = unpack_from(">4BL", data, offset + header.size)
-        return cls(EnumInsKey.from_int(header.param), protocol, algorithm, src_index, tgt_index, location)
+        protocol, algorithm, src_index, tgt_index, location = unpack_from(
+            ">4BL", data, offset + header.size
+        )
+        return cls(
+            EnumInsKey.from_int(header.param),
+            protocol,
+            algorithm,
+            src_index,
+            tgt_index,
+            location,
+        )
 
 
 # the type represents referenced command data: either Signature or MAC
@@ -1162,10 +1247,17 @@ class CmdAuthData(CmdBase):
         assert value in EnumEngine
         self._engine = value
 
-    def __init__(self, flags: EnumAuthDat = EnumAuthDat.CLR, key_index: int = 1,
-                 sig_format: EnumCertFormat = EnumCertFormat.CMS, engine: EnumEngine = EnumEngine.ANY,
-                 engine_cfg: int = 0, location: int = 0, certificate: Optional[Certificate] = None,
-                 private_key_pem_data: Optional[bytes] = None):
+    def __init__(
+        self,
+        flags: EnumAuthDat = EnumAuthDat.CLR,
+        key_index: int = 1,
+        sig_format: EnumCertFormat = EnumCertFormat.CMS,
+        engine: EnumEngine = EnumEngine.ANY,
+        engine_cfg: int = 0,
+        location: int = 0,
+        certificate: Optional[Certificate] = None,
+        private_key_pem_data: Optional[bytes] = None,
+    ):
         """Initialize the Authenticate data command."""
         super().__init__(CmdTag.AUT_DAT, flags)
         self.key_index = key_index
@@ -1243,7 +1335,7 @@ class CmdAuthData(CmdBase):
         if header.tag == SegTag.SIG:
             self._signature = Signature.parse(data, offset)
             return self._signature
-        raise ExpectedSignatureOrMACError(f'TAG = {header.tag}')
+        raise ExpectedSignatureOrMACError(f"TAG = {header.tag}")
 
     @property
     def signature(self) -> Optional[SignatureOrMAC]:
@@ -1259,9 +1351,13 @@ class CmdAuthData(CmdBase):
         self.cmd_data_reference = value
 
     def __repr__(self) -> str:
-        return "CmdAuthData <{}, {}, {}, key:{}, 0x{:X}>". \
-            format(EnumAuthDat[self.flags], EnumEngine[self.engine],  # type: ignore
-                   self.engine_cfg, self.key_index, self.location)
+        return "CmdAuthData <{}, {}, {}, key:{}, 0x{:X}>".format(
+            EnumAuthDat[self.flags],  # type: ignore
+            EnumEngine[self.engine],  # type: ignore
+            self.engine_cfg,
+            self.key_index,
+            self.location,
+        )
 
     def __len__(self) -> int:
         return len(self._blocks)
@@ -1285,9 +1381,11 @@ class CmdAuthData(CmdBase):
         msg += " Key index:   {:d}\n".format(self.key_index)
         msg += " Engine:      {:d} ({})\n".format(self.engine, EnumEngine.desc(self.engine))
         msg += " Engine Conf: {:d}\n".format(self.engine_cfg)
-        msg += " Location:    0x{:08X} (Start address of authentication data) \n".format(self.location)
+        msg += " Location:    0x{:08X} (Start address of authentication data) \n".format(
+            self.location
+        )
         if self.signature:
-            msg += '[related signature]\n'
+            msg += "[related signature]\n"
             msg += self.signature.info()
         msg += "-" * 60 + "\n"
         for blk in self._blocks:
@@ -1296,7 +1394,9 @@ class CmdAuthData(CmdBase):
 
     def append(self, start_address: int, size: int) -> None:
         """Append of Authenticate data command."""
-        self._blocks.append((start_address, size), )
+        self._blocks.append(
+            (start_address, size),
+        )
         self._header.length += 8
 
     def pop(self, index: int) -> Tuple[int, int]:
@@ -1323,63 +1423,78 @@ class CmdAuthData(CmdBase):
 
         # signed data (main section)
         signed_data = cms.SignedData()
-        signed_data['version'] = 'v1'
-        signed_data['encap_content_info'] = util.OrderedDict([
-            ('content_type', 'data')
-        ])
-        signed_data['digest_algorithms'] = [util.OrderedDict([
-            ('algorithm', 'sha256'),
-            ('parameters', None)])]
+        signed_data["version"] = "v1"
+        signed_data["encap_content_info"] = util.OrderedDict([("content_type", "data")])
+        signed_data["digest_algorithms"] = [
+            util.OrderedDict([("algorithm", "sha256"), ("parameters", None)])
+        ]
 
         # signer info sub-section
         signer_info = cms.SignerInfo()
-        signer_info['version'] = 'v1'
-        signer_info['digest_algorithm'] = util.OrderedDict([
-            ('algorithm', 'sha256'),
-            ('parameters', None)])
-        signer_info['signature_algorithm'] = util.OrderedDict([
-            ('algorithm', 'rsassa_pkcs1v15'),
-            ('parameters', b'')])
+        signer_info["version"] = "v1"
+        signer_info["digest_algorithm"] = util.OrderedDict(
+            [("algorithm", "sha256"), ("parameters", None)]
+        )
+        signer_info["signature_algorithm"] = util.OrderedDict(
+            [("algorithm", "rsassa_pkcs1v15"), ("parameters", b"")]
+        )
         # signed identifier: issuer amd serial number
         asn1cert = x509.Certificate.load(self.certificate.public_bytes(Encoding.DER))
-        signer_info['sid'] = cms.SignerIdentifier({
-            'issuer_and_serial_number': cms.IssuerAndSerialNumber({
-                'issuer': asn1cert.issuer,
-                'serial_number': asn1cert.serial_number
-            })
-        })
+        signer_info["sid"] = cms.SignerIdentifier(
+            {
+                "issuer_and_serial_number": cms.IssuerAndSerialNumber(
+                    {"issuer": asn1cert.issuer, "serial_number": asn1cert.serial_number}
+                )
+            }
+        )
         # signed attributes
         signed_attrs = cms.CMSAttributes()
-        signed_attrs.append(cms.CMSAttribute({
-            'type': 'content_type',
-            'values': [cms.ContentType('data')],
-        }))
+        signed_attrs.append(
+            cms.CMSAttribute(
+                {
+                    "type": "content_type",
+                    "values": [cms.ContentType("data")],
+                }
+            )
+        )
         # check time-zone is assigned (expected UTC+0)
         assert zulu.tzinfo
-        signed_attrs.append(cms.CMSAttribute({
-            'type': 'signing_time',
-            'values': [cms.Time(name='utc_time', value=zulu.strftime('%y%m%d%H%M%SZ'))],
-        }))
-        signed_attrs.append(cms.CMSAttribute({
-            'type': 'message_digest',
-            'values': [cms.OctetString(crypto_backend().hash(data))],  # digest
-        }))
-        signer_info['signed_attrs'] = signed_attrs
+        signed_attrs.append(
+            cms.CMSAttribute(
+                {
+                    "type": "signing_time",
+                    "values": [cms.Time(name="utc_time", value=zulu.strftime("%y%m%d%H%M%SZ"))],
+                }
+            )
+        )
+        signed_attrs.append(
+            cms.CMSAttribute(
+                {
+                    "type": "message_digest",
+                    "values": [cms.OctetString(crypto_backend().hash(data))],  # digest
+                }
+            )
+        )
+        signer_info["signed_attrs"] = signed_attrs
 
         # create signature
-        signer_info['signature'] = crypto_backend().rsa_sign(self.private_key_pem_data, signed_attrs.dump())
+        signer_info["signature"] = crypto_backend().rsa_sign(
+            self.private_key_pem_data, signed_attrs.dump()
+        )
 
         # Adding SignerInfo object to SignedData object
-        signed_data['signer_infos'] = [signer_info]
+        signed_data["signer_infos"] = [signer_info]
 
         # content info
         content_info = cms.ContentInfo()
-        content_info['content_type'] = 'signed_data'
-        content_info['content'] = signed_data
+        content_info["content_type"] = "signed_data"
+        content_info["content"] = signed_data
 
         return content_info.dump()
 
-    def update_signature(self, zulu: datetime, data: bytes, base_data_addr: int = 0xFFFFFFFF) -> bool:
+    def update_signature(
+        self, zulu: datetime, data: bytes, base_data_addr: int = 0xFFFFFFFF
+    ) -> bool:
         """Update signature.
 
         This method must be called from parent to provide data to be signed
@@ -1393,13 +1508,15 @@ class CmdAuthData(CmdBase):
                         to data);
         """
         if not self.certificate or not self.private_key_pem_data:
-            raise ValueError('certificate or private key not assigned, cannot update signature')
+            raise ValueError("certificate or private key not assigned, cannot update signature")
 
         if self.signature is None:
-            raise ValueError('signature must be assigned explicitly, so its version matches to CST version')
+            raise ValueError(
+                "signature must be assigned explicitly, so its version matches to CST version"
+            )
 
         if self._blocks:
-            sign_data = b''
+            sign_data = b""
             if data:  # if not data specified, create "fake" signature to update length
                 total_len = 0
                 for blk in self._blocks:
@@ -1407,7 +1524,7 @@ class CmdAuthData(CmdBase):
                     end = blk[0] + blk[1] - base_data_addr
                     assert start >= 0
                     assert end <= len(data)
-                    sign_data += data[start: end]
+                    sign_data += data[start:end]
                     total_len += blk[1]
                 assert len(sign_data) == total_len
         else:
@@ -1429,17 +1546,24 @@ class CmdAuthData(CmdBase):
         """
         self._header.length = self.size
         raw_data = super().export(dbg_info=dbg_info)
-        data = pack(">4BL", self.key_index, self.sig_format, self.engine, self.engine_cfg, self.location)
-        dbg_info.append_binary_data('data', data)
+        data = pack(
+            ">4BL",
+            self.key_index,
+            self.sig_format,
+            self.engine,
+            self.engine_cfg,
+            self.location,
+        )
+        dbg_info.append_binary_data("data", data)
         raw_data += data
         for blk in self._blocks:
             blk_data = pack(">2L", blk[0], blk[1])
-            dbg_info.append_binary_data('block', blk_data)
+            dbg_info.append_binary_data("block", blk_data)
             raw_data += blk_data
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CmdAuthData':
+    def parse(cls, data: bytes, offset: int = 0) -> "CmdAuthData":
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
@@ -1448,7 +1572,14 @@ class CmdAuthData(CmdBase):
         """
         header = CmdHeader.parse(data, offset, CmdTag.AUT_DAT)
         key, sig_format, eng, cfg, location = unpack_from(">4BL", data, offset + header.size)
-        obj = cls(EnumAuthDat.from_int(header.param), key, sig_format, EnumEngine.from_int(eng), cfg, location)
+        obj = cls(
+            EnumAuthDat.from_int(header.param),
+            key,
+            sig_format,
+            EnumEngine.from_int(eng),
+            cfg,
+            location,
+        )
         index = header.size + 8
         while index < header.length:
             start_address, size = unpack_from(">2L", data, offset + index)
@@ -1466,7 +1597,7 @@ _CMD_TO_CLASS: Mapping[CmdTag, Type[CmdBase]] = {
     CmdTag.INIT: CmdInitialize,
     CmdTag.UNLK: CmdUnlockAbstract,
     CmdTag.INS_KEY: CmdInstallKey,
-    CmdTag.AUT_DAT: CmdAuthData
+    CmdTag.AUT_DAT: CmdAuthData,
 }
 
 

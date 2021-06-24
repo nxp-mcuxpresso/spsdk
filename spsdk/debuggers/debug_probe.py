@@ -10,34 +10,43 @@ from typing import Dict
 
 from spsdk.exceptions import SPSDKError
 
+
 class DebugProbeError(SPSDKError):
     """The general issue with debug probe exception for use with SPSDK."""
+
 
 class ProbeNotFoundError(DebugProbeError):
     """The Probe not found exception for use with SPSDK."""
 
+
 class DebugMailBoxAPNotFoundError(DebugProbeError):
     """The target doesn't have debug mailbox access port exception for use with SPSDK."""
+
 
 class DebugProbeTransferError(DebugProbeError):
     """The communication error exception for use with SPSDK."""
 
+
 class DebugProbeNotOpenError(DebugProbeError):
     """The debug probe is not opened exception for use with SPSDK."""
+
 
 class DebugProbeMemoryInterfaceAPNotFoundError(DebugProbeError):
     """The target doesn't have memory interface access port exception for use with SPSDK."""
 
+
 class DebugProbeMemoryInterfaceNotEnabled(DebugProbeError):
     """The target doesn't have memory interface enabled exception for use with SPSDK."""
 
-class DebugProbe():
+
+class DebugProbe:
     """Abstraction class to define SPSDK debug probes interface."""
 
     # Constants to detect the debug mailbox access port
-    APBANKSEL = 0x000000f0
-    APADDR = 0x00ffffff
-    APSEL = 0xff000000
+    APBANKSEL = 0x000000F0
+    APBANK_SHIFT = 4
+    APADDR = 0x00FFFFFF
+    APSEL = 0xFF000000
     APSEL_SHIFT = 24
     APSEL_APBANKSEL = APSEL | APBANKSEL
 
@@ -64,7 +73,7 @@ class DebugProbe():
         :return: ProbeDescription
         :raises NotImplementedError: The get_connected_probes is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @property
     def debug_mailbox_access_port(self) -> int:
@@ -86,7 +95,6 @@ class DebugProbe():
         """
         self.dbgmlbx_ap_ix = value
 
-
     def open(self) -> None:
         """Debug probe open.
 
@@ -96,7 +104,7 @@ class DebugProbe():
 
         :raises NotImplementedError: The open is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def enable_memory_interface(self) -> None:
         """Debug probe enabling memory interface.
@@ -113,7 +121,7 @@ class DebugProbe():
 
         :raises NotImplementedError: The close is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def dbgmlbx_reg_read(self, addr: int = 0) -> int:
         """Read debug mailbox access port register.
@@ -124,7 +132,7 @@ class DebugProbe():
         :return: The read value of addressed register (4 bytes)
         :raises NotImplementedError: The dbgmlbx_reg_read is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write debug mailbox access port register.
@@ -135,7 +143,7 @@ class DebugProbe():
         :param data: the data to be written into register
         :raises NotImplementedError: The dbgmlbx_reg_write is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def mem_reg_read(self, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
@@ -147,7 +155,7 @@ class DebugProbe():
         :return: The read value of addressed register (4 bytes)
         :raises NotImplementedError: The mem_reg_read is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write 32-bit register in memory space of MCU.
@@ -159,7 +167,7 @@ class DebugProbe():
         :param data: the data to be written into register
         :raises NotImplementedError: The mem_reg_write is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @classmethod
     def get_coresight_ap_address(cls, access_port: int, address: int) -> int:
@@ -171,7 +179,7 @@ class DebugProbe():
         :raises ValueError: In case of invalid value.
         """
         if access_port > 255:
-            raise ValueError
+            raise ValueError()
 
         return access_port << cls.APSEL_SHIFT | address
 
@@ -185,7 +193,7 @@ class DebugProbe():
         :return: The read value of addressed register (4 bytes)
         :raises NotImplementedError: The coresight_reg_read is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def coresight_reg_write(self, access_port: bool = True, addr: int = 0, data: int = 0) -> None:
         """Write coresight register.
@@ -197,7 +205,7 @@ class DebugProbe():
         :param data: the data to be written into register
         :raises NotImplementedError: The coresight_reg_read is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def reset(self) -> None:
         """Reset a target.
@@ -206,7 +214,7 @@ class DebugProbe():
 
         :raises NotImplementedError: The coresight_reg_read is NOT implemented
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def __del__(self) -> None:
         """General Debug Probe 'END' event handler."""

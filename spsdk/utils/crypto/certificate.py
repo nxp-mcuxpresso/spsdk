@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,10 +24,10 @@ class Certificate:
     @property
     def version(self) -> str:
         """Version of the Certificate."""
-        return self._cert.native['tbs_certificate']['version']
+        return self._cert.native["tbs_certificate"]["version"]
 
     @property
-    def ca(self) -> bool:   # pylint: disable=invalid-name
+    def ca(self) -> bool:  # pylint: disable=invalid-name
         """Certification Authority flag."""
         return self._cert.ca
 
@@ -64,21 +64,23 @@ class Certificate:
     @property
     def public_key_modulus(self) -> int:
         """Modulus of the public key of the certificate."""
-        return self._cert.public_key.native['public_key']['modulus']
+        return self._cert.public_key.native["public_key"]["modulus"]
 
     @property
     def public_key_exponent(self) -> int:
         """Exponent of the public key of the certificate."""
-        return self._cert.public_key.native['public_key']['public_exponent']
+        return self._cert.public_key.native["public_key"]["public_exponent"]
 
     @property
     def public_key_hash(self) -> bytes:
         """32 bytes hash (SHA-256) of public key (modulus and exponent)."""
-        modulus = self._cert.public_key.native['public_key']['modulus']
-        exponent = self._cert.public_key.native['public_key']['public_exponent']
+        modulus = self._cert.public_key.native["public_key"]["modulus"]
+        exponent = self._cert.public_key.native["public_key"]["public_exponent"]
         modulus_len = (modulus.bit_length() + 7) // 8
         exponent_len = (exponent.bit_length() + 7) // 8
-        return crypto_backend().hash(modulus.to_bytes(modulus_len, "big") + exponent.to_bytes(exponent_len, "big"))
+        return crypto_backend().hash(
+            modulus.to_bytes(modulus_len, "big") + exponent.to_bytes(exponent_len, "big")
+        )
 
     @property
     def public_key_usage(self) -> Set[str]:
@@ -100,7 +102,7 @@ class Certificate:
         """Maximum length of derived Certificate chain."""
         if not self.ca:
             return 0
-        return self._cert.basic_constraints_value['path_len_constraint'].native
+        return self._cert.basic_constraints_value["path_len_constraint"].native
 
     @property
     def issuer(self) -> Dict[str, str]:
@@ -142,7 +144,7 @@ class Certificate:
         """
         value = self.issuer.get(key, None)
         if not value:
-            return ''
+            return ""
 
         return format_str.format(value)
 
@@ -158,20 +160,22 @@ class Certificate:
         nfo += f"  Validity Range:             {not_valid_before} - {not_valid_after}\n"
         nfo += f"  Signature Algorithm:        {self.signature_algo}\n"
         nfo += f"  Self Issued:                {'YES' if self.self_issued else 'NO'}\n"
-        nfo += self._get_issuer_info('country_name', "  Issuer Country Name:        {}\n")
-        nfo += self._get_issuer_info('state_or_province_name', "  Issuer State/Province Name: {}\n")
-        nfo += self._get_issuer_info('locality_name', "  Issuer Locality Name:       {}\n")
-        nfo += self._get_issuer_info('organization_name', "  Issuer Organization Name:   {}\n")
-        nfo += self._get_issuer_info('organizational_unit_name', "  Issuer Organ. Unit Name:    {}\n")
-        nfo += self._get_issuer_info('common_name', "  Issuer Common Name:         {}\n")
-        nfo += self._get_issuer_info('email_address', "  Issuer Email Address:       {}\n")
+        nfo += self._get_issuer_info("country_name", "  Issuer Country Name:        {}\n")
+        nfo += self._get_issuer_info("state_or_province_name", "  Issuer State/Province Name: {}\n")
+        nfo += self._get_issuer_info("locality_name", "  Issuer Locality Name:       {}\n")
+        nfo += self._get_issuer_info("organization_name", "  Issuer Organization Name:   {}\n")
+        nfo += self._get_issuer_info(
+            "organizational_unit_name", "  Issuer Organ. Unit Name:    {}\n"
+        )
+        nfo += self._get_issuer_info("common_name", "  Issuer Common Name:         {}\n")
+        nfo += self._get_issuer_info("email_address", "  Issuer Email Address:       {}\n")
         return nfo
 
     def export(self) -> bytes:
         """Serialized Certificate data."""
         raw_data = self._data
         if len(raw_data) % 4:
-            raw_data += b'\x00' * (4 - (len(raw_data) % 4))
+            raw_data += b"\x00" * (4 - (len(raw_data) % 4))
         return raw_data
 
     def verify(self, public_key_modulus: int, public_key_exponent: int) -> bool:
@@ -184,8 +188,12 @@ class Certificate:
         public_key = internal_backend.rsa_public_key(public_key_modulus, public_key_exponent)
         key_object = load_public_key(public_key.export_key())
         try:
-            rsa_pkcs1v15_verify(key_object, self._cert['signature_value'].native, self._cert['tbs_certificate'].dump(),
-                                self.hash_algo)
+            rsa_pkcs1v15_verify(
+                key_object,
+                self._cert["signature_value"].native,
+                self._cert["tbs_certificate"].dump(),
+                self.hash_algo,
+            )
         except SignatureError:
             return False
         return True

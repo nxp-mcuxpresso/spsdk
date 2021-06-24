@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,8 +16,9 @@ from spsdk.crypto import SignatureProvider
 
 class SuperAwesomeSP(SignatureProvider):
     """Signature Provider based on a remote signing service."""
+
     # identifier of this signature provider; used in yaml configuration file
-    sp_type = 'sasp'
+    sp_type = "sasp"
 
     def __init__(self, key_number: int) -> None:
         """Initialize the Super Awesome SignatureProvider.
@@ -38,10 +39,8 @@ class SuperAwesomeSP(SignatureProvider):
         :param data: Data to sign
         :return: Signature
         """
-        params = {
-            'data': base64.b64encode(data)
-        }
+        params = {"data": base64.b64encode(data)}
         response = requests.get(self.url, params=params)
-        signature = response.json()['signature']
+        signature = response.json()["signature"]
         data = base64.b64decode(signature)
         return data.zfill(256)

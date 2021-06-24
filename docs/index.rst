@@ -3,44 +3,45 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. toctree::
-   :caption: Documentation
-   :maxdepth: 1
-
-   spsdk
+================================
+Secure Provisioning SDK (SPSDK)
+================================
 
 .. toctree::
-    :caption: SPSDK API
+    :caption: Project overview
     :maxdepth: 1
 
-    api/crypto
-    api/dat
-    api/debuggers
-    api/image
-    api/mboot
-    api/pfr
-    api/shadowregs
-    api/sbfile
-    api/sdp
-    api/utils
-
+    spsdk.rst
 
 .. toctree::
-    :caption: SPSDK APPS
+    :caption: Usage
     :maxdepth: 1
 
-    apps/overview
-
+    usage/installation
+    usage/applications
+    usage/apis
 
 .. toctree::
-    :caption: SPSDK Usage
+    :caption: Application User Guides
     :maxdepth: 1
 
-    usage/image
-    usage/sbfile
-    usage/mboot
-    usage/sdp
+    apps/nxpdevscan
+    apps/sdphost
+    apps/blhost
+    apps/pfr
+    apps/pfrc
+    apps/elftosb
+    apps/nxpkeygen
+    apps/nxpcertgen
+    apps/nxpdebugmbox
+    apps/shadowregs
+    apps/sdpshost
 
+.. toctree::
+    :caption: API Development Guide
+    :maxdepth: 1
+
+    api/api
 
 .. toctree::
     :caption: Examples

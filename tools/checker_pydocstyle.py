@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Checker for pydocstyle."""
@@ -11,20 +11,39 @@ import subprocess
 import sys
 
 import click
-
 from git_operations import get_changed_files, get_number_of_commits
 
 
 @click.command()
-@click.option("-p", "--repo-path", required=False, default=".",
-              help="Path to root of repository", show_default=True)
-@click.option("-m", "--module", required=False, default="spsdk",
-              help="Module for branch coverage analysis", show_default=True)
-@click.option("-b", "--parent-branch", required=False, default='origin/master',
-              help="Branch to compare HEAD to", show_default=True)
-@click.option('-a', "--all-files", is_flag=True, help='Check pydostyle for all files in spsdk') # type: ignore
-@click.option('-v', '--verbose', 'log_level', flag_value=logging.INFO, help='Display more verbose output')
-@click.option('-d', '--debug', 'log_level', flag_value=logging.DEBUG, help='Display debugging info')
+@click.option(
+    "-p",
+    "--repo-path",
+    required=False,
+    default=".",
+    help="Path to root of repository",
+    show_default=True,  # type: ignore  # Mypy is getting confused here
+)
+@click.option(
+    "-m",
+    "--module",
+    required=False,
+    default="spsdk",
+    help="Module for branch coverage analysis",
+    show_default=True,
+)
+@click.option(
+    "-b",
+    "--parent-branch",
+    required=False,
+    default="origin/master",
+    help="Branch to compare HEAD to",
+    show_default=True,
+)
+@click.option("-a", "--all-files", is_flag=True, help="Check pydostyle for all files in spsdk")  # type: ignore
+@click.option(
+    "-v", "--verbose", "log_level", flag_value=logging.INFO, help="Display more verbose output"
+)
+@click.option("-d", "--debug", "log_level", flag_value=logging.DEBUG, help="Display debugging info")
 def main(repo_path, parent_branch, module, log_level, all_files):
     """Run pydocstyle of changed lines of code."""
     logging.basicConfig(level=log_level or logging.WARNING)
@@ -52,7 +71,7 @@ def execute_pydocstyle(scope: str) -> int:
     err = 0
     logging.info(f"processing files: {scope}")
     try:
-        cmd = 'pydocstyle ' + scope
+        cmd = "pydocstyle " + scope
         subprocess.check_output(cmd)
     except subprocess.CalledProcessError as e:
         output = e.output.decode("utf-8")
@@ -67,7 +86,7 @@ def get_error_number_from_output(output_str: str) -> int:
     :param output_str: output string from pydocstyle
     :return number of errors
     """
-    return len(re.findall(r'D[100-500]', output_str))
+    return len(re.findall(r"D[100-500]", output_str))
 
 
 if __name__ == "__main__":
@@ -75,4 +94,4 @@ if __name__ == "__main__":
     from pathlib import Path
 
     os.chdir(Path(__file__).parent.parent)
-    sys.exit(main())  # pragma: no cover
+    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter

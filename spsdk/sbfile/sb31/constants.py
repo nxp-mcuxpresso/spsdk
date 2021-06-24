@@ -14,6 +14,7 @@ from spsdk.utils.easy_enum import Enum
 ########################################################################################################################
 class EnumCmdTag(Enum):
     """Contains commands tags."""
+
     NONE = (0x00, "NONE")
     ERASE = (0x01, "ERASE")
     LOAD = (0x02, "LOAD")

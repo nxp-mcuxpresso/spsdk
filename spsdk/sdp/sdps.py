@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -15,13 +15,13 @@ from typing import Tuple, Mapping
 from .exceptions import SdpConnectionError
 from .interfaces import Interface
 
-logger = logging.getLogger('SDPS')
+logger = logging.getLogger("SDPS")
 
 ROM_INFO = {
-    "MX8QXP": {'no_cmd': True, 'hid_ep1': False, 'hid_pack_size': 1024},
-    "MX28": {'no_cmd': False, 'hid_ep1': False, 'hid_pack_size': 1024},
-    "MX815": {'no_cmd': True, 'hid_ep1': True, 'hid_pack_size': 1020},
-    "MX865": {'no_cmd': True, 'hid_ep1': True, 'hid_pack_size': 1020}
+    "MX8QXP": {"no_cmd": True, "hid_ep1": False, "hid_pack_size": 1024},
+    "MX28": {"no_cmd": False, "hid_ep1": False, "hid_pack_size": 1024},
+    "MX815": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
+    "MX865": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
 }
 
 BLTC_DOWNLOAD_FW = 2
@@ -48,7 +48,7 @@ class SDPS:
         self._device = device
         self.__name: str = device_name
 
-    def __enter__(self) -> 'SDPS':
+    def __enter__(self) -> "SDPS":
         self.open()
         return self
 
@@ -88,23 +88,36 @@ class SDPS:
         :param data: The boot image data in binary format
         :raises SdpConnectionError: Timeout or Connection error
         """
-        _format = '<3IB2xbI11x'
+        _format = "<3IB2xbI11x"
 
         try:
-            self._device.conf({'hid_ep1': ROM_INFO[self.name]['hid_ep1'],
-                               'pack_size': ROM_INFO[self.name]['hid_pack_size']})
-            if not ROM_INFO[self.name]['no_cmd']:
-                cmd_packet = pack(_format, CBW_BLTC_SIGNATURE, 1, len(data), CBW_HOST_TO_DEVICE_DIR, BLTC_DOWNLOAD_FW,
-                                  self.swap32(len(data)))
-                logger.info(f"TX-CMD: WriteCmd(command={BLTC_DOWNLOAD_FW},"
-                            f" flags=0x{CBW_HOST_TO_DEVICE_DIR:08X},"
-                            f" length={len(cmd_packet)})")
+            self._device.conf(
+                {
+                    "hid_ep1": ROM_INFO[self.name]["hid_ep1"],
+                    "pack_size": ROM_INFO[self.name]["hid_pack_size"],
+                }
+            )
+            if not ROM_INFO[self.name]["no_cmd"]:
+                cmd_packet = pack(
+                    _format,
+                    CBW_BLTC_SIGNATURE,
+                    1,
+                    len(data),
+                    CBW_HOST_TO_DEVICE_DIR,
+                    BLTC_DOWNLOAD_FW,
+                    self.swap32(len(data)),
+                )
+                logger.info(
+                    f"TX-CMD: WriteCmd(command={BLTC_DOWNLOAD_FW},"
+                    f" flags=0x{CBW_HOST_TO_DEVICE_DIR:08X},"
+                    f" length={len(cmd_packet)})"
+                )
                 self._device.write(cmd_packet)
 
             self._device.write(data)
 
         except:
-            logger.info('RX-CMD: Timeout Error')
-            raise SdpConnectionError('Timeout Error')
+            logger.info("RX-CMD: Timeout Error")
+            raise SdpConnectionError("Timeout Error")
 
         logger.info(f"TX-CMD: WriteFile(length={len(data)})")

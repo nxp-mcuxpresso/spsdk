@@ -15,7 +15,9 @@ def ref_csf_obj():
     # Prepare reference CSF object
     obj = SegCSF(enabled=True)
     obj.append_command(CmdWriteData(ops=EnumWriteOps.WRITE_VALUE, data=((0x30340004, 0x4F400005),)))
-    obj.append_command(CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001, count=10))
+    obj.append_command(
+        CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001, count=10)
+    )
     return obj
 
 

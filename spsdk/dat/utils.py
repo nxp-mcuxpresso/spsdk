@@ -22,14 +22,16 @@ def reconstruct_signature(signature_bytes: bytes, size: int = None) -> bytes:
     """
     size = len(signature_bytes) // 2
     r_bytes = signature_bytes[:size]
-    r = int.from_bytes(r_bytes, 'big')
-    s_bytes = signature_bytes[size:(size*2)]
-    s = int.from_bytes(s_bytes, 'big')
+    r = int.from_bytes(r_bytes, "big")
+    s_bytes = signature_bytes[size : (size * 2)]
+    s = int.from_bytes(s_bytes, "big")
     signature = utils_cryptography.encode_dss_signature(r, s)
     return signature
 
 
-def ecc_public_numbers_to_bytes(public_numbers: crypto.EllipticCurvePublicNumbers, length: int = None) -> bytes:
+def ecc_public_numbers_to_bytes(
+    public_numbers: crypto.EllipticCurvePublicNumbers, length: int = None
+) -> bytes:
     """Converts public numbers from ECC key into bytes.
 
     :param public_numbers: instance of ecc public numbers
@@ -39,14 +41,16 @@ def ecc_public_numbers_to_bytes(public_numbers: crypto.EllipticCurvePublicNumber
     x = public_numbers.x
     y = public_numbers.y
     length = length or math.ceil(x.bit_length() / 8)
-    x_bytes = x.to_bytes(length, 'big')
-    y_bytes = y.to_bytes(length, 'big')
+    x_bytes = x.to_bytes(length, "big")
+    y_bytes = y.to_bytes(length, "big")
     return x_bytes + y_bytes
 
 
-def rsa_key_to_bytes(key: Union[crypto.RSAPublicKey, crypto.RSAPrivateKeyWithSerialization],
-                     exp_length: int = None,
-                     modulus_length: int = None) -> bytes:
+def rsa_key_to_bytes(
+    key: Union[crypto.RSAPublicKey, crypto.RSAPrivateKeyWithSerialization],
+    exp_length: int = None,
+    modulus_length: int = None,
+) -> bytes:
     """Converts RSA key into bytes.
 
     :param key: Union of types: RSAPublicKey, RSAPrivateKeyWithSerialization
@@ -58,8 +62,8 @@ def rsa_key_to_bytes(key: Union[crypto.RSAPublicKey, crypto.RSAPrivateKeyWithSer
     mod_rotk = key.public_numbers().n  # type: ignore
     exp_length = exp_length or math.ceil(exp_rotk.bit_length() / 8)
     modulus_length = modulus_length or math.ceil(mod_rotk.bit_length() / 8)
-    exp_rotk_bytes = exp_rotk.to_bytes(exp_length, 'big')
-    mod_rotk_bytes = mod_rotk.to_bytes(modulus_length, 'big')
+    exp_rotk_bytes = exp_rotk.to_bytes(exp_length, "big")
+    mod_rotk_bytes = mod_rotk.to_bytes(modulus_length, "big")
     return mod_rotk_bytes + exp_rotk_bytes
 
 
@@ -71,5 +75,4 @@ def ecc_key_to_bytes(key: crypto.EllipticCurvePublicKey, length: int = None) -> 
     :return: bytes representation
     """
     public_numbers = key.public_numbers()
-    return ecc_public_numbers_to_bytes(public_numbers=public_numbers,
-                                       length=length)
+    return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=length)

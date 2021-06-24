@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,7 @@ import pytest
 from spsdk.image import TrustZone, TrustZoneType
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def sample_tz_data(data_dir):
     with open(os.path.join(data_dir, "lpc55xxA1.json")) as f:
         return json.load(f)["trustZonePreset"]
@@ -43,7 +43,7 @@ def test_tz_types(sample_tz_data):
     assert tz.type == TrustZoneType.CUSTOM
     tz = TrustZone.custom(family="lpc55xx", customizations=sample_tz_data)
     assert tz.type == TrustZoneType.CUSTOM
-    assert "TrustZone" in str(tz) 
+    assert "TrustZone" in str(tz)
 
 
 def test_errors(sample_tz_data):
@@ -55,7 +55,7 @@ def test_errors(sample_tz_data):
     # throw error when TZ is set to CUSTOM but no data and no family are provided
     with pytest.raises(AssertionError):
         TrustZone(tz_type=TrustZoneType.CUSTOM)
-   # throw error when TZ is set to CUSTOM but no family is provided
+    # throw error when TZ is set to CUSTOM but no family is provided
     with pytest.raises(AssertionError):
         TrustZone(tz_type=TrustZoneType.CUSTOM, customizations=sample_tz_data)
     # throw error when TZ is set to CUSTOM but no data are provided
@@ -67,9 +67,10 @@ def test_errors(sample_tz_data):
 
 
 def test_simplified_export():
-    assert TrustZone().export() == b''
-    assert TrustZone.enabled().export() == b''
-    assert TrustZone.disabled().export() == b''
+    assert TrustZone().export() == b""
+    assert TrustZone.enabled().export() == b""
+    assert TrustZone.disabled().export() == b""
+
 
 # in data dir, there are example json config files for elftosb and their  associated binaries
 # to create new datasets:
@@ -79,8 +80,7 @@ def test_simplified_export():
 
 
 @pytest.mark.parametrize(
-    "family,json_config,binary",
-    [("lpc55xx", "lpc55xxA1.json", "lpc55xxA1_tzFile.bin")]
+    "family,json_config,binary", [("lpc55xx", "lpc55xxA1.json", "lpc55xxA1_tzFile.bin")]
 )
 def test_binary(data_dir, family, json_config, binary):
     with open(os.path.join(data_dir, json_config)) as json_config_file:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,18 @@
 from typing import Mapping, Type
 
 from ..commands import CmdBaseClass, EnumCmdTag
-from ..commands import CmdNop, CmdTag, CmdLoad, CmdFill, CmdJump, CmdCall, CmdErase, CmdReset, CmdMemEnable, CmdProg
+from ..commands import (
+    CmdNop,
+    CmdTag,
+    CmdLoad,
+    CmdFill,
+    CmdJump,
+    CmdCall,
+    CmdErase,
+    CmdReset,
+    CmdMemEnable,
+    CmdProg,
+)
 
 # mapping of V1.x command to the implementation class
 _CMDV1_TO_CLASS: Mapping[EnumCmdTag, Type[CmdBaseClass]] = {
@@ -38,5 +49,5 @@ def parse_v1_command(data: bytes, offset: int = 0) -> CmdBaseClass:
     """
     header_tag = EnumCmdTag.from_int(data[offset + 1])
     if header_tag not in _CMDV1_TO_CLASS:
-        raise ValueError(f'Unsupported command: {EnumCmdTag.name(header_tag)}')
+        raise ValueError(f"Unsupported command: {EnumCmdTag.name(header_tag)}")
     return _CMDV1_TO_CLASS[header_tag].parse(data, offset)

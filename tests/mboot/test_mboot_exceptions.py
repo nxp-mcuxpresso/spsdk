@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -41,9 +41,10 @@ def test_expect_fail():
     assert False == raise_and_catch(SPSDKError(), McuBootError)
     assert False == raise_and_catch(McuBootError(), McuBootConnectionError)
 
+
 def test_stringification():
     """Test stringified error messages from exceptions."""
-    assert 'random-description' in str(McuBootError('random-description'))
-    assert 'random-description' in str(McuBootConnectionError('random-description'))
-    assert 'random-command' in str(McuBootCommandError('random-command', 0))
-    assert 'Unknown Error' in str(McuBootCommandError('random-command', -1))
+    assert "random-description" in str(McuBootError("random-description"))
+    assert "random-description" in str(McuBootConnectionError("random-description"))
+    assert "random-command" in str(McuBootCommandError("random-command", 0))
+    assert "Unknown Error" in str(McuBootCommandError("random-command", -1))

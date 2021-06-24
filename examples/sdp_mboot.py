@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,10 +17,12 @@ from spsdk import sdp, mboot
 # import logging
 # logging.basicConfig(level=logging.DEBUG)
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
-def run_flash_loader(load_address: int, start_address: int, data: bytes, device_name: str = None) -> bool:
+def run_flash_loader(
+    load_address: int, start_address: int, data: bytes, device_name: str = None
+) -> bool:
     """Load an execute flashloader binary in i.MX-RT.
 
     :param load_address: Destination address in target memory
@@ -45,12 +47,12 @@ def run_flash_loader(load_address: int, start_address: int, data: bytes, device_
 
 def main() -> None:
     """Main function."""
-    with open(f'{DATA_DIR}/ivt_flashloader.bin', 'rb') as f:
+    with open(f"{DATA_DIR}/ivt_flashloader.bin", "rb") as f:
         flash_loader_data = f.read()
 
     if run_flash_loader(0x20000000, 0x20000400, flash_loader_data):
         sleep(6)  # wait for device startup
-        print('flash-loader executed')
+        print("flash-loader executed")
 
     # Scan for MCU-BOOT device
     devices = mboot.scan_usb()

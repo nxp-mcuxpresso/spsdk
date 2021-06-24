@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,12 +23,20 @@ def test_segDCD_set_get_iter():
     dcd_seg.append(CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001))
     dcd_seg.append(CmdNop())
     dcd_seg[1] = CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001)
-    assert dcd_seg[1] == CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001)
+    assert dcd_seg[1] == CmdCheckData(
+        ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001
+    )
     dcd_seg.append(CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001))
     my_iter = iter(dcd_seg)
-    assert next(my_iter) == CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001)
-    assert next(my_iter) == CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001)
-    assert next(my_iter) == CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001)
+    assert next(my_iter) == CmdCheckData(
+        ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001
+    )
+    assert next(my_iter) == CmdCheckData(
+        ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001
+    )
+    assert next(my_iter) == CmdCheckData(
+        ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001
+    )
     with pytest.raises(StopIteration):
         next(my_iter)
 
@@ -38,9 +46,9 @@ def test_segDCD_pop_append():
     dcd_seg.append(CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001))
     dcd_seg.append(CmdNop())
     output = dcd_seg.pop(1)
-    assert "Command \"No Operation" in output.info()
+    assert 'Command "No Operation' in output.info()
     output = dcd_seg.pop(0)
-    assert "Command \"Check Data" in output.info()
+    assert 'Command "Check Data' in output.info()
 
 
 def test_segDCD_clear():

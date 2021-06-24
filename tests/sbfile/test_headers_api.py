@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ from spsdk.utils.crypto.backend_internal import internal_backend
 def test_image_header_v2():
     header = ImageHeaderV2()
     assert header.nonce is None
-    assert header.version == '2.0'
+    assert header.version == "2.0"
     assert header.flags == 8
     assert header.image_blocks == 0
     assert header.first_boot_section_id == 0
@@ -23,8 +23,8 @@ def test_image_header_v2():
     assert header.key_blob_block == 8
     assert header.key_blob_block_count == 5
     assert header.max_section_mac_count == 0
-    assert str(header.product_version) == '1.0.0'
-    assert str(header.component_version) == '1.0.0'
+    assert str(header.product_version) == "1.0.0"
+    assert str(header.component_version) == "1.0.0"
     assert header.build_number == 0
 
     assert header.info()  # test info prints any non-empty output
@@ -41,5 +41,5 @@ def test_image_header_v2():
     header_parsed = ImageHeaderV2.parse(data)
     assert header == header_parsed
 
-    header.version = '2.1'
+    header.version = "2.1"
     assert header != header_parsed

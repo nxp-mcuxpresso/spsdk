@@ -13,10 +13,12 @@ import re
 import sys
 from typing import Sequence
 
-EXTENSIONS = ['.py']
+EXTENSIONS = [".py"]
 COPYRIGHT_REGEX_STR = r"Copyright.*(?P<till>\d{4}) (?P<holder>.*)"
 COPYRIGHT_REGEX = re.compile(COPYRIGHT_REGEX_STR)
 THIS_YEAR = datetime.datetime.now().year
+
+EXCLUDED_FILES = ["docs/conf.py"]
 
 
 def check_file(file: str) -> int:
@@ -42,6 +44,8 @@ def check_files(files: Sequence[str]) -> int:
     """Run the check on a list of files."""
     ret_val = 0
     for file in files:
+        if file in EXCLUDED_FILES:
+            continue
         _, extension = os.path.splitext(file)
         if extension in EXTENSIONS:
             ret_val += check_file(file)
@@ -53,11 +57,11 @@ def main(argv: Sequence[str] = None) -> int:
     parser = argparse.ArgumentParser(
         description="""Check whether "files" have the current year in Copyright."""
     )
-    parser.add_argument('files', nargs='*', help='Files to analyze')
+    parser.add_argument("files", nargs="*", help="Files to analyze")
     args = parser.parse_args(argv)
 
     return check_files(args.files)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

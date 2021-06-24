@@ -6,14 +6,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to handle registers configuration."""
 
-import os
-import logging
-from typing import List, Dict
 import json
+import logging
+import os
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-class RegConfig():
+
+class RegConfig:
     """Class that helps manage the registers configuration."""
 
     def __init__(self, path: str) -> None:
@@ -42,7 +43,7 @@ class RegConfig():
         :return: List of all supported devices.
         """
         config = cls.load_config(path)
-        return list(config['devices'].keys())
+        return list(config["devices"].keys())
 
     def _get_device(self, device: str = None) -> dict:
         """Return JSON device structure.
@@ -104,14 +105,9 @@ class RegConfig():
         :param device: The device name.
         :return: The dictionary of antipole registers.
         """
-        dev = self._get_device(device)
-        if dev and "inverted_regs" in dev.keys():
-            # Get device specific
-            inverted_regs = dev.get("inverted_regs", {})
-        else:
-            # get the general one
-            inverted_regs = self.config.get("inverted_regs", {})
-        return dict(inverted_regs)
+        val = self.get_value("inverted_regs", device, default={})
+        assert isinstance(val, dict)
+        return dict(val)
 
     def get_computed_fields(self, device: str = None) -> Dict[str, Dict[str, str]]:
         """Return the list of computed fields (not used in config YML files).
@@ -119,14 +115,9 @@ class RegConfig():
         :param device: The device name, if not specified, the general value is used.
         :return: The dictionary of computed fields.
         """
-        dev = self._get_device(device)
-        if dev and "computed_fields" in dev.keys():
-            # Get device specific
-            computed_fields = dev.get("computed_fields", {})
-        else:
-            # get the general one
-            computed_fields = self.config.get("computed_fields", {})
-        return dict(computed_fields)
+        val = self.get_value("computed_fields", device, default={})
+        assert isinstance(val, dict)
+        return dict(val)
 
     def get_computed_registers(self, device: str = None) -> List[str]:
         """Return the list of computed registers.
@@ -134,14 +125,9 @@ class RegConfig():
         :param device: The device name, if not specified, the general value is used.
         :return: The list of computed registers.
         """
-        dev = self._get_device(device)
-        if dev and "computed_registers" in dev.keys():
-            # Get device specific
-            computed_registers = dev.get("computed_registers", [])
-        else:
-            # get the general one
-            computed_registers = self.config.get("computed_registers", [])
-        return list(computed_registers)
+        val = self.get_value("computed_registers", device, default=[])
+        assert isinstance(val, list)
+        return list(val)
 
     def get_grouped_registers(self, device: str = None) -> List[dict]:
         """Return the list of grouped registers description.
@@ -149,14 +135,9 @@ class RegConfig():
         :param device: The device name, if not specified, the general value is used.
         :return: The list of grouped registers descriptions.
         """
-        dev = self._get_device(device)
-        if dev and "grouped_registers" in dev.keys():
-            # Get device specific
-            grouped_registers = dev.get("grouped_registers", [])
-        else:
-            # get the general one
-            grouped_registers = self.config.get("grouped_registers", [])
-        return list(grouped_registers)
+        val = self.get_value("grouped_registers", device, default=[])
+        assert isinstance(val, list)
+        return list(val)
 
     def get_ignored_registers(self, device: str = None) -> List[str]:
         """Return the list of ignored registers.
@@ -164,14 +145,9 @@ class RegConfig():
         :param device: The device name, if not specified, the general value is used.
         :return: The list of ignored register.
         """
-        dev = self._get_device(device)
-        if dev and "ignored_registers" in dev.keys():
-            # Get device specific
-            ignored_registers = dev.get("ignored_registers", [])
-        else:
-            # get the general one
-            ignored_registers = self.config.get("ignored_registers", [])
-        return list(ignored_registers)
+        val = self.get_value("ignored_registers", device, default=[])
+        assert isinstance(val, list)
+        return list(val)
 
     def get_ignored_fields(self, device: str = None) -> List[str]:
         """Return the list of ignored fields.
@@ -179,41 +155,41 @@ class RegConfig():
         :param device: The device name, if not specified, the general value is used.
         :return: The list of ignored fields.
         """
-        dev = self._get_device(device)
-        if dev and "ignored_fields" in dev.keys():
-            # Get device specific
-            ignored_fields = dev.get("ignored_fields", [])
-        else:
-            # get the general one
-            ignored_fields = self.config.get("ignored_fields", [])
-        return list(ignored_fields)
+        val = self.get_value("ignored_fields", device, default=[])
+        assert isinstance(val, list)
+        return val
 
-    def get_seal_start_address(self, device: str = None) -> str:
+    def get_seal_start_address(self, device: str = None) -> Optional[str]:
         """Return the seal start address.
 
         :param device: The device name, if not specified, the general value is used.
         :return: The seal start register name.
         """
-        dev = self._get_device(device)
-        if dev and "seal_start" in dev.keys():
-            # Get device specific
-            seal_start = dev.get("seal_start", None)
-        else:
-            # get the general one
-            seal_start = self.config.get("seal_start", None)
-        return seal_start
+        val = self.get_value("seal_start", device)
+        assert val is None or isinstance(val, str)
+        return val
 
-    def get_seal_count(self, device: str = None) -> str:
+    def get_seal_count(self, device: str = None) -> Optional[int]:
         """Return the seal count.
 
         :param device: The device name, if not specified, the general value is used.
         :return: The seal count.
         """
+        val = self.get_value("seal_count", device)
+        assert val is None or isinstance(val, int)
+        return val
+
+    def get_value(self, key: str, device: str = None, default: Any = None) -> Any:
+        """Return any parameter by key.
+
+        :param key: The Key of the parameter to be returned.
+        :param device: The device name.
+        :param default: The default Value in case that is not specified in config file.
+        :return: The Value of parameter by handled Key.
+        """
         dev = self._get_device(device)
-        if dev and "seal_count" in dev.keys():
-            # Get device specific
-            seal_count = dev.get("seal_count", None)
-        else:
-            # get the general one
-            seal_count = self.config.get("seal_count", None)
-        return seal_count
+        # Try to get device specific
+        if dev and key in dev.keys():
+            return dev[key]
+        # get the general one if available, default otherwise
+        return self.config.get(key, default)

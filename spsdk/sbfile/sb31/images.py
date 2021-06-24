@@ -22,6 +22,7 @@ from spsdk.utils.crypto.backend_internal import internal_backend
 ########################################################################################################################
 class SecureBinary31Header(BaseClass):
     """Header of the SecureBinary V3.1."""
+
     HEADER_FORMAT = "<4s2H3LQ4L16s"
     HEADER_SIZE = calcsize(HEADER_FORMAT)
     MAGIC = b"sbv3"
@@ -29,9 +30,13 @@ class SecureBinary31Header(BaseClass):
     DESCRIPTION_LENGTH = 16
 
     def __init__(
-            self, firmware_version: int, curve_name: str,
-            description: str = None, timestamp: int = None,
-            is_nxp_container: bool = False, flags: int = 0,
+        self,
+        firmware_version: int,
+        curve_name: str,
+        description: str = None,
+        timestamp: int = None,
+        is_nxp_container: bool = False,
+        flags: int = 0,
     ) -> None:
         """Initialize the SecureBinary V3.1 Header.
 
@@ -57,26 +62,26 @@ class SecureBinary31Header(BaseClass):
         """Format the description."""
         if not description:
             return bytes(self.DESCRIPTION_LENGTH)
-        desc = bytes(description, encoding='ascii')
-        desc = desc[:self.DESCRIPTION_LENGTH]
+        desc = bytes(description, encoding="ascii")
+        desc = desc[: self.DESCRIPTION_LENGTH]
         desc += bytes(self.DESCRIPTION_LENGTH - len(desc))
         return desc
 
     def calculate_cert_block_offset(self) -> int:
         """Calculate the offset to the Certification block."""
         fixed_offset = 1 * 8 + 9 * 4 + 16
-        if self.curve_name == 'secp256r1':
+        if self.curve_name == "secp256r1":
             return fixed_offset + 32
-        if self.curve_name == 'secp384r1':
+        if self.curve_name == "secp384r1":
             return fixed_offset + 48
         raise SPSDKError(f"Invalid curve name: {self.curve_name}")
 
     def calculate_block_size(self) -> int:
         """Calculate the the data block size."""
         fixed_block_size = 4 + 256
-        if self.curve_name == 'secp256r1':
+        if self.curve_name == "secp256r1":
             return fixed_block_size + 32
-        if self.curve_name == 'secp384r1':
+        if self.curve_name == "secp384r1":
             return fixed_block_size + 48
         raise SPSDKError(f"Invalid curve name: {self.curve_name}")
 
@@ -98,11 +103,14 @@ class SecureBinary31Header(BaseClass):
 
     def export(self) -> bytes:
         """Serialize the SB file to bytes."""
-        major_format_version, minor_format_version = [int(v) for v in self.FORMAT_VERSION.split(".")]
+        major_format_version, minor_format_version = [
+            int(v) for v in self.FORMAT_VERSION.split(".")
+        ]
         return pack(
             self.HEADER_FORMAT,
             self.MAGIC,
-            minor_format_version, major_format_version,
+            minor_format_version,
+            major_format_version,
             self.flags,
             self.block_count,
             self.block_size,
@@ -111,7 +119,8 @@ class SecureBinary31Header(BaseClass):
             self.image_total_length,
             self.image_type,
             self.cert_block_offset,
-            self.description)
+            self.description,
+        )
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "SecureBinary31Header":
@@ -124,11 +133,16 @@ class SecureBinary31Header(BaseClass):
 
 class SecureBinary31Commands(BaseClass):
     """Blob containing SB3.1 commands."""
+
     DATA_CHUNK_LENGTH = 256
 
     def __init__(
-            self, curve_name: str, is_encrypted: bool = True,
-            pck: bytes = None, timestamp: int = None, kdk_access_rights: int = None
+        self,
+        curve_name: str,
+        is_encrypted: bool = True,
+        pck: bytes = None,
+        timestamp: int = None,
+        kdk_access_rights: int = None,
     ) -> None:
         """Initialize container for SB3.1 commands.
 
@@ -151,28 +165,20 @@ class SecureBinary31Commands(BaseClass):
             if not (pck and timestamp and kdk_access_rights):
                 raise SPSDKError("PCK, timeout or kdk_access_rights are not defined.")
             self.key_derivator = KeyDerivator(
-                pck=pck, timestamp=timestamp,
+                pck=pck,
+                timestamp=timestamp,
                 key_length=self._get_key_length(curve_name),
-                kdk_access_rights=kdk_access_rights
+                kdk_access_rights=kdk_access_rights,
             )
 
     def _get_hash_length(self, curve_name: str) -> int:
-        return {
-            'secp256r1': 32,
-            'secp384r1': 48
-        }[curve_name]
+        return {"secp256r1": 32, "secp384r1": 48}[curve_name]
 
     def _get_key_length(self, curve_name: str) -> int:
-        return {
-            'secp256r1': 128,
-            'secp384r1': 256
-        }[curve_name]
+        return {"secp256r1": 128, "secp384r1": 256}[curve_name]
 
     def _get_hash_type(self, curve_name: str) -> str:
-        return {
-            'secp256r1': 'sha256',
-            'secp384r1': 'sha384'
-        }[curve_name]
+        return {"secp256r1": "sha256", "secp384r1": "sha384"}[curve_name]
 
     def add_command(self, command: BaseCmd) -> None:
         """Add SB3.1 command."""
@@ -184,7 +190,7 @@ class SecureBinary31Commands(BaseClass):
 
     def export(self) -> bytes:
         """Export commands as bytes."""
-        commands_bytes = b''.join([command.export() for command in self.commands])
+        commands_bytes = b"".join([command.export() for command in self.commands])
         section_header = CmdSectionHeader(length=len(commands_bytes))
         total = section_header.export() + commands_bytes
 
@@ -199,7 +205,7 @@ class SecureBinary31Commands(BaseClass):
             self._process_block(block_number, block_data)
             for block_number, block_data in reversed(list(enumerate(data_blocks, start=1)))
         ]
-        final_data = b''.join(reversed(processed_blocks))
+        final_data = b"".join(reversed(processed_blocks))
         return final_data
 
     def _process_block(self, block_number: int, block_data: bytes) -> bytes:
@@ -213,7 +219,9 @@ class SecureBinary31Commands(BaseClass):
 
         full_block = pack(
             f"<L{len(self.final_hash)}s{len(encrypted_block)}s",
-            block_number, self.final_hash, encrypted_block
+            block_number,
+            self.final_hash,
+            encrypted_block,
         )
         block_hash = internal_backend.hash(full_block, self.hash_type)
         self.final_hash = block_hash

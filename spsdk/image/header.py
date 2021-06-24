@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,38 +21,41 @@ from spsdk.utils.easy_enum import Enum
 
 class SegTag(Enum):
     """Segments Tag."""
-    DCD = (0xD2, 'Device Configuration Data')
-    CSF = (0xD4, 'Command Sequence File Data')
+
+    DCD = (0xD2, "Device Configuration Data")
+    CSF = (0xD4, "Command Sequence File Data")
     # i.MX6, i.MX7, i.MX8M
-    IVT2 = (0xD1, 'Image Vector Table (Version 2)')
-    CRT = (0xD7, 'Certificate')
-    SIG = (0xD8, 'Signature')
-    EVT = (0xDB, 'Event')
-    RVT = (0xDD, 'ROM Vector Table')
-    WRP = (0x81, 'Wrapped Key')
-    MAC = (0xAC, 'Message Authentication Code')
+    IVT2 = (0xD1, "Image Vector Table (Version 2)")
+    CRT = (0xD7, "Certificate")
+    SIG = (0xD8, "Signature")
+    EVT = (0xDB, "Event")
+    RVT = (0xDD, "ROM Vector Table")
+    WRP = (0x81, "Wrapped Key")
+    MAC = (0xAC, "Message Authentication Code")
     # i.MX8QXP_A0, i.MX8QM_A0
-    IVT3 = (0xDE, 'Image Vector Table (Version 3)')
+    IVT3 = (0xDE, "Image Vector Table (Version 3)")
     # i.MX8QXP_B0, i.MX8QM_B0
-    BIC1 = (0x87, 'Boot Images Container')
-    SIGB = (0x90, 'Signature block')
+    BIC1 = (0x87, "Boot Images Container")
+    SIGB = (0x90, "Signature block")
 
 
 class CmdTag(Enum):
     """CSF/DCD Command Tag."""
-    SET = (0xB1, 'Set')
-    INS_KEY = (0xBE, 'Install Key')
-    AUT_DAT = (0xCA, 'Authenticate Data')
-    WRT_DAT = (0xCC, 'Write Data')
-    CHK_DAT = (0xCF, 'Check Data')
-    NOP = (0xC0, 'No Operation (NOP)')
-    INIT = (0xB4, 'Initialize')
-    UNLK = (0xB2, 'Unlock')
+
+    SET = (0xB1, "Set")
+    INS_KEY = (0xBE, "Install Key")
+    AUT_DAT = (0xCA, "Authenticate Data")
+    WRT_DAT = (0xCC, "Write Data")
+    CHK_DAT = (0xCF, "Check Data")
+    NOP = (0xC0, "No Operation (NOP)")
+    INIT = (0xB4, "Initialize")
+    UNLK = (0xB2, "Unlock")
 
 
 ########################################################################################################################
 # Exceptions
 ########################################################################################################################
+
 
 class UnparsedException(Exception):
     """Unparsed Exception."""
@@ -66,8 +69,10 @@ class CorruptedException(Exception):
 # Classes
 ########################################################################################################################
 
+
 class Header:
     """Header element type."""
+
     FORMAT = ">BHB"
     SIZE = calcsize(FORMAT)
 
@@ -114,7 +119,7 @@ class Header:
         return pack(self.FORMAT, self.tag, self.length, self.param)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, required_tag: Optional[int] = None) -> 'Header':
+    def parse(cls, data: bytes, offset: int = 0, required_tag: Optional[int] = None) -> "Header":
         """Parse header.
 
         :param data: Raw data as bytes or bytearray
@@ -125,7 +130,9 @@ class Header:
         """
         tag, length, param = unpack_from(cls.FORMAT, data, offset)
         if required_tag is not None and tag != required_tag:
-            raise UnparsedException(" Invalid header tag: '0x{:02X}' expected '0x{:02X}' ".format(tag, required_tag))
+            raise UnparsedException(
+                " Invalid header tag: '0x{:02X}' expected '0x{:02X}' ".format(tag, required_tag)
+            )
 
         return cls(tag, param, length)
 
@@ -165,6 +172,7 @@ class CmdHeader(Header):
 
 class Header2(Header):
     """Header element type."""
+
     FORMAT = "<BHB"
 
     def export(self) -> bytes:
@@ -172,8 +180,7 @@ class Header2(Header):
         return pack(self.FORMAT, self.param, self.length, self.tag)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0,
-              required_tag: int = None) -> 'Header':
+    def parse(cls, data: bytes, offset: int = 0, required_tag: int = None) -> "Header":
         """Parse header.
 
         :param data: Raw data as bytes or bytearray
@@ -184,6 +191,8 @@ class Header2(Header):
         """
         param, length, tag = unpack_from(cls.FORMAT, data, offset)
         if required_tag is not None and tag != required_tag:
-            raise UnparsedException(" Invalid header tag: '0x{:02X}' expected '0x{:02X}' ".format(tag, required_tag))
+            raise UnparsedException(
+                " Invalid header tag: '0x{:02X}' expected '0x{:02X}' ".format(tag, required_tag)
+            )
 
         return cls(tag, param, length)

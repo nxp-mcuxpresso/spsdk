@@ -9,10 +9,15 @@ voluptuous
 jsonschema
 # metrics
 radon
-mypy
-pylint==2.4.4
+mypy>=0.800,<0.900
+# codestyle
+pylint>=2.6.0
 pydocstyle
+black
 # cli executables
 pyinstaller
 # developement/CI tools
 pre-commit
+openpyxl
+cachier
+jira

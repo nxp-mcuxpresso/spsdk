@@ -1,6 +1,6 @@
 {
   "device": "lpc55s6x",
-  "revision": "a1",
+  "revision": "1b",
   "type": "cfpa",
   "settings": {
     "HEADER": "0x0000_0000",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,15 +18,21 @@
 import os
 from os import path
 
-from spsdk.crypto import RSAPublicKey, validate_certificate_chain, \
-    get_public_key_from_certificate, validate_certificate, is_ca_flag_set, \
-    load_public_key, load_certificate
+from spsdk.crypto import (
+    RSAPublicKey,
+    validate_certificate_chain,
+    get_public_key_from_certificate,
+    validate_certificate,
+    is_ca_flag_set,
+    load_public_key,
+    load_certificate,
+)
 
 
 def main() -> None:
     """Main function."""
     # Set the folder for data (certificates, keys)
-    data_dir = path.join(path.dirname(__file__), 'data')
+    data_dir = path.join(path.dirname(__file__), "data")
     os.makedirs(data_dir, exist_ok=True)
     # Load public key of CA certificate
     ca0_pubkey_rsa2048 = load_public_key(path.join(data_dir, "ca_publickey_rsa2048.pem"))
@@ -37,8 +43,9 @@ def main() -> None:
     # Check if public key of certificate has proper format
     assert isinstance(pubkey_from_ca0_cert, RSAPublicKey)
     # Compare CA's public key from file and the one from certificate
-    assert ca0_pubkey_rsa2048.public_numbers() == pubkey_from_ca0_cert.public_numbers(), \
-        "Keys are not the same (the one from disc and the one from cert)"
+    assert (
+        ca0_pubkey_rsa2048.public_numbers() == pubkey_from_ca0_cert.public_numbers()
+    ), "Keys are not the same (the one from disc and the one from cert)"
     # Load certificate, which is singed by CA
     crt = load_certificate(path.join(data_dir, "crt_pem.crt"))
     assert validate_certificate(crt, ca0_cert)

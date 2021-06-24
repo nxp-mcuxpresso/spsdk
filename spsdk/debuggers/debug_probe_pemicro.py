@@ -13,10 +13,12 @@ from pypemicro import PyPemicro, PEMicroException, PEMicroInterfaces
 
 from spsdk.exceptions import SPSDKError
 
-from .debug_probe import (DebugProbe,
-                          DebugProbeTransferError,
-                          DebugProbeNotOpenError,
-                          DebugProbeError)
+from .debug_probe import (
+    DebugProbe,
+    DebugProbeTransferError,
+    DebugProbeNotOpenError,
+    DebugProbeError,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -34,8 +36,12 @@ class DebugProbePemicro(DebugProbe):
         :return: The J-Link Object
         :raises DebugProbeError: The J-Link object get function failed.
         """
-        return PyPemicro(log_info=PEMICRO_LOGGER.info, log_debug=PEMICRO_LOGGER.debug,
-                         log_err=PEMICRO_LOGGER.error, log_war=PEMICRO_LOGGER.warn)
+        return PyPemicro(
+            log_info=PEMICRO_LOGGER.info,
+            log_debug=PEMICRO_LOGGER.debug,
+            log_err=PEMICRO_LOGGER.error,
+            log_war=PEMICRO_LOGGER.warn,
+        )
 
     def __init__(self, hardware_id: str, user_params: Dict = None) -> None:
         """The Pemicro class initialization.
@@ -60,7 +66,7 @@ class DebugProbePemicro(DebugProbe):
         :param user_params: The user params dictionary
         :return: probe_description
         """
-        #pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         from .utils import DebugProbes, ProbeDescription
 
         pemicro = DebugProbePemicro.get_pemicro_lib()
@@ -68,10 +74,9 @@ class DebugProbePemicro(DebugProbe):
         probes = DebugProbes()
         connected_probes = pemicro.list_ports()
         for probe in connected_probes:
-            probes.append(ProbeDescription("PEMicro",
-                                           probe["id"],
-                                           probe["description"],
-                                           DebugProbePemicro))
+            probes.append(
+                ProbeDescription("PEMicro", probe["id"], probe["description"], DebugProbePemicro)
+            )
 
         return probes
 
@@ -95,7 +100,9 @@ class DebugProbePemicro(DebugProbe):
             self.pemicro.connect(PEMicroInterfaces.SWD)  # type: ignore
             dbgmlbx_ap_ix = self._get_dmbox_ap()
         except PEMicroException as exc:
-            raise DebugProbeError(f"Pemicro cannot establish communication with target({str(exc)}).")
+            raise DebugProbeError(
+                f"Pemicro cannot establish communication with target({str(exc)})."
+            )
 
         if self.dbgmlbx_ap_ix == -1:
             if dbgmlbx_ap_ix == -1:
@@ -103,7 +110,9 @@ class DebugProbePemicro(DebugProbe):
             self.dbgmlbx_ap_ix = dbgmlbx_ap_ix
         else:
             if dbgmlbx_ap_ix != self.dbgmlbx_ap_ix:
-                logger.info(f"The detected debug mailbox accessport index is different to specified.")
+                logger.info(
+                    f"The detected debug mailbox accessport index is different to specified."
+                )
 
     def close(self) -> None:
         """Close Pemicro interface.
@@ -199,8 +208,7 @@ class DebugProbePemicro(DebugProbe):
 
             if access_port:
                 ap_ix = (addr & self.APSEL_APBANKSEL) >> self.APSEL_SHIFT
-                ret = self.pemicro.read_ap_register(apselect=ap_ix,
-                                                    addr=addr)
+                ret = self.pemicro.read_ap_register(apselect=ap_ix, addr=addr)
             else:
                 ret = self.pemicro.read_dp_register(addr=addr)
             return ret
@@ -227,9 +235,7 @@ class DebugProbePemicro(DebugProbe):
 
             if access_port:
                 ap_ix = (addr & self.APSEL_APBANKSEL) >> self.APSEL_SHIFT
-                self.pemicro.write_ap_register(apselect=ap_ix,
-                                               addr=addr,
-                                               value=data)
+                self.pemicro.write_ap_register(apselect=ap_ix, addr=addr, value=data)
             else:
                 self.pemicro.write_dp_register(addr=addr, value=data)
 
@@ -270,9 +276,10 @@ class DebugProbePemicro(DebugProbe):
 
         for access_port_ix in range(256):
             try:
-                address = idr_address | ((access_port_ix << self.APSEL_SHIFT) & self.APSEL_APBANKSEL)
-                ret = self.pemicro.read_ap_register(apselect=access_port_ix,
-                                                    addr=address)
+                address = idr_address | (
+                    (access_port_ix << self.APSEL_SHIFT) & self.APSEL_APBANKSEL
+                )
+                ret = self.pemicro.read_ap_register(apselect=access_port_ix, addr=address)
 
                 if ret == idr_expected:
                     logger.debug(f"Found debug mailbox ix:{access_port_ix}")

@@ -33,18 +33,18 @@ class CertBlock(BaseClass):
 class CertBlockHeader(BaseClass):
     """Certificate block header."""
 
-    FORMAT = '<4s2H6I'
+    FORMAT = "<4s2H6I"
     SIZE = calcsize(FORMAT)
-    SIGNATURE = b'cert'
+    SIGNATURE = b"cert"
 
-    def __init__(self, version: str = '1.0', flags: int = 0, build_number: int = 0) -> None:
+    def __init__(self, version: str = "1.0", flags: int = 0, build_number: int = 0) -> None:
         """Constructor.
 
         :param version: Version of the certificate in format n.n
         :param flags: Flags for the Certificate Header
         :param build_number: of the certificate
         """
-        assert re.match(r'[0-9]+\.[0-9]+', version)  # check format of the version: N.N
+        assert re.match(r"[0-9]+\.[0-9]+", version)  # check format of the version: N.N
         self.version = version
         self.flags = flags
         self.build_number = build_number
@@ -70,20 +70,22 @@ class CertBlockHeader(BaseClass):
 
     def export(self) -> bytes:
         """Certificate block in binary form."""
-        major_version, minor_version = [int(v) for v in self.version.split('.')]
-        return pack(self.FORMAT,
-                    self.SIGNATURE,
-                    major_version,
-                    minor_version,
-                    self.SIZE,
-                    self.flags,
-                    self.build_number,
-                    self.image_length,
-                    self.cert_count,
-                    self.cert_table_length)
+        major_version, minor_version = [int(v) for v in self.version.split(".")]
+        return pack(
+            self.FORMAT,
+            self.SIGNATURE,
+            major_version,
+            minor_version,
+            self.SIZE,
+            self.flags,
+            self.build_number,
+            self.image_length,
+            self.cert_count,
+            self.cert_table_length,
+        )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CertBlockHeader':
+    def parse(cls, data: bytes, offset: int = 0) -> "CertBlockHeader":
         """Deserialize object from bytes array.
 
         :param data: Input data as bytes
@@ -93,13 +95,26 @@ class CertBlockHeader(BaseClass):
         """
         if cls.SIZE > len(data) - offset:
             raise Exception()
-        (signature, major_version, minor_version, length, flags, build_number, image_length, cert_count,
-         cert_table_length) = unpack_from(cls.FORMAT, data, offset)
+        (
+            signature,
+            major_version,
+            minor_version,
+            length,
+            flags,
+            build_number,
+            image_length,
+            cert_count,
+            cert_table_length,
+        ) = unpack_from(cls.FORMAT, data, offset)
         if signature != cls.SIGNATURE:
             raise Exception()
         if length != cls.SIZE:
             raise Exception()
-        obj = cls(version=f'{major_version}.{minor_version}', flags=flags, build_number=build_number)
+        obj = cls(
+            version=f"{major_version}.{minor_version}",
+            flags=flags,
+            build_number=build_number,
+        )
         obj.image_length = image_length
         obj.cert_count = cert_count
         obj.cert_table_length = cert_table_length
@@ -151,7 +166,7 @@ class CertBlockV2(CertBlock):
         result = list()
         rkht = self.rkht
         while rkht:
-            fuse = int.from_bytes(rkht[:4], byteorder='little')
+            fuse = int.from_bytes(rkht[:4], byteorder="little")
             result.append(fuse)
             rkht = rkht[4:]
         return result
@@ -167,7 +182,9 @@ class CertBlockV2(CertBlock):
     @property
     def signature_size(self) -> int:
         """Size of the signature in bytes."""
-        return len(self.certificates[0].signature)  # The certificate is self signed, return size of its signature
+        return len(
+            self.certificates[0].signature
+        )  # The certificate is self signed, return size of its signature
 
     @property
     def rkh_index(self) -> Optional[int]:
@@ -215,7 +232,7 @@ class CertBlockV2(CertBlock):
         assert value > 0
         self._header.image_length = value
 
-    def __init__(self, version: str = '1.0', flags: int = 0, build_number: int = 0) -> None:
+    def __init__(self, version: str = "1.0", flags: int = 0, build_number: int = 0) -> None:
         """Constructor.
 
         :param version: of the certificate in format n.n
@@ -223,7 +240,7 @@ class CertBlockV2(CertBlock):
         :param build_number: of the certificate
         """
         self._header = CertBlockHeader(version, flags, build_number)
-        self._root_key_hashes = [b'\x00' * self.RKH_SIZE for _ in range(self.RKHT_SIZE)]
+        self._root_key_hashes = [b"\x00" * self.RKH_SIZE for _ in range(self.RKHT_SIZE)]
         self._cert: List[Certificate] = []
         self._alignment = self.DEFAULT_ALIGNMENT
 
@@ -262,13 +279,13 @@ class CertBlockV2(CertBlock):
         elif isinstance(cert, Certificate):
             cert_obj = cert
         else:
-            raise ValueError('Invalid parameter type (cert)')
-        if cert_obj.version != 'v3':
-            raise ValueError('Expected certificate v3 but received: ' + cert_obj.version)
+            raise ValueError("Invalid parameter type (cert)")
+        if cert_obj.version != "v3":
+            raise ValueError("Expected certificate v3 but received: " + cert_obj.version)
         if self._cert:  # chain certificate?
             last_cert = self._cert[-1]  # verify that it is signed by parent key
             if not cert_obj.verify(last_cert.public_key_modulus, last_cert.public_key_exponent):
-                raise ValueError('Chain certificate cannot be verified using parent public key')
+                raise ValueError("Chain certificate cannot be verified using parent public key")
         else:  # root certificate
             if cert_obj.self_signed == "no":
                 raise ValueError("Root certificate must be self-signed")
@@ -282,7 +299,9 @@ class CertBlockV2(CertBlock):
         nfo += " Public Root Keys Hash e.g. RKH (SHA256):\n"
         rkh_index = self.rkh_index
         for index, root_key in enumerate(self._root_key_hashes):
-            nfo += f"  {index}) {root_key.hex().upper()} {'<- Used' if index == rkh_index else ''}\n"
+            nfo += (
+                f"  {index}) {root_key.hex().upper()} {'<- Used' if index == rkh_index else ''}\n"
+            )
         rkht = self.rkht
         nfo += f" RKHT (SHA256): {rkht.hex().upper()}\n"
         for index, fuse in enumerate(self.rkht_fuses):
@@ -301,7 +320,9 @@ class CertBlockV2(CertBlock):
         :return: True if the data signature can be confirmed using the certificate; False otherwise
         """
         cert = self._cert[-1]
-        return crypto_backend().rsa_verify(cert.public_key_modulus, cert.public_key_exponent, signature, data)
+        return crypto_backend().rsa_verify(
+            cert.public_key_modulus, cert.public_key_exponent, signature, data
+        )
 
     def verify_private_key(self, private_key_pem_data: bytes) -> bool:
         """Verify that given private key matches the public certificate.
@@ -311,7 +332,9 @@ class CertBlockV2(CertBlock):
         """
         signature = crypto_backend().rsa_sign(private_key_pem_data, bytes())
         cert = self.certificates[-1]  # last certificate
-        return crypto_backend().rsa_verify(cert.public_key_modulus, cert.public_key_exponent, signature, bytes())
+        return crypto_backend().rsa_verify(
+            cert.public_key_modulus, cert.public_key_exponent, signature, bytes()
+        )
 
     def export(self) -> bytes:
         """Serialize Certificate Block V2 object."""
@@ -330,7 +353,7 @@ class CertBlockV2(CertBlock):
         # Export
         data = self.header.export()
         for cert in self._cert:
-            data += pack('<I', cert.raw_size)
+            data += pack("<I", cert.raw_size)
             data += cert.export()
         for key in self._root_key_hashes:
             data += bytes(key)
@@ -339,7 +362,7 @@ class CertBlockV2(CertBlock):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'CertBlockV2':
+    def parse(cls, data: bytes, offset: int = 0) -> "CertBlockV2":
         """Deserialize CertBlockV2 from binary file.
 
         :param data: Binary data
@@ -353,23 +376,24 @@ class CertBlockV2(CertBlock):
             raise Exception()
         obj = cls(version=header.version, flags=header.flags, build_number=header.build_number)
         for i in range(header.cert_count):
-            cert_len = unpack_from('<I', data, offset)[0]
+            cert_len = unpack_from("<I", data, offset)[0]
             offset += 4
-            cert_obj = Certificate(data[offset: offset + cert_len])
+            cert_obj = Certificate(data[offset : offset + cert_len])
             obj.add_certificate(cert_obj)
             offset += cert_len
         for i in range(cls.RKHT_SIZE):
-            obj.set_root_key_hash(i, data[offset: offset + cls.RKH_SIZE])
+            obj.set_root_key_hash(i, data[offset : offset + cls.RKH_SIZE])
             offset += cls.RKH_SIZE
         return obj
+
 
 ########################################################################################################################
 # Certificate Block Class for SB 3.1
 ########################################################################################################################
 def get_ecc_key_bytes(key: ECC.EccKey) -> bytes:
     """Function to get ECC Key pointQ as bytes."""
-    point_x = key.pointQ.x.to_bytes()   # type: ignore
-    point_y = key.pointQ.y.to_bytes()   # type: ignore
+    point_x = key.pointQ.x.to_bytes()  # type: ignore
+    point_y = key.pointQ.y.to_bytes()  # type: ignore
     return point_x + point_y
 
 
@@ -404,9 +428,17 @@ class CertificateBlockHeader(BaseClass):
 
     def export(self) -> bytes:
         """Export Certificate block header as bytes array."""
-        major_format_version, minor_format_version = [int(v) for v in self.format_version.split(".")]
+        major_format_version, minor_format_version = [
+            int(v) for v in self.format_version.split(".")
+        ]
 
-        return pack(self.FORMAT, self.MAGIC, minor_format_version, major_format_version, self.cert_block_size)
+        return pack(
+            self.FORMAT,
+            self.MAGIC,
+            minor_format_version,
+            major_format_version,
+            self.cert_block_size,
+        )
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "CertificateBlockHeader":
@@ -422,8 +454,9 @@ class CertificateBlockHeader(BaseClass):
             raise ValueError("SIZE is bigger than length of the data without offset")
         (
             magic,
-            minor_format_version, major_format_version,
-            _cert_block_size
+            minor_format_version,
+            major_format_version,
+            _cert_block_size,
         ) = unpack_from(cls.FORMAT, data, offset)
 
         if magic != cls.MAGIC:
@@ -434,13 +467,15 @@ class CertificateBlockHeader(BaseClass):
 
 class RootKeyRecord(BaseClass):
     """Create Root key record."""
+
     # P-256
 
-    def __init__(self,
-                 ca_flag: bool,
-                 root_certs: Union[Sequence[ECC.EccKey], Sequence[bytes]],
-                 used_root_cert: int = 0
-                 ) -> None:
+    def __init__(
+        self,
+        ca_flag: bool,
+        root_certs: Union[Sequence[ECC.EccKey], Sequence[bytes]],
+        used_root_cert: int = 0,
+    ) -> None:
         """Constructor for Root key record.
 
         :param ca_flag: CA flag
@@ -448,10 +483,7 @@ class RootKeyRecord(BaseClass):
         :param used_root_cert: Used root cert number 0-3
         """
         self.ca_flag = ca_flag
-        self.root_certs = [
-            convert_to_ecc_key(cert)
-            for cert in root_certs
-        ]
+        self.root_certs = [convert_to_ecc_key(cert) for cert in root_certs]
         self.used_root_cert = used_root_cert
         self.flags = self._calculate_flags()
         self.ctrk_hash_table = self._create_ctrk_hash_table()
@@ -472,14 +504,14 @@ class RootKeyRecord(BaseClass):
         """Function to calculate parameter flags."""
         flags = 0
         if self.ca_flag is True:
-            flags |= (1 << 31)
+            flags |= 1 << 31
         if self.used_root_cert:
-            flags |= (self.used_root_cert << 8)
-        flags |= (len(self.root_certs) << 4)
+            flags |= self.used_root_cert << 8
+        flags |= len(self.root_certs) << 4
         if self.root_certs[0].curve == "NIST P-256":
-            flags |= (1 << 0)
+            flags |= 1 << 0
         if self.root_certs[0].curve == "NIST P-384":
-            flags |= (1 << 1)
+            flags |= 1 << 1
         return flags
 
     def _create_root_public_key(self) -> bytes:
@@ -523,11 +555,11 @@ class IskCertificate(BaseClass):
     """Create ISK certificate."""
 
     def __init__(
-            self,
-            constraints: int,
-            isk_private_key: Union[ECC.EccKey, bytes],
-            isk_cert: Union[ECC.EccKey, bytes],
-            user_data: bytes = None
+        self,
+        constraints: int,
+        isk_private_key: Union[ECC.EccKey, bytes],
+        isk_cert: Union[ECC.EccKey, bytes],
+        user_data: bytes = None,
     ) -> None:
         """Constructor for ISK certificate.
 
@@ -548,7 +580,14 @@ class IskCertificate(BaseClass):
         self._calculate_flags()
         self.signature_offset = calcsize("<3L") + len(self.user_data)
         self.signature_offset += 2 * self.isk_cert.pointQ.size_in_bytes()
-        self.expected_size = 4 + 4 + 4 + 2 * self.coordinate_length + len(self.user_data) + 2 * self.coordinate_length
+        self.expected_size = (
+            4
+            + 4
+            + 4
+            + 2 * self.coordinate_length
+            + len(self.user_data)
+            + 2 * self.coordinate_length
+        )
 
     def info(self) -> str:
         """Get info of ISK certificate."""
@@ -560,11 +599,11 @@ class IskCertificate(BaseClass):
         """Function to calculate parameter flags."""
         self.flags = 0
         if self.user_data:
-            self.flags |= (1 << 31)
+            self.flags |= 1 << 31
         if self.isk_cert.curve == "NIST P-256":
-            self.flags |= (1 << 0)
+            self.flags |= 1 << 0
         if self.isk_cert.curve == "NIST P-384":
-            self.flags |= (1 << 1)
+            self.flags |= 1 << 1
 
     def create_isk_signature(self, key_record_data: bytes) -> None:
         """Function to create ISK signature."""
@@ -603,11 +642,15 @@ class CertBlockV31(CertBlock):
     MAGIC = b"chdr"
 
     def __init__(
-            self, root_certs: Union[Sequence[ECC.EccKey], Sequence[bytes]],
-            ca_flag: bool, version: str = "2.1",
-            used_root_cert: int = 0, constraints: int = 0,
-            isk_private_key: Union[ECC.EccKey, bytes] = None,
-            isk_cert: Union[ECC.EccKey, bytes] = None, user_data: bytes = None
+        self,
+        root_certs: Union[Sequence[ECC.EccKey], Sequence[bytes]],
+        ca_flag: bool,
+        version: str = "2.1",
+        used_root_cert: int = 0,
+        constraints: int = 0,
+        isk_private_key: Union[ECC.EccKey, bytes] = None,
+        isk_cert: Union[ECC.EccKey, bytes] = None,
+        user_data: bytes = None,
     ) -> None:
         """The Constructor for Certificate block."""
         # workaround for base MasterBootImage
@@ -621,8 +664,10 @@ class CertBlockV31(CertBlock):
             assert isk_private_key, "ISK private key is not set."
             assert isk_cert, "ISK certificate is not set."
             self.isk_certificate = IskCertificate(
-                constraints=constraints, isk_private_key=isk_private_key,
-                isk_cert=isk_cert, user_data=user_data
+                constraints=constraints,
+                isk_private_key=isk_private_key,
+                isk_cert=isk_cert,
+                user_data=user_data,
             )
         self.expected_size = self._calculate_expected_size()
 

@@ -9,9 +9,10 @@
 """Commands and responses used by MBOOT module."""
 
 from struct import pack, unpack_from
-from typing import Dict, Type, Any
+from typing import Any, Dict, Type
 
 from spsdk.utils.easy_enum import Enum
+
 from .error_codes import StatusCode
 from .exceptions import McuBootError
 
@@ -23,61 +24,81 @@ from .exceptions import McuBootError
 class CommandTag(Enum):
     """McuBoot Commands."""
 
-    NO_COMMAND = (0x00, 'NoCommand', 'No Command')
-    FLASH_ERASE_ALL = (0x01, 'FlashEraseAll', 'Erase Complete Flash')
-    FLASH_ERASE_REGION = (0x02, 'FlashEraseRegion', 'Erase Flash Region')
-    READ_MEMORY = (0x03, 'ReadMemory', 'Read Memory')
-    WRITE_MEMORY = (0x04, 'WriteMemory', 'Write Memory')
-    FILL_MEMORY = (0x05, 'FillMemory', 'Fill Memory')
-    FLASH_SECURITY_DISABLE = (0x06, 'FlashSecurityDisable', 'Disable Flash Security')
-    GET_PROPERTY = (0x07, 'GetProperty', 'Get Property')
-    RECEIVE_SB_FILE = (0x08, 'ReceiveSBFile', 'Receive SB File')
-    EXECUTE = (0x09, 'Execute', 'Execute')
-    CALL = (0x0A, 'Call', 'Call')
-    RESET = (0x0B, 'Reset', 'Reset MCU')
-    SET_PROPERTY = (0x0C, 'SetProperty', 'Set Property')
-    FLASH_ERASE_ALL_UNSECURE = (0x0D, 'FlashEraseAllUnsecure', 'Erase Complete Flash and Unlock')
-    FLASH_PROGRAM_ONCE = (0x0E, 'FlashProgramOnce', 'Flash Program Once')
-    FLASH_READ_ONCE = (0x0F, 'FlashReadOnce', 'Flash Read Once')
-    FLASH_READ_RESOURCE = (0x10, 'FlashReadResource', 'Flash Read Resource')
-    CONFIGURE_MEMORY = (0x11, 'ConfigureMemory', 'Configure Quad-SPI Memory')
-    RELIABLE_UPDATE = (0x12, 'ReliableUpdate', 'Reliable Update')
-    GENERATE_KEY_BLOB = (0x13, 'GenerateKeyBlob', 'Generate Key Blob')
-    KEY_PROVISIONING = (0x15, 'KeyProvisioning', 'Key Provisioning')
+    NO_COMMAND = (0x00, "NoCommand", "No Command")
+    FLASH_ERASE_ALL = (0x01, "FlashEraseAll", "Erase Complete Flash")
+    FLASH_ERASE_REGION = (0x02, "FlashEraseRegion", "Erase Flash Region")
+    READ_MEMORY = (0x03, "ReadMemory", "Read Memory")
+    WRITE_MEMORY = (0x04, "WriteMemory", "Write Memory")
+    FILL_MEMORY = (0x05, "FillMemory", "Fill Memory")
+    FLASH_SECURITY_DISABLE = (0x06, "FlashSecurityDisable", "Disable Flash Security")
+    GET_PROPERTY = (0x07, "GetProperty", "Get Property")
+    RECEIVE_SB_FILE = (0x08, "ReceiveSBFile", "Receive SB File")
+    EXECUTE = (0x09, "Execute", "Execute")
+    CALL = (0x0A, "Call", "Call")
+    RESET = (0x0B, "Reset", "Reset MCU")
+    SET_PROPERTY = (0x0C, "SetProperty", "Set Property")
+    FLASH_ERASE_ALL_UNSECURE = (
+        0x0D,
+        "FlashEraseAllUnsecure",
+        "Erase Complete Flash and Unlock",
+    )
+    FLASH_PROGRAM_ONCE = (0x0E, "FlashProgramOnce", "Flash Program Once")
+    FLASH_READ_ONCE = (0x0F, "FlashReadOnce", "Flash Read Once")
+    FLASH_READ_RESOURCE = (0x10, "FlashReadResource", "Flash Read Resource")
+    CONFIGURE_MEMORY = (0x11, "ConfigureMemory", "Configure Quad-SPI Memory")
+    RELIABLE_UPDATE = (0x12, "ReliableUpdate", "Reliable Update")
+    GENERATE_KEY_BLOB = (0x13, "GenerateKeyBlob", "Generate Key Blob")
+    FUSE_PROGRAM = (0x14, "ProgramFuse", "Program Fuse")
+    KEY_PROVISIONING = (0x15, "KeyProvisioning", "Key Provisioning")
+    FUSE_READ = (0x17, "ReadFuse", "Read Fuse")
 
     # reserved commands
-    CONFIGURE_I2C = (0xC1, 'ConfigureI2c', 'Configure I2C')
-    CONFIGURE_SPI = (0xC2, 'ConfigureSpi', 'Configure SPI')
-    CONFIGURE_CAN = (0xC3, 'ConfigureCan', 'Configure CAN')
+    CONFIGURE_I2C = (0xC1, "ConfigureI2c", "Configure I2C")
+    CONFIGURE_SPI = (0xC2, "ConfigureSpi", "Configure SPI")
+    CONFIGURE_CAN = (0xC3, "ConfigureCan", "Configure CAN")
 
 
 class ResponseTag(Enum):
     """McuBoot Responses to Commands."""
 
-    GENERIC = (0xA0, 'GenericResponse', 'Generic Response')
-    READ_MEMORY = (0xA3, 'ReadMemoryResponse', 'Read Memory Response')
-    GET_PROPERTY = (0xA7, 'GetPropertyResponse', 'Get Property Response')
-    FLASH_READ_ONCE = (0xAF, 'FlashReadOnceResponse', 'Flash Read Once Response')
-    FLASH_READ_RESOURCE = (0xB0, 'FlashReadResourceResponse', 'Flash Read Resource Response')
-    KEY_BLOB_RESPONSE = (0xB3, 'CreateKeyBlobResponse', 'Create Key Blob')
-    KEY_PROVISIONING_RESPONSE = (0xB5, 'KeyProvisioningResponse', 'Key Provisioning Response')
+    GENERIC = (0xA0, "GenericResponse", "Generic Response")
+    READ_MEMORY = (0xA3, "ReadMemoryResponse", "Read Memory Response")
+    GET_PROPERTY = (0xA7, "GetPropertyResponse", "Get Property Response")
+    FLASH_READ_ONCE = (0xAF, "FlashReadOnceResponse", "Flash Read Once Response")
+    FLASH_READ_RESOURCE = (
+        0xB0,
+        "FlashReadResourceResponse",
+        "Flash Read Resource Response",
+    )
+    KEY_BLOB_RESPONSE = (0xB3, "CreateKeyBlobResponse", "Create Key Blob")
+    KEY_PROVISIONING_RESPONSE = (
+        0xB5,
+        "KeyProvisioningResponse",
+        "Key Provisioning Response",
+    )
 
 
 class KeyProvOperation(Enum):
     """Type of key provisioning operation."""
-    ENROLL = (0, 'Enroll', 'Enroll Operation')
-    SET_USER_KEY = (1, 'SetUserKey', 'Set User Key Operation')
-    SET_INTRINSIC_KEY = (2, 'SetIntrinsicKey', 'Set Intrinsic Key Operation')
-    WRITE_NON_VOLATILE = (3, 'WriteNonVolatile', 'Write Non Volatile Operation')
-    READ_NON_VOLATILE = (4, 'ReadNonVolatile', 'Read Non Volatile Operation')
-    WRITE_KEY_STORE = (5, 'WriteKeyStore', 'Write Key Store Operation')
-    READ_KEY_STORE = (6, 'ReadKeyStore', 'Read Key Store Operation')
+
+    ENROLL = (0, "Enroll", "Enroll Operation")
+    SET_USER_KEY = (1, "SetUserKey", "Set User Key Operation")
+    SET_INTRINSIC_KEY = (2, "SetIntrinsicKey", "Set Intrinsic Key Operation")
+    WRITE_NON_VOLATILE = (3, "WriteNonVolatile", "Write Non Volatile Operation")
+    READ_NON_VOLATILE = (4, "ReadNonVolatile", "Read Non Volatile Operation")
+    WRITE_KEY_STORE = (5, "WriteKeyStore", "Write Key Store Operation")
+    READ_KEY_STORE = (6, "ReadKeyStore", "Read Key Store Operation")
 
 
 class KeyProvUserKeyType(Enum):
     """Enumeration of supported user keys in PUF. Keys are SoC specific, not all will be supported for the processor."""
+
     OTFADKEK = (2, "OTFADKEK", "Key for OTFAD encryption")  # used on RTxxx
-    SBKEK = (3, "SBKEK", "Key for SB file encryption")  # Available on LPC55Sxx and RTxxx
+    SBKEK = (
+        3,
+        "SBKEK",
+        "Key for SB file encryption",
+    )  # Available on LPC55Sxx and RTxxx
     PRINCE_REGION_0 = (7, "PRINCE0", "Key for Prince region 0")  # LPC55Sxx
     PRINCE_REGION_1 = (8, "PRINCE1", "Key for Prince region 1")  # LPC55Sxx
     PRINCE_REGION_2 = (9, "PRINCE2", "Key for Prince region 2")  # LPC55Sxx
@@ -94,6 +115,7 @@ class GenerateKeyBlobSelect(Enum):
     3 or CMK: CMK from SNVS,
     For devices without SNVS, this option will be ignored.
     """
+
     OPTMK = (0, "OPTMK", "OTPMK from FUSE or OTP(default)")
     ZMK = (2, "ZMK", "ZMK from SNVS")
     CMK = (3, "CMK", "CMK from SNVS")
@@ -102,6 +124,7 @@ class GenerateKeyBlobSelect(Enum):
 ########################################################################################################################
 # McuBoot Command and Response packet classes
 ########################################################################################################################
+
 
 class CmdHeader:
     """McuBoot command/response header."""
@@ -137,10 +160,10 @@ class CmdHeader:
 
     def to_bytes(self) -> bytes:
         """Serialize header into bytes."""
-        return pack('4B', self.tag, self.flags, self.reserved, self.params_count)
+        return pack("4B", self.tag, self.flags, self.reserved, self.params_count)
 
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0) -> 'CmdHeader':
+    def from_bytes(cls, data: bytes, offset: int = 0) -> "CmdHeader":
         """Deserialize header from bytes.
 
         :param data: Input data in bytes
@@ -150,7 +173,7 @@ class CmdHeader:
         """
         if len(data) < 4:
             raise McuBootError(f"Invalid format of RX packet (data length is {len(data)} bytes)")
-        return cls(*unpack_from('4B', data, offset))
+        return cls(*unpack_from("4B", data, offset))
 
 
 class CmdPacket:
@@ -172,8 +195,8 @@ class CmdPacket:
         self.params = list(args)
         if data is not None:
             if len(data) % 4:
-                data += b'\0' * (4 - len(data) % 4)
-            self.params.extend(unpack_from(f'<{len(data) // 4}I', data))
+                data += b"\0" * (4 - len(data) % 4)
+            self.params.extend(unpack_from(f"<{len(data) // 4}I", data))
             self.header.params_count = len(self.params)
 
     def __eq__(self, obj: Any) -> bool:
@@ -183,13 +206,14 @@ class CmdPacket:
         return not self.__eq__(obj)
 
     def __str__(self) -> str:
-        return '<' + self.info() + '>'
+        return "<" + self.info() + ">"
 
     def info(self) -> str:
         """Get object info."""
-        tag = CommandTag.get(self.header.tag, f'0x{self.header.tag:02X}')
-        return f"Tag={tag}, Flags=0x{self.header.flags:02X}" + \
-               "".join(f", P[{n}]=0x{param:08X}" for n, param in enumerate(self.params))
+        tag = CommandTag.get(self.header.tag, f"0x{self.header.tag:02X}")
+        return f"Tag={tag}, Flags=0x{self.header.flags:02X}" + "".join(
+            f", P[{n}]=0x{param:08X}" for n, param in enumerate(self.params)
+        )
 
     def to_bytes(self, padding: bool = True) -> bytes:
         """Serialize CmdPacket into bytes.
@@ -218,7 +242,7 @@ class CmdResponse:
         assert isinstance(raw_data, (bytes, bytearray))
         self.header = header
         self.raw_data = raw_data
-        self.status, = unpack_from("<L", raw_data)
+        (self.status,) = unpack_from("<L", raw_data)
 
     def __eq__(self, obj: Any) -> bool:
         return isinstance(obj, CmdResponse) and vars(obj) == vars(self)
@@ -227,12 +251,16 @@ class CmdResponse:
         return not self.__eq__(obj)
 
     def __str__(self) -> str:
-        return '<' + self.info() + '>'
+        return "<" + self.info() + ">"
 
     def info(self) -> str:
         """Get object info."""
-        return f"Tag=0x{self.header.tag:02X}, Flags=0x{self.header.flags:02X}" + \
-               ' [' + ', '.join(f"{b:02X}" for b in self.raw_data) + ']'
+        return (
+            f"Tag=0x{self.header.tag:02X}, Flags=0x{self.header.flags:02X}"
+            + " ["
+            + ", ".join(f"{b:02X}" for b in self.raw_data)
+            + "]"
+        )
 
 
 class GenericResponse(CmdResponse):
@@ -245,13 +273,13 @@ class GenericResponse(CmdResponse):
         :param raw_data: Response data
         """
         super().__init__(header, raw_data)
-        self.status, self.cmd_tag = unpack_from('<2I', raw_data)
+        self.status, self.cmd_tag = unpack_from("<2I", raw_data)
 
     def info(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
-        status = StatusCode.get(self.status, f'Unknown[0x{self.status:08X}]')
-        cmd = CommandTag.get(self.cmd_tag, f'Unknown[0x{self.cmd_tag:02X}]')
+        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        cmd = CommandTag.get(self.cmd_tag, f"Unknown[0x{self.cmd_tag:02X}]")
         return f"Tag={tag}, Status={status}, Cmd={cmd}"
 
 
@@ -265,13 +293,15 @@ class GetPropertyResponse(CmdResponse):
         :param raw_data: Response data
         """
         super().__init__(header, raw_data)
-        self.status, *self.values = unpack_from(f'<{self.header.params_count}I', raw_data)
+        self.status, *self.values = unpack_from(f"<{self.header.params_count}I", raw_data)
 
     def info(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
-        status = StatusCode.get(self.status, f'Unknown[0x{self.status:08X}]')
-        return f"Tag={tag}, Status={status}" + "".join(f", v{n}=0x{value:08X}" for n, value in enumerate(self.values))
+        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        return f"Tag={tag}, Status={status}" + "".join(
+            f", v{n}=0x{value:08X}" for n, value in enumerate(self.values)
+        )
 
 
 class ReadMemoryResponse(CmdResponse):
@@ -284,12 +314,12 @@ class ReadMemoryResponse(CmdResponse):
         :param raw_data: Response data
         """
         super().__init__(header, raw_data)
-        self.status, self.length = unpack_from('<2I', raw_data)
+        self.status, self.length = unpack_from("<2I", raw_data)
 
     def info(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
-        status = StatusCode.get(self.status, f'Unknown[0x{self.status:08X}]')
+        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
@@ -303,13 +333,15 @@ class FlashReadOnceResponse(CmdResponse):
         :param raw_data: Response data
         """
         super().__init__(header, raw_data)
-        self.status, self.length, *self.values = unpack_from(f'<{self.header.params_count}I', raw_data)
-        self.data = raw_data[8:8 + self.length] if self.length > 0 else b''
+        self.status, self.length, *self.values = unpack_from(
+            f"<{self.header.params_count}I", raw_data
+        )
+        self.data = raw_data[8 : 8 + self.length] if self.length > 0 else b""
 
     def info(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
-        status = StatusCode.get(self.status, f'Unknown[0x{self.status:08X}]')
+        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
@@ -323,12 +355,12 @@ class FlashReadResourceResponse(CmdResponse):
         :param raw_data: Response data
         """
         super().__init__(header, raw_data)
-        self.status, self.length = unpack_from('<2I', raw_data)
+        self.status, self.length = unpack_from("<2I", raw_data)
 
     def info(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
-        status = StatusCode.get(self.status, f'Unknown[0x{self.status:08X}]')
+        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
@@ -342,12 +374,12 @@ class KeyProvisioningResponse(CmdResponse):
         :param raw_data: Response data
         """
         super().__init__(header, raw_data)
-        self.status, self.length = unpack_from('<2I', raw_data)
+        self.status, self.length = unpack_from("<2I", raw_data)
 
     def info(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
-        status = StatusCode.get(self.status, f'Unknown[0x{self.status:08X}]')
+        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
@@ -360,7 +392,7 @@ class NoResponse(CmdResponse):
         :param cmd_tag: Tag of the command that preceded the no-response from target
         """
         header = CmdHeader(tag=cmd_tag, flags=0, reserved=0, params_count=0)
-        raw_data = pack('<L', StatusCode.NO_RESPONSE)
+        raw_data = pack("<L", StatusCode.NO_RESPONSE)
         super().__init__(header, raw_data)
 
 
@@ -378,10 +410,10 @@ def parse_cmd_response(data: bytes, offset: int = 0) -> CmdResponse:
         ResponseTag.FLASH_READ_RESOURCE: FlashReadResourceResponse,
         ResponseTag.FLASH_READ_ONCE: FlashReadOnceResponse,
         ResponseTag.KEY_BLOB_RESPONSE: ReadMemoryResponse,  # not sure what format is returned, this work on RT1050
-        ResponseTag.KEY_PROVISIONING_RESPONSE: KeyProvisioningResponse
+        ResponseTag.KEY_PROVISIONING_RESPONSE: KeyProvisioningResponse,
     }
     header = CmdHeader.from_bytes(data, offset)
     if header.tag in known_response:
-        return known_response[header.tag](header, data[CmdHeader.SIZE:])
+        return known_response[header.tag](header, data[CmdHeader.SIZE :])
 
-    return CmdResponse(header, data[CmdHeader.SIZE:])
+    return CmdResponse(header, data[CmdHeader.SIZE :])

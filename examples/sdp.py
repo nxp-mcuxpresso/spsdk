@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,6 +35,6 @@ def read_memory(address: int, length: int, device_name: str = None) -> Optional[
     return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     DATA = read_memory(0, 100)
     print(DATA)

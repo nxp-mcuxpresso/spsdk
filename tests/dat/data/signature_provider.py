@@ -7,15 +7,16 @@
 
 from spsdk.crypto import SignatureProvider
 
+
 class TestSignatureProvider(SignatureProvider):
-    sp_type = 'test'
+    sp_type = "test"
 
     def __init__(self, param: str) -> None:
         self.param = int(param)
 
     def info(self) -> str:
         msg = "Test Signature provider"
-        msg += f'param: {self.param}'
+        msg += f"param: {self.param}"
 
     def sign(self, data: bytes) -> bytes:
-        return b'x' * self.param
+        return b"x" * self.param

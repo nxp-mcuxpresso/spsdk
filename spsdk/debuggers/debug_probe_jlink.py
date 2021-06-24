@@ -14,14 +14,17 @@ import pylink
 import pylink.protocols.swd as swd
 from pylink.errors import JLinkException
 
-from .debug_probe import (DebugProbe,
-                          DebugProbeTransferError,
-                          DebugProbeNotOpenError,
-                          DebugProbeError,
-                          DebugProbeMemoryInterfaceNotEnabled)
+from .debug_probe import (
+    DebugProbe,
+    DebugProbeError,
+    DebugProbeMemoryInterfaceNotEnabled,
+    DebugProbeNotOpenError,
+    DebugProbeTransferError,
+)
 
 logger = logging.getLogger(__name__)
 JLINK_LOGGER = logger.getChild("PyLink")
+
 
 def set_logger(level: int) -> None:
     """Sets the log level for this module.
@@ -30,7 +33,9 @@ def set_logger(level: int) -> None:
     """
     logger.setLevel(level)
 
+
 set_logger(logging.ERROR)
+
 
 class DebugProbePyLink(DebugProbe):
     """Class to define PyLink package interface for NXP SPSDK."""
@@ -43,8 +48,12 @@ class DebugProbePyLink(DebugProbe):
         :raises DebugProbeError: The J-Link object get function failed.
         """
         try:
-            return pylink.JLink(log=JLINK_LOGGER.info, detailed_log=JLINK_LOGGER.debug,
-                                error=JLINK_LOGGER.error, warn=JLINK_LOGGER.warn)
+            return pylink.JLink(
+                log=JLINK_LOGGER.info,
+                detailed_log=JLINK_LOGGER.debug,
+                error=JLINK_LOGGER.error,
+                warn=JLINK_LOGGER.warn,
+            )
         except TypeError:
             raise DebugProbeError("Cannot open Jlink DLL")
 
@@ -78,7 +87,7 @@ class DebugProbePyLink(DebugProbe):
         :param user_params: The user params dictionary
         :return: probe_description
         """
-        #pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         from .utils import DebugProbes, ProbeDescription
 
         jlink = DebugProbePyLink.get_jlink_lib()
@@ -86,10 +95,14 @@ class DebugProbePyLink(DebugProbe):
         probes = DebugProbes()
         connected_probes = jlink.connected_emulators()
         for probe in connected_probes:
-            probes.append(ProbeDescription("Jlink",
-                                           str(probe.SerialNumber),
-                                           "Segger " + probe.acProduct.decode("utf-8") + ": " + str(probe.SerialNumber),
-                                           DebugProbePyLink))
+            probes.append(
+                ProbeDescription(
+                    "Jlink",
+                    str(probe.SerialNumber),
+                    "Segger " + probe.acProduct.decode("utf-8") + ": " + str(probe.SerialNumber),
+                    DebugProbePyLink,
+                )
+            )
 
         return probes
 
@@ -105,7 +118,7 @@ class DebugProbePyLink(DebugProbe):
         try:
             self.pylink = DebugProbePyLink.get_jlink_lib()
             if self.pylink is None:
-                raise DebugProbeError(f"Getting of J-Link library failed.")
+                raise DebugProbeError("Getting of J-Link library failed.")
         except DebugProbeError as exc:
             raise DebugProbeError(f"Getting of J-Link library failed({str(exc)}).")
 
@@ -114,18 +127,20 @@ class DebugProbePyLink(DebugProbe):
             self.pylink.open(serial_no=self.hardware_id, ip_addr=self.user_params.get("ip_address"))
             self.pylink.set_tif(pylink.enums.JLinkInterfaces.SWD)
             self.pylink.coresight_configure()
+            # Power Up the system and debug and clear sticky errors
+            self.coresight_reg_write(access_port=False, addr=4, data=0x50000F00)
             debug_mbox_ap_ix = self._get_dmbox_ap()
 
             # Select ISP - AP
             if self.dbgmlbx_ap_ix == -1:
                 if debug_mbox_ap_ix == -1:
-                    raise DebugProbeError(f"The Debug mailbox access port is not available!")
+                    raise DebugProbeError("The Debug mailbox access port is not available!")
                 self.dbgmlbx_ap_ix = debug_mbox_ap_ix
             else:
                 if debug_mbox_ap_ix != self.dbgmlbx_ap_ix:
-                    logger.info(f"The detected debug mailbox accessport index is different to specified.")
-
-            self._select_ap(ap_ix=self.dbgmlbx_ap_ix)
+                    logger.info(
+                        "The detected debug mailbox accessport index is different to specified."
+                    )
 
         except JLinkException as exc:
             raise DebugProbeError(f"PyLink cannot establish communication with target({str(exc)}).")
@@ -164,7 +179,7 @@ class DebugProbePyLink(DebugProbe):
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
         """
-        return self.coresight_reg_read(addr=addr | (self.dbgmlbx_ap_ix << self.APSEL_SHIFT))
+        return self.coresight_reg_read(addr=(self.dbgmlbx_ap_ix << self.APSEL_SHIFT) | addr)
 
     def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write debug mailbox access port register.
@@ -174,7 +189,7 @@ class DebugProbePyLink(DebugProbe):
         :param addr: the register address
         :param data: the data to be written into register
         """
-        self.coresight_reg_write(addr=addr | (self.dbgmlbx_ap_ix << self.APSEL_SHIFT), data=data)
+        self.coresight_reg_write(addr=(self.dbgmlbx_ap_ix << self.APSEL_SHIFT) | addr, data=data)
 
     def mem_reg_read(self, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
@@ -191,7 +206,9 @@ class DebugProbePyLink(DebugProbe):
             raise DebugProbeNotOpenError("The PyLink debug probe is not opened yet")
 
         if not self.enabled_memory_interface:
-            raise DebugProbeMemoryInterfaceNotEnabled("Memory interface is not enabled over J-Link.")
+            raise DebugProbeMemoryInterfaceNotEnabled(
+                "Memory interface is not enabled over J-Link."
+            )
 
         self.last_accessed_ap = -1
         reg = [0]
@@ -200,7 +217,6 @@ class DebugProbePyLink(DebugProbe):
         except JLinkException as exc:
             logger.error(f"Failed read memory({str(exc)}).")
         return reg[0]
-
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write 32-bit register in memory space of MCU.
@@ -217,7 +233,9 @@ class DebugProbePyLink(DebugProbe):
             raise DebugProbeNotOpenError("The PyLink debug probe is not opened yet")
 
         if not self.enabled_memory_interface:
-            raise DebugProbeMemoryInterfaceNotEnabled("Memory interface is not enabled over J-Link.")
+            raise DebugProbeMemoryInterfaceNotEnabled(
+                "Memory interface is not enabled over J-Link."
+            )
 
         self.last_accessed_ap = -1
         try:
@@ -244,10 +262,10 @@ class DebugProbePyLink(DebugProbe):
 
         try:
             if access_port:
-                req_ap = (self.APSEL & addr) >> self.APSEL_SHIFT
-                if self.last_accessed_ap != req_ap:
-                    self._select_ap(req_ap)
-                    self.last_accessed_ap = req_ap
+                self._select_ap(addr)
+                addr = addr & 0x0F
+            else:
+                self.last_accessed_ap = -1
 
             if not self.use_coresight_rw:
                 request = swd.ReadRequest(addr // 4, ap=access_port)
@@ -261,7 +279,11 @@ class DebugProbePyLink(DebugProbe):
                 return response.data
             return self.pylink.coresight_read(reg=addr // 4, ap=access_port)
         except JLinkException as exc:
-            raise DebugProbeTransferError(f"The Coresight read operation failed({str(exc)}).")
+            # In case of transaction error reconfigure and initialize the JLink
+            self._reinit_jlink_target()
+            raise DebugProbeTransferError(
+                f"The Coresight read operation failed({str(exc)})."
+            ) from exc
 
     def coresight_reg_write(self, access_port: bool = True, addr: int = 0, data: int = 0) -> None:
         """Write coresight register over PyLink interface.
@@ -279,10 +301,10 @@ class DebugProbePyLink(DebugProbe):
 
         try:
             if access_port:
-                req_ap = (self.APSEL & addr) >> self.APSEL_SHIFT
-                if self.last_accessed_ap != req_ap:
-                    self._select_ap(req_ap)
-                    self.last_accessed_ap = req_ap
+                self._select_ap(addr)
+                addr = addr & 0x0F
+            else:
+                self.last_accessed_ap = -1
 
             if not self.use_coresight_rw:
                 request = swd.WriteRequest(addr // 4, data=data, ap=access_port)
@@ -293,7 +315,11 @@ class DebugProbePyLink(DebugProbe):
                 self.pylink.coresight_write(reg=addr // 4, data=data, ap=access_port)
 
         except JLinkException as exc:
-            raise DebugProbeTransferError(f"The Coresight write operation failed({str(exc)}).")
+            # In case of transaction error reconfigure and initialize the JLink
+            self._reinit_jlink_target()
+            raise DebugProbeTransferError(
+                f"The Coresight write operation failed({str(exc)})."
+            ) from exc
 
     def reset(self) -> None:
         """Reset a target.
@@ -307,13 +333,21 @@ class DebugProbePyLink(DebugProbe):
 
         self.pylink.reset()
 
-    def _select_ap(self, ap_ix: int, address: int = 0) -> None:
+    def _select_ap(self, addr: int) -> None:
         """Helper function to select the access port in DP.
 
-        :param ap_ix: requested Access port  index.
-        :param address: requested address.
+        :param addr: Requested AP access address.
         """
-        self.coresight_reg_write(access_port=False, addr=0x08, data=(address | (ap_ix << 24)))
+        if self.last_accessed_ap != addr:
+            self.last_accessed_ap = addr
+            addr = addr & self.APSEL_APBANKSEL
+            self.coresight_reg_write(access_port=False, addr=0x08, data=addr)
+
+    def _reinit_jlink_target(self) -> None:
+        """Re-initialize the Jlink connection."""
+        if self.pylink:
+            self.pylink.coresight_configure()
+            self.coresight_reg_write(access_port=False, addr=4, data=0x50000F00)
 
     def _get_dmbox_ap(self) -> int:
         """Search for Debug Mailbox Access Point.
@@ -329,12 +363,13 @@ class DebugProbePyLink(DebugProbe):
         if self.pylink is None:
             raise DebugProbeNotOpenError("The Segger debug probe is not opened yet")
 
-        logger.debug(f"Looking for debug mailbox access port")
-
+        logger.debug("Looking for debug mailbox access port")
         for access_port_ix in range(256):
             try:
-                self._select_ap(ap_ix=access_port_ix, address=0x000000F0)
-                ret = self.coresight_reg_read(addr=idr_address)
+                self._select_ap(self.get_coresight_ap_address(access_port_ix, idr_address))
+                ret = self.coresight_reg_read(
+                    addr=idr_address | (access_port_ix << self.APSEL_SHIFT)
+                )
 
                 if ret == idr_expected:
                     logger.debug(f"Found debug mailbox ix:{access_port_ix}")

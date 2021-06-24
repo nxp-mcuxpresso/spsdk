@@ -31,6 +31,7 @@ class Interface(ABC):
         :param reopen: Reopen the interface after reset, defaults to False
         """
         self.reopen = reopen
+        self.allow_abort = False
 
     def open(self) -> None:
         """Open the interface."""

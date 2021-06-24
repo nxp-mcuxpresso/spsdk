@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,7 @@ from spsdk.utils.easy_enum import Enum
 
 class TestEnum(Enum):
     ONE = 1
-    TWO = (2, 'TheTwo', 'Just two.')
+    TWO = (2, "TheTwo", "Just two.")
 
 
 def test_simple() -> None:
@@ -22,53 +22,53 @@ def test_simple() -> None:
 
 def test_get() -> None:
     # value -> name
-    assert TestEnum.get(1) == 'ONE'
-    assert TestEnum[2] == 'TheTwo'
-    assert TestEnum.get(TestEnum.ONE) == 'ONE'
-    assert TestEnum[TestEnum.TWO] == 'TheTwo'
+    assert TestEnum.get(1) == "ONE"
+    assert TestEnum[2] == "TheTwo"
+    assert TestEnum.get(TestEnum.ONE) == "ONE"
+    assert TestEnum[TestEnum.TWO] == "TheTwo"
     # non-existing value
     assert TestEnum.get(3) is None
     assert TestEnum.get(3, 3) == 3
     with pytest.raises(KeyError):
         TestEnum[3]
     # name -> value
-    assert TestEnum.get('ONE') == 1
-    assert TestEnum.get('TheTwo') == 2
-    assert TestEnum.get('THREE') is None
-    assert TestEnum.get('three', 3) == 3
+    assert TestEnum.get("ONE") == 1
+    assert TestEnum.get("TheTwo") == 2
+    assert TestEnum.get("THREE") is None
+    assert TestEnum.get("three", 3) == 3
     with pytest.raises(KeyError):
-        TestEnum['THREE']
+        TestEnum["THREE"]
     # case insensitive
-    assert TestEnum.get('one') == 1
-    assert TestEnum['thetwo'] == 2
+    assert TestEnum.get("one") == 1
+    assert TestEnum["thetwo"] == 2
     with pytest.raises(KeyError):
-        TestEnum['three']
+        TestEnum["three"]
 
 
 def test_desc() -> None:
     # desc for value
-    assert TestEnum.desc(1) == ''
-    assert TestEnum.desc(TestEnum.TWO) == 'Just two.'
+    assert TestEnum.desc(1) == ""
+    assert TestEnum.desc(TestEnum.TWO) == "Just two."
     # desc for name
-    assert TestEnum.desc('ONE') == ''
-    assert TestEnum.desc('thetwo') == 'Just two.'
+    assert TestEnum.desc("ONE") == ""
+    assert TestEnum.desc("thetwo") == "Just two."
     # default
-    assert TestEnum.desc('ONE', 'default') == ''
-    assert TestEnum.desc('thetwo', 'default') == 'Just two.'
+    assert TestEnum.desc("ONE", "default") == ""
+    assert TestEnum.desc("thetwo", "default") == "Just two."
     # invalid key
-    assert TestEnum.desc('three') == ''
-    assert TestEnum.desc('three', 'default') == 'default'
+    assert TestEnum.desc("three") == ""
+    assert TestEnum.desc("three", "default") == "default"
 
 
 def test_name() -> None:
-    assert TestEnum.name(1) == 'ONE'
-    assert TestEnum.name(2) == 'TheTwo'
-    assert TestEnum.name(TestEnum.ONE) == 'ONE'
-    assert TestEnum.name(TestEnum.TWO) == 'TheTwo'
+    assert TestEnum.name(1) == "ONE"
+    assert TestEnum.name(2) == "TheTwo"
+    assert TestEnum.name(TestEnum.ONE) == "ONE"
+    assert TestEnum.name(TestEnum.TWO) == "TheTwo"
     # default
-    assert TestEnum.name(1, '?') == 'ONE'
-    assert TestEnum.name(TestEnum.TWO, '?') == 'TheTwo'
-    assert TestEnum.name(3, 'three') == 'three'
+    assert TestEnum.name(1, "?") == "ONE"
+    assert TestEnum.name(TestEnum.TWO, "?") == "TheTwo"
+    assert TestEnum.name(3, "three") == "three"
     with pytest.raises(KeyError):
         TestEnum[3]
 
@@ -103,10 +103,10 @@ def test_contains() -> None:
     assert TestEnum.ONE in TestEnum
     assert TestEnum.TWO in TestEnum
     # name
-    assert 'ONE' in TestEnum
-    assert 'TheTwo' in TestEnum
+    assert "ONE" in TestEnum
+    assert "TheTwo" in TestEnum
     # case sensitive
-    assert 'one' not in TestEnum
+    assert "one" not in TestEnum
     # not contains
-    assert 'three' not in TestEnum
+    assert "three" not in TestEnum
     assert 3 not in TestEnum

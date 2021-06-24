@@ -18,6 +18,7 @@ from Crypto.PublicKey import RSA, ECC
 from Crypto.Signature import pkcs1_15, DSS
 
 from spsdk import SPSDKError
+
 # Abstract Class Interface
 from .abstract import BackendClass
 
@@ -31,12 +32,12 @@ class Backend(BackendClass):
     @property
     def name(self) -> str:
         """Name of the backend."""
-        return 'SPSDK'
+        return "SPSDK"
 
     @property
     def version(self) -> str:
         """Version of the backend."""
-        return '0.1'
+        return "0.1"
 
     def random_bytes(self, length: int) -> bytes:
         """Return a random byte string with specified length.
@@ -56,9 +57,9 @@ class Backend(BackendClass):
         :raise ValueError: if the algorithm is not found
         """
         # algo_cls = getattr(Hash, name.upper(), None)  # hack: get class object by name
-        algo_cls = importlib.import_module(f'Crypto.Hash.{name.upper()}')
+        algo_cls = importlib.import_module(f"Crypto.Hash.{name.upper()}")
         if algo_cls is None:
-            raise ValueError(f'Unsupported algorithm: Hash.{name}'.format(name=name.upper()))
+            raise ValueError(f"Unsupported algorithm: Hash.{name}".format(name=name.upper()))
         return algo_cls.new(data)  # type: ignore  # pylint: disable=not-callable
 
     def cmac(self, data: bytes, key: bytes) -> bytes:  # pylint: disable=no-self-use
@@ -72,7 +73,7 @@ class Backend(BackendClass):
         cipher.update(data)
         return cipher.digest()
 
-    def hash(self, data: bytes, algorithm: str = 'sha256') -> bytes:
+    def hash(self, data: bytes, algorithm: str = "sha256") -> bytes:
         """Return a HASH from input data with specified algorithm.
 
         :param data: Input data in bytes
@@ -82,7 +83,7 @@ class Backend(BackendClass):
         """
         return self._get_algorithm(algorithm, data).digest()
 
-    def hmac(self, key: bytes, data: bytes, algorithm: str = 'sha256') -> bytes:
+    def hmac(self, key: bytes, data: bytes, algorithm: str = "sha256") -> bytes:
         """Return a HMAC from data with specified key and algorithm.
 
         :param key: The key in bytes format
@@ -112,17 +113,17 @@ class Backend(BackendClass):
             raise ValueError("The key to wrap must be at least 16 bytes")
         if len(key_to_wrap) % 8 != 0:
             raise ValueError("The key to wrap must be a multiple of 8 bytes")
-        iv = 0xa6a6a6a6a6a6a6a6
+        iv = 0xA6A6A6A6A6A6A6A6
         n = len(key_to_wrap) // 8
-        r = [b''] + [key_to_wrap[i * 8: i * 8 + 8] for i in range(0, n)]
+        r = [b""] + [key_to_wrap[i * 8 : i * 8 + 8] for i in range(0, n)]
         a = iv
         aes = AES.new(kek, AES.MODE_ECB)
         for j in range(6):
             for i in range(1, n + 1):
-                b = aes.encrypt(pack('>Q', a) + r[i])
-                a = unpack_from('>Q', b[:8])[0] ^ (n * j + i)
+                b = aes.encrypt(pack(">Q", a) + r[i])
+                a = unpack_from(">Q", b[:8])[0] ^ (n * j + i)
                 r[i] = b[8:]
-        return pack('>Q', a) + b''.join(r[1:])
+        return pack(">Q", a) + b"".join(r[1:])
 
     # pylint: disable=invalid-name
     def aes_key_unwrap(self, kek: bytes, wrapped_key: bytes) -> bytes:
@@ -140,20 +141,20 @@ class Backend(BackendClass):
         if len(wrapped_key) % 8 != 0:
             raise ValueError("The wrapped key must be a multiple of 8 bytes")
         # default iv
-        iv = 0xa6a6a6a6a6a6a6a6
+        iv = 0xA6A6A6A6A6A6A6A6
         n = len(wrapped_key) // 8 - 1
         # NOTE: R[0] is never accessed, left in for consistency with RFC indices
-        r = [b''] + [wrapped_key[i * 8: i * 8 + 8] for i in range(1, n + 1)]
-        a = unpack_from('>Q', wrapped_key[:8])[0]
+        r = [b""] + [wrapped_key[i * 8 : i * 8 + 8] for i in range(1, n + 1)]
+        a = unpack_from(">Q", wrapped_key[:8])[0]
         aes = AES.new(kek, AES.MODE_ECB)
         for j in range(5, -1, -1):  # counting down
             for i in range(n, 0, -1):  # (n, n-1, ..., 1)
-                b = aes.decrypt(pack('>Q', a ^ (n * j + i)) + r[i])
-                a = unpack_from('>Q', b[:8])[0]
+                b = aes.decrypt(pack(">Q", a ^ (n * j + i)) + r[i])
+                a = unpack_from(">Q", b[:8])[0]
                 r[i] = b[8:]
         if a != iv:
             raise ValueError(f"Integrity Check Failed: {a:016X} (expected {iv:016X})")
-        return b''.join(r[1:])
+        return b"".join(r[1:])
 
     def aes_cbc_encrypt(self, key: bytes, plain_data: bytes, iv: bytes = None) -> bytes:
         """Encrypt plain data with AES in CBC mode.
@@ -165,7 +166,9 @@ class Backend(BackendClass):
         :raises SPSDKError: Incorrect key or initialization vector size
         """
         if len(key) not in AES.key_size:
-            raise SPSDKError(f"The key must be a valid AES key length: {', '.join([str(k) for k in AES.key_size])}")
+            raise SPSDKError(
+                f"The key must be a valid AES key length: {', '.join([str(k) for k in AES.key_size])}"
+            )
         init_vector = iv or bytes(AES.block_size)
         if len(init_vector) != AES.block_size:
             raise SPSDKError(f"The initial vector length must be {AES.block_size}")
@@ -200,7 +203,12 @@ class Backend(BackendClass):
         """
         return self.aes_ctr_encrypt(key, encrypted_data, nonce)
 
-    def rsa_sign(self, private_key: Union[RSA.RsaKey, bytes], data: bytes, algorithm: str = 'sha256') -> bytes:
+    def rsa_sign(
+        self,
+        private_key: Union[RSA.RsaKey, bytes],
+        data: bytes,
+        algorithm: str = "sha256",
+    ) -> bytes:
         """Sign input data.
 
         :param private_key: The private key: either RSA.RsaKey or decrypted binary data in PEM format
@@ -215,8 +223,14 @@ class Backend(BackendClass):
         h = self._get_algorithm(algorithm, data)
         return pkcs1_15.new(private_key).sign(h)
 
-    def rsa_verify(self, pub_key_mod: int, pub_key_exp: int, signature: bytes, data: bytes,
-                   algorithm: str = 'sha256') -> bool:
+    def rsa_verify(
+        self,
+        pub_key_mod: int,
+        pub_key_exp: int,
+        signature: bytes,
+        data: bytes,
+        algorithm: str = "sha256",
+    ) -> bool:
         """Verify input data.
 
         :param pub_key_mod: The public key modulus
@@ -246,7 +260,9 @@ class Backend(BackendClass):
         """
         return RSA.construct((modulus, exponent))
 
-    def ecc_sign(self, private_key: Union[ECC.EccKey, bytes], data: bytes, algorithm: str = None) -> bytes:
+    def ecc_sign(
+        self, private_key: Union[ECC.EccKey, bytes], data: bytes, algorithm: str = None
+    ) -> bytes:
         """Sign data using (EC)DSA.
 
         :param private_key: ECC private key, either as EccKey or bytes
@@ -255,12 +271,18 @@ class Backend(BackendClass):
         :return: Signature, r and s coordinates as bytes
         """
         key = private_key if isinstance(private_key, ECC.EccKey) else ECC.import_key(private_key)
-        hash_name = algorithm or f'sha{key.pointQ.size_in_bits()}'
+        hash_name = algorithm or f"sha{key.pointQ.size_in_bits()}"
         hasher = self._get_algorithm(name=hash_name, data=data)
-        signer = DSS.new(key, mode='deterministic-rfc6979')
+        signer = DSS.new(key, mode="deterministic-rfc6979")
         return signer.sign(hasher)
 
-    def ecc_verify(self, key: Union[ECC.EccKey, bytes], signature: bytes, data: bytes, algorithm: str = None) -> bool:
+    def ecc_verify(
+        self,
+        key: Union[ECC.EccKey, bytes],
+        signature: bytes,
+        data: bytes,
+        algorithm: str = None,
+    ) -> bool:
         """Verify (EC)DSA signature.
 
         :param key: ECC private or public key, either as EccKey or bytes
@@ -271,18 +293,21 @@ class Backend(BackendClass):
         :raises SPSDKError: Signature length is invalid
         """
         key = key if isinstance(key, ECC.EccKey) else ECC.import_key(key)
-        hash_name = algorithm or f'sha{key.pointQ.size_in_bits()}'
+        hash_name = algorithm or f"sha{key.pointQ.size_in_bits()}"
         coordinate_size = key.pointQ.size_in_bytes()
         if len(signature) != 2 * coordinate_size:
-            raise SPSDKError(f'Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}')
+            raise SPSDKError(
+                f"Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}"
+            )
         hasher = self._get_algorithm(name=hash_name, data=data)
         try:
-            DSS.new(key, mode='deterministic-rfc6979').verify(hasher, signature)
+            DSS.new(key, mode="deterministic-rfc6979").verify(hasher, signature)
             return True
         except ValueError:
             return False
 
+
 ########################################################################################################################
 # SPSDK Backend instance
 ########################################################################################################################
-internal_backend = Backend()    # pylint: disable=invalid-name
+internal_backend = Backend()  # pylint: disable=invalid-name

@@ -15,7 +15,7 @@ from spsdk.utils.crypto import Certificate, CertBlockV2
 
 def test_cert_block_header():
     header = CertBlockHeader()
-    assert header.version == '1.0'
+    assert header.version == "1.0"
     assert header.flags == 0
     assert header.build_number == 0
     assert header.image_length == 0
@@ -50,7 +50,7 @@ def test_cert_block_basic():
 
 
 def test_cert_block(data_dir):
-    with open(os.path.join(data_dir, 'selfsign_2048_v3.der.crt'), 'rb') as f:
+    with open(os.path.join(data_dir, "selfsign_2048_v3.der.crt"), "rb") as f:
         cert_data = f.read()
 
     cert_obj = Certificate(cert_data)
@@ -62,13 +62,13 @@ def test_cert_block(data_dir):
     cb.export()
 
     # test RKHT
-    assert cb.rkht.hex() == 'db31d46c717711a8231cbc38b1de8a6e8657e1f733e04c2ee4b62fcea59149fa'
+    assert cb.rkht.hex() == "db31d46c717711a8231cbc38b1de8a6e8657e1f733e04c2ee4b62fcea59149fa"
     fuses = cb.rkht_fuses
     assert len(fuses) == 8
     assert fuses[0] == 1825845723
 
     # test exception if child certificate in chain is not signed by parent certificate
-    with open(os.path.join(data_dir, 'ca0_v3.der.crt'), 'rb') as f:
+    with open(os.path.join(data_dir, "ca0_v3.der.crt"), "rb") as f:
         ca0_cert_data = f.read()
     ca0_cert = Certificate(ca0_cert_data)
     with pytest.raises(ValueError):

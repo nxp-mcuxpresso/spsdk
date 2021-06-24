@@ -16,10 +16,11 @@ from spsdk.debuggers.debug_probe import (
     DebugProbeTransferError,
     DebugProbeNotOpenError,
     DebugProbeError,
-    DebugProbeMemoryInterfaceNotEnabled
+    DebugProbeMemoryInterfaceNotEnabled,
 )
 
 logger = logging.getLogger(__name__)
+
 
 def set_logger(level: int) -> None:
     """Sets the log level for this module.
@@ -27,6 +28,7 @@ def set_logger(level: int) -> None:
     param level: Requested level.
     """
     logger.setLevel(level)
+
 
 set_logger(logging.ERROR)
 
@@ -59,11 +61,17 @@ class DebugProbeVirtual(DebugProbe):
             if "exc" in user_params.keys():
                 raise DebugProbeError("Forced exception from constructor.")
             if "subs_ap" in user_params.keys():
-                self.set_coresight_ap_substitute_data(self._load_subs_from_param(user_params["subs_ap"]))
+                self.set_coresight_ap_substitute_data(
+                    self._load_subs_from_param(user_params["subs_ap"])
+                )
             if "subs_dp" in user_params.keys():
-                self.set_coresight_dp_substitute_data(self._load_subs_from_param(user_params["subs_dp"]))
+                self.set_coresight_dp_substitute_data(
+                    self._load_subs_from_param(user_params["subs_dp"])
+                )
             if "subs_mem" in user_params.keys():
-                self.set_virtual_memory_substitute_data(self._load_subs_from_param(user_params["subs_mem"]))
+                self.set_virtual_memory_substitute_data(
+                    self._load_subs_from_param(user_params["subs_mem"])
+                )
 
         logger.debug(f"The SPSDK Virtual Interface has been initialized")
 
@@ -78,7 +86,7 @@ class DebugProbeVirtual(DebugProbe):
         :return: probe_description
         :raises DebugProbeError: In case of invoked test Exception.
         """
-        #pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         from spsdk.debuggers.utils import DebugProbes, ProbeDescription
 
         probes = DebugProbes()
@@ -88,10 +96,14 @@ class DebugProbeVirtual(DebugProbe):
 
         # Find this 'probe' just in case of direct request (user must know the hardware id :-) )
         if hardware_id == DebugProbeVirtual.UNIQUE_SERIAL:
-            probes.append(ProbeDescription("Virtual",
-                                           DebugProbeVirtual.UNIQUE_SERIAL,
-                                           "Special virtual debug probe used for product testing",
-                                           DebugProbeVirtual))
+            probes.append(
+                ProbeDescription(
+                    "Virtual",
+                    DebugProbeVirtual.UNIQUE_SERIAL,
+                    "Special virtual debug probe used for product testing",
+                    DebugProbeVirtual,
+                )
+            )
         return probes
 
     def open(self) -> None:
@@ -152,7 +164,7 @@ class DebugProbeVirtual(DebugProbe):
             raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         # Add ap selection to 2 as a standard index of debug mailbox
-        return self.coresight_reg_read(access_port=True, addr=addr | 2<<self.APSEL_SHIFT)
+        return self.coresight_reg_read(access_port=True, addr=addr | 2 << self.APSEL_SHIFT)
 
     def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write debug mailbox access port register.
@@ -166,7 +178,7 @@ class DebugProbeVirtual(DebugProbe):
             raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         # Add ap selection to 2 as a standard index of debug mailbox
-        self.coresight_reg_write(access_port=True, addr=addr | 2<<self.APSEL_SHIFT, data=data)
+        self.coresight_reg_write(access_port=True, addr=addr | 2 << self.APSEL_SHIFT, data=data)
 
     def mem_reg_read(self, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
@@ -183,12 +195,11 @@ class DebugProbeVirtual(DebugProbe):
             raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         if not self.enabled_memory_interface:
-            raise DebugProbeMemoryInterfaceNotEnabled("Memory interface is not enabled over Virtual.")
+            raise DebugProbeMemoryInterfaceNotEnabled(
+                "Memory interface is not enabled over Virtual."
+            )
 
-        return self._get_requested_value(
-            self.virtual_memory,
-            self.virtual_memory_substituted,
-            addr)
+        return self._get_requested_value(self.virtual_memory, self.virtual_memory_substituted, addr)
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write 32-bit register in memory space of MCU.
@@ -204,7 +215,9 @@ class DebugProbeVirtual(DebugProbe):
             raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         if not self.enabled_memory_interface:
-            raise DebugProbeMemoryInterfaceNotEnabled("Memory interface is not enabled over Virtual.")
+            raise DebugProbeMemoryInterfaceNotEnabled(
+                "Memory interface is not enabled over Virtual."
+            )
 
         self.virtual_memory[addr] = data
 
@@ -223,16 +236,10 @@ class DebugProbeVirtual(DebugProbe):
             raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
         # As first try to solve AP requests
         if access_port:
-            return self._get_requested_value(
-                self.coresight_ap,
-                self.coresight_ap_substituted,
-                addr)
+            return self._get_requested_value(self.coresight_ap, self.coresight_ap_substituted, addr)
 
-        #DP requests
-        return self._get_requested_value(
-            self.coresight_dp,
-            self.coresight_dp_substituted,
-            addr)
+        # DP requests
+        return self._get_requested_value(self.coresight_dp, self.coresight_dp_substituted, addr)
 
     def coresight_reg_write(self, access_port: bool = True, addr: int = 0, data: int = 0) -> None:
         """Write coresight register over Virtual interface.
@@ -254,7 +261,6 @@ class DebugProbeVirtual(DebugProbe):
                 self.coresight_dp_write_exception = False
                 raise DebugProbeTransferError(f"The Coresight write operation failed.")
             self.coresight_dp[addr] = data
-
 
     def reset(self) -> None:
         """Reset a target.

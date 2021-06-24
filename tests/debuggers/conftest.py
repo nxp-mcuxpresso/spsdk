@@ -9,4 +9,4 @@ from spsdk.debuggers.utils import PROBES
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
 # Extend standard list of debug probes by virtual to allow unit testing
-PROBES['virtual'] = DebugProbeVirtual
+PROBES["virtual"] = DebugProbeVirtual

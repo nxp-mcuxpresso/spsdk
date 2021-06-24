@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2020 NXP
+# Copyright 2019-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ def test_SegIDS3a_repr():
     output = repr(ids3a_seg)
     repr_strings = ["IDS3a", "OUT", "ENTRY", "SIZE", "HAB", "SCFW", "ROM"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_SegIDS3a_info():
@@ -22,7 +22,7 @@ def test_SegIDS3a_info():
     info_msg = ids3a_seg.info()
     repr_strings = ["Source", "Dest", "Entry", "Size", "SCFW", "HAB", "ROM", "<Flags>"]
     for req_string in repr_strings:
-        assert req_string in info_msg, f'string {req_string} is not in the output: {info_msg}'
+        assert req_string in info_msg, f"string {req_string} is not in the output: {info_msg}"
 
 
 def test_SegIDS3a_export_parse():
@@ -42,7 +42,7 @@ def test_SegIDS3b_repr():
     output = repr(ids3b_seg)
     repr_strings = ["IDS3b", "IN", "OUT", "ENTRY", "SIZE", "FLAGS"]
     for req_string in repr_strings:
-        assert req_string in output, f'string {req_string} is not in the output: {output}'
+        assert req_string in output, f"string {req_string} is not in the output: {output}"
 
 
 def test_SegIDS3b_export_parse():

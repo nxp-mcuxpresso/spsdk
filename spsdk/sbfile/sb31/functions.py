@@ -13,12 +13,14 @@ from spsdk.utils.crypto.backend_internal import internal_backend
 
 class KeyDerivationMode(Enum):
     """Modes for Key derivation."""
-    KDK = (1, 'KDK', 'Key Derivation Key mode')
-    BLK = (2, 'BLK', 'Block Key Derivation mode')
+
+    KDK = (1, "KDK", "Key Derivation Key mode")
+    BLK = (2, "BLK", "Block Key Derivation mode")
 
 
 class KeyDerivator:
     """Engine for generating derived keys."""
+
     def __init__(self, pck: bytes, timestamp: int, key_length: int, kdk_access_rights: int) -> None:
         """Initialize the KeyDerivator.
 
@@ -42,7 +44,9 @@ class KeyDerivator:
         return derive_block_key(self.kdk, block_number, self.key_length, self.kdk_access_rights)
 
 
-def derive_block_key(kdk: bytes, block_number: int, key_length: int, kdk_access_rights: int) -> bytes:
+def derive_block_key(
+    kdk: bytes, block_number: int, key_length: int, kdk_access_rights: int
+) -> bytes:
     """Derive encryption AES key for given block.
 
     :param kdk: Key Derivation Key
@@ -52,9 +56,13 @@ def derive_block_key(kdk: bytes, block_number: int, key_length: int, kdk_access_
     :return: AES key for given block
     """
     return _derive_key(
-        key=kdk, derivation_constant=block_number, kdk_access_rights=kdk_access_rights,
-        key_length=key_length, mode=KeyDerivationMode.BLK
+        key=kdk,
+        derivation_constant=block_number,
+        kdk_access_rights=kdk_access_rights,
+        key_length=key_length,
+        mode=KeyDerivationMode.BLK,
     )
+
 
 def derive_kdk(pck: bytes, timestamp: int, key_length: int, kdk_access_rights: int) -> bytes:
     """Derive the Key Derivation Key.
@@ -66,14 +74,20 @@ def derive_kdk(pck: bytes, timestamp: int, key_length: int, kdk_access_rights: i
     :return: Key Derivation Key
     """
     return _derive_key(
-        key=pck, derivation_constant=timestamp, kdk_access_rights=kdk_access_rights,
-        key_length=key_length, mode=KeyDerivationMode.KDK
+        key=pck,
+        derivation_constant=timestamp,
+        kdk_access_rights=kdk_access_rights,
+        key_length=key_length,
+        mode=KeyDerivationMode.KDK,
     )
 
 
 def _derive_key(
-        key: bytes, derivation_constant: int, kdk_access_rights: int,
-        mode: int, key_length: int
+    key: bytes,
+    derivation_constant: int,
+    kdk_access_rights: int,
+    mode: int,
+    key_length: int,
 ) -> bytes:
     """Derive new AES key from the provided key.
 
@@ -89,7 +103,8 @@ def _derive_key(
         _get_key_derivation_data,
         derivation_constant=derivation_constant,
         kdk_access_rights=kdk_access_rights,
-        mode=mode, key_length=key_length
+        mode=mode,
+        key_length=key_length,
     )
 
     result = internal_backend.cmac(data=derivation_data(iteration=1), key=key)
@@ -99,8 +114,11 @@ def _derive_key(
 
 
 def _get_key_derivation_data(
-        derivation_constant: int, kdk_access_rights: int,
-        mode: int, key_length: int, iteration: int
+    derivation_constant: int,
+    kdk_access_rights: int,
+    mode: int,
+    key_length: int,
+    iteration: int,
 ) -> bytes:
     """Generate data for AES key derivation.
 
@@ -116,15 +134,15 @@ def _get_key_derivation_data(
     assert kdk_access_rights in [0, 1, 2, 3]
     assert key_length in [128, 256]
 
-    label = int.to_bytes(derivation_constant, length=12, byteorder='little')
+    label = int.to_bytes(derivation_constant, length=12, byteorder="little")
     context = bytes(8)
-    context += int.to_bytes(kdk_access_rights << 6, length=1, byteorder='big')
-    context += b'\x01' if mode == KeyDerivationMode.KDK else b'\x10'
+    context += int.to_bytes(kdk_access_rights << 6, length=1, byteorder="big")
+    context += b"\x01" if mode == KeyDerivationMode.KDK else b"\x10"
     context += bytes(1)
     key_option = 0x20 if key_length == 128 else 0x21
-    context += int.to_bytes(key_option, length=1, byteorder='big')
-    length = int.to_bytes(key_length, length=4, byteorder='big')
-    i = int.to_bytes(iteration, length=4, byteorder='big')
+    context += int.to_bytes(key_option, length=1, byteorder="big")
+    length = int.to_bytes(key_length, length=4, byteorder="big")
+    i = int.to_bytes(iteration, length=4, byteorder="big")
     result = label + context + length + i
     return result
 

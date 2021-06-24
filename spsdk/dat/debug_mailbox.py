@@ -15,12 +15,14 @@ from spsdk.exceptions import SPSDKError
 
 logger = logging.getLogger(__name__)
 
+
 class DebugMailboxError(RuntimeError):
     """Class for DebugMailboxError."""
 
 
 class DebugMailbox:
     """Class for DebugMailbox."""
+
     def __init__(self, debug_probe: DebugProbe, reset: bool = True, moredelay: float = 1.0) -> None:
         """Initialize DebugMailbox object."""
         # setup debug port / access point
@@ -45,8 +47,7 @@ class DebugMailbox:
         if self.reset:
             self.debug_probe.dbgmlbx_reg_write(
                 addr=self.registers.CSW.address,
-                data=self.registers.CSW.bits.RESYNCH_REQ |
-                self.registers.CSW.bits.CHIP_RESET_REQ
+                data=self.registers.CSW.bits.RESYNCH_REQ | self.registers.CSW.bits.CHIP_RESET_REQ,
             )
 
         # Acknowledgement of initiation
@@ -72,7 +73,6 @@ class DebugMailbox:
                     retries = 20
                     raise IOError("TransferTimeoutError limit exceeded!")
                 sleep(0.05)
-
 
     def close(self) -> None:
         """Close session."""
@@ -107,52 +107,46 @@ class DebugMailbox:
                 logger.error(f"write exception addr={reg:#08X}, val={value:#08X}")
                 sleep(0.01)
 
-REGISTERS = munchify({
-    # Control and Status Word (CSW) is used to control
-    # the Debug Mailbox communication
-    'CSW': {
-        'address': 0x00,
-        'bits': {
 
-            # Debugger will set this bit to 1 to request a resynchronrisation
-            'RESYNCH_REQ': (1 << 0),
-
-            # Request is pending from debugger (i.e unread value in REQUEST)
-            'REQ_PENDING': (1 << 1),
-
-            # Debugger overrun error
-            # (previous REQUEST overwritten before being picked up by ROM)
-            'DBG_OR_ERR': (1 << 2),
-
-            # AHB overrun Error (Return value overwritten by ROM)
-            'AHB_OR_ERR': (1 << 3),
-
-            # Soft Reset for DM (write-only from AHB,
-            # not readable and self-clearing).
-            # A write to this bit will cause a soft reset for DM.
-            'SOFT_RESET': (1 << 4),
-
-            # Write only bit. Once written will cause the chip to reset
-            # (note that the DM is not reset by this reset as it is
-            #   only resettable by a SOFT reset or a POR/BOD event)
-            'CHIP_RESET_REQ': (1 << 5),
-        }
-    },
-
-    # Request register is used to send data from debugger to device
-    'REQUEST': {
-        'address': 0x04,
-    },
-
-    # Return register is used to send data from device to debugger
-    # Note: Any read from debugger side will be stalled until new data is present.
-    'RETURN': {
-        'address': 0x08,
-    },
-
-    # IDR register is used to identify the access port
-    'IDR': {
-        'address': 0xFC,
-        'expected': 0x002A0000,
+REGISTERS = munchify(
+    {
+        # Control and Status Word (CSW) is used to control
+        # the Debug Mailbox communication
+        "CSW": {
+            "address": 0x00,
+            "bits": {
+                # Debugger will set this bit to 1 to request a resynchronrisation
+                "RESYNCH_REQ": (1 << 0),
+                # Request is pending from debugger (i.e unread value in REQUEST)
+                "REQ_PENDING": (1 << 1),
+                # Debugger overrun error
+                # (previous REQUEST overwritten before being picked up by ROM)
+                "DBG_OR_ERR": (1 << 2),
+                # AHB overrun Error (Return value overwritten by ROM)
+                "AHB_OR_ERR": (1 << 3),
+                # Soft Reset for DM (write-only from AHB,
+                # not readable and self-clearing).
+                # A write to this bit will cause a soft reset for DM.
+                "SOFT_RESET": (1 << 4),
+                # Write only bit. Once written will cause the chip to reset
+                # (note that the DM is not reset by this reset as it is
+                #   only resettable by a SOFT reset or a POR/BOD event)
+                "CHIP_RESET_REQ": (1 << 5),
+            },
+        },
+        # Request register is used to send data from debugger to device
+        "REQUEST": {
+            "address": 0x04,
+        },
+        # Return register is used to send data from device to debugger
+        # Note: Any read from debugger side will be stalled until new data is present.
+        "RETURN": {
+            "address": 0x08,
+        },
+        # IDR register is used to identify the access port
+        "IDR": {
+            "address": 0xFC,
+            "expected": 0x002A0000,
+        },
     }
-})
+)

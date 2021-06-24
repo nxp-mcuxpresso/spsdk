@@ -1,14 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 from typing import Optional
 
-from spsdk.image.bee import BeeBaseClass, BeeFacRegion, BeeProtectRegionBlock, BeeKIB, BeeRegionHeader
+from spsdk.image.bee import (
+    BeeBaseClass,
+    BeeFacRegion,
+    BeeProtectRegionBlock,
+    BeeKIB,
+    BeeRegionHeader,
+)
 from spsdk.image.segments import SegBEE
 from spsdk.utils.crypto import crypto_backend
 
@@ -33,13 +39,15 @@ def verify_base_class_features(inst: BeeBaseClass, decrypt_key: Optional[bytes] 
     assert (data is not None) and (len(data) == expected_size)
     # parse data back into instance
     cls = inst.__class__
-    inst2 = cls.parse(b'?' + data, 1, sw_key=decrypt_key) if decrypt_key else cls.parse(b'?' + data, 1)
+    inst2 = (
+        cls.parse(b"?" + data, 1, sw_key=decrypt_key) if decrypt_key else cls.parse(b"?" + data, 1)
+    )
     # verify the parsed instance is same as original instance
     assert inst2 is not None
     assert inst == inst2
     # verify ValueError exception by parser if input data are too short
     with pytest.raises(ValueError):
-        cls.parse(b'\x00', 0)
+        cls.parse(b"\x00", 0)
 
 
 def test_bee_fac_region() -> None:
@@ -80,7 +88,7 @@ def test_bee_protect_region_block() -> None:
     verify_base_class_features(prdb)
     # parse invalid data
     with pytest.raises(ValueError):
-        BeeProtectRegionBlock.parse(b'\x00' * 256)
+        BeeProtectRegionBlock.parse(b"\x00" * 256)
 
 
 def test_bee_kib() -> None:
@@ -103,7 +111,7 @@ def test_bee_region_header() -> None:
 
 def test_bee_region_header_fuses() -> None:
     """Test function BeeRegionHeader.sw_key_fuses()"""
-    hdr = BeeRegionHeader(sw_key=bytes.fromhex('11223344556677889900AABBCCDDEEFF'))
+    hdr = BeeRegionHeader(sw_key=bytes.fromhex("11223344556677889900AABBCCDDEEFF"))
     fuses = hdr.sw_key_fuses()
     assert len(fuses) == 4
     assert fuses[0] == 0xCCDDEEFF
@@ -117,7 +125,7 @@ def test_seg_bee() -> None:
     # empty segment
     seg = SegBEE([])
     assert seg.info()
-    assert seg.export() == b''
+    assert seg.export() == b""
     assert seg.size == 0
     seg.validate()
     # single region
@@ -129,7 +137,7 @@ def test_seg_bee() -> None:
     seg.validate()
     data = seg.export()
     assert (data is not None) and (len(data) == seg.size)
-    parsed_seg = SegBEE.parse(b'\xFF' + data, 1, [sw_key])
+    parsed_seg = SegBEE.parse(b"\xFF" + data, 1, [sw_key])
     assert seg == parsed_seg
     # two regions
     sw_key2 = crypto_backend().random_bytes(16)
@@ -141,7 +149,7 @@ def test_seg_bee() -> None:
     seg.validate()
     data = seg.export()
     assert (data is not None) and (len(data) == seg.size)
-    parsed_seg = SegBEE.parse(b'\xFF' + data, 1, [sw_key, sw_key2])
+    parsed_seg = SegBEE.parse(b"\xFF" + data, 1, [sw_key, sw_key2])
     assert seg == parsed_seg
     # total number of FACs exceeded
     hdr.add_fac(BeeFacRegion(0xF0000000, 0x00010000, 3))

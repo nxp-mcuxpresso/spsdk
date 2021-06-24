@@ -53,13 +53,23 @@ import cryptography.hazmat.primitives.asymmetric.utils as utils_cryptography
 
 from cryptography.x509 import *
 from cryptography.x509 import (
-    AuthorityInformationAccessOID, CRLEntryExtensionOID,
-    CertificatePoliciesOID, ExtendedKeyUsageOID, ExtensionOID, NameOID,
-    ObjectIdentifier, SignatureAlgorithmOID
+    AuthorityInformationAccessOID,
+    CRLEntryExtensionOID,
+    CertificatePoliciesOID,
+    ExtendedKeyUsageOID,
+    ExtensionOID,
+    NameOID,
+    ObjectIdentifier,
+    SignatureAlgorithmOID,
 )
 
 from .certificate_management import *
 from .keys_management import *
-from .loaders import (_get_encoding_type, generic_load, load_certificate,
-                      load_private_key, load_public_key)
+from .loaders import (
+    _get_encoding_type,
+    generic_load,
+    load_certificate,
+    load_private_key,
+    load_public_key,
+)
 from .signature_provider import SignatureProvider

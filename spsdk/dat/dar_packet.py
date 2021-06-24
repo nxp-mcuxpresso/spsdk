@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,8 +20,13 @@ from spsdk.utils.crypto.backend_internal import internal_backend
 class DebugAuthenticateResponse:
     """Class for DAR packet."""
 
-    def __init__(self, debug_credential: DebugCredential, auth_beacon: int,
-                 dac: DebugAuthenticationChallenge, path_dck_private: str) -> None:
+    def __init__(
+        self,
+        debug_credential: DebugCredential,
+        auth_beacon: int,
+        dac: DebugAuthenticationChallenge,
+        path_dck_private: str,
+    ) -> None:
         """Initialize the DebugAuthenticateResponse object.
 
         :param debug_credential: the path, where the dc is store
@@ -38,7 +43,6 @@ class DebugAuthenticateResponse:
 
     def info(self) -> str:
         """String representation of DebugAuthenticateResponse."""
-        # pylint: disable=bad-whitespace
         msg = f"DAC:\n{self.dac.info()}\n"
         msg += f"DC:\n{self.debug_credential.info()}\n"
         msg += f"Authentication Beacon: {self.auth_beacon}\n"
@@ -74,7 +78,7 @@ class DebugAuthenticateResponse:
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> 'DebugAuthenticateResponse':
+    def parse(cls, data: bytes, offset: int = 0) -> "DebugAuthenticateResponse":
         """Parse the DAR.
 
         :param data: Raw data as bytes
@@ -84,14 +88,21 @@ class DebugAuthenticateResponse:
         raise NotImplementedError
 
     @classmethod
-    def _get_class(cls, version: str, socc: int) -> 'Type[DebugAuthenticateResponse]':
+    def _get_class(cls, version: str, socc: int) -> "Type[DebugAuthenticateResponse]":
         if socc == 4:
             return _n4analog_version_mapping[version]
         return _version_mapping[version]
 
     @classmethod
-    def create(cls, version: str, socc: int, dc: DebugCredential,
-               auth_beacon: int, dac: DebugAuthenticationChallenge, dck: str) -> 'DebugAuthenticateResponse':
+    def create(
+        cls,
+        version: str,
+        socc: int,
+        dc: DebugCredential,
+        auth_beacon: int,
+        dac: DebugAuthenticationChallenge,
+        dck: str,
+    ) -> "DebugAuthenticateResponse":
         """Create a dar object out of input parameters.
 
         :param version: protocol version
@@ -119,7 +130,7 @@ class DebugAuthenticateResponseRSA(DebugAuthenticateResponse):
         key_bytes = key.private_bytes(
             encoding=crypto.Encoding.PEM,
             format=crypto.serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=crypto.serialization.NoEncryption()
+            encryption_algorithm=crypto.serialization.NoEncryption(),
         )
         return internal_backend.rsa_sign(key_bytes, self._get_data_for_signature())
 
@@ -144,8 +155,7 @@ class DebugAuthenticateResponseN4A_256(DebugAuthenticateResponse):
         signature = super()._get_signature()
         r, s = crypto.utils_cryptography.decode_dss_signature(signature)
         public_numbers = crypto.EllipticCurvePublicNumbers(r, s, crypto.ec.SECP256R1())
-        return ecc_public_numbers_to_bytes(public_numbers=public_numbers,
-                                           length=32)
+        return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=32)
 
 
 class DebugAuthenticateResponseN4A_384(DebugAuthenticateResponse):
@@ -156,19 +166,18 @@ class DebugAuthenticateResponseN4A_384(DebugAuthenticateResponse):
         signature = super()._get_signature()
         r, s = crypto.utils_cryptography.decode_dss_signature(signature)
         public_numbers = crypto.EllipticCurvePublicNumbers(r, s, crypto.ec.SECP384R1())
-        return ecc_public_numbers_to_bytes(public_numbers=public_numbers,
-                                           length=48)
+        return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=48)
 
 
 _version_mapping = {
-    '1.0': DebugAuthenticateResponseRSA,
-    '1.1': DebugAuthenticateResponseRSA,
-    '2.0': DebugAuthenticateResponseECC,
-    '2.1': DebugAuthenticateResponseECC,
-    '2.2': DebugAuthenticateResponseECC,
+    "1.0": DebugAuthenticateResponseRSA,
+    "1.1": DebugAuthenticateResponseRSA,
+    "2.0": DebugAuthenticateResponseECC,
+    "2.1": DebugAuthenticateResponseECC,
+    "2.2": DebugAuthenticateResponseECC,
 }
 
 _n4analog_version_mapping = {
-    '2.0': DebugAuthenticateResponseN4A_256,
-    '2.1': DebugAuthenticateResponseN4A_384
+    "2.0": DebugAuthenticateResponseN4A_256,
+    "2.1": DebugAuthenticateResponseN4A_384,
 }

@@ -20,7 +20,7 @@ from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdReset
 # logging.basicConfig(level=logging.DEBUG)
 
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
 def build_sb(app: str, kek: bytes, address: int = 0) -> bytes:
@@ -31,7 +31,7 @@ def build_sb(app: str, kek: bytes, address: int = 0) -> bytes:
     :param address: Entry address for application
     :return: Serialized SB2.0 image
     """
-    with open(app, 'rb') as f:
+    with open(app, "rb") as f:
         boot_data = f.read()
 
     boot_section = BootSectionV2(
@@ -39,7 +39,8 @@ def build_sb(app: str, kek: bytes, address: int = 0) -> bytes:
         CmdErase(address, len(boot_data)),
         CmdLoad(address, boot_data),
         CmdReset(),
-        hmac_count=10)
+        hmac_count=10,
+    )
 
     boot_image = BootImageV20(signed=False, kek=kek)
     boot_image.add_boot_section(boot_section)
@@ -52,11 +53,11 @@ def build_sb(app: str, kek: bytes, address: int = 0) -> bytes:
 def main() -> None:
     """Main function."""
     # Input values
-    kek_value = unhexlify('AC701E99BD3492E419B756EADC0985B3D3D0BC0FDB6B057AA88252204C2DA732')
-    app_path = f'{DATA_DIR}/blinky.bin'
+    kek_value = unhexlify("AC701E99BD3492E419B756EADC0985B3D3D0BC0FDB6B057AA88252204C2DA732")
+    app_path = f"{DATA_DIR}/blinky.bin"
 
     # Device name ('KL27Z', 'LPC55', ...), VID:PID ('0x15A2:0x0073') or None (any from known devices)
-    devices = scan_usb('LPC55')
+    devices = scan_usb("LPC55")
 
     for device in devices:
         with McuBoot(device, True) as mb:
@@ -69,5 +70,5 @@ def main() -> None:
             mb.reset(reopen=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

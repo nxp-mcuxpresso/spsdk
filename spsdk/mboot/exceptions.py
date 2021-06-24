@@ -16,14 +16,17 @@ from ..exceptions import SPSDKError
 # McuBoot Exceptions
 ########################################################################################################################
 
+
 class McuBootError(SPSDKError):
     """MBoot Module: Base Exception."""
-    fmt = 'MBoot: {description}'
+
+    fmt = "MBoot: {description}"
 
 
 class McuBootCommandError(McuBootError):
     """MBoot Module: Command Exception."""
-    fmt = 'MBoot: {cmd_name} interrupted -> {description}'
+
+    fmt = "MBoot: {cmd_name} interrupted -> {description}"
 
     def __init__(self, cmd: str, value: int) -> None:
         """Initialize the Command Error exception.
@@ -42,8 +45,11 @@ class McuBootCommandError(McuBootError):
 
 class McuBootDataAbortError(McuBootError):
     """MBoot Module: Data phase aborted by sender."""
-    fmt = 'Mboot: Data aborted by sender'
+
+    fmt = "Mboot: Data aborted by sender"
+
 
 class McuBootConnectionError(McuBootError):
     """MBoot Module: Connection Exception."""
-    fmt = 'MBoot: Connection issue -> {description}'
+
+    fmt = "MBoot: Connection issue -> {description}"
