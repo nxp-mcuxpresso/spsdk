@@ -19,5 +19,5 @@ pypemicro>=0.1.5,<0.2
 pyocd-pemicro>=1.0.2,<2
 pyocd>=0.28.3,<0.29
 munch<2.5.1
-bincopy
+bincopy<17.10
 sly==0.4
