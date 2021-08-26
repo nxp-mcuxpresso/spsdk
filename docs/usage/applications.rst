@@ -45,6 +45,9 @@ SPSDK applications are used for various functions and not all applications are v
     :align: center
     :scale: 50 %
 
+.. note:: Please note that elftosb features marked with light green are supported but not tested and should be used with caution.
+
+
 :ref:`blhost`
 =============
 

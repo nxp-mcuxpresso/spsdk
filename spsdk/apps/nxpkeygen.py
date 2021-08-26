@@ -6,13 +6,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module is used to generate public/private key and generating debug credential file."""
-import json
 import logging
 import os
 import sys
-from typing import List, Tuple
+from typing import List, Tuple, Type
 
 import click
+import commentjson as json
 import yaml
 
 from spsdk import SPSDK_DATA_FOLDER
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
 
 
-@click.group()
+@click.group(no_args_is_help=True)
 @click.option(
     "-p",
     "--protocol",
@@ -45,7 +45,14 @@ LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
     type=str,
     metavar="VERSION",
     default="1.0",
-    help="Set the protocol version. Default is 1.0 (RSA). ",
+    help =
+        """Set the protocol version. Default is 1.0 (RSA).\n
+        NXP Protocol Version        Encryption Type\n
+        1.0                         RSA 2048\n
+        1.1                         RSA 4096\n
+        2.0                         NIST P-256 SECP256R1\n
+        2.1                         NIST P-384 SECP384R1\n
+        2.2                         NIST P-521 SECP521R1\n"""
 )
 @click.option(
     "-d",
@@ -153,12 +160,15 @@ def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
     """Generate key pair for RoT or DCK.
 
     \b
-    PATH    - path where the key pairs will be stored
+    PATH    - output file path, where the key pairs (private and public key) will be stored.
+              Each key will be stored in separate file (.pub and .pem).
     """
     is_rsa = ctx.obj["is_rsa"]
     key_param = ctx.obj["key_param"]
     check_destination_dir(path, force)
     check_file_exists(path, force)
+    pub_key_path = os.path.splitext(path)[0] + ".pub"
+    check_file_exists(pub_key_path, force)
 
     if is_rsa:
         logger.info("Generating RSA private key...")
@@ -167,7 +177,7 @@ def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
         pub_key_rsa = generate_rsa_public_key(priv_key_rsa)
         logger.info("Saving RSA key pair...")
         save_rsa_private_key(priv_key_rsa, path, password if password else None)
-        save_rsa_public_key(pub_key_rsa, os.path.splitext(path)[0] + ".pub")
+        save_rsa_public_key(pub_key_rsa, pub_key_path)
     else:
         logger.info("Generating ECC private key...")
         priv_key_ec = generate_ecc_private_key(curve_name=key_param)
@@ -175,7 +185,7 @@ def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
         pub_key_ec = generate_ecc_public_key(priv_key_ec)
         logger.info("Saving ECC key pair...")
         save_ecc_private_key(priv_key_ec, path, password if password else None)
-        save_ecc_public_key(pub_key_ec, os.path.splitext(path)[0] + ".pub")
+        save_ecc_public_key(pub_key_ec, pub_key_path)
 
 
 @main.command()
