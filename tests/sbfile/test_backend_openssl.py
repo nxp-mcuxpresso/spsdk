@@ -38,6 +38,11 @@ def test_hmac():
     assert calc_hmac_sha256 == text_hmac_sha256
 
 
+def test_hmac_invalid():
+    with pytest.raises(SPSDKError):
+        openssl_backend.hmac(key=b"1", data=b"t", algorithm="sha256b")
+
+
 def test_aes_key_wrap():
     kek = unhexlify("000102030405060708090A0B0C0D0E0F")
     plain_key = unhexlify("00112233445566778899AABBCCDDEEFF")

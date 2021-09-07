@@ -14,9 +14,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from ruamel.yaml import YAML
 
-import spsdk
-from spsdk.apps.pfr import _extract_public_keys
-from spsdk.exceptions import SPSDKError
+from spsdk import SPSDKError
+from spsdk.crypto.loaders import extract_public_keys
 from spsdk.pfr import (
     CFPA,
     CMPA,
@@ -27,7 +26,7 @@ from spsdk.pfr import (
     SPSDKPfrRotkhIsNotPresent,
 )
 from spsdk.pfr.pfr import BaseConfigArea
-from spsdk.utils.misc import load_file, use_working_directory
+from spsdk.utils.misc import load_file
 
 
 def test_generate_cmpa(data_dir):
@@ -376,9 +375,19 @@ def test_missing_rotkh():
         cfpa.export(keys=["Invalid"])
 
 
+def test_n4a_load_yml_without_change(data_dir):
+    """Test silicon niobe4analog mandatory computing of antipole values."""
+    cfpa = CFPA(user_config=PfrConfiguration(f"{data_dir}/cfpa_no_change.yml"))
+    data = cfpa.export()
+
+    assert len(data) == 512
+    with open(data_dir + "/n4a_CFPA_basic.bin", "rb") as binary:
+        assert data == binary.read()
+
+
 def test_n4a_binary_ec256(data_dir):
     """Test silicon niobe4analog EC 256. Binary generation/ROTKH computation"""
-    cfpa = CMPA("lpc55s3x")
+    cmpa = CMPA("lpc55s3x")
     keys_path = [
         data_dir + "/ec_secp256r1_cert0.pem",
         data_dir + "/ec_secp256r1_cert1.pem",
@@ -386,7 +395,7 @@ def test_n4a_binary_ec256(data_dir):
         data_dir + "/ec_secp256r1_cert3.pem",
     ]
 
-    data = cfpa.export(keys=_extract_public_keys(keys_path, password=None))
+    data = cmpa.export(keys=extract_public_keys(keys_path, password=None))
 
     assert len(data) == 512
     with open(data_dir + "/n4a_CMPA.bin", "rb") as binary:
@@ -403,7 +412,7 @@ def test_n4a_binary_ec384(data_dir):
         data_dir + "/ec_secp384r1_cert3.pem",
     ]
 
-    data = cfpa.export(keys=_extract_public_keys(keys_path, password=None))
+    data = cfpa.export(keys=extract_public_keys(keys_path, password=None))
 
     assert len(data) == 512
     with open(data_dir + "/n4a_CMPA_384.bin", "rb") as binary:
@@ -421,7 +430,7 @@ def test_invalid_key_size(data_dir):
     ]
 
     with pytest.raises(SPSDKPfrError):
-        cfpa.export(keys=_extract_public_keys(keys_path, password=None))
+        cfpa.export(keys=extract_public_keys(keys_path, password=None))
 
 
 def test_config_cmpa_without_bc(data_dir):
@@ -469,3 +478,46 @@ def test_config_various_revisions():
     cfg.revision = "latest"
     cmpa.set_config(cfg)
     assert cmpa.revision
+
+
+def test_config_invalid_yaml_config():
+    cfg = PfrConfiguration(device="lpc55s6x")
+    cmpa = CMPA("lpc55s6x", user_config=cfg)
+    cmpa.parse(bytes(512))
+    cmpa.user_config.device = None
+    with pytest.raises(SPSDKError, match="Device not found"):
+        cmpa.get_yaml_config(exclude_computed=False)
+    cfg = PfrConfiguration(device="lpc55s6x")
+    cmpa = CMPA("lpc55s6x", user_config=cfg)
+    cmpa.parse(bytes(512))
+    cmpa.user_config.type = None
+    with pytest.raises(SPSDKError, match="Type not found"):
+        cmpa.get_yaml_config(exclude_computed=False)
+
+
+def test_invalid_base_config_area():
+    with pytest.raises(SPSDKError, match="No device provided"):
+        BaseConfigArea()
+
+
+def test_base_config_area_invalid_device_revision(data_dir):
+    original_data_dir = BaseConfigArea.CONFIG_DIR
+    BaseConfigArea.CONFIG_DIR = data_dir
+    with pytest.raises(SPSDKError, match="Device 'bb' is not supported"):
+        BaseConfigArea(device="bb")
+    with pytest.raises(SPSDKError, match="Invalid revision 'HH'"):
+        BaseConfigArea(device="lpc55s6x", revision="HH")
+    BaseConfigArea.CONFIG_DIR = original_data_dir
+
+
+def test_config_no_device_no_revision():
+    cfg = PfrConfiguration(device="lpc55s6x")
+    cfg.device = "lpc55s6x"
+    cmpa = CMPA(user_config=cfg)
+    cmpa.device = None
+    with pytest.raises(SPSDKError, match="No device provided"):
+        cmpa.set_config(cfg)
+    cmpa.device = "lpc55s6x"
+    cmpa.revision = None
+    with pytest.raises(SPSDKError, match="No revision provided"):
+        cmpa.set_config(cfg)

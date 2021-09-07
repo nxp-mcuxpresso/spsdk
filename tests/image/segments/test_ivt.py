@@ -8,7 +8,8 @@
 
 import pytest
 
-from spsdk.image import SegIVT2, SegAPP, SegIVT3a, SegIVT3b
+from spsdk import SPSDKError
+from spsdk.image import SegAPP, SegIVT2, SegIVT3a, SegIVT3b
 from spsdk.image.segments import _format_ivt_item
 
 
@@ -21,7 +22,7 @@ def test_ivt2_segment_api():
     assert ivt2.app_address == 0
     assert ivt2.csf_address == 0
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         _ = ivt2.export()
 
     # set correct values
@@ -41,17 +42,17 @@ def test_ivt2_validate():
     ivt2.ivt_address = 0x877FF42C
     ivt2.dcd_address = 0x877FF400
     ivt2.bdt_address = 0x877FF42E
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         ivt2.validate()
 
     ivt2.csf_address = 0x877FF000
     ivt2.dcd_address = 0x877FF500
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         ivt2.validate()
 
     ivt2.padding = 1
     ivt2.csf_address = 0x877FF600
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         ivt2.validate()
 
 
@@ -89,6 +90,12 @@ def test_ivt2_equality():
     assert ivt2 != ivt2_other
 
 
+def test_ivt2_invalid_version():
+    ivt2 = SegIVT2(0x41)
+    with pytest.raises(SPSDKError, match="Invalid version of IVT and image format"):
+        ivt2.version = 0x39
+
+
 def test_ivt3a_segment_api():
     ivt3a = SegIVT3a(0)
     assert ivt3a.version == 0
@@ -97,7 +104,7 @@ def test_ivt3a_segment_api():
     assert ivt3a.dcd_address == 0
     assert ivt3a.csf_address == 0
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         _ = ivt3a.export()
 
     # set correct values
@@ -112,11 +119,11 @@ def test_ivt3a_validate():
     ivt3a.ivt_address = 0x800480
     ivt3a.dcd_address = 0x800400
     ivt3a.bdt_address = 0x800980
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         ivt3a.validate()
     ivt3a.dcd_address = 0x800500
     ivt3a.csf_address = 0x800200
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         ivt3a.validate()
 
 
@@ -169,7 +176,7 @@ def test_ivt3b_segment_api():
     assert ivt3b.scd_address == 0
     assert ivt3b.csf_address == 0
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         _ = ivt3b.export()
 
     # set correct values
@@ -186,17 +193,17 @@ def test_ivt3b_validate():
     ivt3b.dcd_address = 0x2000E000
     ivt3b.bdt_address = 0x2000E690
     ivt3b.dcd_address = 0x2000E659
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         ivt3b.validate()
 
     ivt3b.dcd_address = 0x2000E665
     ivt3b.csf_address = 0x2000E050
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         ivt3b.validate()
 
     ivt3b.csf_address = 0x2000E669
     ivt3b.scd_address = 0x2000E600
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         ivt3b.validate()
 
 

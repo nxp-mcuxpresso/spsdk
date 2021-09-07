@@ -12,6 +12,7 @@ Secure Provisioning SDK (SPSDK)
     :maxdepth: 1
 
     spsdk.rst
+    release_notes.rst
 
 .. toctree::
     :caption: Usage
@@ -25,17 +26,18 @@ Secure Provisioning SDK (SPSDK)
     :caption: Application User Guides
     :maxdepth: 1
 
-    apps/nxpdevscan
-    apps/sdphost
     apps/blhost
-    apps/pfr
-    apps/pfrc
     apps/elftosb
-    apps/nxpkeygen
     apps/nxpcertgen
     apps/nxpdebugmbox
-    apps/shadowregs
+    apps/nxpdevhsm
+    apps/nxpdevscan
+    apps/nxpkeygen
+    apps/pfr
+    apps/pfrc
+    apps/sdphost
     apps/sdpshost
+    apps/shadowregs
 
 .. toctree::
     :caption: API Development Guide

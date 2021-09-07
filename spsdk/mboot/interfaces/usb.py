@@ -8,12 +8,10 @@
 """Module for serial communication with a target device using MBoot protocol."""
 
 import logging
-import platform
-import time
 from struct import pack, unpack_from
 from typing import Sequence, Union
 
-import hid
+import libusbsio
 
 from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
@@ -21,7 +19,7 @@ from ..commands import CmdPacket, CmdResponse, parse_cmd_response
 from ..exceptions import McuBootConnectionError, McuBootDataAbortError, McuBootError
 from .base import Interface
 
-logger = logging.getLogger("MBOOT:USB")
+logger = logging.getLogger(__name__)
 
 # import os
 # os.environ['PYUSB_DEBUG'] = 'debug'
@@ -151,11 +149,11 @@ class RawHid(Interface):
         try:
             if not self.device:
                 raise McuBootConnectionError("No device available")
-            self.device.open_path(self.path)
+            self.device.Open(self.path)
             self._opened = True
         except Exception as error:
             raise McuBootConnectionError(
-                "Unable to open device VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
+                f"Unable to open device '{self.path}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
             ) from error
 
     def close(self) -> None:
@@ -168,11 +166,11 @@ class RawHid(Interface):
         try:
             if not self.device:
                 raise McuBootConnectionError("No device available")
-            self.device.close()
+            self.device.Close()
             self._opened = False
         except Exception as error:
             raise McuBootConnectionError(
-                "Unable to close device VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
+                f"Unable to close device '{self.path}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
             ) from error
 
     def write(self, packet: Union[CmdPacket, bytes]) -> None:
@@ -202,7 +200,7 @@ class RawHid(Interface):
         # try to read a begging of the ABORT_FRAME
         if self.allow_abort and report_id == REPORT_ID["DATA_OUT"]:
             try:
-                abort_data = self.device.read(1024, 10)
+                (abort_data, result) = self.device.Read(1024, timeout_ms=10)
                 logger.debug(f"Read {len(abort_data)} bytes of abort data")
             except Exception as e:
                 raise McuBootConnectionError(str(e)) from e
@@ -212,17 +210,7 @@ class RawHid(Interface):
 
         try:
             raw_data = self._encode_report(report_id, data)
-            bytes_written = self.device.write(raw_data)
-            # TODO: failure to write data (without an exception) indicates the MCU is busy
-            # After some amount of NAK the HID gives up
-            # this is just na WORKAROUND to give MCU some breathing room
-            if bytes_written < 0:
-                time.sleep(2)
-                # NOTE: on Windows and Mac, the request for sending data is still active,
-                # even when the read methid returns -1 (potential issue in HID library?)
-                # On Linux we simply fire the write request again
-                if platform.system() == "Linux":
-                    self.device.write(raw_data)
+            bytes_written = self.device.Write(raw_data, timeout_ms=self.timeout)
 
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
@@ -241,16 +229,16 @@ class RawHid(Interface):
         if not self.device:
             raise McuBootConnectionError("Device not available")
         try:
-            raw_data = self.device.read(1024, self.timeout)
+            (raw_data, result) = self.device.Read(1024, timeout_ms=self.timeout)
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
         if not raw_data:
-            logger.error(self.device.error())
+            logger.error(f"Cannot read from HID device, error={result}")
             raise TimeoutError()
         # NOTE: uncomment the following when using KBoot/Flashloader v2.1 and older
         # import platform
         # if platform.system() == "Linux":
-        #     raw_data += self.device.read(1024, self.timeout)
+        #     raw_data += self.device.Read(1024, timeout_ms=self.timeout)
         return self._decode_report(bytes(raw_data))
 
     @staticmethod
@@ -261,13 +249,16 @@ class RawHid(Interface):
         :return: List of interfaces found
         """
         devices = []
-        all_hid_devices = hid.enumerate()
+
+        # use HID_API of LIBUSBSIO library to enumerate all USB HID devices
+        sio = libusbsio.usbsio()
+        all_hid_devices = sio.HIDAPI_Enumerate()
 
         # iterate on all devices found
         for dev in all_hid_devices:
             if usb_device_filter.compare(dev) is True:
                 new_device = RawHid()
-                new_device.device = hid.device()
+                new_device.device = sio.HIDAPI_DeviceCreate()
                 new_device.vid = dev["vendor_id"]
                 new_device.pid = dev["product_id"]
                 new_device.vendor_name = dev["manufacturer_string"]

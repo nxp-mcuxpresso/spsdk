@@ -5,9 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pytest
 from os import path
-from spsdk.mboot import scan_usb, McuBoot
+
+import pytest
+
+from spsdk.mboot import McuBoot, scan_usb
+
 from .device_config import DevConfig
 from .virtual_device import VirtualDevice
 

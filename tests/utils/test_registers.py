@@ -12,6 +12,7 @@ from typing import List
 import pytest
 from ruamel.yaml import YAML
 
+from spsdk import SPSDKError
 from spsdk.utils.exceptions import (
     SPSDKRegsError,
     SPSDKRegsErrorBitfieldNotFound,
@@ -130,7 +131,7 @@ def test_basic_regs(tmpdir):
     # The Registers MUST return empty array
     assert regs.get_reg_names() == []
 
-    with pytest.raises(TypeError):
+    with pytest.raises(SPSDKError):
         regs.remove_register("String")
 
     with pytest.raises(ValueError):
@@ -147,7 +148,7 @@ def test_basic_regs(tmpdir):
 
     assert regt == reg1
 
-    with pytest.raises(TypeError):
+    with pytest.raises(SPSDKError):
         regs.add_register("Invalid Parameter")
 
     regt.set_value(TEST_REG_VALUE)
@@ -246,10 +247,12 @@ def test_register_invalid_val():
     )
 
     val = reg.get_value()
-    reg.set_value("Invalid")
+    with pytest.raises(SPSDKError):
+        reg.set_value("Invalid")
     assert reg.get_value() == val
 
-    reg.set_value([1, 2])
+    with pytest.raises(SPSDKError):
+        reg.set_value([1, 2])
     assert reg.get_value() == val
 
 
@@ -304,12 +307,9 @@ def test_enum_bytes():
 
 def test_enum_invalidval():
     """Enum test with INVALID value."""
-    try:
-        enum = RegsEnum(TEST_ENUM_NAME, "InvalidValue", TEST_ENUM_DESCR, TEST_ENUM_MAXWIDTH)
-        printed_str = str(enum)
-        assert "N/A" in printed_str
-    except TypeError:
-        assert 0
+    enum = RegsEnum(TEST_ENUM_NAME, "InvalidValue", TEST_ENUM_DESCR, TEST_ENUM_MAXWIDTH)
+    printed_str = str(enum)
+    assert "N/A" in printed_str
 
 
 def test_bitfield():
@@ -488,7 +488,7 @@ def test_bitfield_value():
     bitfield.set_value(TEST_BITFIELD_SAVEVAL)
     assert bitfield.get_value() == TEST_BITFIELD_SAVEVAL
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         bitfield.set_value(TEST_BITFIELD_OUTOFRANGEVAL)
 
 
@@ -595,7 +595,7 @@ def test_bitfield_enums_invalid_name():
 
     parent_reg.add_bitfield(bitfield)
     bitfield.add_enum(RegsEnum(f"{TEST_ENUM_NAME}", 0, f"{TEST_ENUM_DESCR}", TEST_BITFIELD_WIDTH))
-    with pytest.raises(SPSDKRegsErrorEnumNotFound):
+    with pytest.raises(SPSDKError):
         bitfield.set_enum_value(f"Invalid Enum name")
 
 
@@ -629,11 +629,11 @@ def test_registers_corrupted_xml(data_dir):
     """Test registers XML support with invalid data."""
     regs = Registers(TEST_DEVICE_NAME)
 
-    with pytest.raises(SPSDKRegsError):
+    with pytest.raises(SPSDKError):
         with use_working_directory(data_dir):
             regs.load_registers_from_xml("registers_corr.xml")
 
-    with pytest.raises(SPSDKRegsError):
+    with pytest.raises(SPSDKError):
         with use_working_directory(data_dir):
             regs.load_registers_from_xml("registers_corr2.xml")
 

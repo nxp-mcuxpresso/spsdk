@@ -8,16 +8,14 @@
 """Console script for pfr."""
 
 import io
-import json
 import sys
 
 # no_type_check decorator is used to suppress mypy's confusion in Click and cryptography libraries
-from typing import List, Optional, Tuple, Type, Union, no_type_check
+from typing import Optional, Tuple, Type, Union, no_type_check
 
 import click
+import commentjson as json
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from ruamel.yaml import YAML
 
 from spsdk import SPSDK_YML_INDENT
@@ -25,7 +23,7 @@ from spsdk import __version__ as spsdk_version
 from spsdk import pfr
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
 from spsdk.apps.utils import catch_spsdk_error
-from spsdk.crypto import load_certificate, load_private_key, load_public_key
+from spsdk.crypto.loaders import extract_public_keys
 from spsdk.pfr.exceptions import SPSDKPfrConfigError
 
 PFRArea = Union[Type[pfr.CMPA], Type[pfr.CFPA]]
@@ -46,31 +44,7 @@ def _get_pfr_class(area_name: str) -> PFRArea:
     return getattr(pfr, area_name.upper())
 
 
-@no_type_check
-def _extract_public_key(
-    file_path: str, password: Optional[str]
-) -> Union[RSAPublicKey, EllipticCurvePublicKey]:
-    cert_candidate = load_certificate(file_path)
-    if cert_candidate:
-        return cert_candidate.public_key()
-    private_candidate = load_private_key(file_path, password.encode() if password else None)
-    if private_candidate:
-        return private_candidate.public_key()
-    public_candidate = load_public_key(file_path)
-    if public_candidate:
-        return public_candidate
-    assert False, f"Unable to load secret file '{file_path}'."
-
-
-@no_type_check
-def _extract_public_keys(
-    secret_files: Tuple[str], password: Optional[str]
-) -> Union[List[RSAPublicKey], List[EllipticCurvePublicKey]]:
-    """Extract RSAPublic key from a file that contains Certificate, Private Key o Public Key."""
-    return [_extract_public_key(file_path=source, password=password) for source in secret_files]
-
-
-@click.group()
+@click.group(no_args_is_help=True)
 @click.version_option(spsdk_version, "-v", "--version")
 def main() -> int:
     """Utility for generating and parsing Protected Flash Region data (CMPA, CFPA)."""
@@ -231,7 +205,9 @@ def generate_binary(
     pfr_config = pfr.PfrConfiguration(str(user_config_file))
     invalid_reason = pfr_config.is_invalid()
     if invalid_reason:
-        raise SPSDKPfrConfigError(f"The configuration file is not valid. The reason is: {invalid_reason}")
+        raise SPSDKPfrConfigError(
+            f"The configuration file is not valid. The reason is: {invalid_reason}"
+        )
     assert pfr_config.type
     root_of_trust = None
     keys = None
@@ -242,8 +218,10 @@ def generate_binary(
         root_of_trust = secret_file
     area = pfr_config.type
     if area.lower() == "cmpa" and root_of_trust:
-        keys = _extract_public_keys(root_of_trust, password)
+        keys = extract_public_keys(root_of_trust, password)
     pfr_obj = _get_pfr_class(area)(device=pfr_config.device, revision=pfr_config.revision)
+    if not pfr_config.revision:
+        pfr_config.revision = pfr_obj.revision
     pfr_obj.set_config(pfr_config, raw=not calc_inverse)
 
     data = pfr_obj.export(add_seal=add_seal, keys=keys)

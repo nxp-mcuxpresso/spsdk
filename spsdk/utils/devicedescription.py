@@ -148,17 +148,17 @@ def get_usb_device_name(
 
 
 def convert_usb_path(hid_api_usb_path: bytes) -> str:
-    """Converts the HID API path into string, which can be observed from OS.
+    """Converts the Libusbsio/HID_API path into string, which can be observed from OS.
 
     DESIGN REMARK: this function is not part of the USBLogicalDevice, as the
     class intention is to be just a simple container. But to help the class
     to get the required inputs, this helper method has been provided. Additionally,
-    this method relies on the fact that the provided path comes from the HID API.
+    this method relies on the fact that the provided path comes from the Libusbsio/HID_API.
     This method will most probably fail or provide improper results in case
     path from different USB API is provided.
 
-    :hid_api_usb_path: USB device path from HID API
-    :return: HID API path converted for given platform
+    :hid_api_usb_path: USB device path from Libusbsio/HID_API
+    :return: Libusbsio/HID_API path converted for given platform
     """
     if platform.system() == "Windows":
         device_manager_path = hid_api_usb_path.decode("utf-8").upper()
@@ -170,7 +170,7 @@ def convert_usb_path(hid_api_usb_path: bytes) -> str:
         return device_manager_path
 
     if platform.system() == "Linux":
-        # we expect the path in form of <bus>#<device>, HID API returns
+        # we expect the path in form of <bus>#<device>, Libusbsio/HID_API returns
         # <bus>:<device>:<interface>
         linux_path = hid_api_usb_path.decode("utf-8")
         linux_path_parts = linux_path.split(":")

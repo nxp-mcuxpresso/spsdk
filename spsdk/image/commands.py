@@ -11,22 +11,22 @@
 from abc import ABC
 from datetime import datetime
 from struct import pack, unpack_from
-from typing import Iterable, List, Optional, Tuple, Union, Any, Iterator, Mapping, Type
+from typing import Any, Iterable, Iterator, List, Mapping, Optional, Tuple, Type, Union
 
 from asn1crypto import cms, util, x509
 
+from spsdk import SPSDKError
 from spsdk.crypto import Certificate, Encoding
-from spsdk.utils.crypto import matches_key_and_cert, crypto_backend
+from spsdk.utils.crypto import crypto_backend, matches_key_and_cert
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo
-from .header import CmdTag, CmdHeader, Header, SegTag
-from .secret import BaseClass, CertificateImg, EnumAlgorithm, MAC, Signature, SrkTable
-
 
 ########################################################################################################################
 # Enums
 ########################################################################################################################
 from .. import SPSDKError
+from .header import CmdHeader, CmdTag, Header, SegTag
+from .secret import MAC, BaseClass, CertificateImg, EnumAlgorithm, Signature, SrkTable
 
 
 class EnumWriteOps(Enum):
@@ -166,9 +166,9 @@ class CmdBase:
         """Setter.
 
         :param value: offset to set
-        :raises TypeError: if cmd-data not supported by the command
+        :raises SPSDKError: If cmd-data not supported by the command
         """
-        raise TypeError("cmd-data not supported by the command")
+        raise SPSDKError("cmd-data not supported by the command")
 
     @property
     def cmd_data_reference(self) -> Optional[BaseClass]:
@@ -187,18 +187,18 @@ class CmdBase:
         Note: the method must be implemented in `self.has_cmd_data_reference` returns True
 
         :param value: to be set
-        :raise TypeError: if reference not supported by the command
+        :raises SPSDKError: If reference not supported by the command
         """
-        raise TypeError("cmd-data not supported by the command")
+        raise SPSDKError("cmd-data not supported by the command")
 
     def parse_cmd_data(self, data: bytes, offset: int) -> Any:
         """Parse additional command data from binary data.
 
         :param data: to be parsed
         :param offset: start position in data to parse
-        :raises TypeError: if cmd_data is not supported by the command
+        :raises SPSDKError: If cmd_data is not supported by the command
         """
-        raise TypeError("cmd-data not supported by the command")
+        raise SPSDKError("cmd-data not supported by the command")
 
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, self.__class__) and vars(other) == vars(self)
@@ -251,8 +251,10 @@ class CmdWriteData(CmdBase):
         """Setter.
 
         :param value: number of bytes being written by the command
+        :raises SPSDKError: When number of bytes is not 1, 2 nor 4
         """
-        assert value in (1, 2, 4)
+        if value not in (1, 2, 4):
+            raise SPSDKError("number of bytes is not 1, 2 nor 4")
         self._header.param &= ~0x7
         self._header.param |= value
 
@@ -263,7 +265,8 @@ class CmdWriteData(CmdBase):
 
     @ops.setter
     def ops(self, value: int) -> None:
-        assert value in EnumWriteOps
+        if value not in EnumWriteOps:
+            raise SPSDKError
         self._header.param &= ~(0x3 << 3)
         self._header.param |= int(value) << 3
 
@@ -278,9 +281,13 @@ class CmdWriteData(CmdBase):
         :param numbytes: number of bytes. Must be value: 1, 2 or 4
         :param ops: type of write operation
         :param data: list of tuples: address and value
+        :raises SPSDKError: When incorrect number of bytes
+        :raises SPSDKError: When incorrect type of operation
         """
-        assert numbytes in (1, 2, 4)
-        assert ops in EnumWriteOps
+        if numbytes not in (1, 2, 4):
+            raise SPSDKError("Incorrect number of bytes")
+        if ops not in EnumWriteOps:
+            raise SPSDKError("Incorrect type of operation")
         super().__init__(CmdTag.WRT_DAT, ((int(ops) & 0x3) << 3) | (numbytes & 0x7))
         self._data: List[List[int]] = []
         if data is not None:
@@ -317,14 +324,17 @@ class CmdWriteData(CmdBase):
 
     def append(self, address: int, value: int) -> None:
         """Append of Write data command."""
-        assert 0 <= address <= 0xFFFFFFFF, "address out of range"
-        assert 0 <= value <= 0xFFFFFFFF, "value out of range"
+        if address < 0 or address > 0xFFFFFFFF:
+            raise SPSDKError("Address out of range")
+        if value < 0 or value > 0xFFFFFFFF:
+            raise SPSDKError("Value out of range")
         self._data.append([address, value])
         self._header.length += 8
 
     def pop(self, index: int) -> List[int]:
         """Pop of Write data command."""
-        assert 0 <= index < len(self._data)
+        if index < 0 or index >= len(self._data):
+            raise SPSDKError("Length of data is incorrect")
         cmd = self._data.pop(index)
         self._header.length -= 8
         return cmd
@@ -373,7 +383,8 @@ class CmdCheckData(CmdBase):
 
     @num_bytes.setter
     def num_bytes(self, value: int) -> None:
-        assert value in (1, 2, 4)
+        if value not in (1, 2, 4):
+            raise SPSDKError("Incorrect number of bytes")
         self._header.param &= ~0x7
         self._header.param |= int(value)
 
@@ -384,7 +395,12 @@ class CmdCheckData(CmdBase):
 
     @ops.setter
     def ops(self, value: int) -> None:
-        assert value in EnumCheckOps
+        """Operation of Check data command.
+
+        :raises SPSDKError: If incorrect operation
+        """
+        if value not in EnumCheckOps:
+            raise SPSDKError("Incorrect operation")
         self._header.param &= ~(0x3 << 3)
         self._header.param |= int(value) << 3
 
@@ -403,9 +419,13 @@ class CmdCheckData(CmdBase):
         :param address: list of tuples: address and value
         :param mask: mask value
         :param count: count value
+        :raises SPSDKError: If incorrect number of bytes
+        :raises SPSDKError: If incorrect operation
         """
-        assert numbytes in (1, 2, 4)
-        assert ops in EnumCheckOps
+        if numbytes not in (1, 2, 4):
+            raise SPSDKError("Incorrect number of bytes")
+        if ops not in EnumCheckOps:
+            raise SPSDKError("Incorrect operation")
         super().__init__(CmdTag.CHK_DAT, ((int(ops) & 0x3) << 3) | (numbytes & 0x7))
         self.address = address
         self.mask = mask
@@ -511,7 +531,8 @@ class CmdSet(CmdBase):
 
     @itm.setter
     def itm(self, value: EnumItm) -> None:
-        assert value in EnumItm
+        if value not in EnumItm:
+            raise SPSDKError("Incorrect item of set command")
         self._header.param = value
 
     @property
@@ -521,7 +542,8 @@ class CmdSet(CmdBase):
 
     @hash_algorithm.setter
     def hash_algorithm(self, value: EnumAlgorithm) -> None:
-        assert value in EnumAlgorithm
+        if value not in EnumAlgorithm:
+            raise SPSDKError("Incorrect type of algorithm")
         self._hash_alg = value
 
     @property
@@ -531,7 +553,8 @@ class CmdSet(CmdBase):
 
     @engine.setter
     def engine(self, value: EnumEngine) -> None:
-        assert value in EnumEngine
+        if value not in EnumEngine:
+            raise SPSDKError("Incorrect type of engine plugin")
         self._engine = value
 
     def __init__(
@@ -542,7 +565,8 @@ class CmdSet(CmdBase):
         engine_cfg: int = 0,
     ):
         """Initialize the set command."""
-        assert itm in EnumItm
+        if itm not in EnumItm:
+            raise SPSDKError("Incorrect engine configuration flag")
         super().__init__(CmdTag.SET, itm)
         self.hash_algorithm: EnumAlgorithm = hash_alg
         self.engine = engine
@@ -609,12 +633,14 @@ class CmdInitialize(CmdBase):
 
     @engine.setter
     def engine(self, value: EnumEngine) -> None:
-        assert value in EnumEngine
+        if value not in EnumEngine:
+            raise SPSDKError("Incorrect value of engine")
         self._header.param = value
 
     def __init__(self, engine: int = EnumEngine.ANY, data: List[int] = None) -> None:
         """Initialize the initialize command."""
-        assert engine in EnumEngine
+        if engine not in EnumEngine:
+            raise SPSDKError("Incorrect value of engine")
         super().__init__(CmdTag.INIT, engine)
         self._data = data if data else []
 
@@ -646,15 +672,24 @@ class CmdInitialize(CmdBase):
         return msg
 
     def append(self, value: int) -> None:
-        """Appending of Initialize command."""
+        """Appending of Initialize command.
+
+        :raises SPSDKError: If value out of range
+        """
         assert isinstance(value, int), "value must be INT type"
-        assert 0 <= value < 0xFFFFFFFF, "value out of range"
+        if value < 0 or value >= 0xFFFFFFFF:
+            raise SPSDKError("Value out of range")
         self._data.append(value)
         self._header.length += 4
 
     def pop(self, index: int) -> int:
-        """Pop of Initialize command."""
-        assert 0 <= index < len(self._data)
+        """Pop of Initialize command.
+
+        :return: value from the index
+        :raises SPSDKError: If incorrect length of data
+        """
+        if index < 0 or index >= len(self._data):
+            raise SPSDKError("Incorrect length of data")
         val = self._data.pop(index)
         self._header.length -= 4
         return val
@@ -682,12 +717,14 @@ class CmdInitialize(CmdBase):
         :param data: being parsed
         :param offset: current position to readd from data
         :return: parse command
+        :raises SPSDKError: If incorrect length of data
         """
         header = CmdHeader.parse(data, offset, CmdTag.INIT)
         obj = cls(EnumEngine.from_int(header.param))
         index = header.size
         while index < header.length:
-            assert (offset + index) < len(data)
+            if (offset + index) >= len(data):
+                raise SPSDKError("Incorrect length of data")
             val = unpack_from(">L", data, offset + index)
             obj.append(val[0])
             index += 4
@@ -991,7 +1028,12 @@ class CmdInstallKey(CmdBase):
 
     @flags.setter
     def flags(self, value: EnumInsKey) -> None:
-        assert value in EnumInsKey
+        """Flags.
+
+        :raises SPSDKError: If incorrect flag"
+        """
+        if value not in EnumInsKey:
+            raise SPSDKError("Incorrect flag")
         self._header.param = value
 
     @property
@@ -1004,8 +1046,10 @@ class CmdInstallKey(CmdBase):
         """Setter.
 
         :param value: certificate format
+        :raises SPSDKError: If incorrect certificate format
         """
-        assert value in EnumCertFormat
+        if value not in EnumCertFormat:
+            raise SPSDKError("Incorrect certificate format")
         self._cert_fmt = value
 
     @property
@@ -1018,8 +1062,10 @@ class CmdInstallKey(CmdBase):
         """Setter.
 
         :param value: hash algorithm
+        :raises SPSDKError: If incorrect hash algorithm
         """
-        assert value in EnumAlgorithm
+        if value not in EnumAlgorithm:
+            raise SPSDKError("Incorrect hash algorithm")
         self._hash_alg = value
 
     @property
@@ -1036,16 +1082,21 @@ class CmdInstallKey(CmdBase):
         """Setter.
 
         :param value: source key (verification key, KEK) index
+        :raises SPSDKError: If incorrect keys
+        :raises SPSDKError: If incorrect keys
         """
         if self._cert_fmt == EnumCertFormat.SRK:
-            assert value in (
+            # RT10xx supports just 4 SRK keys; this might need update for other devices
+            if value not in (
                 0,
                 1,
                 2,
                 3,
-            )  # RT10xx supports just 4 SRK keys; this might need update for other devices
+            ):
+                raise SPSDKError("Incorrect keys")
         else:
-            assert value in (0, 2, 3, 4, 5)
+            if value not in (0, 2, 3, 4, 5):
+                raise SPSDKError("Incorrect keys")
         self._src_index = value
 
     @property
@@ -1058,8 +1109,10 @@ class CmdInstallKey(CmdBase):
         """Setter.
 
         :param value: target key index
+        :raises SPSDKError: If incorrect key index
         """
-        assert value in (0, 1, 2, 3, 4, 5)
+        if value not in (0, 1, 2, 3, 4, 5):
+            raise SPSDKError("Incorrect key index")
         self._tgt_index = value
 
     @property
@@ -1081,7 +1134,8 @@ class CmdInstallKey(CmdBase):
         if (
             self.flags == EnumInsKey.ABS
         ):  # reference is an absolute address; instance not assigned; used for DEK key
-            assert self._certificate_ref is None
+            if self._certificate_ref is not None:
+                raise SPSDKError("Reference is not none")
             return False
         return True
 
@@ -1101,7 +1155,6 @@ class CmdInstallKey(CmdBase):
         By default, the command does not support cmd_data_reference
 
         :param value: to be set
-        :raise ValueError: if cmd reference not supported by the command
         """
         assert isinstance(value, (CertificateImg, SrkTable))
         self._certificate_ref = value
@@ -1224,7 +1277,8 @@ class CmdAuthData(CmdBase):
 
     @flags.setter
     def flags(self, value: int) -> None:
-        assert value in EnumAuthDat
+        if value not in EnumAuthDat:
+            raise SPSDKError("Incorrect flag")
         self._header.param = value
 
     @property
@@ -1234,7 +1288,8 @@ class CmdAuthData(CmdBase):
 
     @key_index.setter
     def key_index(self, value: int) -> None:
-        assert value in (0, 1, 2, 3, 4, 5)
+        if value not in (0, 1, 2, 3, 4, 5):
+            raise SPSDKError("Incorrect key index")
         self._key_index = value
 
     @property
@@ -1244,7 +1299,8 @@ class CmdAuthData(CmdBase):
 
     @engine.setter
     def engine(self, value: EnumEngine) -> None:
-        assert value in EnumEngine
+        if value not in EnumEngine:
+            raise SPSDKError("Incorrect engine")
         self._engine = value
 
     def __init__(
@@ -1273,7 +1329,8 @@ class CmdAuthData(CmdBase):
         if certificate and private_key_pem_data:
             assert isinstance(certificate, Certificate)
             assert isinstance(private_key_pem_data, bytes)
-            assert matches_key_and_cert(private_key_pem_data, certificate)
+            if not matches_key_and_cert(private_key_pem_data, certificate):
+                raise SPSDKError("Given private key does not match the public certificate")
 
     @property
     def needs_cmd_data_reference(self) -> bool:
@@ -1309,8 +1366,7 @@ class CmdAuthData(CmdBase):
         By default, the command does not support cmd_data_reference
 
         :param value: to be set
-        :raise ValueError: if cmd reference not supported by the command
-        :raise ExpectedSignatureOrMACError: if unspported data object is provided
+        :raise ExpectedSignatureOrMACError: if unsupported data object is provided
         """
         if self.sig_format == EnumCertFormat.AEAD:
             assert isinstance(value, MAC)
@@ -1367,7 +1423,8 @@ class CmdAuthData(CmdBase):
 
     def __setitem__(self, key: int, value: Tuple[int, int]) -> None:
         assert isinstance(value, (list, tuple))
-        assert len(value) == 2
+        if len(value) != 2:
+            raise SPSDKError("Incorrect length")
         self._blocks[key] = value
 
     def __iter__(self) -> Iterator[Union[Tuple[Any, ...], List[Any]]]:
@@ -1401,7 +1458,8 @@ class CmdAuthData(CmdBase):
 
     def pop(self, index: int) -> Tuple[int, int]:
         """Pop of Authenticate data command."""
-        assert 0 <= index < len(self._blocks)
+        if index < 0 or index >= len(self._blocks):
+            raise SPSDKError("Incorrect length of blocks")
         value = self._blocks.pop(index)
         self._header.length -= 8
         return value
@@ -1417,9 +1475,14 @@ class CmdAuthData(CmdBase):
         :param zulu: current UTC time+date
         :param data: to be signed
         :return: CMS signature (binary)
+        :raises SPSDKError: If certificate is not present
+        :raises SPSDKError: If private key is not present
+        :raises SPSDKError: If incorrect time-zone"
         """
-        assert self.certificate is not None
-        assert self.private_key_pem_data is not None
+        if self.certificate is None:
+            raise SPSDKError("Certificate is not present")
+        if self.private_key_pem_data is None:
+            raise SPSDKError("Private key is not present")
 
         # signed data (main section)
         signed_data = cms.SignedData()
@@ -1458,7 +1521,8 @@ class CmdAuthData(CmdBase):
             )
         )
         # check time-zone is assigned (expected UTC+0)
-        assert zulu.tzinfo
+        if not zulu.tzinfo:
+            raise SPSDKError("Incorrect time-zone")
         signed_attrs.append(
             cms.CMSAttribute(
                 {
@@ -1504,14 +1568,17 @@ class CmdAuthData(CmdBase):
         :param base_data_addr: base address of the generated data
         :raises ValueError: When certificate or private key are not assigned
         :raises ValueError: When signatures not assigned explicitly
+        :raises SPSDKError: If incorrect start address
+        :raises SPSDKError: If incorrect end address
+        :raises SPSDKError: If incorrect length
         :return: True if length of the signature was unchanged, as this may affect content of the CSF section (pointer
                         to data);
         """
         if not self.certificate or not self.private_key_pem_data:
-            raise ValueError("certificate or private key not assigned, cannot update signature")
+            raise SPSDKError("certificate or private key not assigned, cannot update signature")
 
         if self.signature is None:
-            raise ValueError(
+            raise SPSDKError(
                 "signature must be assigned explicitly, so its version matches to CST version"
             )
 
@@ -1522,11 +1589,14 @@ class CmdAuthData(CmdBase):
                 for blk in self._blocks:
                     start = blk[0] - base_data_addr
                     end = blk[0] + blk[1] - base_data_addr
-                    assert start >= 0
-                    assert end <= len(data)
+                    if start < 0:
+                        raise SPSDKError("Incorrect start address")
+                    if end > len(data):
+                        raise SPSDKError("Incorrect end address")
                     sign_data += data[start:end]
                     total_len += blk[1]
-                assert len(sign_data) == total_len
+                if len(sign_data) != total_len:
+                    raise SPSDKError("Incorrect length")
         else:
             sign_data = data  # if no blocks defined, sign complete data; used for CSF
         if isinstance(self.signature, Signature):
@@ -1607,11 +1677,11 @@ def parse_command(data: bytes, offset: int = 0) -> CmdBase:
     :param data: binary data to be parsed
     :param offset: to start parsing
     :return: instance of the command
-    :raise ValueError: if the command is not valid
+    :raises SPSDKError: If the command is not valid
     """
     try:
         cmdtag = CmdTag.from_int(data[offset])
     except ValueError:
-        raise ValueError("Unknown command at position: " + hex(offset))
+        raise SPSDKError("Unknown command at position: " + hex(offset))
     cmd_class = _CMD_TO_CLASS[cmdtag]
     return cmd_class.parse(data, offset)

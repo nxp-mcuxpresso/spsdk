@@ -14,15 +14,10 @@
 import os
 from binascii import unhexlify
 
-from spsdk.sbfile.images import (
-    BootImageV20,
-    BootImageV21,
-    SBV2xAdvancedParams,
-    BootSectionV2,
-)
+from spsdk import SPSDKError
 from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdReset
-from spsdk.utils.crypto import CertBlockV2, KeyBlob, Otfad, Certificate
-
+from spsdk.sbfile.images import BootImageV20, BootImageV21, BootSectionV2, SBV2xAdvancedParams
+from spsdk.utils.crypto import CertBlockV2, Certificate, KeyBlob, Otfad
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, "data")
@@ -65,7 +60,10 @@ def gen_boot_section() -> BootSectionV2:
 
 
 def gen_boot_section_otfad() -> BootSectionV2:
-    """Generate a Boot Section with content encrypted by OTFAD."""
+    """Generate a Boot Section with content encrypted by OTFAD.
+
+    :raises SPSDKError: When length of key blobs is not 256
+    """
     with open(f"{DATA_DIR}/boot_image.bin", "rb") as boot_image_file:
         boot_data = boot_image_file.read()
 
@@ -84,7 +82,8 @@ def gen_boot_section_otfad() -> BootSectionV2:
     )  # zero_fill and crc should be used only for testing !
     enc_image = otfad.encrypt_image(boot_data, 0x08001000, True)
     key_blobs = otfad.encrypt_key_blobs(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
-    assert len(key_blobs) == 256
+    if len(key_blobs) != 256:
+        raise SPSDKError("Length of key blobs is not 256")
 
     boot_section = BootSectionV2(
         0,

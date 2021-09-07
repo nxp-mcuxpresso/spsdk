@@ -11,33 +11,32 @@ from os import path
 from typing import List
 
 import pytest
+from click.testing import CliRunner
 
+from spsdk import SPSDKError
+from spsdk.apps.nxpcertgen import main
 from spsdk.crypto import (
+    Certificate,
+    Encoding,
+    ExtensionOID,
+    NameOID,
+    _get_encoding_type,
+    generate_certificate,
     generate_rsa_private_key,
     generate_rsa_public_key,
+    is_ca_flag_set,
+    load_certificate,
+    load_private_key,
+    load_public_key,
+    save_crypto_item,
     save_rsa_private_key,
     save_rsa_public_key,
     validate_ca_flag_in_cert_chain,
-    Certificate,
-    Encoding,
+    validate_certificate,
+    validate_certificate_chain,
 )
-from spsdk.crypto import (
-    _get_encoding_type,
-    load_private_key,
-    load_certificate,
-    load_public_key,
-    ExtensionOID,
-    NameOID,
-)
-from spsdk.crypto import validate_certificate_chain, validate_certificate, is_ca_flag_set
-from spsdk.crypto import generate_certificate, save_crypto_item
-
 from spsdk.crypto.certificate_management import generate_name_struct
 from spsdk.utils.misc import use_working_directory
-
-from click.testing import CliRunner
-
-from spsdk.apps.nxpcertgen import main
 
 
 def get_certificate(data_dir, cert_file_name: str) -> Certificate:
@@ -211,10 +210,14 @@ def test_certificate_generation(tmpdir):
     assert path.isfile(path.join(tmpdir, "srk1.pem"))
 
 
-def test_certificate_generation_cli(tmpdir, data_dir):
+@pytest.mark.parametrize("json, encoding", [(True, "PEM"), (False, "Der")])
+def test_certificate_generation_cli(tmpdir, data_dir, json, encoding):
     with use_working_directory(data_dir):
         cert_path = os.path.join(tmpdir, "cert.crt")
-        cmd = f'-j {os.path.join(data_dir, "certgen_config.json")} -c {cert_path}'
+        if json:
+            cmd = f'generate -j {os.path.join(data_dir, "certgen_config.json")} -o {cert_path}'
+        else:
+            cmd = f'generate -c {os.path.join(data_dir, "certgen_config.yaml")} -o {cert_path} -e {encoding}'
         runner = CliRunner()
         result = runner.invoke(main, cmd.split())
         assert result.exit_code == 0
@@ -226,3 +229,8 @@ def test_certificate_generation_cli(tmpdir, data_dir):
     assert generated_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == "TWO"
     assert generated_cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS).value.ca
     assert generated_cert.serial_number == 777
+
+
+def test_invalid_certificate_chain():
+    with pytest.raises(SPSDKError):
+        validate_certificate_chain(chain_list=[])

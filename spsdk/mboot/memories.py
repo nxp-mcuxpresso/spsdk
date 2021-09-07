@@ -35,6 +35,12 @@ class ExtMemId(Enum):
     MMC_CARD = (289, "MMC", "MMC/eMMC Memory Card")
 
 
+class MemId(ExtMemId):
+    """McuBoot Internal/External Memory Property Tags."""
+
+    INTERNAL_MEMORY = (0, "RAM/FLASH", "Internal RAM/FLASH (Used for the PRINCE configuration)")
+
+
 ########################################################################################################################
 # McuBoot External Memory Property Tags
 ########################################################################################################################

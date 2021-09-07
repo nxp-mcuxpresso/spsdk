@@ -16,7 +16,7 @@ from .error_codes import StatusCode
 from .exceptions import SdpCommandError, SdpConnectionError, SdpError
 from .interfaces import Interface
 
-logger = logging.getLogger("SDP")
+logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################

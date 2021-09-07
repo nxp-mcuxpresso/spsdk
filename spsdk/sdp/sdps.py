@@ -10,12 +10,12 @@
 
 import logging
 from struct import pack, unpack
-from typing import Tuple, Mapping
+from typing import Mapping, Tuple
 
 from .exceptions import SdpConnectionError
 from .interfaces import Interface
 
-logger = logging.getLogger("SDPS")
+logger = logging.getLogger(__name__)
 
 ROM_INFO = {
     "MX8QXP": {"no_cmd": True, "hid_ep1": False, "hid_pack_size": 1024},

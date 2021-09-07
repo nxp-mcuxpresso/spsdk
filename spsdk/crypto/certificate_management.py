@@ -7,22 +7,23 @@
 """Module for certificate management (generating certificate, validating certificate, chains)."""
 
 from datetime import datetime, timedelta
-from typing import Union, List
+from typing import List, Union
 
+from spsdk import SPSDKError
 from spsdk.crypto import (
-    x509,
-    InvalidSignature,
-    Encoding,
-    default_backend,
-    hashes,
-    RSAPrivateKey,
-    RSAPublicKey,
-    ExtensionOID,
     Certificate,
     CertificateSigningRequest,
-    padding,
-    EllipticCurvePublicKey,
     EllipticCurvePrivateKey,
+    EllipticCurvePublicKey,
+    Encoding,
+    ExtensionOID,
+    InvalidSignature,
+    RSAPrivateKey,
+    RSAPublicKey,
+    default_backend,
+    hashes,
+    padding,
+    x509,
 )
 
 
@@ -85,8 +86,10 @@ def validate_certificate_chain(chain_list: list) -> list:
 
     :param chain_list: list of certificates in chain
     :return: list of boolean values, which corresponds to the certificate validation in chain
+    :raises SPSDKError: When chain has less than two certificates
     """
-    assert len(chain_list) > 1, "The chain must have at least two certificates"
+    if len(chain_list) <= 1:
+        raise SPSDKError("The chain must have at least two certificates")
     result = []
     for i in range(len(chain_list) - 1):
         result.append(validate_certificate(chain_list[i], chain_list[i + 1]))

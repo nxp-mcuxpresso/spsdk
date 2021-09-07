@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Set
 
 from asn1crypto import x509
-from oscrypto.asymmetric import rsa_pkcs1v15_verify, load_public_key
+from oscrypto.asymmetric import load_public_key, rsa_pkcs1v15_verify
 from oscrypto.errors import SignatureError
 
 from .backend_internal import internal_backend

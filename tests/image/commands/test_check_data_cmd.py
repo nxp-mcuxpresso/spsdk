@@ -6,6 +6,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pytest
+
+from spsdk import SPSDKError
 from spsdk.image import CmdCheckData, EnumCheckOps
 
 
@@ -44,3 +47,15 @@ def test_checkdata_export_parse_without_count():
 def test_checkdata_info():
     cmd = CmdCheckData(count=1)
     assert "Count: " in cmd.info()
+
+
+def test_checkdata_invalid():
+    cmd = CmdCheckData()
+    with pytest.raises(SPSDKError):
+        cmd.num_bytes = 6
+    with pytest.raises(SPSDKError):
+        cmd.ops = 99
+    with pytest.raises(SPSDKError):
+        cmd = CmdCheckData(numbytes=8)
+    with pytest.raises(SPSDKError):
+        cmd = CmdCheckData(ops=80)

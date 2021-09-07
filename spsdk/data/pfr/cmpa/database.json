@@ -60,6 +60,7 @@
             "address": "0x3_E200",
             "seal_start": "CMPA_CMAC0",
             "seal_count": 4,
+	    "mandatory_computed_regs": 1,
             "grouped_registers": [
                 {
                     "name": "ROTKH",
@@ -77,6 +78,7 @@
             "address": "0x3_E200",
             "seal_start": "CMPA_CMAC0",
             "seal_count": 4,
+	    "mandatory_computed_regs": 1,
             "grouped_registers": [
                 {
                     "name": "ROTKH",
@@ -111,6 +113,7 @@
     ],
     "seal_start": "SHA256_DIGEST0",
     "seal_count": 8,
+    "mandatory_computed_regs": 0,
     "backward_compatibility": {
         "CC_SOCU_PIN": {
             "bitfields": {

@@ -10,12 +10,15 @@ import json
 import logging
 import os
 import struct
-
 from typing import Optional
+
+from spsdk import SPSDKError
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import format_value
 
 from .misc import parse_int
+
+logger = logging.getLogger(__name__)
 
 
 class TrustZoneType(Enum):
@@ -80,30 +83,32 @@ class TrustZone:
         self.revision: Optional[str] = revision
 
         if self.type == TrustZoneType.DISABLED and customizations:
-            raise ValueError("TrustZone was disabled, can't add trust_zone_data")
+            raise SPSDKError("TrustZone was disabled, can't add trust_zone_data")
 
         # TODO: Should empty customs qualifies for CUSTOM TZ type???
         if self.customs is not None:
             self.type = TrustZoneType.CUSTOM
 
         if self.type == TrustZoneType.CUSTOM:
-            assert self.family, "Need to provide 'family' parameter"
+            if not self.family:
+                raise SPSDKError("Need to provide 'family' parameter")
             self.family = self.family.lower()
-            assert self.family in self.get_families(), "Chip family '{}' is not supported\n".format(
-                self.family
-            )
+            if self.family not in self.get_families():
+                raise SPSDKError(f"Chip family '{self.family}' is not supported\n")
             self.revision = self.sanitize_revision(self.family, self.revision)
-            assert (
-                self.revision in self.get_revisions()
-            ), "Revision '{}' is not supported on family '{}'\n".format(self.revision, self.family)
+            if self.revision not in self.get_revisions():
+                raise SPSDKError(
+                    f"Revision '{self.revision}' is not supported on family '{self.family}'\n"
+                )
 
             self.presets: dict = self._load_presets()
             if raw_data:
                 self.customs = self._parse_raw_data(raw_data)
-            assert self.customs is not None, "Need to provide 'customization' parameter"
+            if self.customs is None:
+                raise SPSDKError("Need to provide 'customization' parameter")
 
             if not TrustZone.validate_custom_data(self.presets, self.customs):
-                raise ValueError(
+                raise SPSDKError(
                     "Invalid register found in customization data:\n"
                     "%s" % [item for item in self.customs if item not in self.presets]
                 )
@@ -149,7 +154,7 @@ class TrustZone:
     def _parse_raw_data(self, raw_data: bytes) -> dict:
         """Parse raw data into 'customizations' format."""
         if len(self.presets) != len(raw_data) // 4:
-            raise ValueError(
+            raise SPSDKError(
                 f"Incorrect raw_data length\nExpected: {len(self.presets)}, Got: {len(raw_data) // 4}"
             )
 
@@ -163,12 +168,14 @@ class TrustZone:
         return all(item in data for item in customizations)
 
     def _custom_export(self) -> bytes:
-        assert self.presets is not None
-        assert self.customs is not None
-        logging.info(f"{len(self.presets)} registers loaded from defaults")
-        logging.debug(self.presets)
-        logging.info(f"{len(self.customs)} modifications provided")
-        logging.debug(self.customs)
+        if self.presets is None:
+            raise SPSDKError("Preset data not present")
+        if self.customs is None:
+            raise SPSDKError("Data not present")
+        logger.info(f"{len(self.presets)} registers loaded from defaults")
+        logger.debug(self.presets)
+        logger.info(f"{len(self.customs)} modifications provided")
+        logger.debug(self.customs)
         data = self.presets
         data.update(self.customs)
         registers = [parse_int(item) for item in data.values()]

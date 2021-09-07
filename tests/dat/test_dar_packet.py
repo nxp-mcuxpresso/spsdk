@@ -8,11 +8,13 @@
 """Tests with Debug Authentication Packet (DAR) Packet."""
 
 import os
+
 import pytest
 import yaml
 
-from spsdk.dat.dar_packet import DebugAuthenticateResponse
+from spsdk import SPSDKError
 from spsdk.dat import DebugAuthenticationChallenge as DAC
+from spsdk.dat.dar_packet import DebugAuthenticateResponse
 from spsdk.dat.debug_credential import DebugCredential as DC
 from spsdk.utils.misc import load_binary, use_working_directory
 
@@ -25,7 +27,7 @@ from spsdk.utils.misc import load_binary, use_working_directory
     ],
 )
 def test_dar_packet_rsa(
-    tmpdir, data_dir, yml_file_name, version, dck_key_file, expected_length, dac_bin_file
+    data_dir, yml_file_name, version, dck_key_file, expected_length, dac_bin_file
 ):
     with use_working_directory(data_dir):
         dac_bytes = load_binary(os.path.join(data_dir, dac_bin_file))
@@ -55,9 +57,7 @@ def test_dar_packet_rsa(
         ("new_dck_secp384_N4A.yml", "2.1", "new_dck_secp384r1.pem", 444),
     ],
 )
-def test_dar_packet_4_analog_256(
-    tmpdir, data_dir, yml_file_name, version, file_key, expected_length
-):
+def test_dar_packet_4_analog_256(data_dir, yml_file_name, version, file_key, expected_length):
     with use_working_directory(data_dir):
         dac_bytes = load_binary(os.path.join(data_dir, "sample_dac_analog.bin"))
         with open(os.path.join(data_dir, yml_file_name), "r") as f:
@@ -76,3 +76,24 @@ def test_dar_packet_4_analog_256(
         assert len(dar_bytes) == expected_length
         assert isinstance(dar_bytes, bytes)
         assert "Authentication Beacon" in dar.info()
+
+
+def test_dar_packet_no_signature_provider(data_dir):
+    with use_working_directory(data_dir):
+        version = "1.0"
+        dac_bin_file = "sample_dac.bin"
+        yml_file_name = "new_dck_rsa2048.yml"
+        dac_bytes = load_binary(os.path.join(data_dir, dac_bin_file))
+        with open(os.path.join(data_dir, yml_file_name), "r") as f:
+            yaml_config = yaml.safe_load(f)
+        dc = DC.create_from_yaml_config(version=version, yaml_config=yaml_config)
+        dc.sign()
+        dar = DebugAuthenticateResponse(
+            debug_credential=dc,
+            auth_beacon=0,
+            dac=DAC.parse(dac_bytes),
+            path_dck_private=os.path.join(data_dir, "new_dck_2048.pem"),
+        )
+        dar.sig_provider = None
+        with pytest.raises(SPSDKError, match="Signature provider is not set"):
+            dar.export()

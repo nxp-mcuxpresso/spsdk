@@ -6,7 +6,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import SegBDT, SegAPP
+from spsdk.image import SegAPP, SegBDT
 
 
 def test_app_segment_api():

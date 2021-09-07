@@ -10,7 +10,7 @@
 from struct import pack
 from typing import Type
 
-from spsdk import crypto
+from spsdk import SPSDKError, crypto
 from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.dat import DebugAuthenticationChallenge, DebugCredential
 from spsdk.dat.utils import ecc_public_numbers_to_bytes
@@ -38,7 +38,6 @@ class DebugAuthenticateResponse:
         self.auth_beacon = auth_beacon
         self.dac = dac
         self.dck_priv = path_dck_private
-        self.is_n4analog = self.debug_credential.socc == 0x04
         self.sig_provider = PlainFileSP(path_dck_private)
 
     def info(self) -> str:
@@ -55,9 +54,11 @@ class DebugAuthenticateResponse:
         return data
 
     def _get_signature(self) -> bytes:
-        assert self.sig_provider, f"Signature provider is not set"
+        if not self.sig_provider:
+            raise SPSDKError("Signature provider is not set")
         signature = self.sig_provider.sign(self._get_data_for_signature())
-        assert signature
+        if not signature:
+            raise SPSDKError("Signature is not present")
         return signature
 
     def export(self) -> bytes:
@@ -70,11 +71,9 @@ class DebugAuthenticateResponse:
         return data
 
     def _get_common_data(self) -> bytes:
-        """Collects dc, auth_beacon and in case of n4analog devices - UUID."""
+        """Collects dc, auth_beacon."""
         data = self.debug_credential.export()
         data += pack("<L", self.auth_beacon)
-        if self.is_n4analog:
-            data += pack("<16s", self.debug_credential.uuid)
         return data
 
     @classmethod
@@ -147,8 +146,19 @@ class DebugAuthenticateResponseECC(DebugAuthenticateResponse):
         return signature
 
 
-class DebugAuthenticateResponseN4A_256(DebugAuthenticateResponse):
+class DebugAuthenticateResponseN4A(DebugAuthenticateResponse):
     """Class for N4A specific of DAR."""
+
+    def _get_common_data(self) -> bytes:
+        """Collects dc, auth_beacon and UUID."""
+        data = self.debug_credential.export()
+        data += pack("<L", self.auth_beacon)
+        data += pack("<16s", self.dac.uuid)
+        return data
+
+
+class DebugAuthenticateResponseN4A_256(DebugAuthenticateResponseN4A):
+    """Class for N4A specific of DAR, 256 bits sized keys."""
 
     def _get_signature(self) -> bytes:
         """Sign the DAR data using SignatureProvider."""
@@ -158,8 +168,8 @@ class DebugAuthenticateResponseN4A_256(DebugAuthenticateResponse):
         return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=32)
 
 
-class DebugAuthenticateResponseN4A_384(DebugAuthenticateResponse):
-    """Class for N4A specific of DAR."""
+class DebugAuthenticateResponseN4A_384(DebugAuthenticateResponseN4A):
+    """Class for N4A specific of DAR, 384 bits sized keys."""
 
     def _get_signature(self) -> bytes:
         """Sign the DAR data using SignatureProvider."""

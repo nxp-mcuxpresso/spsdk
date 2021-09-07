@@ -10,17 +10,12 @@
 from struct import unpack_from
 from typing import Iterator, List, Optional
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto import CertBlockV2, Counter
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.common import calc_cypher_block_count, crypto_backend
-from .commands import (
-    CmdHeader,
-    CmdBaseClass,
-    EnumCmdTag,
-    EnumSectionFlag,
-    parse_command,
-)
 
+from .commands import CmdBaseClass, CmdHeader, EnumCmdTag, EnumSectionFlag, parse_command
 
 ########################################################################################################################
 # Boot Image Sections
@@ -330,6 +325,7 @@ class CertSectionV2(BaseClass):
         :param counter: The counter object (required)
         :return: exported bytes
         :raise Exception: raised when dek, mac, counter have invalid format
+        :raises SPSDKError: Raised size of exported bytes is invalid
         """
         if not isinstance(dek, bytes):
             raise Exception()
@@ -347,7 +343,8 @@ class CertSectionV2(BaseClass):
         hmac_data = crypto_backend().hmac(mac, header_encrypted)
         hmac_data += crypto_backend().hmac(mac, body_data)
         result = header_encrypted + hmac_data + body_data
-        assert len(result) == self.raw_size
+        if len(result) != self.raw_size:
+            raise SPSDKError("Invalid size")
         return result
 
     @classmethod
@@ -367,16 +364,16 @@ class CertSectionV2(BaseClass):
         :param mac: The MAC value in bytes (required)
         :param counter: The counter object (required)
         :return: parsed cert section v2 object
-        :raise AttributeError: raised when dek, mac, counter are not valid
-        :raise Exception: raised when there is invalid header HMAC, TAG, FLAGS, Mark
-        :raise Exception: raised when there is invalid certificate block HMAC
+        :raises SPSDKError: Raised when dek, mac, counter are not valid
+        :raises SPSDKError: Raised when there is invalid header HMAC, TAG, FLAGS, Mark
+        :raises SPSDKError: Raised when there is invalid certificate block HMAC
         """
         if not isinstance(dek, bytes):
-            raise AttributeError()
+            raise SPSDKError("DEK value has invalid format")
         if not isinstance(mac, bytes):
-            raise AttributeError()
+            raise SPSDKError("MAC value has invalid format")
         if not isinstance(counter, Counter):
-            raise AttributeError()
+            raise SPSDKError("Counter value has invalid format")
         index = offset
         header_encrypted = data[index : index + CmdHeader.SIZE]
         index += CmdHeader.SIZE
@@ -385,19 +382,19 @@ class CertSectionV2(BaseClass):
         cert_block_hmac = data[index : index + cls.HMAC_SIZE]
         index += cls.HMAC_SIZE
         if header_hmac != crypto_backend().hmac(mac, header_encrypted):
-            raise Exception("Invalid Header HMAC")
+            raise SPSDKError("Invalid Header HMAC")
         header_encrypted = crypto_backend().aes_ctr_decrypt(dek, header_encrypted, counter.value)
         header = CmdHeader.parse(header_encrypted)
         if header.tag != EnumCmdTag.TAG:
-            raise Exception(f"Invalid Header TAG: 0x{header.tag:02X}")
+            raise SPSDKError(f"Invalid Header TAG: 0x{header.tag:02X}")
         if header.flags != (EnumSectionFlag.CLEARTEXT | EnumSectionFlag.LAST_SECT):
-            raise Exception(f"Invalid Header FLAGS: 0x{header.flags:02X}")
+            raise SPSDKError(f"Invalid Header FLAGS: 0x{header.flags:02X}")
         if header.address != cls.SECT_MARK:
-            raise Exception(f"Invalid Section Mark: 0x{header.address:08X}")
+            raise SPSDKError(f"Invalid Section Mark: 0x{header.address:08X}")
         # Parse Certificate Block
         cert_block = CertBlockV2.parse(data, index)
         if cert_block_hmac != crypto_backend().hmac(mac, data[index : index + cert_block.raw_size]):
-            raise Exception("Invalid Certificate Block HMAC")
+            raise SPSDKError("Invalid Certificate Block HMAC")
         index += cert_block.raw_size
         cert_section_obj = cls(cert_block)
         counter.increment(calc_cypher_block_count(index - offset))

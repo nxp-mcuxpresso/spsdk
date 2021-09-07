@@ -32,6 +32,10 @@ class SignatureProvider(abc.ABC):
     def info(self) -> str:
         """Provide information about the Signature provide."""
 
+    @abc.abstractproperty
+    def signature_length(self) -> int:
+        """Return length of the signature."""
+
     @staticmethod
     def _convert_params(params: str) -> Dict[str, str]:
         """Coverts creation params from string into dictionary.
@@ -85,6 +89,14 @@ class PlainFileSP(SignatureProvider):
             hash_size = 256  # hash_size //= 8
         hash_alg_name = hash_alg or f"sha{hash_size}"
         self.hash_alg = getattr(crypto.hashes, hash_alg_name.upper())()
+
+    @property
+    def signature_length(self) -> int:
+        """Return length of the signature."""
+        sig_len = self.private_key.key_size // 8
+        if isinstance(self.private_key, crypto.EllipticCurvePrivateKey):
+            sig_len *= 2
+        return sig_len
 
     def info(self) -> str:
         """Return basic into about the signature provider."""

@@ -8,7 +8,7 @@
 
 import logging
 from time import sleep
-from typing import Dict
+from typing import Dict, Type
 
 import pylink
 import pylink.protocols.swd as swd
@@ -16,10 +16,10 @@ from pylink.errors import JLinkException
 
 from .debug_probe import (
     DebugProbe,
-    DebugProbeError,
-    DebugProbeMemoryInterfaceNotEnabled,
-    DebugProbeNotOpenError,
-    DebugProbeTransferError,
+    SPSDKDebugProbeError,
+    SPSDKDebugProbeMemoryInterfaceNotEnabled,
+    SPSDKDebugProbeNotOpenError,
+    SPSDKDebugProbeTransferError,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class DebugProbePyLink(DebugProbe):
         """Get J-Link object.
 
         :return: The J-Link Object
-        :raises DebugProbeError: The J-Link object get function failed.
+        :raises SPSDKDebugProbeError: The J-Link object get function failed.
         """
         try:
             return pylink.JLink(
@@ -55,7 +55,7 @@ class DebugProbePyLink(DebugProbe):
                 warn=JLINK_LOGGER.warn,
             )
         except TypeError:
-            raise DebugProbeError("Cannot open Jlink DLL")
+            raise SPSDKDebugProbeError("Cannot open Jlink DLL")
 
     def __init__(self, hardware_id: str, user_params: Dict = None) -> None:
         """The PyLink class initialization.
@@ -113,14 +113,14 @@ class DebugProbePyLink(DebugProbe):
         The function is used to initialize the connection to target and enable using debug probe
         for DAT purposes.
 
-        :raises DebugProbeError: The PyLink cannot establish communication with target
+        :raises SPSDKDebugProbeError: The PyLink cannot establish communication with target
         """
         try:
             self.pylink = DebugProbePyLink.get_jlink_lib()
             if self.pylink is None:
-                raise DebugProbeError("Getting of J-Link library failed.")
-        except DebugProbeError as exc:
-            raise DebugProbeError(f"Getting of J-Link library failed({str(exc)}).")
+                raise SPSDKDebugProbeError("Getting of J-Link library failed.")
+        except SPSDKDebugProbeError as exc:
+            raise SPSDKDebugProbeError(f"Getting of J-Link library failed({str(exc)}).") from exc
 
         try:
 
@@ -134,7 +134,7 @@ class DebugProbePyLink(DebugProbe):
             # Select ISP - AP
             if self.dbgmlbx_ap_ix == -1:
                 if debug_mbox_ap_ix == -1:
-                    raise DebugProbeError("The Debug mailbox access port is not available!")
+                    raise SPSDKDebugProbeError("The Debug mailbox access port is not available!")
                 self.dbgmlbx_ap_ix = debug_mbox_ap_ix
             else:
                 if debug_mbox_ap_ix != self.dbgmlbx_ap_ix:
@@ -143,7 +143,9 @@ class DebugProbePyLink(DebugProbe):
                     )
 
         except JLinkException as exc:
-            raise DebugProbeError(f"PyLink cannot establish communication with target({str(exc)}).")
+            raise SPSDKDebugProbeError(
+                f"PyLink cannot establish communication with target({str(exc)})."
+            ) from exc
 
     def enable_memory_interface(self) -> None:
         """Debug probe enabling memory interface.
@@ -152,16 +154,18 @@ class DebugProbePyLink(DebugProbe):
         to support various DEBUG PROBES. The function is used to initialize the target memory interface
         and enable using memory access of target over debug probe.
 
-        :raises DebugProbeNotOpenError: The PyLink probe is NOT opened
-        :raises DebugProbeError: Error with connection to target.
+        :raises SPSDKDebugProbeNotOpenError: The PyLink probe is NOT opened
+        :raises SPSDKDebugProbeError: Error with connection to target.
         """
         if self.pylink is None:
-            raise DebugProbeNotOpenError("The PyLink debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyLink debug probe is not opened yet")
         try:
             self.pylink.connect(chip_name="Cortex-M33")
             self.enabled_memory_interface = True
         except JLinkException as exc:
-            raise DebugProbeError(f"PyLink cannot establish connection with target({str(exc)}).")
+            raise SPSDKDebugProbeError(
+                f"PyLink cannot establish connection with target({str(exc)})."
+            ) from exc
 
     def close(self) -> None:
         """Close PyLink interface.
@@ -199,14 +203,15 @@ class DebugProbePyLink(DebugProbe):
 
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeNotOpenError: The PyLink probe is NOT opened
-        :raises DebugProbeMemoryInterfaceNotEnabled: The PyLink is using just CoreSight access.
+        :raises SPSDKDebugProbeNotOpenError: The PyLink probe is NOT opened
+        :raises SPSDKDebugProbeMemoryInterfaceNotEnabled: The PyLink is using just CoreSight access.
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
         """
         if self.pylink is None:
-            raise DebugProbeNotOpenError("The PyLink debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyLink debug probe is not opened yet")
 
         if not self.enabled_memory_interface:
-            raise DebugProbeMemoryInterfaceNotEnabled(
+            raise SPSDKDebugProbeMemoryInterfaceNotEnabled(
                 "Memory interface is not enabled over J-Link."
             )
 
@@ -214,8 +219,9 @@ class DebugProbePyLink(DebugProbe):
         reg = [0]
         try:
             reg = self.pylink.memory_read32(addr=addr, num_words=1)
-        except JLinkException as exc:
+        except (JLinkException, ValueError, TypeError) as exc:
             logger.error(f"Failed read memory({str(exc)}).")
+            raise SPSDKDebugProbeTransferError(f"Failed read memory({str(exc)}).") from exc
         return reg[0]
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
@@ -226,14 +232,15 @@ class DebugProbePyLink(DebugProbe):
 
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeNotOpenError: The PyLink probe is NOT opened
-        :raises DebugProbeMemoryInterfaceNotEnabled: The PyLink is using just CoreSight access.
+        :raises SPSDKDebugProbeNotOpenError: The PyLink probe is NOT opened
+        :raises SPSDKDebugProbeMemoryInterfaceNotEnabled: The PyLink is using just CoreSight access.
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
         """
         if self.pylink is None:
-            raise DebugProbeNotOpenError("The PyLink debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyLink debug probe is not opened yet")
 
         if not self.enabled_memory_interface:
-            raise DebugProbeMemoryInterfaceNotEnabled(
+            raise SPSDKDebugProbeMemoryInterfaceNotEnabled(
                 "Memory interface is not enabled over J-Link."
             )
 
@@ -242,8 +249,9 @@ class DebugProbePyLink(DebugProbe):
             data_list = list()
             data_list.append(data)
             self.pylink.memory_write32(addr=addr, data=data_list)
-        except JLinkException as exc:
+        except (JLinkException, ValueError, TypeError) as exc:
             logger.error(f"Failed write memory({str(exc)}).")
+            raise SPSDKDebugProbeTransferError(f"Failed write memory({str(exc)}).") from exc
 
     def coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
         """Read coresight register over PyLink interface.
@@ -253,12 +261,12 @@ class DebugProbePyLink(DebugProbe):
         :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeTransferError: The IO operation failed
-        :raises DebugProbeNotOpenError: The PyLink probe is NOT opened
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
+        :raises SPSDKDebugProbeNotOpenError: The PyLink probe is NOT opened
 
         """
         if self.pylink is None:
-            raise DebugProbeNotOpenError("The PyLink debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyLink debug probe is not opened yet")
 
         try:
             if access_port:
@@ -278,10 +286,10 @@ class DebugProbePyLink(DebugProbe):
 
                 return response.data
             return self.pylink.coresight_read(reg=addr // 4, ap=access_port)
-        except JLinkException as exc:
+        except (JLinkException, ValueError, TypeError) as exc:
             # In case of transaction error reconfigure and initialize the JLink
             self._reinit_jlink_target()
-            raise DebugProbeTransferError(
+            raise SPSDKDebugProbeTransferError(
                 f"The Coresight read operation failed({str(exc)})."
             ) from exc
 
@@ -293,11 +301,11 @@ class DebugProbePyLink(DebugProbe):
         :param access_port: if True, the Access Port (AP) register will be write(default), otherwise the Debug Port
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeTransferError: The IO operation failed
-        :raises DebugProbeNotOpenError: The PyLink probe is NOT opened
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
+        :raises SPSDKDebugProbeNotOpenError: The PyLink probe is NOT opened
         """
         if self.pylink is None:
-            raise DebugProbeNotOpenError("The PyLink debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyLink debug probe is not opened yet")
 
         try:
             if access_port:
@@ -310,14 +318,14 @@ class DebugProbePyLink(DebugProbe):
                 request = swd.WriteRequest(addr // 4, data=data, ap=access_port)
                 response = request.send(self.pylink)
                 if not response.ack():
-                    raise DebugProbeTransferError("No ack from JLink")
+                    raise SPSDKDebugProbeTransferError("No ack from JLink")
             else:
                 self.pylink.coresight_write(reg=addr // 4, data=data, ap=access_port)
 
-        except JLinkException as exc:
+        except (JLinkException, ValueError, TypeError) as exc:
             # In case of transaction error reconfigure and initialize the JLink
             self._reinit_jlink_target()
-            raise DebugProbeTransferError(
+            raise SPSDKDebugProbeTransferError(
                 f"The Coresight write operation failed({str(exc)})."
             ) from exc
 
@@ -326,10 +334,10 @@ class DebugProbePyLink(DebugProbe):
 
         It resets a target.
 
-        :raises DebugProbeNotOpenError: The PyLink probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The PyLink probe is NOT opened
         """
         if self.pylink is None:
-            raise DebugProbeNotOpenError("The PyLink debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyLink debug probe is not opened yet")
 
         self.pylink.reset()
 
@@ -355,13 +363,13 @@ class DebugProbePyLink(DebugProbe):
         This is helper function to find and return the debug mailbox access port index.
 
         :return: Debug MailBox Access Port Index if found, otherwise -1
-        :raises DebugProbeNotOpenError: The Segger JLink probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The Segger JLink probe is NOT opened
         """
         idr_expected = 0x002A0000
         idr_address = 0xFC
 
         if self.pylink is None:
-            raise DebugProbeNotOpenError("The Segger debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Segger debug probe is not opened yet")
 
         logger.debug("Looking for debug mailbox access port")
         for access_port_ix in range(256):
@@ -381,6 +389,6 @@ class DebugProbePyLink(DebugProbe):
                     logger.debug(f"The AP({access_port_ix}) is not available")
             except JLinkException:
                 logger.debug(f"The AP({access_port_ix}) is not available")
-            except DebugProbeTransferError:
+            except SPSDKDebugProbeTransferError:
                 logger.debug(f"The AP({access_port_ix}) is not available")
         return -1

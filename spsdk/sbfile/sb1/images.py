@@ -8,14 +8,16 @@
 """Secure Boot Image Class."""
 
 from datetime import datetime
-from typing import Optional, List, Sequence
+from typing import List, Optional, Sequence
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto import crypto_backend
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.misc import DebugInfo, align
-from .headers import SecureBootHeaderV1, SectionHeaderItemV1, BootSectionHeaderV1
+
+from ..misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
+from .headers import BootSectionHeaderV1, SectionHeaderItemV1, SecureBootHeaderV1
 from .sections import BootSectionV1
-from ..misc import BcdVersion3Format, SecBootBlckSize, BcdVersion3
 
 
 ########################################################################################################################
@@ -76,7 +78,8 @@ class SecureBootV1(BaseClass):
 
     @first_boot_section_id.setter
     def first_boot_section_id(self, value: int) -> None:
-        assert value < len(self._sections)
+        if value > len(self._sections):
+            raise SPSDKError("Invalid length of section")
         self._header.first_boot_section_id = value
 
     @property
@@ -121,10 +124,10 @@ class SecureBootV1(BaseClass):
     def validate(self) -> None:
         """Validate settings.
 
-        :raise ValueError: if the settings is not consistent
+        :raises SPSDKError: If the settings is not consistent
         """
         if not self._sections:
-            raise ValueError("At least one section must be defined")
+            raise SPSDKError("At least one section must be defined")
 
     def update(self) -> None:
         """Update content."""
@@ -167,6 +170,8 @@ class SecureBootV1(BaseClass):
         :param auth_padding: optional padding used after authentication; recommended to use None to apply random value
         :param dbg_info: instance allowing to debug generated output
         :return: serialize the instance into binary data
+        :raises SPSDKError: Invalid section data
+        :raises SPSDKError: Invalid padding length
         """
         self.update()
         self.validate()
@@ -182,7 +187,8 @@ class SecureBootV1(BaseClass):
         dbg_info.append_section("Sections")
         for sect in self._sections:
             sect_data = sect.export(dbg_info)
-            assert len(sect_data) == sect.size
+            if len(sect_data) != sect.size:
+                raise SPSDKError("Invalid section data")
             data += sect_data
         # authentication: SHA1
         auth_code = crypto_backend().hash(data, "sha1")
@@ -192,7 +198,8 @@ class SecureBootV1(BaseClass):
         padding_len = align(len(auth_code), SecBootBlckSize.BLOCK_SIZE) - len(auth_code)
         if auth_padding is None:
             auth_padding = crypto_backend().random_bytes(padding_len)
-        assert padding_len == len(auth_padding)
+        if padding_len != len(auth_padding):
+            raise SPSDKError("Invalid padding length")
         data += auth_padding
         dbg_info.append_binary_section("padding", auth_padding)
         return data
@@ -205,6 +212,7 @@ class SecureBootV1(BaseClass):
         :param offset: to start parsing the data
         :return: converted instance
         :raise ValueError: raised when digest does not match
+        :raises SPSDKError: Raised when section is invalid
         """
         obj = SecureBootV1()
         cur_pos = offset
@@ -217,7 +225,8 @@ class SecureBootV1(BaseClass):
             cur_pos += sect_header.size
         # sections
         new_pos = offset + obj._header.first_boot_tag_block * SecBootBlckSize.BLOCK_SIZE
-        assert new_pos >= cur_pos
+        if new_pos < cur_pos:
+            raise SPSDKError("Invalid section")
         cur_pos = new_pos
         for _ in range(obj._header.section_count):
             boot_sect = BootSectionV1.parse(data, cur_pos)

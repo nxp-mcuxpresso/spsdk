@@ -12,7 +12,7 @@ import logging
 # pylint: disable=unused-import  # Type is necessary for Mypy
 from typing import Dict, Type
 
-logger = logging.getLogger("SerialProxy")
+logger = logging.getLogger(__name__)
 
 
 class SerialProxy:

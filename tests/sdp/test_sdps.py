@@ -6,10 +6,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+from spsdk.sdp import SdpConnectionError
 from spsdk.sdp.interfaces.base import Interface
 from spsdk.sdp.sdps import SDPS
-from spsdk.sdp import SdpConnectionError
-
 
 data = b"\xAD" * 100
 cmd_pack = b"BLTC\x01\x00\x00\x00d\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"

@@ -5,10 +5,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import os
 import json
+import os
+
 import pytest
 
+from spsdk import SPSDKError
 from spsdk.image import TrustZone, TrustZoneType
 
 
@@ -47,29 +49,43 @@ def test_tz_types(sample_tz_data):
 
 
 def test_errors(sample_tz_data):
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         TrustZone.custom(family="totaly_legit_family", customizations=sample_tz_data)
     # throw error when TZ is disabled, but tz data are present
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         TrustZone(tz_type=TrustZoneType.DISABLED, customizations=sample_tz_data)
     # throw error when TZ is set to CUSTOM but no data and no family are provided
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         TrustZone(tz_type=TrustZoneType.CUSTOM)
     # throw error when TZ is set to CUSTOM but no family is provided
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         TrustZone(tz_type=TrustZoneType.CUSTOM, customizations=sample_tz_data)
     # throw error when TZ is set to CUSTOM but no data are provided
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         TrustZone(tz_type=TrustZoneType.CUSTOM, family="lpc55xx")
     # throw error for invalid customization data
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         TrustZone(family="lpc55xx", customizations={"fake": "this is fake"})
+    # throw error when TZ  type is custom and family is not set
+    with pytest.raises(SPSDKError, match="Need to provide 'family' parameter"):
+        TrustZone(tz_type=TrustZoneType.CUSTOM, family=None)
 
 
 def test_simplified_export():
     assert TrustZone().export() == b""
     assert TrustZone.enabled().export() == b""
     assert TrustZone.disabled().export() == b""
+
+
+def test_export_invalid(sample_tz_data):
+    tz = TrustZone(family="lpc55xx", tz_type=TrustZoneType.CUSTOM, customizations=sample_tz_data)
+    tz.presets = None
+    with pytest.raises(SPSDKError, match="Preset data not present"):
+        tz.export()
+    tz = TrustZone(family="lpc55xx", tz_type=TrustZoneType.CUSTOM, customizations=sample_tz_data)
+    tz.customs = None
+    with pytest.raises(SPSDKError, match="Data not present"):
+        tz.export()
 
 
 # in data dir, there are example json config files for elftosb and their  associated binaries
@@ -91,3 +107,13 @@ def test_binary(data_dir, family, json_config, binary):
 
     my_data = TrustZone(family=family, customizations=json_config_data["trustZonePreset"]).export()
     assert my_data == binary_data
+
+
+def test_tz_incorrect_data(sample_tz_data):
+    with pytest.raises(SPSDKError):
+        TrustZone(
+            family="lpc55xx",
+            raw_data=bytes(4),
+            tz_type=TrustZoneType.CUSTOM,
+            customizations=sample_tz_data,
+        )

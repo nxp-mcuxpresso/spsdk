@@ -12,7 +12,8 @@ from typing import Any, Dict, Type
 import colorama
 import prettytable
 
-from spsdk.debuggers.debug_probe import DebugProbe, DebugProbeError, ProbeNotFoundError
+from spsdk import SPSDKError
+from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError, SPSDKProbeNotFoundError
 from spsdk.debuggers.debug_probe_jlink import DebugProbePyLink
 from spsdk.debuggers.debug_probe_pemicro import DebugProbePemicro
 
@@ -66,36 +67,36 @@ class DebugProbes(list):
         """Overriding build-in function by check the type.
 
         :param item: ProbeDestription item.
-        :raises TypeError: Invalid input types has been used.
+        :raises SPSDKError: Invalid input types has been used.
         """
         if isinstance(item, ProbeDescription):
             super(DebugProbes, self).append(item)
         else:
-            raise TypeError("The list accepts only ProbeDescription object")
+            raise SPSDKError("The list accepts only ProbeDescription object")
 
     def insert(self, index: int, item: ProbeDescription) -> None:
         """Overriding build-in function by check the type.
 
         :param item: ProbeDestription item.
         :param index: Index in list to insert.
-        :raises TypeError: Invalid input types has been used.
+        :raises SPSDKError: Invalid input types has been used.
         """
         if isinstance(item, ProbeDescription):
             super(DebugProbes, self).insert(index, item)
         else:
-            raise TypeError("The list accepts only ProbeDescription object")
+            raise SPSDKError("The list accepts only ProbeDescription object")
 
     def select_probe(self, silent: bool = False) -> ProbeDescription:
         """Perform Probe selection.
 
         :param silent: When it True, the functions select the probe if applicable without any prints to log
         :return: The record of selected DebugProbe
-        :raises ProbeNotFoundError: No probe has been founded
+        :raises SPSDKProbeNotFoundError: No probe has been founded
         """
         if len(self) == 0:
             if not silent:
                 print("There is no any debug probe connected in system!")
-            raise ProbeNotFoundError("There is no any debug probe connected in system!")
+            raise SPSDKProbeNotFoundError("There is no any debug probe connected in system!")
 
         if not silent or len(self) > 1:  # pragma: no cover
             self.print()
@@ -108,7 +109,7 @@ class DebugProbes(list):
             i_selected = int(input())
             if i_selected > len(self) - 1:
                 print("The chosen probe index is out of range")
-                raise ProbeNotFoundError("The chosen probe index is out of range")
+                raise SPSDKProbeNotFoundError("The chosen probe index is out of range")
 
         return self[i_selected]
 
@@ -164,7 +165,7 @@ class DebugProbeUtils:
             if (interface is None) or (interface.lower() == probe_key):
                 try:
                     probes.extend(PROBES[probe_key].get_connected_probes(hardware_id, user_params))
-                except DebugProbeError as exc:
+                except SPSDKDebugProbeError as exc:
                     logger.warning(f"The {probe_key} debug probe support is not ready({str(exc)}).")
 
         return probes
@@ -181,29 +182,30 @@ def test_ahb_access(probe: DebugProbe, ap_mem: int = 0) -> bool:
     logger.debug("step T.1: Activate the correct AP")
     probe.coresight_reg_write(access_port=False, addr=2 * 4, data=ap_mem)
 
-    logger.debug("step T.2: Set the AP access size and address mode")
-    probe.coresight_reg_write(
-        access_port=True,
-        addr=probe.get_coresight_ap_address(ap_mem, 0 * 4),
-        data=0x22000012,
-    )
-
-    logger.debug("step T.3: Set the initial AHB address to access")
-    probe.coresight_reg_write(
-        access_port=True,
-        addr=probe.get_coresight_ap_address(ap_mem, 1 * 4),
-        data=0x20000000,
-    )
-
-    logger.debug("step T.4: Access the memory system at that address")
     try:
+        logger.debug("step T.2: Set the AP access size and address mode")
+        probe.coresight_reg_write(
+            access_port=True,
+            addr=probe.get_coresight_ap_address(ap_mem, 0 * 4),
+            data=0x22000012,
+        )
+
+        logger.debug("step T.3: Set the initial AHB address to access")
+        probe.coresight_reg_write(
+            access_port=True,
+            addr=probe.get_coresight_ap_address(ap_mem, 1 * 4),
+            data=0x20000000,
+        )
+
+        logger.debug("step T.4: Access the memory system at that address")
+
         value = probe.coresight_reg_read(
             access_port=True, addr=probe.get_coresight_ap_address(ap_mem, 3 * 4)
         )
         logger.debug(f"Read value at 0x2000_0000 is {value:08X}")
         ahb_enabled = True
 
-    except DebugProbeError:
+    except SPSDKDebugProbeError:
         logger.debug("Chip has NOT enabled AHB access.")
 
     return ahb_enabled

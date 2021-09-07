@@ -3,7 +3,6 @@ line-length = 100
 target-version = ['py36', 'py37', 'py38']
 include = '\.pyi?$'
 force-exclude = '''
-spsdk/apps
 '''
 
 [tool.isort]

@@ -6,8 +6,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Test Trustzone part of elftosb app."""
-import os
 import filecmp
+import os
 
 from click.testing import CliRunner
 

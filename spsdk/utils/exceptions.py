@@ -27,3 +27,7 @@ class SPSDKRegsErrorBitfieldNotFound(SPSDKRegsError):
 
 class SPSDKRegsErrorEnumNotFound(SPSDKRegsError):
     """Enum has not been found."""
+
+
+class SPSDKTimeoutError(SPSDKError):
+    """SPSDK Timeout."""

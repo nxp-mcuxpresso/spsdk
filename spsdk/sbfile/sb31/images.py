@@ -6,15 +6,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module used for generation SecureBinary V3.1."""
 from datetime import datetime
-from typing import List, Sequence
-from struct import pack, unpack_from, calcsize
+from struct import calcsize, pack
+from typing import List
 
 from spsdk import SPSDKError
-from spsdk.sbfile.sb31.functions import KeyDerivator
-from spsdk.utils.misc import align_block
-from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.sbfile.sb31.commands import BaseCmd, CmdSectionHeader
+from spsdk.sbfile.sb31.functions import KeyDerivator
+from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.backend_internal import internal_backend
+from spsdk.utils.misc import align_block
 
 
 ########################################################################################################################
@@ -162,8 +162,8 @@ class SecureBinary31Commands(BaseClass):
         self.commands: List[BaseCmd] = []
         self.key_derivator = None
         if is_encrypted:
-            if not (pck and timestamp and kdk_access_rights):
-                raise SPSDKError("PCK, timeout or kdk_access_rights are not defined.")
+            if pck is None or timestamp is None or kdk_access_rights is None:
+                raise SPSDKError("PCK, timestamp or kdk_access_rights are not defined.")
             self.key_derivator = KeyDerivator(
                 pck=pck,
                 timestamp=timestamp,
@@ -188,7 +188,7 @@ class SecureBinary31Commands(BaseClass):
         """Set all SB3.1 commands at once."""
         self.commands = commands.copy()
 
-    def export(self) -> bytes:
+    def get_cmd_blocks_to_export(self) -> List[bytes]:
         """Export commands as bytes."""
         commands_bytes = b"".join([command.export() for command in self.commands])
         section_header = CmdSectionHeader(length=len(commands_bytes))
@@ -199,6 +199,11 @@ class SecureBinary31Commands(BaseClass):
             for i in range(0, len(total), self.DATA_CHUNK_LENGTH)
         ]
         data_blocks[-1] = align_block(data_blocks[-1], alignment=self.DATA_CHUNK_LENGTH)
+
+        return data_blocks
+
+    def process_cmd_blocks_to_export(self, data_blocks: List[bytes]) -> bytes:
+        """Process given data blocks for export."""
         self.block_count = len(data_blocks)
 
         processed_blocks = [
@@ -208,10 +213,16 @@ class SecureBinary31Commands(BaseClass):
         final_data = b"".join(reversed(processed_blocks))
         return final_data
 
+    def export(self) -> bytes:
+        """Export commands as bytes."""
+        data_blocks = self.get_cmd_blocks_to_export()
+        return self.process_cmd_blocks_to_export(data_blocks)
+
     def _process_block(self, block_number: int, block_data: bytes) -> bytes:
         """Process single block."""
         if self.is_encrypted:
-            assert self.key_derivator
+            if not self.key_derivator:
+                raise SPSDKError("No key derivator")
             block_key = self.key_derivator.get_block_key(block_number)
             encrypted_block = internal_backend.aes_cbc_encrypt(block_key, block_data)
         else:

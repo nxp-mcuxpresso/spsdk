@@ -9,7 +9,9 @@
 import time
 from typing import Any, List
 
+from spsdk import SPSDKError
 from spsdk.utils.misc import format_value
+
 from .debug_mailbox import DebugMailbox, logger
 
 
@@ -34,7 +36,7 @@ class DebugMailboxCommand:
     def run(self, params: list = []) -> List[Any]:
         """Run DebugMailboxCommand."""
         if len(params) != self.paramlen:
-            raise ValueError(
+            raise SPSDKError(
                 "Provided parameters length is not equal to command parameters length!"
             )
 
@@ -49,9 +51,9 @@ class DebugMailboxCommand:
             ret = self.dm.spin_read(self.dm.registers.RETURN.address)
             logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
             if (ret & 0xFFFF) != 0xA5A5:
-                raise IOError("Device did not send correct ACK answer!")
+                raise SPSDKError("Device did not send correct ACK answer!")
             if ((ret >> 16) & 0xFFFF) != (self.paramlen - i):
-                raise IOError("Device expects parameters of different length we can provide!")
+                raise SPSDKError("Device expects parameters of different length we can provide!")
             logger.debug(f"<- spin_write: {format_value(params[i], 32)}")
             self.dm.spin_write(self.dm.registers.REQUEST.address, params[i])
 
@@ -59,11 +61,12 @@ class DebugMailboxCommand:
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
         resplen = (ret >> 16) & 0x7FFF
         status = ret & 0xFFFF
+
         if resplen != self.resplen:  # MSB is used to show it is the new protocol -> 0x7FFF
-            raise IOError("Device wants to send us different size than expected!")
+            raise SPSDKError("Device wants to send us different size than expected!")
 
         if status != 0:
-            raise IOError(f"Status code is not success: {ret & 0xFFFF} !")
+            raise SPSDKError(f"Status code is not success: {ret & 0xFFFF} !")
 
         # do not send ack, in case no data follows
         if resplen == 0:
@@ -144,10 +147,13 @@ class StartDebugSession(DebugMailboxCommand):
 class DebugAuthenticationStart(DebugMailboxCommand):
     """Class for DebugAuthenticationStart."""
 
-    def __init__(self, dm: DebugMailbox) -> None:
+    def __init__(self, dm: DebugMailbox, resplen: int = 26) -> None:
         """Initialize."""
-        # 26 words == 104 bytes
-        super(DebugAuthenticationStart, self).__init__(dm, id=16, name="DBG_AUTH_START", resplen=26)
+        # 26 words == 104 bytes (SHA256 - 32 Bytes)
+        # 30 words == 120 bytes (SHA384 - 48 Bytes)
+        super(DebugAuthenticationStart, self).__init__(
+            dm, id=16, name="DBG_AUTH_START", resplen=resplen
+        )
 
 
 class DebugAuthenticationResponse(DebugMailboxCommand):

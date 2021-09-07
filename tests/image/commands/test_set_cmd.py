@@ -6,6 +6,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pytest
+
+from spsdk import SPSDKError
 from spsdk.image import CmdNop, CmdSet, EnumItm
 
 
@@ -44,3 +47,15 @@ def test_set_cmd_export_parse():
     data = cmd.export()
     assert len(data) == 8
     assert cmd == CmdSet.parse(data)
+
+
+def test_set_cmd_invalid():
+    with pytest.raises(SPSDKError):
+        CmdSet(itm=8)
+    cmd = CmdSet()
+    with pytest.raises(SPSDKError):
+        cmd.hash_algorithm = 55
+    with pytest.raises(SPSDKError):
+        cmd.engine = 0xFE
+    with pytest.raises(SPSDKError):
+        cmd.itm = 55

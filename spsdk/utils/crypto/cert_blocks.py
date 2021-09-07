@@ -8,19 +8,18 @@
 """Module for handling Certificate block."""
 
 import re
-from spsdk.sbfile.sb31.commands import BaseCmd
-from struct import pack, unpack_from, calcsize
+from struct import calcsize, pack, unpack_from
 from typing import List, Optional, Sequence, Union
 
 from Crypto.PublicKey import ECC
 
-from spsdk import crypto
-from spsdk.crypto import utils_cryptography
+from spsdk import SPSDKError
 from spsdk.utils import misc
+
 from .abstract import BaseClass
 from .backend_internal import internal_backend
 from .certificate import Certificate
-from .common import crypto_backend, serialize_ecc_signature, ecc_public_numbers_to_bytes
+from .common import crypto_backend
 
 
 class CertBlock(BaseClass):
@@ -43,8 +42,10 @@ class CertBlockHeader(BaseClass):
         :param version: Version of the certificate in format n.n
         :param flags: Flags for the Certificate Header
         :param build_number: of the certificate
+        :raises SPSDKError: When there is invalid version
         """
-        assert re.match(r"[0-9]+\.[0-9]+", version)  # check format of the version: N.N
+        if not re.match(r"[0-9]+\.[0-9]+", version):  # check format of the version: N.N
+            raise SPSDKError("Invalid version")
         self.version = version
         self.flags = flags
         self.build_number = build_number
@@ -154,7 +155,8 @@ class CertBlockV2(CertBlock):
         data = bytes()
         for rkh in self._root_key_hashes:
             data += rkh
-        assert len(data) == self.RKH_SIZE * self.RKHT_SIZE
+        if len(data) != self.RKH_SIZE * self.RKHT_SIZE:
+            raise SPSDKError("Invalid length of data")
         return internal_backend.hash(data)
 
     @property
@@ -206,8 +208,10 @@ class CertBlockV2(CertBlock):
         """Setter.
 
         :param value: new alignment
+        :raises SPSDKError: When there is invalid alignment
         """
-        assert value > 0
+        if value <= 0:
+            raise SPSDKError("Invalid alignment")
         self._alignment = value
 
     @property
@@ -228,8 +232,10 @@ class CertBlockV2(CertBlock):
         """Setter.
 
         :param value: new image length
+        :raises SPSDKError: When there is invalid image length
         """
-        assert value > 0
+        if value <= 0:
+            raise SPSDKError("Invalid image length")
         self._header.image_length = value
 
     def __init__(self, version: str = "1.0", flags: int = 0, build_number: int = 0) -> None:
@@ -258,12 +264,16 @@ class CertBlockV2(CertBlock):
         :param index: The index of Root Key Hash in the table
         :param key_hash: The Root Key Hash value (32 bytes, SHA-256);
                         or Certificate where the hash can be created from public key
+        :raises SPSDKError: When there is invalid index of root key hash in the table
+        :raises SPSDKError: When there is invalid length of key hash
         """
         if isinstance(key_hash, Certificate):
             key_hash = key_hash.public_key_hash
         assert isinstance(key_hash, (bytes, bytearray))
-        assert 0 <= index < self.RKHT_SIZE
-        assert len(key_hash) == self.RKH_SIZE
+        if index < 0 or index >= self.RKHT_SIZE:
+            raise SPSDKError("Invalid index of root key hash in the table")
+        if len(key_hash) != self.RKH_SIZE:
+            raise SPSDKError("Invalid length of key hash")
         self._root_key_hashes[index] = bytes(key_hash)
 
     def add_certificate(self, cert: Union[bytes, Certificate]) -> None:
@@ -272,23 +282,23 @@ class CertBlockV2(CertBlock):
         First call adds root certificate. Additional calls add chain certificates.
 
         :param cert: The certificate itself in DER format
-        :raise ValueError: if certificate cannot be added
+        :raises SPSDKError: If certificate cannot be added
         """
         if isinstance(cert, bytes):
             cert_obj = Certificate(cert)
         elif isinstance(cert, Certificate):
             cert_obj = cert
         else:
-            raise ValueError("Invalid parameter type (cert)")
+            raise SPSDKError("Invalid parameter type (cert)")
         if cert_obj.version != "v3":
-            raise ValueError("Expected certificate v3 but received: " + cert_obj.version)
+            raise SPSDKError("Expected certificate v3 but received: " + cert_obj.version)
         if self._cert:  # chain certificate?
             last_cert = self._cert[-1]  # verify that it is signed by parent key
             if not cert_obj.verify(last_cert.public_key_modulus, last_cert.public_key_exponent):
-                raise ValueError("Chain certificate cannot be verified using parent public key")
+                raise SPSDKError("Chain certificate cannot be verified using parent public key")
         else:  # root certificate
             if cert_obj.self_signed == "no":
-                raise ValueError("Root certificate must be self-signed")
+                raise SPSDKError("Root certificate must be self-signed")
         self._cert.append(cert_obj)
         self._header.cert_count += 1
         self._header.cert_table_length += cert_obj.raw_size + 4
@@ -340,16 +350,16 @@ class CertBlockV2(CertBlock):
         """Serialize Certificate Block V2 object."""
         # At least one certificate must be used
         if not self._cert:
-            raise ValueError("At least one certificate must be used")
+            raise SPSDKError("At least one certificate must be used")
         # The hast of root key certificate must be in RKHT
         if self.rkh_index is None:
-            raise ValueError("The HASH of used Root Key must be in RKHT")
+            raise SPSDKError("The HASH of used Root Key must be in RKHT")
         # CA: Using a single certificate is allowed. In this case, the sole certificate must be self-signed and must not
         # be a CA. If multiple certificates are used, the root must be self-signed and all but the last must be CAs.
         if self._cert[-1].ca:
-            raise ValueError("The last chain certificate must not be CA")
+            raise SPSDKError("The last chain certificate must not be CA")
         if not all(cert.ca for cert in self._cert[:-1]):
-            raise ValueError("All certificates except the last chain certificate must be CA")
+            raise SPSDKError("All certificates except the last chain certificate must be CA")
         # Export
         data = self.header.export()
         for cert in self._cert:
@@ -358,7 +368,8 @@ class CertBlockV2(CertBlock):
         for key in self._root_key_hashes:
             data += bytes(key)
         data = misc.align_block(data, self.alignment)
-        assert len(data) == self.raw_size
+        if len(data) != self.raw_size:
+            raise SPSDKError("Invalid length of data")
         return data
 
     @classmethod
@@ -446,12 +457,12 @@ class CertificateBlockHeader(BaseClass):
 
         :param data: Input data as bytes
         :param offset: The offset of input data (default: 0)
-        :raises ValueError: Raise when SIZE is bigger than length of the data without offset
-        :raises ValueError: Raise when magic is not equal MAGIC
+        :raises SPSDKError: Raised when SIZE is bigger than length of the data without offset
+        :raises SPSDKError: Raised when magic is not equal MAGIC
         :return: CertificateBlockHeader
         """
         if cls.SIZE > len(data) - offset:
-            raise ValueError("SIZE is bigger than length of the data without offset")
+            raise SPSDKError("SIZE is bigger than length of the data without offset")
         (
             magic,
             minor_format_version,
@@ -460,7 +471,7 @@ class CertificateBlockHeader(BaseClass):
         ) = unpack_from(cls.FORMAT, data, offset)
 
         if magic != cls.MAGIC:
-            raise ValueError("Magic is not same!")
+            raise SPSDKError("Magic is not same!")
 
         return cls(format_version=f"{major_format_version}.{minor_format_version}")
 
@@ -581,12 +592,12 @@ class IskCertificate(BaseClass):
         self.signature_offset = calcsize("<3L") + len(self.user_data)
         self.signature_offset += 2 * self.isk_cert.pointQ.size_in_bytes()
         self.expected_size = (
-            4
-            + 4
-            + 4
-            + 2 * self.coordinate_length
-            + len(self.user_data)
-            + 2 * self.coordinate_length
+            4  #  signature offset
+            + 4  # constraints
+            + 4  # flags
+            + 2 * self.isk_cert.pointQ.size_in_bytes()  # isk public key coordinates
+            + len(self.user_data)  # user data
+            + 2 * self.isk_private_key.pointQ.size_in_bytes()  # isk blob signature
         )
 
     def info(self) -> str:
@@ -614,7 +625,8 @@ class IskCertificate(BaseClass):
 
     def export(self) -> bytes:
         """Export ISK certificate as bytes array."""
-        assert self.signature, "Signature is not set."
+        if not self.signature:
+            raise SPSDKError("Signature is not set.")
         data = bytes()
         data += pack("<3L", self.signature_offset, self.constraints, self.flags)
         # data += pack("<2L", self.signature_offset)
@@ -661,8 +673,10 @@ class CertBlockV31(CertBlock):
         )
         self.isk_certificate = None
         if not ca_flag:
-            assert isk_private_key, "ISK private key is not set."
-            assert isk_cert, "ISK certificate is not set."
+            if not isk_private_key:
+                raise SPSDKError("ISK private key is not set.")
+            if not isk_cert:
+                raise SPSDKError("ISK certificate is not set.")
             self.isk_certificate = IskCertificate(
                 constraints=constraints,
                 isk_private_key=isk_private_key,

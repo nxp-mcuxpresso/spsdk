@@ -6,8 +6,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import yaml
-from voluptuous import Schema, Optional, Required, All, Any, ALLOW_EXTRA
-from spsdk.mboot import CommandTag, PropertyTag, PeripheryTag, ExtMemId, Version
+from voluptuous import ALLOW_EXTRA, All, Any, Optional, Required, Schema
+
+from spsdk.mboot import CommandTag, ExtMemId, PeripheryTag, PropertyTag, Version
 
 ########################################################################################################################
 # Validator schema for configuration file

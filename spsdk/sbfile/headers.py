@@ -8,16 +8,13 @@
 """Image header."""
 
 from datetime import datetime
-from struct import pack, unpack_from, calcsize
+from struct import calcsize, pack, unpack_from
 from typing import Optional
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.crypto.common import (
-    swap16,
-    unpack_timestamp,
-    pack_timestamp,
-    crypto_backend,
-)
+from spsdk.utils.crypto.common import crypto_backend, pack_timestamp, swap16, unpack_timestamp
+
 from .misc import BcdVersion3
 
 
@@ -106,17 +103,20 @@ class ImageHeaderV2(BaseClass):
 
         :param padding: header padding 8 bytes (for testing purposes); None to use random value
         :return: binary representation
-        :raise AttributeError: raised when format is incorrect
+        :raises SPSDKError: Raised when format is incorrect
+        :raises SPSDKError: Raised when length of padding is incorrect
+        :raises SPSDKError: Raised when length of header is incorrect
         """
         if not isinstance(self.nonce, bytes) or len(self.nonce) != 16:
-            raise AttributeError()
+            raise SPSDKError("Format is incorrect")
         major_version, minor_version = [int(v) for v in self.version.split(".")]
         product_version_words = [swap16(v) for v in self.product_version.nums]
         component_version_words = [swap16(v) for v in self.product_version.nums]
         if padding is None:
             padding = crypto_backend().random_bytes(8)
         else:
-            assert len(padding) == 8
+            if len(padding) != 8:
+                raise SPSDKError("Invalid length of padding")
 
         result = pack(
             self.FORMAT,
@@ -156,7 +156,8 @@ class ImageHeaderV2(BaseClass):
             # padding[4]
             padding[4:],
         )
-        assert len(result) == self.SIZE
+        if len(result) != self.SIZE:
+            raise SPSDKError("Invalid length of header")
         return result
 
     # pylint: disable=too-many-locals

@@ -8,12 +8,15 @@
 """Boot Image V2.0, V2.1."""
 
 from datetime import datetime
-from typing import Iterator, Optional, List
+from typing import Iterator, List, Optional
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto import CertBlockV2, Counter, crypto_backend
 from spsdk.utils.crypto.abstract import BaseClass
+from spsdk.utils.crypto.backend_internal import internal_backend
 from spsdk.utils.crypto.common import calc_cypher_block_count
 from spsdk.utils.misc import find_first
+
 from .commands import CmdHeader
 from .headers import ImageHeaderV2
 from .sections import BootSectionV2, CertSectionV2
@@ -47,6 +50,8 @@ class SBV2xAdvancedParams:
         :param mac: MAC key
         :param nonce: nonce
         :param timestamp: fixed timestamp for the header; use None to use current date/time
+        :raises SPSDKError: Invalid dek or mac
+        :raises SPSDKError: Invalid length of nonce
         """
         self._dek: bytes = dek if dek else crypto_backend().random_bytes(32)
         self._mac: bytes = mac if mac else crypto_backend().random_bytes(32)
@@ -54,8 +59,10 @@ class SBV2xAdvancedParams:
         if timestamp is None:
             timestamp = datetime.now()
         self._timestamp = datetime.fromtimestamp(int(timestamp.timestamp()))
-        assert len(self._dek) == 32 and len(self._mac) == 32
-        assert len(self._nonce) == 16
+        if len(self._dek) != 32 and len(self._mac) != 32:
+            raise SPSDKError("Invalid dek or mac")
+        if len(self._nonce) != 16:
+            raise SPSDKError("Invalid length of nonce")
 
     @property
     def dek(self) -> bytes:
@@ -111,6 +118,7 @@ class BootImageV20(BaseClass):
         :param build_number: The build number value (default: 0)
         :param advanced_params: Advanced parameters for encryption of the SB file, use for tests only
         :param sections: Boot sections
+        :raises SPSDKError: Invalid dek or mac
         """
         self._kek = kek
         # Set Flags value
@@ -120,7 +128,10 @@ class BootImageV20(BaseClass):
         # Set private attributes
         self._dek: bytes = advanced_params.dek
         self._mac: bytes = advanced_params.mac
-        assert len(self._dek) == self.HEADER_MAC_SIZE and len(self._mac) == self.HEADER_MAC_SIZE
+        if (
+            len(self._dek) != self.HEADER_MAC_SIZE and len(self._mac) != self.HEADER_MAC_SIZE
+        ):  # pragma: no cover # condition checked in SBV2xAdvancedParams constructor
+            raise SPSDKError("Invalid dek or mac")
         self._header = ImageHeaderV2(
             version="2.0",
             product_version=product_version,
@@ -195,9 +206,11 @@ class BootImageV20(BaseClass):
         """Setter.
 
         :param value: block to be assigned; None to remove previously assigned block
+        :raises SPSDKError: When certificate block is used when SB file is not signed
         """
         if value is not None:
-            assert self.signed, "Certificate block cannot be used unless SB file is signed"
+            if not self.signed:
+                raise SPSDKError("Certificate block cannot be used unless SB file is signed")
         self._cert_section = CertSectionV2(value) if value else None
 
     @property
@@ -217,7 +230,8 @@ class BootImageV20(BaseClass):
         if self.signed:
             size += self.DEK_MAC_SIZE
             cert_block = self.cert_block
-            assert cert_block
+            if not cert_block:
+                raise SPSDKError("Certification block not present")
             size += cert_block.raw_size
         # Boot Sections
         for boot_section in self._boot_sections:
@@ -231,7 +245,8 @@ class BootImageV20(BaseClass):
 
         if self.signed:
             cert_block = self.cert_block
-            assert cert_block
+            if not cert_block:  # pragma: no cover # already checked in raw_size_without_signature
+                raise SPSDKError("Certificate block not present")
             size += cert_block.signature_size
 
         return size
@@ -299,14 +314,14 @@ class BootImageV20(BaseClass):
         """Add new Boot section into image.
 
         :param section: Boot section
-        :raise TypeError: raised when section is not instance of BootSectionV2 class
-        :raise ValueError: raise when boot section has duplicate UID
+        :raises SPSDKError: Raised when section is not instance of BootSectionV2 class
+        :raises SPSDKError: Raised when boot section has duplicate UID
         """
         if not isinstance(section, BootSectionV2):
-            raise TypeError()
+            raise SPSDKError("Section is not instance of BootSectionV2 class")
         duplicate_uid = find_first(self._boot_sections, lambda bs: bs.uid == section.uid)
         if duplicate_uid is not None:
-            raise ValueError(f"Boot section with duplicate UID: {str(section.uid)}")
+            raise SPSDKError(f"Boot section with duplicate UID: {str(section.uid)}")
         self._boot_sections.append(section)
 
     def export(self, padding: Optional[bytes] = None) -> bytes:
@@ -314,14 +329,19 @@ class BootImageV20(BaseClass):
 
         :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
         :return: exported bytes
-        :raise ValueError: raised when there are no boot sections or is not signed or private keys are missing
+        :raises SPSDKError: Raised when there are no boot sections or is not signed or private keys are missing
+        :raises SPSDKError: Raised when there is invalid dek or mac
+        :raises SPSDKError: Raised when certificate data is not present
+        :raises SPSDKError: Raised when there is invalid certificate block
+        :raises SPSDKError: Raised when there is invalid length of exported data
         """
-        assert len(self.dek) == 32 and len(self.mac) == 32
+        if len(self.dek) != 32 or len(self.mac) != 32:
+            raise SPSDKError("Invalid dek or mac")
         # validate params
         if not self._boot_sections:
-            raise ValueError("No boot section")
+            raise SPSDKError("No boot section")
         if self.signed and (self._cert_section is None):
-            raise ValueError("Certificate section is required for signed images")
+            raise SPSDKError("Certificate section is required for signed images")
         # update internals
         self.update()
         # Add Image Header data
@@ -333,7 +353,8 @@ class BootImageV20(BaseClass):
         # Add Padding
         data += padding if padding else crypto_backend().random_bytes(8)
         # Add Certificates data
-        assert self._header.nonce
+        if not self._header.nonce:
+            raise SPSDKError("There is no nonce in the header")
         counter = Counter(self._header.nonce)
         counter.increment(calc_cypher_block_count(len(data)))
         if self._cert_section is not None:
@@ -347,13 +368,16 @@ class BootImageV20(BaseClass):
         if self.signed:
             private_key_pem_data = self.private_key_pem_data
             if private_key_pem_data is None:
-                raise ValueError("Private key not assigned, cannot sign the image")
+                raise SPSDKError("Private key not assigned, cannot sign the image")
             certificate_block = self.cert_block
-            assert (certificate_block is not None) and certificate_block.verify_private_key(
-                private_key_pem_data
-            )
+            if not (
+                (certificate_block is not None)
+                and certificate_block.verify_private_key(private_key_pem_data)
+            ):
+                raise SPSDKError("Invalid certificate block")
             data += crypto_backend().rsa_sign(private_key_pem_data, data)
-        assert len(data) == self.raw_size
+        if len(data) != self.raw_size:
+            raise SPSDKError("Invalid length of exported data")
         return data
 
     # pylint: disable=too-many-locals
@@ -368,8 +392,11 @@ class BootImageV20(BaseClass):
         :raise Exception: raised when header is in wrong format
         :raise Exception: raised when there is invalid header version
         :raise Exception: raised when signature is incorrect
+        :raises SPSDKError: Raised when kek is empty
+        :raises Exception: raised when header's nonce is not present
         """
-        assert kek, "kek cannot be empty"
+        if not kek:
+            raise SPSDKError("kek cannot be empty")
         index = offset
         header_raw_data = data[index : index + ImageHeaderV2.SIZE]
         index += ImageHeaderV2.SIZE
@@ -389,7 +416,8 @@ class BootImageV20(BaseClass):
             raise Exception(f"Invalid Header Version: {header.version} instead 2.0")
         image_size = header.image_blocks * 16
         # Initialize counter
-        assert header.nonce
+        if not header.nonce:
+            raise SPSDKError("Header's nonce not present")
         counter = Counter(header.nonce)
         counter.increment(calc_cypher_block_count(index - offset))
         # ...
@@ -432,6 +460,11 @@ class BootImageV21(BaseClass):
     # Image specific data
     HEADER_MAC_SIZE = 32
     KEY_BLOB_SIZE = 80
+    SHA_256_SIZE = 32
+
+    # defines
+    FLAGS_SHA_PRESENT_BIT = 0x8000  # image contains SHA-256
+    FLAGS_ENCRYPTED_SIGNED_BIT = 0x0008  # image is signed and encrypted
 
     def __init__(
         self,
@@ -441,6 +474,7 @@ class BootImageV21(BaseClass):
         component_version: str = "1.0.0",
         build_number: int = 0,
         advanced_params: SBV2xAdvancedParams = SBV2xAdvancedParams(),
+        flags: int = FLAGS_SHA_PRESENT_BIT | FLAGS_ENCRYPTED_SIGNED_BIT,
     ) -> None:
         """Initialize Secure Boot Image V2.1.
 
@@ -451,6 +485,7 @@ class BootImageV21(BaseClass):
         :param build_number: The build number value (default: 0)
 
         :param advanced_params: optional advanced parameters for encryption; it is recommended to use default value
+        :param flags: see flags defined in class.
         :param sections: Boot sections
         """
         self._kek = kek
@@ -464,7 +499,7 @@ class BootImageV21(BaseClass):
             product_version=product_version,
             component_version=component_version,
             build_number=build_number,
-            flags=0x08,
+            flags=flags,
             nonce=advanced_params.nonce,
             timestamp=advanced_params.timestamp,
         )
@@ -551,7 +586,8 @@ class BootImageV21(BaseClass):
         cert_blk = self.cert_block
         if cert_blk:
             size += cert_blk.raw_size
-            assert self.signed
+            if not self.signed:  # pragma: no cover # SB2.1 is always signed
+                raise SPSDKError("Certificate block is not signed")
             size += cert_blk.signature_size
         # Boot Sections
         for boot_section in self._boot_sections:
@@ -582,7 +618,8 @@ class BootImageV21(BaseClass):
             cert_blk = self.cert_block
             if cert_blk is not None:
                 data_size += cert_blk.raw_size
-                assert self.signed
+                if not self.signed:  # pragma: no cover # SB2.1 is always signed
+                    raise SPSDKError("Certificate block is not signed")
                 data_size += cert_blk.signature_size
             self._header.first_boot_tag_block = calc_cypher_block_count(data_size)
         # ...
@@ -621,10 +658,10 @@ class BootImageV21(BaseClass):
         """Add new Boot section into image.
 
         :param section: Boot section to be added
-        :raise TypeError: raised when section is not instance of BootSectionV2 class
+        :raises SPSDKError: Raised when section is not instance of BootSectionV2 class
         """
         if not isinstance(section, BootSectionV2):
-            raise TypeError()
+            raise SPSDKError("Section is not instance of BootSectionV2 class")
         self._boot_sections.append(section)
 
     # pylint: disable=too-many-locals
@@ -636,17 +673,20 @@ class BootImageV21(BaseClass):
         :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
         :param dbg_info: optional list, where debug info is exported in text form
         :return: exported bytes
-        :raise ValueError: raised when there is no boot section to be added
-        :raise ValueError: raise when certificate is not assigned
-        :raise ValueError: raise when private key is not assigned
+        :raises SPSDKError: Raised when there is no boot section to be added
+        :raises SPSDKError: Raised when certificate is not assigned
+        :raises SPSDKError: Raised when private key is not assigned
+        :raises SPSDKError: Raised when private header's nonce is invalid
+        :raises SPSDKError: Raised when private key does not match certificate
+        :raises SPSDKError: Raised when there is no debug info
         """
         # validate params
         if not self._boot_sections:
-            raise ValueError("At least one Boot Section must be added")
+            raise SPSDKError("At least one Boot Section must be added")
         if self.cert_block is None:
-            raise ValueError("Certificate is not assigned")
+            raise SPSDKError("Certificate is not assigned")
         if self.private_key_pem_data is None:
-            raise ValueError("Private key not assigned, cannot sign the image")
+            raise SPSDKError("Private key not assigned, cannot sign the image")
         # Update internals
         if dbg_info is not None:
             dbg_info.append("[sb_file]")
@@ -662,7 +702,11 @@ class BootImageV21(BaseClass):
             + self.cert_block.raw_size
             + self.cert_block.signature_size
         )
-        assert self._header.nonce
+        if self.header.flags & self.FLAGS_SHA_PRESENT_BIT:
+            bs_offset += self.SHA_256_SIZE
+
+        if not self._header.nonce:
+            raise SPSDKError("Invalid header's nonce")
         counter = Counter(self._header.nonce, calc_cypher_block_count(bs_offset))
         for sect in self._boot_sections:
             bs_data += sect.export(
@@ -693,16 +737,19 @@ class BootImageV21(BaseClass):
         if dbg_info:
             dbg_info.append("[cert_block]")
             dbg_info.append(self.cert_block.export().hex())
+        # Add SHA-256 of Bootable sections if requested
+        if self.header.flags & self.FLAGS_SHA_PRESENT_BIT:
+            signed_data += internal_backend.hash(bs_data)
         # Add Signature data
-        assert self.cert_block.verify_private_key(
-            self.private_key_pem_data
-        )  # verify private key matches certificate
+        if not self.cert_block.verify_private_key(self.private_key_pem_data):
+            raise SPSDKError("Private key does not match certificate")
         signature = crypto_backend().rsa_sign(self.private_key_pem_data, signed_data)
         if dbg_info:
             dbg_info.append("[signature]")
             dbg_info.append(signature.hex())
             dbg_info.append("[boot_sections]")
-            assert bs_dbg_info
+            if not bs_dbg_info:
+                raise SPSDKError("No debug information")
             dbg_info.extend(bs_dbg_info)
         return signed_data + signature + bs_data
 
@@ -720,12 +767,16 @@ class BootImageV21(BaseClass):
         :param data: Raw data of parsed image
         :param offset: The offset of input data
         :param kek: The Key for unwrapping DEK and MAC keys (required)
-        :param plain_sections: Sections are not encrypted; this is used only for debugging, not supported by ROM code
+        :param plain_sections: Sections are not encrypted; this is used only for debugging,
+            not supported by ROM code
         :return: BootImageV21 parsed object
-        :raise Exception: raised when header is in incorrect format
-        :raise Exception: raised when signature is incorrect
+        :raises Exception: raised when header is in incorrect format
+        :raises Exception: raised when signature is incorrect
+        :raises SPSDKError: Raised when kek is empty
+        :raises Exception: raised when header's nonce not present"
         """
-        assert kek, "kek cannot be empty"
+        if not kek:
+            raise SPSDKError("kek cannot be empty")
         index = offset
         header_raw_data = data[index : index + ImageHeaderV2.SIZE]
         index += ImageHeaderV2.SIZE
@@ -743,23 +794,51 @@ class BootImageV21(BaseClass):
         # Parse Certificate Block
         cert_block = CertBlockV2.parse(data, index)
         index += cert_block.raw_size
+
         # Verify Signature
-        if not cert_block.verify_data(
-            data[index : index + cert_block.signature_size], data[offset:index]
-        ):
+        signature_index = index
+        # The image may containt SHA, in such a case the signature is placed
+        # after SHA. Thus we must shift the index by SHA size.
+        if header.flags & BootImageV21.FLAGS_SHA_PRESENT_BIT:
+            signature_index += BootImageV21.SHA_256_SIZE
+        result = cert_block.verify_data(
+            data[signature_index : signature_index + cert_block.signature_size],
+            data[offset:signature_index],
+        )
+
+        if not result:
             raise Exception()
+        # Check flags, if 0x8000 bit is set, the SB file contains SHA-256 between
+        # certificate and signature.
+        if header.flags & BootImageV21.FLAGS_SHA_PRESENT_BIT:
+            bootable_section_sha256 = data[index : index + BootImageV21.SHA_256_SIZE]
+            index += BootImageV21.SHA_256_SIZE
         index += cert_block.signature_size
         # Check first Boot Section HMAC
         # TODO: not implemented yet
         # hmac_data_calc = crypto_backend().hmac(mac, data[index + CmdHeader.SIZE: index + CmdHeader.SIZE + ((2) * 32)])
         # if hmac_data != hmac_data_calc:
         #    raise Exception()
-        assert header.nonce
+        if not header.nonce:
+            raise SPSDKError("Header's nonce not present")
         counter = Counter(header.nonce)
         counter.increment(calc_cypher_block_count(index - offset))
         boot_section = BootSectionV2.parse(
             data, index, dek=dek, mac=mac, counter=counter, plain_sect=plain_sections
         )
+        if header.flags & BootImageV21.FLAGS_SHA_PRESENT_BIT:
+            computed_bootable_section_sha256 = internal_backend.hash(
+                data[index:], algorithm="sha256"
+            )
+
+            if bootable_section_sha256 != computed_bootable_section_sha256:
+                raise SPSDKError(
+                    desc=(
+                        "Error: invalid Bootable section SHA."
+                        f"Expected {bootable_section_sha256.decode('utf-8')},"
+                        f"got {computed_bootable_section_sha256.decode('utf-8')}"
+                    )
+                )
         adv_params = SBV2xAdvancedParams(
             dek=dek, mac=mac, nonce=header.nonce, timestamp=header.timestamp
         )

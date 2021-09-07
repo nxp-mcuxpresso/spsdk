@@ -24,3 +24,15 @@ class SPSDKError(Exception):
 
     def __str__(self) -> str:
         return self.fmt.format(description=self.description)
+
+
+class SPSDKValueError(SPSDKError, ValueError):
+    """SPSDK standard value error."""
+
+
+class SPSDKTypeError(SPSDKError, TypeError):
+    """SPSDK standard type error."""
+
+
+class SPSDKIOError(SPSDKError, IOError):
+    """SPSDK standard IO error."""

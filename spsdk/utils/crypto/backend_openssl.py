@@ -16,7 +16,7 @@ from typing import Any, Union
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac, keywrap, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding, ec, utils
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from spsdk import SPSDKError
@@ -55,11 +55,11 @@ class Backend(BackendClass):
 
         :param name: of the algorithm (class name), case insensitive
         :return: instance of algorithm class
-        :raise ValueError: if algorithm not found
+        :raises SPSDKError: If algorithm not found
         """
         algo_cls = getattr(hashes, name.upper(), None)  # hack: get class object by name
         if algo_cls is None:
-            raise ValueError(f"Unsupported algorithm: hashes.{name}".format(name=name.upper()))
+            raise SPSDKError(f"Unsupported algorithm: hashes.{name}".format(name=name.upper()))
 
         return algo_cls()  # pylint: disable=not-callable
 
@@ -69,7 +69,7 @@ class Backend(BackendClass):
         :param data: Input data in bytes
         :param algorithm: Algorithm type for HASH function
         :return: Hash-ed bytes
-        :raise ValueError: if algorithm not found
+        :raises SPSDKError: If algorithm not found
         """
         hash_obj = hashes.Hash(self._get_algorithm(algorithm), default_backend())
         hash_obj.update(data)
@@ -82,7 +82,7 @@ class Backend(BackendClass):
         :param data: Input data in bytes format
         :param algorithm: Algorithm type for HASH function (sha256, sha384, sha512, ...)
         :return: HMAC bytes
-        :raise ValueError: if algorithm not found
+        :raises SPSDKError: If algorithm not found
         """
         hmac_obj = hmac.HMAC(key, self._get_algorithm(algorithm), default_backend())
         hmac_obj.update(data)
@@ -142,7 +142,7 @@ class Backend(BackendClass):
         :param data: Input data
         :param algorithm: Used algorithm
         :return: Signed data
-        :raise ValueError: if algorithm not found
+        :raises SPSDKError: If algorithm not found
         """
         if isinstance(private_key, bytes):
             private_key = serialization.load_pem_private_key(private_key, None, default_backend())
@@ -169,7 +169,7 @@ class Backend(BackendClass):
         :param data: Input data
         :param algorithm: Used algorithm
         :return: True if signature is valid, False otherwise
-        :raise ValueError: if algorithm not found
+        :raises SPSDKError: If algorithm not found
         """
         public_key = rsa.RSAPublicNumbers(pub_key_exp, pub_key_mod).public_key(default_backend())
         assert isinstance(public_key, rsa.RSAPublicKey)

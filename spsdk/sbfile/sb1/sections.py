@@ -11,21 +11,22 @@ from typing import List, Sequence
 
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.misc import DebugInfo
-from .commands import parse_v1_command
-from .headers import BootSectionHeaderV1, SecureBootFlagsV1
-from ..commands import CmdBaseClass
+
 from ..commands import (
-    CmdNop,
+    CmdBaseClass,
+    CmdCall,
     CmdErase,
-    CmdLoad,
     CmdFill,
     CmdJump,
-    CmdCall,
-    CmdReset,
+    CmdLoad,
     CmdMemEnable,
+    CmdNop,
     CmdProg,
+    CmdReset,
 )
 from ..misc import SecBootBlckSize
+from .commands import parse_v1_command
+from .headers import BootSectionHeaderV1, SecureBootFlagsV1
 
 
 class BootSectionV1(BaseClass):

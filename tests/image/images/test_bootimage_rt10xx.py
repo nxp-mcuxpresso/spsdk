@@ -5,8 +5,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from re import L
+
 import pytest
 
+from spsdk import SPSDKError
 from spsdk.image import BootImgRT
 from spsdk.utils.misc import DebugInfo
 
@@ -26,7 +29,7 @@ def test_bootimage_rt10xx_basic():
 
 def test_bootimage_rt10xx_missing_ivt():
     # IVT header not found
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         BootImgRT.parse(b"00000000")
 
 
@@ -47,8 +50,39 @@ def test_bootimage_rt10xx_add_encrypted_image():
     assert len(img.dek_key) == 16
     # test invalid dek key length
     img = BootImgRT(0x20000000)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         img.add_image(test_app_data, address=0x20000000, dek_key=b"x")
     # test image already added
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         img.add_image(test_app_data, address=0x20000000, dek_key=b"0123456789123456")
+
+
+def test_invalid_image():
+    img = BootImgRT(address=0x60000000)
+    with pytest.raises(SPSDKError):
+        img.add_image(bytes([1]) * 1024, address=0x20000000, dek_key=b"")
+    with pytest.raises(SPSDKError):
+        img.add_image(bytes([0]) * 1024, address=0x20000000, dek_key=b"\x00\x00\x00")
+
+
+def test_invalid_export():
+    img = BootImgRT(address=0x60000000)
+    img.dek_key = b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    with pytest.raises(SPSDKError):
+        img.export()
+
+
+def test_invalid_parse():
+    with pytest.raises(SPSDKError):
+        BootImgRT.parse(stream=5)
+
+
+def test_bootimage_rt10xx_add_encrypted_image_invalid():
+    img = BootImgRT(0x20000000)
+    test_app_data = bytes(1024)
+    with pytest.raises(SPSDKError, match="Invalid image type"):
+        img.add_image(test_app_data, address=0x20000000, img_type=7)
+    with pytest.raises(
+        SPSDKError, match="entry_addr not detected from image, must be specified explicitly"
+    ):
+        img.add_image(test_app_data, address=-1)

@@ -6,17 +6,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Virtual Debug probes support used for product testing."""
 
-from json.decoder import JSONDecodeError
-import logging
 import json
-from typing import Dict, Any
+import logging
+from json.decoder import JSONDecodeError
+from typing import Any, Dict
 
 from spsdk.debuggers.debug_probe import (
     DebugProbe,
-    DebugProbeTransferError,
-    DebugProbeNotOpenError,
-    DebugProbeError,
-    DebugProbeMemoryInterfaceNotEnabled,
+    SPSDKDebugProbeError,
+    SPSDKDebugProbeMemoryInterfaceNotEnabled,
+    SPSDKDebugProbeNotOpenError,
+    SPSDKDebugProbeTransferError,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class DebugProbeVirtual(DebugProbe):
 
         if user_params is not None:
             if "exc" in user_params.keys():
-                raise DebugProbeError("Forced exception from constructor.")
+                raise SPSDKDebugProbeError("Forced exception from constructor.")
             if "subs_ap" in user_params.keys():
                 self.set_coresight_ap_substitute_data(
                     self._load_subs_from_param(user_params["subs_ap"])
@@ -84,7 +84,7 @@ class DebugProbeVirtual(DebugProbe):
             hardware id is listed.
         :param user_params: The user params dictionary
         :return: probe_description
-        :raises DebugProbeError: In case of invoked test Exception.
+        :raises SPSDKDebugProbeError: In case of invoked test Exception.
         """
         # pylint: disable=import-outside-toplevel
         from spsdk.debuggers.utils import DebugProbes, ProbeDescription
@@ -92,7 +92,7 @@ class DebugProbeVirtual(DebugProbe):
         probes = DebugProbes()
 
         if user_params is not None and "exc" in user_params.keys():
-            raise DebugProbeError("Forced exception from discovery function.")
+            raise SPSDKDebugProbeError("Forced exception from discovery function.")
 
         # Find this 'probe' just in case of direct request (user must know the hardware id :-) )
         if hardware_id == DebugProbeVirtual.UNIQUE_SERIAL:
@@ -140,7 +140,7 @@ class DebugProbeVirtual(DebugProbe):
         :param subs_values: The dictionary with substituted values.
         :param addr: Address of value.
         :return: Value by address.
-        :raises DebugProbeError: General virtual probe error.
+        :raises SPSDKDebugProbeError: General virtual probe error.
         """
         if subs_values and addr in subs_values.keys():
             if len(subs_values[addr]) > 0:
@@ -148,7 +148,7 @@ class DebugProbeVirtual(DebugProbe):
                 if isinstance(svalue, int):
                     return svalue
                 if isinstance(svalue, str) and svalue == "Exception":
-                    raise DebugProbeError("Simulated Debug probe exception")
+                    raise SPSDKDebugProbeError("Simulated Debug probe exception")
 
         return int(values[addr]) if addr in values.keys() else 0
 
@@ -158,10 +158,10 @@ class DebugProbeVirtual(DebugProbe):
         This is read debug mailbox register function for SPSDK library to support various DEBUG PROBES.
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeNotOpenError: The virtual probe is not open
+        :raises SPSDKDebugProbeNotOpenError: The virtual probe is not open
         """
         if not self.opened:
-            raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         # Add ap selection to 2 as a standard index of debug mailbox
         return self.coresight_reg_read(access_port=True, addr=addr | 2 << self.APSEL_SHIFT)
@@ -172,10 +172,10 @@ class DebugProbeVirtual(DebugProbe):
         This is write debug mailbox register function for SPSDK library to support various DEBUG PROBES.
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeNotOpenError: The virtual probe is not open
+        :raises SPSDKDebugProbeNotOpenError: The virtual probe is not open
         """
         if not self.opened:
-            raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         # Add ap selection to 2 as a standard index of debug mailbox
         self.coresight_reg_write(access_port=True, addr=addr | 2 << self.APSEL_SHIFT, data=data)
@@ -187,15 +187,15 @@ class DebugProbeVirtual(DebugProbe):
         to support various DEBUG PROBES.
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeNotOpenError: The Virtual probe is NOT opened
-        :raises DebugProbeMemoryInterfaceNotEnabled: The Virtual is using just CoreSight access.
-        :raises DebugProbeError: General virtual probe error.
+        :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
+        :raises SPSDKDebugProbeMemoryInterfaceNotEnabled: The Virtual is using just CoreSight access.
+        :raises SPSDKDebugProbeError: General virtual probe error.
         """
         if not self.opened:
-            raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         if not self.enabled_memory_interface:
-            raise DebugProbeMemoryInterfaceNotEnabled(
+            raise SPSDKDebugProbeMemoryInterfaceNotEnabled(
                 "Memory interface is not enabled over Virtual."
             )
 
@@ -208,14 +208,14 @@ class DebugProbeVirtual(DebugProbe):
         to support various DEBUG PROBES.
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeNotOpenError: The Virtual probe is NOT opened
-        :raises DebugProbeMemoryInterfaceNotEnabled: The Virtual is using just CoreSight access.
+        :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
+        :raises SPSDKDebugProbeMemoryInterfaceNotEnabled: The Virtual is using just CoreSight access.
         """
         if not self.opened:
-            raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         if not self.enabled_memory_interface:
-            raise DebugProbeMemoryInterfaceNotEnabled(
+            raise SPSDKDebugProbeMemoryInterfaceNotEnabled(
                 "Memory interface is not enabled over Virtual."
             )
 
@@ -228,12 +228,12 @@ class DebugProbeVirtual(DebugProbe):
         :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeTransferError: The IO operation failed
-        :raises DebugProbeNotOpenError: The Virtual probe is NOT opened
-        :raises DebugProbeError: General virtual probe error.
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
+        :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
+        :raises SPSDKDebugProbeError: General virtual probe error.
         """
         if not self.opened:
-            raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
         # As first try to solve AP requests
         if access_port:
             return self._get_requested_value(self.coresight_ap, self.coresight_ap_substituted, addr)
@@ -248,28 +248,28 @@ class DebugProbeVirtual(DebugProbe):
         :param access_port: if True, the Access Port (AP) register will be write(default), otherwise the Debug Port
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeTransferError: The IO operation failed
-        :raises DebugProbeNotOpenError: The Virtual probe is NOT opened
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
+        :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
         """
         if not self.opened:
-            raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         if access_port:
             self.coresight_ap[addr] = data
         else:
             if self.coresight_dp_write_exception:
                 self.coresight_dp_write_exception = False
-                raise DebugProbeTransferError(f"The Coresight write operation failed.")
+                raise SPSDKDebugProbeTransferError(f"The Coresight write operation failed.")
             self.coresight_dp[addr] = data
 
     def reset(self) -> None:
         """Reset a target.
 
         It resets a target.
-        :raises DebugProbeNotOpenError: The Virtual probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
         """
         if not self.opened:
-            raise DebugProbeNotOpenError("The Virtual debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         logger.debug("The Virtual probe did reset of virtual target.")
 
@@ -325,7 +325,7 @@ class DebugProbeVirtual(DebugProbe):
 
         :param arg: Input string arguments with substitute values.
         :return: List of values for the substituted values.
-        :raises DebugProbeError: The input string is not able do parse.
+        :raises SPSDKDebugProbeError: The input string is not able do parse.
         """
         try:
             subs_data_raw = json.loads(arg)
@@ -334,4 +334,4 @@ class DebugProbeVirtual(DebugProbe):
                 subs_data[int(key)] = subs_data_raw[key]
             return subs_data
         except (TypeError, JSONDecodeError) as exc:
-            raise DebugProbeError(f"Cannot parse substituted values: ({str(exc)})")
+            raise SPSDKDebugProbeError(f"Cannot parse substituted values: ({str(exc)})")

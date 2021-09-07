@@ -14,6 +14,7 @@ from typing import Dict, List
 
 import click
 
+from spsdk import SPSDKError
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import INT, catch_spsdk_error
 from spsdk.dat import (
@@ -24,9 +25,8 @@ from spsdk.dat import (
 )
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.debuggers.utils import DebugProbeUtils, test_ahb_access
-from spsdk.exceptions import SPSDKError
 
-logger = logging.getLogger("DebugMBox")
+logger = logging.getLogger(__name__)
 
 # pylint: disable=protected-access
 LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
@@ -38,13 +38,14 @@ def _open_debugmbox(pass_obj: Dict) -> DebugMailbox:
 
     :param pass_obj: Input dictionary with arguments.
     :return: Active DebugMailbox object.
-    :raise SPSDKError: Raised with any kind of problems with debug probe.
+    :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
     interface = pass_obj["interface"]
     serial_no = pass_obj["serial_no"]
     debug_probe_params = pass_obj["debug_probe_params"]
     timing = pass_obj["timing"]
     reset = pass_obj["reset"]
+    operation_timeout = pass_obj["operation_timeout"]
 
     debug_probes = DebugProbeUtils.get_connected_probes(
         interface=interface, hardware_id=serial_no, user_params=debug_probe_params
@@ -53,10 +54,12 @@ def _open_debugmbox(pass_obj: Dict) -> DebugMailbox:
     debug_probe = selected_probe.get_probe(debug_probe_params)
     debug_probe.open()
 
-    return DebugMailbox(debug_probe=debug_probe, reset=reset, moredelay=timing)
+    return DebugMailbox(
+        debug_probe=debug_probe, reset=reset, moredelay=timing, op_timeout=operation_timeout
+    )
 
 
-@click.group()
+@click.group(no_args_is_help=True)
 @click.option("-i", "--interface")
 @click.option(
     "-p",
@@ -73,7 +76,7 @@ def _open_debugmbox(pass_obj: Dict) -> DebugMailbox:
     "--debug",
     "log_level",
     metavar="LEVEL",
-    default="debug",
+    default="info",
     help=f"Set the level of system logging output. "
     f'Available options are: {", ".join(LOG_LEVEL_NAMES)}',
     type=click.Choice(LOG_LEVEL_NAMES),
@@ -87,6 +90,13 @@ def _open_debugmbox(pass_obj: Dict) -> DebugMailbox:
     multiple=True,
     help="This option could be used " "multiply to setup non-standard option for debug probe.",
 )
+@click.option(
+    "--operation-timeout",
+    type=int,
+    default=4000,
+    help="Special option to change the standard operation timeout used"
+    " for communication with debugmailbox. Default value is 4000ms.",
+)
 @click.version_option(spsdk_version, "-v", "--version")
 @click.help_option("--help")
 @click.pass_context
@@ -99,6 +109,7 @@ def main(
     serial_no: str,
     debug_probe_option: List[str],
     reset: bool,
+    operation_timeout: int,
 ) -> int:
     """NXP Debug Mailbox Tool."""
     logging.basicConfig(level=log_level.upper())
@@ -119,6 +130,7 @@ def main(
         "debug_probe_params": probe_user_params,
         "timing": timing,
         "reset": reset,
+        "operation_timeout": operation_timeout,
     }
 
     return 0
@@ -138,7 +150,8 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, force: bool) -
         with open(certificate, "rb") as f:
             debug_cred_data = f.read()
         debug_cred = DebugCredential.parse(debug_cred_data)
-        dac_data = dm_commands.DebugAuthenticationStart(dm=mail_box).run()
+        dac_rsp_len = 26 if debug_cred.HASH_LENGTH == 32 else 30
+        dac_data = dm_commands.DebugAuthenticationStart(dm=mail_box, resplen=dac_rsp_len).run()
         # convert List[int] to bytes
         dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
         dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
@@ -166,7 +179,9 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, force: bool) -
         mail_box.debug_probe.open()
         # Do test of access to AHB bus
         ahb_access_granted = test_ahb_access(mail_box.debug_probe)
-        logger.info(f"Debug Authentication ends {'successfully' if ahb_access_granted else 'without AHB access'}.")
+        logger.info(
+            f"Debug Authentication ends {'successfully' if ahb_access_granted else 'without AHB access'}."
+        )
     except Exception as e:
         logger.error(f"Start Debug Mailbox failed!\n{e}")
 

@@ -8,7 +8,7 @@
 
 import pytest
 
-from spsdk.image import CmdNop, CmdAuthData, EnumEngine, EnumAuthDat
+from spsdk.image import CmdAuthData, CmdNop, EnumAuthDat, EnumEngine
 
 
 def test_auth_data_cmd_basic():

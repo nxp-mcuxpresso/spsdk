@@ -15,7 +15,7 @@ from xml.dom import minidom
 from jinja2 import Environment, FileSystemLoader
 from ruamel.yaml.comments import CommentedMap as CM
 
-from spsdk import SPSDK_YML_INDENT, utils
+from spsdk import SPSDK_YML_INDENT, SPSDKError, utils
 from spsdk.utils.exceptions import (
     SPSDKRegsError,
     SPSDKRegsErrorBitfieldNotFound,
@@ -45,7 +45,7 @@ class RegsEnum:
         self.name = name or "N/A"
         try:
             self.value = value_to_bytes(value)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, SPSDKError):
             self.value = b""
         self.description = description or "N/A"
         self.max_width = max_width
@@ -60,13 +60,13 @@ class RegsEnum:
         :raises SPSDKRegsError: Error during enum XML parsing.
         """
         name = xml_element.attrib["name"] if "name" in xml_element.attrib else "N/A"
-        if not "value" in xml_element.attrib:
+        if "value" not in xml_element.attrib:
             raise SPSDKRegsError(f"Missing Enum Value Key for {name}.")
 
         raw_val = xml_element.attrib["value"]
         try:
             value = value_to_bytes(raw_val)
-        except (TypeError, ValueError) as exc:
+        except (TypeError, ValueError, SPSDKError) as exc:
             raise SPSDKRegsError(f"Invalid Enum Value: {raw_val}") from exc
 
         descr = xml_element.attrib["description"] if "description" in xml_element.attrib else "N/A"
@@ -221,11 +221,11 @@ class RegsBitField:
 
         :param new_val: New value of bitfield.
         :param raw: If set, no automatic modification of value is applied.
-        :raise ValueError: The input value is out of range.
+        :raises SPSDKError: The input value is out of range.
         """
         new_val_int = value_to_int(new_val)
         if new_val_int > 1 << self.width:
-            raise ValueError("The input value is out of bitfield range")
+            raise SPSDKError("The input value is out of bitfield range")
         reg_val = int.from_bytes(self.parent.get_value(), "big")
         mask = ((1 << self.width) - 1) << self.offset
         reg_val = reg_val & ~mask
@@ -540,10 +540,10 @@ class RegsRegister:
 
         :param val: The new value to set.
         :param raw: Do not use any modification hooks.
+        :raises SPSDKError: When invalid values is loaded into register
         """
         try:
             value = value_to_bytes(val)
-            # TODO check if this works with shorter arrays for example with ROTKH
             value = value.rjust(self.width // 8, b"\x00")
             if not raw and len(self._set_value_hooks) > 0:
                 for hook in self._set_value_hooks:
@@ -556,8 +556,9 @@ class RegsRegister:
                 for index, sub_reg in enumerate(self.sub_regs):
                     sub_reg.set_value(value[index * 4 : index * 4 + 4])
 
-        except TypeError:
+        except SPSDKError:
             logger.error(f"Loaded invalid value {str(val)}")
+            raise SPSDKError(f"Loaded invalid value {str(val)}")
 
     def reset_value(self, raw: bool = False) -> None:
         """Reset the value of register.
@@ -733,11 +734,11 @@ class Registers:
         """Adds register into register list.
 
         :param reg: Register to add to the class.
-        :raise TypeError: Invalid type has been provided.
+        :raises SPSDKError: Invalid type has been provided.
         :raise SPSDKRegsError: Cannot add register with same name
         """
         if not isinstance(reg, RegsRegister):
-            raise TypeError("The 'reg' has invalid type.")
+            raise SPSDKError("The 'reg' has invalid type.")
 
         if reg.name in self.get_reg_names():
             raise SPSDKRegsError(f"Cannot add register with same name: {reg.name}.")
@@ -748,10 +749,10 @@ class Registers:
         """Remove register from register list by its instance reference.
 
         :reg: Instance of register that should be removed.
-        :raise TypeError: Invalid type has been provided.
+        :raises SPSDKError: Invalid type has been provided.
         """
         if not isinstance(reg, RegsRegister):
-            raise TypeError("The 'reg' has invalid type.")
+            raise SPSDKError("The 'reg' has invalid type.")
 
         self._registers.remove(reg)
 

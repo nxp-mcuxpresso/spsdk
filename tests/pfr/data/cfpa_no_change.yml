@@ -1,0 +1,11 @@
+# NXP lpc55s3x PFR CFPA configuration
+description:  # The PFR CFPA configuration description.
+  device: lpc55s3x  # The NXP device name.
+  revision: 0a # The NXP device revision.
+  type: CFPA # The PFR type (CMPA, CFPA).
+  version: 1.3.5 # The SPSDK tool version.
+  author: NXP # The author of the configuration.
+  release: alpha # The SPSDK release.
+settings: # The PFR CFPA registers configuration.
+  HEADER:  # Header
+    value: '0x00000000'  # The value width: 32b

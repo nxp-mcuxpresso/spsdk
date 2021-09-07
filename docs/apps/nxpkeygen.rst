@@ -32,3 +32,7 @@ The "help" guide of *nxpkeygen* lists all of the options and sub-commands suppor
 .. click:: spsdk.apps.nxpkeygen:genkey
     :prog: nxpkeygen genkey
     :nested: full
+
+.. click:: spsdk.apps.nxpkeygen:get_cfg_template
+    :prog: nxpkeygen get-cfg-template
+    :nested: full

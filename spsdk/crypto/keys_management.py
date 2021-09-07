@@ -7,16 +7,33 @@
 """Module for key generation and saving keys to file (RSA and ECC)."""
 
 from spsdk.crypto import (
-    default_backend,
-    RSAPublicKey,
-    serialization,
-    rsa,
-    RSAPrivateKeyWithSerialization,
-    Encoding,
-    EllipticCurvePublicKey,
     EllipticCurvePrivateKeyWithSerialization,
+    EllipticCurvePublicKey,
+    Encoding,
+    RSAPrivateKeyWithSerialization,
+    RSAPublicKey,
+    default_backend,
     ec,
+    rsa,
+    serialization,
 )
+from spsdk.exceptions import SPSDKValueError
+
+
+def get_ec_curve_object(name: str) -> ec.EllipticCurve:
+    """Get the EC curve object by its name.
+
+    :param name: Name of EC curve.
+    :return: EC curve object.
+    :raises SPSDKValueError: Invalid EC curve name.
+    """
+    # pylint: disable=protected-access
+    for key_object in ec._CURVE_TYPES:  # type: ignore
+        if key_object.lower() == name.lower():
+            # pylint: disable=protected-access
+            return ec._CURVE_TYPES[key_object]()  # type: ignore
+
+    raise SPSDKValueError(f"The EC curve with name '{name}' is not supported.")
 
 
 def generate_rsa_private_key(
@@ -87,18 +104,14 @@ def save_rsa_public_key(
 
 
 def generate_ecc_private_key(
-    curve_name: str = "P-256",
+    curve_name: str = "secp256r1",
 ) -> EllipticCurvePrivateKeyWithSerialization:
     """Generate ECC private key.
 
-    :param curve_name: name of curve; currently supported: P-256, P-384, P-521
+    :param curve_name: name of curve
     :return: ECC private key
     """
-    curve_obj = {
-        "P-256": ec.SECP256R1(),
-        "P-384": ec.SECP384R1(),
-        "P-521": ec.SECP521R1(),
-    }[curve_name]
+    curve_obj = get_ec_curve_object(curve_name)
     return ec.generate_private_key(curve_obj, default_backend())  # type: ignore
 
 

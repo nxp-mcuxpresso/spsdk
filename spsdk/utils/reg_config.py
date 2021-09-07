@@ -11,6 +11,8 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
+from spsdk import SPSDKError
+
 logger = logging.getLogger(__name__)
 
 
@@ -164,9 +166,11 @@ class RegConfig:
 
         :param device: The device name, if not specified, the general value is used.
         :return: The seal start register name.
+        :raises SPSDKError: When seal start address has invalid name
         """
         val = self.get_value("seal_start", device)
-        assert val is None or isinstance(val, str)
+        if not (val is None or isinstance(val, str)):
+            raise SPSDKError("Invalid seal start address name")
         return val
 
     def get_seal_count(self, device: str = None) -> Optional[int]:
@@ -174,9 +178,11 @@ class RegConfig:
 
         :param device: The device name, if not specified, the general value is used.
         :return: The seal count.
+        :raises SPSDKError: When there is invalid seal count
         """
         val = self.get_value("seal_count", device)
-        assert val is None or isinstance(val, int)
+        if not (val is None or isinstance(val, int)):
+            raise SPSDKError("Invalid seal count")
         return val
 
     def get_value(self, key: str, device: str = None, default: Any = None) -> Any:

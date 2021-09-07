@@ -11,17 +11,14 @@ from datetime import datetime
 from struct import calcsize, pack, unpack_from
 from typing import Optional
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.crypto.common import (
-    swap16,
-    crypto_backend,
-    pack_timestamp,
-    unpack_timestamp,
-)
+from spsdk.utils.crypto.common import crypto_backend, pack_timestamp, swap16, unpack_timestamp
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo
+
 from ..commands import CmdHeader, CmdTag
-from ..misc import BcdVersion3Format, SecBootBlckSize, BcdVersion3
+from ..misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
 
 
 class SecureBootFlagsV1(Enum):
@@ -75,11 +72,13 @@ class SecureBootHeaderV1(BaseClass):
                     The first 16 bytes (of 20 total) also act as the initialization vector for CBC-encrypted regions.
         :param timestamp: datetime of the file creation, use None for current date/time
                     Fixed value should be used only for regression testing to generate same results
+        :raises SPSDKError: Invalid header version
         """
         # SHA-1 digest of all fields of the header prior to this one.
         self.digest = digest
         # Major version of the boot image format, currently 1. Minor version of the boot image format, currently 1 or 2.
-        assert version in ("1.0", "1.1", "1.2")
+        if version not in ("1.0", "1.1", "1.2"):
+            raise SPSDKError("Invalid header version")
         self.version = version
         self.flags = flags
         # Size of the entire image in blocks.
@@ -219,12 +218,12 @@ class SecureBootHeaderV1(BaseClass):
         :param data: given binary data to be decoded
         :param offset: to start parsing binary data; 0 by default
         :return: the instance of secure boot header v1
-        :raise ValueError: raised when there is insufficient size
-        :raise ValueError: raised when there is invalid signature
-        :raise ValueError: raised when there is unexpected signature
+        :raises SPSDKError: Raised when there is insufficient size
+        :raises SPSDKError: Raised when there is invalid signature
+        :raises SPSDKError: Raised when there is unexpected signature
         """
         if SecureBootHeaderV1._SIZE > len(data) - offset:
-            raise ValueError("Insufficient size")
+            raise SPSDKError("Insufficient size")
 
         (
             digest,
@@ -262,12 +261,12 @@ class SecureBootHeaderV1(BaseClass):
 
         # check header signature 1
         if signature1 != SecureBootHeaderV1._SIGNATURE1:
-            raise ValueError("Invalid signature")
+            raise SPSDKError("Invalid signature")
 
         # check header signature 2 for version 1.1 and greater
         if (major_version > 1) or ((major_version == 1) and (minor_version >= 2)):
             if signature2 != SecureBootHeaderV1._SIGNATURE2:
-                raise ValueError("Unexpected signature")
+                raise SPSDKError("Unexpected signature")
 
         product_version = BcdVersion3(swap16(pv0), swap16(pv1), swap16(pv2))
         component_version = BcdVersion3(swap16(cv0), swap16(cv1), swap16(cv2))
@@ -358,10 +357,10 @@ class SectionHeaderItemV1(BaseClass):
         :param data: to be parsed
         :param offset: to start parsing the data
         :return: the new instance
-        :raise ValueError: if size is not sufficient
+        :raises SPSDKError: If size is not sufficient
         """
         if cls.SIZE > len(data) - offset:
-            raise ValueError("Insufficient size")
+            raise SPSDKError("Insufficient size")
         (identifier, offset, length, flags) = unpack_from(cls.FORMAT, data, offset)
         return cls(identifier, offset, length, SecureBootFlagsV1.from_int(flags))
 

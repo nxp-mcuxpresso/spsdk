@@ -45,6 +45,9 @@ SPSDK applications are used for various functions and not all applications are v
     :align: center
     :scale: 50 %
 
+.. note:: Please note that elftosb features marked with light green are supported but not tested and should be used with caution.
+
+
 :ref:`blhost`
 =============
 
@@ -98,7 +101,7 @@ The *nxpcertgen* application allows the user to generate the self-signed x.509 c
 :ref:`nxpdebugmbox`
 ===================
 
-The *nxpkeygen* application allows user to:
+The *nxpdebugmbox* application allows user to:
 
 - perform the Debug Authentication
 - start/stop Debug Mailbox
@@ -108,6 +111,15 @@ The *nxpkeygen* application allows user to:
 .. code:: bash
 
     nxpdebugmbox --help
+
+:ref:`nxpdevhsm`
+=================
+
+The  *nxpdevhsm* application allows user to generate provisioned SB file.
+
+.. code:: bash
+
+    nxpdevhsm --help
 
 :ref:`nxpdevscan`
 =================
@@ -205,5 +217,3 @@ It allows user to:
 .. code:: bash
 
     shadowregs --help
-
-

@@ -7,6 +7,9 @@
 """ Tests for registers utility."""
 import os
 
+import pytest
+
+from spsdk import SPSDKError
 from spsdk.utils.reg_config import RegConfig
 
 
@@ -216,3 +219,11 @@ def test_reg_config_get_grouped_registers(data_dir):
     assert grouped_registers[0]["name"] == "DeviceTest"
     grouped_registers = reg_config.get_grouped_registers("test_device2")
     assert grouped_registers[0]["name"] == "Test"
+
+
+def test_reg_invalid(data_dir):
+    reg_config = RegConfig(os.path.join(data_dir, "reg_config_invalid.json"))
+    with pytest.raises(SPSDKError, match="Invalid seal start address name"):
+        reg_config.get_seal_start_address("test_device1")
+    with pytest.raises(SPSDKError, match="Invalid seal count"):
+        reg_config.get_seal_count("test_device1")

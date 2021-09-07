@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
-import pytest
+
 from spsdk.image import BootImg2
 
 

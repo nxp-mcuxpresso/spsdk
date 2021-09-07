@@ -6,26 +6,23 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Loading methods for keys/certificates/CSR."""
 
-from typing import Callable, Any, Union
+from typing import Any, Callable, Iterable, List, Optional
 
+from cryptography.hazmat._types import _PRIVATE_KEY_TYPES as PrivateKey
+from cryptography.hazmat._types import _PUBLIC_KEY_TYPES as PublicKey
+
+from spsdk import SPSDKError
 from spsdk.crypto import (
-    default_backend,
-    RSAPrivateKeyWithSerialization,
-    RSAPublicKey,
     Certificate,
-    load_pem_x509_certificate,
-    load_der_x509_certificate,
-    load_pem_public_key,
-    load_der_public_key,
-    load_pem_private_key,
-    load_der_private_key,
     Encoding,
-    EllipticCurvePrivateKeyWithSerialization,
-    EllipticCurvePublicKey,
+    default_backend,
+    load_der_private_key,
+    load_der_public_key,
+    load_der_x509_certificate,
+    load_pem_private_key,
+    load_pem_public_key,
+    load_pem_x509_certificate,
 )
-
-PrivateKey = Union[RSAPrivateKeyWithSerialization, EllipticCurvePrivateKeyWithSerialization]
-PublicKey = Union[RSAPublicKey, EllipticCurvePublicKey]
 
 
 def load_private_key(
@@ -82,7 +79,7 @@ def load_certificate(file_path: str, encoding: Encoding = None) -> Certificate:
 
     :param file_path: path to file, where certificate is stored
     :param encoding: type of encoding
-    :return: Certificate
+    :return: Certificate (from cryptography library)
     """
     real_encoding = encoding or _get_encoding_type(file_path)
 
@@ -98,6 +95,17 @@ def load_certificate(file_path: str, encoding: Encoding = None) -> Certificate:
         }[real_encoding](certificate_data, default_backend())
 
     return generic_load(file_path, solve)
+
+
+def load_certificate_as_bytes(file_path: str) -> bytes:
+    """Load certificate from file in PEM/DER format.
+
+    Converts the certificate into DER format and serializes it into bytes.
+
+    :param file_path: path to certificate file.
+    :return: certificate in der format serialized into bytes.
+    """
+    return load_certificate(file_path).public_bytes(encoding=Encoding.DER)
 
 
 def generic_load(file_path: str, inner_fun: Callable) -> Any:
@@ -129,3 +137,27 @@ def _get_encoding_type(file: str) -> Encoding:
     else:
         encoding = Encoding.PEM
     return encoding
+
+
+def extract_public_key(file_path: str, password: Optional[str]) -> PublicKey:
+    """Extract any kind of public key from a file that contains Certificate, Private Key or Public Key.
+
+    :raises SPSDKError: Raised when file can not be loaded
+    :return: private key of any type
+
+    """
+    cert_candidate = load_certificate(file_path)
+    if cert_candidate:
+        return cert_candidate.public_key()
+    private_candidate = load_private_key(file_path, password.encode() if password else None)
+    if private_candidate:
+        return private_candidate.public_key()
+    public_candidate = load_public_key(file_path)
+    if public_candidate:
+        return public_candidate
+    raise SPSDKError(f"Unable to load secret file '{file_path}'.")
+
+
+def extract_public_keys(secret_files: Iterable[str], password: Optional[str]) -> List[PublicKey]:
+    """Extract any kind of public key from files that contain Certificate, Private Key or Public Key."""
+    return [extract_public_key(file_path=source, password=password) for source in secret_files]

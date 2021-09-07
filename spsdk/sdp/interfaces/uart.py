@@ -18,7 +18,7 @@ from spsdk.sdp.exceptions import SdpConnectionError
 
 from .base import Interface
 
-logger = logging.getLogger("SDP:UART")
+logger = logging.getLogger(__name__)
 
 
 def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List[Interface]:

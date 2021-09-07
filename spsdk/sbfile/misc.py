@@ -9,6 +9,7 @@
 
 from typing import Any, Sequence, Union
 
+from spsdk import SPSDKError
 from spsdk.utils import misc
 
 
@@ -45,10 +46,10 @@ class SecBootBlckSize:
 
         :param size: to be converted, the size must be aligned to block boundary
         :return: corresponding number of cipher blocks
-        :raise ValueError: is size not aligned to block boundary
+        :raises SPSDKError: Raised when size is not aligned to block boundary
         """
         if not SecBootBlckSize.is_aligned(size):
-            raise ValueError(
+            raise SPSDKError(
                 f"Invalid size {size}, expected number aligned to BLOCK size {SecBootBlckSize.BLOCK_SIZE}"
             )
         return size // SecBootBlckSize.BLOCK_SIZE
@@ -79,13 +80,13 @@ class BcdVersion3:
 
         :param num: to be checked
         :return: True if number format is valid
-        :raise ValueError: if number format is not valid
+        :raises SPSDKError: If number format is not valid
         """
-        if not 0 <= num <= 0x9999:
-            raise ValueError("Invalid number range")
+        if num < 0 or num > 0x9999:
+            raise SPSDKError("Invalid number range")
         for index in range(4):
             if (num >> 4 * index) & 0xF > 0x9:
-                raise ValueError("Invalid number, contains digit > 9")
+                raise SPSDKError("Invalid number, contains digit > 9")
         return True
 
     @staticmethod
@@ -94,9 +95,10 @@ class BcdVersion3:
 
         :param text: given string to be converted to a version number
         :return: version number
-        :raise ValueError: if format is not valid
+        :raises SPSDKError: If format is not valid
         """
-        assert 0 <= len(text) <= 4
+        if len(text) < 0 or len(text) > 4:
+            raise SPSDKError("Invalid text length")
         result = int(text, 16)
         BcdVersion3._check_number(result)
         return result
@@ -107,10 +109,11 @@ class BcdVersion3:
 
         :param text: version in format #.#.#, where # is 1-4 decimal digits
         :return: BcdVersion3 instance
-        :raise: ValueError: if format is not valid
+        :raises SPSDKError: If format is not valid
         """
         parts = text.split(".")
-        assert len(parts) == 3
+        if len(parts) != 3:
+            raise SPSDKError("Invalid length")
         major = BcdVersion3._num_from_str(parts[0])
         minor = BcdVersion3._num_from_str(parts[1])
         service = BcdVersion3._num_from_str(parts[2])
@@ -121,14 +124,14 @@ class BcdVersion3:
         """Convert different input formats into BcdVersion3 instance.
 
         :param input_version: either directly BcdVersion3 or string
-        :raise ValueError: raises when the format is unsupported
+        :raises SPSDKError: Raises when the format is unsupported
         :return: BcdVersion3 instance
         """
         if isinstance(input_version, BcdVersion3):
             return input_version
         if isinstance(input_version, str):
             return BcdVersion3.from_str(input_version)
-        raise ValueError("unsupported format")
+        raise SPSDKError("unsupported format")
 
     def __init__(self, major: int = 1, minor: int = 0, service: int = 0):
         """Initialize BcdVersion3.
@@ -136,14 +139,16 @@ class BcdVersion3:
         :param major: number in BCD format, 1-4 decimal digits
         :param minor: number in BCD format, 1-4 decimal digits
         :param service: number in BCD format, 1-4 decimal digits
+        :raises SPSDKError: Invalid version
         """
-        assert all(
+        if not all(
             [
                 BcdVersion3._check_number(major),
                 BcdVersion3._check_number(minor),
                 BcdVersion3._check_number(service),
             ]
-        )
+        ):
+            raise SPSDKError("Invalid version")
         self.major = major
         self.minor = minor
         self.service = service

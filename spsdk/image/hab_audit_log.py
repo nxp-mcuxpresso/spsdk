@@ -10,11 +10,13 @@
 import os
 from enum import Enum as PyEnum
 from struct import unpack_from
-from typing import List, Type, Optional
+from typing import List, Optional, Type
 
+from spsdk import SPSDKError
 from spsdk.mboot import McuBoot, PropertyTag
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import load_binary
+
 from .commands import parse_command
 from .header import CmdTag
 
@@ -230,7 +232,7 @@ def get_hab_log_info(hab_log: Optional[bytes]) -> bool:
     return True
 
 
-def get_hab_enum_descr(enum_cls: Type[Enum], value: int) -> str:
+def get_hab_enum_description(enum_cls: Type[Enum], value: int) -> str:
     """Converts integer value into description of the enumeration value.
 
     If the value does not match any value from enumeration, it is reported as `Unknown value`
@@ -252,31 +254,31 @@ def parse_hab_log(hab_sts: int, hab_cfg: int, hab_state: int, data: bytes) -> Li
     :param hab_state: HAB state; this is result of the HAB function `report_status`
     :param data: HAB log data in binary format; result of the HAB function `report_event`
     :return: list of lines to be displayed, that describes the HAB status and content of the LOG
-    :raise ValueError: If a record has invalid data length
+    :raises SPSDKError: If a record has invalid data length
     """
     result = list()
     result.append("=" * 60)
-    result.append(f"HAB Status:  {get_hab_enum_descr(HabStatus, hab_sts)}")
-    result.append(f"HAB Config:  {get_hab_enum_descr(HabConfig, hab_cfg)}")
-    result.append(f"HAB State :  {get_hab_enum_descr(HabState, hab_state)}")
+    result.append(f"HAB Status:  {get_hab_enum_description(HabStatus, hab_sts)}")
+    result.append(f"HAB Config:  {get_hab_enum_description(HabConfig, hab_cfg)}")
+    result.append(f"HAB State :  {get_hab_enum_description(HabState, hab_state)}")
     offset = 0
     while offset + 8 <= len(data):
         result.append("=" * 60)
         # parse header
-        (cmd, leng, ver) = unpack_from(">BHB", data, offset)
-        if (cmd != 0xDB) or ((ver < 0x40) or (ver > 0x43)):
+        (cmd, length, version) = unpack_from(">BHB", data, offset)
+        if (cmd != 0xDB) or ((version < 0x40) or (version > 0x43)):
             break
-        if (leng < 8) or (leng > 1024):
-            raise ValueError("invalid log length")
+        if (length < 8) or (length > 1024):
+            raise SPSDKError("invalid log length")
         # parse data
         (sts, rsn, ctx, eng) = unpack_from("4B", data, offset + 4)
         # print results
-        result.append(f"Status:  {get_hab_enum_descr(HabStatus, sts)}")
-        result.append(f"Reason:  {get_hab_enum_descr(HabReason, rsn)}")
-        result.append(f"Context: {get_hab_enum_descr(HabContext, ctx)}")
-        result.append(f"Engine:  {get_hab_enum_descr(HabEngine, eng)}")
-        if leng > 8:
-            result.append(f"Data:    {data[offset + 8:offset + leng].hex().upper()}")
+        result.append(f"Status:  {get_hab_enum_description(HabStatus, sts)}")
+        result.append(f"Reason:  {get_hab_enum_description(HabReason, rsn)}")
+        result.append(f"Context: {get_hab_enum_description(HabContext, ctx)}")
+        result.append(f"Engine:  {get_hab_enum_description(HabEngine, eng)}")
+        if length > 8:
+            result.append(f"Data:    {data[offset + 8:offset + length].hex().upper()}")
             try:
                 cmd = parse_command(data, offset + 8)
                 result.append(f"Cmd :    {CmdTag.desc(cmd.tag)}")
@@ -284,7 +286,7 @@ def parse_hab_log(hab_sts: int, hab_cfg: int, hab_state: int, data: bytes) -> Li
             except ValueError:
                 pass
 
-        offset += leng
+        offset += length
     return result
 
 
@@ -299,12 +301,20 @@ def hab_audit_xip_app(cpu_data: CpuData, mboot: McuBoot, read_log_only: bool) ->
         It is recommended to call the function firstly with parameter `True` and second time with parameter False to
         see the difference.
     :return: bytes contains result of the hab log, otherwise returns None when an error occurred
+    :raises SPSDKError: When flashloader is not running
+    :raises SPSDKError: When given cpu data were not provided
+    :raises SPSDKError: When there is invalid address
+    :raises SPSDKError: When Log address is in conflict with reserved regions
+    :raises SPSDKError: When write memory failed
+    :raises SPSDKError: When call failed
     """
     # check if the flashloader is running (not None)
-    assert mboot, "Flashloader is not running"
+    if not mboot:
+        raise SPSDKError("Flashloader is not running")
 
     # get CPU data dir, hab_audit_base and hab_audit_start
-    assert cpu_data, "Can not read the log, because given cpu data were not provided."
+    if not cpu_data:
+        raise SPSDKError("Can not read the log, because given cpu data were not provided.")
     cpu_data_bin_dir = cpu_data.bin
     evk_exec_hab_audit_base = cpu_data.base_address
     evk_exec_hab_audit_start = cpu_data.start_address
@@ -325,17 +335,19 @@ def hab_audit_xip_app(cpu_data: CpuData, mboot: McuBoot, read_log_only: bool) ->
     log_addr = evk_exec_hab_audit_base + exec_hab_audit_code.find(
         b"\xA5\x5A\x11\x22\x33\x44\x55\x66"
     )
-    assert log_addr > evk_exec_hab_audit_base
+    if log_addr <= evk_exec_hab_audit_base:
+        raise SPSDKError("Invalid address")
     # check if the executable binary is in collision with reserved region
     reserved_regions = mboot.get_property(PropertyTag.RESERVED_REGIONS)
 
     # check conflict between hab log address and any of reserved regions
     # we need 2 values (min and max) - that is why %2 is used
-    assert check_reserved_regions(
-        log_addr, reserved_regions
-    ), f"Log address is in conflict with reserved regions"
-    assert mboot.write_memory(evk_exec_hab_audit_base, exec_hab_audit_code, 0)
-    assert mboot.call(evk_exec_hab_audit_start | 1, 0 if read_log_only else 1)
+    if not check_reserved_regions(log_addr, reserved_regions):
+        raise SPSDKError("Log address is in conflict with reserved regions")
+    if not mboot.write_memory(evk_exec_hab_audit_base, exec_hab_audit_code, 0):
+        raise SPSDKError("Write memory failed")
+    if not mboot.call(evk_exec_hab_audit_start | 1, 0 if read_log_only else 1):
+        raise SPSDKError("Call failed")
 
     log = mboot.read_memory(log_addr, 100, 0)
     return log

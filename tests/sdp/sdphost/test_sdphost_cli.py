@@ -7,16 +7,14 @@
 
 """Testing the SDPHost application."""
 
-import logging
+
 from unittest.mock import patch
 
-import click
 from click.testing import CliRunner
 
 import spsdk
 from spsdk.apps import sdphost
 from spsdk.utils.serial_proxy import SerialProxy
-
 
 data_responses = {
     b"\x05\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00": b"\x56\x78\x78\x56\xf0\xf0\xf0\xf0"

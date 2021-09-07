@@ -33,7 +33,6 @@
 # ============================================
 # ============================================
 
-
 # ============ SoC Class ============
 # A unique identifier for a set of SoCs that require no SoC-specific differentiation in
 # their debug authentication. The main usage is to allow a different set of debug
@@ -41,7 +40,8 @@
 # credentials. A class can contain just a single revision of a single SoC model, if the
 # granularity of debug control warrants it.
 # Examples list of possible settings:
-# 0x0001:       LPC550x, LPC55s0x, LPC551x, LPC55s1x, LPC552x, LPC55s2x, LPC55s3x, LPC55s6x
+# 0x0001:       LPC550x, LPC55s0x, LPC551x, LPC55s1x, LPC552x, LPC55s2x, LPC55s6x
+# 0x0004:       LPC55s3x
 
 socc: 0x0001
 
@@ -67,7 +67,7 @@ cc_vu: 0
 # credential beacon is associated with a DC and is therefore vendor/RoT-signed. An
 # authentication beacon is provided and signed by the debugger during the
 # authentication process.
-cred_beacon: 0
+cc_beacon: 0
 
 # ============ RoT meta-data ============
 # The RoT meta-data required by the device to corroborate; the ROTID sent in the
@@ -75,10 +75,10 @@ cred_beacon: 0
 # device. This allows different RoT identification, management and revocation
 # solutions to be handled.
 rot_meta:
- - ./rotk0.pub
- - ./rotk1.pub
- - ./rotk2.pub
- - ./rotk3.pub
+  - ./rotk0.pub
+  - ./rotk1.pub
+  - ./rotk2.pub
+  - ./rotk3.pub
 
 # ============ RoT Identifier ============
 # RoTID allows the debugger to infer which RoT public key(s) are acceptable to the
@@ -95,9 +95,9 @@ dck: dck.pub
 # ==================================================================================================
 #               Signature configuration area
 # ==================================================================================================
-# There are two ways how sign the final DC data blob. 
+# There are two ways how sign the final DC data blob.
 #
-# 1. In case that you is available private pair for rot_meta with index rot_id just use first simple style 
+# 1. In case that you is available private pair for rot_meta with index rot_id just use first simple style
 #    to use it by rotk key. As a second way to do same is use sign_provider option with 'type=file'.
 #
 # 2. For case that Debug Credential files are generated in untrusted environment (without access to RoT private keys),
@@ -107,14 +107,12 @@ dck: dck.pub
 #
 #    Those options are exclusive, so only one option could be used to sign the DC.
 
-
 # ============ Signature Provider ============
 # To use signing provider examples
-# 
+#
 # sign_provider: 'type=file;file_path=./hsm/k0_cert0_2048.pem'
 # sign_provider: : 'type=sasp;key_number=0'
 
 # ============ RoT signature private key ============
 # Private key for for the RoT meta chosen by rot_id to sign the image.
 rotk: rotk0.pem
-

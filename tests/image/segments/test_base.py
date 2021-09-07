@@ -8,8 +8,8 @@
 
 import pytest
 
-from spsdk.image import SegIVT3b
-from spsdk.image.segments import SegFCB, FlexSPIConfBlockFCB
+from spsdk import SPSDKError
+from spsdk.image.segments import BaseSegment
 
 
 def test_base_exceptions():
@@ -29,3 +29,9 @@ def test_base():
 
     base = BaseSegment()
     assert base.size == 0
+
+
+def test_base_invalid_padding_length():
+    base_seg = BaseSegment()
+    with pytest.raises(SPSDKError, match="Length of padding must be >= 0"):
+        base_seg.padding_len = -1

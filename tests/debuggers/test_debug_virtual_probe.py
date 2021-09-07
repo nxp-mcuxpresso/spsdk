@@ -8,10 +8,10 @@
 import pytest
 
 from spsdk.debuggers.debug_probe import (
-    DebugProbeError,
-    DebugProbeNotOpenError,
-    DebugProbeMemoryInterfaceNotEnabled,
-    DebugProbeTransferError,
+    SPSDKDebugProbeError,
+    SPSDKDebugProbeMemoryInterfaceNotEnabled,
+    SPSDKDebugProbeNotOpenError,
+    SPSDKDebugProbeTransferError,
 )
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
@@ -32,9 +32,9 @@ def test_virtualprobe_basic():
 def test_virtualprobe_dp():
     """Test of virtual Debug Probe - Debug port access."""
     virtual_probe = DebugProbeVirtual("ID", None)
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.coresight_reg_read(False, 0)
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.coresight_reg_write(False, 0, 0)
     virtual_probe.open()
 
@@ -48,7 +48,7 @@ def test_virtualprobe_dp():
     virtual_probe.set_coresight_dp_substitute_data({0: [2, 3, "Exception", "Invalid"]})
     assert virtual_probe.coresight_reg_read(False, 0) == 2
     assert virtual_probe.coresight_reg_read(False, 0) == 3
-    with pytest.raises(DebugProbeError):
+    with pytest.raises(SPSDKDebugProbeError):
         assert virtual_probe.coresight_reg_read(False, 0) == 3
 
     assert virtual_probe.coresight_reg_read(False, 0) == 1
@@ -56,17 +56,17 @@ def test_virtualprobe_dp():
 
     virtual_probe.dp_write_cause_exception()
 
-    with pytest.raises(DebugProbeTransferError):
+    with pytest.raises(SPSDKDebugProbeTransferError):
         virtual_probe.coresight_reg_write(False, 0, 0)
 
 
 def test_virtualprobe_ap():
     """Test of virtual Debug Probe - Access port control."""
     virtual_probe = DebugProbeVirtual("ID", None)
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.coresight_reg_read(True, 0)
 
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.coresight_reg_write(True, 0, 0)
 
     virtual_probe.open()
@@ -81,7 +81,7 @@ def test_virtualprobe_ap():
     virtual_probe.set_coresight_ap_substitute_data({0: [2, 3, "Exception", "Invalid"]})
     assert virtual_probe.coresight_reg_read(True, 0) == 2
     assert virtual_probe.coresight_reg_read(True, 0) == 3
-    with pytest.raises(DebugProbeError):
+    with pytest.raises(SPSDKDebugProbeError):
         assert virtual_probe.coresight_reg_read(True, 0) == 3
     assert virtual_probe.coresight_reg_read(True, 0) == 1
     assert virtual_probe.coresight_reg_read(True, 0) == 1
@@ -90,9 +90,9 @@ def test_virtualprobe_ap():
 def test_virtualprobe_debugmbox():
     """Test of virtual Debug Probe - Debug mailbox API."""
     virtual_probe = DebugProbeVirtual("ID", None)
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.dbgmlbx_reg_read(0)
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.dbgmlbx_reg_write(0, 0)
 
     virtual_probe.open()
@@ -113,16 +113,16 @@ def test_virtualprobe_debugmbox():
 def test_virtualprobe_memory():
     """Test of virtual Debug Probe - Memory access tests."""
     virtual_probe = DebugProbeVirtual("ID", None)
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.mem_reg_read(0)
 
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.mem_reg_write(0, 0)
 
     virtual_probe.open()
-    with pytest.raises(DebugProbeMemoryInterfaceNotEnabled):
+    with pytest.raises(SPSDKDebugProbeMemoryInterfaceNotEnabled):
         virtual_probe.mem_reg_read(0)
-    with pytest.raises(DebugProbeMemoryInterfaceNotEnabled):
+    with pytest.raises(SPSDKDebugProbeMemoryInterfaceNotEnabled):
         virtual_probe.mem_reg_write(0, 0)
 
     virtual_probe.enable_memory_interface()
@@ -137,7 +137,7 @@ def test_virtualprobe_memory():
     virtual_probe.set_virtual_memory_substitute_data({0: [2, 3, "Exception", "Invalid"]})
     assert virtual_probe.mem_reg_read(0) == 2
     assert virtual_probe.mem_reg_read(0) == 3
-    with pytest.raises(DebugProbeError):
+    with pytest.raises(SPSDKDebugProbeError):
         assert virtual_probe.mem_reg_read(0) == 3
     assert virtual_probe.mem_reg_read(0) == 1
     assert virtual_probe.mem_reg_read(0) == 1
@@ -146,7 +146,7 @@ def test_virtualprobe_memory():
 def test_virtualprobe_reset():
     """Test of virtual Debug Probe - Reset API."""
     virtual_probe = DebugProbeVirtual("ID", None)
-    with pytest.raises(DebugProbeNotOpenError):
+    with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.reset()
     virtual_probe.open()
     virtual_probe.reset()
@@ -154,7 +154,7 @@ def test_virtualprobe_reset():
 
 def test_virtualprobe_init():
     """Test of virtual Debug Probe - Initialization."""
-    with pytest.raises(DebugProbeError):
+    with pytest.raises(SPSDKDebugProbeError):
         virtual_probe = DebugProbeVirtual("ID", {"exc": None})
 
     virtual_probe = DebugProbeVirtual(
@@ -169,5 +169,5 @@ def test_virtualprobe_init():
 
 def test_virtualprobe_init_false():
     """Test of virtual Debug Probe - Invalid Initialization."""
-    with pytest.raises(DebugProbeError):
+    with pytest.raises(SPSDKDebugProbeError):
         DebugProbeVirtual("ID", {"subs_ap": '{"0":1,2]}'})

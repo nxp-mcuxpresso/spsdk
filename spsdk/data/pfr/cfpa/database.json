@@ -59,7 +59,8 @@
             "latest": "0a",
             "address": "0x3_DC00",
             "seal_start": "CFPA_CRC32",
-            "seal_count": 1
+            "seal_count": 1,
+            "mandatory_computed_regs": 1
         },
         "lpc553x": {
             "revisions": {
@@ -68,7 +69,8 @@
             "latest": "0a",
             "address": "0x3_DC00",
             "seal_start": "CFPA_CRC32",
-            "seal_count": 1
+            "seal_count": 1,
+            "mandatory_computed_regs": 1
         }
     },
     "computed_registers": [
@@ -92,6 +94,7 @@
     ],
     "seal_start": "SHA256_DIGEST0",
     "seal_count": 8,
+    "mandatory_computed_regs": 0,
     "backward_compatibility": {
         "DCFG_CC_SOCU_PIN": {
             "bitfields": {

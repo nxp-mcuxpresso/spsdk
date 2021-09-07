@@ -8,19 +8,13 @@
 import pytest
 
 from spsdk.mboot.commands import CommandTag
+from spsdk.mboot.exceptions import McuBootError
 from spsdk.mboot.properties import (
-    AvailableCommandsValue,
-    AvailablePeripheralsValue,
     BoolValue,
     DeviceUidValue,
     EnumValue,
-    ExternalMemoryAttributesValue,
-    FlashReadMargin,
     IntValue,
-    IrqNotifierPinValue,
-    PfrKeystoreUpdateOpt,
     PropertyTag,
-    ReservedRegionsValue,
     Version,
     VersionValue,
     parse_property_value,
@@ -44,7 +38,7 @@ def test_version_class():
     assert version != Version(0x00000102)
     assert str(version)
     assert repr(version)
-    with pytest.raises(TypeError):
+    with pytest.raises(McuBootError):
         _ = Version(0.5)
 
 

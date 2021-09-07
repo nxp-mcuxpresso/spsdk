@@ -11,12 +11,18 @@ from typing import Optional
 
 import pytest
 
-from spsdk.image import MasterBootImage, MasterBootImageType, MultipleImageTable, MultipleImageEntry
-from spsdk.image import TrustZone
+from spsdk import SPSDKError
+from spsdk.image import (
+    MasterBootImage,
+    MasterBootImageType,
+    MultipleImageEntry,
+    MultipleImageTable,
+    TrustZone,
+)
 from spsdk.image.keystore import KeySourceType, KeyStore
+from spsdk.image.mbimg import MasterBootImageN4Analog
 from spsdk.utils.crypto import CertBlockV2, Certificate
 from spsdk.utils.misc import load_binary
-
 
 #################################################################
 # To create data sets for Master Boot Image (MBI)
@@ -112,18 +118,21 @@ def test_invalid_master_boot_image_params(data_dir):
     with pytest.raises(TypeError):
         # noinspection PyTypeChecker
         MasterBootImage(app=5)
+    # The app MUST be bytes or bytearray
+    with pytest.raises(SPSDKError):
+        MasterBootImage(app=5, load_addr=0)
     # load_addr must not be negative
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(64)), load_addr=-1, image_type=MasterBootImageType.CRC_XIP_IMAGE
         )
 
     # certificate block is supported for signed images
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(64)), load_addr=0, image_type=MasterBootImageType.SIGNED_RAM_IMAGE
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(64)), load_addr=0, image_type=MasterBootImageType.SIGNED_XIP_IMAGE
         )
@@ -131,7 +140,7 @@ def test_invalid_master_boot_image_params(data_dir):
     # hmac_key must be provided for load-to-ram image
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
     priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(64)),
             load_addr=0,
@@ -139,7 +148,7 @@ def test_invalid_master_boot_image_params(data_dir):
             cert_block=cert_block,
             priv_key_pem_data=priv_key_pem_data,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(64)),
             load_addr=0,
@@ -148,7 +157,7 @@ def test_invalid_master_boot_image_params(data_dir):
             priv_key_pem_data=priv_key_pem_data,
             key_store=KeyStore(KeySourceType.OTP),
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(64)),
             load_addr=0,
@@ -158,7 +167,7 @@ def test_invalid_master_boot_image_params(data_dir):
             key_store=KeyStore(KeySourceType.KEYSTORE),
         )
     # hmac_key (or key_store) cannot be provided for XIP image
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(64)),
             load_addr=0,
@@ -167,7 +176,7 @@ def test_invalid_master_boot_image_params(data_dir):
             priv_key_pem_data=priv_key_pem_data,
             hmac_key=bytes(range(32)),
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(64)),
             load_addr=0,
@@ -178,7 +187,7 @@ def test_invalid_master_boot_image_params(data_dir):
         )
 
     # app_table can be specified only for RAM images
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         app_table = MultipleImageTable()
         MasterBootImage(
             app=bytes(range(64)),
@@ -187,7 +196,7 @@ def test_invalid_master_boot_image_params(data_dir):
             app_table=app_table,
         )
     # app_table is empty
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         app_table = MultipleImageTable()
         MasterBootImage(
             app=bytes(range(64)),
@@ -196,9 +205,87 @@ def test_invalid_master_boot_image_params(data_dir):
             app_table=app_table,
         )
 
+    # unsigned image have certification block
+    with pytest.raises(SPSDKError):
+        # create certification block
+        cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+        priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+        MasterBootImage(
+            app=bytes(range(64)),
+            load_addr=0,
+            image_type=MasterBootImageType.CRC_RAM_IMAGE,
+            cert_block=cert_block,
+            priv_key_pem_data=priv_key_pem_data,
+        )
+
+    # unsigned image have private key
+    with pytest.raises(SPSDKError):
+        # create certification block
+        priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+        mbi = MasterBootImage(
+            app=bytes(range(64)),
+            load_addr=0,
+            image_type=MasterBootImageType.CRC_RAM_IMAGE,
+        )
+        mbi._priv_key_pem_data = priv_key_pem_data
+        mbi._validate_new_instance()
+
+    # signed image without private key
+    with pytest.raises(SPSDKError):
+        # create certification block
+        cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+        MasterBootImage(
+            app=bytes(range(64)),
+            load_addr=0,
+            image_type=MasterBootImageType.SIGNED_XIP_IMAGE,
+            cert_block=cert_block,
+        )
+
+    # Invalid ctr_init_vector size
+    with pytest.raises(SPSDKError):
+        with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+            org_data = f.read()
+        user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
+        ctr_init_vector = bytes.fromhex("11")
+        # create certification block
+        cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+        priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+
+        mbi = MasterBootImage(
+            app=org_data,
+            image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+            load_addr=0x12345678,
+            trust_zone=TrustZone.disabled(),
+            cert_block=cert_block,
+            priv_key_pem_data=priv_key_pem_data,
+            hmac_key=user_key,
+            ctr_init_vector=ctr_init_vector,
+        )
+
     # error if image len is not enough
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(app=bytes(range(32)), load_addr=0).export()
+
+
+@pytest.mark.parametrize(
+    "fw_ver, expected_val",
+    [
+        (0, b"\x05\x00\x00\x00"),
+        (1, b"\x05\x04\x01\x00"),
+        (0x10, b"\x05\x04\x10\x00"),
+        (0xFF, b"\x05\x04\xff\x00"),
+    ],
+)
+def test_N4A_image_version(fw_ver, expected_val):
+    """Test of generating of various image versions into binary MBI"""
+    mbi = MasterBootImageN4Analog(
+        app=bytes(range(256)),
+        load_addr=0,
+        image_type=MasterBootImageType.CRC_XIP_IMAGE,
+        firmware_version=fw_ver,
+    )
+    data = mbi.export()[0x24:0x28]
+    assert data == expected_val
 
 
 def _compare_image(mbi: MasterBootImage, data_dir: str, expected_mbi_filename: str) -> bool:
@@ -499,14 +586,14 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
         "selfsign_3072_v3.der.crt",
         "selfsign_2048_v3.der.crt",
     ]
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         certificate_block(data_dir, der_file_names, 1)
 
     # public key in certificate and private key does not match
     der_file_names = ["selfsign_4096_v3.der.crt"]
     cert_block = certificate_block(data_dir, der_file_names, 0)
     priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         MasterBootImage(
             app=bytes(range(128)),
             load_addr=0,
@@ -519,7 +606,7 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
     # chain of certificates does not match
     der_file_names = ["selfsign_4096_v3.der.crt"]
     chain_certificates = ["ch3_crt2_v3.der.crt"]
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         certificate_block(data_dir, der_file_names, 0, chain_certificates)
 
 
@@ -688,7 +775,7 @@ def test_plain_xip_crc_custom_tz(data_dir, input_img, tz_config, family, expecte
 
 
 def test_base_info(data_dir):
-    """Basic test for MasterBootImage - information """
+    """Basic test for MasterBootImage - information"""
     # plain image
     mbi = MasterBootImage(app=bytes(range(64)), load_addr=0, enable_hw_user_mode_keys=True)
     output = mbi.info()
@@ -755,3 +842,213 @@ def test_multiple_images_with_relocation_table(data_dir):
     )
 
     assert _compare_image(mbi, os.path.join(data_dir, "multicore"), "expected_output.bin")
+
+
+def test_invalid_masterbootimage(data_dir):
+    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"], 0)
+    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    with pytest.raises(SPSDKError):
+        MasterBootImage(app=5, load_addr=0)
+    with pytest.raises(SPSDKError):
+        MasterBootImage(
+            app=bytes(5),
+            load_addr=0,
+            app_table=MultipleImageTable(),
+            image_type=MasterBootImageType.CRC_XIP_IMAGE,
+        )
+    with pytest.raises(SPSDKError):
+        MasterBootImage(
+            app=bytes(68),
+            load_addr=0,
+            image_type=MasterBootImageType.SIGNED_XIP_IMAGE,
+            cert_block=cert_block,
+        )
+    with pytest.raises(SPSDKError):
+        MasterBootImage(
+            app=bytes(68),
+            load_addr=0,
+            image_type=MasterBootImageType.CRC_RAM_IMAGE,
+            cert_block=cert_block,
+        )
+    with pytest.raises(SPSDKError):
+        MasterBootImage(
+            app=bytes(68),
+            load_addr=0,
+            image_type=MasterBootImageType.CRC_RAM_IMAGE,
+            priv_key_pem_data=priv_key_pem_data,
+            cert_block=cert_block,  # check it
+        )
+    with pytest.raises(SPSDKError):
+        MasterBootImage(
+            app=bytes(68),
+            load_addr=0,
+            image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+            priv_key_pem_data=priv_key_pem_data,
+            ctr_init_vector=b"\x00\x01",
+            cert_block=cert_block,
+        )
+
+
+def test_multiple_image_entry_table_invalid():
+    with pytest.raises(SPSDKError, match="Invalid destination address"):
+        MultipleImageEntry(img=bytes(), dst_addr=0xFFFFFFFFA)
+    with pytest.raises(SPSDKError):
+        MultipleImageEntry(img=bytes(), dst_addr=0xFFFFFFFF, flags=4)
+
+
+def test_multiple_image_table_invalid():
+    with pytest.raises(SPSDKError, match="There must be at least one entry for export"):
+        img_table = MultipleImageTable()
+        img_table._entries = None
+        img_table.export(start_addr=0xFFF)
+
+
+def test_master_boot_image_no_cert_block():
+    table = MultipleImageTable()
+    table.add_entry(MultipleImageEntry(bytes(64), 0x80000))
+    with pytest.raises(SPSDKError, match="Certification block is not present"):
+        MasterBootImage(
+            app=bytes(64),
+            app_table=table,
+            load_addr=0,
+            image_type=MasterBootImageType.CRC_RAM_IMAGE,
+            priv_key_pem_data=bytes(5),
+        )
+
+
+def test_master_boot_image_no_init_vector(data_dir):
+    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+        org_data = f.read()
+    user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
+    key_store = KeyStore(KeySourceType.KEYSTORE, None)
+    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    mbi = MasterBootImage(
+        app=org_data,
+        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+        load_addr=0x12345678,
+        trust_zone=TrustZone.disabled(),
+        cert_block=cert_block,
+        priv_key_pem_data=priv_key_pem_data,
+        hmac_key=user_key,
+        key_store=key_store,
+    )
+    mbi.ctr_init_vector = None
+    with pytest.raises(SPSDKError, match="Initial vector for encryption counter is not present"):
+        mbi.export()
+
+
+def test_master_boot_image_invalid_hmac(data_dir):
+    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+        org_data = f.read()
+    user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
+    key_store = KeyStore(KeySourceType.KEYSTORE, None)
+    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    mbi = MasterBootImage(
+        app=org_data,
+        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+        load_addr=0x12345678,
+        trust_zone=TrustZone.disabled(),
+        cert_block=cert_block,
+        priv_key_pem_data=priv_key_pem_data,
+        hmac_key=user_key,
+        key_store=key_store,
+    )
+    mbi.hmac_key = None
+    with pytest.raises(SPSDKError, match="Invalid hmac key"):
+        mbi._hmac(data=bytes(16))
+    mbi = MasterBootImage(
+        app=org_data,
+        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+        load_addr=0x12345678,
+        trust_zone=TrustZone.disabled(),
+        cert_block=cert_block,
+        priv_key_pem_data=priv_key_pem_data,
+        hmac_key=user_key,
+        key_store=key_store,
+    )
+    mbi._HMAC_DERIVED_KEY_LEN = 7
+    with pytest.raises(SPSDKError, match="Invalid length of key"):
+        mbi._hmac(data=bytes(16))
+    mbi._HMAC_DERIVED_KEY_LEN = 16
+    mbi.HMAC_SIZE = 44
+    with pytest.raises(SPSDKError, match="Invalid length of calculated hmac"):
+        mbi._hmac(data=bytes(16))
+    mbi.HMAC_SIZE = 32
+
+
+def test_master_boot_image_invalid_encrypt(data_dir):
+    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+        org_data = f.read()
+    user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
+    key_store = KeyStore(KeySourceType.KEYSTORE, None)
+    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    mbi = MasterBootImage(
+        app=org_data,
+        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+        load_addr=0x12345678,
+        trust_zone=TrustZone.disabled(),
+        cert_block=cert_block,
+        priv_key_pem_data=priv_key_pem_data,
+        hmac_key=user_key,
+        key_store=key_store,
+    )
+    mbi.key_store = None
+    with pytest.raises(SPSDKError, match="key_store must be specified for encrypted image"):
+        mbi._encrypt(data=bytes(16))
+    mbi = MasterBootImage(
+        app=org_data,
+        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+        load_addr=0x12345678,
+        trust_zone=TrustZone.disabled(),
+        cert_block=cert_block,
+        priv_key_pem_data=priv_key_pem_data,
+        hmac_key=user_key,
+        key_store=key_store,
+    )
+    mbi.hmac_key = bytes(5)
+    with pytest.raises(SPSDKError, match="Invalid hmac key"):
+        mbi._encrypt(data=bytes(16))
+    mbi = MasterBootImage(
+        app=org_data,
+        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+        load_addr=0x12345678,
+        trust_zone=TrustZone.disabled(),
+        cert_block=cert_block,
+        priv_key_pem_data=priv_key_pem_data,
+        hmac_key=user_key,
+        key_store=key_store,
+    )
+    mbi.ctr_init_vector = None
+    with pytest.raises(SPSDKError, match="Invalid initialization vector"):
+        mbi._encrypt(data=bytes(16))
+
+
+def test_invalid_export_mbi(data_dir):
+    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+        org_data = f.read()
+    user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
+    key_store_bin = None
+    key_store = KeyStore(KeySourceType.KEYSTORE, key_store_bin)
+    cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
+    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    mbi = MasterBootImage(
+        app=org_data,
+        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
+        load_addr=0x12345678,
+        trust_zone=TrustZone.disabled(),
+        cert_block=cert_block,
+        priv_key_pem_data=priv_key_pem_data,
+        hmac_key=user_key,
+        key_store=key_store,
+        ctr_init_vector=bytes(16),
+    )
+    mbi._priv_key_pem_data = None
+    with pytest.raises(SPSDKError, match="Private key not present"):
+        mbi.export()
+    mbi._priv_key_pem_data = priv_key_pem_data
+    mbi.cert_block = None
+    with pytest.raises(SPSDKError, match="Wrong private key"):
+        mbi.export()

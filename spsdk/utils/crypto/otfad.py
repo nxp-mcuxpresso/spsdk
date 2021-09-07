@@ -12,6 +12,8 @@ from typing import List, Optional, Union
 
 from Crypto.Cipher import AES
 
+from spsdk import SPSDKError
+
 from ..misc import align_block
 from . import Counter, crypto_backend
 
@@ -35,8 +37,11 @@ class KeyBlob:
     } keyblob_t;
     """
 
+    _START_ADDR_MASK = 0x400 - 1
     # Region addresses are modulo 1024
-    _ADDR_MASK = 0x400 - 1
+    # The address ends with RO, ADE, VLD bits. From this perspective, only
+    # bits [9:3] must be set to 1. The rest is configurable.
+    _END_ADDR_MASK = 0x3F8
 
     # Key flags mask: RO, ADE, VLD
     _KEY_FLAG_MASK = 0x07
@@ -85,23 +90,27 @@ class KeyBlob:
         :param counter_iv: optional counter init value for AES; None to use random value
         :param zero_fill: optional value for zero_fill (for testing only); None to use random value (recommended)
         :param crc: optional value for unused CRC fill (for testing only); None to use random value (recommended)
-        :raises ValueError: Start or end address are not aligned
+        :raises SPSDKError: Start or end address are not aligned
+        :raises SPSDKError: When there is invalid key
+        :raises SPSDKError: When there is invalid start/end address
+        :raises SPSDKError: When key_flags exceeds mask
         """
         if key is None:
             key = crypto_backend().random_bytes(self.KEY_SIZE)
         if counter_iv is None:
             counter_iv = crypto_backend().random_bytes(self.CTR_SIZE)
-        assert (len(key) == self.KEY_SIZE) and (len(counter_iv) == self.CTR_SIZE)
-        assert 0 <= start_addr < end_addr <= 0xFFFFFFFF
-        assert (
-            key_flags & ~self._KEY_FLAG_MASK == 0
-        ), f"key_flags exceeds mask {hex(self._KEY_FLAG_MASK)}"
-        if (start_addr & self._ADDR_MASK) != 0:
-            raise ValueError(
-                f"Start address must be aligned to {hex(self._ADDR_MASK + 1)} boundary"
+        if (len(key) != self.KEY_SIZE) and (len(counter_iv) != self.CTR_SIZE):
+            raise SPSDKError("Invalid key")
+        if start_addr < 0 or start_addr >= end_addr or end_addr > 0xFFFFFFFF:
+            raise SPSDKError("Invalid start/end address")
+        if key_flags & ~self._KEY_FLAG_MASK != 0:
+            raise SPSDKError(f"key_flags exceeds mask {hex(self._KEY_FLAG_MASK)}")
+        if (start_addr & self._START_ADDR_MASK) != 0:
+            raise SPSDKError(
+                f"Start address must be aligned to {hex(self._START_ADDR_MASK + 1)} boundary"
             )
-        if (end_addr & self._ADDR_MASK) != self._ADDR_MASK:
-            raise ValueError(f"End address must be aligned to {hex(self._ADDR_MASK)} boundary")
+        if (end_addr & self._END_ADDR_MASK) != self._END_ADDR_MASK:
+            raise SPSDKError(f"End address must be aligned to {hex(self._END_ADDR_MASK)} boundary")
         self.key = key
         self.ctr_init_vector = counter_iv
         self.start_addr = start_addr
@@ -123,6 +132,9 @@ class KeyBlob:
         """Plain data for selected key range.
 
         :return: key blob exported into binary form (serialization)
+        :raises SPSDKError: Invalid value of zero fill parameter
+        :raises SPSDKError: Invalid value crc
+        :raises SPSDKError: Invalid length binary data
         """
         result = bytes()
         result += self.key
@@ -132,19 +144,22 @@ class KeyBlob:
         result += pack("<I", end_addr_with_flags)
         # zero fill
         if self.zero_fill:
-            assert len(self.zero_fill) == 4
+            if len(self.zero_fill) != 4:
+                raise SPSDKError("Invalid value")
             result += self.zero_fill
         else:
             result += crypto_backend().random_bytes(4)
         # CRC is not used, use random value
         if self.crc_fill:
-            assert len(self.crc_fill) == 4
+            if len(self.crc_fill) != 4:
+                raise SPSDKError("Invalid value crc")
             result += self.crc_fill
         else:
             result += crypto_backend().random_bytes(4)
         result += bytes([0] * 8)  # expanded_wrap_data
         result += bytes([0] * 16)  # unused filler
-        assert len(result) == 64
+        if len(result) != 64:
+            raise SPSDKError("Invalid length binary data")
         return result
 
     # pylint: disable=invalid-name
@@ -154,15 +169,20 @@ class KeyBlob:
         :param kek: key to encode; 16 bytes long
         :param iv: counter initialization vector; 8 bytes; optional, OTFAD uses empty init value
         :return: Serialized key blob
-        :raise ValueError: if any parameter is not valid
+        :raises SPSDKError: If any parameter is not valid
+        :raises SPSDKError: If length of kek is not valid
+        :raises SPSDKError: If length of data is not valid
         """
         if isinstance(kek, str):
             kek = bytes.fromhex(kek)
-        assert len(kek) == 16
-        assert len(iv) == self._EXPORT_CTR_IV_SIZE
+        if len(kek) != 16:
+            raise SPSDKError("Invalid length of kek")
+        if len(iv) != self._EXPORT_CTR_IV_SIZE:
+            raise SPSDKError("Invalid length of initialization vector")
         n = self._EXPORT_NBLOCKS_5
         plaintext = self.plain_data()  # input data to be encrypted
-        assert len(plaintext) >= n * 8
+        if len(plaintext) < n * 8:
+            raise SPSDKError("Invalid length of data to be encrypted")
 
         # step 1: initialize the byte - sized data variables
         # set a = iv
@@ -199,13 +219,18 @@ class KeyBlob:
         )  # align to 64 bytes (0 padding)
 
     def _get_ctr_nonce(self) -> bytes:
-        """Get the counter initial value for image encryption."""
+        """Get the counter initial value for image encryption.
+
+        :return: counter bytes
+        :raises SPSDKError: If length of counter is not valid
+        """
         #  CTRn_x[127-0] = {CTR_W0_x[C0...C3],    // 32 bits of pre-programmed CTR
         #  CTR_W1_x[C4...C7],                     // another 32 bits of CTR
         #  CTR_W0_x[C0...C3] ^ CTR_W1_x[C4...C7], // exclusive-OR of CTR values
         #  systemAddress[31-4], 0000b             // 0-modulo-16 system address */
 
-        assert len(self.ctr_init_vector) == 8
+        if len(self.ctr_init_vector) != 8:
+            raise SPSDKError("Invalid length of counter init")
 
         result = bytearray(16)
         result[:4] = self.ctr_init_vector[:4]
@@ -242,15 +267,17 @@ class KeyBlob:
         :param byte_swap: this probably depends on the flash device, how bytes are organized there
                 True should be used for FLASH on EVK RT6xx; False for FLASH on EVK RT5xx
         :return: encrypted data
-        :raise ValueError: if start_addr or end_addr does not match with base_address (+ data length)
+        :raises SPSDKError: If start_addr or end_addr does not match with base_address (+ data length)
+        :raises SPSDKError: If start address is not valid
         """
-        assert base_address % 16 == 0  # Start address has to be 16 byte aligned
+        if base_address % 16 != 0:
+            raise SPSDKError("Invalid start address")  # Start address has to be 16 byte aligned
         data = align_block(data, self._IMAGE_ALIGNMENT)  # align data length
         data_len = len(data)
 
         # check start and end addresses
         if not self.matches_range(base_address, base_address + data_len - 1):
-            raise ValueError(
+            raise SPSDKError(
                 f"Image address range is not within key blob: {hex(self.start_addr)}-{hex(self.end_addr)}"
             )
 
@@ -279,7 +306,8 @@ class KeyBlob:
             # update counter for encryption
             counter.increment(16)
 
-        assert len(result) == data_len
+        if len(result) != data_len:
+            raise SPSDKError("Invalid length of encrypted data")
         return bytes(result)
 
 
@@ -308,14 +336,14 @@ class Otfad:
         :param byte_swap: this probably depends on the flash device, how bytes are organized there
                 True should be used for FLASH on EVK RT6xx; False for FLASH on EVK RT5xx
         :return: encrypted image
-        :raise ValueError: if address range does not match to any key blob
+        :raises SPSDKError: If address range does not match to any key blob
         """
         image_end = base_addr + len(image) - 1
         for key_blob in self._key_blobs:
             if key_blob.matches_range(base_addr, image_end):
                 return key_blob.encrypt_image(base_addr, image, byte_swap)
 
-        raise ValueError("The image address range does not match to key blob")
+        raise SPSDKError("The image address range does not match to key blob")
 
     def encrypt_key_blobs(self, kek: Union[bytes, str]) -> bytes:
         """Encrypt key blobs with specified key.

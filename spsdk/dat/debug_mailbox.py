@@ -10,8 +10,12 @@ import logging
 from time import sleep
 
 from munch import munchify
+
+from spsdk import SPSDKError
 from spsdk.debuggers.debug_probe import DebugProbe
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKIOError
+from spsdk.utils.exceptions import SPSDKTimeoutError
+from spsdk.utils.misc import Timeout
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +27,21 @@ class DebugMailboxError(RuntimeError):
 class DebugMailbox:
     """Class for DebugMailbox."""
 
-    def __init__(self, debug_probe: DebugProbe, reset: bool = True, moredelay: float = 1.0) -> None:
-        """Initialize DebugMailbox object."""
+    def __init__(
+        self,
+        debug_probe: DebugProbe,
+        reset: bool = True,
+        moredelay: float = 1.0,
+        op_timeout: int = 4000,
+    ) -> None:
+        """Initialize DebugMailbox object.
+
+        :param debug_probe: Debug probe instantion.
+        :param reset: Do reset of debug mailbox during initialization, defaults to True.
+        :param moredelay: Time of extra delay after reset sequence, defaults to 1.0.
+        :param op_timeout: Atomic operation timeout, defaults to 4000.
+        :raises SPSDKIOError: Various kind of vulnerabilities during connection to debug mailbox.
+        """
         # setup debug port / access point
 
         self.debug_probe = debug_probe
@@ -32,6 +49,8 @@ class DebugMailbox:
         self.moredelay = moredelay
         # setup registers and register bitfields
         self.registers = REGISTERS
+        # set internal operation timeout
+        self.op_timeout = op_timeout
 
         # Proceed with initiation (Resynchronization request)
 
@@ -67,31 +86,48 @@ class DebugMailbox:
         while ret is None or (ret & self.registers.CSW.bits.REQ_PENDING):
             try:
                 ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers.CSW.address)
-            except SPSDKError as e:
-                retries -= 1
-                if retries == 0:
-                    retries = 20
-                    raise IOError("TransferTimeoutError limit exceeded!")
-                sleep(0.05)
+            except SPSDKError:
+                pass
+            retries -= 1
+            if retries == 0:
+                raise SPSDKIOError("TransferTimeoutError limit exceeded!")
+            sleep(0.05)
 
     def close(self) -> None:
         """Close session."""
         self.debug_probe.close()
 
     def spin_read(self, reg: int) -> int:
-        """Read."""
+        """Do atomic read operation to debugmailbox.
+
+        :param reg: Register address.
+        :return: Read value.
+        :raises SPSDKTimeoutError: When read operation exceed defined operation timeout.
+        """
         ret = None
+        timeout = Timeout(self.op_timeout, units="ms")
         while ret is None:
             try:
                 ret = self.debug_probe.dbgmlbx_reg_read(addr=reg)
             except SPSDKError as e:
                 logger.error(str(e))
                 logger.error(f"read exception  {reg:#08X}")
+                if timeout.overflow():
+                    raise SPSDKTimeoutError(
+                        f"The Debug Mailbox read operation ends on timeout. ({str(e)})"
+                    ) from e
                 sleep(0.01)
+
         return ret
 
     def spin_write(self, reg: int, value: int) -> None:
-        """Write."""
+        """Do atomic write operation to debugmailbox.
+
+        :param reg: Register address.
+        :param value: Value to write.
+        :raises SPSDKTimeoutError: When write operation exceed defined operation timeout.
+        """
+        timeout = Timeout(self.op_timeout, units="ms")
         while True:
             try:
                 self.debug_probe.dbgmlbx_reg_write(addr=reg, data=value)
@@ -100,11 +136,17 @@ class DebugMailbox:
                     ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers.CSW.address)
                     if (ret & self.registers.CSW.bits.REQ_PENDING) == 0:
                         break
+                    if timeout.overflow():
+                        raise SPSDKTimeoutError("Mailbox command request pending timeout.")
 
                 return
             except SPSDKError as e:
                 logger.error(str(e))
                 logger.error(f"write exception addr={reg:#08X}, val={value:#08X}")
+                if timeout.overflow():
+                    raise SPSDKTimeoutError(
+                        f"The Debug Mailbox write operation ends on timeout. ({str(e)})"
+                    ) from e
                 sleep(0.01)
 
 
@@ -115,7 +157,7 @@ REGISTERS = munchify(
         "CSW": {
             "address": 0x00,
             "bits": {
-                # Debugger will set this bit to 1 to request a resynchronrisation
+                # Debugger will set this bit to 1 to request a resynchronization
                 "RESYNCH_REQ": (1 << 0),
                 # Request is pending from debugger (i.e unread value in REQUEST)
                 "REQ_PENDING": (1 << 1),

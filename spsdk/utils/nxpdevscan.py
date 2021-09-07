@@ -9,14 +9,14 @@
 
 
 import logging
-from spsdk.sdp.exceptions import SdpConnectionError
-from typing import Dict, Sequence, Type
+from typing import Sequence
 
-import hid
+import libusbsio
 from serial.tools.list_ports import comports
 
 from spsdk.mboot.interfaces.uart import scan_uart as mb_scan_uart
 from spsdk.sdp import SDP
+from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.interfaces.uart import Uart as SDP_Uart
 
 from .devicedescription import (
@@ -32,6 +32,8 @@ NXP_USB_DEVICE_VIDS = [
     0x15A2,
 ]
 
+logger = logging.getLogger(__name__)
+
 
 def search_nxp_usb_devices(extend_vid_list: list = None) -> Sequence[DeviceDescription]:
     """Searches all NXP USB devices based on their Vendor ID.
@@ -39,7 +41,8 @@ def search_nxp_usb_devices(extend_vid_list: list = None) -> Sequence[DeviceDescr
     :extend_vid_list: list of VIDs, to extend the default NXP VID list (int)
     :return: list of dicts corresponding to NXP devices
     """
-    all_usb_devices = hid.enumerate()
+    sio = libusbsio.usbsio()
+    all_usb_devices = sio.HIDAPI_Enumerate()
     nxp_usb_devices = []
 
     search_vids = NXP_USB_DEVICE_VIDS
@@ -49,13 +52,13 @@ def search_nxp_usb_devices(extend_vid_list: list = None) -> Sequence[DeviceDescr
 
     for usb_device in all_usb_devices:
         for nxp_vid in search_vids:
-            if nxp_vid == usb_device.get("vendor_id"):
+            if nxp_vid == usb_device["vendor_id"]:
                 # We found our device, let's create container for it
-                vid = usb_device.get("vendor_id")
-                pid = usb_device.get("product_id")
-                path = convert_usb_path(usb_device.get("path"))
-                product_string = usb_device.get("product_string")
-                manufacturer_string = usb_device.get("manufacturer_string")
+                vid = usb_device["vendor_id"]
+                pid = usb_device["product_id"]
+                path = convert_usb_path(usb_device["path"])
+                product_string = usb_device["product_string"]
+                manufacturer_string = usb_device["manufacturer_string"]
                 name = ", ".join(get_usb_device_name(vid, pid, None))
                 usb_dev = USBDeviceDescription(
                     vid, pid, path, product_string, manufacturer_string, name
@@ -96,8 +99,10 @@ def search_nxp_uart_devices() -> Sequence[DeviceDescription]:
                 uart_dev = UartDeviceDescription(name=port, dev_type="SDP device")
                 retval.append(uart_dev)
         except SdpConnectionError as e:
-            logging.debug(f"Exception {type(e).__name__} occurred while reading status via SDP. \
-Arguments: {e.args}")
+            logger.debug(
+                f"Exception {type(e).__name__} occurred while reading status via SDP. \
+Arguments: {e.args}"
+            )
             pass
 
     return retval

@@ -7,6 +7,7 @@
 
 import pytest
 
+from spsdk import SPSDKError
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, McuBootError
 from spsdk.mboot.mcuboot import (
@@ -17,6 +18,7 @@ from spsdk.mboot.mcuboot import (
     PropertyTag,
     StatusCode,
 )
+from tests.mcu_examples.test_rt5xx import write_shadow_regis
 
 
 def test_class(mcuboot, target, config):
@@ -82,8 +84,8 @@ def test_cmd_fill_memory(mcuboot, target):
 
 def test_cmd_flash_security_disable(mcuboot, target):
     assert mcuboot.flash_security_disable(b"12345678")
-    with pytest.raises(ValueError):
-        mcuboot.flash_security_disable(b"123456789")
+    with pytest.raises(McuBootError, match="Backdoor key must by 8 bytes long"):
+        mcuboot.flash_security_disable(backdoor_key=b"123456789")
 
 
 def test_cmd_get_property(mcuboot, target, config):
@@ -142,10 +144,10 @@ def test_cmd_reset_reopen(mcuboot, target):
 def test_cmd_reset_reopen_disabled(mcuboot, target):
     """Test reset command with reopen disabled"""
     mcuboot.reopen = False
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         mcuboot.reset(reopen=True)
     mcuboot.open()  # ensure device is again opened for communication
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         mcuboot.reset()
     mcuboot.open()  # ensure device is again opened for communication
 
@@ -175,9 +177,19 @@ def test_cmd_flash_read_once(mcuboot, target):
     # assert isinstance(value, bytes)
 
 
+def test_cmd_flash_read_once(mcuboot):
+    with pytest.raises(SPSDKError, match="Invalid count of bytes. Must be 4 or 8"):
+        mcuboot.flash_read_once(index=0, count=3)
+
+
 def test_cmd_flash_program_once(mcuboot, target):
     assert not mcuboot.flash_program_once(0, b"\x00\x00\x00\x00")
     assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND
+
+
+def test_cmd_flash_program_once_invalid_data(mcuboot):
+    with pytest.raises(SPSDKError, match="Invalid length of data. Must be aligned to 4 or 8 bytes"):
+        mcuboot.flash_program_once(index=0, data=bytes(9))
 
 
 def test_cmd_flash_read_resource(mcuboot, target):

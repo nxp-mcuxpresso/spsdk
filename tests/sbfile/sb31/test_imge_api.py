@@ -7,8 +7,8 @@
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
 from spsdk.sbfile.sb31 import commands
+from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
 
 
 def test_sb31_header_error():
@@ -50,3 +50,13 @@ def test_sb31_commands_add():
     assert len(sc.commands) == 1
     info = sc.info()
     assert "CALL: Address=" in info
+
+
+def test_sb31_commands_no_key_derivator():
+    sc = SecureBinary31Commands(
+        curve_name="secp256r1", is_encrypted=True, pck=bytes(16), timestamp=5, kdk_access_rights=3
+    )
+    sc.add_command(commands.CmdCall(0x100))
+    sc.key_derivator = None
+    with pytest.raises(SPSDKError, match="No key derivator"):
+        sc.export()

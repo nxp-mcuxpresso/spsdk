@@ -7,7 +7,8 @@
 
 import pytest
 
-from spsdk.image.header import Header, SegTag, Header2, CmdHeader
+from spsdk import SPSDKError
+from spsdk.image.header import CmdHeader, Header, Header2, SegTag
 
 
 def test_basic_header_without_length():
@@ -106,11 +107,11 @@ def test_comparision_header_without_length():
 
 def test_parse_invalid_command():
     # invalid required_tag: not CmdTag
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         CmdHeader.parse(b"", 0, required_tag=-1)
     # invalid zero length
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         CmdHeader.parse(b"\xFF\x00\x00\x00", 0, required_tag=None)
     # invalid tag: not CmdTag
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         CmdHeader.parse(b"\xFF\x04\x00\x00", 0, required_tag=None)

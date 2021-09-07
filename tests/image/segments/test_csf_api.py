@@ -7,7 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from spsdk.image import SegCSF, CmdWriteData, CmdCheckData, EnumWriteOps, EnumCheckOps
+
+from spsdk.image import CmdCheckData, CmdWriteData, EnumCheckOps, EnumWriteOps, SegCSF
 
 
 @pytest.fixture(scope="module")

@@ -44,3 +44,8 @@ class SuperAwesomeSP(SignatureProvider):
         signature = response.json()["signature"]
         data = base64.b64decode(signature)
         return data.zfill(256)
+
+    @property
+    def signature_length(self) -> int:
+        """Return length of the signature."""
+        return 256

@@ -6,6 +6,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+
+from spsdk import SPSDKError
 from spsdk.sbfile.misc import BcdVersion3, SecBootBlckSize
 
 
@@ -16,7 +18,7 @@ def test_size_sbfile1x():
     assert SecBootBlckSize.to_num_blocks(16) == 1
     assert SecBootBlckSize.to_num_blocks(16 * 15) == 15
     assert SecBootBlckSize.to_num_blocks(16 * 65537) == 65537
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         SecBootBlckSize.to_num_blocks(1)
     assert len(SecBootBlckSize.align_block_fill_random(b"1")) == 16
 
@@ -32,13 +34,13 @@ def test_bcd_version3():
     assert str(version) == "987.654.321"
     assert version.nums == [0x987, 0x654, 0x321]
     # invalid value
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         BcdVersion3(0x19999)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         BcdVersion3(0xF)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         BcdVersion3.to_version(0xF)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         BcdVersion3(0xF1, 0, 0)
     # conversion from string
     fs_version = BcdVersion3.from_str("987.654.321")
@@ -49,3 +51,10 @@ def test_bcd_version3():
     # conversion from BcdVersion3
     fs_version = BcdVersion3.to_version(fs_version)
     assert fs_version == version
+
+
+def test_bcd_invalid():
+    with pytest.raises(SPSDKError, match="Invalid length"):
+        BcdVersion3.from_str("")
+    with pytest.raises(SPSDKError, match="Invalid text length"):
+        BcdVersion3.from_str("bbbbbbbbb.vvvvvvvv.yyyyyyy")

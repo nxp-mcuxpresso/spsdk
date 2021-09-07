@@ -8,8 +8,13 @@
 import contextlib
 import os
 import re
-from typing import Callable, Iterable, Iterator, Optional, TypeVar, List, Union
+import time
 from math import ceil
+from typing import Callable, Iterable, Iterator, List, Optional, TypeVar, Union
+
+from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKValueError
+from spsdk.utils.exceptions import SPSDKTimeoutError
 
 # for generics
 T = TypeVar("T")  # pylint: disable=invalid-name
@@ -21,8 +26,10 @@ def align(number: int, alignment: int = 4) -> int:
     :param number: input to be aligned
     :param alignment: the boundary to align; typical value is power of 2
     :return: aligned number; result is always >= size (e.g. aligned up)
+    :raises SPSDKError: When there is wrong alignment
     """
-    assert alignment > 0 and number >= 0
+    if alignment <= 0 or number < 0:
+        raise SPSDKError("Wrong alignment")
     return (number + (alignment - 1)) // alignment * alignment
 
 
@@ -33,10 +40,14 @@ def align_block(data: bytes, alignment: int = 4, padding: int = 0) -> bytes:
     :param alignment: boundary alignment (typically 2, 4, 16, 64 or 256 boundary)
     :param padding: byte to be added, use -1 to fill with random data
     :return: aligned block
+    :raises SPSDKError: When there is wrong alignment
     """
     assert isinstance(data, bytes)
-    assert alignment > 0
-    assert -1 <= padding <= 255
+
+    if alignment < 0:
+        raise SPSDKError("Wrong alignment")
+    if padding < -1 or padding > 255:
+        raise SPSDKError("Wrong padding")
     current_size = len(data)
     num_padding = align(current_size, alignment) - current_size
     if not num_padding:
@@ -61,9 +72,11 @@ def extend_block(data: bytes, length: int, padding: int = 0) -> bytes:
     :param length: requested block length; the value must be >= current block length
     :param padding: 8-bit value value to be used as a padding
     :return: block extended with padding
+    :raises SPSDKError: When the length is incorrect
     """
     current_len = len(data)
-    assert length >= current_len
+    if length < current_len:
+        raise SPSDKError("Incorrect length")
     num_padding = length - current_len
     if not num_padding:
         return data
@@ -188,9 +201,11 @@ class DebugInfo:
         """Appends the line to the log.
 
         :param line: text to be added
+        :raises SPSDKError: When there is nothing to append
         """
         if self.enabled:
-            assert self._lines is not None
+            if self._lines is None:
+                raise SPSDKError("There is nothing to append")
             self._lines.append(line)
 
     def append_section(self, name: str) -> None:
@@ -222,8 +237,10 @@ class DebugInfo:
 
         :param data_name: the name
         :param data: binary data (up to 8 bytes)
+        :raises SPSDKError: When the data has incorrect length
         """
-        assert len(data) <= 16
+        if len(data) > 16:
+            raise SPSDKError("Incorrect data length")
         self.append(data_name + "=" + data.hex())
 
     @property
@@ -279,7 +296,7 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) 
     :param value: Input value.
     :param default: Default Value in case of invalid input.
     :return: Value in Integer.
-    :raise TypeError: Unsupported input type.
+    :raises SPSDKError: Unsupported input type.
     """
     if isinstance(value, int):
         return value
@@ -307,7 +324,7 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) 
 
     if default is not None:
         return default
-    raise TypeError(f"Invalid input number type({type(value)}) with value ({value})")
+    raise SPSDKError(f"Invalid input number type({type(value)}) with value ({value})")
 
 
 def value_to_bytes(value: Union[bytes, bytearray, int, str], align_to_2n: bool = True) -> bytes:
@@ -332,7 +349,7 @@ def value_to_bool(value: Union[bool, int, str]) -> bool:
 
     :param value: Input value.
     :return: Boolean value.
-    :raise TypeError: Unsupported input type.
+    :raises SPSDKError: Unsupported input type.
     """
     if isinstance(value, bool):
         return value
@@ -343,7 +360,7 @@ def value_to_bool(value: Union[bool, int, str]) -> bool:
     if isinstance(value, str):
         return value in ("True", "T", "1")
 
-    raise TypeError(f"Invalid input Boolean type({type(value)}) with value ({value})")
+    raise SPSDKError(f"Invalid input Boolean type({type(value)}) with value ({value})")
 
 
 def reverse_bytes_in_longs(arr: bytes) -> bytes:
@@ -351,11 +368,11 @@ def reverse_bytes_in_longs(arr: bytes) -> bytes:
 
     :param arr: Input array.
     :return: New array with reversed bytes.
-    :raises ValueError: Raises when invalid value is in input.
+    :raises SPSDKError: Raises when invalid value is in input.
     """
     arr_len = len(arr)
     if arr_len % 4 != 0:
-        raise ValueError("The input array is not in modulo 4!")
+        raise SPSDKError("The input array is not in modulo 4!")
 
     result = bytearray()
 
@@ -371,7 +388,7 @@ def change_endianism(bin_data: bytes) -> bytes:
 
     :param bin_data: input binary array.
     :return: Converted array (practically little to big endianism).
-    :raises ValueError: Invalid value on input.
+    :raises SPSDKError: Invalid value on input.
     """
     data = bytearray(bin_data)
     length = len(data)
@@ -384,6 +401,101 @@ def change_endianism(bin_data: bytes) -> bytes:
 
     # The length of 24 bits is not supported yet
     if length == 3:
-        raise ValueError("Unsupported length (3) for change endianism.")
+        raise SPSDKError("Unsupported length (3) for change endianism.")
 
     return reverse_bytes_in_longs(data)
+
+
+class Timeout:
+    """Simple timout handle class."""
+
+    UNITS = {
+        "s": 1000000,
+        "ms": 1000,
+        "us": 1,
+    }
+
+    def __init__(self, timeout: int, units: str = "s") -> None:
+        """Simple timeout class constructor.
+
+        :param timeout: Timeout value.
+        :param units: Timeout units (MUST be from the UNITS list)
+        :raises SPSDKValueError: Invalid input value.
+        """
+        if units not in self.UNITS:
+            raise SPSDKValueError("Units are not in supported units.")
+        self.enabled = timeout != 0
+        self.timeout_us = timeout * self.UNITS[units]
+        self.start_time_us = self._get_current_time_us()
+        self.end_time = self.start_time_us + self.timeout_us
+        self.units = units
+
+    @staticmethod
+    def _get_current_time_us() -> int:
+        """Returns current system time in microseconds.
+
+        :return: Current time in microseconds
+        """
+        return ceil(time.time() * 1_000_000)
+
+    def _convert_to_units(self, time_us: int) -> int:
+        """Converts time in us into used units.
+
+        :param time_us: Time in micro seconds.
+        :return: Time in user units.
+        """
+        return time_us // self.UNITS[self.units]
+
+    def get_consumed_time(self) -> int:
+        """Returns consumed time since start of timeouted operation.
+
+        :return: Consumed time in units as the class was constructed
+        """
+        return self._convert_to_units(self._get_current_time_us() - self.start_time_us)
+
+    def get_consumed_time_ms(self) -> int:
+        """Returns consumed time since start of timeouted operation in milliseconds.
+
+        :return: Consumed time in milliseconds
+        """
+        return (self._get_current_time_us() - self.start_time_us) // 1000
+
+    def get_rest_time(self, raise_exc: bool = False) -> int:
+        """Returns rest time to timeout overflow.
+
+        :param raise_exc: If set, the function raise SPSDKTimeoutError in case of overflow.
+        :return: Rest time in units as the class was constructed
+        :raises SPSDKTimeoutError: In case of overflow
+        """
+        if self.enabled and self._get_current_time_us() > self.end_time and raise_exc:
+            raise SPSDKTimeoutError("Timeout of operation.")
+
+        return (
+            self._convert_to_units(self.end_time - self._get_current_time_us())
+            if self.enabled
+            else 0
+        )
+
+    def get_rest_time_ms(self, raise_exc: bool = False) -> int:
+        """Returns rest time to timeout overflow.
+
+        :param raise_exc: If set, the function raise SPSDKTimeoutError in case of overflow.
+        :return: Rest time in milliseconds
+        :raises SPSDKTimeoutError: In case of overflow
+        """
+        if self.enabled and self._get_current_time_us() > self.end_time and raise_exc:
+            raise SPSDKTimeoutError("Timeout of operation.")
+
+        return ((self.end_time - self._get_current_time_us()) // 1000) if self.enabled else 0
+
+    def overflow(self, raise_exc: bool = False) -> bool:
+        """Check the the timer has been overflowed.
+
+        :param raise_exc: If set, the function raise SPSDKTimeoutError in case of overflow.
+        :return: True if timeout overflowed, False otherwise.
+        :raises SPSDKTimeoutError: In case of overflow
+        """
+        overflow = self.enabled and self._get_current_time_us() > self.end_time
+        if overflow and raise_exc:
+            raise SPSDKTimeoutError("Timeout of operation.")
+        return overflow

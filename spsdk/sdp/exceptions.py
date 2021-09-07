@@ -8,8 +8,9 @@
 
 """Exceptions used in the SDP module."""
 
+from spsdk import SPSDKError
+
 from .error_codes import StatusCode
-from ..exceptions import SPSDKError
 
 
 ########################################################################################################################

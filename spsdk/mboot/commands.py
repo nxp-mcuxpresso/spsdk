@@ -8,9 +8,10 @@
 
 """Commands and responses used by MBOOT module."""
 
-from struct import pack, unpack_from
+from struct import pack, unpack, unpack_from
 from typing import Any, Dict, Type
 
+from spsdk import SPSDKError
 from spsdk.utils.easy_enum import Enum
 
 from .error_codes import StatusCode
@@ -50,6 +51,7 @@ class CommandTag(Enum):
     GENERATE_KEY_BLOB = (0x13, "GenerateKeyBlob", "Generate Key Blob")
     FUSE_PROGRAM = (0x14, "ProgramFuse", "Program Fuse")
     KEY_PROVISIONING = (0x15, "KeyProvisioning", "Key Provisioning")
+    TRUST_PROVISIONING = (0x16, "TrustProvisioning", "Trust Provisioning")
     FUSE_READ = (0x17, "ReadFuse", "Read Fuse")
 
     # reserved commands
@@ -75,6 +77,11 @@ class ResponseTag(Enum):
         0xB5,
         "KeyProvisioningResponse",
         "Key Provisioning Response",
+    )
+    TRUST_PROVISIONING_RESPONSE = (
+        0xB6,
+        "TrustProvisioningResponse",
+        "Trust Provisioning Response",
     )
 
 
@@ -119,6 +126,45 @@ class GenerateKeyBlobSelect(Enum):
     OPTMK = (0, "OPTMK", "OTPMK from FUSE or OTP(default)")
     ZMK = (2, "ZMK", "ZMK from SNVS")
     CMK = (3, "CMK", "CMK from SNVS")
+
+
+class TrustProvOperation(Enum):
+    """Type of trust provisioning operation."""
+
+    OEM_GEN_MASTER_SHARE = (0, "OemGenMasterShare", "Enroll Operation")
+    OEM_SET_MASTER_SHARE = (1, "SetUserKey", "Set User Key Operation")
+    OEM_GET_CUST_CERT_DICE_PUK = (2, "SetIntrinsicKey", "Set Intrinsic Key Operation")
+    HSM_GEN_KEY = (3, "HsmGenKey", "HSM gen key")
+    HSM_STORE_KEY = (4, "HsmStoreKey", "HSM store key")
+    HSM_ENC_BLOCK = (5, "HsmEncBlock", "HSM Enc block")
+    HSM_ENC_SIGN = (6, "HsnEncSign", "HSM enc sign")
+
+
+class TrustProvOemKeyType(Enum):
+    """Type of oem key type definition."""
+
+    MFWISK = (0xC3A5, "MFWISK", "ECDSA Manufactoring Firmware Signing Key")
+    MFWENCK = (0xA5C3, "MFWENCK", "CKDF Master Key for Manufactoring Firmware Encryption Key")
+    GENSIGNK = (0x5A3C, "GENSIGNK", "Generic ECDSA Signing Key")
+    GETCUSTMKSK = (0x3C5A, "GETCUSTMKSK", "CKDF Master Key for Production Firmware Encryption Key")
+
+
+class TrustProvKeyType(Enum):
+    """Type of key type definition."""
+
+    CKDFK = (1, "CKDFK", "CKDF Master Key")
+    HKDFK = (2, "HKDFK", "HKDF Master Key")
+    HMACK = (3, "HMACK", "HMAC Key")
+    CMACK = (4, "CMACK", "CMAC Key")
+    AESK = (5, "AESK", "AES Key")
+    KUOK = (6, "KUOK", "Key Unwrap Only Key")
+
+
+class TrustProvWrappingKeyType(Enum):
+    """Type of wrapping key type definition."""
+
+    INT_SK = (0x10, "INT_SK", "The wrapping key for wrapping of MFG_CUST_MK_SK0_BLOB")
+    EXT_SK = (0x11, "EXT_SK", "The wrapping key for wrapping of MFG_CUST_MK_SK0_BLOB")
 
 
 ########################################################################################################################
@@ -190,7 +236,6 @@ class CmdPacket:
         :param args: Arguments used by the command
         :param data: Additional data, defaults to None
         """
-        assert len(args) < 8
         self.header = CmdHeader(tag, flags, 0, len(args))
         self.params = list(args)
         if data is not None:
@@ -383,6 +428,26 @@ class KeyProvisioningResponse(CmdResponse):
         return f"Tag={tag}, Status={status}, Length={self.length}"
 
 
+class TrustProvisioningResponse(CmdResponse):
+    """McuBoot Trust Provisioning response format class."""
+
+    def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
+        """Initialize the Trust-Provisioning response object.
+
+        :param header: Header for the response
+        :param raw_data: Response data
+        """
+        super().__init__(header, raw_data)
+        self.status, *values = unpack(f"<{self.header.params_count}I", raw_data)
+        self.values = list(values)
+
+    def info(self) -> str:
+        """Get object info."""
+        tag = ResponseTag.name(self.header.tag)
+        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        return f"Tag={tag}, Status={status}"
+
+
 class NoResponse(CmdResponse):
     """Special internal case when no response is provided by the target."""
 
@@ -411,6 +476,7 @@ def parse_cmd_response(data: bytes, offset: int = 0) -> CmdResponse:
         ResponseTag.FLASH_READ_ONCE: FlashReadOnceResponse,
         ResponseTag.KEY_BLOB_RESPONSE: ReadMemoryResponse,  # not sure what format is returned, this work on RT1050
         ResponseTag.KEY_PROVISIONING_RESPONSE: KeyProvisioningResponse,
+        ResponseTag.TRUST_PROVISIONING_RESPONSE: TrustProvisioningResponse,
     }
     header = CmdHeader.from_bytes(data, offset)
     if header.tag in known_response:

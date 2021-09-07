@@ -11,11 +11,11 @@ from struct import pack, unpack_from
 from typing import Any, Union
 
 # Used security modules
-from Crypto import Random, Hash
+from Crypto import Hash, Random
 from Crypto.Cipher import AES
-from Crypto.Hash import HMAC, CMAC
-from Crypto.PublicKey import RSA, ECC
-from Crypto.Signature import pkcs1_15, DSS
+from Crypto.Hash import CMAC, HMAC
+from Crypto.PublicKey import ECC, RSA
+from Crypto.Signature import DSS, pkcs1_15
 
 from spsdk import SPSDKError
 
@@ -54,12 +54,15 @@ class Backend(BackendClass):
         :param name: Name of the algorithm (class name), case insensitive
         :param data: parameter for the constructor of the algorithm class
         :return: instance of algorithm class
-        :raise ValueError: if the algorithm is not found
+        :raises SPSDKError: If the algorithm is not found
         """
         # algo_cls = getattr(Hash, name.upper(), None)  # hack: get class object by name
-        algo_cls = importlib.import_module(f"Crypto.Hash.{name.upper()}")
+        try:
+            algo_cls = importlib.import_module(f"Crypto.Hash.{name.upper()}")
+        except ModuleNotFoundError as e:
+            raise SPSDKError(f"No module named 'Crypto.Hash.{name.upper()}")
         if algo_cls is None:
-            raise ValueError(f"Unsupported algorithm: Hash.{name}".format(name=name.upper()))
+            raise SPSDKError(f"Unsupported algorithm: Hash.{name}".format(name=name.upper()))
         return algo_cls.new(data)  # type: ignore  # pylint: disable=not-callable
 
     def cmac(self, data: bytes, key: bytes) -> bytes:  # pylint: disable=no-self-use
@@ -79,7 +82,7 @@ class Backend(BackendClass):
         :param data: Input data in bytes
         :param algorithm: Algorithm type for HASH function
         :return: Hash-ed bytes
-        :raise ValueError: if the algorithm is not found
+        :raises SPSDKError: If the algorithm is not found
         """
         return self._get_algorithm(algorithm, data).digest()
 
@@ -90,11 +93,11 @@ class Backend(BackendClass):
         :param data: Input data in bytes format
         :param algorithm: Algorithm type for HASH function (sha256, sha384, sha512, ...)
         :return: HMAC bytes
-        :raise ValueError: if the algorithm is not found
+        :raises SPSDKError: If the algorithm is not found
         """
         cls = getattr(Hash, algorithm.upper(), None)
         if cls is None:
-            raise ValueError()
+            raise SPSDKError("The algorithm is not found")
         hmac_obj = HMAC.new(key, data, cls)
         return hmac_obj.digest()
 
@@ -105,14 +108,14 @@ class Backend(BackendClass):
         :param kek: The key-encrypting key
         :param key_to_wrap: Plain data
         :return: Wrapped key
-        :raise ValueError: Invalid length of kek or key_to_wrap
+        :raises SPSDKError: Invalid length of kek or key_to_wrap
         """
         if len(kek) not in (16, 24, 32):
-            raise ValueError("The wrapping key must be a valid AES key length")
+            raise SPSDKError("The wrapping key must be a valid AES key length")
         if len(key_to_wrap) < 16:
-            raise ValueError("The key to wrap must be at least 16 bytes")
+            raise SPSDKError("The key to wrap must be at least 16 bytes")
         if len(key_to_wrap) % 8 != 0:
-            raise ValueError("The key to wrap must be a multiple of 8 bytes")
+            raise SPSDKError("The key to wrap must be a multiple of 8 bytes")
         iv = 0xA6A6A6A6A6A6A6A6
         n = len(key_to_wrap) // 8
         r = [b""] + [key_to_wrap[i * 8 : i * 8 + 8] for i in range(0, n)]
@@ -132,14 +135,14 @@ class Backend(BackendClass):
         :param kek: The key-encrypting key
         :param wrapped_key: Encrypted data
         :return: Un-wrapped key
-        :raise ValueError: Invalid length of kek or key_to_wrap
+        :raises SPSDKError: Invalid length of kek or key_to_wrap
         """
         if len(kek) not in (16, 24, 32):
-            raise ValueError("The wrapping key must be a valid AES key length")
+            raise SPSDKError("The wrapping key must be a valid AES key length")
         if len(wrapped_key) < 24:
-            raise ValueError("Must be at least 24 bytes")
+            raise SPSDKError("Must be at least 24 bytes")
         if len(wrapped_key) % 8 != 0:
-            raise ValueError("The wrapped key must be a multiple of 8 bytes")
+            raise SPSDKError("The wrapped key must be a multiple of 8 bytes")
         # default iv
         iv = 0xA6A6A6A6A6A6A6A6
         n = len(wrapped_key) // 8 - 1
@@ -153,7 +156,7 @@ class Backend(BackendClass):
                 a = unpack_from(">Q", b[:8])[0]
                 r[i] = b[8:]
         if a != iv:
-            raise ValueError(f"Integrity Check Failed: {a:016X} (expected {iv:016X})")
+            raise SPSDKError(f"Integrity Check Failed: {a:016X} (expected {iv:016X})")
         return b"".join(r[1:])
 
     def aes_cbc_encrypt(self, key: bytes, plain_data: bytes, iv: bytes = None) -> bytes:
@@ -182,13 +185,16 @@ class Backend(BackendClass):
         :param plain_data: Input data
         :param nonce: Nonce data with counter value
         :return: Encrypted data
-        :raise ValueError: Invalid length of key or nonce
+        :raises SPSDKError: Invalid length of key
+        :raises SPSDKError: Invalid length of nonce
+        :raises SPSDKError: Invalid length of plain text
         """
         if len(key) not in (16, 24, 32):
-            raise ValueError("The key must be a valid AES key length")
+            raise SPSDKError("The key must be a valid AES key length")
         if len(nonce) != 16:
-            raise ValueError("The nonce length is not valid")
-        assert len(plain_data) <= len(nonce)
+            raise SPSDKError("The nonce length is not valid")
+        if len(plain_data) > len(nonce):
+            raise SPSDKError("The length of plain text is large than the length of nonce")
         aes = AES.new(key, AES.MODE_ECB)
         ctr = aes.encrypt(nonce)
         return bytes([p ^ c for p, c in zip(plain_data, ctr)])
@@ -215,7 +221,7 @@ class Backend(BackendClass):
         :param data: Input data
         :param algorithm: Used algorithm
         :return: Singed data
-        :raise ValueError: if the algorithm is not found
+        :raises SPSDKError: If the algorithm is not found
         """
         if isinstance(private_key, bytes):
             private_key = RSA.import_key(private_key)
@@ -239,7 +245,7 @@ class Backend(BackendClass):
         :param data: Input data
         :param algorithm: Used algorithm
         :return: True if signature is valid, False otherwise
-        :raise ValueError: if the algorithm is not found
+        :raises SPSDKError: If the algorithm is not found
         """
         public_key = self.rsa_public_key(pub_key_mod, pub_key_exp)
         assert isinstance(public_key, RSA.RsaKey)

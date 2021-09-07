@@ -9,17 +9,16 @@
 import logging
 from typing import Dict, Optional
 
-from pypemicro import PyPemicro, PEMicroException, PEMicroInterfaces
+from pypemicro import PEMicroException, PEMicroInterfaces, PyPemicro
 
-from spsdk.exceptions import SPSDKError
+from spsdk import SPSDKError
 
 from .debug_probe import (
     DebugProbe,
-    DebugProbeTransferError,
-    DebugProbeNotOpenError,
-    DebugProbeError,
+    SPSDKDebugProbeError,
+    SPSDKDebugProbeNotOpenError,
+    SPSDKDebugProbeTransferError,
 )
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.CRITICAL)
@@ -34,7 +33,7 @@ class DebugProbePemicro(DebugProbe):
         """Get J-Link object.
 
         :return: The J-Link Object
-        :raises DebugProbeError: The J-Link object get function failed.
+        :raises SPSDKDebugProbeError: The J-Link object get function failed.
         """
         return PyPemicro(
             log_info=PEMICRO_LOGGER.info,
@@ -87,31 +86,31 @@ class DebugProbePemicro(DebugProbe):
         The function is used to initialize the connection to target and enable using debug probe
         for DAT purposes.
 
-        :raises DebugProbeError: The Pemicro cannot establish communication with target
+        :raises SPSDKDebugProbeError: The Pemicro cannot establish communication with target
         """
         try:
             self.pemicro = DebugProbePemicro.get_pemicro_lib()
             if self.pemicro is None:
-                raise DebugProbeError(f"Getting of J-Link library failed.")
-        except DebugProbeError as exc:
-            raise DebugProbeError(f"Getting of J-Link library failed({str(exc)}).")
+                raise SPSDKDebugProbeError(f"Getting of J-Link library failed.")
+        except SPSDKDebugProbeError as exc:
+            raise SPSDKDebugProbeError(f"Getting of J-Link library failed({str(exc)}).")
         try:
             self.pemicro.open(debug_hardware_name_ip_or_serialnum=self.hardware_id)
             self.pemicro.connect(PEMicroInterfaces.SWD)  # type: ignore
             dbgmlbx_ap_ix = self._get_dmbox_ap()
         except PEMicroException as exc:
-            raise DebugProbeError(
+            raise SPSDKDebugProbeError(
                 f"Pemicro cannot establish communication with target({str(exc)})."
             )
 
         if self.dbgmlbx_ap_ix == -1:
             if dbgmlbx_ap_ix == -1:
-                raise DebugProbeError(f"The Debug mailbox access port is not available!")
+                raise SPSDKDebugProbeError("The Debug mailbox access port is not available!")
             self.dbgmlbx_ap_ix = dbgmlbx_ap_ix
         else:
             if dbgmlbx_ap_ix != self.dbgmlbx_ap_ix:
                 logger.info(
-                    f"The detected debug mailbox accessport index is different to specified."
+                    "The detected debug mailbox accessport index is different to specified."
                 )
 
     def close(self) -> None:
@@ -130,11 +129,11 @@ class DebugProbePemicro(DebugProbe):
 
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeNotOpenError: The Pemicro probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The Pemicro probe is NOT opened
         :raises SPSDKError: The Pemicro probe has failed during read operation
         """
         if self.pemicro is None:
-            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
 
         self.last_access_memory = True
         reg = 0
@@ -142,7 +141,7 @@ class DebugProbePemicro(DebugProbe):
             reg = self.pemicro.read_32bit(addr)
         except PEMicroException as exc:
             logger.error(f"Failed read memory({str(exc)}).")
-            raise SPSDKError(str(exc))
+            raise SPSDKError(str(exc)) from exc
         return reg
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
@@ -153,18 +152,18 @@ class DebugProbePemicro(DebugProbe):
 
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeNotOpenError: The Pemicro probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The Pemicro probe is NOT opened
         :raises SPSDKError: The Pemicro probe has failed during write operation
         """
         if self.pemicro is None:
-            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
 
         self.last_access_memory = True
         try:
             self.pemicro.write_32bit(address=addr, data=data)
         except PEMicroException as exc:
             logger.error(f"Failed write memory({str(exc)}).")
-            raise SPSDKError(str(exc))
+            raise SPSDKError(str(exc)) from exc
 
     def dbgmlbx_reg_read(self, addr: int = 0) -> int:
         """Read debug mailbox access port register.
@@ -196,11 +195,11 @@ class DebugProbePemicro(DebugProbe):
         :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeTransferError: The IO operation failed
-        :raises DebugProbeNotOpenError: The Pemicro probe is NOT opened
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
+        :raises SPSDKDebugProbeNotOpenError: The Pemicro probe is NOT opened
         """
         if self.pemicro is None:
-            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
 
         try:
             if self.last_access_memory:
@@ -213,7 +212,9 @@ class DebugProbePemicro(DebugProbe):
                 ret = self.pemicro.read_dp_register(addr=addr)
             return ret
         except PEMicroException as exc:
-            raise DebugProbeTransferError(f"The Coresight read operation failed({str(exc)}).")
+            raise SPSDKDebugProbeTransferError(
+                f"The Coresight read operation failed({str(exc)})."
+            ) from exc
 
     def coresight_reg_write(self, access_port: bool = True, addr: int = 0, data: int = 0) -> None:
         """Write coresight register over Pemicro interface.
@@ -223,11 +224,11 @@ class DebugProbePemicro(DebugProbe):
         :param access_port: if True, the Access Port (AP) register will be write(default), otherwise the Debug Port
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeTransferError: The IO operation failed
-        :raises DebugProbeNotOpenError: The Pemicro probe is NOT opened
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
+        :raises SPSDKDebugProbeNotOpenError: The Pemicro probe is NOT opened
         """
         if self.pemicro is None:
-            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
 
         try:
             if self.last_access_memory:
@@ -240,17 +241,19 @@ class DebugProbePemicro(DebugProbe):
                 self.pemicro.write_dp_register(addr=addr, value=data)
 
         except PEMicroException as exc:
-            raise DebugProbeTransferError(f"The Coresight write operation failed({str(exc)}).")
+            raise SPSDKDebugProbeTransferError(
+                f"The Coresight write operation failed({str(exc)})."
+            ) from exc
 
     def reset(self) -> None:
         """Reset a target.
 
         It resets a target.
 
-        :raises DebugProbeNotOpenError: The Pemicro debug probe is not opened yet
+        :raises SPSDKDebugProbeNotOpenError: The Pemicro debug probe is not opened yet
         """
         if self.pemicro is None:
-            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
 
         try:
             self.pemicro.reset_target()
@@ -264,15 +267,15 @@ class DebugProbePemicro(DebugProbe):
         This is helper function to find and return the debug mailbox access port index.
 
         :return: Debug MailBox Access Port Index if found, otherwise -1
-        :raises DebugProbeNotOpenError: The PEMicro probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The PEMicro probe is NOT opened
         """
         idr_expected = 0x002A0000
         idr_address = 0xFC
 
         if self.pemicro is None:
-            raise DebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The Pemicro debug probe is not opened yet")
 
-        logger.debug(f"Looking for debug mailbox access port")
+        logger.debug("Looking for debug mailbox access port")
 
         for access_port_ix in range(256):
             try:
@@ -280,12 +283,11 @@ class DebugProbePemicro(DebugProbe):
                     (access_port_ix << self.APSEL_SHIFT) & self.APSEL_APBANKSEL
                 )
                 ret = self.pemicro.read_ap_register(apselect=access_port_ix, addr=address)
-
                 if ret == idr_expected:
                     logger.debug(f"Found debug mailbox ix:{access_port_ix}")
                     return access_port_ix
                 if ret != 0:
-                    logger.debug(f"Found general access port ix:{access_port_ix}")
+                    logger.debug(f"Found general access port ix:{access_port_ix}, IDR:{ret}")
                 else:
                     logger.debug(f"The AP({access_port_ix}) is not available")
             except PEMicroException:

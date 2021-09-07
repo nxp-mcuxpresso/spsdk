@@ -6,7 +6,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import CmdNop, CmdInstallKey, EnumInsKey, EnumCertFormat, EnumAlgorithm
+from spsdk.image import CmdInstallKey, CmdNop, EnumAlgorithm, EnumCertFormat, EnumInsKey
 
 
 def test_install_key_cmd_base():

@@ -29,12 +29,22 @@ def test_hash():
     assert calc_sha256 == text_sha256
 
 
+def test_hash_invalid():
+    with pytest.raises(SPSDKError):
+        internal_backend.hash(data=b"n", algorithm="")
+
+
 def test_hmac():
     key = b"12345678"
     plain_text = b"testestestestestestestestestestestestestestestestestestestest"
     text_hmac_sha256 = unhexlify("d785d886a750c999aa86802697dd4a9934facac72614cbfa66bbf657b74eb1d5")
     calc_hmac_sha256 = internal_backend.hmac(key, plain_text, "sha256")
     assert calc_hmac_sha256 == text_hmac_sha256
+
+
+def test_hmac_invalid_algorithm():
+    with pytest.raises(SPSDKError):
+        internal_backend.hmac(key=b"1", data=b"nn", algorithm="sha256hh")
 
 
 def test_aes_key_wrap():
@@ -45,6 +55,24 @@ def test_aes_key_wrap():
     assert calc_wrapped_key == wrapped_key
 
 
+def test_aes_key_wrap_invalid_aes_key_length():
+    kek = unhexlify("0001020304050607080B0C0D0E0F")
+    plain_key = unhexlify("001122334455899AABBCCDDEEF")
+    with pytest.raises(SPSDKError, match="The wrapping key must be a valid AES key length"):
+        internal_backend.aes_key_wrap(kek=kek, key_to_wrap=plain_key)
+
+
+def test_aes_key_wrap_invalid_key_to_wrap():
+    kek = unhexlify("000102030405060708090A0B0C0D0E0F")
+    plain_key = unhexlify("00112233445566778899AABBCCDDEE")
+    with pytest.raises(SPSDKError, match="The key to wrap must be at least 16 bytes"):
+        internal_backend.aes_key_wrap(kek=kek, key_to_wrap=plain_key)
+    kek = unhexlify("000102030405060708090A0B0C0D0E0F")
+    plain_key = unhexlify("00112233445566778899AABBCCDDEEFF00")
+    with pytest.raises(SPSDKError, match="The key to wrap must be a multiple of 8 bytes"):
+        internal_backend.aes_key_wrap(kek=kek, key_to_wrap=plain_key)
+
+
 def test_aes_key_unwrap():
     kek = unhexlify("000102030405060708090A0B0C0D0E0F")
     plain_key = unhexlify("00112233445566778899AABBCCDDEEFF")
@@ -53,13 +81,53 @@ def test_aes_key_unwrap():
     assert calc_plain_key == plain_key
 
 
+def test_aes_key_unwrap_invalid_kek():
+    kek = unhexlify("000102030405060708090A0B0C0D")
+    wrapped_key = unhexlify("1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5")
+    with pytest.raises(SPSDKError, match="The wrapping key must be a valid AES key length"):
+        internal_backend.aes_key_unwrap(kek=kek, wrapped_key=wrapped_key)
+
+
+def test_aes_invalid_key_unwrap():
+    kek = unhexlify("000102030405060708090A0B0C0D0E0F")
+    wrapped_key = unhexlify("1F")
+    with pytest.raises(SPSDKError, match="Must be at least 24 bytes"):
+        internal_backend.aes_key_unwrap(kek=kek, wrapped_key=wrapped_key)
+    kek = unhexlify("000102030405060708090A0B0C0D0E0F")
+    wrapped_key = unhexlify("1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D21111111111")
+    with pytest.raises(SPSDKError, match="The wrapped key must be a multiple of 8 bytes"):
+        internal_backend.aes_key_unwrap(kek=kek, wrapped_key=wrapped_key)
+
+
 def test_aes_ctr_encrypt():
+    key = b"1234567812345678"
+    nonce = b"\x00" * 16
+    plain_text = b"\x0A" * 17
+    with pytest.raises(
+        SPSDKError, match="The length of plain text is large than the length of nonce"
+    ):
+        internal_backend.aes_ctr_encrypt(key, plain_text, nonce)
+
+
+def test_aes_ctr_encrypt_incalid():
     key = b"1234567812345678"
     nonce = b"\x00" * 16
     plain_text = b"\x0A" * 16
     cipher_text = b'\x90\xe2\xf7\x08\xb9J"\x80\x04q\xb5\xfa\xfa\xb0^\xdc'
     calc_cipher_text = internal_backend.aes_ctr_encrypt(key, plain_text, nonce)
     assert calc_cipher_text == cipher_text
+
+
+def test_aes_ctr_encrypt_invalid():
+    key = b"123456781234567"
+    nonce = b"\x00" * 16
+    plain_text = b"\x0A" * 16
+    with pytest.raises(SPSDKError, match="The key must be a valid AES key length"):
+        internal_backend.aes_ctr_encrypt(key, plain_text, nonce)
+    key = b"1234567812345678"
+    nonce = b"\x00" * 15
+    with pytest.raises(SPSDKError, match="The nonce length is not valid"):
+        internal_backend.aes_ctr_encrypt(key, plain_text, nonce)
 
 
 def test_aes_ctr_decrypt():

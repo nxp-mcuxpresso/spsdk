@@ -7,18 +7,21 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+
 import pytest
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from spsdk.image import SrkTable, SrkItem, MAC, Signature, CertificateImg, SecretKeyBlob
-from spsdk.image.secret import (
-    NotImplementedSRKPublicKeyType,
-    NotImplementedSRKItem,
-    SrkItemRSA,
-    NotImplementedSRKCertificate,
-    SrkItemHash,
-)
+
+from spsdk import SPSDKError
 from spsdk.crypto.loaders import load_certificate
+from spsdk.image import MAC, CertificateImg, SecretKeyBlob, Signature, SrkItem, SrkTable
+from spsdk.image.secret import (
+    NotImplementedSRKCertificate,
+    NotImplementedSRKItem,
+    NotImplementedSRKPublicKeyType,
+    SrkItemHash,
+    SrkItemRSA,
+)
 
 
 @pytest.fixture(scope="module", name="srk_pem")
@@ -99,7 +102,7 @@ def test_srk_table_single_cert(srk_pem):
     # test get_fuse() returns valid value
     for fuse_index in range(8):
         assert srk_table.get_fuse(fuse_index) >= 0
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         srk_table.get_fuse(8)
     # test info() returns non-empty text
     assert srk_table.info()  # test export returns any result
@@ -156,8 +159,19 @@ def test_mac_class():
     assert mac.nonce == test_nonce
     assert mac.mac == test_mac
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         mac.data = test_mac
+
+
+def test_mac_invalid():
+    mac = MAC()
+    with pytest.raises(SPSDKError, match="Incorrect length of mac"):
+        mac.update_aead_encryption_params(mac=bytes(4), nonce=bytes(12))
+    with pytest.raises(SPSDKError, match="Incorrect length of nonce"):
+        mac.update_aead_encryption_params(mac=bytes(16), nonce=bytes(4))
+    mac = MAC(mac_len=15)
+    with pytest.raises(SPSDKError, match="Incorrect number of MAC bytes"):
+        mac.update_aead_encryption_params(mac=bytes(16), nonce=bytes(12))
 
 
 def test_signature_class():
@@ -228,3 +242,20 @@ def test_srkitemhash_parse_not_valid_header():
     srkhash_out = srkhash.export()
     with pytest.raises(NotImplementedSRKItem):
         SrkItemHash.parse(srkhash_out)
+
+
+def test_srkitemhash_invalid_algorithm():
+    with pytest.raises(SPSDKError, match="Incorrect algorithm"):
+        SrkItemHash(algorithm=88, digest=bytes(16))
+
+
+def test_srktable_invalid_flag():
+    srk = SrkItemRSA(modulus=bytes(2048), exponent=bytes(4))
+    with pytest.raises(SPSDKError, match="Incorrect flag"):
+        srk.flag = 8
+
+
+def test_srk_table_invalid_fuse(srk_pem):
+    srk_table = SrkTable(version=0x40)
+    with pytest.raises(SPSDKError, match="Incorrect index of the fuse"):
+        srk_table.get_fuse(index=9)

@@ -6,20 +6,21 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module is used to generate public/private key and generating debug credential file."""
-import json
 import logging
 import os
 import sys
 from typing import List, Tuple
 
 import click
+import commentjson as json
 import yaml
 
-from spsdk import SPSDK_DATA_FOLDER
+from spsdk import SPSDK_DATA_FOLDER, SPSDKValueError
 from spsdk import __version__ as version
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
-from spsdk.apps.utils import catch_spsdk_error
+from spsdk.apps.utils import catch_spsdk_error, check_destination_dir, check_file_exists
 from spsdk.crypto import (
+    ec,
     generate_ecc_private_key,
     generate_ecc_public_key,
     generate_rsa_private_key,
@@ -35,39 +36,7 @@ NXPKEYGEN_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpkeygen")
 
 logger = logging.getLogger(__name__)
 LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
-
-
-@click.group()
-@click.option(
-    "-p",
-    "--protocol",
-    "protocol",
-    type=str,
-    metavar="VERSION",
-    default="1.0",
-    help="Set the protocol version. Default is 1.0 (RSA). ",
-)
-@click.option(
-    "-d",
-    "--debug",
-    "log_level",
-    metavar="LEVEL",
-    default="debug",
-    help=f"Set the level of system logging output. "
-    f'Available options are: {", ".join(LOG_LEVEL_NAMES)}',
-    type=click.Choice(LOG_LEVEL_NAMES),
-)
-@click.version_option(version, "--version")
-@click.pass_context
-def main(ctx: click.Context, protocol: str, log_level: str) -> int:
-    """NXP Key Generator Tool."""
-    is_rsa, protocol_version = determine_protocol_version(protocol)
-    key_param = determine_key_parameters(is_rsa, protocol_version)
-
-    ctx.obj = {"is_rsa": is_rsa, "key_param": key_param, "protocol_version": protocol}
-
-    logging.basicConfig(level=log_level.upper())
-    return 0
+SUPPORTED_PROTOCOLS = ["1.0", "1.1", "2.0", "2.1", "2.2"]
 
 
 def determine_key_parameters(is_rsa: bool, protocol_version: List[str]) -> object:
@@ -78,7 +47,7 @@ def determine_key_parameters(is_rsa: bool, protocol_version: List[str]) -> objec
     :return: string with keys' parameter
     """
     rsa_key_sizes = {"0": 2048, "1": 4096}
-    ecc_curves = {"0": "P-256", "1": "P-384", "2": "P-521"}
+    ecc_curves = {"0": "secp256r1", "1": "secp384r1", "2": "secp521r1"}
     key_param = rsa_key_sizes[protocol_version[1]] if is_rsa else ecc_curves[protocol_version[1]]
     return key_param
 
@@ -88,86 +57,105 @@ def determine_protocol_version(protocol: str) -> Tuple[bool, List[str]]:
 
     :param protocol: one of the values: '1.0', '1.1', '2.0', '2.1', '2.2'
     :return: is_rsa (true/false), protocol_version
+    :raises SPSDKValueError: In case that protocol is using unsupported key type.
     """
-    assert protocol in [
-        "1.0",
-        "1.1",
-        "2.0",
-        "2.1",
-        "2.2",
-    ], "Unsupported protocol was given."
+    if not protocol in SUPPORTED_PROTOCOLS:
+        raise SPSDKValueError(f"Unsupported protocol '{protocol}' was given.")
     protocol_version = protocol.split(".")
     is_rsa = protocol_version[0] == "1"
     return is_rsa, protocol_version
 
 
-def check_destination_dir(path: str, create_folder: bool = False) -> None:
-    """Checks path's destination dir, optionally create the destination folder.
+def get_list_of_supported_keys() -> List[str]:
+    """Generate list with list of supported key types.
 
-    :param path: Path to file to create/consider
-    :param create_folder: Create destination folder
+    :return: List of supported key types.
     """
-    dest_dir = os.path.dirname(path)
-    if not dest_dir:
-        return
-    if create_folder:
-        os.makedirs(dest_dir, exist_ok=True)
-        return
-    if not os.path.isdir(dest_dir):
-        click.echo(f"Can't create '{path}', folder '{dest_dir}' doesn't exit.")
-        sys.exit(1)
+    ret = ["rsa2048", "rsa3072", "rsa4096"]
+    # pylint: disable=protected-access
+    ret.extend(ec._CURVE_TYPES.keys())  # type: ignore
+
+    return ret
 
 
-def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type: ignore
-    """Check if file exists, exits if file exists and overwriting is disabled.
-
-    :param path: Path to a file
-    :param force_overwrite: allows file overwriting
-    :return: if file overwriting is allowed, it return True if file exists
-    """
-    if force_overwrite:
-        return os.path.isfile(path)
-    if os.path.isfile(path) and not force_overwrite:
-        click.echo(f"File '{path}' already exists. Use --force to overwrite it.")
-        sys.exit(1)
+@click.group(no_args_is_help=True)
+@click.option(
+    "-d",
+    "--debug",
+    "log_level",
+    metavar="LEVEL",
+    default="warning",
+    help=f"Set the level of system logging output. "
+    f'Available options are: {", ".join(LOG_LEVEL_NAMES)}',
+    type=click.Choice(LOG_LEVEL_NAMES),
+)
+@click.version_option(version, "--version")
+def main(log_level: str) -> int:
+    """NXP Key Generator Tool."""
+    logging.basicConfig(level=log_level.upper())
+    return 0
 
 
 @main.command()
 @click.option(
+    "-k",
+    "--key-type",
+    type=click.Choice(get_list_of_supported_keys(), case_sensitive=False),
+    metavar="KEY-TYPE",
+    default="RSA2048",
+    help=f"""\b
+        Set of the supported key types. Default is RSA2048.
+
+        Note: NXP DAT protocol is using encryption keys by this table:
+
+        NXP Protocol Version                Encryption Type
+            1.0                                 RSA 2048
+            1.1                                 RSA 4096
+            2.0                                 SECP256R1
+            2.1                                 SECP384R1
+            2.2                                 SECP521R1
+
+        All possible options:
+        {", ".join(get_list_of_supported_keys())}.
+        """,
+)
+@click.option(
     "--password",
     "password",
     metavar="PASSWORD",
-    help="Password with which the output file will be "
-    "encrypted. If not provided, the output will be "
-    "unencrypted.",
+    help="Password with which the output file will be encrypted. "
+    "If not provided, the output will be unencrypted.",
 )
 @click.argument("path", type=click.Path(file_okay=True))
 @click.option(
     "--force",
     is_flag=True,
     default=False,
-    help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
+    help="Force overwriting of an existing file.",
 )
-@click.pass_context
-def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
+def genkey(key_type: str, path: str, password: str, force: bool) -> None:
     """Generate key pair for RoT or DCK.
 
     \b
-    PATH    - path where the key pairs will be stored
+    PATH    - output file path, where the key pairs (private and public key) will be stored.
+              Each key will be stored in separate file (.pub and .pem).
     """
-    is_rsa = ctx.obj["is_rsa"]
-    key_param = ctx.obj["key_param"]
+    key_param = key_type.lower().strip()
+    is_rsa = "rsa" in key_param
+
     check_destination_dir(path, force)
     check_file_exists(path, force)
+    pub_key_path = os.path.splitext(path)[0] + ".pub"
+    check_file_exists(pub_key_path, force)
 
     if is_rsa:
         logger.info("Generating RSA private key...")
-        priv_key_rsa = generate_rsa_private_key(key_size=key_param)
+        priv_key_rsa = generate_rsa_private_key(key_size=int(key_param.replace("rsa", "")))
         logger.info("Generating RSA corresponding public key...")
         pub_key_rsa = generate_rsa_public_key(priv_key_rsa)
         logger.info("Saving RSA key pair...")
         save_rsa_private_key(priv_key_rsa, path, password if password else None)
-        save_rsa_public_key(pub_key_rsa, os.path.splitext(path)[0] + ".pub")
+        save_rsa_public_key(pub_key_rsa, pub_key_path)
     else:
         logger.info("Generating ECC private key...")
         priv_key_ec = generate_ecc_private_key(curve_name=key_param)
@@ -175,10 +163,27 @@ def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
         pub_key_ec = generate_ecc_public_key(priv_key_ec)
         logger.info("Saving ECC key pair...")
         save_ecc_private_key(priv_key_ec, path, password if password else None)
-        save_ecc_public_key(pub_key_ec, os.path.splitext(path)[0] + ".pub")
+        save_ecc_public_key(pub_key_ec, pub_key_path)
 
 
 @main.command()
+@click.option(
+    "-p",
+    "--protocol",
+    "protocol",
+    type=str,
+    metavar="VERSION",
+    default="1.0",
+    help="""\b
+        Set the protocol version. Default is 1.0 (RSA).
+        NXP Protocol Version    Encryption Type
+        1.0                     RSA 2048
+        1.1                     RSA 4096
+        2.0                     NIST P-256 SECP256R1
+        2.1                     NIST P-384 SECP384R1
+        2.2                     NIST P-521 SECP521R1
+    """,
+)
 @click.option(
     "-c",
     "--config",
@@ -206,9 +211,8 @@ def genkey(ctx: click.Context, path: str, password: str, force: bool) -> None:
     help="External python file containing a custom SignatureProvider implementation.",
 )
 @click.argument("dc_file_path", metavar="PATH", type=click.Path(file_okay=True))
-@click.pass_context
 def gendc(
-    ctx: click.Context,
+    protocol: str,
     plugin: click.Path,
     dc_file_path: str,
     config: click.File,
@@ -229,8 +233,7 @@ def gendc(
         mod = module_from_spec(spec)
         spec.loader.exec_module(mod)  # type: ignore
 
-    is_rsa = ctx.obj["is_rsa"]
-    protocol = ctx.obj["protocol_version"]
+    is_rsa = determine_protocol_version(protocol)
     check_destination_dir(dc_file_path, force)
     check_file_exists(dc_file_path, force)
 
@@ -254,6 +257,7 @@ def gendc(
     with open(dc_file_path, "wb") as f:
         f.write(data)
 
+
 @main.command()
 @click.argument("output", metavar="PATH", type=click.Path())
 @click.option(
@@ -263,7 +267,7 @@ def gendc(
     default=False,
     help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
 )
-def get_gendc_config(output: click.Path, force: bool) -> None:
+def get_cfg_template(output: click.Path, force: bool) -> None:
     """Generate the template of Debug Credentials YML configuration file.
 
     \b
@@ -279,6 +283,7 @@ def get_gendc_config(output: click.Path, force: bool) -> None:
         file.write(template)
 
     click.echo("The configuration template file has been created.")
+
 
 @catch_spsdk_error
 def safe_main() -> None:

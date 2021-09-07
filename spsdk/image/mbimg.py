@@ -10,14 +10,15 @@
 import struct
 from typing import Any, List, Optional, Sequence, Union
 
-from Crypto.Cipher import AES
 from crcmod.predefined import mkPredefinedCrcFun
+from Crypto.Cipher import AES
 
+from spsdk import SPSDKError
 from spsdk.crypto import SignatureProvider
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.trustzone import TrustZone, TrustZoneType
 from spsdk.utils import misc
-from spsdk.utils.crypto import crypto_backend, CertBlock, serialize_ecc_signature
+from spsdk.utils.crypto import CertBlock, crypto_backend, serialize_ecc_signature
 from spsdk.utils.easy_enum import Enum
 
 
@@ -100,9 +101,13 @@ class MultipleImageEntry:
         :param img: binary image data
         :param dst_addr: destination address
         :param flags: see LTI constants
+        :raises SPSDKError: If invalid destination address
+        :raises SPSDKError: Other section types (INIT) are not supported
         """
-        assert 0 <= dst_addr <= 0xFFFFFFFF
-        assert flags == self.LTI_LOAD  # for now, other section types (INIT) are not supported
+        if dst_addr < 0 or dst_addr > 0xFFFFFFFF:
+            raise SPSDKError("Invalid destination address")
+        if flags != self.LTI_LOAD:
+            raise SPSDKError("for now, other section types (INIT) are not supported")
         self._img = img
         self._src_addr = 0
         self._dst_addr = dst_addr
@@ -211,8 +216,10 @@ class MultipleImageTable:
         :param start_addr: start address where the images are exported;
                         the value matches source address for the first image
         :return: images with relocation table
+        :raises SPSDKError: If there is no entry for export
         """
-        assert self._entries, "There must be at least one entry for export"
+        if not self._entries:
+            raise SPSDKError("There must be at least one entry for export")
         src_addr = start_addr
         result = bytes()
         for entry in self.entries:
@@ -335,14 +342,16 @@ class MasterBootImage:
         :param enable_hw_user_mode_keys: flag for controlling secure hardware key bus. If true, then it is possible to
             access keys on hardware secure bus from non-secure application, else non-secure application will read zeros.
         :param ctr_init_vector: optional initial vector for encryption counter; None to use random vector
-        :raises TypeError: if type is not binary data
-        :raises ValueError: if images are not loaded from RAM
+        :raises SPSDKError: If type is not binary data
+        :raises SPSDKError: If images are not loaded from RAM
+        :raises SPSDKError: If invalid address
         """
         if not isinstance(app, (bytes, bytearray)):
-            raise TypeError("app must be binary data (bytes, bytearray)")
+            raise SPSDKError("app must be binary data (bytes, bytearray)")
         if app_table and not MasterBootImageType.is_copied_to_ram(image_type):
-            raise ValueError("app_table can be used only for images loaded to RAM")
-        assert load_addr >= 0
+            raise SPSDKError("app_table can be used only for images loaded to RAM")
+        if load_addr < 0:
+            raise SPSDKError("Invalid address")
         self.load_addr = load_addr
         self.image_type = image_type
         alignment = MasterBootImage._IMAGE_ALIGNMENT
@@ -372,32 +381,32 @@ class MasterBootImage:
     def _validate_new_instance(self) -> None:
         """Validate new instance.
 
-        :raise ValueError: if there are invalid or conflicting parameters
+        :raises SPSDKError: If there are invalid or conflicting parameters
         """
         # table
         if self.app_table:
             if not self.app_table.entries:
-                raise ValueError("app_table is empty")
+                raise SPSDKError("app_table is empty")
 
         # image size
         if len(self.app) < self.HMAC_OFFSET:
-            raise ValueError("Image must be at least {} bytes".format(str(self.HMAC_OFFSET)))
+            raise SPSDKError("Image must be at least {} bytes".format(str(self.HMAC_OFFSET)))
 
         # security stuff
         if MasterBootImageType.is_signed(self.image_type):
             if not self.cert_block:
-                raise ValueError(
+                raise SPSDKError(
                     "Certificate block must be specified for signed image (cert_block)"
                 )
             if not self._priv_key_pem_data:
-                raise ValueError("Private Key must be specified for signed image (priv_key_path)")
+                raise SPSDKError("Private Key must be specified for signed image (priv_key_path)")
         else:
             if self.cert_block:
-                raise ValueError(
+                raise SPSDKError(
                     "Certificate block must be specified only for signed image (cert_block)"
                 )
             if self._priv_key_pem_data:
-                raise ValueError(
+                raise SPSDKError(
                     "Private Key must be specified only for signed image (priv_key_path)"
                 )
 
@@ -405,34 +414,36 @@ class MasterBootImage:
             if not self.ctr_init_vector or (
                 len(self.ctr_init_vector) != self._CTR_INIT_VECTOR_SIZE
             ):
-                raise ValueError(
+                raise SPSDKError(
                     f"Invalid length of CTR init vector, expected {str(self._CTR_INIT_VECTOR_SIZE)} bytes"
                 )
 
         # hmac
         if MasterBootImageType.has_hmac(self.image_type):
             if not self.hmac_key:
-                raise ValueError(
+                raise SPSDKError(
                     "HMAC key must be specified for load-to-ram signed images (hmac_key)"
                 )
         else:
             if self.hmac_key:
-                raise ValueError(
+                raise SPSDKError(
                     "HMAC user key cannot be applied into selected image (hmac_user_key)"
                 )
             if self.key_store:
-                raise ValueError("KeyStore cannot be applied into selected image (key_store)")
+                raise SPSDKError("KeyStore cannot be applied into selected image (key_store)")
 
     def _verify_private_key(self) -> None:
         """Verifies private key.
 
-        :raise ValueError: if any parameter not valid
+        :raises SPSDKError: If certification block is not present
+        :raises SPSDKError: If any parameter not valid
         """
         if self._priv_key_pem_data:
             cert_blk = self.cert_block
-            assert cert_blk is not None
+            if cert_blk is None:
+                raise SPSDKError("Certification block is not present")
             if not cert_blk.verify_private_key(self._priv_key_pem_data):  # type: ignore
-                raise ValueError(
+                raise SPSDKError(
                     "Signature verification failed, private key does not match to certificate"
                 )
 
@@ -494,13 +505,15 @@ class MasterBootImage:
         - for encrypted image: certificate with encrypted image header and CTR init vector
         - for signed image: certificate
         - for plain image: empty bytes
+        :raises SPSDKError: If initial vector for encryption counter is not present
         """
         if not self.cert_block:
             return bytes()
 
         # for encrypted image create encrypted header located behind certificate
         if MasterBootImageType.is_encrypted(self.image_type):
-            assert self.ctr_init_vector
+            if not self.ctr_init_vector:
+                raise SPSDKError("Initial vector for encryption counter is not present")
             encr_header = encr_data[:56] + self.ctr_init_vector
         else:
             encr_header = bytes()
@@ -512,44 +525,65 @@ class MasterBootImage:
 
         :param data: to calculate hmac
         :return: calculated hmac; empty bytes if the block does not contain any HMAC
+        :raises SPSDKError: If invalid hmac key
+        :raises SPSDKError: If invalid length of key
+        :raises SPSDKError: If invalid length of calculated hmac
+        :raises SPSDKError: Key_store must be specified for encrypted image
+        :raises SPSDKError: If invalid hmac key
+        :raises SPSDKError: If invalid initialization vector
+        :raises SPSDKError: Unsupported key_source
         """
         if not MasterBootImageType.has_hmac(self.image_type):
             return bytes()
 
-        assert self.hmac_key and len(self.hmac_key) == self._HMAC_KEY_LENGTH
+        if not (self.hmac_key and len(self.hmac_key) == self._HMAC_KEY_LENGTH):
+            raise SPSDKError("Invalid hmac key")
         key = KeyStore.derive_hmac_key(self.hmac_key)
-        assert len(key) == self._HMAC_DERIVED_KEY_LEN
+        if len(key) != self._HMAC_DERIVED_KEY_LEN:
+            raise SPSDKError("Invalid length of key")
         result = crypto_backend().hmac(key, data)
-        assert len(result) == self.HMAC_SIZE
+        if len(result) != self.HMAC_SIZE:
+            raise SPSDKError("Invalid length of calculated hmac")
         return result
 
     def _encrypt(self, data: bytes) -> bytes:
         if not MasterBootImageType.is_encrypted(self.image_type):
             return data
 
-        assert self.key_store, "key_store must be specified for encrypted image"
-        assert self.hmac_key and len(self.hmac_key) == self._HMAC_KEY_LENGTH
-        assert self.ctr_init_vector
+        if not self.key_store:
+            raise SPSDKError("key_store must be specified for encrypted image")
+        if not (self.hmac_key and len(self.hmac_key) == self._HMAC_KEY_LENGTH):
+            raise SPSDKError("Invalid hmac key")
+        if not self.ctr_init_vector:
+            raise SPSDKError("Invalid initialization vector")
 
         if self.key_store.key_source == KeySourceType.KEYSTORE:
             key = self.hmac_key  # user_key, the key not derived
         elif self.key_store.key_source == KeySourceType.OTP:
             key = self.key_store.derive_enc_image_key(self.hmac_key)
         else:
-            assert False, "Unsupported key_source"
+            if True:
+                raise SPSDKError("Unsupported key_source")
 
         aes = AES.new(key, AES.MODE_CTR, initial_value=self.ctr_init_vector, nonce=bytes())
         return aes.encrypt(data)
 
     def export(self) -> bytes:
-        """Master boot image (binary)."""
+        """Master boot image (binary).
+
+        :raises SPSDKError: If private key not present
+        :raises SPSDKError: If wrong private key
+        :return: exported bytes
+        """
         data = self._update_ivt(self.data)
 
         # signed or encrypted
         if MasterBootImageType.is_signed(self.image_type):
-            assert self._priv_key_pem_data
+            if not self._priv_key_pem_data:
+                raise SPSDKError("Private key not present")
             cb = self.cert_block
-            assert (cb is not None) and cb.verify_private_key(self._priv_key_pem_data)  # type: ignore
+            if not ((cb is not None) and cb.verify_private_key(self._priv_key_pem_data)):  # type: ignore
+                raise SPSDKError("Wrong private key")
             # encrypt
             encr_data = self._encrypt(data)
             encr_data = (
@@ -631,15 +665,14 @@ class MasterBootImageManifest:
 class MasterBootImageN4Analog(MasterBootImage):
     """Master Boot Image layout specific for LPC55s3x."""
 
-    # flag indication presence of dual boot version (Used by LPC55s3x)
-    _DUAL_BOOT_VERSION_FLAG = 0x400
+    # flag indication presence of boot image version (Used by LPC55s3x)
+    _BOOT_IMAGE_VERSION_FLAG = 0x400
 
     def __init__(
         self,
         app: bytes,
         load_addr: int,
-        dual_boot_version: int = None,
-        firmware_version: int = 1,
+        firmware_version: int,
         sign_hash_len: int = 0,
         signature_provider: SignatureProvider = None,
         **kwargs: Any,
@@ -647,18 +680,19 @@ class MasterBootImageN4Analog(MasterBootImage):
         """Initialize MBI for LPC55s3x.
 
         :param app: application binary
-        :param load_addr: Addres where to load application
-        :param dual_boot_version: Version of dualboot application, defaults to None
+        :param load_addr: Address where to load application
         :param firmware_version: Firmware version, defaults to None
         :param sign_hash_len: Length of hash used for singing, defaults to 0
         :param signature_provider: Signature provider meant to sign the image
         :param kwargs: keyword arguments passed to MasterBootImage
+        :raises SPSDKError: If trustZone was not set in parent class
         """
         super().__init__(app=app, load_addr=load_addr, **kwargs)
-        self.dual_boot_version = dual_boot_version
+        self.firmware_version = firmware_version
         self.manifest = None
         self.signature_provider = signature_provider
-        assert self.trust_zone, "TrustZone was not set in parent class!"
+        if not self.trust_zone:
+            raise SPSDKError("TrustZone was not set in parent class!")
         if MasterBootImageType.is_signed(self.image_type):
             self.manifest = MasterBootImageManifest(
                 firmware_version,
@@ -668,9 +702,9 @@ class MasterBootImageN4Analog(MasterBootImage):
 
     def _calculate_flags(self) -> int:
         flags = super()._calculate_flags()
-        if self.dual_boot_version:
-            flags |= self._DUAL_BOOT_VERSION_FLAG
-            flags |= self.dual_boot_version << 16
+        if self.firmware_version:
+            flags |= self._BOOT_IMAGE_VERSION_FLAG
+            flags |= self.firmware_version << 16
         return flags
 
     @property
@@ -682,21 +716,22 @@ class MasterBootImageN4Analog(MasterBootImage):
         - image manifest for signed image types
         - optionally trust zone data
         Please mind the result does not contain: certification block, HMAC, keystore and signature
+        :raises SPSDKError: If certificate Block is not set
+        :raises SPSDKError: If masterBootImageManifest is not set
+        :raises SPSDKError: If signature provider is not set
+        :raises SPSDKError: If signature is not set
         """
         # binary image
         data = self.app
         if MasterBootImageType.is_signed(self.image_type):
-            assert self.cert_block, "Certificate Block is not set!"
+            if not self.cert_block:
+                raise SPSDKError("Certificate Block is not set!")
             data += self.cert_block.export()
-            assert self.manifest, "MasterBootImageManifest is not set!"
+            if not self.manifest:
+                raise SPSDKError("MasterBootImageManifest is not set!")
             data += self.manifest.export()
         # trust zone data
         data += self.trust_zone.export()
-        if MasterBootImageType.is_signed(self.image_type):
-            assert self.signature_provider, "Signature provider is not set!"
-            signature = self.signature_provider.sign(data)
-            assert signature, "Signature is not set!"
-            data += serialize_ecc_signature(signature, 32)
         return data
 
     def _validate_new_instance(self) -> None:
@@ -705,19 +740,33 @@ class MasterBootImageN4Analog(MasterBootImage):
 
     @property
     def total_len(self) -> int:
-        """Return the total (expected) length of the image."""
+        """Return the total (expected) length of the image.
+
+        :raises SPSDKError: If MasterBootImageManifest is not set
+        :raises SPSDKError: If certificate Block is not set
+        :return: total length of the image
+        """
         image_length = len(self.app)
         image_length += len(self.trust_zone.export())
         if MasterBootImageType.is_signed(self.image_type):
-            assert self.manifest, "MasterBootImageManifest is not set!"
+            if not self.manifest:
+                raise SPSDKError("MasterBootImageManifest is not set!")
             image_length += len(self.manifest.export())
-            assert self.cert_block, "Certificate Block is not set!"
+            if not self.cert_block:
+                raise SPSDKError("Certificate Block is not set!")
             image_length += self.cert_block.expected_size  # type: ignore
             # signature length
-            image_length += 64
+            assert self.signature_provider, "Signature provider is not set!"
+            image_length += self.signature_provider.signature_length
         return image_length
 
     def export(self) -> bytes:
         """Master boot image (binary)."""
         data = self._update_ivt(self.data)
+        if MasterBootImageType.is_signed(self.image_type):
+            assert self.signature_provider, "Signature provider is not set!"
+            signature = self.signature_provider.sign(data)
+            assert signature, "Signature is not set!"
+            data += serialize_ecc_signature(signature, 32)
+            # data += signature
         return data

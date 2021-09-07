@@ -14,9 +14,9 @@ from typing import Any, Dict, Tuple
 class USBDeviceFilter:
     """Generic USB Device Filtering class.
 
-    Create a filtering instance. This instance holds the USB ID you are insterested
+    Create a filtering instance. This instance holds the USB ID you are interested
     in during USB HID device search and allows you to compare, whether
-    provided USB HID object is the one you are insterested in.
+    provided USB HID object is the one you are interested in.
     The allowed format of `usb_id` string is following:
 
     vid or pid - vendor ID or product ID. String holding hex or dec number.
@@ -90,14 +90,14 @@ class USBDeviceFilter:
         The provided USB ID during initialization may be VID or PID, VID/PID pair,
         or a path. See private methods for details.
 
-        :param usb_device_object: hidapi USB HID device object
+        :param usb_device_object: Libusbsio/HID_API device object (dictionary)
 
         :return: True on match, False otherwise
         """
         vendor_id = usb_device_object["vendor_id"]
         product_id = usb_device_object["product_id"]
 
-        # the hidapi holds the path as bytes, so we convert it to string
+        # the Libusbsio/HID_API holds the path as bytes, so we convert it to string
         usb_path = usb_device_object["path"].decode("utf-8")
 
         if platform.system() == "Windows":
@@ -113,10 +113,12 @@ class USBDeviceFilter:
 
         if platform.system() == "Linux":
             # The user input is expected in form of <dec_num>#<dec_num>. So we
-            # convert the path returned by HID API into this form so we can
-            # compare it
+            # convert the path returned by Libusbsio/HID_API into this form so we can
+            # compare it. Alternatively, the input is the real device path,
+            # like '/dev/hidraw0' - in this case, just leave it as it is.
             nums = usb_path.split(":")
-            usb_path = str.format("{}#{}", int(nums[0], 16), int(nums[1], 16))
+            if len(nums) >= 2:
+                usb_path = str.format("{}#{}", int(nums[0], 16), int(nums[1], 16))
 
         # Determine, whether given device matches one of the expected criterion
         if self.usb_id is None:
@@ -221,7 +223,7 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
         Extends the comparison by USB names - dictionary of device name and
         corresponding VID/PID.
 
-        :param usb_device_object: hidapi USB HID device object
+        :param usb_device_object: lpcusbsio USB HID device object
 
         :return: True on match, False otherwise
         """

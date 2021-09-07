@@ -8,12 +8,49 @@
 """Helper module for blhost application."""
 
 import math
-from typing import List, NamedTuple
+from typing import Any, List
 
 import bincopy
+import click
 
 from spsdk import SPSDKError
-from spsdk.mboot.commands import KeyProvUserKeyType
+from spsdk.mboot.commands import (
+    KeyProvUserKeyType,
+    TrustProvKeyType,
+    TrustProvOemKeyType,
+    TrustProvWrappingKeyType,
+)
+
+
+class OemGenMasterShareHelp(click.Command):
+    """Class for customized "usage" help line for oem_gen_master_share command."""
+
+    def format_usage(self, ctx: Any, formatter: Any) -> None:
+        """Customizes "usage" help line for oem_gen_master_share command."""
+        click.echo("Usage: blhost trust-provisioning oem_gen_master_share [OPTIONS]")
+        indent = 7 * "\t"
+        click.echo(indent + "OEM_SHARE_INPUT_ADDR")
+        click.echo(indent + "OEM_SHARE_INPUT_SIZE")
+        click.echo(indent + "OEM_ENC_SHARE_OUTPUT_ADDR")
+        click.echo(indent + "OEM_ENC_SHARE_OUTPUT_SIZE")
+        click.echo(indent + "OEM_ENC_MASTER_SHARE_OUTPUT_ADDR")
+        click.echo(indent + "OEM_ENC_MASTER_SHARE_OUTPUT_SIZE")
+        click.echo(indent + "OEM_CUST_CERT_PUK_OUTPUT_ADDR")
+        click.echo(indent + "OEM_CUST_CERT_PUK_OUTPUT_SIZE")
+
+
+class OemSetMasterShareHelp(click.Command):
+    """Class for customized "usage" help line for oem_set_master_share command."""
+
+    def format_usage(self, ctx: Any, formatter: Any) -> None:
+        """Customizes "usage" help line for oem_set_master_share command."""
+        click.echo("Usage: blhost trust-provisioning oem_set_master_share [OPTIONS]")
+        indent = 7 * "\t"
+        click.echo(indent + "OEM_SHARE_INPUT_ADDR")
+        click.echo(indent + "OEM_SHARE_INPUT_SIZE")
+        click.echo(indent + "OEM_ENC_MASTER_SHARE_INPUT_ADDR")
+        click.echo(indent + "OEM_ENC_MASTER_SHARE_INPUT_SIZE")
+
 
 PROPERTIES_NAMES = {
     "list-properties": 0,
@@ -67,16 +104,50 @@ def parse_key_prov_key_type(key_type: str) -> int:
     :param key_type: Name or number of the Key type
     :return: key type number
     """
+    return _parse_key_type(key_type, KeyProvUserKeyType, 0xFF)
+
+
+def parse_trust_prov_oem_key_type(key_type: str) -> int:
+    """Convert the key type as name or stringified number into integer.
+
+    :param key_type: Name or number of the Key type
+    :return: key type number
+    """
+    return _parse_key_type(key_type, TrustProvOemKeyType)
+
+
+def parse_trust_prov_key_type(key_type: str) -> int:
+    """Convert the key type as name or stringified number into integer.
+
+    :param key_type: Name or number of the Key type
+    :return: key type number
+    """
+    return _parse_key_type(key_type, TrustProvKeyType)
+
+
+def parse_trust_prov_wrapping_key_type(key_type: str) -> int:
+    """Convert the key type as name or stringified number into integer.
+
+    :param key_type: Name or number of the Key type
+    :return: key type number
+    """
+    return _parse_key_type(key_type, TrustProvWrappingKeyType)
+
+
+def _parse_key_type(user_input: str, collection: Any, default: int = None) -> int:
     try:
-        return int(key_type, 0)
+        return int(user_input, 0)
     except:
-        key_type = key_type.upper()
-        key_type_int = KeyProvUserKeyType.get(key_type, 0xFF)
-        assert isinstance(key_type_int, int)
+        key_type = user_input.upper()
+        key_type_int = collection.get(key_type, default)
+        if key_type_int is None:
+            raise SPSDKError(f"Unable to find '{user_input}' in '{collection.__name__}'")
         return key_type_int
 
-class SegmentInfo():
+
+class SegmentInfo:
     """SegmentInfo class containing: start, length and data of segment."""
+
     ALIGNMENT = 1024
 
     def __init__(self, start: int, length: int, data_bin: bytes) -> None:
@@ -108,14 +179,14 @@ def parse_image_file(file_path: str) -> List[SegmentInfo]:
     """Parse image.
 
     :param file_path: path, where the image is stored
-    :raises SPSDKError: when elf/axf files are used
-    :raises SPSDKError: when binary file is used
-    :raises SPSDKError: when unsupported file is used
+    :raises SPSDKError: When elf/axf files are used
+    :raises SPSDKError: When binary file is used
+    :raises SPSDKError: When unsupported file is used
     :return: SegmentInfo object
     """
     with open(file_path, "rb") as f:
         data = f.read(4)
-    if data == b'\x7fELF':
+    if data == b"\x7fELF":
         raise SPSDKError("Elf file is not supported")
     try:
         binfile = bincopy.BinFile(file_path)
@@ -124,6 +195,8 @@ def parse_image_file(file_path: str) -> List[SegmentInfo]:
             for segment in binfile.segments
         ]
     except UnicodeDecodeError as e:
-        raise SPSDKError('Error: please use write-memory command for binary file downloading.') from e
+        raise SPSDKError(
+            "Error: please use write-memory command for binary file downloading."
+        ) from e
     except Exception as e:
         raise SPSDKError("Error loading file") from e

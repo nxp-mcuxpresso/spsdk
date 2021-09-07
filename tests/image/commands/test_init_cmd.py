@@ -8,7 +8,8 @@
 
 import pytest
 
-from spsdk.image import CmdNop, CmdInitialize, EnumEngine
+from spsdk import SPSDKError
+from spsdk.image import CmdInitialize, CmdNop, EnumEngine
 
 
 def test_init_cmd():
@@ -91,3 +92,15 @@ def test_init_cmd_equality():
     assert cmd != nop
     assert cmd == cmd
     assert cmd != cmd_other
+
+
+def test_init_cmd_invalid():
+    cmd = CmdInitialize()
+    with pytest.raises(SPSDKError):
+        cmd.engine = 55
+    with pytest.raises(SPSDKError):
+        CmdInitialize(engine=55)
+    with pytest.raises(SPSDKError):
+        cmd.append(value=0xFFFFFFFF)
+    with pytest.raises(SPSDKError):
+        cmd.pop(index=77)

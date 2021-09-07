@@ -8,11 +8,11 @@
 
 """Header."""
 
-from struct import pack, unpack_from, calcsize
+from struct import calcsize, pack, unpack_from
 from typing import Optional
 
+from spsdk import SPSDKError
 from spsdk.utils.easy_enum import Enum
-
 
 ########################################################################################################################
 # Enums
@@ -87,11 +87,13 @@ class Header:
         :param tag: section tag
         :param param: TODO
         :param length: length of the segment or command; if not specified, size of the header is used
+        :raises SPSDKError: If invalid length
         """
         self._tag = tag
         self.param: int = param
         self.length: int = self.SIZE if length is None else length
-        assert self.SIZE <= self.length < 65536
+        if self.SIZE > self.length or self.length >= 65536:
+            raise SPSDKError("Invalid length")
 
     @property
     def tag(self) -> int:
@@ -146,9 +148,11 @@ class CmdHeader(Header):
         :param tag: command tag
         :param param: TODO
         :param length: of the command binary section, in bytes
+        :raises SPSDKError: If invalid command tag
         """
         super().__init__(tag, param, length)
-        assert tag in CmdTag.tags()
+        if tag not in CmdTag.tags():
+            raise SPSDKError("Invalid command tag")
 
     @property
     def tag(self) -> CmdTag:
@@ -163,10 +167,12 @@ class CmdHeader(Header):
         :param offset: to start reading binary data
         :param required_tag: CmdTag, None if not required
         :return: parsed instance
-        :raise UnparsedException: if required header tag does not match
+        :raises UnparsedException: if required header tag does not match
+        :raises SPSDKError: If invalid tag
         """
         if required_tag is not None:
-            assert required_tag in CmdTag.tags()
+            if required_tag not in CmdTag.tags():
+                raise SPSDKError("Invalid tag")
         return super(CmdHeader, cls).parse(data, offset, required_tag)
 
 

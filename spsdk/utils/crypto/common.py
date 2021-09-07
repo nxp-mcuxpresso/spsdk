@@ -14,6 +14,8 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumb
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.x509 import Certificate
 
+from spsdk import SPSDKError
+
 from .abstract import BackendClass
 from .backend_openssl import openssl_backend
 
@@ -42,9 +44,11 @@ class Counter:
         :param nonce: last for bytes are used as initial value for counter
         :param ctr_value: counter initial value; it is added to counter value retrieved from nonce
         :param ctr_byteorder_encoding: way how the counter is encoded into output value: either 'little' or 'big'
+        :raises SPSDKError: When invalid byteorder is provided
         """
         assert isinstance(nonce, bytes) and len(nonce) == 16
-        assert ctr_byteorder_encoding in ["little", "big"]
+        if ctr_byteorder_encoding not in ["little", "big"]:
+            raise SPSDKError("Wrong byte order")
         self._nonce = nonce[:-4]
         self._ctr_byteorder_encoding = ctr_byteorder_encoding
         self._ctr = int.from_bytes(nonce[-4:], ctr_byteorder_encoding)
@@ -75,8 +79,10 @@ def swap16(x: int) -> int:
 
     :param x: Original number
     :return: Number with swapped bytes
+    :raises SPSDKError: When inncorrect number to be swapped is provided
     """
-    assert 0 <= x <= 0xFFFF
+    if x < 0 or x > 0xFFFF:
+        raise SPSDKError("Incorrect number to be swapped")
     return ((x << 8) & 0xFF00) | ((x >> 8) & 0x00FF)
 
 
@@ -86,11 +92,13 @@ def pack_timestamp(value: datetime) -> int:
 
     :param value: datetime to be converted
     :return: number of milliseconds since 1.1.2000  00:00:00; 64-bit integer
+    :raises SPSDKError: When there is incorrect result of convertion
     """
     assert isinstance(value, datetime)
     start = datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp()
     result = int((value.timestamp() - start) * 1000000)
-    assert 0 <= result <= 0xFFFFFFFFFFFFFFFF
+    if result < 0 or result > 0xFFFFFFFFFFFFFFFF:
+        raise SPSDKError("Incorrect result of convertion")
     return result
 
 
@@ -100,9 +108,11 @@ def unpack_timestamp(value: int) -> datetime:
 
     :param value: number of milliseconds since 1.1.2000  00:00:00; 64-bit integer
     :return: corresponding datetime
+    :raises SPSDKError: When there is incorrect result of convertion
     """
     assert isinstance(value, int)
-    assert 0 <= value <= 0xFFFFFFFFFFFFFFFF
+    if value < 0 or value > 0xFFFFFFFFFFFFFFFF:
+        raise SPSDKError("Incorrect result of convertion")
     start = int(datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000000)
     return datetime.fromtimestamp((start + value) / 1000000)
 

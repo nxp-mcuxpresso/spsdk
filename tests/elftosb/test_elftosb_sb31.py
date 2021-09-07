@@ -15,7 +15,6 @@ import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import elftosb
-from spsdk.apps.elftosb_utils import sb_31_helper
 from spsdk.utils.misc import use_working_directory
 
 
@@ -37,23 +36,23 @@ def process_config_file(
 
 
 @pytest.mark.parametrize(
-    "config_file",
+    "config_file,device",
     [
-        "sb3_256_256.json",
-        "sb3_256_none.json",
-        "sb3_256_none_ernad.json",
-        "sb3_384_256.json",
-        "sb3_384_256_fixed_timestamp.json",
-        "sb3_384_256_unencrypted.json",
-        "sb3_384_384.json",
-        "sb3_384_none.json",
-        "sb3_test_384_384_unencrypted.json",
+        ("sb3_256_256.json", "lpc55s3x"),
+        ("sb3_256_none.json", "lpc55s3x"),
+        ("sb3_256_none_ernad.json", "lpc55s3x"),
+        ("sb3_384_256.json", "lpc55s3x"),
+        ("sb3_384_256_fixed_timestamp.json", "lpc55s3x"),
+        ("sb3_384_256_unencrypted.json", "lpc55s3x"),
+        ("sb3_384_384.json", "lpc55s3x"),
+        ("sb3_384_none.json", "lpc55s3x"),
+        ("sb3_test_384_384_unencrypted.json", "lpc55s3x"),
     ],
 )
-def test_elftosb_sb31(data_dir, tmpdir, config_file):
+def test_elftosb_sb31(data_dir, tmpdir, config_file, device):
     runner = CliRunner()
     with use_working_directory(data_dir):
-        config_file = f"{data_dir}/{config_file}"
+        config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(
             config_file, tmpdir, "containerOutputFile"
         )
@@ -67,9 +66,10 @@ def test_elftosb_sb31(data_dir, tmpdir, config_file):
 def test_elftosb_sb31_notime(data_dir, tmpdir):
 
     config_file = "sb3_256_256.json"
+    device = "lpc55s3x"
     runner = CliRunner()
     with use_working_directory(data_dir):
-        config_file = f"{data_dir}/{config_file}"
+        config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(
             config_file, tmpdir, "containerOutputFile"
         )

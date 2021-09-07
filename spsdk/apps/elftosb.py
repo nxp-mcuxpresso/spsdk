@@ -9,7 +9,7 @@
 import os
 import sys
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
 import click
 import commentjson as json
@@ -20,17 +20,26 @@ import spsdk.apps.elftosb_utils.sly_bd_parser as bd_parser
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.elftosb_utils import sb_31_helper as elftosb_helper
 from spsdk.apps.utils import catch_spsdk_error
-from spsdk.crypto import SignatureProvider
-from spsdk.image import MasterBootImageN4Analog, MasterBootImageType, TrustZone
+from spsdk.crypto import SignatureProvider, load_certificate_as_bytes
+from spsdk.exceptions import SPSDKError
+from spsdk.image import MasterBootImage, MasterBootImageN4Analog, MasterBootImageType, TrustZone
+from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.sbfile.images import BootImageV21, BootSectionV2
 from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
 from spsdk.utils.crypto import CertBlockV2, CertBlockV31, Certificate
 from spsdk.utils.crypto.backend_internal import internal_backend
 from spsdk.utils.misc import load_binary, load_text, write_file
 
-# TODO update supported families...
-SUPPORTED_FAMILIES = ['lpc55s3x']
-
+SUPPORTED_FAMILIES = [
+    "lpc55xx",
+    "lpc55s0x",
+    "lpc55s1x",
+    "lpc55s2x",
+    "lpc55s6x",
+    "lpc55s3x",
+    "rt5xx",
+    "rt6xx",
+]
 
 
 def generate_trustzone_binary(tzm_conf: click.File) -> None:
@@ -43,11 +52,39 @@ def generate_trustzone_binary(tzm_conf: click.File) -> None:
     tz_data = trustzone.export()
     write_file(tz_data, config.output_file, mode="wb")
 
+    click.echo(f"Success. (Trustzone binary: {config.output_file} created.)")
 
-def _get_trustzone(config: elftosb_helper.MasterBootImageConfig) -> TrustZone:
+
+def _get_trustzone(
+    config: Union[
+        elftosb_helper.MasterBootImageConfigGroup3, elftosb_helper.MasterBootImageConfigGroup4
+    ]
+) -> TrustZone:
     """Create appropriate TrustZone instance."""
-    if not config.trustzone_preset_file:
-        return TrustZone.disabled()
+    family = config.family.lower()
+
+    if family in ["lpc55s3x"]:
+        if not config.trustzone_preset_file:
+            return TrustZone.enabled()
+
+    if family in [
+        "lpc55xx",
+        "lpc55s0x",
+        "lpc55s1x",
+        "lpc552x",
+        "lpc55s2x",
+        "lpc55s6x",
+        "rt5xx",
+        "rt6xx",
+    ]:
+        if config.enable_trustzone is False:  # type: ignore
+            # we don't care about preset data file, just "disable" TZ-M
+            return TrustZone.disabled()
+
+        if not config.trustzone_preset_file:
+            # TZ-M is left enabled, but no data provided
+            return TrustZone.enabled()
+
     try:
         tz_config_data = json.loads(load_text(config.trustzone_preset_file))
         tz_config = elftosb_helper.TrustZoneConfig(tz_config_data)
@@ -58,73 +95,181 @@ def _get_trustzone(config: elftosb_helper.MasterBootImageConfig) -> TrustZone:
         )
     except ValueError:
         tz_raw_data = load_binary(config.trustzone_preset_file)
-        return TrustZone.from_binary(
-            family=config.family, revision=config.revision, raw_data=tz_raw_data
-        )
+        revision = getattr(config, "revision", None)
+        return TrustZone.from_binary(family=config.family, revision=revision, raw_data=tz_raw_data)
 
 
-def _get_master_boot_image_type(
-    config: elftosb_helper.MasterBootImageConfig,
-) -> MasterBootImageType:
-    """Get appropriate MasterBootImage type."""
-    sb3_image_types = {
-        "crc-ram-False": MasterBootImageType.CRC_RAM_IMAGE,
-        "crc-xip-False": MasterBootImageType.CRC_XIP_IMAGE,
-        "signed-xip-False": MasterBootImageType.SIGNED_XIP_IMAGE,
-        "signed-xip-True": MasterBootImageType.SIGNED_XIP_NXP_IMAGE,
-    }
-    image_type = (
-        f"{config.output_image_auth_type}-{config.output_image_exec_target}-{config.use_isk}"
-    )
-    return sb3_image_types[image_type]
+def _get_cert_block_v2(cert_config: elftosb_helper.CertificateBlockConfigGroup3) -> CertBlockV2:
+    cert_block = CertBlockV2(build_number=cert_config.image_build_number)
+
+    # add whole certificate chain used for image signing
+    for cert_path in cert_config.root_certificates[cert_config.main_cert_chain_id]:
+        cert_data = load_certificate_as_bytes(str(cert_path))
+        cert_block.add_certificate(cert_data)
+    # set root key hash of each root certificate
+    for cert_idx, cert_path in enumerate(cert_config.root_certificates):
+        cert_data = load_certificate_as_bytes(str(cert_path[0]))
+        cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
+
+    return cert_block
 
 
-def _get_cert_block_v31(config: elftosb_helper.CertificateBlockConfig) -> CertBlockV31:
-    root_certs = [load_binary(cert_file) for cert_file in config.root_certs]  # type: ignore
+def _get_cert_block_v31(cert_config: elftosb_helper.CertificateBlockConfigGroup4) -> CertBlockV31:
+    root_certs = [load_binary(cert_file) for cert_file in cert_config.root_certs]  # type: ignore
     user_data = None
-    if config.use_isk and config.isk_sign_data_path:
-        user_data = load_binary(config.isk_sign_data_path)
+    if cert_config.use_isk and cert_config.isk_sign_data_path:
+        user_data = load_binary(cert_config.isk_sign_data_path)
     isk_private_key = None
-    if config.use_isk:
-        assert config.main_root_private_key_file
-        isk_private_key = load_binary(config.main_root_private_key_file)
+    if cert_config.use_isk:
+        assert cert_config.main_root_private_key_file
+        isk_private_key = load_binary(cert_config.main_root_private_key_file)
     isk_cert = None
-    if config.use_isk:
-        assert config.isk_certificate
-        isk_cert = load_binary(config.isk_certificate)
+    if cert_config.use_isk:
+        assert cert_config.isk_certificate
+        isk_cert = load_binary(cert_config.isk_certificate)
 
     cert_block = CertBlockV31(
         root_certs=root_certs,
-        used_root_cert=config.main_root_cert_id,
+        used_root_cert=cert_config.main_root_cert_id,
         user_data=user_data,
-        constraints=config.isk_constraint,
+        constraints=cert_config.isk_constraint,
         isk_cert=isk_cert,
-        ca_flag=not config.use_isk,
+        ca_flag=not cert_config.use_isk,
         isk_private_key=isk_private_key,
     )
     return cert_block
 
 
 def generate_master_boot_image(image_conf: click.File) -> None:
-    """Generate MasterBootImage from json configuration file."""
+    """Generate MasterBootImage from json configuration file.
+
+    :param image_conf: master boot image json configuration file.
+    :raises SPSDKError: Raised when signing private key path is not set
+    :raises SPSDKError: on unsupported family.
+    """
     config_data = json.load(image_conf)
-    config = elftosb_helper.MasterBootImageConfig(config_data)
+    family = config_data.get("family")
+
+    if family in [
+        "lpc55xx",
+        "lpc55s0x",
+        "lpc55s1x",
+        "lpc552x",
+        "lpc55s2x",
+        "lpc55s6x",
+        "rt5xx",
+        "rt6xx",
+    ]:
+        mbi = __create_mbi_group3(config_data)
+    elif family in ["lpc55s3x"]:
+        mbi = __create_mbi_group4(config_data)
+    else:
+        raise SPSDKError(f"Generating Master Boot Image failed. Family {family} is not supported.")
+
+    mbi_data = mbi.export()
+
+    mbi_output_file_path = config_data["masterBootOutputFile"]
+    write_file(mbi_data, mbi_output_file_path, mode="wb")
+
+    click.echo(f"Success. (Master Boot Image: {mbi_output_file_path} created.)")
+
+
+def __create_mbi_group3(config_data: dict) -> MasterBootImage:
+    """Create master boot image for group 3 devices.
+
+    Into group 3 belongs LPC55xx (LPC552x/S2x, LPC55S6x), LPC55S0x, LPC55S1x, RT5xx, RT6xx.
+
+    :param config: master boot image configuration data. Consult the content with elftosb user guide.
+    :return: master boot image fro group 3 devices.
+    :raises SPSDKError: if keystore size is of invalid size.
+    :raises SPSDKError: if keystore file path is invalid.
+    """
+    config = elftosb_helper.MasterBootImageConfigGroup3(config_data)
+
     app = load_binary(config.input_image_file)
     load_addr = config.output_image_exec_address
     trustzone = _get_trustzone(config)
-    image_type = _get_master_boot_image_type(config)
-    dual_boot_version = config.dual_boot_version
+    image_type = config.image_type
+    enable_hw_user_mode_keys = config.enable_hw_user_mode_keys
+
+    # Create certificate block, if image is signed
+    cert_block = None
+    private_key_pem_data = None
+    if MasterBootImageType.is_signed(image_type):
+        cert_block = _get_cert_block_v2(config.certificate_block_config)
+        private_key_pem_data = load_binary(
+            config.certificate_block_config.main_cert_private_key_file
+        )
+
+    key_store = None
+    hmac_key = None
+    key_source = KeySourceType.get(config.device_key_source)
+    if key_source in [KeySourceType.OTP, KeySourceType.KEYSTORE]:
+        with open(config.output_image_encryption_key_file, "r") as f:
+            hmac_key = f.read()
+
+        if config.use_key_store and key_source == KeySourceType.KEYSTORE:
+            try:
+                if config.key_store_file.strip():
+                    key_store_data = load_binary(config.key_store_file)
+                    if len(key_store_data) != KeyStore.KEY_STORE_SIZE:
+                        raise SPSDKError(
+                            f'Expected keystore size is "{KeyStore.KEY_STORE_SIZE}", got "{len(key_store_data)}".'
+                        )
+                else:
+                    key_store_data = bytes(KeyStore.KEY_STORE_SIZE)
+            except OSError:
+                raise SPSDKError(
+                    f'Invalid keystore file "{config.key_store_file}" in Master Boot Image configuration file.'
+                )
+
+            key_store = KeyStore(key_source=key_source, key_store=key_store_data)  # type: ignore
+
+    # app_table: Optional[MultipleImageTable] = None,
+    # ctr_init_vector: bytes = None,
+    mbi = MasterBootImage(
+        app=app,
+        load_addr=load_addr,
+        image_type=image_type,
+        trust_zone=trustzone,
+        app_table=None,
+        cert_block=cert_block,
+        priv_key_pem_data=private_key_pem_data,
+        hmac_key=hmac_key,
+        key_store=key_store,
+        enable_hw_user_mode_keys=enable_hw_user_mode_keys,
+        # ctr_init_vector=None, # commented out due to testing purposes
+    )
+    return mbi
+
+
+def __create_mbi_group4(config_data: dict) -> MasterBootImageN4Analog:
+    """Create master boot image for group 4 devices.
+
+    Into group 4 devices belongs LPC55S3x.
+
+    :param config: master boot image configuration data. Consult the content with elftosb user guide.
+    :return: master boot image group 4 devices.
+    :raises SPSDKError: signing private key file path not set in configuration file.
+    """
+    config = elftosb_helper.MasterBootImageConfigGroup4(config_data)
+
+    app = load_binary(config.input_image_file)
+    load_addr = config.output_image_exec_address
+    trustzone = _get_trustzone(config)
+    image_type = config.image_type
     firmware_version = config.firmware_version
 
     cert_block = None
     signature_provider = None
     if MasterBootImageType.is_signed(image_type):
-        cert_config = elftosb_helper.CertificateBlockConfig(config_data)
-        cert_block = _get_cert_block_v31(cert_config)
-        if cert_config.use_isk:
-            signing_private_key_path = cert_config.isk_private_key_file
+        cert_block = _get_cert_block_v31(config.certificate_block_config)
+        if config.certificate_block_config.use_isk:
+            signing_private_key_path = config.certificate_block_config.isk_private_key_file
         else:
-            signing_private_key_path = cert_config.main_root_private_key_file
+            signing_private_key_path = config.certificate_block_config.main_root_private_key_file
+        if not signing_private_key_path:
+            raise SPSDKError("Signing private key path is not set.")
         signature_provider = SignatureProvider.create(
             f"type=file;file_path={signing_private_key_path}"
         )
@@ -134,14 +279,12 @@ def generate_master_boot_image(image_conf: click.File) -> None:
         load_addr=load_addr,
         image_type=image_type,
         trust_zone=trustzone,
-        dual_boot_version=dual_boot_version,
         firmware_version=firmware_version,
         cert_block=cert_block,
         signature_provider=signature_provider,
     )
-    mbi_data = mbi.export()
 
-    write_file(mbi_data, config.master_boot_output_file, mode="wb")
+    return mbi
 
 
 def generate_secure_binary_21(
@@ -152,15 +295,15 @@ def generate_secure_binary_21(
     signing_certificate_file_paths: List[click.Path],
     root_key_certificate_paths: List[click.Path],
     hoh_out_path: click.Path,
-    external_files: List[click.Path]
-    ) -> None:
+    external_files: List[click.Path],
+) -> None:
     """Generate SecureBinary image from BD command file.
 
     :param bd_file_path: path to BD file.
     :param output_file_path: output path to generated secure binary file.
     :param key_file_path: path to key file.
     :param private_key_file_path: path to private key file for signing. This key
-    relates to last certificate from signinng certifacate chain.
+    relates to last certificate from signing certificate chain.
     :param signing_certificate_file_paths: signing certificate chain.
     :param root_key_certificate_paths: paths to root key certificate(s) for
     verifying other certificates. Only 4 root key certificates are allowed,
@@ -170,7 +313,7 @@ def generate_secure_binary_21(
     None, 'hash.bin' is created under working directory.
     :param external_files: external files referenced from BD file.
 
-    :raises SyntaxError:
+    :raises SPSDKError: If incorrect bf file is provided
     """
     # Create lexer and parser, load the BD file content and parse it for
     # further execution - the parsed BD file is a dictionary in JSON format
@@ -181,7 +324,7 @@ def generate_secure_binary_21(
 
     parsed_bd_file = parser.parse(text=bd_file_content, extern=external_files)
     if parsed_bd_file is None:
-        raise SyntaxError("error: invalid bd file, secure binary file generation terminated")
+        raise SPSDKError("Invalid bd file, secure binary file generation terminated")
 
     # The dictionary contains following content:
     # {
@@ -198,13 +341,23 @@ def generate_secure_binary_21(
     # we need to encrypt and sign the image, let's check, whether we have
     # everything we need
     # It appears, that flags option in BD file are irrelevant for 2.1 secure
-    # binary images.
-    if private_key_file_path is None or \
-        signing_certificate_file_paths is None or \
-        root_key_certificate_paths is None:
-        click.echo("error: Signed image requires private key with -s option, \
-one or more certificate(s) using -S option and one or more root key \
-certificates using -R option")
+    # binary images regarding encryption/signing - SB 2.1 must be encrypted
+    # and signed.
+    # However, bit 15 represents, whether the final SB 2.1 must include a
+    # SHA-256 of the botable section.
+    flags = parsed_bd_file["options"].get(
+        "flags", BootImageV21.FLAGS_SHA_PRESENT_BIT | BootImageV21.FLAGS_ENCRYPTED_SIGNED_BIT
+    )
+    if (
+        private_key_file_path is None
+        or signing_certificate_file_paths is None
+        or root_key_certificate_paths is None
+    ):
+        click.echo(
+            "error: Signed image requires private key with -s option, "
+            "one or more certificate(s) using -S option and one or more root key "
+            "certificates using -R option"
+        )
         sys.exit(1)
 
     # Versions and build number are up to the user. If he doesn't provide any,
@@ -230,7 +383,7 @@ certificates using -R option")
         # be definitely reported to tell the user, what kind of key is being
         # used
         click.echo("warning: no KEK key provided, using a zero KEK key")
-        sb_kek = bytes.fromhex('0' * 64)
+        sb_kek = bytes.fromhex("0" * 64)
     else:
         with open(str(key_file_path)) as kek_key_file:
             # TODO maybe we should validate the key length and content, to make
@@ -286,15 +439,17 @@ certificates using -R option")
         *sb_sections,
         product_version=product_version,
         component_version=component_version,
-        build_number=build_number)
+        build_number=build_number,
+        flags=flags,
+    )
 
     # create certificate block
     cert_block = CertBlockV2(build_number=build_number)
-    for cert_file_path in signing_certificate_file_paths:
-        cert_data = load_binary(str(cert_file_path))
+    for cert_path in signing_certificate_file_paths:
+        cert_data = load_certificate_as_bytes(str(cert_path))
         cert_block.add_certificate(cert_data)
     for cert_idx, cert_path in enumerate(root_key_certificate_paths):
-        cert_data = load_binary(str(cert_path))
+        cert_data = load_certificate_as_bytes(str(cert_path))
         cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
 
     # We have our secure binary, now we attach to it the certificate block and
@@ -315,9 +470,15 @@ certificates using -R option")
     with open(str(output_file_path), "wb") as sb_file_output:
         sb_file_output.write(secure_binary.export())
 
+    click.echo(f"Success. (Secure binary 2.1: {output_file_path} created.)")
 
-def generate_secure_binary(container_conf: click.File) -> None:
-    """Geneate SecureBinary image from json configuration file."""
+
+def generate_secure_binary_31(container_conf: click.File) -> None:
+    """Geneate SecureBinary image from json configuration file.
+
+    :param container_conf: configuration file
+    :raises SPSDKError: Raised when there is no signing key
+    """
     config_data = json.load(container_conf)
     config = elftosb_helper.SB31Config(config_data)
     timestamp = config.timestamp
@@ -347,7 +508,7 @@ def generate_secure_binary(container_conf: click.File) -> None:
     commands_data = sb_cmd_block.export()
 
     # CERTIFICATE BLOCK
-    cert_block = _get_cert_block_v31(config)
+    cert_block = _get_cert_block_v31(config.certificate_block_config)
     data_cb = cert_block.export()
 
     # SB FILE HEADER
@@ -370,6 +531,8 @@ def generate_secure_binary(container_conf: click.File) -> None:
     final_data += data_cb
 
     # SIGNATURE
+    if not config.main_signing_key:
+        raise SPSDKError("There is no signing key")
     assert isinstance(config.main_signing_key, str)
     private_key_data = load_binary(config.main_signing_key)
     data_to_sign = final_data
@@ -380,107 +543,80 @@ def generate_secure_binary(container_conf: click.File) -> None:
 
     write_file(final_data, config.container_output, mode="wb")
 
-handlers = {
-    "command": generate_secure_binary_21,
-    "image_conf": generate_master_boot_image,
-    "container_conf": generate_secure_binary,
-    "tzm_conf": generate_trustzone_binary
-}
+    click.echo(f"Success. (Secure binary 3.1: {config.container_output} created.)")
 
-@click.command()
+
+@click.command(no_args_is_help=True)  # type: ignore
 @click.option(
-    '-f', '--chip-family',
-    default='lpc55s3x',
-    help="Select the chip family (default is lpc55s3x)"
+    "-f",
+    "--chip-family",
+    default="lpc55s3x",
+    help="Select the chip family (default is lpc55s3x)",
+    type=click.Choice(SUPPORTED_FAMILIES, case_sensitive=False),
 )
-@optgroup.group(
-    "Output file type generation selection.",
-    cls=RequiredMutuallyExclusiveOptionGroup
-)
+@optgroup.group("Output file type generation selection.", cls=RequiredMutuallyExclusiveOptionGroup)
 @optgroup.option(
-    '-c',
-    '--command',
+    "-c",
+    "--command",
     type=click.Path(exists=True),
-    help="BD configuration file to produce secure binary v2.x"
+    help="BD configuration file to produce secure binary v2.x",
 )
 @optgroup.option(
-    '-J',
-    '--image-conf',
-    type=click.File('r'),
-    help="Json image configuration file to produce master boot image"
+    "-J",
+    "--image-conf",
+    type=click.File("r"),
+    help="Json image configuration file to produce master boot image",
 )
 @optgroup.option(
-    '-j',
-    '--container-conf',
-    type=click.File('r'),
-    help="json container configuration file to produce secure binary v3.x"
+    "-j",
+    "--container-conf",
+    type=click.File("r"),
+    help="json container configuration file to produce secure binary v3.x",
 )
 @optgroup.option(
-    '-T',
-    '--tzm-conf',
-    type=click.File('r'),
-    help="json trust zone configuration file to produce trust zone binary"
+    "-T",
+    "--tzm-conf",
+    type=click.File("r"),
+    help="json trust zone configuration file to produce trust zone binary",
 )
-@optgroup.group(
-    "Command file options"
+@optgroup.group("Command file options")
+@optgroup.option("-o", "--output", type=click.Path(), help="Output file path.")
+@optgroup.option(
+    "-k", "--key", type=click.Path(exists=True), help="Add a key file and enable encryption."
 )
 @optgroup.option(
-    '-o',
-    '--output',
-    type=click.Path(),
-    help="Output file path."
+    "-s", "--pkey", type=click.Path(exists=True), help="Path to private key for signing."
 )
 @optgroup.option(
-    '-k',
-    '--key',
-    type=click.Path(exists=True),
-    help="Add a key file and enable encryption."
-)
-@optgroup.option(
-    '-s',
-    '--pkey',
-    type=click.Path(exists=True),
-    help="Path to private key for signing."
-)
-@optgroup.option(
-    '-S',
-    '--cert',
+    "-S",
+    "--cert",
     type=click.Path(exists=True),
     multiple=True,
     help="Path to certificate files for signing. The first certificate will be \
-the self signed root key certificate."
+the self signed root key certificate.",
 )
 @optgroup.option(
-    '-R',
-    '--root-key-cert',
+    "-R",
+    "--root-key-cert",
     type=click.Path(exists=True),
     multiple=True,
     help="Path to root key certificate file(s) for verifying other certificates. \
 Only 4 root key certificates are allowed, others are ignored. \
 One of the certificates must match the first certificate passed \
-with -S/--cert arg."
+with -S/--cert arg.",
 )
 @optgroup.option(
-    '-h',
-    '--hash-of-hashes',
+    "-h",
+    "--hash-of-hashes",
     type=click.Path(),
     help="Path to output hash of hashes of root keys. If argument is not \
-provided, then by default the tool creates hash.bin in the working directory."
+provided, then by default the tool creates hash.bin in the working directory.",
 )
-@click.version_option(
-    spsdk_version,
-    '-v',
-    '--version'
-)
-@click.help_option(
-    '--help'
-)
-@click.argument(
-    'external',
-    type=click.Path(),
-    nargs=-1
-)
-def main(chip_family: str,
+@click.version_option(spsdk_version, "-v", "--version")
+@click.help_option("--help")
+@click.argument("external", type=click.Path(), nargs=-1)
+def main(
+    chip_family: str,
     command: click.Path,
     output: click.Path,
     key: click.Path,
@@ -491,7 +627,8 @@ def main(chip_family: str,
     container_conf: click.File,
     tzm_conf: click.File,
     hash_of_hashes: click.Path,
-    external: List[click.Path]) -> None:
+    external: List[click.Path],
+) -> None:
     """Tool for generating TrustZone, MasterBootImage and SecureBinary images."""
     if command:
         if output is None:
@@ -507,7 +644,7 @@ def main(chip_family: str,
             signing_certificate_file_paths=cert,
             root_key_certificate_paths=root_key_cert,
             hoh_out_path=hash_of_hashes,
-            external_files=external
+            external_files=external,
         )
 
     if chip_family not in SUPPORTED_FAMILIES:
@@ -518,10 +655,11 @@ def main(chip_family: str,
         generate_master_boot_image(image_conf)
 
     if container_conf:
-        generate_secure_binary(container_conf)
+        generate_secure_binary_31(container_conf)
 
     if tzm_conf:
         generate_trustzone_binary(tzm_conf)
+
 
 @catch_spsdk_error
 def safe_main() -> None:

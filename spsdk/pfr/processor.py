@@ -16,6 +16,8 @@ import astunparse
 
 from .translator import Translator
 
+logger = logging.getLogger(__name__)
+
 
 class MyTransformer(ast.NodeTransformer):
     """AST-based transformer for replacing string names with actual values."""
@@ -26,7 +28,7 @@ class MyTransformer(ast.NodeTransformer):
         :param translator: Translator instance
         """
         self.translator = translator
-        self.logger = logging.getLogger("transformer")
+        self.logger = logger.getChild("transformer")
 
     def visit_Attribute(self, node: ast.Attribute) -> ast.Constant:  # pylint: disable=invalid-name
         """Translate Attribute Nodes."""
@@ -53,7 +55,7 @@ class Processor:
 
         :param translator: Translator instance
         """
-        self.logger = logging.getLogger("processor")
+        self.logger = logger.getChild("processor")
         self.transformer = MyTransformer(translator)
 
     def process(self, condition: str) -> Tuple[bool, str]:

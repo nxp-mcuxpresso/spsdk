@@ -6,7 +6,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import SegIVT2, SegBDT
+import pytest
+
+from spsdk import SPSDKError
+from spsdk.image import SegBDT, SegIVT2
 
 
 def test_bdt_export_parse():
@@ -63,3 +66,9 @@ def test_bdt_info():
     info_strings = ["Start", "App Length", "Plugin"]
     for info_string in info_strings:
         assert info_string in output, f"string {info_string} is not in the output: {output}"
+
+
+def test_bdt_invalid_plugin():
+    bdt = SegBDT()
+    with pytest.raises(SPSDKError, match="Plugin value must be 0 .. 2"):
+        bdt.plugin = 10

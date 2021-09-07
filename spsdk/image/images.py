@@ -9,42 +9,49 @@
 """Image."""
 
 from datetime import datetime, timezone
-from io import BytesIO, BufferedReader, SEEK_END, SEEK_CUR
+from io import SEEK_CUR, SEEK_END, BufferedReader, BytesIO
 from struct import unpack_from
-from typing import Optional, Tuple, Union, Any, List
+from typing import Any, List, Optional, Tuple, Union
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives.serialization import Encoding
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto import crypto_backend
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo
-from spsdk.utils.misc import align, align_block, extend_block
-from .commands import CmdAuthData, CmdInstallKey
-from .commands import EnumInsKey, EnumCertFormat, EnumAlgorithm, EnumAuthDat, EnumEngine
+from spsdk.utils.misc import DebugInfo, align, align_block, extend_block
+
+from .commands import (
+    CmdAuthData,
+    CmdInstallKey,
+    EnumAlgorithm,
+    EnumAuthDat,
+    EnumCertFormat,
+    EnumEngine,
+    EnumInsKey,
+)
 from .header import Header, Header2, UnparsedException
-from .misc import read_raw_data, read_raw_segment, NotEnoughBytesException
-from .secret import Signature, CertificateImg, MAC, SrkTable
+from .misc import NotEnoughBytesException, read_raw_data, read_raw_segment
+from .secret import MAC, CertificateImg, Signature, SrkTable
 from .segments import (
-    SegTag,
-    SegIVT2,
-    SegBDT,
-    SegAPP,
-    SegDCD,
-    SegCSF,
-    SegIVT3a,
-    SegIVT3b,
-    SegBDS3a,
-    SegBDS3b,
-    SegBIC1,
     AbstractFCB,
     FlexSPIConfBlockFCB,
     PaddingFCB,
+    SegAPP,
+    SegBDS3a,
+    SegBDS3b,
+    SegBDT,
     SegBEE,
+    SegBIC1,
+    SegCSF,
+    SegDCD,
+    SegIVT2,
+    SegIVT3a,
+    SegIVT3b,
+    SegTag,
 )
-
 
 ########################################################################################################################
 # i.MX Boot Image Classes
@@ -166,10 +173,16 @@ class BootImgRT(BootImgBase):
         :param offset: The IVT offset; use IVT_OFFSET_NOR_FLASH for NOR-FLASH or IVT_OFFSET_OTHER
         :param version: The version of boot img format; default value should be used
         :param plugin: Do not use; see `self.plugin` property
+        :raises SPSDKError: If invalid IVT offset
+        :raises SPSDKError: If invalid version
+        :raises SPSDKError: If Plugin is not supported
         """
-        assert offset in BootImgRT.IVT_OFFSETS
-        assert version in self.VERSIONS
-        assert plugin is False  # not supported yet
+        if offset not in BootImgRT.IVT_OFFSETS:
+            raise SPSDKError("Invalid IVT offset")
+        if version not in self.VERSIONS:
+            raise SPSDKError("Invalid version")
+        if plugin is True:
+            raise SPSDKError("Plugin is not supported")  # not supported yet
         super().__init__(address, offset)
         self._nonce: Optional[bytes] = None
         self._dek_key: Optional[bytes] = None
@@ -197,8 +210,10 @@ class BootImgRT(BootImgBase):
         """Setter.
 
         :param value: DEK key for encrypted images
+        :raises SPSDKError: If invalid length of DEK key
         """
-        assert len(value) == MAC.AES128_BLK_LEN
+        if len(value) != MAC.AES128_BLK_LEN:
+            raise SPSDKError("Invalid length of DEK key")
         self._dek_key = value
 
     @property
@@ -233,8 +248,10 @@ class BootImgRT(BootImgBase):
         """Setter.
 
         :param value: new IVT offset
+        :raises SPSDKError: If invalid IVT offset
         """
-        assert value in self.IVT_OFFSETS
+        if value not in self.IVT_OFFSETS:
+            raise SPSDKError("Invalid IVT offset")
         self.offset = value
 
     @property
@@ -303,7 +320,6 @@ class BootImgRT(BootImgBase):
         """Set FlexSPI external FLASH configuration.
 
         :param data: FlexSPIConfBlockFCB or binary data representing
-        :raise ValueError: if data are not valid Flex SPI configuration block
         """
         self.fcb = (
             data if isinstance(data, FlexSPIConfBlockFCB) else FlexSPIConfBlockFCB.parse(data)
@@ -399,6 +415,8 @@ class BootImgRT(BootImgBase):
         """Update CSF segment.
 
         :param csf: CSF segment tu be updated
+        :raises SPSDKError: If nonce not present
+        :raises SPSDKError: If mac not present
         """
         self.app.padding_len = align(self.app.size, 0x1000) - self.app.size
         csf.update(True)
@@ -415,8 +433,10 @@ class BootImgRT(BootImgBase):
             #
             self.bdt.app_length += self.DEK_SIZE  # to include DEK
             # update encryption signature
-            assert self._nonce
-            assert self._mac
+            if not self._nonce:
+                raise SPSDKError("Nonce not present")
+            if not self._mac:
+                raise SPSDKError("Mac not present")
             for mac in csf.macs:
                 mac.update_aead_encryption_params(self._nonce, self._mac)
 
@@ -479,26 +499,31 @@ class BootImgRT(BootImgBase):
         :param nonce: initial vector for AEAD HAB encryption, if not specified random value is used;
                         For non-encrypted image use `None`
                         The parameter should be used only for testing to produce stable output
-        :raise ValueError: if any parameter is not valid
+        :raises ValueError: if any parameter is not valid
+        :raises SPSDKError: If invalid image type
+        :raises SPSDKError: If image was already added
+        :raises SPSDKError: If entry_addr not detected from image, must be specified explicitly
+        :raises SPSDKError: If hab is not encrypted
+        :raises SPSDKError: If nonce is not empty
         """
-        assert img_type == EnumAppType.APP
+        if img_type != EnumAppType.APP:
+            raise SPSDKError("Invalid image type")
         if self.app.data:
-            raise ValueError("Image was already added")
+            raise SPSDKError("Image was already added")
         entry_addr = unpack_from("<I", data, 4)[0]
         if entry_addr == 0:  # there can be padding for images located in RAM, see flashloader
             entry_addr = address
-            assert (
-                entry_addr > 0
-            ), "entry_addr not detected from image, must be specified explicitly"
+            if not entry_addr > 0:
+                raise SPSDKError("entry_addr not detected from image, must be specified explicitly")
         elif (address >= 0) and (address != entry_addr):
-            raise ValueError("entry_address does not match with the image")
+            raise SPSDKError("entry_address does not match with the image")
         self._ivt.app_address = entry_addr
         self.app.data = data
         if dek_key is not None:  # encrypted?
             # initialize DEK key
             self._dek_key = bytes([0]) * MAC.AES128_BLK_LEN if len(dek_key) == 0 else dek_key
             if len(self._dek_key) != MAC.AES128_BLK_LEN:
-                raise ValueError(f"Invalid dek_key length, expected {MAC.AES128_BLK_LEN} bytes")
+                raise SPSDKError(f"Invalid dek_key length, expected {MAC.AES128_BLK_LEN} bytes")
             # initialize NONCE
             if nonce:
                 self._nonce = nonce
@@ -506,21 +531,27 @@ class BootImgRT(BootImgBase):
             if self._nonce is None:
                 self._nonce = crypto_backend().random_bytes(nonce_len)
             elif len(self._nonce) != nonce_len:
-                raise ValueError(f"Invalid nonce length, expected {nonce_len} bytes")
+                raise SPSDKError(f"Invalid nonce length, expected {nonce_len} bytes")
             # encrypt APP
-            assert self.hab_encrypted
+            if not self.hab_encrypted:
+                raise SPSDKError("Hab is not encrypted")
             self.app.data = self._hab_encrypt_app_data(align_block(data, MAC.AES128_BLK_LEN))
         else:
-            assert nonce is None
+            if nonce is not None:
+                raise SPSDKError("Nonce is not empty")
 
     def add_dcd_bin(self, data: bytes) -> None:
         """Add DCD binary data.
 
         :param data: DCD binary data to be added
+        :raises SPSDKError: If DCD is already present
+        :raises SPSDKError: If DCD is not enabled
         """
-        assert self.dcd is None
+        if self.dcd is not None:
+            raise SPSDKError("DCD is already present")
         self.dcd = SegDCD.parse(data)
-        assert self.dcd  # must be enabled to include DCD into export
+        if not self.dcd:
+            raise SPSDKError("DCD must be enabled to include DCD into export")
 
     def add_csf_standard_auth(
         self,
@@ -543,9 +574,14 @@ class BootImgRT(BootImgBase):
         :param csf_priv_key: CSF private key; decrypted binary data in PEM format
         :param img_cert: IMG certificate
         :param img_priv_key: IMG private key; decrypted binary data in PEM format
+        :raises SPSDKError: If invalid length of srk table
+        :raises SPSDKError: If invalid index of selected SRK key
+        :raises SPSDKError: If application data not present
         """
-        assert 1 <= len(srk_table) <= 4
-        assert 0 <= src_key_index < len(srk_table)
+        if not 1 <= len(srk_table) <= 4:
+            raise SPSDKError("Invalid length of srk table")
+        if not 0 <= src_key_index < len(srk_table):
+            raise SPSDKError("Invalid index of selected SRK key")
         csf = SegCSF(version=version, enabled=True)
         # install SRK
         cmd_ins = CmdInstallKey(
@@ -594,7 +630,8 @@ class BootImgRT(BootImgBase):
                 self.dcd.size,
             )
         app_data = self.app.data
-        assert app_data is not None
+        if app_data is None:
+            raise SPSDKError("Application data not present")
         cmd_auth.append(self.address + self.app_offset, align(len(app_data), 16))
         cmd_auth.cmd_data_reference = Signature(version=version)
         csf.append_command(cmd_auth)
@@ -629,14 +666,22 @@ class BootImgRT(BootImgBase):
 
         :param app_data: application data to be encrypted
         :return: encrypted application data (using HAB encryption)
+        :raises SPSDKError: If nonce is not present
+        :raises SPSDKError: If invalid length of application data
+        :raises SPSDKError: If DEK key is not present
+        :raises SPSDKError: If invalid length of encrypted data
         """
-        assert self._nonce is not None
-        assert len(app_data) & (MAC.AES128_BLK_LEN - 1) == 0
+        if self._nonce is None:
+            raise SPSDKError("Nonce is not present")
+        if not len(app_data) & (MAC.AES128_BLK_LEN - 1) == 0:
+            raise SPSDKError("Invalid length of application data")
         dek = self.dek_key
-        assert dek is not None
+        if dek is None:
+            raise SPSDKError("DEK key is not present")
         aesccm = AESCCM(dek, tag_length=MAC.AES128_BLK_LEN)
         encr = aesccm.encrypt(self._nonce, app_data, b"")
-        assert len(encr) == len(app_data) + 16
+        if len(encr) != len(app_data) + 16:
+            raise SPSDKError("Invalid length of encrypted data")
         self._mac = encr[-16:]
         return encr[:-16]
 
@@ -645,16 +690,22 @@ class BootImgRT(BootImgBase):
         """Return decrypted binary application data.
 
         Note: dek key, mac and nonce must be assigned for decryption
+        :raises SPSDKError: If application not present
+        :raises SPSDKError: If invalid length of application data
+        :raises SPSDKError: If Mac or nonce or dek not present
         """
         app_data = self.app.data
-        assert app_data
+        if not app_data:
+            raise SPSDKError("Application not present")
         if not self.hab_encrypted:
             return app_data
 
-        assert len(app_data) & (MAC.AES128_BLK_LEN - 1) == 0
+        if not len(app_data) & (MAC.AES128_BLK_LEN - 1) == 0:
+            raise SPSDKError("Invalid length of application data")
         mac = self._mac
         dek = self.dek_key
-        assert mac and self._nonce and dek
+        if not (mac and self._nonce and dek):
+            raise SPSDKError("Mac or nonce or dek not present")
         aesccm = AESCCM(dek, tag_length=MAC.AES128_BLK_LEN)
         res = aesccm.decrypt(self._nonce, app_data + mac, b"")
         return res
@@ -680,9 +731,14 @@ class BootImgRT(BootImgBase):
         :param csf_priv_key: CSF private key; decrypted binary data in PEM format
         :param img_cert: IMG certificate
         :param img_priv_key: IMG private key; decrypted binary data in PEM format
+        :raises SPSDKError: If invalid length of srk table
+        :raises SPSDKError: If invalid index of srk table
+        :raises SPSDKError: If application data is not present
         """
-        assert 1 <= len(srk_table) <= 4
-        assert 0 <= src_key_index < len(srk_table)
+        if not 1 <= len(srk_table) <= 4:
+            raise SPSDKError("Invalid length of srk table")
+        if not 0 <= src_key_index < len(srk_table):
+            raise SPSDKError("Invalid index of srk table")
         csf = SegCSF(version=version, enabled=True)
         # install SRK
         cmd_ins = CmdInstallKey(
@@ -726,7 +782,8 @@ class BootImgRT(BootImgBase):
         )
         cmd_auth.append(self.address + self.ivt_offset, SegIVT2.SIZE + BootImgRT.BDT_SIZE)
         app_data = self.app.data
-        assert app_data is not None
+        if app_data is None:
+            raise SPSDKError("Application data is not present")
         cmd_auth.cmd_data_reference = Signature(version=version)
         csf.append_command(cmd_auth)
         # install DEK key
@@ -741,7 +798,8 @@ class BootImgRT(BootImgBase):
             certificate=cert,
             private_key_pem_data=img_priv_key,
         )
-        assert app_data is not None
+        if app_data is None:
+            raise SPSDKError("Application data is not present")
         cmd_auth.append(self.address + self.app_offset, align(len(app_data), 16))
         cmd_auth.cmd_data_reference = MAC(version=version, nonce_len=0xD, mac_len=16)
         csf.append_command(cmd_auth)
@@ -753,16 +811,18 @@ class BootImgRT(BootImgBase):
 
         :param dbg_info: optional instance to provide info about exported data
         :return: binary FCB segment and BEE regions
-        :raise ValueError: if any BEE region is configured for images not located in the FLASH
+        :raises ValueError: if any BEE region is configured for images not located in the FLASH
+        :raises SPSDKError: If invalid length of data
         """
         if not self.fcb.enabled:
             return b""
         data = self.fcb.export(dbg_info=dbg_info)
-        assert len(data) == self.fcb.space
+        if len(data) != self.fcb.space:
+            raise SPSDKError("Invalid length of data")
         if self.ivt_offset == self.IVT_OFFSET_NOR_FLASH:
             data += self.bee.export(dbg_info=dbg_info)
         elif self.bee.space > 0:
-            raise ValueError("BEE can be configured only for XIP images located in FLASH")
+            raise SPSDKError("BEE can be configured only for XIP images located in FLASH")
         return data
 
     def _bee_encrypt_img_data(self, data: bytes) -> bytes:
@@ -770,15 +830,15 @@ class BootImgRT(BootImgBase):
 
         :param data: image data (including IVT offset) to be encrypted
         :return: the image with encrypted regions
-        :raise ValueError: if image configuration is invalid and BEE encryption cannot be applied
+        :raises SPSDKError: If image configuration is invalid and BEE encryption cannot be applied
         """
         if not self.bee_encrypted:
             return data
 
         if self.ivt_offset != self.IVT_OFFSET_NOR_FLASH:
-            raise ValueError("BEE encryption is supported only for NOR FLASH")
+            raise SPSDKError("BEE encryption is supported only for NOR FLASH")
         if self.hab_encrypted:
-            raise ValueError("BEE encryption cannot be used for HAB encrypted images")
+            raise SPSDKError("BEE encryption cannot be used for HAB encrypted images")
 
         # encrypt
         return data[: self.ivt_offset] + self.bee.encrypt_data(
@@ -795,14 +855,16 @@ class BootImgRT(BootImgBase):
         :param zulu: optional UTC datetime; should be used only if you need fixed datetime for the test
                 Note: the parameter is applied to CSF only, so it is not used for unsigned images
         :param dbg_info: optional instance to provide info about exported data
-        :raises ValueError: If the image is not encrypted
+        :raises SPSDKError: If the image is not encrypted
+        :raises SPSDKError: If padding is present
+        :raises SPSDKError: If invalid alignment of application
         :return: bytes
         """
         csf = self.enabled_csf
         if csf:
             csf.update_signatures(zulu, b"", 0)  # dummy call to provide size of the CSF section
         elif self.dek_key is not None:
-            raise ValueError("CSF must be assigned for encrypted images")
+            raise SPSDKError("CSF must be assigned for encrypted images")
 
         self._update()
         dbg_info.append_section("RT10xxBootableImage")
@@ -819,13 +881,15 @@ class BootImgRT(BootImgBase):
         dbg_info.append_binary_section("BDT", bdt_data)
         # DCD
         if (self.dcd is not None) and self.dcd.enabled:
-            assert self.dcd.padding_len == 0  # no padding
+            if self.dcd.padding_len != 0:
+                raise SPSDKError("Padding can not be present")
             dcd_data = self.dcd.export()
             data += dcd_data
             dbg_info.append_binary_section("DCD", dcd_data)
         # padding before APP
         app_alignment = self.app_offset if self.fcb.enabled else self.app_offset - self.ivt_offset
-        assert app_alignment >= len(data)
+        if not app_alignment >= len(data):
+            raise SPSDKError("Invalid alignment of application")
         data = extend_block(data, app_alignment)
         # APP
         app_data = self.app.export()
@@ -849,7 +913,7 @@ class BootImgRT(BootImgBase):
 
         :param strm: of image data; start seeking from current position
         :param size: maximum length
-        :raise ValueError: Raised when IVT is not found
+        :raises SPSDKError: Raised when IVT is not found
         :return: tuple with: Header, start position, end position
         """
         start_pos = strm.tell()
@@ -871,7 +935,7 @@ class BootImgRT(BootImgBase):
             except UnparsedException:  # ignore different header tags
                 pass
 
-        raise ValueError("IVT not found")
+        raise SPSDKError("IVT not found")
 
     @classmethod
     def _find_fcb_pos(
@@ -912,14 +976,14 @@ class BootImgRT(BootImgBase):
         :param stream: The stream buffer or bytes array
         :param step: Image searching step (this parameter is not used for RT)
         :param size: parsing size; None to parse till the end of the stream
-        :raises TypeError: Raised when the value type is incorrect
+        :raises SPSDKError: Raised when the value type is incorrect
         :return: BootImgRT object
         """
         if isinstance(stream, (bytes, bytearray)):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise TypeError(' Not correct value type: "{}" !'.format(type(stream)))
+            raise SPSDKError(' Not correct value type: "{}" !'.format(type(stream)))
 
         header, start_pos, end_pos = cls._find_ivt_pos(stream, size)
 
@@ -1180,15 +1244,15 @@ class BootImg2(BootImgBase):
         :param stream: The stream buffer or bytes array
         :param step: Image searching step
         :param size: parsing size
-        :raises TypeError: raised when value type is incorrect
-        :raises Exception: raised when there is not an i.MX Boot Image
+        :raises SPSDKError: Raised when value type is incorrect
+        :raises SPSDKError: Raised when there is not an i.MX Boot Image
         :return: BootImg2 object
         """
         if isinstance(stream, (bytes, bytearray)):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise TypeError(f"Not correct value type: {type(stream)} !")
+            raise SPSDKError(f"Not correct value type: {type(stream)} !")
 
         header = Header()
         start_index = stream.tell()
@@ -1212,7 +1276,7 @@ class BootImg2(BootImgBase):
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception("Not an i.MX Boot Image!")
+            raise SPSDKError("Not an i.MX Boot Image!")
 
         obj = BootImg2()
         if header.param:
@@ -1466,15 +1530,15 @@ class BootImg8m(BootImgBase):
         :param stream: The stream buffer or bytes array
         :param step: Image searching step
         :param size: parsing size
-        :raises TypeError: raised when the value type is incorrect
-        :raises Exception: raised when there is not an i.MX Boot Image
+        :raises SPSDKError: Raised when the value type is incorrect
+        :raises SPSDKError: Raised when there is not an i.MX Boot Image
         :return: BootImg2 object
         """
         if isinstance(stream, (bytes, bytearray)):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise TypeError(f"Not correct value type: {type(stream)}!")
+            raise SPSDKError(f"Not correct value type: {type(stream)}!")
 
         header = Header()
         start_index = stream.tell()
@@ -1498,7 +1562,7 @@ class BootImg8m(BootImgBase):
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception("Not an i.MX Boot Image!")
+            raise SPSDKError("Not an i.MX Boot Image!")
 
         obj = cls(version=header.param)
         img_size = last_index - start_index
@@ -1637,7 +1701,7 @@ class BootImg3a(BootImgBase):
 
     @staticmethod
     def _compute_padding(size: int, sector_size: int) -> int:
-        return ((size // sector_size + (size % sector_size > 0)) * sector_size) - size
+        return (size // sector_size + (size % sector_size > 0)) * sector_size - size
 
     def _update(self) -> None:
         # Set zero padding for IVT and BDT sections
@@ -1848,15 +1912,15 @@ class BootImg3a(BootImgBase):
         :param stream: The stream buffer or bytes array
         :param step: Image searching step
         :param size: parsing size
-        :raises TypeError: raised when the values type is incorrect
-        :raises Exception: raised when there is not an i.MX Boot Image
+        :raises SPSDKError: Raised when the values type is incorrect
+        :raises SPSDKError: Raised when there is not an i.MX Boot Image
         :return: BootImg3a object
         """
         if isinstance(stream, (bytes, bytearray)):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise TypeError(f"Not correct value type: {type(stream)}!")
+            raise SPSDKError(f"Not correct value type: {type(stream)}!")
 
         header = Header()
         start_index = stream.tell()
@@ -1880,7 +1944,7 @@ class BootImg3a(BootImgBase):
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception("Not an i.MX Boot Image!")
+            raise SPSDKError("Not an i.MX Boot Image!")
 
         obj = cls(version=header.param)
         # TODO: not used right now: img_size = last_index - start_index
@@ -1968,7 +2032,8 @@ class BootImg3b(BootImgBase):
     @ivt.setter
     def ivt(self, value: List) -> None:
         assert isinstance(value, list)
-        assert len(value) == self.COUNT_OF_CONTAINERS
+        if len(value) != self.COUNT_OF_CONTAINERS:
+            raise SPSDKError("Invalid value of IVT")
         assert isinstance(value[0], SegIVT3b)
         self._ivt = value
 
@@ -1980,7 +2045,8 @@ class BootImg3b(BootImgBase):
     @bdt.setter
     def bdt(self, value: List) -> None:
         assert isinstance(value, list)
-        assert len(value) == self.COUNT_OF_CONTAINERS
+        if len(value) != self.COUNT_OF_CONTAINERS:
+            raise SPSDKError("Invalid value of BDT")
         assert isinstance(value[0], SegBDS3b)
         self._bdt = value
 
@@ -2256,15 +2322,15 @@ class BootImg3b(BootImgBase):
         :param stream: The stream buffer or bytes array
         :param step: Image searching step
         :param size: parsing size
-        :raises TypeError: When the value is incorrect
-        :raises Exception: If there is not an i.MX Boot Image
+        :raises SPSDKError: When the value is incorrect
+        :raises SPSDKError: If there is not an i.MX Boot Image
         :return: BootImg3b object
         """
         if isinstance(stream, (bytes, bytearray)):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise TypeError(f"Not correct value type: {type(stream)}!")
+            raise SPSDKError(f"Not correct value type: {type(stream)}!")
 
         header = Header()
         start_index = stream.tell()
@@ -2288,7 +2354,7 @@ class BootImg3b(BootImgBase):
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception("Not an i.MX Boot Image!")
+            raise SPSDKError("Not an i.MX Boot Image!")
 
         obj = cls(version=header.param)
         # TODO: not used right now: img_size = last_index - start_index
@@ -2391,14 +2457,14 @@ class BootImg4(BootImgBase):
         :param step: Image searching step
         :param size: parsing size
         :return: BootImg4 object
-        :raises TypeError: Raised when the value type is incorrect
-        :raises Exception: If there is not an i.MX Boot Image
+        :raises SPSDKError: Raised when the value type is incorrect
+        :raises SPSDKError: If there is not an i.MX Boot Image
         """
         if isinstance(stream, (bytes, bytearray)):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise TypeError(' Not correct value type: "{}" !'.format(type(stream)))
+            raise SPSDKError(' Not correct value type: "{}" !'.format(type(stream)))
 
         start_index = stream.tell()
         last_index = stream.seek(0, SEEK_END)
@@ -2417,7 +2483,7 @@ class BootImg4(BootImgBase):
             start_index = stream.seek(step, SEEK_CUR)
 
         if not imx_image:
-            raise Exception(" Not an i.MX Boot Image !")
+            raise SPSDKError(" Not an i.MX Boot Image !")
 
         # TODO: not used right now: img_size = last_index - start_index
         obj = cls()
@@ -2517,7 +2583,8 @@ class KernelImg:
     def parse(cls, data: Union[str, bytes]) -> None:
         """Parse."""
         assert isinstance(data, (bytes, str))
-        assert len(data) > cls.IMAGE_MIN_SIZE
+        if not len(data) > cls.IMAGE_MIN_SIZE:
+            raise SPSDKError("Invalid length of data to be parsed")
 
 
 ########################################################################################################################
@@ -2533,17 +2600,17 @@ def parse(
     """Common parser for all versions of i.MX boot images.
 
     :param stream: stream buffer to image
-    :raises TypeError: raised when the format of string is incorrect
     :param step: Image searching step
     :param size: parsing size
     :return: the object of boot image
-    :raises Exception: when not i.MX Boot Image is passed
+    :raises SPSDKError: Raised when the format of string is incorrect
+    :raises SPSDKError: When not i.MX Boot Image is passed
     """
     if isinstance(stream, (bytes, bytearray)):
         stream = BytesIO(stream)
 
     if not isinstance(stream, (BufferedReader, BytesIO)):
-        raise TypeError(' Not correct value type: "{}" !'.format(type(stream)))
+        raise SPSDKError('Not correct value type: "{}" !'.format(type(stream)))
 
     # calculate stream size
     start_index = stream.tell()
@@ -2582,4 +2649,4 @@ def parse(
 
         start_index = stream.seek(step, SEEK_CUR)
 
-    raise Exception(" Not an i.MX Boot Image !")
+    raise SPSDKError(" Not an i.MX Boot Image !")

@@ -1,0 +1,16 @@
+{
+    "issuer": {
+        // this should cause an exception
+        "COMMON_NAME": ONE,
+    },
+    "subject": {
+        "COMMON_NAME": "TWO",
+    },
+    "serial_number": 777,
+    "extensions": {
+        "BASIC_CONSTRAINTS": {
+            "ca": true,
+            "path_length": 5
+        }
+    }
+}

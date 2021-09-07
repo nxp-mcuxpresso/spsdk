@@ -6,9 +6,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+
 import pytest
 
-from spsdk.image.segments import FlexSPIConfBlockFCB, SegFCB, SegIVT3b, PaddingFCB
+from spsdk import SPSDKError
+from spsdk.image.segments import FlexSPIConfBlockFCB, PaddingFCB, SegFCB, SegIVT3b
 from spsdk.utils.misc import load_binary
 from tests.misc import compare_bin_files
 
@@ -63,17 +65,17 @@ def test_flexspi_conf_block_fcb(data_dir) -> None:
     assert fcb.size == 0
     assert fcb.export() == b""
     # invalid tag
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         FlexSPIConfBlockFCB.parse(b"\x00" * 512)
     # invalid version
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         FlexSPIConfBlockFCB.parse(FlexSPIConfBlockFCB.TAG + b"\x00" * 512)
     # insufficient length
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         FlexSPIConfBlockFCB.parse(FlexSPIConfBlockFCB.TAG + FlexSPIConfBlockFCB.VERSION[::-1])
 
 
-def test_padding_fcb(data_dir) -> None:
+def test_padding_fcb() -> None:
     """See PaddingFCB class"""
     fcb = PaddingFCB(10, padding_value=0xA5)
     # enabled, no padding
@@ -95,3 +97,10 @@ def test_padding_fcb(data_dir) -> None:
     assert fcb.space == 16
     assert fcb.export() == b"\xA5" * 10 + b"\x00" * 6
     assert fcb.info()
+
+
+def test_padding_fcb_invalid() -> None:
+    with pytest.raises(SPSDKError, match="Invalid size of the exported padding"):
+        PaddingFCB(size=-1, padding_value=0xA5)
+    with pytest.raises(SPSDKError, match="Invalid padding"):
+        PaddingFCB(size=10, padding_value=-1)

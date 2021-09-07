@@ -10,29 +10,31 @@
 import logging
 from abc import ABC
 from datetime import datetime
-from struct import pack, unpack_from, calcsize
-from typing import Dict, List, Optional, Iterator, Sequence, Tuple, Union
+from struct import calcsize, pack, unpack_from
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
-from spsdk.utils.misc import align, align_block, extend_block, DebugInfo
-from .bee import BeeRegionHeader, BEE_ENCR_BLOCK_SIZE
+from spsdk import SPSDKError
+from spsdk.utils.misc import DebugInfo, align, align_block, extend_block
+
+from .bee import BEE_ENCR_BLOCK_SIZE, BeeRegionHeader
 from .commands import (
-    CmdBase,
-    CmdWriteData,
-    CmdCheckData,
-    CmdUnlock,
-    CmdNop,
     CmdAuthData,
-    EnumWriteOps,
+    CmdBase,
+    CmdCheckData,
+    CmdNop,
+    CmdTag,
+    CmdUnlock,
+    CmdWriteData,
     EnumCheckOps,
     EnumEngine,
-    CmdTag,
+    EnumWriteOps,
     parse_command,
 )
-from .header import Header, Header2, SegTag, CorruptedException
+from .header import CorruptedException, Header, Header2, SegTag
 from .misc import size_fmt
-from .secret import BaseClass, MAC
+from .secret import MAC, BaseClass
 
-logger = logging.getLogger("IMAGE:SEGMENTS")
+logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
@@ -54,7 +56,8 @@ class BaseSegment(ABC):
     @padding_len.setter
     def padding_len(self, value: int) -> None:
         """New length (in bytes) of padding applied at the end of exported data."""
-        assert value >= 0
+        if value < 0:
+            raise SPSDKError("Length of padding must be >= 0")
         self.padding = value
 
     @property
@@ -198,10 +201,14 @@ class PaddingFCB(AbstractFCB):
         :param size: of the exported padding
         :param padding_value: byte value used as padding; 0 by default
         :param enabled: whether enabled
+        :raises SPSDKError: If invalid size of the exported padding
+        :raises SPSDKError: If invalid padding
         """
         super().__init__()
-        assert 0 <= size <= 0xFFFF
-        assert 0 <= padding_value <= 0xFF
+        if size < 0 or size > 0xFFFF:
+            raise SPSDKError("Invalid size of the exported padding")
+        if padding_value < 0 or padding_value > 0xFF:
+            raise SPSDKError("Invalid padding")
         self._size = size
         self._padding_byte = bytes([padding_value])
         self.enabled = enabled
@@ -443,10 +450,10 @@ class FlexSPIConfBlockFCB(AbstractFCB):
 
         :param buffer: data to be parsed
         :return: instance of the class representing the data
-        :raise ValueError: if data are not valid Flex SPI configuration block
+        :raises SPSDKError: If data are not valid Flex SPI configuration block
         """
         if buffer[:4] != FlexSPIConfBlockFCB.TAG:
-            raise ValueError("TAG does not match: " + buffer[:4].hex())
+            raise SPSDKError("TAG does not match: " + buffer[:4].hex())
 
         version = buffer[7:3:-1]
         if (
@@ -455,11 +462,11 @@ class FlexSPIConfBlockFCB(AbstractFCB):
             or (version[2] not in range(0, 9))
             or (version[3] not in range(0, 9))
         ):
-            raise ValueError("Invalid version number format")
+            raise SPSDKError("Invalid version number format")
 
         result = FlexSPIConfBlockFCB()
         if len(buffer) < result.size:
-            raise ValueError("Insufficient data length")
+            raise SPSDKError("Insufficient data length")
 
         offset = len(result.export_header())
         result.version = version
@@ -575,14 +582,14 @@ class SegBEE(BaseSegment):
     def validate(self) -> None:
         """Validates settings of the instance.
 
-        :raises ValueError: if number of FAC regions exceeds the limit
+        :raises SPSDKError: If number of FAC regions exceeds the limit
         """
         total_facs = 0
         for region in self._regions:
             region.validate()
             total_facs += len(region.fac_regions)
         if total_facs > self.max_facs:
-            raise ValueError(
+            raise SPSDKError(
                 f"Totally {total_facs} FAC regions, but only {self.max_facs} supported"
             )
 
@@ -628,8 +635,10 @@ class SegBEE(BaseSegment):
         :param start_addr: start address of the data; must be aligned to block size
         :param data: to be encrypted
         :return: encrypted data, aligned to block size; blocks outside any FAC region kept untouched
+        :raises SPSDKError: If invalid start address
         """
-        assert align(start_addr, BEE_ENCR_BLOCK_SIZE) == start_addr
+        if align(start_addr, BEE_ENCR_BLOCK_SIZE) != start_addr:
+            raise SPSDKError("Invalid start address")
         orig_len = len(data)
         data = align_block(data, BEE_ENCR_BLOCK_SIZE)
         result = bytes()
@@ -660,7 +669,8 @@ class SegIVT2(BaseSegment):
     @version.setter
     def version(self, value: int) -> None:
         """The version of IVT and Image format."""
-        assert 0x40 <= value < 0x4F
+        if value < 0x40 or value >= 0x4F:
+            raise SPSDKError("Invalid version of IVT and image format")
         self._header.param = value
 
     @property
@@ -708,22 +718,22 @@ class SegIVT2(BaseSegment):
     def validate(self) -> None:
         """Validate settings of the segment.
 
-        :raises ValueError: if there is configuration problem
+        :raises SPSDKError: If there is configuration problem
         """
         if self.ivt_address == 0 or self.bdt_address == 0 or self.bdt_address < self.ivt_address:
-            raise ValueError("Not valid IVT/BDT address")
+            raise SPSDKError("Not valid IVT/BDT address")
         if self.dcd_address and self.dcd_address < self.ivt_address:
-            raise ValueError(
+            raise SPSDKError(
                 "Not valid DCD address: 0x{:X} < 0x{:X}".format(self.dcd_address, self.ivt_address)
             )
         # TODO: resolve commented code: if self.app_address and self.app_address < self.ivt_address:
-        #  raise ValueError("Not valid APP address: 0x{:X} < 0x{:X}".format(self.app_address, self.ivt_address))
+        #  raise SPSDKError("Not valid APP address: 0x{:X} < 0x{:X}".format(self.app_address, self.ivt_address))
         if self.csf_address and self.csf_address < self.ivt_address:
-            raise ValueError(
+            raise SPSDKError(
                 "Not valid CSF address: 0x{:X} < 0x{:X}".format(self.csf_address, self.ivt_address)
             )
         if self.padding > 0:
-            raise ValueError("IVT padding should be zero: {}".format(self.padding))
+            raise SPSDKError("IVT padding should be zero: {}".format(self.padding))
 
     def export(self) -> bytes:
         """Export to binary representation (serialization).
@@ -785,7 +795,8 @@ class SegBDT(BaseSegment):
 
     @plugin.setter
     def plugin(self, value: int) -> None:
-        assert value in (0, 1, 2), "Plugin value must be 0 .. 2"
+        if value not in (0, 1, 2):
+            raise SPSDKError("Plugin value must be 0 .. 2")
         self._plugin = value
 
     @property
@@ -952,7 +963,8 @@ class SegDCD(BaseSegment):
         return self._commands[key]
 
     def __setitem__(self, key: int, value: CmdBase) -> None:
-        assert value.tag in self._COMMANDS
+        if value.tag not in self._COMMANDS:
+            raise SPSDKError("Invalid command")
         self._commands[key] = value
 
     def __iter__(self) -> Iterator:
@@ -968,13 +980,15 @@ class SegDCD(BaseSegment):
 
     def append(self, cmd: CmdBase) -> None:
         """Appending of Device configuration data (DCD) segment."""
-        assert isinstance(cmd, CmdBase) and (cmd.tag in self._COMMANDS)
+        if not (isinstance(cmd, CmdBase) and (cmd.tag in self._COMMANDS)):
+            raise SPSDKError("Invalid command")
         self._commands.append(cmd)
         self._header.length += cmd.size
 
     def pop(self, index: int) -> CmdBase:
         """Popping of Device configuration data (DCD) segment."""
-        assert 0 <= index < len(self._commands)
+        if index < 0 or index >= len(self._commands):
+            raise SPSDKError("Can not pop item from dcd segment")
         cmd = self._commands.pop(index)
         self._header.length -= cmd.size
         return cmd
@@ -1085,6 +1099,7 @@ class SegDcdBuilder:
         :param dcd_obj: result of the builder
         :param cmd: command with arguments
         :raises SyntaxError: command is corrupted
+        :raises SPSDKError: When command is unsupported
         """
         # ----------------------------
         # Parse command
@@ -1112,7 +1127,8 @@ class SegDcdBuilder:
                 args = [int(value, 0) for value in cmd[2:]]
                 dcd_obj.append(CmdUnlock(engine, *args))
             else:
-                assert False, "unknown command"
+                if True:
+                    raise SPSDKError("unknown command")
 
         elif cmd_tuple[0] == "write":
             if len(cmd) < 4:
@@ -1275,7 +1291,8 @@ class SegCSF(BaseSegment):
         return self.commands[key]
 
     def __setitem__(self, key: int, value: CmdBase) -> None:
-        assert SegCSF._is_csf_command(value)
+        if not SegCSF._is_csf_command(value):
+            raise SPSDKError("Invalid command")
         self._commands[key] = value
 
     def __iter__(self) -> Iterator[CmdBase]:
@@ -1302,8 +1319,10 @@ class SegCSF(BaseSegment):
         """Append CSF command to the segment.
 
         :param cmd: to be added
+        :raises SPSDKError: If invalid command
         """
-        assert SegCSF._is_csf_command(cmd)
+        if not SegCSF._is_csf_command(cmd):
+            raise SPSDKError("Invalid command")
         self._commands.append(cmd)
         self._header.length += cmd.size
         self.update(False)
@@ -1356,6 +1375,8 @@ class SegCSF(BaseSegment):
         :param zulu: current UTC time+date
         :param data: currently generated binary data; empty to create "fake" signature to update size of the segment
         :param base_data_addr: base address of the generated data
+        :raises SPSDKError: If invalid length of data
+        :raises SPSDKError: If invalid length of data
         """
         if self.no_signature_updates:
             return
@@ -1364,10 +1385,12 @@ class SegCSF(BaseSegment):
             if isinstance(cmd, CmdAuthData):
                 if len(cmd) > 0:  # any blocks defined? => sign image data
                     if not cmd.update_signature(zulu, data, base_data_addr):
-                        assert len(data) == 0
+                        if len(data) != 0:
+                            raise SPSDKError("Invalid length of data")
                 else:  # sign CSF section
                     if not cmd.update_signature(zulu, self._export_base()):
-                        assert len(data) == 0
+                        if len(data) != 0:
+                            raise SPSDKError("Invalid length of data")
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Export segment as bytes array (serialization).
@@ -1395,9 +1418,13 @@ class SegCSF(BaseSegment):
         :param cmd: command with reference to a cmd-data
         :param data: binary data array to be parsed
         :return: parsed instance, either Certificate or Signature
+        :raises SPSDKError: If invalid cmd
+        :raises SPSDKError: If invalid cmd's data
         """
-        assert cmd.needs_cmd_data_reference
-        assert self._cmd_data.get(cmd.cmd_data_offset) is None
+        if not cmd.needs_cmd_data_reference:
+            raise SPSDKError("Invalid cmd")
+        if self._cmd_data.get(cmd.cmd_data_offset) is not None:
+            raise SPSDKError("Invalid cmd's data")
         result = cmd.parse_cmd_data(data, cmd.cmd_data_offset)
         self._cmd_data[cmd.cmd_data_offset] = result
 
@@ -1491,11 +1518,11 @@ class SegIVT3a(BaseSegment):
     def validate(self) -> None:
         """Validation of IVT3a segment."""
         if self.ivt_address == 0 or self.bdt_address == 0 or self.bdt_address < self.ivt_address:
-            raise ValueError("Not valid IVT/BDT address")
+            raise SPSDKError("Not valid IVT/BDT address")
         if self.dcd_address and self.dcd_address < self.ivt_address:
-            raise ValueError("Not valid DCD address: 0x{:X}".format(self.dcd_address))
+            raise SPSDKError("Not valid DCD address: 0x{:X}".format(self.dcd_address))
         if self.csf_address and self.csf_address < self.ivt_address:
-            raise ValueError("Not valid CSF address: 0x{:X}".format(self.csf_address))
+            raise SPSDKError("Not valid CSF address: 0x{:X}".format(self.csf_address))
 
     def export(self) -> bytes:
         """Export segment as bytes array.
@@ -1600,13 +1627,13 @@ class SegIVT3b(BaseSegment):
     def validate(self) -> None:
         """Validation of IVT3b segment."""
         if self.ivt_address == 0 or self.bdt_address == 0 or self.bdt_address < self.ivt_address:
-            raise ValueError("Not valid IVT/BDT address")
+            raise SPSDKError("Not valid IVT/BDT address")
         if self.dcd_address and self.dcd_address < self.ivt_address:
-            raise ValueError("Not valid DCD address: 0x{:X}".format(self.dcd_address))
+            raise SPSDKError("Not valid DCD address: 0x{:X}".format(self.dcd_address))
         if self.csf_address and self.csf_address < self.ivt_address:
-            raise ValueError("Not valid CSF address: 0x{:X}".format(self.csf_address))
+            raise SPSDKError("Not valid CSF address: 0x{:X}".format(self.csf_address))
         if self.scd_address and self.scd_address < self.ivt_address:
-            raise ValueError("Not valid SCD address: 0x{:X}".format(self.scd_address))
+            raise SPSDKError("Not valid SCD address: 0x{:X}".format(self.scd_address))
 
     def export(self) -> bytes:
         """Export segment as bytes array.

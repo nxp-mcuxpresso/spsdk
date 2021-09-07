@@ -9,18 +9,21 @@
 
 from typing import Mapping, Type
 
-from ..commands import CmdBaseClass, EnumCmdTag
+from spsdk import SPSDKError
+
 from ..commands import (
-    CmdNop,
-    CmdTag,
-    CmdLoad,
-    CmdFill,
-    CmdJump,
+    CmdBaseClass,
     CmdCall,
     CmdErase,
-    CmdReset,
+    CmdFill,
+    CmdJump,
+    CmdLoad,
     CmdMemEnable,
+    CmdNop,
     CmdProg,
+    CmdReset,
+    CmdTag,
+    EnumCmdTag,
 )
 
 # mapping of V1.x command to the implementation class
@@ -45,9 +48,9 @@ def parse_v1_command(data: bytes, offset: int = 0) -> CmdBaseClass:
     :param data: Input data as bytes
     :param offset: The offset of input data to start parsing
     :return: parsed command object
-    :raise ValueError: raised when there is unsupported command
+    :raises SPSDKError: Raised when there is unsupported command
     """
     header_tag = EnumCmdTag.from_int(data[offset + 1])
     if header_tag not in _CMDV1_TO_CLASS:
-        raise ValueError(f"Unsupported command: {EnumCmdTag.name(header_tag)}")
+        raise SPSDKError(f"Unsupported command: {EnumCmdTag.name(header_tag)}")
     return _CMDV1_TO_CLASS[header_tag].parse(data, offset)

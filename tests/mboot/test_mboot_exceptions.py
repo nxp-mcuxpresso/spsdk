@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from spsdk import SPSDKError
-from spsdk.mboot import McuBootError, McuBootCommandError, McuBootConnectionError
+from spsdk.mboot import McuBootCommandError, McuBootConnectionError, McuBootError
 
 
 def raise_and_catch(raising_exc, catching_exc) -> bool:

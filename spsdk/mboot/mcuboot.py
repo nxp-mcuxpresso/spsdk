@@ -22,6 +22,8 @@ from .commands import (
     KeyProvOperation,
     KeyProvUserKeyType,
     NoResponse,
+    TrustProvisioningResponse,
+    TrustProvOperation,
 )
 from .error_codes import StatusCode
 from .exceptions import (
@@ -35,7 +37,7 @@ from .interfaces import Interface
 from .memories import ExtMemId, ExtMemRegion, FlashRegion, MemoryRegion, RamRegion
 from .properties import PropertyTag, Version, parse_property_value
 
-logger = logging.getLogger("MBOOT")
+logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
@@ -236,7 +238,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
     def close(self) -> None:
         """Disconnect from the device."""
-        self._device.close()
+        if self._device.is_opened:
+            logger.info(f"Closing: {self._device.info()}")
+            self._device.close()
 
     def get_property_list(self) -> list:
         """Get a list of available properties.
@@ -335,6 +339,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """Get information about the external memories.
 
         :return: list of ExtMemRegion objects supported by the device
+        :raises SPSDKError: If no response to get property command
+        :raises SPSDKError: Other Error
         """
         ext_mem_list: List[ExtMemRegion] = []
         ext_mem_ids: Sequence[int] = ExtMemId.tags()
@@ -347,7 +353,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             self._status_code = StatusCode.SUCCESS
             return ext_mem_list
 
-        assert values
+        if not values:
+            raise SPSDKError("No response to get property command")
 
         if Version(values[0]) <= Version("2.0.0"):
             # old versions mboot support only Quad SPI memory
@@ -373,7 +380,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                 if self._status_code == StatusCode.MEMORY_NOT_CONFIGURED:
                     ext_mem_list.append(ExtMemRegion(mem_id=mem_id))
 
-                assert self._status_code != StatusCode.SUCCESS  # Other Error
+                if self._status_code == StatusCode.SUCCESS:
+                    raise SPSDKError("Other Error")
 
             else:
                 ext_mem_list.append(ExtMemRegion(mem_id=mem_id, raw_values=values))
@@ -490,10 +498,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         :param backdoor_key: The key value as array of 8 bytes
         :return: False in case of any problem; True otherwise
-        :raises ValueError: If the backdoor_key is not 8 bytes long
+        :raises McuBootError: If the backdoor_key is not 8 bytes long
         """
         if len(backdoor_key) != 8:
-            raise ValueError("Backdoor key must by 8 bytes long")
+            raise McuBootError("Backdoor key must by 8 bytes long")
         logger.info(f"CMD: FlashSecurityDisable(backdoor_key={backdoor_key!r})")
         key_high = backdoor_key[0:4][::-1]
         key_low = backdoor_key[4:8][::-1]
@@ -507,7 +515,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param index: External memory ID or internal memory region index (depends on property type)
         :return: list integers representing the property; None in case no response from device
         """
-        logger.info(f"CMD: GetProperty({PropertyTag.name(prop_tag, 'UNKNOWN')!r}, index={index!r})")
+        logger.info(
+            f"CMD: GetProperty({PropertyTag.name(prop_tag, 'UNKNOWN')!r}, index={index!r})"  # pylint: disable=too-many-function-args
+        )
         cmd_packet = CmdPacket(CommandTag.GET_PROPERTY, 0, prop_tag, index)
         cmd_response = self._process_cmd(cmd_packet)
         return cmd_response.values if cmd_response.status == StatusCode.SUCCESS else None
@@ -572,21 +582,21 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param timeout: The maximal waiting time in [ms] for reopen connection
         :param reopen: True for reopen connection after HW reset else False
         :return: False in case of any problem; True otherwise
-        :raises ValueError: if reopen is not supported
+        :raises McuBootError: if reopen is not supported
         :raises McuBootConnectionError: Failure to reopen the device
         """
         logger.info("CMD: Reset MCU")
         cmd_packet = CmdPacket(CommandTag.RESET, 0)
         ret_val = False
         if self._process_cmd(cmd_packet).status == StatusCode.SUCCESS:
-            self._device.close()
+            self.close()
             ret_val = True
             if reopen:
                 if not self.reopen:
-                    raise ValueError("reopen is not supported")
+                    raise McuBootError("reopen is not supported")
                 time.sleep(timeout / 1000)
                 try:
-                    self._device.open()
+                    self.open()
                 except SPSDKError:
                     ret_val = False
                     if self._cmd_exception:
@@ -630,8 +640,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param index: Start index
         :param count: Count of bytes
         :return: Data read; None in case of an failure
+        :raises SPSDKError: When invalid count of bytes. Must be 4 or 8
         """
-        assert count in (4, 8)
+        if count not in (4, 8):
+            raise SPSDKError("Invalid count of bytes. Must be 4 or 8")
         logger.info(f"CMD: FlashReadOnce(index={index}, bytes={count})")
         cmd_packet = CmdPacket(CommandTag.FLASH_READ_ONCE, 0, index, count)
         cmd_response = self._process_cmd(cmd_packet)
@@ -643,8 +655,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param index: Start index
         :param data: Input data aligned to 4 or 8 bytes
         :return: False in case of any problem; True otherwise
+        :raises SPSDKError: When invalid length of data. Must be aligned to 4 or 8 bytes
         """
-        assert len(data) in (4, 8)
+        if len(data) not in (4, 8):
+            raise SPSDKError("Invalid length of data. Must be aligned to 4 or 8 bytes")
         logger.info(f"CMD: FlashProgramOnce(index={index!r}, data={data!r})")
         cmd_packet = CmdPacket(CommandTag.FLASH_PROGRAM_ONCE, 0, index, len(data), data=data)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
@@ -871,6 +885,269 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if cmd_response.status == StatusCode.SUCCESS:  # pragma: no cover
             # command is not supported in any device (N4 family, RTxxx, RTxxxx) thus we can't measure coverage
             return self._read_data(CommandTag.FUSE_READ, cmd_response.length)
+        return None
+
+    def tp_hsm_gen_key(
+        self,
+        key_type: int,
+        reserved: int,
+        key_blob_output_addr: int,
+        key_blob_output_size: int,
+        ecdsa_puk_output_addr: int,
+        ecdsa_puk_output_size: int,
+    ) -> Optional[List[Any]]:
+        """Trust provisioning: OEM generate common keys.
+
+        :param key_type: Key to generate (MFW_ISK, MFW_ENCK, GEN_SIGNK, GET_CUST_MK_SK)
+        :param reserved: Reserved, must be zero
+        :param key_blob_output_addr: The output buffer address where ROM writes the key blob to
+        :param key_blob_output_size: The output buffer size in byte
+        :param ecdsa_puk_output_addr: The output buffer address where ROM writes the public key to
+        :param ecdsa_puk_output_size: The output buffer size in byte
+        :return: Return byte count of the key blob + byte count of the public key from the device;
+            None in case of an failure
+        """
+        logger.info("CMD: [TrustProvisioning] OEM generate common keys")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            0,
+            TrustProvOperation.HSM_GEN_KEY,
+            key_type,
+            reserved,
+            key_blob_output_addr,
+            key_blob_output_size,
+            ecdsa_puk_output_addr,
+            ecdsa_puk_output_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values
+        return None
+
+    def tp_oem_gen_master_share(
+        self,
+        oem_share_input_addr: int,
+        oem_share_input_size: int,
+        oem_enc_share_output_addr: int,
+        oem_enc_share_output_size: int,
+        oem_enc_master_share_output_addr: int,
+        oem_enc_master_share_output_size: int,
+        oem_cust_cert_puk_output_addr: int,
+        oem_cust_cert_puk_output_size: int,
+    ) -> Optional[List[int]]:
+        """Takes the entropy seed provided by the OEM as input.
+
+        :param oem_share_input_addr: The input buffer address
+            where the OEM Share(entropy seed) locates at
+        :param oem_share_input_size: The byte count of the OEM Share
+        :param oem_enc_share_output_addr: The output buffer address
+            where ROM writes the Encrypted OEM Share to
+        :param oem_enc_share_output_size: The output buffer size in byte
+        :param oem_enc_master_share_output_addr: The output buffer address
+            where ROM writes the Encrypted OEM Master Share to
+        :param oem_enc_master_share_output_size: The output buffer size in byte.
+        :param oem_cust_cert_puk_output_addr: The output buffer address where
+            ROM writes the OEM Customer Certificate Public Key to
+        :param oem_cust_cert_puk_output_size: The output buffer size in byte
+        :return: Sizes of two encrypted blobs(the Encrypted OEM Share and the Encrypted OEM Master Share)
+            and a public key(the OEM Customer Certificate Public Key).
+        """
+        logger.info("CMD: [TrustProvisioning] OEM generate master share")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            0,
+            TrustProvOperation.OEM_GEN_MASTER_SHARE,
+            oem_share_input_addr,
+            oem_share_input_size,
+            oem_enc_share_output_addr,
+            oem_enc_share_output_size,
+            oem_enc_master_share_output_addr,
+            oem_enc_master_share_output_size,
+            oem_cust_cert_puk_output_addr,
+            oem_cust_cert_puk_output_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values
+        return None
+
+    def tp_oem_set_master_share(
+        self,
+        oem_share_input_addr: int,
+        oem_share_input_size: int,
+        oem_enc_master_share_input_addr: int,
+        oem_enc_master_share_input_size: int,
+    ) -> bool:
+        """Takes the entropy seed and the Encrypted OEM Master Share.
+
+        :param oem_share_input_addr: The input buffer address
+            where the OEM Share(entropy seed) locates at
+        :param oem_share_input_size: The byte count of the OEM Share
+        :param oem_enc_master_share_input_addr: The input buffer address
+            where the Encrypted OEM Master Share locates at
+        :param oem_enc_master_share_input_size: The byte count of the Encrypted OEM Master Share
+        :return: False in case of any problem; True otherwise
+        """
+        logger.info(
+            "CMD: [TrustProvisioning] Takes the entropy seed and the Encrypted OEM Master Share."
+        )
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            0,
+            TrustProvOperation.OEM_SET_MASTER_SHARE,
+            oem_share_input_addr,
+            oem_share_input_size,
+            oem_enc_master_share_input_addr,
+            oem_enc_master_share_input_size,
+        )
+        return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
+
+    def tp_oem_get_cust_cert_dice_puk(
+        self,
+        oem_rkt_input_addr: int,
+        oem_rkth_input_size: int,
+        oem_cust_cert_dice_puk_output_addr: int,
+        oem_cust_cert_dice_puk_output_size: int,
+    ) -> Optional[int]:
+        """Creates the initial trust provisioning keys.
+
+        :param oem_rkt_input_addr: The input buffer address where the OEM RKTH locates at
+        :param oem_rkth_input_size: The byte count of the OEM RKTH
+        :param oem_cust_cert_dice_puk_output_addr: The output buffer address where ROM writes the OEM Customer
+            Certificate Public Key for DICE to
+        :param oem_cust_cert_dice_puk_output_size: The output buffer size in byte
+        :return: The byte count of the OEM Customer Certificate Public Key for DICE
+        """
+        logger.info("CMD: [TrustProvisioning] Creates the initial trust provisioning keys")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            0,
+            TrustProvOperation.OEM_GET_CUST_CERT_DICE_PUK,
+            oem_rkt_input_addr,
+            oem_rkth_input_size,
+            oem_cust_cert_dice_puk_output_addr,
+            oem_cust_cert_dice_puk_output_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
+        return None
+
+    def tp_hsm_store_key(
+        self,
+        key_type: int,
+        key_property: int,
+        key_input_addr: int,
+        key_input_size: int,
+        key_blob_output_addr: int,
+        key_blob_output_size: int,
+    ) -> Optional[List[Any]]:
+        """Trust provisioning: OEM generate common keys.
+
+        :param key_type: Key to generate (CKDFK, HKDFK, HMACK, CMACK, AESK, KUOK)
+        :param key_property: Bit 0: Key Size, 0 for 128bit, 1 for 256bit.
+            Bits 30-31: set key protection CSS mode.
+        :param key_input_addr: The input buffer address where the key locates at
+        :param key_input_size: The byte count of the key
+        :param key_blob_output_addr: The output buffer address where ROM writes the key blob to
+        :param key_blob_output_size: The output buffer size in byte
+        :return: Return header of the key blob + byte count of the key blob
+            (header is not included) from the device; None in case of an failure
+        """
+        logger.info("CMD: [TrustProvisioning] OEM generate common keys")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            0,
+            TrustProvOperation.HSM_STORE_KEY,
+            key_type,
+            key_property,
+            key_input_addr,
+            key_input_size,
+            key_blob_output_addr,
+            key_blob_output_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values
+        return None
+
+    def tp_hsm_enc_blk(
+        self,
+        mfg_cust_mk_sk_0_blob_input_addr: int,
+        mfg_cust_mk_sk_0_blob_input_size: int,
+        kek_id: int,
+        sb3_header_input_addr: int,
+        sb3_header_input_size: int,
+        block_num: int,
+        block_data_addr: int,
+        block_data_size: int,
+    ) -> bool:
+        """Trust provisioning: Encrypt the given SB3 data block.
+
+        :param mfg_cust_mk_sk_0_blob_input_addr: The input buffer address
+            where the CKDF Master Key Blob locates at
+        :param mfg_cust_mk_sk_0_blob_input_size: The byte count of the CKDF Master Key Blob
+        :param kek_id: The CKDF Master Key Encryption Key ID
+            (0x10: NXP_CUST_KEK_INT_SK, 0x11: NXP_CUST_KEK_EXT_SK)
+        :param sb3_header_input_addr: The input buffer address,
+            where the SB3 Header(block0) locates at
+        :param sb3_header_input_size: The byte count of the SB3 Header
+        :param block_num: The index of the block. Due to SB3 Header(block 0) is always unencrypted,
+            the index starts from block1
+        :param block_data_addr: The buffer address where the SB3 data block locates at
+        :param block_data_size: The byte count of the SB3 data block
+        :return: False in case of any problem; True otherwise
+        """
+        logger.info("CMD: [TrustProvisioning] Encrypt the given SB3 data block")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            0,
+            TrustProvOperation.HSM_ENC_BLOCK,
+            mfg_cust_mk_sk_0_blob_input_addr,
+            mfg_cust_mk_sk_0_blob_input_size,
+            kek_id,
+            sb3_header_input_addr,
+            sb3_header_input_size,
+            block_num,
+            block_data_addr,
+            block_data_size,
+        )
+        return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
+
+    def tp_hsm_enc_sign(
+        self,
+        key_blob_input_addr: int,
+        key_blob_input_size: int,
+        block_data_input_addr: int,
+        block_data_input_size: int,
+        signature_output_addr: int,
+        signature_output_size: int,
+    ) -> Optional[int]:
+        """Signs the given data.
+
+        :param key_blob_input_addr: The input buffer address where signing key blob locates at
+        :param key_blob_input_size: The byte count of the signing key blob
+        :param block_data_input_addr: The input buffer address where the data locates at
+        :param block_data_input_size: The byte count of the data
+        :param signature_output_addr: The output buffer address where ROM writes the signature to
+        :param signature_output_size: The output buffer size in byte
+        :return: Return signature size; None in case of an failure
+        """
+        logger.info("CMD: [TrustProvisioning] HSM ENC SIGN")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            0,
+            TrustProvOperation.HSM_ENC_SIGN,
+            key_blob_input_addr,
+            key_blob_input_size,
+            block_data_input_addr,
+            block_data_input_size,
+            signature_output_addr,
+            signature_output_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
         return None
 
 

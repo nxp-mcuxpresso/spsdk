@@ -8,8 +8,9 @@ import pytest
 
 from spsdk import SPSDKError
 from spsdk.apps import utils
-from spsdk.apps.utils import catch_spsdk_error
+from spsdk.apps.utils import catch_spsdk_error, load_configuration
 from spsdk.mboot.exceptions import McuBootConnectionError
+from spsdk.utils.misc import use_working_directory
 
 
 def test_split_string():
@@ -87,3 +88,17 @@ def test_catch_spsdk_error():
     assert exc_3.value.code == 3
 
     assert function_under_test(None) == 0
+
+
+@pytest.mark.parametrize("file_name", ["certgen_config.yaml", "test_config.json"])
+def test_load_configuration(data_dir, file_name):
+    with use_working_directory(data_dir):
+        result = load_configuration(file_name)
+        assert isinstance(result, dict)
+
+
+@pytest.mark.parametrize("file_name", ["zeros.bin", "invalid_file.json"])
+def test_load_configuration_invalid_file(data_dir, file_name):
+    with use_working_directory(data_dir):
+        with pytest.raises(SPSDKError):
+            load_configuration(file_name)

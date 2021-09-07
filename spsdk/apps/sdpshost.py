@@ -24,7 +24,7 @@ WARNING_MSG = """
 """
 
 
-@click.group()
+@click.group(no_args_is_help=True)
 @optgroup.group("Interface configuration", cls=MutuallyExclusiveOptionGroup)
 @optgroup.option("-p", "--port", help="Serial port")
 @optgroup.option("-u", "--usb", help="USB device's PID:VID")

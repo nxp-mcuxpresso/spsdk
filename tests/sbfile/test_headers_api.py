@@ -7,6 +7,7 @@
 
 import pytest
 
+from spsdk import SPSDKError
 from spsdk.sbfile.headers import ImageHeaderV2
 from spsdk.utils.crypto.backend_internal import internal_backend
 
@@ -29,9 +30,9 @@ def test_image_header_v2():
 
     assert header.info()  # test info prints any non-empty output
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(SPSDKError):
         _ = header.export()
-    with pytest.raises(AttributeError):
+    with pytest.raises(SPSDKError):
         _ = header.export()
 
     header.nonce = internal_backend.random_bytes(16)
@@ -43,3 +44,12 @@ def test_image_header_v2():
 
     header.version = "2.1"
     assert header != header_parsed
+
+
+def test_image_header_v2_invalid():
+    header = ImageHeaderV2(nonce=bytes(16))
+    with pytest.raises(SPSDKError, match="Invalid length of padding"):
+        header.export(padding=bytes(9))
+    with pytest.raises(SPSDKError, match="Invalid length of header"):
+        header.SIZE=5
+        header.export()

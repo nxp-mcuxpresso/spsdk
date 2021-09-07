@@ -20,7 +20,7 @@ It is delivered in a form of python library with functionality presented as CLI 
 import os
 
 from .__version__ import __version__ as version
-from .exceptions import SPSDKError
+from .exceptions import SPSDKError, SPSDKIOError, SPSDKTypeError, SPSDKValueError
 
 __author__ = "NXP"
 __contact__ = "michal.starecek@nxp.com"

@@ -7,34 +7,32 @@
 """Module for DebugMailbox PyOCD Debug probes support."""
 
 import logging
-from typing import Dict, Any
-
+from typing import Any, Dict
 
 import pylink
-import six
-
-from pylink.errors import JLinkException
-
 import pyocd
-from pyocd.core.helpers import ConnectHelper
+import six
+from pylink.errors import JLinkException
 from pyocd.core.exceptions import Error as PyOCDError
-from pyocd.probe.jlink_probe import JLinkProbe
+from pyocd.core.helpers import ConnectHelper
 from pyocd.coresight import dap
 from pyocd.coresight.ap import MEM_AP
-from pyocd.utility.sequencer import CallSequence
-from pyocd.coresight.discovery import ADIVersion, ADIv5Discovery, ADIv6Discovery
+from pyocd.coresight.discovery import ADIv5Discovery, ADIv6Discovery, ADIVersion
 from pyocd.probe.debug_probe import DebugProbe as PyOCDDebugProbe
+from pyocd.probe.jlink_probe import JLinkProbe
+from pyocd.utility.sequencer import CallSequence
+
+from spsdk.exceptions import SPSDKError
 
 from .debug_probe import (
     DebugProbe,
-    ProbeNotFoundError,
-    DebugMailBoxAPNotFoundError,
-    DebugProbeTransferError,
-    DebugProbeNotOpenError,
-    DebugProbeError,
-    DebugProbeMemoryInterfaceAPNotFoundError,
+    SPSDKDebugMailBoxAPNotFoundError,
+    SPSDKDebugProbeError,
+    SPSDKDebugProbeMemoryInterfaceAPNotFoundError,
+    SPSDKDebugProbeNotOpenError,
+    SPSDKDebugProbeTransferError,
+    SPSDKProbeNotFoundError,
 )
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.CRITICAL)
@@ -110,9 +108,9 @@ class DebugProbePyOCD(DebugProbe):
         The function is used to initialize the connection to target and enable using debug probe
         for DAT purposes.
 
-        :raises ProbeNotFoundError: The probe has not found
-        :raises DebugMailBoxAPNotFoundError: The debug mailbox access port NOT found
-        :raises DebugProbeError: The PyOCD cannot establish communication with target
+        :raises SPSDKProbeNotFoundError: The probe has not found
+        :raises SPSDKDebugMailBoxAPNotFoundError: The debug mailbox access port NOT found
+        :raises SPSDKDebugProbeError: The PyOCD cannot establish communication with target
         """
         try:
             self.pyocd_session = ConnectHelper.session_with_chosen_probe(
@@ -120,19 +118,19 @@ class DebugProbePyOCD(DebugProbe):
             )
 
             if self.pyocd_session is None:
-                raise ProbeNotFoundError("No probe available!")
+                raise SPSDKProbeNotFoundError("No probe available!")
             self.pyocd_session.options.set("scan_all_aps", True)
             self.pyocd_session.delegate = self
             self.pyocd_session.open()
             logger.info(f"PyOCD connected via {self.pyocd_session.probe.product_name} probe.")
-        except PyOCDError:
-            raise DebugProbeError("PyOCD cannot establish communication with target.")
+        except PyOCDError as exc:
+            raise SPSDKDebugProbeError("PyOCD cannot establish communication with target.") from exc
         self.dbgmlbx_ap = self._get_dmbox_ap()
         self.mem_ap = self._get_mem_ap()
         if self.mem_ap is None:
             logger.warning("The memory interface not found - probably locked device")
         if self.dbgmlbx_ap is None:
-            raise DebugMailBoxAPNotFoundError("No debug mail box access point available!")
+            raise SPSDKDebugMailBoxAPNotFoundError("No debug mail box access point available!")
 
     def close(self) -> None:
         """Close PyOCD interface.
@@ -150,16 +148,18 @@ class DebugProbePyOCD(DebugProbe):
 
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeMemoryInterfaceAPNotFoundError: The device doesn't content memory interface
+        :raises SPSDKDebugProbeMemoryInterfaceAPNotFoundError: The device doesn't content memory interface
+        :raises SPSDKDebugProbeTransferError: Memory read operation failed.
         """
         if self.mem_ap is None:
-            raise DebugProbeMemoryInterfaceAPNotFoundError
+            raise SPSDKDebugProbeMemoryInterfaceAPNotFoundError
 
         reg = 0
         try:
             reg = self.mem_ap.read32(addr=addr)
         except PyOCDError as exc:
             logger.error(f"Failed read memory({str(exc)}).")
+            raise SPSDKDebugProbeTransferError("The memory read operation failed") from exc
         return reg
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
@@ -170,15 +170,17 @@ class DebugProbePyOCD(DebugProbe):
 
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeMemoryInterfaceAPNotFoundError: The device doesn't content memory interface
+        :raises SPSDKDebugProbeMemoryInterfaceAPNotFoundError: The device doesn't content memory interface
+        :raises SPSDKDebugProbeTransferError: Memory write operation failed.
         """
         if self.mem_ap is None:
-            raise DebugProbeMemoryInterfaceAPNotFoundError
+            raise SPSDKDebugProbeMemoryInterfaceAPNotFoundError
 
         try:
             self.mem_ap.write32(addr=addr, value=data)
         except PyOCDError as exc:
             logger.error(f"Failed write memory({str(exc)}).")
+            raise SPSDKDebugProbeTransferError("The memory write operation failed") from exc
 
     def dbgmlbx_reg_read(self, addr: int = 0) -> int:
         """Read debug mailbox access port register.
@@ -187,15 +189,15 @@ class DebugProbePyOCD(DebugProbe):
 
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugMailBoxAPNotFoundError: The dbgmlbx_reg_read is NOT implemented
-        :raises DebugProbeTransferError: The dbgmlbx_reg_read ends with data transfer error
+        :raises SPSDKDebugMailBoxAPNotFoundError: The dbgmlbx_reg_read is NOT implemented
+        :raises SPSDKDebugProbeTransferError: The dbgmlbx_reg_read ends with data transfer error
         """
         if self.dbgmlbx_ap is None:
-            raise DebugMailBoxAPNotFoundError("No debug mail box access point available!")
+            raise SPSDKDebugMailBoxAPNotFoundError("No debug mail box access point available!")
         try:
             return self.dbgmlbx_ap.read_reg(self.APADDR & addr)
-        except:
-            raise DebugProbeTransferError("The Coresight read operation failed")
+        except PyOCDError as exc:
+            raise SPSDKDebugProbeTransferError("The Coresight read operation failed") from exc
 
     def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write debug mailbox access port register.
@@ -204,25 +206,25 @@ class DebugProbePyOCD(DebugProbe):
 
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugMailBoxAPNotFoundError: The dbgmlbx_reg_write is NOT implemented
-        :raises DebugProbeTransferError: The dbgmlbx_reg_write ends with data transfer error
+        :raises SPSDKDebugMailBoxAPNotFoundError: The dbgmlbx_reg_write is NOT implemented
+        :raises SPSDKDebugProbeTransferError: The dbgmlbx_reg_write ends with data transfer error
         """
         if self.dbgmlbx_ap is None:
-            raise DebugMailBoxAPNotFoundError("No debug mail box access point available!")
+            raise SPSDKDebugMailBoxAPNotFoundError("No debug mail box access point available!")
         try:
             self.dbgmlbx_ap.write_reg(addr=self.APADDR & addr, data=data)
-        except:
-            raise DebugProbeTransferError("The Coresight write operation failed")
+        except PyOCDError as exc:
+            raise SPSDKDebugProbeTransferError("The Coresight write operation failed") from exc
 
     def reset(self) -> None:
         """Reset a target.
 
         It resets a target.
 
-        :raises DebugProbeNotOpenError: The PyOCD debug probe is not opened yet
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD debug probe is not opened yet
         """
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
         self.pyocd_session.target.reset()
 
     def _get_ap_by_ix(self, index: int) -> Any:
@@ -230,26 +232,26 @@ class DebugProbePyOCD(DebugProbe):
 
         :param index: Index of requested access port class.
         :return: Access port class, by its IX
-        :raises DebugProbeNotOpenError: The PyOCD probe is NOT opened
-        :raises DebugProbeError: There is not active access port for specified index.
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
+        SPSDK:raises SPSDKDebugProbeError: There is not active access port for specified index.
         """
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
         for access_port in self.pyocd_session.target.aps.values():
             if access_port.address.apsel == index:
                 return access_port
 
-        raise DebugProbeError(f"The access port {index} is not present.")
+        raise SPSDKDebugProbeError(f"The access port {index} is not present.")
 
     def _get_ap_by_addr(self, addr: int) -> Any:
         """Function returns the AP PyoCD object by address if exists.
 
         :param addr: The access port address.
         :return: The Access port object.
-        :raises DebugProbeNotOpenError: The PyOCD probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
         """
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
         ap_sel = (addr & self.APSEL) >> self.APSEL_SHIFT
 
         return self._get_ap_by_ix(ap_sel)
@@ -262,19 +264,19 @@ class DebugProbePyOCD(DebugProbe):
         :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises DebugProbeTransferError: The IO operation failed
-        :raises DebugProbeNotOpenError: The PyOCD probe is NOT opened
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
         """
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
         try:
             if access_port:
                 access_p = self._get_ap_by_addr(addr)
                 return access_p.read_reg(self.APADDR & addr)
             else:
                 return self.pyocd_session.target.dp.read_dp(addr)
-        except:
-            raise DebugProbeTransferError("The Coresight read operation failed")
+        except PyOCDError as exc:
+            raise SPSDKDebugProbeTransferError("The Coresight read operation failed") from exc
 
     def coresight_reg_write(self, access_port: bool = True, addr: int = 0, data: int = 0) -> None:
         """Write coresight register over PyOCD interface.
@@ -284,19 +286,19 @@ class DebugProbePyOCD(DebugProbe):
         :param access_port: if True, the Access Port (AP) register will be write(default), otherwise the Debug Port
         :param addr: the register address
         :param data: the data to be written into register
-        :raises DebugProbeTransferError: The IO operation failed
-        :raises DebugProbeNotOpenError: The PyOCD probe is NOT opened
+        :raises SPSDKDebugProbeTransferError: The IO operation failed
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
         """
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
         try:
             if access_port:
                 access_p = self._get_ap_by_addr(addr)
                 access_p.write_reg(self.APADDR & addr, data)
             else:
                 self.pyocd_session.target.dp.write_dp(addr, data)
-        except:
-            raise DebugProbeTransferError("The Coresight write operation failed")
+        except PyOCDError as exc:
+            raise SPSDKDebugProbeTransferError("The Coresight write operation failed") from exc
 
     def _get_dmbox_ap(self) -> Any:
         """Search for Debug Mailbox Access Point.
@@ -304,12 +306,12 @@ class DebugProbePyOCD(DebugProbe):
         This is helper function to find and return the debug mailbox access port.
 
         :return: Debug MailBox Access Port
-        :raises DebugProbeNotOpenError: The PyOCD probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
         """
         idr_expected = 0x002A0000
 
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
 
         for access_port in self.pyocd_session.target.aps.values():
             if self.dbgmlbx_ap_ix >= 0:
@@ -329,10 +331,10 @@ class DebugProbePyOCD(DebugProbe):
         This is helper function to find and return the memory interface access port.
 
         :return: Memory Interface Access Port
-        :raises DebugProbeNotOpenError: The PyOCD probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
         """
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
 
         for access_port in self.pyocd_session.target.aps.values():
             if self.mem_ap_ix >= 0:
@@ -380,10 +382,10 @@ class DebugProbePyOCD(DebugProbe):
         do some additional unwanted actions that are not welcomed by DAT.
 
         :return: Debug Port initialization call sequence
-        :raises DebugProbeNotOpenError: The PyOCD probe is NOT opened
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
         """
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
 
         debug_probe = self.pyocd_session.target.dp
         probe = debug_probe.probe
@@ -409,11 +411,11 @@ class DebugProbePyOCD(DebugProbe):
     def _connect_jlink(self) -> None:
         """Custom J-Link connect function.
 
-        :raises ValueError: Unsupported communication protocol.
-        :raises DebugProbeNotOpenError: The PyOCD probe is NOT opened
+        :raises SPSDKError: Unsupported communication protocol.
+        :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
         """
         if self.pyocd_session is None:
-            raise DebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
+            raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
 
         # Attempt to connect.
         debug_probe = self.pyocd_session.target.dp
@@ -428,7 +430,7 @@ class DebugProbePyOCD(DebugProbe):
 
         # Validate selected protocol.
         if protocol not in probe._supported_protocols:
-            raise ValueError("unsupported wire protocol %s" % protocol)
+            raise SPSDKError("unsupported wire protocol %s" % protocol)
 
         # Convert protocol to port enum.
         if protocol == PyOCDDebugProbe.Protocol.SWD:

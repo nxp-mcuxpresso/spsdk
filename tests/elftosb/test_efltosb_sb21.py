@@ -7,18 +7,51 @@
 
 import os
 from binascii import unhexlify
+from itertools import zip_longest
 
+import pytest
 from click.testing import CliRunner
 
 import spsdk.apps.elftosb as elftosb
+from spsdk import SPSDKError
 from spsdk.sbfile.images import BootImageV21
 from spsdk.utils.misc import use_working_directory
 
 
-def test_elftosb_sb21(data_dir, tmpdir):
+@pytest.mark.parametrize(
+    "bd_file,legacy_sb,external",
+    [
+        (
+            "sb_sources/BD_files/real_example1.bd",
+            "sb_sources/SB_files/legacy_real_example1.sb",
+            [],
+        ),
+        (
+            "sb_sources/BD_files/real_example2.bd",
+            "sb_sources/SB_files/legacy_real_example2.sb",
+            [
+                "sb_sources/output_images/tmdData.bin",
+                "sb_sources/output_images/bootloaderImage.bin",
+                "sb_sources/output_images/tmdImage.bin",
+                "sb_sources/output_images/audioImage.bin",
+            ],
+        ),
+        (
+            "sb_sources/BD_files/simpleExample_no_sha.bd",
+            "sb_sources/SB_files/legacy_elftosb_no_sha.bin",
+            [],
+        ),
+        (
+            "sb_sources/BD_files/simpleExample_sha.bd",
+            "sb_sources/SB_files/legacy_elftosb_sha.bin",
+            [],
+        ),
+    ],
+)
+def test_elftosb_sb21(bd_file, legacy_sb, external, data_dir, tmpdir):
     runner = CliRunner()
     with use_working_directory(data_dir):
-        bd_file_path = os.path.join(data_dir, "sb_sources/BD_files/simpleExample.bd")
+        bd_file_path = os.path.join(data_dir, bd_file)
         out_file_path_new = os.path.join(tmpdir, "new_elf2sb.bin")
         kek_key_path = os.path.join(data_dir, "sb_sources/keys/SBkek_PUF.txt")
         priv_key_path = os.path.join(data_dir, "sb_sources/keys_and_certs/k0_cert0_2048.pem")
@@ -39,7 +72,7 @@ def test_elftosb_sb21(data_dir, tmpdir):
         )
         hash_of_hashes_output_path = os.path.join(tmpdir, "hash.bin")
 
-        out_file_path_legacy = os.path.join(data_dir, "sb_sources/SB_files/legacy_elf2sb.bin")
+        out_file_path_legacy = os.path.join(data_dir, legacy_sb)
 
         cmd = f"-c {bd_file_path} \
             -o {out_file_path_new}\
@@ -51,6 +84,8 @@ def test_elftosb_sb21(data_dir, tmpdir):
             -R {root_key_certificate2_path}\
             -R {root_key_certificate3_path}\
             -h {hash_of_hashes_output_path}"
+        for entry in external:
+            cmd += " " + entry
         result = runner.invoke(elftosb.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(out_file_path_new)
@@ -98,4 +133,10 @@ def test_elftosb_sb21(data_dir, tmpdir):
         # -1 for indexing starting from 0, -1 for previously removed line => -2
         del sb_old_lines[TIMESTAMP_LINE - 2]
 
-        assert sb_new_lines == sb_old_lines
+        for i in zip_longest(sb_new_lines, sb_old_lines, fillvalue=None):
+            assert i[0] == i[1]
+
+
+def test_sb_21_invalid_parse():
+    with pytest.raises(SPSDKError, match="kek cannot be empty"):
+        BootImageV21.parse(data=bytes(232), kek=None)

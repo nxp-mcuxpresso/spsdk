@@ -1,0 +1,7 @@
+issuer:
+  COMMON_NAME: ONE
+
+subject:
+  COMMON_NAME: TWO
+# this is comment
+duration: 1234

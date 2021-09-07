@@ -17,6 +17,9 @@ from spsdk.apps.blhost_helper import (
     parse_image_file,
     parse_key_prov_key_type,
     parse_property_tag,
+    parse_trust_prov_key_type,
+    parse_trust_prov_oem_key_type,
+    parse_trust_prov_wrapping_key_type,
 )
 
 
@@ -154,3 +157,58 @@ def test_parse_image_file_aligned_sizes(path, aligned_sizes: List[Tuple[int, int
     for segment, expected in zip(result, aligned_sizes):
         assert segment.aligned_start == expected[0]
         assert segment.aligned_length == expected[1]
+
+
+@pytest.mark.parametrize(
+    "input_value, expected_output",
+    [
+        ("MFWISK", 50085),
+        ("0xC3A5", 50085),
+        ("0xc3a5", 50085),
+        ("MFWENCK", 42435),
+        ("0xA5C3", 42435),
+        ("GENSIGNK", 23100),
+        ("0x5A3C", 23100),
+        ("GETCUSTMKSK", 15450),
+        ("0x3C5A", 15450),
+    ],
+)
+def test_parse_tp_prov_oem_key_type(input_value, expected_output):
+    actual = parse_trust_prov_oem_key_type(input_value)
+    assert actual == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_value, expected_output",
+    [
+        ("1", 1),
+        ("CKDFK", 1),
+        ("2", 2),
+        ("HKDFK", 2),
+        ("3", 3),
+        ("HMACK", 3),
+        ("4", 4),
+        ("CMACK", 4),
+        ("5", 5),
+        ("AESK", 5),
+        ("6", 6),
+        ("KUOK", 6),
+    ],
+)
+def test_parse_tp_prov_key_type(input_value, expected_output):
+    actual = parse_trust_prov_key_type(input_value)
+    assert actual == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_value, expected_output",
+    [
+        ("0x10", 16),
+        ("INT_SK", 16),
+        ("0x11", 17),
+        ("EXT_SK", 17),
+    ],
+)
+def test_parse_tp_prov_wrapping_key_type(input_value, expected_output):
+    actual = parse_trust_prov_wrapping_key_type(input_value)
+    assert actual == expected_output

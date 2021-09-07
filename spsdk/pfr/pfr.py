@@ -18,13 +18,14 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from ruamel.yaml.comments import CommentedMap as CM
 
+from spsdk import SPSDKError
 from spsdk import __author__ as spsdk_author
 from spsdk import __release__ as spsdk_release
 from spsdk import __version__ as spsdk_version
 from spsdk.utils.crypto.abstract import BackendClass
 from spsdk.utils.crypto.backend_openssl import openssl_backend
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
-from spsdk.utils.misc import change_endianism, format_value, value_to_int
+from spsdk.utils.misc import change_endianism, value_to_int
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
@@ -214,9 +215,13 @@ class PfrConfiguration:
         :param data: The registers settings data.
         :param indent: YAML start indent.
         :return: YAML PFR configuration in commented map(ordered dict).
+        :raises SPSDKError: When there is no device found
+        :raises SPSDKError: When there is no type found
         """
-        assert self.device
-        assert self.type
+        if not self.device:
+            raise SPSDKError("Device not found")
+        if not self.type:
+            raise SPSDKError("Type not found")
         res_data = CM()
 
         res_data.yaml_set_start_comment(
@@ -280,13 +285,19 @@ class BaseConfigArea:
         :param device: device to use, list of supported devices is available via 'devices' method
         :param revision: silicon revision, if not specified, the latest is being used
         :param user_config: PfrConfiguration with user configuration to use with initialization
+        :raises SPSDKError: When no device is provided
+        :raises SPSDKError: When no device is not supported
+        :raises SPSDKError: When there is invalid revision
         """
         self.bc_cfg = None
-        assert device or user_config
+        if not (device or user_config):
+            raise SPSDKError("No device provided")
         self.config = self._load_config()
-        self.device = device or (user_config.device if user_config else "")
+        # either 'device' or 'user_config' IS defined! Mypy doesn't understand the check above
+        self.device = device or user_config.device  # type: ignore
 
-        assert self.device in self.config.get_devices(), f"Device '{self.device}' is not supported"
+        if self.device not in self.config.get_devices():
+            raise SPSDKError(f"Device '{self.device}' is not supported")
         self.revision = revision or (user_config.revision if user_config else "latest")
         if not self.revision or self.revision == "latest":
             self.revision = self.config.get_latest_revision(self.device)
@@ -294,9 +305,8 @@ class BaseConfigArea:
                 f"The silicon revision is not specified, the latest: '{self.revision}' has been used."
             )
 
-        assert self.revision in self.config.get_revisions(
-            self.device
-        ), f"Invalid revision '{self.revision}' for '{self.device}'"
+        if self.revision not in self.config.get_revisions(self.device):
+            raise SPSDKError(f"Invalid revision '{self.revision}' for '{self.device}'")
         self.registers = Registers(self.device)
         self.registers.load_registers_from_xml(
             xml=self.config.get_data_file(self.device, self.revision),
@@ -382,10 +392,14 @@ class BaseConfigArea:
 
         :param config: PFR configuration.
         :param raw: When set all (included computed fields) configuration will be applied.
+        :raises SPSDKError: When device is not provided.
+        :raises SPSDKError: When revision is not provided.
         :raises SPSDKPfrConfigError: Invalid config file.
         """
-        assert self.device
-        assert self.revision
+        if not self.device:
+            raise SPSDKError("No device provided")
+        if not self.revision:
+            raise SPSDKError("No revision provided")
 
         if config.device != self.device:
             raise SPSDKPfrConfigError(
@@ -417,8 +431,12 @@ the latest: '{config.revision}' has been used."
 
         self.registers.load_yml_config(config.settings, computed_regs, computed_fields)
         if not raw:
-            # Just update only configured registers
-            exclude_hooks = list(set(self.registers.get_reg_names()) - set(config.settings.keys()))
+            # # Just update only configured registers
+            exclude_hooks = []
+            if not self.config.get_value("mandatory_computed_regs", self.device):
+                exclude_hooks.extend(
+                    list(set(self.registers.get_reg_names()) - set(config.settings.keys()))
+                )
             self.registers.run_hooks(exclude_hooks)
 
     def get_yaml_config(
@@ -491,18 +509,22 @@ the latest: '{config.revision}' has been used."
         """Function returns start of seal fields for the device.
 
         :return: Start of seals fields.
+        :raises SPSDKError: When 'seal_start_address' in database.json can not be found
         """
         start = self.config.get_seal_start_address(self.device)
-        assert start, "Can't find 'seal_start_address' in database.json"
+        if not start:
+            raise SPSDKError("Can't find 'seal_start_address' in database.json")
         return self.registers.find_reg(start).offset
 
     def _get_seal_count(self) -> int:
         """Function returns seal count for the device.
 
         :return: Count of seals fields.
+        :raises SPSDKError: When 'seal_count' in database.json can not be found
         """
         count = self.config.get_seal_count(self.device)
-        assert count, "Can't find 'seal_count' in database.json"
+        if not count:
+            raise SPSDKError("Can't find 'seal_count' in database.json")
         return value_to_int(count)
 
     def export(self, add_seal: bool = False, keys: List[RSAPublicKey] = None) -> bytes:
@@ -512,6 +534,7 @@ the latest: '{config.revision}' has been used."
         :param keys: List of Keys to compute ROTKH field.
         :return: Binary block with PFR configuration(CMPA or CFPA).
         :raises SPSDKPfrRotkhIsNotPresent: This PFR block doesn't contains ROTKH field.
+        :raises SPSDKError: The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}.
         """
         if keys:
             try:
@@ -546,9 +569,8 @@ the latest: '{config.revision}' has been used."
             seal_count = self._get_seal_count()
             data[seal_start : seal_start + seal_count * 4] = self.MARK * seal_count
 
-        assert (
-            len(data) == self.BINARY_SIZE
-        ), f"The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}"
+        if len(data) != self.BINARY_SIZE:
+            raise SPSDKError(f"The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}")
         return bytes(data)
 
     def parse(self, data: bytes) -> None:
@@ -558,7 +580,8 @@ the latest: '{config.revision}' has been used."
         """
         for reg in self._get_registers():
             value = bytearray(data[reg.offset : reg.offset + reg.width // 8])
-            reg.set_value(change_endianism(value), raw=True)
+            # don't change endian if register is meant to be used in 'reverse' (array of bytes)
+            reg.set_value(value if reg.reverse else change_endianism(value), raw=True)
 
     def _bc_bitfields(self, reg: RegsRegister, bitfield: RegsBitField) -> List[str]:
         """Function returns list of backward compatibility names for bitfield.
@@ -577,8 +600,10 @@ the latest: '{config.revision}' has been used."
         :param bitfield: Current bitfield
         :param enum: Current enum
         :return: List of backward compatibility names
+        :raises SPSDKError: If register is not provided
         """
-        assert self.bc_cfg
+        if not self.bc_cfg:
+            raise SPSDKError("No register provided")
         ret = []
         bitfield_n = [bitfield.name]
         reg_n = [reg.name]

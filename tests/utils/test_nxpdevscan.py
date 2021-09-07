@@ -8,13 +8,11 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-import spsdk.utils.nxpdevscan as nds
-import spsdk.utils.devicedescription as devicedescription
-
-from spsdk.mboot.interfaces.uart import Uart as SDP_Uart
-
 from serial import Serial
 from serial.tools.list_ports_common import ListPortInfo
+
+import spsdk.utils.devicedescription as devicedescription
+import spsdk.utils.nxpdevscan as nds
 
 
 def test_usb_device_search():
@@ -56,7 +54,7 @@ def test_usb_device_search():
         devicedescription.USBDeviceDescription(0x15A2, 0, "", "", "", ""),
     ]
 
-    with patch("hid.enumerate", MagicMock(return_value=test_vector)):
+    with patch("libusbsio.LIBUSBSIO.HIDAPI_Enumerate", MagicMock(return_value=test_vector)):
         devices = nds.search_nxp_usb_devices()
 
         assert len(devices) == len(result)
@@ -120,7 +118,7 @@ def test_usb_device_search_extended():
         devicedescription.USBDeviceDescription(0x0002, 0, "", "", "", ""),
         devicedescription.USBDeviceDescription(0x15A2, 0, "", "", "", ""),
     ]
-    with patch("hid.enumerate", MagicMock(return_value=test_vector)):
+    with patch("libusbsio.LIBUSBSIO.HIDAPI_Enumerate", MagicMock(return_value=test_vector)):
         devices = nds.search_nxp_usb_devices([0x2])
 
         assert len(devices) == len(result)
@@ -182,7 +180,7 @@ def test_uart_device_search():
     ],
 )
 def test_get_device_name(vid, pid, expected_result):
-    """Verify search works and returns appropripate name based on VID/PID"""
+    """Verify search works and returns appropriate name based on VID/PID"""
     assert devicedescription.get_usb_device_name(vid, pid) == expected_result
 
 

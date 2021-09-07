@@ -55,7 +55,15 @@ Registers descriptions with support for XML files
    :show-inheritance:
 
 
-USB Device Scanner 
+Register's configuration
+------------------------
+.. automodule:: spsdk.utils.reg_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+USB Device Scanner
 ---------------------
 .. automodule:: spsdk.utils.nxpdevscan
    :members:
@@ -66,6 +74,14 @@ USB Device Scanner
 Device description
 --------------------
 .. automodule:: spsdk.utils.devicedescription
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Utils Exceptions
+----------------
+.. automodule:: spsdk.utils.exceptions
    :members:
    :undoc-members:
    :show-inheritance:

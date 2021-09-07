@@ -8,7 +8,8 @@
 
 import pytest
 
-from spsdk.image import CmdWriteData, CmdNop, EnumWriteOps
+from spsdk import SPSDKError
+from spsdk.image import CmdNop, CmdWriteData, EnumWriteOps
 
 
 @pytest.mark.parametrize(
@@ -29,6 +30,27 @@ def test_write_value_cmd_basic(input_data):
     assert cmd._header.param == 20
 
     assert "CmdWriteData" in repr(cmd)
+
+
+def test_invalid_cmd_write_data():
+    cmd = CmdWriteData()
+    with pytest.raises(SPSDKError):
+        cmd.num_bytes = 16
+    with pytest.raises(SPSDKError):
+        cmd.ops = 10
+    with pytest.raises(SPSDKError):
+        cmd = CmdWriteData(numbytes=8)
+    with pytest.raises(SPSDKError):
+        cmd = CmdWriteData(ops=9)
+    cmd = CmdWriteData()
+    with pytest.raises(SPSDKError):
+        cmd.append(address=0xFFFFFFFFF, value=0)
+    with pytest.raises(SPSDKError):
+        cmd.append(address=0xFFFFFFFF, value=0xFFFFFFFFF)
+    cmd.append(5, 6)
+    cmd.append(7, 8)
+    with pytest.raises(SPSDKError):
+        cmd.pop(3)
 
 
 def test_write_value_cmd_get_set_iter():

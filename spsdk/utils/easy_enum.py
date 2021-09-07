@@ -25,6 +25,8 @@ __all__ = ["Enum"]
 
 from typing import Sequence, Union
 
+from spsdk import SPSDKError
+
 EnumKeyType = Union[str, int]
 
 
@@ -34,6 +36,10 @@ class MetaEnum(type):
     def __new__(mcs, name, bases, attrs):
         cls = super().__new__(mcs, name, bases, attrs)
         cls._items_ = list()
+
+        for base in bases:
+            cls._items_ += base._items_
+
         for attr, value in attrs.items():
             if attr in set(dir(type(name, (object,), {}))) or (
                 attr.startswith("_") and attr.endswith("_")
@@ -155,10 +161,10 @@ class Enum(metaclass=MetaEnum):
         - formally converts value into enumeration (for type hints), even the returned value is same as input
         :param value: integer value to be converted
         :return: corresponding enumeration
-        :raises ValueError: if specified value does not match any enumeration value
+        :raises SPSDKError: If specified value does not match any enumeration value
         """
         if value not in cls.tags():
-            raise ValueError(
+            raise SPSDKError(
                 f"the following integer value is not defined within the enumeration: {str(value)}"
             )
 

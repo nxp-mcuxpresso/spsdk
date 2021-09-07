@@ -7,25 +7,26 @@
 
 import pytest
 
+from spsdk import SPSDKError
+from spsdk.mboot import ExtMemId
 from spsdk.sbfile.commands import (
-    CmdNop,
     CmdCall,
     CmdErase,
     CmdFill,
+    CmdHeader,
     CmdJump,
-    CmdLoad,
-    CmdMemEnable,
-    CmdProg,
-    CmdReset,
-)
-from spsdk.sbfile.commands import (
-    VersionCheckType,
-    CmdVersionCheck,
     CmdKeyStoreBackup,
     CmdKeyStoreRestore,
+    CmdLoad,
+    CmdMemEnable,
+    CmdNop,
+    CmdProg,
+    CmdReset,
+    CmdTag,
+    CmdVersionCheck,
+    VersionCheckType,
+    parse_command,
 )
-from spsdk.sbfile.commands import CmdTag, parse_command
-from spsdk.mboot import ExtMemId
 
 
 def test_nop_cmd():
@@ -40,6 +41,13 @@ def test_nop_cmd():
     assert cmd == cmd_parsed
 
 
+def test_nop_cmd_invalid_parse():
+    cmd = CmdLoad(address=100, data=b"\x00" * 100)
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Incorrect header tag"):
+        CmdNop.parse(data)
+
+
 def test_tag_cmd():
     cmd = CmdTag()
     assert cmd.info()
@@ -50,6 +58,13 @@ def test_tag_cmd():
 
     cmd_parsed = parse_command(data)
     assert cmd == cmd_parsed
+
+
+def test_tag_cmd_invalid_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Incorrect header tag"):
+        CmdTag.parse(data)
 
 
 def test_load_cmd():
@@ -67,6 +82,28 @@ def test_load_cmd():
 
     cmd_parsed = parse_command(data)
     assert cmd == cmd_parsed
+
+
+def test_load_cmd_invalid_address():
+    cmd = CmdLoad(address=100, data=b"\x00" * 100)
+    with pytest.raises(SPSDKError, match="Incorrect address"):
+        cmd.address = 0xFFFFFFFFD
+
+
+def test_load_cmd_invalid_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Incorrect header tag"):
+        CmdLoad.parse(data)
+
+
+def test_load_cmd_invalid_parse_crc():
+    cmd = CmdLoad(address=100, data=b"\x00" * 100)
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Invalid CRC in the command header"):
+        CmdLoad.parse(
+            data=b"Q\x02\x00\x00d\x00\x00\x00p\x00\x00\x00\x02z\xa7\xfe\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\xd1a\x13<\xf5 \x9cP\xb8\x00\x00"
+        )
 
 
 def test_load_cmd_preexisting():
@@ -133,18 +170,31 @@ def test_fill_cmd_length_not_defined():
 
 
 def test_fill_cmd_empty_word():
-    with pytest.raises(ValueError):
-        CmdFill(address=100, pattern=0)
+    result = CmdFill(address=100, pattern=0)
+    assert result is not None
 
 
 def test_fill_cmd_incorrect_length():
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdFill(address=100, pattern=0, length=9)
 
 
 def test_fill_cmd_incorrect_word():
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdFill(address=100, pattern=283678294867452)
+
+
+def test_fill_cmd_incorrect_address():
+    cmd = CmdFill(address=100, pattern=2)
+    with pytest.raises(SPSDKError, match="Incorrect address"):
+        cmd.address = 0xFFFFFFFFA
+
+
+def test_fill_cmd_incorrect_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Incorrect header tag"):
+        CmdFill.parse(data)
 
 
 def test_jump_cmd():
@@ -171,6 +221,22 @@ def test_jump_cmd_with_spreg():
     assert cmd._header.flags == 2
     assert cmd._header.address == 200
     assert cmd._header.data == 50
+    assert "JUMP: Address=0x000000C8, Argument=0x00000032, SP=0x00000020" in str(cmd)
+
+
+def test_jump_cmd_invalid():
+    cmd = CmdJump(address=100, argument=10, spreg=None)
+    with pytest.raises(SPSDKError, match="Incorrect address"):
+        cmd.address = 0xFFFFFFFFA
+    with pytest.raises(SPSDKError, match="Incorrect argument"):
+        cmd.argument = 0xFFF
+
+
+def test_jump_cmd_invalid_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Incorrect header tag"):
+        CmdJump.parse(data)
 
 
 def test_call_cmd():
@@ -185,6 +251,19 @@ def test_call_cmd():
 
     cmd_parsed = parse_command(data)
     assert cmd == cmd_parsed
+
+
+def test_call_cmd_invalid():
+    cmd = CmdCall(address=100, argument=10)
+    with pytest.raises(SPSDKError, match="Incorrect address"):
+        cmd.address = 0xFFFFFFFFA
+
+
+def test_call_cmd_invalid_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Incorrect header tag"):
+        CmdCall.parse(data)
 
 
 def test_erase_cmd():
@@ -202,6 +281,19 @@ def test_erase_cmd():
     assert cmd == cmd_parsed
 
 
+def test_erase_invalid():
+    cmd = CmdErase(address=100, length=10, flags=0)
+    with pytest.raises(SPSDKError, match="Incorrect address"):
+        cmd.address = 0xFFFFFFFFA
+
+
+def test_erase_invalid():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Invalid header tag"):
+        CmdErase.parse(data)
+
+
 def test_reset_cmd():
     cmd = CmdReset()
     assert cmd.info()
@@ -212,6 +304,13 @@ def test_reset_cmd():
 
     cmd_parsed = parse_command(data)
     assert cmd == cmd_parsed
+
+
+def test_reset_cmd_invalid_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Invalid header tag"):
+        CmdReset.parse(data)
 
 
 def test_mem_enable_cmd():
@@ -229,6 +328,13 @@ def test_mem_enable_cmd():
     assert cmd == cmd_parsed
 
 
+def test_mem_enable_cmd_invalid_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Invalid header tag"):
+        CmdMemEnable.parse(data)
+
+
 def test_prog_cmd():
     cmd = CmdProg()
     assert cmd.info()
@@ -241,8 +347,15 @@ def test_prog_cmd():
     assert cmd == cmd_parsed
 
 
+def test_prog_cmd_invalid_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Invalid header tag"):
+        CmdProg.parse(data)
+
+
 def test_version_check():
-    """ Test SB command `CmdVersionCheck` """
+    """Test SB command `CmdVersionCheck`"""
     cmd = CmdVersionCheck(VersionCheckType.NON_SECURE_VERSION, 0x16)
     assert cmd.info()
 
@@ -257,8 +370,20 @@ def test_version_check():
     assert cmd.type == VersionCheckType.NON_SECURE_VERSION
 
 
+def test_version_check_invalid_version():
+    with pytest.raises(SPSDKError, match="Invalid version check type"):
+        CmdVersionCheck(2, 0x16)
+
+
+def test_version_check_invalid_parse():
+    cmd = CmdNop()
+    data = cmd.export()
+    with pytest.raises(SPSDKError, match="Invalid header tag"):
+        CmdVersionCheck.parse(data)
+
+
 def test_keystore_backup():
-    """ Test SB command `CmdKeyStoreBackup` """
+    """Test SB command `CmdKeyStoreBackup`"""
     cmd = CmdKeyStoreBackup(1000, 1)
     assert cmd.info()
 
@@ -274,7 +399,7 @@ def test_keystore_backup():
 
 
 def test_keystore_restore():
-    """ Test SB command `CmdKeyStoreRestore` """
+    """Test SB command `CmdKeyStoreRestore`"""
     cmd = CmdKeyStoreRestore(1000, 1)
     assert cmd.info()
 
@@ -290,5 +415,26 @@ def test_keystore_restore():
 
 
 def test_parse_invalid_command_tag():
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         parse_command(b"\xEE" * 16)
+
+
+def test_invalid_crc():
+    cmd = CmdNop()
+    with pytest.raises(SPSDKError):
+        cmd.parse(bytes(20))
+
+
+def test_load_cmd_invalid_crc():
+    cmd = CmdLoad(address=100, data=b"\x00" * 100)
+    valid_data = cmd.export()
+    invalid_data = valid_data
+    invalid_data = bytearray(invalid_data)
+    invalid_data[17:112] = bytearray(112)
+    with pytest.raises(SPSDKError):
+        cmd.parse(invalid_data)
+
+
+def test_invalid_cmd_header():
+    with pytest.raises(SPSDKError, match="Incorrect command tag"):
+        CmdHeader(tag=9999999)

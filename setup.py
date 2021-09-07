@@ -11,9 +11,6 @@ from setuptools import find_packages, setup  # type: ignore
 
 with open("requirements.txt") as req_file:
     requirements = req_file.read().splitlines()
-    # avoid build errors on readthedocs (excluding hidapi, which depends on C module)
-    if os.getenv("READTHEDOCS"):
-        requirements = [x for x in requirements if "hidapi" not in x]
 
 
 with open("README.md", "r") as f:
@@ -75,6 +72,7 @@ setup(
             "nxpdebugmbox=spsdk.apps.nxpdebugmbox:safe_main",
             "nxpcertgen=spsdk.apps.nxpcertgen:safe_main",
             "nxpdevscan=spsdk.apps.nxpdevscan:safe_main",
+            "nxpdevhsm=spsdk.apps.nxpdevhsm:safe_main",
             "shadowregs=spsdk.apps.shadowregs:safe_main",
         ],
     },

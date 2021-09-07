@@ -8,18 +8,18 @@
 
 """Module implementing communication with the MCU Bootloader."""
 
-from .mcuboot import McuBoot
-from .commands import CommandTag, KeyProvUserKeyType, GenerateKeyBlobSelect
-from .memories import ExtMemPropTags, ExtMemId
-from .properties import PropertyTag, PeripheryTag, Version, parse_property_value
-from .interfaces import scan_usb
+from .commands import CommandTag, GenerateKeyBlobSelect, KeyProvUserKeyType
+from .error_codes import StatusCode
 from .exceptions import (
-    McuBootError,
     McuBootCommandError,
     McuBootConnectionError,
     McuBootDataAbortError,
+    McuBootError,
 )
-from .error_codes import StatusCode
+from .interfaces import scan_usb
+from .mcuboot import McuBoot
+from .memories import ExtMemId, ExtMemPropTags, MemId
+from .properties import PeripheryTag, PropertyTag, Version, parse_property_value
 
 __all__ = [
     # global methods

@@ -20,6 +20,14 @@ MBoot USB
    :show-inheritance:
    :member-order: bysource
 
+MBoot USBSIO
+-------------
+
+.. automodule:: spsdk.mboot.interfaces.usbsio
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
 
 MBoot Interface Class
 ---------------------

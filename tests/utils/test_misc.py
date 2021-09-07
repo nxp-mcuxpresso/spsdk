@@ -6,27 +6,31 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import filecmp
 import os
-
+import time
 from typing import Union
 
 import pytest
 
+from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKValueError
+from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import (
+    Timeout,
     align,
     align_block,
     align_block_fill_random,
+    change_endianism,
     extend_block,
     find_first,
+    format_value,
+    get_bytes_cnt_of_int,
     load_binary,
     load_file,
-    write_file,
-    format_value,
     reverse_bytes_in_longs,
-    get_bytes_cnt_of_int,
-    change_endianism,
-    value_to_int,
-    value_to_bytes,
     value_to_bool,
+    value_to_bytes,
+    value_to_int,
+    write_file,
 )
 
 
@@ -114,13 +118,13 @@ def test_align_block_invalid_input():
     """Test invalid inputs for misc.align_block()"""
     with pytest.raises(AssertionError):
         align_block(None)
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError, match="Wrong alignment"):
         align_block(b"", -1)
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError, match="Wrong alignment"):
         align_block(b"", 0)
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError, match="Wrong padding"):
         align_block(b"", 1, -2)
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError, match="Wrong padding"):
         align_block(b"", 1, 256)
 
 
@@ -148,16 +152,16 @@ def test_add_padding(test_input: bytes, length: int, padding: int, expected: byt
 def test_add_padding_invalid_input():
     """Test invalid inputs for misc.align_block()"""
     # negative length
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         extend_block(b"", -1)
     # length < current length
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         extend_block(b"\x00\x00", 1)
     # padding > 255
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         extend_block(b"\x00\x00", 1, 256)
     # padding < 0
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         extend_block(b"\x00\x00", 1, -1)
 
 
@@ -230,7 +234,7 @@ def test_reg_long_reverse():
     assert reverse_bytes_in_longs(test_val_ret) == test_val
 
     test_val1 = b"\x01\x02\x03\x04\x11\x12"
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         reverse_bytes_in_longs(test_val1)
 
 
@@ -288,7 +292,7 @@ def test_change_endianism(value, res, exc):
     if not exc:
         assert res == change_endianism(value)
     else:
-        with pytest.raises(ValueError):
+        with pytest.raises(SPSDKError):
             change_endianism(value)
 
 
@@ -314,7 +318,7 @@ def test_value_to_int(value, res, exc):
     if not exc:
         assert res == value_to_int(value)
     else:
-        with pytest.raises(TypeError):
+        with pytest.raises(SPSDKError):
             value_to_int(value)
 
 
@@ -340,7 +344,7 @@ def test_value_to_bytes(value, res, exc):
     if not exc:
         assert res == value_to_bytes(value)
     else:
-        with pytest.raises(TypeError):
+        with pytest.raises(SPSDKError):
             value_to_bytes(value)
 
 
@@ -362,5 +366,34 @@ def test_value_to_bool(value, res, exc):
     if not exc:
         assert res == value_to_bool(value)
     else:
-        with pytest.raises(TypeError):
+        with pytest.raises(SPSDKError):
             value_to_bool(value)
+
+
+def test_timeout_basic():
+    """Basic test of timeout."""
+    timeout = Timeout(100, "ms")
+    assert not timeout.overflow()
+    time.sleep(0.1)
+    with pytest.raises(SPSDKTimeoutError):
+        timeout.overflow(True)
+
+
+def test_timeout_invalid_unit():
+    """Test of timeout class - invalid unit."""
+    with pytest.raises(SPSDKValueError):
+        Timeout(100, "day")
+
+
+def test_timeout_get_time():
+    """Basic test of timeout."""
+    timeout = Timeout(50, "ms")
+    assert timeout.get_consumed_time() < timeout.get_rest_time()
+    assert timeout.get_consumed_time_ms() < timeout.get_rest_time_ms()
+    time.sleep(0.1)
+    assert timeout.get_rest_time() < 0
+    assert timeout.get_rest_time_ms() < 0
+    with pytest.raises(SPSDKTimeoutError):
+        timeout.get_rest_time(True)
+    with pytest.raises(SPSDKTimeoutError):
+        timeout.get_rest_time_ms(True)

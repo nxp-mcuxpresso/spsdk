@@ -8,9 +8,9 @@
 
 import pytest
 
-from spsdk.image import CmdCheckData, CmdNop
-from spsdk.image import EnumCheckOps
-from spsdk.image.segments import SegFCB, FlexSPIConfBlockFCB, SegDCD
+from spsdk import SPSDKError
+from spsdk.image import CmdCheckData, CmdNop, EnumCheckOps
+from spsdk.image.segments import FlexSPIConfBlockFCB, SegDCD, SegFCB
 
 
 def test_segDCD():
@@ -69,3 +69,11 @@ def test_segDCD_eq():
     assert dcd_seg != confFlexSpi
     assert dcd_seg != segfcb
     assert dcd_seg == dcd_seg
+
+
+def test_segDCD_invalid_append_pop():
+    dcd_seg = SegDCD()
+    with pytest.raises(SPSDKError, match="Invalid command"):
+        dcd_seg.append(cmd=5)
+    with pytest.raises(SPSDKError, match="Can not pop item from dcd segment"):
+        dcd_seg.pop(index=100)

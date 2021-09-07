@@ -7,23 +7,22 @@
 """Main Debug Authentication Tool application."""
 
 import logging
-import sys
 import os
-
-from typing import List, Dict
+import sys
+from typing import Dict, List
 
 import click
 
+from spsdk import SPSDK_DATA_FOLDER
 from spsdk import __version__ as spsdk_version
-from spsdk.shadowregs import ShadowRegisters, enable_debug
+from spsdk.apps.utils import catch_spsdk_error
 from spsdk.debuggers.utils import DebugProbeUtils
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.registers import Registers, RegsRegister
+from spsdk.shadowregs import ShadowRegisters, enable_debug
 from spsdk.utils.reg_config import RegConfig
-from spsdk.apps.utils import catch_spsdk_error
-from spsdk import SPSDK_DATA_FOLDER
+from spsdk.utils.registers import Registers, RegsRegister
 
-logger = logging.getLogger("ShadowRegs")
+logger = logging.getLogger(__name__)
 
 # pylint: disable=protected-access
 LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
@@ -37,7 +36,7 @@ def _open_shadow_registers(pass_obj: Dict) -> ShadowRegisters:
 
     :param pass_obj: Input dictionary with arguments.
     :return: Active ShadowRegisters object.
-    :raise SPSDKError: Raised with any kind of problems with debug probe.
+    :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
     config_file = pass_obj["config_file"]
     interface = pass_obj["interface"]
@@ -72,7 +71,7 @@ def _open_shadow_registers(pass_obj: Dict) -> ShadowRegisters:
     )
 
 
-@click.group()
+@click.group(no_args_is_help=True)
 @click.option(
     "-i",
     "--interface",

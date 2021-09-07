@@ -9,17 +9,20 @@
 import argparse
 import itertools
 import json
+import math
 import os
 import sys
 from typing import Dict, Iterator, List, NamedTuple, Optional, Union, no_type_check
 
-from pip._internal.commands.show import search_packages_info
+from pip import __version__ as pip_version
+from pip._internal.commands.show import _PackageInfo, search_packages_info
 
 APPROVED_LICENSES_FILE_NAME = "approved_packages.json"
 APPROVED_LICENSES_FILE = os.path.abspath(
     os.path.join(os.path.dirname(__file__), APPROVED_LICENSES_FILE_NAME)
 )
 ROOT_PACKAGE = "spsdk"
+MIN_PIP_VERSION = "21.2.0"
 
 
 class DependencyInfo(NamedTuple):
@@ -28,7 +31,7 @@ class DependencyInfo(NamedTuple):
     name: str
     license: str
     home_page: str
-    is_manual: str
+    is_manual: bool
 
     def __str__(self) -> str:
         dep_info = f"{self.name:20} -> {self.license}"
@@ -37,13 +40,13 @@ class DependencyInfo(NamedTuple):
         return dep_info
 
     @staticmethod
-    def from_pgk_meta(pgk_meta_item: dict) -> "DependencyInfo":
+    def from_pgk_meta(pgk_meta_item: _PackageInfo) -> "DependencyInfo":
         """Extract data from package's meta info."""
         return DependencyInfo(
-            name=pgk_meta_item["name"],
-            license=pgk_meta_item["license"],
-            home_page=pgk_meta_item["home-page"],
-            is_manual=pgk_meta_item["license"] == "UNKNOWN",
+            name=pgk_meta_item.name,
+            license=pgk_meta_item.license,
+            home_page=pgk_meta_item.homepage,
+            is_manual=pgk_meta_item.license == "UNKNOWN",
         )
 
 
@@ -98,8 +101,8 @@ class DependenciesList(List[DependencyInfo]):
     def _get_requires(module_names: List[str]) -> Iterator[List[str]]:
         """Get `requires` fields from given set of package names."""
         for pkg_info in search_packages_info(module_names):
-            yield pkg_info["requires"]
-            yield from DependenciesList._get_requires(pkg_info["requires"])
+            yield pkg_info.requires
+            yield from DependenciesList._get_requires(pkg_info.requires)
 
 
 def parse_inputs(input_args: List[str] = None) -> dict:
@@ -118,7 +121,7 @@ def parse_inputs(input_args: List[str] = None) -> dict:
     # Mypy really doesn't like dictionary unpacking
     commands_parser = parser.add_subparsers(**commands_parser_opts)  # type: ignore
     commands_parser.add_parser("print", help="Only print dependencies and their licenses")
-    commands_parser.add_parser("print_lic", help="Only print licenses of dependencies")
+    commands_parser.add_parser("print-lic", help="Only print licenses of dependencies")
     commands_parser.add_parser("check", help="Check whether all dependencies are approved")
     commands_parser.add_parser("init", help="Initialize the approved licenses list file")
     parser.add_argument(
@@ -219,15 +222,61 @@ def init_approved_file(actual_list: DependenciesList) -> int:
     return 0
 
 
+def numberify_version(version: str, separator: str = ".") -> int:
+    """Turn version string into a number.
+
+    Each group is weighted by a multiple of 1000
+
+    1.2.3    -> 1  * 1_000_000 +   2 * 1_000 + 3 * 1 =  1_002_003
+    21.100.9 -> 21 * 1_000_000 + 100 * 1_000 + 9 * 1 = 21_100_009
+
+    :param version: Version string numbers separated by `separator`
+    :param separator: Separator used in the version string, defaults to "."
+    :return: Number representing the version
+    """
+    sanitized_version = sanitize_version(version=version, separator=separator, valid_numbers=3)
+    return int(
+        sum(
+            int(number) * math.pow(10, 3 * order)
+            for order, number in enumerate(reversed(sanitized_version.split(separator)))
+        )
+    )
+
+
+def sanitize_version(version: str, separator: str = ".", valid_numbers: int = 3) -> str:
+    """Sanitize version string.
+
+    Append '.0' in case version string has fewer parts than `valid_numbers`
+    Remove right-most version parts after `valid_numbers` amount of parts
+
+    1.2     -> 1.2.0
+    1.2.3.4 -> 1.2.3
+
+    :param version: Original version string
+    :param separator: Separator used in the version string, defaults to "."
+    :param valid_numbers: Amount of numbers to sanitize, defaults to 3
+    :return: Sanitized version string
+    """
+    version_parts = version.split(separator)
+    version_parts += ["0"] * (valid_numbers - len(version_parts))
+    return separator.join(version_parts[:valid_numbers])
+
+
 def main() -> int:
     """Main function."""
+    if numberify_version(pip_version) < numberify_version(MIN_PIP_VERSION):
+        print("Please install newer version of pip")
+        print(f"Minimum version required: {MIN_PIP_VERSION}, you have: {pip_version}")
+        print("To update pip run: 'python -m pip install --upgrade pip'")
+        return 1
+
     args = parse_inputs()
 
     actual_dep_list = DependenciesList.from_pip_meta(root_package=args["root_package"])
 
     handlers = {
         "print": print_dependencies,
-        "print_lic": print_licenses,
+        "print-lic": print_licenses,
         "check": check_dependencies,
         "init": init_approved_file,
     }

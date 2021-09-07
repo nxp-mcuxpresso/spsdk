@@ -16,10 +16,12 @@ from typing import Any
 import click
 
 from spsdk import __version__ as spsdk_version
+
 from .blhost import main as blhost_main
 from .elftosb import main as elftosb_main
 from .nxpcertgen import main as nxpcertgen_main
 from .nxpdebugmbox import main as nxpdebugmbox_main
+from .nxpdevhsm import main as nxpdevhsm_main
 from .nxpdevscan import main as nxpdevscan_main
 from .nxpkeygen import main as nxpkeygen_main
 from .pfr import main as pfr_main
@@ -30,7 +32,7 @@ from .shadowregs import main as shadowregs_main
 from .utils import catch_spsdk_error
 
 
-@click.group()
+@click.group(no_args_is_help=True)
 @click.version_option(spsdk_version, "--version")
 def main() -> int:
     """Main entry point for all SPSDK applications."""
@@ -42,6 +44,7 @@ main.add_command(elftosb_main, name="elftosb")
 main.add_command(nxpcertgen_main, name="nxpcertgen")
 main.add_command(nxpdebugmbox_main, name="nxpdebugmbox")
 main.add_command(nxpdevscan_main, name="nxpdevscan")
+main.add_command(nxpdevhsm_main, name="nxpdevhsm")
 main.add_command(nxpkeygen_main, name="nxpkeygen")
 main.add_command(pfr_main, name="pfr")
 main.add_command(pfrc_main, name="pfrc")

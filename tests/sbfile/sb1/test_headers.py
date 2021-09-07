@@ -7,18 +7,19 @@
 
 import pytest
 
+from spsdk import SPSDKError
 from spsdk.sbfile.misc import BcdVersion3, SecBootBlckSize
 from spsdk.sbfile.sb1.headers import (
-    SecureBootHeaderV1,
     BootSectionHeaderV1,
     SectionHeaderItemV1,
     SecureBootFlagsV1,
+    SecureBootHeaderV1,
 )
 
 
 def test_secure_boot_header_v1():
     # insufficient size
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         SecureBootHeaderV1.parse(b"\x00")
     # default params
     header = SecureBootHeaderV1()
@@ -73,3 +74,13 @@ def test_section_header_item():
     assert header == header_parsed
 
     assert header.info()
+
+
+def test_insufficient_size():
+    with pytest.raises(SPSDKError):
+        SectionHeaderItemV1.parse("\x00")
+
+
+def test_secure_boot_header_v1_invalid():
+    with pytest.raises(SPSDKError, match="Invalid header version"):
+        SecureBootHeaderV1(version="2.0")

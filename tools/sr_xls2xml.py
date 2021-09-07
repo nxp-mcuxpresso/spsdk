@@ -9,7 +9,7 @@
 import os
 import re
 import sys
-from typing import Any, Tuple, Dict
+from typing import Any, Dict, Tuple
 
 import click
 import openpyxl

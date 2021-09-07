@@ -9,8 +9,9 @@ import os
 
 import pytest
 
-from spsdk.utils.crypto.cert_blocks import CertBlockHeader
-from spsdk.utils.crypto import Certificate, CertBlockV2
+from spsdk import SPSDKError
+from spsdk.utils.crypto import CertBlockV2, Certificate
+from spsdk.utils.crypto.cert_blocks import CertBlockHeader, CertificateBlockHeader
 
 
 def test_cert_block_header():
@@ -29,6 +30,11 @@ def test_cert_block_header():
     assert header == header_parsed
 
 
+def test_cert_block_header_invalid():
+    with pytest.raises(SPSDKError, match="Invalid version"):
+        CertBlockHeader(version="bbb")
+
+
 def test_cert_block_basic():
     cb = CertBlockV2()
     # test default values
@@ -42,10 +48,10 @@ def test_cert_block_basic():
     assert cb.image_length == 1
     assert cb.header.image_length == 1
     # invalid root key index
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         cb.set_root_key_hash(4, bytes([0] * 32))
     # invalid root key size
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         cb.set_root_key_hash(0, bytes())
 
 
@@ -71,25 +77,83 @@ def test_cert_block(data_dir):
     with open(os.path.join(data_dir, "ca0_v3.der.crt"), "rb") as f:
         ca0_cert_data = f.read()
     ca0_cert = Certificate(ca0_cert_data)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         cb.add_certificate(ca0_cert)
 
     # test exception if no certificate specified
     cb = CertBlockV2()
     cb.set_root_key_hash(0, cert_obj.public_key_hash)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         cb.export()
 
     # test exception last certificate is set as CA
     cb = CertBlockV2()
     cb.set_root_key_hash(0, ca0_cert.public_key_hash)
     cb.add_certificate(ca0_cert)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         cb.export()
 
     # test exception if hash does not match any certificate
     cb = CertBlockV2()
     cb.set_root_key_hash(0, ca0_cert.public_key_hash)
     cb.add_certificate(cert_data)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         cb.export()
+
+
+def test_add_invalid_cert_in_cert_block(data_dir):
+    cb = CertBlockV2()
+    with open(os.path.join(data_dir, "selfsign_2048_v3.der.crt"), "rb") as f:
+        cert_data = f.read()
+    with open(os.path.join(data_dir, "ca0_v3.der.crt"), "rb") as f:
+        ca0_cert_data = f.read()
+    with pytest.raises(SPSDKError):
+        cb.add_certificate(cert=5)
+    with pytest.raises(
+        SPSDKError, match="Chain certificate cannot be verified using parent public key"
+    ):
+        cb.add_certificate(cert=cert_data)
+        cb.add_certificate(cert=ca0_cert_data)
+
+
+def test_cert_block_export_invalid(data_dir):
+    with open(os.path.join(data_dir, "selfsign_2048_v3.der.crt"), "rb") as f:
+        cert_data = f.read()
+    with open(os.path.join(data_dir, "ca0_v3.der.crt"), "rb") as f:
+        ca0_cert_data = f.read()
+    cert_obj = Certificate(cert_data)
+    cb = CertBlockV2()
+    cb.set_root_key_hash(0, cert_obj.public_key_hash)
+    cb.add_certificate(cert_data)
+    cb.add_certificate(cert_data)
+    assert cb.rkh_index == 0
+    with pytest.raises(
+        SPSDKError, match="All certificates except the last chain certificate must be CA"
+    ):
+        cb.export()
+
+
+def test_invalid_cert_block_header():
+    ch = CertificateBlockHeader()
+    ch.MAGIC = b"chdx"
+    data = ch.export()
+    with pytest.raises(SPSDKError, match="Magic is not same!"):
+        CertificateBlockHeader.parse(data=data)
+    with pytest.raises(SPSDKError, match="SIZE is bigger than length of the data without offset"):
+        CertificateBlockHeader.parse(data=bytes(8))
+
+
+def test_cert_block_invalid():
+    cb = CertBlockV2()
+    cb.RKH_SIZE = 77777
+    with pytest.raises(SPSDKError, match="Invalid length of data"):
+        cb.rkht
+    with pytest.raises(SPSDKError, match="Invalid image length"):
+        cb.image_length = -2
+    with pytest.raises(SPSDKError, match="Invalid alignment"):
+        cb.alignment = -2
+    cb = CertBlockV2()
+    with pytest.raises(SPSDKError, match="Invalid index of root key hash in the table"):
+        cb.set_root_key_hash(5, bytes(32))
+    with pytest.raises(SPSDKError, match="Invalid length of key hash"):
+        cb.set_root_key_hash(3, bytes(5))

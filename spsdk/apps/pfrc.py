@@ -6,12 +6,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Console script for pfrc (Utility to search for brick-conditions in PFR settings)."""
-import json
 import logging
 import os
 import sys
 
 import click
+import commentjson as json
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import catch_spsdk_error
@@ -21,7 +21,7 @@ from spsdk.pfr.pfr import PfrConfiguration
 RULES_FILE = os.path.join(PFR_DATA_FOLDER, "rules.json")
 
 
-@click.command()
+@click.command(no_args_is_help=True)  # type: ignore
 @click.option(
     "-m",
     "--cmpa-config",

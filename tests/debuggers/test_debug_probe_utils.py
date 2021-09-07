@@ -7,9 +7,15 @@
 """ Tests for Debug Probe utilities."""
 import pytest
 
-from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
-from spsdk.debuggers.utils import DebugProbeUtils, DebugProbes, ProbeDescription, ProbeNotFoundError
 import spsdk.debuggers.debug_probe as DP
+from spsdk import SPSDKError
+from spsdk.debuggers.utils import (
+    DebugProbes,
+    DebugProbeUtils,
+    ProbeDescription,
+    SPSDKProbeNotFoundError,
+)
+from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
 
 def test_debugprobes_append():
@@ -20,7 +26,7 @@ def test_debugprobes_append():
 
     assert probe_list.pop() == probe_descr
 
-    with pytest.raises(TypeError):
+    with pytest.raises(SPSDKError):
         probe_list.append("Invalid Type")
 
 
@@ -32,7 +38,7 @@ def test_debugprobes_insert():
 
     assert probe_list.pop() == probe_descr
 
-    with pytest.raises(TypeError):
+    with pytest.raises(SPSDKError):
         probe_list.insert(0, "Invalid Type")
 
 
@@ -55,7 +61,7 @@ def test_debugprobes_get_probe():
     probe = probe_list.select_probe().get_probe()
     assert isinstance(probe, DebugProbeVirtual)
 
-    with pytest.raises(DP.DebugProbeError):
+    with pytest.raises(DP.SPSDKDebugProbeError):
         assert probe_list.select_probe().get_probe({"exc": None}) is None
 
 
@@ -63,10 +69,10 @@ def test_debugprobes_select_probe():
     """Test of Debug Probe Utilities - Select probe."""
     probe_list = DebugProbes()
 
-    with pytest.raises(ProbeNotFoundError):
+    with pytest.raises(SPSDKProbeNotFoundError):
         probe_list.select_probe(silent=True)
 
-    with pytest.raises(ProbeNotFoundError):
+    with pytest.raises(SPSDKProbeNotFoundError):
         probe_list.select_probe(silent=False)
 
     probe_description = ProbeDescription(

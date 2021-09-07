@@ -5,7 +5,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from spsdk.exceptions import SPSDKError
 import pytest
+
 from spsdk.image.misc import parse_int, size_fmt
 
 
@@ -38,7 +40,7 @@ def test_parse_int(test_input, expected):
 @pytest.mark.parametrize("test_input", ["", "x", ".0", "1whatever*", " 3 "])
 def test_parse_int_invalid_input(test_input):
     """ Test invalid inputs for parse_int() """
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         parse_int(test_input)
 
 

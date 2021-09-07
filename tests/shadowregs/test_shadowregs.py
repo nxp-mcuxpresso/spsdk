@@ -108,10 +108,10 @@ def test_shadowreg_invalid_probe(data_dir):
 
     shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
 
-    with pytest.raises(DP.DebugProbeError):
+    with pytest.raises(DP.SPSDKDebugProbeError):
         shadowregs.set_register("REG1", 0x12345678)
 
-    with pytest.raises(DP.DebugProbeError):
+    with pytest.raises(DP.SPSDKDebugProbeError):
         shadowregs.get_register("REG1")
 
 

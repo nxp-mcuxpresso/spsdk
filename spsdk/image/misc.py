@@ -12,9 +12,10 @@ import re
 from io import SEEK_CUR
 from typing import Union
 
+from spsdk import SPSDKError
 from spsdk.utils.registers import value_to_int
+
 from .header import Header
-from .. import SPSDKError
 
 
 class RawDataException(SPSDKError):
@@ -64,12 +65,12 @@ def read_raw_data(
     """Read raw data."""
     if index is not None:
         if index < 0:
-            raise ValueError(" Index must be non-negative, found {}".format(index))
+            raise SPSDKError(" Index must be non-negative, found {}".format(index))
         if index != stream.tell():
             stream.seek(index)
 
     if length < 0:
-        raise ValueError(" Length must be non-negative, found {}".format(length))
+        raise SPSDKError(" Length must be non-negative, found {}".format(length))
 
     try:
         data = stream.read(length)
@@ -104,11 +105,11 @@ def parse_int(number: str) -> int:
 
     :param number: input string
     :return: corresponding integer value
-    :raise ValueError: if parameter is not valid number
+    :raises SPSDKError: If parameter is not valid number
     """
     match = NUMBER_FORMAT.match(number)
     if match is None:
-        raise ValueError("invalid number")
+        raise SPSDKError("invalid number")
     base = {"0b": 2, "0x": 16, None: 10}[match.group("prefix")]
     return int(match.group("number"), base=base)
 
@@ -128,7 +129,7 @@ def dict_diff(main: dict, mod: dict) -> dict:
             try:
                 if value_to_int(main_value) != value_to_int(value):
                     diff[key] = value
-            except TypeError:
+            except (SPSDKError, TypeError):
                 # Not a number!
                 if main_value != value:
                     diff[key] = value

@@ -11,6 +11,7 @@ import sys
 from typing import IO
 
 import click
+import logging
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import catch_spsdk_error
@@ -29,6 +30,8 @@ from spsdk.utils import nxpdevscan
 @click.version_option(spsdk_version, "--version")
 def main(extend_vids: str, out: IO[str]) -> None:
     """Utility listing all connected NXP USB and UART devices."""
+    logging.basicConfig()
+
     additional_vids = [int(vid, 16) for vid in extend_vids]
 
     nxp_devices = nxpdevscan.search_nxp_usb_devices(additional_vids)

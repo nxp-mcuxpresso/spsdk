@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for Debug Probe interface."""
 import pytest
+
 import spsdk
 import spsdk.debuggers.debug_probe as DP
 

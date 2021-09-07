@@ -18,7 +18,15 @@ from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import SPSDKError
 from spsdk import __version__ as spsdk_version
-from spsdk.apps.blhost_helper import parse_image_file, parse_key_prov_key_type, parse_property_tag
+from spsdk.apps.blhost_helper import (
+    OemGenMasterShareHelp,
+    OemSetMasterShareHelp,
+    parse_image_file,
+    parse_key_prov_key_type,
+    parse_property_tag,
+    parse_trust_prov_key_type,
+    parse_trust_prov_oem_key_type,
+)
 from spsdk.apps.utils import (
     INT,
     catch_spsdk_error,
@@ -30,10 +38,11 @@ from spsdk.apps.utils import (
 from spsdk.mboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_property_value
 
 
-@click.group()
+@click.group(no_args_is_help=True)
 @optgroup.group("Interface configuration", cls=MutuallyExclusiveOptionGroup)
 @optgroup.option(
-    "-p", "--port",
+    "-p",
+    "--port",
     metavar="COM[,speed]",
     help="""Serial port configuration. Use 'nxpdevscan' utility to list devices on serial port.""",
 )
@@ -48,25 +57,45 @@ from spsdk.mboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_proper
     Use 'nxpdevscan' utility to list connected device names.
 """,
 )
-@click.option("-j",
-    "--json",
-    "use_json",
-    is_flag=True,
-    help="Prints output in JSON format."
+@optgroup.option(
+    "-l",
+    "--lpcusbsio",
+    metavar="spi|i2c",
+    help="""USB-SIO bridge interface.
+    Following interfaces are supported:
+
+    spi[,port,pin,speed_kHz,polarity,phase]
+     - port ... bridge GPIO port used as SPI SSEL
+     - pin  ... bridge GPIO pin used as SPI SSEL
+        default SSEL is set to 0.15 which works
+        for the LPCLink2 bridge. The MCULink OB
+        bridge ignores the SSEL value anyway.
+     - speed_kHz ... SPI clock in kHz (default 1000)
+     - polarity ... SPI CPOL option (default=1)
+     - phase ... SPI CPHA option (default=1)
+
+    i2c[,address,speed_kHz]
+     - address ... I2C device address (default 0x10)
+     - speed_kHz ... I2C clock in kHz (default 100)
+""",
 )
-@click.option("-v",
+@click.option("-j", "--json", "use_json", is_flag=True, help="Prints output in JSON format.")
+@click.option(
+    "-v",
     "--verbose",
     "log_level",
     flag_value=logging.INFO,
     help="Prints more detailed information.",
 )
-@click.option("-d",
+@click.option(
+    "-d",
     "--debug",
     "log_level",
     flag_value=logging.DEBUG,
     help="Display more debugging info.",
 )
-@click.option("-t",
+@click.option(
+    "-t",
     "--timeout",
     metavar="<ms>",
     help="""Sets timeout when waiting on data over a serial line. The default is 5000 milliseconds.""",
@@ -79,6 +108,7 @@ def main(
     ctx: click.Context,
     port: str,
     usb: str,
+    lpcusbsio: str,
     use_json: bool,
     log_level: int,
     timeout: int,
@@ -99,7 +129,9 @@ def main(
     # if --help is provided anywhere on commandline, skip interface lookup and display help message
     if "--help" not in click.get_os_args():
         ctx.obj = {
-            "interface": get_interface(module="mboot", port=port, usb=usb, timeout=timeout),
+            "interface": get_interface(
+                module="mboot", port=port, usb=usb, timeout=timeout, lpcusbsio=lpcusbsio
+            ),
             "use_json": use_json,
         }
     return 0
@@ -203,14 +235,14 @@ def execute(ctx: click.Context, address: int, argument: int, stackpointer: int) 
     STACKPOINTER - Stack pointer for the application
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
-        response = mboot.execute(address, argument, stackpointer)
+        mboot.execute(address, argument, stackpointer)
         display_output([], mboot.status_code, ctx.obj["use_json"])
 
 
 @main.command()
 @click.argument("address", type=INT(), required=True)
 @click.argument("byte_count", type=INT(), required=True)
-@click.argument("memory_id", type=int, required=False, default=0)
+@click.argument("memory_id", type=INT(), required=False, default="0")
 @click.pass_context
 def flash_erase_region(ctx: click.Context, address: int, byte_count: int, memory_id: int) -> None:
     """Erases one or more sectors of the flash memory.
@@ -229,7 +261,7 @@ def flash_erase_region(ctx: click.Context, address: int, byte_count: int, memory
 
 
 @main.command()
-@click.argument("memory_id", type=int, required=False, default=0)
+@click.argument("memory_id", type=INT(), required=False, default="0")
 @click.pass_context
 def flash_erase_all(ctx: click.Context, memory_id: int) -> None:
     """Performs an erase of the entire flash memory.
@@ -257,7 +289,7 @@ def flash_erase_all_unsecure(ctx: click.Context) -> None:
 @main.command()
 @click.argument("image_file_path", metavar="FILE", type=str, required=True)
 @click.argument("erase", type=str, required=False, default="none")
-@click.argument("memory_id", type=INT(), required=False, default='0')
+@click.argument("memory_id", type=INT(), required=False, default="0")
 @click.pass_context
 def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id: int) -> None:
     """Write the formatted image in <FILE> to the memory specified by memoryID.
@@ -274,7 +306,9 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
         try:
             mem_id = int(erase, 0)
         except ValueError as e:
-            raise SPSDKError("The option for erasing was not declared properly. Choose from 'erase' or 'none'.") from e
+            raise SPSDKError(
+                "The option for erasing was not declared properly. Choose from 'erase' or 'none'."
+            ) from e
     if memory_id:
         mem_id = memory_id
     segments = parse_image_file(image_file_path)
@@ -293,14 +327,15 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
 
 
 @main.command()
-@click.argument("index", type=int, required=True)
+@click.argument("index", type=INT(), required=True)
 @click.argument("byte_count", type=click.Choice(["4", "8"]), required=True)
 @click.argument("data", type=INT(base=16), required=True)
 @click.argument(
     "endianess",
     metavar="[LSB|MSB]",
     type=click.Choice(["LSB", "MSB"]),
-    default="LSB", required=False
+    default="LSB",
+    required=False,
 )
 @click.pass_context
 def flash_program_once(
@@ -322,7 +357,7 @@ def flash_program_once(
 
 
 @main.command()
-@click.argument("index", type=int, required=True)
+@click.argument("index", type=INT(), required=True)
 @click.argument("byte_count", type=click.Choice(["4", "8"]), required=True, default=4)
 @click.pass_context
 def flash_read_once(ctx: click.Context, index: int, byte_count: str) -> None:
@@ -363,13 +398,18 @@ def flash_security_disable(ctx: click.Context, key: str) -> None:
 
 @main.command()
 @click.argument("address", type=INT(), required=True)
-@click.argument("length", type=int, required=True)
+@click.argument("length", type=INT(), required=True)
 @click.argument("option", type=click.Choice(["0", "1"]), required=True)
 @click.argument("out_file", metavar="FILE", type=click.File("wb"), required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_context
 def flash_read_resource(
-    ctx: click.Context, address: int, length: int, option: str, out_file: click.File, use_hexdump: bool
+    ctx: click.Context,
+    address: int,
+    length: int,
+    option: str,
+    out_file: click.File,
+    use_hexdump: bool,
 ) -> None:
     """Read resource of flash module.
 
@@ -395,7 +435,7 @@ def flash_read_resource(
             [len(response) if response else 0],
             mboot.status_code,
             ctx.obj["use_json"],
-            f"Read {len(response) if response else 0} of {length} bytes."
+            f"Read {len(response) if response else 0} of {length} bytes.",
         )
 
 
@@ -431,7 +471,7 @@ def fill_memory(
 @main.command()
 @click.argument("address", type=INT(), required=True)
 @click.argument("data_source", metavar="FILE[,BYTE_COUNT] | {{HEX-DATA}}", type=str, required=True)
-@click.argument("memory_id", type=int, required=False, default=0)
+@click.argument("memory_id", type=INT(), required=False, default="0")
 @click.pass_context
 def fuse_program(ctx: click.Context, address: int, data_source: str, memory_id: int) -> None:
     """Program fuse.
@@ -459,7 +499,7 @@ def fuse_program(ctx: click.Context, address: int, data_source: str, memory_id: 
 @click.argument("address", type=INT(), required=True)
 @click.argument("byte_count", type=INT(), required=True)
 @click.argument("out_file", metavar="FILE", type=click.File("wb"), required=False)
-@click.argument("memory_id", type=int, default=0, required=False)
+@click.argument("memory_id", type=INT(), default="0", required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_context
 def fuse_read(
@@ -536,7 +576,7 @@ def load_image(ctx: click.Context, boot_file: click.File) -> None:
 
 @main.command()
 @click.argument("property_tag", type=str, required=True)
-@click.argument("index", type=int, default=0)
+@click.argument("index", type=INT(), default="0")
 @click.pass_context
 def get_property(ctx: click.Context, property_tag: str, index: int) -> None:
     """Queries various bootloader properties and settings.
@@ -624,7 +664,7 @@ def set_property(ctx: click.Context, property_tag: str, value: int) -> None:
 @click.argument("address", type=INT(), required=True)
 @click.argument("byte_count", type=INT(), required=True)
 @click.argument("out_file", metavar="FILE", type=click.File("wb"), required=False)
-@click.argument("memory_id", type=int, default=0, required=False)
+@click.argument("memory_id", type=INT(), default="0", required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_context
 def read_memory(
@@ -682,8 +722,7 @@ def receive_sb_file(ctx: click.Context, sb_file: click.File) -> None:
 @main.command()
 @click.argument("address", type=INT(), required=True)
 @click.pass_context
-def reliable_update(
-    ctx: click.Context, address: int) -> None:
+def reliable_update(ctx: click.Context, address: int) -> None:
     """Reliable Update.
 
     \b
@@ -709,7 +748,7 @@ def reset(ctx: click.Context) -> None:
 @main.command()
 @click.argument("address", type=INT(), required=True)
 @click.argument("data_source", metavar="FILE[,BYTE_COUNT] | {{HEX-DATA}}", type=str, required=True)
-@click.argument("memory_id", type=int, required=False, default=0)
+@click.argument("memory_id", type=INT(), required=False, default="0")
 @click.pass_context
 def write_memory(ctx: click.Context, address: int, data_source: str, memory_id: int) -> None:
     """Writes memory from a file or a hex-data.
@@ -851,7 +890,7 @@ def set_user_key(ctx: click.Context, key_type: str, file_and_size: str) -> None:
 
 @key_provisioning.command(name="set_key")
 @click.argument("key_type", metavar="TYPE", type=str, required=True)
-@click.argument("key_size", metavar="SIZE", type=int, required=True)
+@click.argument("key_size", metavar="SIZE", type=INT(), required=True)
 @click.pass_context
 def set_key(ctx: click.Context, key_type: str, key_size: int) -> None:
     """Generates a size bytes of the key specified by the type.
@@ -882,7 +921,7 @@ def set_key(ctx: click.Context, key_type: str, key_size: int) -> None:
 
 
 @key_provisioning.command(name="write_key_nonvolatile")
-@click.argument("memory_id", metavar="memoryID", type=int, default=0)
+@click.argument("memory_id", metavar="memoryID", type=INT(), default="0")
 @click.pass_context
 def write_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
     """Writes the key to nonvolatile memory.
@@ -896,7 +935,7 @@ def write_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
 
 
 @key_provisioning.command(name="read_key_nonvolatile")
-@click.argument("memory_id", metavar="memoryID", type=int, default=0)
+@click.argument("memory_id", metavar="memoryID", type=INT(), default="0")
 @click.pass_context
 def read_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
     """Loads the key from nonvolatile memory to bootloader.
@@ -956,6 +995,368 @@ def read_key_store(ctx: click.Context, key_store_file: click.File) -> None:
             key_store_file.write(response)  # type: ignore
 
 
+@main.group()
+@click.pass_context
+def trust_provisioning(ctx: click.Context) -> None:
+    """Group of sub-commands related to trust provisioning."""
+
+
+@trust_provisioning.command(name="hsm_store_key")
+@click.argument("key_type", metavar="KEY_TYPE", type=str, required=True)
+@click.argument("key_property", metavar="KEY_PROPERTY", type=INT(), required=True)
+@click.argument("key_input_addr", metavar="KEY_INPUT_ADDR", type=INT(), required=True)
+@click.argument("key_input_size", metavar="KEY_INPUT_SIZE", type=INT(), required=True)
+@click.argument("key_blob_output_addr", metavar="KEY_BLOB_OUTPUT_ADDR", type=INT(), required=True)
+@click.argument("key_blob_output_size", metavar="KEY_BLOB_OUTPUT_SIZE", type=INT(), required=True)
+@click.pass_context
+def hsm_store_key(
+    ctx: click.Context,
+    key_type: str,
+    key_property: int,
+    key_input_addr: int,
+    key_input_size: int,
+    key_blob_output_addr: int,
+    key_blob_output_size: int,
+) -> None:
+    """Stores known keys, and generate the corresponding key blob.
+
+    It wraps the known key, which is given by the customer,
+    using NXP_CUST_KEK_EXT_SK, and output the RFC3396 key blob.
+
+    \b
+    KEY_TYPE              - Type of key to generate (CKDFK, HKDFK, HMACK, CMACK, AESK, KUOK)
+    KEY_PROPERTY          - Bit 0: Key Size, 0 for 128bit, 1 for 256bit. Bits 30-31: set key protection CSS mode
+    KEY_INPUT_ADDR        - The input buffer address where the key locates at
+    KEY_INPUT_SIZE        - The byte count of the key
+    KEY_BLOB_OUTPUT_ADDR  - The output buffer address where ROM writes the key blob to
+    KEY_BLOB_OUTPUT_SIZE  - The output buffer size in byte
+    """
+    key_type_int = parse_trust_prov_key_type(key_type)
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        response = mboot.tp_hsm_store_key(
+            key_type_int,
+            key_property,
+            key_input_addr,
+            key_input_size,
+            key_blob_output_addr,
+            key_blob_output_size,
+        )
+
+        extra_output = ""
+        if response:
+            key_header = response[0]
+            key_blob_size = response[1]
+            if mboot.status_code == StatusCode.SUCCESS:
+                extra_output = "Output data size/value(s) is(are):\n"
+                extra_output += (
+                    f"\tKey Header: {key_header} ({hex(key_header)})\n"
+                    f"\tKey Blob size: {key_blob_size} ({hex(key_blob_size)})"
+                )
+        display_output(response, mboot.status_code, ctx.obj["use_json"], extra_output)
+
+
+@trust_provisioning.command(name="hsm_gen_key")
+@click.argument("key_type", metavar="KEY_TYPE", type=str, required=True)
+@click.argument("reserved", metavar="RESERVED", type=INT(), required=True)
+@click.argument("key_blob_output_addr", metavar="KEY_BLOB_OUTPUT_ADDR", type=INT(), required=True)
+@click.argument("key_blob_output_size", metavar="KEY_BLOB_OUTPUT_SIZE", type=INT(), required=True)
+@click.argument("ecdsa_puk_output_addr", metavar="ECDSA_PUK_OUTPUT_ADDR", type=INT(), required=True)
+@click.argument("ecdsa_puk_output_size", metavar="ECDSA_PUK_OUTPUT_SIZE", type=INT(), required=True)
+@click.pass_context
+def hsm_gen_key(
+    ctx: click.Context,
+    key_type: str,
+    reserved: int,
+    key_blob_output_addr: int,
+    key_blob_output_size: int,
+    ecdsa_puk_output_addr: int,
+    ecdsa_puk_output_size: int,
+) -> None:
+    """Creates OEM common keys, including encryption keys and signing keys.
+
+    It outputs the key blob, which is wrapped by NXP_CUST_KEK_IN_SK
+    and the public portion of the signing key.
+
+    \b
+    KEY_TYPE              - Type of key to generate (MFWISK, MFWENCK, GENSIGNK, GETCUSTMKSK)
+    RESERVED              - Reserved must be 0
+    KEY_BLOB_OUTPUT_ADDR  - Output buffer address where ROM writes the key blob to
+    KEY_BLOB_OUTPUT_SIZE  - Output buffer size in bytes
+    ECDSA_PUK_OUTPUT_ADDR - Output buffer address where ROM writes the public key to
+    ECDSA_PUK_OUTPUT_SIZE - Output buffer size in bytes
+    """
+    key_type_int = parse_trust_prov_oem_key_type(key_type)
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        response = mboot.tp_hsm_gen_key(
+            key_type_int,
+            reserved,
+            key_blob_output_addr,
+            key_blob_output_size,
+            ecdsa_puk_output_addr,
+            ecdsa_puk_output_size,
+        )
+
+        extra_output = ""
+        if response:
+            keyblob_size = response[0]
+            ecdsa_puk_size = response[1]
+            if mboot.status_code == StatusCode.SUCCESS:
+                extra_output = "Output data size/value(s) is(are):\n"
+            else:
+                extra_output = (
+                    "Output buffer(s) is(are) smaller than the minimum requested which is(are):\n"
+                )
+            extra_output += (
+                f"\tKey Blob size: {keyblob_size} ({hex(keyblob_size)})\n"
+                f"\tECDSA Puk size: {ecdsa_puk_size} ({hex(ecdsa_puk_size)})"
+            )
+        display_output(response, mboot.status_code, ctx.obj["use_json"], extra_output)
+
+
+@trust_provisioning.command(name="hsm_enc_blk")
+@click.argument(
+    "mfg_cust_mk_sk_0_blob_input_addr",
+    metavar="MFG_CUST_MK_SK_0_BLOB_INPUT_ADDR",
+    type=INT(),
+    required=True,
+)
+@click.argument(
+    "mfg_cust_mk_sk_0_blob_input_size",
+    metavar="MFG_CUST_MK_SK_0_BLOB_INPUT_SIZE",
+    type=INT(),
+    required=True,
+)
+@click.argument("kek_id", metavar="KEK_ID", type=str, required=True)
+@click.argument("sb3_header_input_addr", metavar="SB3_HEADER_INPUT_ADDR", type=INT(), required=True)
+@click.argument("sb3_header_input_size", metavar="SB3_HEADER_INPUT_SIZE", type=INT(), required=True)
+@click.argument("block_num", metavar="BLOCK_NUM", type=INT(), required=True)
+@click.argument("block_data_addr", metavar="BLOCK_DATA_ADDR", type=INT(), required=True)
+@click.argument("block_data_size", metavar="BLOCK_DATA_SIZE", type=INT(), required=True)
+@click.pass_context
+def hsm_enc_blk(
+    ctx: click.Context,
+    mfg_cust_mk_sk_0_blob_input_addr: int,
+    mfg_cust_mk_sk_0_blob_input_size: int,
+    kek_id: str,
+    sb3_header_input_addr: int,
+    sb3_header_input_size: int,
+    block_num: int,
+    block_data_addr: int,
+    block_data_size: int,
+) -> None:
+    """Encrypts the given SB3 data block.
+
+    \b
+    MFG_CUST_MK_SK_0_BLOB_INPUT_ADDR - The input buffer address where the CKDF Master Key Blob locates at
+    MFG_CUST_MK_SK_0_BLOB_INPUT_SIZE - The byte count of the CKDF Master Key Blob
+    KEK_ID                           - The CKDF Master Key Encryption Key ID
+    (0x10: NXP_CUST_KEK_INT_SK, 0x11: NXP_CUST_KEK_EXT_SK)
+    SB3_HEADER_INPUT_ADDR            - The input buffer address where the SB3 Header(block0) locates at
+    SB3_HEADER_INPUT_SIZE            - The byte count of the SB3 Header
+    BLOCK_NUM                        - The index of the block. Due to SB3 Header(block 0) is always unencrypted,
+    the index starts from block1
+    BLOCK_DATA_ADDR                  - The buffer address where the SB3 data block locates at
+    BLOCK_DATA_SIZE                  - The byte count of the SB3 data block
+    """
+    kek_id_int = parse_trust_prov_key_type(kek_id)
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        mboot.tp_hsm_enc_blk(
+            mfg_cust_mk_sk_0_blob_input_addr,
+            mfg_cust_mk_sk_0_blob_input_size,
+            kek_id_int,
+            sb3_header_input_addr,
+            sb3_header_input_size,
+            block_num,
+            block_data_addr,
+            block_data_size,
+        )
+        display_output([], mboot.status_code, ctx.obj["use_json"])
+
+
+@trust_provisioning.command(name="hsm_enc_sign")
+@click.argument("key_blob_input_addr", metavar="KEY_BLOB_INPUT_ADDR", type=INT(), required=True)
+@click.argument("key_blob_input_size", metavar="KEY_BLOB_INPUT_SIZE", type=INT(), required=True)
+@click.argument("block_data_input_addr", metavar="BLOCK_DATA_INPUT_ADDR", type=INT(), required=True)
+@click.argument("block_data_input_size", metavar="BLOCK_DATA_INPUT_SIZE", type=INT(), required=True)
+@click.argument("signature_output_addr", metavar="SIGNATURE_OUTPUT_ADDR", type=INT(), required=True)
+@click.argument("signature_output_size", metavar="SIGNATURE_OUTPUT_SIZE", type=INT(), required=True)
+@click.pass_context
+def hsm_enc_sign(
+    ctx: click.Context,
+    key_blob_input_addr: int,
+    key_blob_input_size: int,
+    block_data_input_addr: int,
+    block_data_input_size: int,
+    signature_output_addr: int,
+    signature_output_size: int,
+) -> None:
+    """Signs the given data.
+
+    It uses the private key in the given key blob, which is generated by HSM_GEN_KEY.
+
+    \b
+    KEY_BLOB_INPUT_ADDR   - The input buffer address where signing key blob locates at
+    KEY_BLOB_INPUT_SIZE   - The byte count of the signing key blob
+    BLOCK_DATA_INPUT_ADDR - The input buffer address where the data locates at
+    BLOCK_DATA_INPUT_SIZE - The byte count of the data
+    SIGNATURE_OUTPUT_ADDR - The output buffer address where ROM writes the signature to
+    SIGNATURE_OUTPUT_SIZE - The output buffer size in byte
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        response = mboot.tp_hsm_enc_sign(
+            key_blob_input_addr,
+            key_blob_input_size,
+            block_data_input_addr,
+            block_data_input_size,
+            signature_output_addr,
+            signature_output_size,
+        )
+
+        extra_output = ""
+        if response:
+            output_signature_size = response
+            if mboot.status_code == StatusCode.SUCCESS:
+                extra_output = "Output data size/value(s) is(are):\n"
+            else:
+                extra_output = (
+                    "Output buffer(s) is(are) smaller than the minimum requested which is(are):\n"
+                )
+            extra_output += (
+                f"\tSignature size: {output_signature_size} ({hex(output_signature_size)})"
+            )
+        display_output([response], mboot.status_code, ctx.obj["use_json"], extra_output)
+
+
+@trust_provisioning.command(name="oem_gen_master_share", cls=OemGenMasterShareHelp)
+@click.argument("oem_share_input_addr", type=INT(), required=True)
+@click.argument("oem_share_input_size", type=INT(), required=True)
+@click.argument("oem_enc_share_output_addr", type=INT(), required=True)
+@click.argument("oem_enc_share_output_size", type=INT(), required=True)
+@click.argument("oem_enc_master_share_output_addr", type=INT(), required=True)
+@click.argument("oem_enc_master_share_output_size", type=INT(), required=True)
+@click.argument("oem_cust_cert_puk_output_addr", type=INT(), required=True)
+@click.argument("oem_cust_cert_puk_output_size", type=INT(), required=True)
+@click.pass_context
+def oem_gen_master_share(
+    ctx: click.Context,
+    oem_share_input_addr: int,
+    oem_share_input_size: int,
+    oem_enc_share_output_addr: int,
+    oem_enc_share_output_size: int,
+    oem_enc_master_share_output_addr: int,
+    oem_enc_master_share_output_size: int,
+    oem_cust_cert_puk_output_addr: int,
+    oem_cust_cert_puk_output_size: int,
+) -> None:
+    """Creates shares for initial trust provisioning keys.
+
+    \b
+    OEM_SHARE_INPUT_ADDRR            - The input buffer address where the OEM Share(entropy seed) locates at
+    OEM_SHARE_INPUT_SIZE             - The byte count of the OEM Share
+    OEM_ENC_SHARE_OUTPUT_ADDR        - The output buffer address where ROM writes the Encrypted OEM Share to
+    OEM_ENC_SHARE_OUTPUT_SIZE        - The output buffer size in byte
+    OEM_ENC_MASTER_SHARE_OUTPUT_ADDR - The output buffer address where ROM writes the Encrypted OEM Master Share to
+    OEM_ENC_MASTER_SHARE_OUTPUT_SIZE - The output buffer size in byte.
+    OEM_CUST_CERT_PUK_OUTPUT_ADDR    - The output buffer address where ROM writes
+                                       the OEM Customer Certificate Public Key to
+    OEM_CUST_CERT_PUK_OUTPUT_SIZE    - The output buffer size in byte
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        response = mboot.tp_oem_gen_master_share(
+            oem_share_input_addr,
+            oem_share_input_size,
+            oem_enc_share_output_addr,
+            oem_enc_share_output_size,
+            oem_enc_master_share_output_addr,
+            oem_enc_master_share_output_size,
+            oem_cust_cert_puk_output_addr,
+            oem_cust_cert_puk_output_size,
+        )
+        extra_output = ""
+        if response:
+            oem_enc_share_size = response[0]
+            oem_enc_master_share_size = response[1]
+            oem_cust_cert_puk_size = response[2]
+            if mboot.status_code == StatusCode.SUCCESS:
+                extra_output = "Output data size/value(s) is(are):\n"
+            else:
+                extra_output = (
+                    "Output buffer(s) is(are) smaller than the minimum requested which is(are):\n"
+                )
+            extra_output += (
+                f"\tOEM Share size: {oem_enc_share_size} ({hex(oem_enc_share_size)})\n"
+                f"\tOEM Master Share size: {oem_enc_master_share_size} ({hex(oem_enc_master_share_size)})\n"
+                f"\tCust Cert Puk size: {oem_cust_cert_puk_size} ({hex(oem_cust_cert_puk_size)})"
+            )
+        display_output(response, mboot.status_code, ctx.obj["use_json"], extra_output)
+
+
+@trust_provisioning.command(name="oem_set_master_share", cls=OemSetMasterShareHelp)
+@click.argument("oem_share_input_addr", type=INT(), required=True)
+@click.argument("oem_share_input_size", type=INT(), required=True)
+@click.argument("oem_enc_master_share_input_addr", type=INT(), required=True)
+@click.argument("oem_enc_master_share_input_size", type=INT(), required=True)
+@click.pass_context
+def oem_set_master_share(
+    ctx: click.Context,
+    oem_share_input_addr: int,
+    oem_share_input_size: int,
+    oem_enc_master_share_input_addr: int,
+    oem_enc_master_share_input_size: int,
+) -> None:
+    """Takes the entropy seed and the Encrypted OEM Master Share."""
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        mboot.tp_oem_set_master_share(
+            oem_share_input_addr,
+            oem_share_input_size,
+            oem_enc_master_share_input_addr,
+            oem_enc_master_share_input_size,
+        )
+        display_output([], mboot.status_code, ctx.obj["use_json"])
+
+
+@trust_provisioning.command(name="oem_get_cust_cert_dice_puk")
+@click.argument("oem_rkt_input_addr", type=INT(), required=True)
+@click.argument("oem_rkth_input_size", type=INT(), required=True)
+@click.argument("oem_cust_cert_dice_puk_output_addr", type=INT(), required=True)
+@click.argument("oem_cust_cert_dice_puk_output_size", type=INT(), required=True)
+@click.pass_context
+def oem_get_cust_cert_dice_puk(
+    ctx: click.Context,
+    oem_rkt_input_addr: int,
+    oem_rkth_input_size: int,
+    oem_cust_cert_dice_puk_output_addr: int,
+    oem_cust_cert_dice_puk_output_size: int,
+) -> None:
+    """Creates the initial trust provisioning keys.
+
+    \b
+    OEM_RKT_INPUT_ADDR                 - The input buffer address where the OEM RKTH locates at
+    OEM_RKTH_INPUT_SIZE                - The byte count of the OEM RKTH
+    OEM_CUST_CERT_DICE_PUK_OUTPUT_ADDR - The output buffer address where ROM writes the OEM Customer
+                                         Certificate Public Key for DICE to
+    OEM_CUST_CERT_DICE_PUK_OUTPUT_SIZE - The output buffer size in byte
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        response = mboot.tp_oem_get_cust_cert_dice_puk(
+            oem_rkt_input_addr,
+            oem_rkth_input_size,
+            oem_cust_cert_dice_puk_output_addr,
+            oem_cust_cert_dice_puk_output_size,
+        )
+    extra_output = ""
+    if response:
+        output_size = response
+        if mboot.status_code == StatusCode.SUCCESS:
+            extra_output = "Output data size/value(s) is(are):\n"
+        else:
+            extra_output = (
+                "Output buffer(s) is(are) smaller than the minimum requested which is(are):"
+            )
+        extra_output += f"\tCust Cert Dice Puk size: {output_size} ({hex(output_size)})"
+    display_output([response], mboot.status_code, ctx.obj["use_json"], extra_output)
+
+
 def display_output(
     response: list = None,
     status_code: int = 0,
@@ -988,7 +1389,8 @@ def display_output(
     else:
         print(f"Response status = {decode_status_code(status_code)}")
         if isinstance(response, list):
-            for i, word in enumerate(response):
+            filtered_response = filter(lambda x: x is not None, response)
+            for i, word in enumerate(filtered_response):
                 print(f"Response word {i + 1} = {word} ({word:#x})")
         if extra_output:
             print(extra_output)

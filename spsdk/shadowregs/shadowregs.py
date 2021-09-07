@@ -12,12 +12,11 @@ from typing import Any
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap as CM
 
-from spsdk import SPSDK_YML_INDENT, __author__, __release__, __version__
+from spsdk import SPSDK_YML_INDENT, SPSDKError, __author__, __release__, __version__
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.dm_commands import StartDebugSession
-from spsdk.debuggers.debug_probe import DebugProbe, DebugProbeError
+from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.debuggers.utils import test_ahb_access
-from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import change_endianism, reverse_bytes_in_longs, value_to_bytes
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister
@@ -106,10 +105,10 @@ class ShadowRegisters:
 
         param reg: The register name.
         param data: The new data to be stored to shadow register.
-        raises DebugProbeError: The debug probe is not specified.
+        raises SPSDKDebugProbeError: The debug probe is not specified.
         """
         if self.probe is None:
-            raise DebugProbeError("There is no debug probe.")
+            raise SPSDKDebugProbeError("There is no debug probe.")
 
         try:
             reg = self.regs.find_reg(reg_name)
@@ -147,10 +146,10 @@ class ShadowRegisters:
 
         param reg: The register name.
         return: The value of requested register in bytes
-        raises DebugProbeError: The debug probe is not specified.
+        raises SPSDKDebugProbeError: The debug probe is not specified.
         """
         if self.probe is None:
-            raise DebugProbeError("There is no debug probe.")
+            raise SPSDKDebugProbeError("There is no debug probe.")
 
         array = bytearray()
         try:
@@ -214,7 +213,7 @@ class ShadowRegisters:
 
         :param file_name: The file_name (without extension) of stored configuration.
         :param raw: Raw input of configuration (including computed fields and anti-pole registers)
-        :raise SPSDKError: When the configuration file not found.
+        :raises SPSDKError: When the configuration file not found.
         """
         antipole_regs = None if raw else list(self.config.get_antipole_regs(self.device).values())
         computed_fields = None if raw else self.config.get_computed_fields(self.device)
@@ -376,7 +375,7 @@ def enable_debug(probe: DebugProbe, ap_mem: int = 0) -> bool:
     except AttributeError as exc:
         raise SPSDKError(f"Invalid input parameters({str(exc)})") from exc
 
-    except DebugProbeError as exc:
+    except SPSDKDebugProbeError as exc:
         raise SPSDKError(f"Can't unlock device ({str(exc)})") from exc
 
     return debug_enabled

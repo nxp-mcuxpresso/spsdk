@@ -7,12 +7,13 @@
 """Module for creation commands."""
 
 from abc import abstractmethod
-from struct import pack, unpack_from, calcsize
-from typing import Mapping, Type, List, Tuple
+from struct import calcsize, pack, unpack_from
+from typing import Mapping, Tuple, Type
 
+from spsdk import SPSDKError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
-from spsdk.utils.misc import align_block
 from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import align_block
 
 ########################################################################################################################
 # Main Class
@@ -65,7 +66,8 @@ class BaseCmd(MainCmd):
     @address.setter
     def address(self, value: int) -> None:
         """Set address."""
-        assert 0x00000000 <= value <= 0xFFFFFFFF
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Invalid address")
         self._address = value
 
     @property
@@ -76,7 +78,8 @@ class BaseCmd(MainCmd):
     @length.setter
     def length(self, value: int) -> None:
         """Set value."""
-        assert 0x00000000 <= value <= 0xFFFFFFFF
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Invalid length")
         self._length = value
 
     def __init__(self, address: int, length: int, cmd_tag: int = EnumCmdTag.NONE) -> None:
@@ -105,15 +108,15 @@ class BaseCmd(MainCmd):
         :param data: Input data as bytes array
         :param offset: The offset of input data
         :param cmd_tag: Information about command tag
-        :raises ValueError: Raise if tag is not equal to required TAG
-        :raises ValueError: Raise if cmd is not equal EnumCmdTag
+        :raises SPSDKError: Raised if tag is not equal to required TAG
+        :raises SPSDKError: Raised if cmd is not equal EnumCmdTag
         :return: Tuple
         """
         tag, address, length, cmd = unpack_from(cls.FORMAT, data, offset)
         if tag != cls.TAG:
-            raise ValueError("TAG is not valid.")
+            raise SPSDKError("TAG is not valid.")
         if cmd != cmd_tag:
-            raise ValueError("Values are not same.")
+            raise SPSDKError("Values are not same.")
         return address, length
 
 
@@ -160,11 +163,12 @@ class CmdLoadBase(BaseCmd):
         tag, address, length, cmd = unpack_from(cls.FORMAT, data)
         memory_id = 0
         if tag != cls.TAG:
-            raise ValueError(f"Invalid TAG, expected: {cls.TAG}")
+            raise SPSDKError(f"Invalid TAG, expected: {cls.TAG}")
         offset += BaseCmd.SIZE
         if cls.HAS_MEMORY_ID_BLOCK:
             memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset)
-            assert pad0 == pad1 == pad2 == 0
+            if not pad0 == pad1 == pad2 == 0:
+                raise SPSDKError("Invalid padding")
             offset += 16
         load_data = data[offset : offset + length]
         return address, length, load_data, cmd, memory_id
@@ -176,7 +180,7 @@ class CmdLoadBase(BaseCmd):
         :param data: Input data as bytes array
         :param offset: The offset of input data
         :return: CmdLoad
-        :raises ValueError: Invalid cmd_tag was found
+        :raises SPSDKError: Invalid cmd_tag was found
         """
         address, _, data, cmd_tag, memory_id = cls._extract_data(data, offset)
         if cmd_tag not in [
@@ -187,7 +191,7 @@ class CmdLoadBase(BaseCmd):
             EnumCmdTag.PROGRAM_FUSES,
             EnumCmdTag.PROGRAM_IFR,
         ]:
-            raise ValueError(f"Invalid cmd_tag found: {cmd_tag}")
+            raise SPSDKError(f"Invalid cmd_tag found: {cmd_tag}")
         if cls == CmdLoadBase:
             return cls(cmd_tag=cmd_tag, address=address, data=data, memory_id=memory_id)
         # pylint: disable=no-value-for-parameter
@@ -226,10 +230,12 @@ class CmdErase(BaseCmd):
         :param data: Input data as bytes array
         :param offset: The offset of input data
         :return: CmdErase
+        :raises SPSDKError: Invalid padding
         """
         address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.ERASE)
         memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset + 16)
-        assert pad0 == pad1 == pad2 == 0
+        if not pad0 == pad1 == pad2 == 0:
+            raise SPSDKError("Invalid padding")
         return cls(address=address, length=length, memory_id=memory_id)
 
 
@@ -318,11 +324,12 @@ class CmdProgFuses(CmdLoadBase):
         length *= 4
         memory_id = 0
         if tag != cls.TAG:
-            raise ValueError(f"Invalid TAG, expected: {cls.TAG}")
+            raise SPSDKError(f"Invalid TAG, expected: {cls.TAG}")
         offset += BaseCmd.SIZE
         if cls.HAS_MEMORY_ID_BLOCK:
             memory_id, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset)
-            assert pad0 == pad1 == pad2 == 0
+            if pad0 != pad1 != pad2 != 0:
+                raise SPSDKError("Invalid padding")
             offset += 16
         load_data = data[offset : offset + length]
         return address, length, load_data, cmd, memory_id
@@ -427,12 +434,14 @@ class CmdCopy(BaseCmd):
         :param data: Input data as bytes array
         :param offset: The offset of input data
         :return: CmdCopy
+        :raises SPSDKError: Invalid padding
         """
         address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.COPY)
         destination_address, memory_id_from, memory_id_to, pad0 = unpack_from(
             "<4L", data, offset=offset + 16
         )
-        assert pad0 == 0
+        if pad0 != 0:
+            raise SPSDKError("Invalid padding")
         return cls(
             address=address,
             length=length,
@@ -584,10 +593,12 @@ class CmdFillMemory(BaseCmd):
         :param data: Input data as bytes array
         :param offset: The offset of input data
         :return: CmdErase
+        :raises SPSDKError: Invalid padding
         """
         address, length = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.FILL_MEMORY)
         pattern, pad0, pad1, pad2 = unpack_from("<4L", data, offset=offset + 16)
-        assert pad0 == pad1 == pad2 == 0
+        if pad0 != pad1 != pad2 != 0:
+            raise SPSDKError("Invalid padding")
         return cls(address=address, length=length, pattern=pattern)
 
 
@@ -668,11 +679,11 @@ class CmdSectionHeader(MainCmd):
 
         :param data: Input data as bytes array
         :param offset: The offset of input data
-        :raises ValueError: Raise when FORMAT is bigger than length of the data without offset
+        :raises SPSDKError: Raised when FORMAT is bigger than length of the data without offset
         :return: CmdSectionHeader
         """
         if calcsize(cls.FORMAT) > len(data) - offset:
-            raise ValueError("FORMAT is bigger than length of the data without offset!")
+            raise SPSDKError("FORMAT is bigger than length of the data without offset!")
         section_uid, section_type, length, _ = unpack_from(cls.FORMAT, data, offset)
         return cls(section_uid=section_uid, section_type=section_type, length=length)
 
@@ -700,13 +711,15 @@ def parse_command(data: bytes, offset: int = 0) -> object:
 
     :param data: Input data as bytes array
     :param offset: The offset of input data
-    :raises ValueError: Raise when tag is not in cmd_class
+    :raises SPSDKError: Raised when tag is not in cmd_class
+    :raises SPSDKError: Raised when tag is invalid
     :return: object
     """
     #  verify that first 4 bytes of frame are 55aaaa55
     tag = unpack_from("<L", data, offset=offset)[0]
-    assert tag == BaseCmd.TAG, "Invalid tag."
+    if tag != BaseCmd.TAG:
+        raise SPSDKError("Invalid tag.")
     cmd_tag = unpack_from("<L", data, offset=offset + 12)[0]
     if cmd_tag not in TAG_TO_CLASS:
-        raise ValueError(f"Invalid command tag: {cmd_tag}")
+        raise SPSDKError(f"Invalid command tag: {cmd_tag}")
     return TAG_TO_CLASS[cmd_tag].parse(data, offset)

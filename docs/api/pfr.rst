@@ -19,11 +19,19 @@ Protected Flash Region
 Protected Flash Region Checker for brick-conditions
 ----------------------------------------------------
 .. automodule:: spsdk.pfr.processor
-   :members: 
+   :members:
    :exclude-members: MyTransformer
    :undoc-members:
    :show-inheritance:
 .. automodule:: spsdk.pfr.translator
-   :members: 
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+PFR Exceptions
+--------------
+.. automodule:: spsdk.pfr.exceptions
+   :members:
    :undoc-members:
    :show-inheritance:

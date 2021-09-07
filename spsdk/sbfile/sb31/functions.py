@@ -7,8 +7,9 @@
 """File including helping functions."""
 import functools
 
-from spsdk.utils.easy_enum import Enum
+from spsdk import SPSDKError
 from spsdk.utils.crypto.backend_internal import internal_backend
+from spsdk.utils.easy_enum import Enum
 
 
 class KeyDerivationMode(Enum):
@@ -128,11 +129,16 @@ def _get_key_derivation_data(
     :param key_length: Requested key length (128/256b)
     :param iteration: Iteration of the key derivation
     :return: Data used for key derivation
-    :raises AssertionError: Some of the arguments are incorrect.
+    :raises SPSDKError: Invalid mode.
+    :raises SPSDKError: Invalid kdk access rights.
+    :raises SPSDKError: Invalid key length.
     """
-    assert mode in KeyDerivationMode.tags()
-    assert kdk_access_rights in [0, 1, 2, 3]
-    assert key_length in [128, 256]
+    if mode not in KeyDerivationMode.tags():
+        raise SPSDKError("Invalid mode")
+    if kdk_access_rights not in [0, 1, 2, 3]:
+        raise SPSDKError("Invalid kdk access rights")
+    if key_length not in [128, 256]:
+        raise SPSDKError("Invalid key length")
 
     label = int.to_bytes(derivation_constant, length=12, byteorder="little")
     context = bytes(8)

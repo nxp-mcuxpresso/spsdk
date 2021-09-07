@@ -2,7 +2,7 @@
 
 .. toctree::
     :caption: crypto Module API
-    
+
     crypto
 
 .. toctree::
@@ -41,7 +41,7 @@
     sbfile
 
 .. toctree::
-    :caption: Debuggers Module API
+    :caption: SDP Module API
 
     sdp
 

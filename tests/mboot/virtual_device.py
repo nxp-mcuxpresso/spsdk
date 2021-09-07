@@ -8,19 +8,18 @@
 import logging
 from struct import pack
 
-import pytest
-
 from spsdk.mboot.commands import (
-    CommandTag,
     CmdPacket,
+    CommandTag,
+    KeyProvOperation,
     ResponseTag,
     parse_cmd_response,
-    KeyProvOperation,
 )
 from spsdk.mboot.error_codes import StatusCode
+from spsdk.mboot.exceptions import McuBootDataAbortError
 from spsdk.mboot.interfaces import Interface
 from spsdk.mboot.memories import ExtMemId
-from spsdk.mboot.exceptions import McuBootDataAbortError
+
 
 ########################################################################################################################
 # Helper functions

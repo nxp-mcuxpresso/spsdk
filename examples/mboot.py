@@ -9,6 +9,7 @@
 
 from typing import Optional
 
+from spsdk import SPSDKError
 from spsdk.mboot import McuBoot, scan_usb
 
 # Uncomment for printing debug messages
@@ -31,9 +32,13 @@ def mboot_properties(name: str = None) -> Optional[list]:
 
 
 def main() -> None:
-    """Main function."""
+    """Main function.
+
+    :raises SPSDKError: When reading properting ends with error
+    """
     property_list = mboot_properties()
-    assert property_list, "Error reading properties!"
+    if not property_list:
+        raise SPSDKError("Error reading properties!")
     for prop in property_list:
         print(prop)
 

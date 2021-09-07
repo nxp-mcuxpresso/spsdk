@@ -9,11 +9,12 @@ import os
 
 import pytest
 
+from spsdk import SPSDKError
 from spsdk.utils.crypto import KeyBlob, Otfad
 
 
 def test_otfad_keyblob(data_dir):
-    """ Test generation of key blob for OTFAD """
+    """Test generation of key blob for OTFAD"""
     # generate key blob using random keys
     key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF)
     gen_blob = key_blob.export(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
@@ -53,19 +54,21 @@ def test_otfad_keyblob(data_dir):
     assert gen_blob != keyblob_bin
 
     # start address not aligned
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         KeyBlob(start_addr=0x08001001, end_addr=0x0800F3FF, key=key, counter_iv=counter)
 
     # end address not aligned
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         KeyBlob(start_addr=0x08001000, end_addr=0x0800F000, key=key, counter_iv=counter)
 
     # address of the image is not within key blob
     key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         key_blob.encrypt_image(0x8000000, plain_image, True)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         key_blob.encrypt_image(0x800F000, plain_image, True)
+    with pytest.raises(SPSDKError, match="Invalid start address"):
+        key_blob.encrypt_image(0x800F001, plain_image, True)
 
 
 def test_otfad(data_dir):
@@ -80,7 +83,7 @@ def test_otfad(data_dir):
         image = f.read()
 
     # invalid address
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         key_blob.encrypt_image(0x0, image, True)
 
     encr_image = otfad.encrypt_image(image, 0x08001000, True)
@@ -90,3 +93,50 @@ def test_otfad(data_dir):
     assert encr_image == otfad_image
 
     otfad.info()
+
+
+def test_oftad_invalid(data_dir):
+    """Test OTFAD - image address range does not match to key blob"""
+    otfad = Otfad()
+    key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
+    counter = bytes.fromhex("5689fab8b4bfb264")
+    key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
+    otfad.add_key_blob(key_blob)
+    assert otfad[0] == key_blob
+    with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
+        image = f.read()
+    with pytest.raises(SPSDKError):
+        otfad.encrypt_image(image, 0x0800FFF, True)
+
+
+def test_keyblob_invalid():
+    with pytest.raises(SPSDKError, match="Invalid start/end address"):
+        KeyBlob(start_addr=0x08001000, end_addr=0x08000000)
+    key = bytes.fromhex("B1")
+    counter_iv = bytes.fromhex("53")
+    with pytest.raises(SPSDKError, match="Invalid key"):
+        KeyBlob(key=key, counter_iv=counter_iv, start_addr=0x08001000, end_addr=0x0800F3FF)
+    with pytest.raises(SPSDKError, match="key_flags exceeds mask "):
+        KeyBlob(start_addr=0x08000000, end_addr=0x080003FF, key_flags=0x8)
+    counter = bytes.fromhex("5689fab8b4bfb264")
+    key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
+    key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
+    with pytest.raises(SPSDKError, match="Invalid length of kek"):
+        key_blob.export(kek=bytes(15))
+    with pytest.raises(SPSDKError, match="Invalid value crc"):
+        key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x080013FF, crc=bytes(5))
+        key_blob.export(kek=bytes(16))
+    with pytest.raises(SPSDKError, match="Invalid value"):
+        key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x080013FF, zero_fill=bytes(5))
+        key_blob.export(kek=bytes(16))
+    with pytest.raises(SPSDKError, match="Invalid length of initialization vector"):
+        key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x080013FF)
+        key_blob.export(kek=bytes(16), iv=bytes(32))
+    with pytest.raises(SPSDKError, match="Invalid length of data to be encrypted"):
+        key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x080013FF)
+        key_blob._EXPORT_NBLOCKS_5 = 90
+        key_blob.export(kek=bytes(16))
+    key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x080013FF, counter_iv=bytes(8))
+    key_blob.ctr_init_vector = bytes(99)
+    with pytest.raises(SPSDKError, match="Invalid length of counter init"):
+        key_blob._get_ctr_nonce()

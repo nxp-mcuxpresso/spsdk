@@ -12,6 +12,18 @@ from typing import List
 
 import pytest
 
+from spsdk import SPSDKError
+from spsdk.sbfile.commands import (
+    CmdCall,
+    CmdErase,
+    CmdJump,
+    CmdKeyStoreBackup,
+    CmdKeyStoreRestore,
+    CmdLoad,
+    CmdReset,
+    CmdVersionCheck,
+    VersionCheckType,
+)
 from spsdk.sbfile.images import (
     BootImageV20,
     BootImageV21,
@@ -19,14 +31,7 @@ from spsdk.sbfile.images import (
     CertBlockV2,
     SBV2xAdvancedParams,
 )
-from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdCall, CmdJump, CmdReset
-from spsdk.sbfile.commands import (
-    CmdVersionCheck,
-    VersionCheckType,
-    CmdKeyStoreBackup,
-    CmdKeyStoreRestore,
-)
-from spsdk.utils.crypto import Otfad, KeyBlob, Certificate
+from spsdk.utils.crypto import Certificate, KeyBlob, Otfad
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import align_block
 
@@ -34,7 +39,7 @@ kek_value = unhexlify("AC701E99BD3492E419B756EADC0985B3D3D0BC0FDB6B057AA88252204
 
 
 class SectionsContent(Enum):
-    """ type of sections content to test"""
+    """type of sections content to test"""
 
     SIMPLE = (1, "simple", "one simple section")
     ADVANCED = (2, "advanced", "one simple section and second bigger section")
@@ -257,6 +262,7 @@ def test_sb2x_builder(
             build_number=1,
             # parameters fixed for test only, do not use in production
             advanced_params=adv_params,
+            flags=0x0008,
         )
 
     if signed:
@@ -311,19 +317,19 @@ def test_sb2_0_builder_validation(data_dir):
     )
 
     # missing boot section
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         boot_image.export()
 
     for boot_sect in get_boot_sections(data_dir, False, SectionsContent.SIMPLE, 0):
         boot_image.add_boot_section(boot_sect)
 
     # missing certificate block
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         boot_image.export()
 
     boot_image.cert_block = gen_cert_block(data_dir, 2048)
     # missing private key
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         boot_image.export()
 
 
@@ -331,21 +337,72 @@ def test_sb2_1_builder_validation(data_dir):
     """Validate exception from from SB2.1 builder, if any required fields are not defined"""
     # create boot image
     boot_image = BootImageV21(
-        kek=kek_value, product_version="1.0.0", component_version="1.0.0", build_number=1
+        kek=kek_value,
+        product_version="1.0.0",
+        component_version="1.0.0",
+        build_number=1,
+        flags=0x0008,
     )
 
     # missing boot section
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         boot_image.export()
 
     for boot_sect in get_boot_sections(data_dir, False, SectionsContent.SIMPLE, 0):
         boot_image.add_boot_section(boot_sect)
 
     # missing certificate
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         boot_image.export()
 
     boot_image.cert_block = gen_cert_block(data_dir, 2048)
     # missing private key
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         boot_image.export()
+
+
+def test_invalid_boot_section_v21():
+    boot_img = BootImageV21(kek=kek_value)
+    with pytest.raises(SPSDKError):
+        boot_img.add_boot_section(section=5)
+
+
+def test_invalid_boot_section_v2():
+    boot_img = BootImageV20(kek=kek_value, signed=False)
+    with pytest.raises(SPSDKError):
+        boot_img.add_boot_section(section=5)
+
+
+def test_invalid_advanced_params():
+    with pytest.raises(SPSDKError, match="Invalid dek or mac"):
+        SBV2xAdvancedParams(dek=bytes(33), mac=bytes(33))
+    with pytest.raises(SPSDKError, match="Invalid length of nonce"):
+        SBV2xAdvancedParams(nonce=bytes(33))
+
+
+def test_invalid_boot_image_v2():
+    with pytest.raises(SPSDKError, match="Invalid dek or mac"):
+        BootImageV20(
+            True, kek=kek_value, advanced_params=SBV2xAdvancedParams(dek=bytes(33), mac=bytes(33))
+        )
+    bimg = BootImageV20(False, kek=kek_value)
+
+    with pytest.raises(
+        SPSDKError, match="Certificate block cannot be used unless SB file is signed"
+    ):
+        bimg.cert_block = CertBlockV2()
+    bimg = BootImageV20(True, kek=bytes(31))
+    bimg.cert_block = None
+    with pytest.raises(SPSDKError, match="Certification block not present"):
+        bimg.raw_size_without_signature
+
+    bimg = BootImageV20(True, kek=bytes(31))
+    with pytest.raises(SPSDKError, match="Certification block not present"):
+        bimg.raw_size
+
+
+def test_invalid_boot_image_v2_invalid_export():
+    bimg = BootImageV20(True, kek=bytes(31))
+    bimg._dek = bytes()
+    with pytest.raises(SPSDKError, match="Invalid dek or mac"):
+        bimg.export()

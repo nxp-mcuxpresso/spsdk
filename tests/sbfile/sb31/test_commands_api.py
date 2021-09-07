@@ -6,27 +6,30 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
 
+
 import pytest
 
-from spsdk.sbfile.sb31.constants import EnumCmdTag
+from spsdk import SPSDKError
 from spsdk.sbfile.sb31.commands import (
-    CmdErase,
-    CmdLoad,
-    CmdExecute,
+    BaseCmd,
     CmdCall,
-    CmdProgFuses,
-    CmdProgIfr,
+    CmdConfigureMemory,
+    CmdCopy,
+    CmdErase,
+    CmdExecute,
+    CmdFillMemory,
+    CmdFwVersionCheck,
+    CmdLoad,
+    CmdLoadBase,
     CmdLoadCmac,
     CmdLoadHashLocking,
-    CmdCopy,
-    CmdFillMemory,
-    parse_command,
     CmdLoadKeyBlob,
-    CmdConfigureMemory,
+    CmdProgFuses,
+    CmdProgIfr,
     CmdSectionHeader,
-    CmdFwVersionCheck,
+    parse_command,
 )
-from spsdk.sbfile.sb31.commands import BaseCmd
+from spsdk.sbfile.sb31.constants import EnumCmdTag
 
 
 def test_cmd_erase():
@@ -49,8 +52,15 @@ def test_parse_invalid_cmd_erase_cmd_tag():
     cmd = CmdErase(address=0, length=0, memory_id=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdErase.parse(data=data)
+
+
+def test_parse_cmd_erase_invalid_padding():
+    cmd = CmdErase(address=100, length=0xFF)
+    data = b"U\xaa\xaaUd\x00\x00\x00\xff\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+    with pytest.raises(SPSDKError, match="Invalid padding"):
+        cmd.parse(data)
 
 
 def test_cmd_load():
@@ -73,7 +83,7 @@ def test_parse_invalid_cmd_load_cmd_tag():
     cmd = CmdLoad(address=0, data=bytes(4), memory_id=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdLoad.parse(data=data)
 
 
@@ -95,7 +105,7 @@ def test_parse_invalid_cmd_execute_cmd_tag():
     cmd = CmdExecute(address=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdExecute.parse(data)
 
 
@@ -117,7 +127,7 @@ def test_parse_invalid_cmd_call_cmd_tag():
     cmd = CmdCall(address=0)
     cmd.cmd_tag = EnumCmdTag.ERASE
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdCall.parse(data=data)
 
 
@@ -169,7 +179,7 @@ def test_parse_invalid_cmd_loadcmac_cmd_tag():
     cmd = CmdLoadCmac(address=0, data=bytes(10), memory_id=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdLoadCmac.parse(data=data)
 
 
@@ -198,7 +208,7 @@ def test_parse_invalid_cmd_copy_cmd_tag():
     cmd = CmdCopy(address=100, length=0, destination_address=0, memory_id_from=0, memory_id_to=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdLoadCmac.parse(data=data)
 
 
@@ -222,7 +232,7 @@ def test_parse_invalid_cmd_loadhashlocking_cmd_tag():
     cmd = CmdLoadHashLocking(address=0, data=bytes(10), memory_id=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdLoadHashLocking.parse(data=data)
 
 
@@ -251,7 +261,7 @@ def test_parse_invalid_cmd_loadkeyblob_cmd_tag():
     )
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdErase.parse(data=data)
 
 
@@ -274,7 +284,7 @@ def test_parse_invalid_cmd_configurememory_cmd_tag():
     cmd = CmdConfigureMemory(address=0, memory_id=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdConfigureMemory.parse(data=data)
 
 
@@ -298,7 +308,7 @@ def test_parse_invalid_cmd_fillmemory_cmd_tag():
     cmd = CmdFillMemory(address=0, length=0, pattern=0)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdFillMemory.parse(data=data)
 
 
@@ -321,7 +331,7 @@ def test_parse_invalid_cmd_fwversioncheck_cmd_tag():
     cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.COUNTER_ID.SECURE)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdFwVersionCheck.parse(data=data)
 
 
@@ -361,7 +371,7 @@ def test_section_cmd_header_offset():
     """Section header cmd size validity test."""
     section_header = CmdSectionHeader(length=100)
     data = section_header.export()
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         CmdSectionHeader.parse(data=data, offset=50)
 
 
@@ -460,8 +470,34 @@ def test_parse_command_function():
 def test_invalid_parse_command_function():
     """Test invalid parse command function."""
     invalid_data = b"U\xaa\xaaUd\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00"
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         parse_command(invalid_data)
     invalid_data = bytes(CmdSectionHeader.SIZE)
-    with pytest.raises(AssertionError):
+    with pytest.raises(SPSDKError):
         parse_command(invalid_data)
+
+
+def test_invalid_tag_cmd_load_base():
+    with pytest.raises(SPSDKError):
+        CmdLoadBase.parse(data=b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+
+
+def test_invalid_tag_cmd_prog_fuse():
+    with pytest.raises(SPSDKError):
+        CmdProgFuses.parse(data=b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")
+
+
+def test_invalid_base_cmd():
+    cmd = BaseCmd(address=0x00, length=1)
+    with pytest.raises(SPSDKError, match="Invalid address"):
+        cmd.address = 0xFFFFFFFFA
+    with pytest.raises(SPSDKError, match="Invalid length"):
+        cmd.length = 0xFFFFFFFFA
+
+
+def test_invalid_base_load_cmd():
+    cmd = CmdLoadBase(cmd_tag=1437248085, address=0x1, data=bytes(5))
+    with pytest.raises(SPSDKError, match="Invalid padding"):
+        cmd._extract_data(
+            data=b"U\xaa\xaaU\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x01\x00\x00"
+        )

@@ -11,11 +11,12 @@
 
 from typing import Any, List, Optional, Tuple, Type, Union
 
+from spsdk.mboot.exceptions import McuBootError
 from spsdk.utils.easy_enum import Enum
 
 from .commands import CommandTag
 from .error_codes import StatusCode
-from .memories import ExtMemPropTags, MemoryRegion, RamRegion
+from .memories import ExtMemPropTags, MemoryRegion
 
 
 ########################################################################################################################
@@ -49,7 +50,7 @@ class Version:
     def __init__(self, *args: Union[str, int], **kwargs: int):
         """Initialize the Version object.
 
-        :raises TypeError: Argument passed the not str not int
+        :raises McuBootError: Argument passed the not str not int
         """
         self.mark = kwargs.get("mark", "K")
         self.major = kwargs.get("major", 0)
@@ -61,7 +62,7 @@ class Version:
             elif isinstance(args[0], str):
                 self.from_str(args[0])
             else:
-                raise TypeError("Value must be 'str' or 'int' type !")
+                raise McuBootError("Value must be 'str' or 'int' type !")
 
     def __eq__(self, obj: Any) -> bool:
         return isinstance(obj, Version) and vars(obj) == vars(self)

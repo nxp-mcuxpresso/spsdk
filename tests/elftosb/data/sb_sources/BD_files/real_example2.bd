@@ -1,0 +1,94 @@
+constants
+{
+    BOOTLOADER = 0x0;
+    BOOTLOADER_start = 0x0;
+    BOOTLOADER_size = 0x4000;
+    BOOTLOADER_end = 0x0 + 0x4000;
+    TMD = 0x4000;
+    TMD_start = 0x4000;
+    TMD_size = 0x38000;
+    TMD_end = 0x4000 + 0x38000;
+    IMAGE_STAGING_AREA = 0x3c000;
+    IMAGE_STAGING_AREA_start = 0x3c000;
+    IMAGE_STAGING_AREA_size = 0x3bc00;
+    IMAGE_STAGING_AREA_end = 0x3c000 + 0x3bc00;
+    AUDIO_ARRAY = 0x77c00;
+    AUDIO_ARRAY_start = 0x77c00;
+    AUDIO_ARRAY_size = 0x17800;
+    AUDIO_ARRAY_end = 0x77c00 + 0x17800;
+    PERSISTENCE = 0x8f400;
+    PERSISTENCE_start = 0x8f400;
+    PERSISTENCE_size = 0xdc00;
+    PERSISTENCE_end = 0x8f400 + 0xdc00;
+    SPARE_BLOCKS = 0x9d000;
+    SPARE_BLOCKS_start = 0x9d000;
+    SPARE_BLOCKS_size = 0x600;
+    SPARE_BLOCKS_end = 0x9d000 + 0x600;
+    FW_UPDATE_FIRST_BLK = 0x9d600;
+    FW_UPDATE_FIRST_BLK_start = 0x9d600;
+    FW_UPDATE_FIRST_BLK_size = 0x200;
+    FW_UPDATE_FIRST_BLK_end = 0x9d600 + 0x200;
+    FW_UPDATE_PARTIAL_BLK = 0x9d800;
+    FW_UPDATE_PARTIAL_BLK_start = 0x9d800;
+    FW_UPDATE_PARTIAL_BLK_size = 0x200;
+    FW_UPDATE_PARTIAL_BLK_end = 0x9d800 + 0x200;
+    TMD_DATA = 0x9da00;
+    TMD_DATA_start = 0x9da00;
+    TMD_DATA_size = 0x200;
+    TMD_DATA_end = 0x9da00 + 0x200;
+    MANUFACTURER_DATA = 0x9dc00;
+    MANUFACTURER_DATA_start = 0x9dc00;
+    MANUFACTURER_DATA_size = 0x200;
+    MANUFACTURER_DATA_end = 0x9dc00 + 0x200;
+    CFPA_SCRATCH = 0x9de00;
+    CFPA_SCRATCH_start = 0x9de00;
+    CFPA_SCRATCH_size = 0x200;
+    CFPA_SCRATCH_end = 0x9de00 + 0x200;
+    CFPA_PING = 0x9e000;
+    CFPA_PING_start = 0x9e000;
+    CFPA_PING_size = 0x200;
+    CFPA_PING_end = 0x9e000 + 0x200;
+    CFPA_PONG = 0x9e200;
+    CFPA_PONG_start = 0x9e200;
+    CFPA_PONG_size = 0x200;
+    CFPA_PONG_end = 0x9e200 + 0x200;
+    CMPA = 0x9e400;
+    CMPA_start = 0x9e400;
+    CMPA_size = 0x200;
+    CMPA_end = 0x9e400 + 0x200;
+    KEYSTORE = 0x9e600;
+    KEYSTORE_start = 0x9e600;
+    KEYSTORE_size = 0x600;
+    KEYSTORE_end = 0x9e600 + 0x600;
+}
+
+options
+{
+    flags = 0x8;
+    buildNumber = 0x1;
+    productVersion = "1.00.00";
+    componentVersion = "1.0.0";
+    secureBinaryVersion = "2.1";
+}
+
+sources
+{
+    tmdData = extern(0);
+    bootloaderImage = extern(1);
+    tmdImage = extern(2);
+    audioImage = extern(3);
+}
+
+section (0)
+{
+    load 0x50000000 > 0x20034000;
+    load 0x0 > 0x20034004;
+    load 0x3c000 > 0x20034008;
+    enable @0x0 0x20034000;
+    enable @0x9 0x20034000;
+    erase all;
+    load bootloaderImage > BOOTLOADER;
+    load tmdImage > TMD;
+    load audioImage > AUDIO_ARRAY;
+    load tmdData > TMD_DATA;
+}

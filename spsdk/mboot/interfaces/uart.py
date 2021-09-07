@@ -17,13 +17,13 @@ from crcmod.predefined import mkPredefinedCrcFun
 from serial import Serial
 from serial.tools.list_ports import comports
 
-from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
 from spsdk.mboot.commands import CmdPacket, CmdResponse, parse_cmd_response
+from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
 from spsdk.utils.easy_enum import Enum
 
 from .base import Interface
 
-logger = logging.getLogger("MBOOT:UART")
+logger = logging.getLogger(__name__)
 
 
 def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List[Interface]:

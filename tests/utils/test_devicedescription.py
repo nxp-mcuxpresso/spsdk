@@ -8,8 +8,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-import spsdk.utils.devicedescription as devicedescription
 
+import spsdk.utils.devicedescription as devicedescription
 from spsdk.mboot.interfaces.usb import USB_DEVICES as MB_USB_DEVICES
 
 
@@ -63,7 +63,7 @@ def test_repr():
     ],
 )
 def test_get_device_name(vid, pid, expected_result):
-    """Verify search works and returns appropripate name based on VID/PID"""
+    """Verify search works and returns appropriate name based on VID/PID"""
     assert devicedescription.get_usb_device_name(vid, pid) == expected_result
 
 
@@ -76,7 +76,7 @@ def test_get_device_name(vid, pid, expected_result):
     ],
 )
 def test_get_device_name(vid, pid, expected_result):
-    """Verify search works and returns appropripate name based on VID/PID"""
+    """Verify search works and returns appropriate name based on VID/PID"""
     assert devicedescription.get_usb_device_name(vid, pid, MB_USB_DEVICES) == expected_result
 
 

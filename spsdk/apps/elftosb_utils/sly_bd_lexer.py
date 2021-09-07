@@ -82,8 +82,8 @@ class BDLexer(Lexer):
         "ifr": "IFR",
         "enable": "ENABLE",
         "keywrap": "KEYWRAP",
-        "keystore_to_nv" : "KEYSTORE_TO_NV",
-        "keystore_from_nv" : "KEYSTORE_FROM_NV",
+        "keystore_to_nv": "KEYSTORE_TO_NV",
+        "keystore_from_nv": "KEYSTORE_FROM_NV",
         "all": "ALL",
         "no": "NO",
         "options": "OPTIONS",
@@ -152,7 +152,7 @@ class BDLexer(Lexer):
         "DOLLAR",
     ] + list(reserved.values())
 
-    literals = {'@'}
+    literals = {"@"}
 
     # A regular expression rules with some action code
     # The order of these functions MATTER!!! Make sure you know what you are

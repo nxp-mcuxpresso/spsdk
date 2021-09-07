@@ -9,17 +9,18 @@
 """Commands and responses used by SDP module."""
 import math
 from hashlib import sha256
-from struct import pack, unpack_from, unpack
-from typing import List, Optional, Union, Any, Iterator
+from struct import pack, unpack, unpack_from
+from typing import Any, Iterator, List, Optional, Union
 
-from cryptography.x509 import Certificate, KeyUsage, ExtensionNotFound
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509 import Certificate, ExtensionNotFound, KeyUsage
 
+from spsdk import SPSDKError
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo
-from .header import SegTag, Header
-from .misc import modulus_fmt, hexdump_fmt
-from .. import SPSDKError
+
+from .header import Header, SegTag
+from .misc import hexdump_fmt, modulus_fmt
 
 
 class EnumAlgorithm(Enum):
@@ -332,10 +333,10 @@ class MAC(BaseClass):
     def _validate_data(self) -> None:
         """Validates the data.
 
-        :raise ValueError: if data length does not match with parameters
+        :raises SPSDKError: If data length does not match with parameters
         """
         if len(self.data) != self.nonce_len + self.mac_len:
-            raise ValueError(
+            raise SPSDKError(
                 f"length of data ({len(self.data)}) does not match with "
                 f"nonce_bytes({self.nonce_len})+mac_bytes({self.mac_len})"
             )
@@ -371,11 +372,17 @@ class MAC(BaseClass):
 
         :param nonce: initialization vector, length depends on image size,
         :param mac: message authentication code used to authenticate uncrypted data, 16 bytes
+        :raises SPSDKError: If incorrect length of mac
+        :raises SPSDKError: If incorrect length of nonce
+        :raises SPSDKError: If incorrect number of MAC bytes"
         """
-        assert len(mac) == MAC.AES128_BLK_LEN
-        assert 11 <= len(nonce) <= 13
+        if len(mac) != MAC.AES128_BLK_LEN:
+            raise SPSDKError("Incorrect length of mac")
+        if len(nonce) < 11 or len(nonce) > 13:
+            raise SPSDKError("Incorrect length of nonce")
         self.nonce_len = len(nonce)
-        assert self.mac_len == MAC.AES128_BLK_LEN
+        if self.mac_len != MAC.AES128_BLK_LEN:
+            raise SPSDKError("Incorrect number of MAC bytes")
         self.data = nonce + mac
 
     def __repr__(self) -> str:
@@ -538,8 +545,10 @@ class SrkItemHash(SrkItem):
 
         :param algorithm: int: Hash algorithm, only SHA256 now
         :param digest: bytes: Hash digest value
+        :raises SPSDKError: If incorrect algorithm
         """
-        assert algorithm == EnumAlgorithm.SHA256
+        if algorithm != EnumAlgorithm.SHA256:
+            raise SPSDKError("Incorrect algorithm")
         self._header = Header(tag=EnumSRK.KEY_HASH, param=algorithm)
         self.digest = digest
         self._header.length += len(digest)
@@ -612,7 +621,8 @@ class SrkItemRSA(SrkItem):
 
     @flag.setter
     def flag(self, value: int) -> None:
-        assert value in (0, 0x80)
+        if value not in (0, 0x80):
+            raise SPSDKError("Incorrect flag")
         self._flag = value
 
     @property
@@ -786,10 +796,14 @@ class SrkTable(BaseClass):
         :param index: of the fuse, 0-7
         :return: value of the specified fuse; the value is in format, that cane be used as parameter for SDP
                 `efuse_read_once` or `efuse_write_once`
+        :raises SPSDKError: If incorrect index of the fuse
+        :raises SPSDKError: If incorrect length of SRK items
         """
-        assert 0 <= index < 8
+        if index < 0 or index >= 8:
+            raise SPSDKError("Incorrect index of the fuse")
         int_data = self.export_fuses()[index * 4 : (1 + index) * 4]
-        assert len(int_data) == 4
+        if len(int_data) != 4:
+            raise SPSDKError("Incorrect length of SRK items")
         return unpack("<I", int_data)[0]
 
     def export_fuses(self) -> bytes:

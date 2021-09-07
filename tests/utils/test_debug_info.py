@@ -6,6 +6,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+import pytest
+
+from spsdk import SPSDKError
 from spsdk.utils.misc import DebugInfo
 
 
@@ -45,3 +48,9 @@ def test_debug_info_disabled() -> None:
     _log_test_output(dbg_info)
     assert dbg_info.lines == []
     assert dbg_info.info() == ""
+
+
+def test_debug_info_invalid():
+    dbg_info = DebugInfo()
+    with pytest.raises(SPSDKError, match="Incorrect data length"):
+        dbg_info.append_binary_data("data", bytes(20))

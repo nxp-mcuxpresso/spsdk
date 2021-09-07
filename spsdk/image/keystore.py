@@ -9,6 +9,7 @@
 
 from Crypto.Cipher import AES
 
+from spsdk import SPSDKError
 from spsdk.utils.easy_enum import Enum
 
 
@@ -37,16 +38,16 @@ class KeyStore:
 
         :param key_source: device key source
         :param key_store: initial content of the key store in the bootable image; None if empty
-        :raises ValueError: if invalid key-store size
+        :raises SPSDKError: If invalid key-store size
+        :raises SPSDKError: KeyStore can be initialized only if key_source == KEYSTORE
         """
         if key_store:
             if len(key_store) != self.KEY_STORE_SIZE:
-                raise ValueError(
+                raise SPSDKError(
                     f"Invalid key-store size, expected is {str(self.KEY_STORE_SIZE)} bytes"
                 )
-            assert (
-                key_source == KeySourceType.KEYSTORE
-            ), "KeyStore can be initialized only if key_source == KEYSTORE"
+            if key_source != KeySourceType.KEYSTORE:
+                raise SPSDKError("KeyStore can be initialized only if key_source == KEYSTORE")
 
         self._key_source = key_source
         self._key_store = key_store
@@ -69,8 +70,10 @@ class KeyStore:
 
         :param hmac_key: either master-key (for key_source == OTP) or user key (for key_source == KEYSTORE)
         :return: key used for image header authentication in LoadToRam images
+        :raises SPSDKError: If invalid length of hmac key
         """
-        assert len(hmac_key) == 32
+        if len(hmac_key) != 32:
+            raise SPSDKError("Invalid length of hmac key")
         aes = AES.new(hmac_key, AES.MODE_ECB)
         return aes.encrypt(bytes([0] * 16))
 
@@ -80,8 +83,10 @@ class KeyStore:
 
         :param master_key: stored in OTP
         :return: key used to decrypt encrypted images during boot
+        :raises SPSDKError: If invalid length of master key
         """
-        assert len(master_key) == 32
+        if len(master_key) != 32:
+            raise SPSDKError("Invalid length of master key")
         aes = AES.new(master_key, AES.MODE_ECB)
         return aes.encrypt(bytes([1] + [0] * 15 + [2] + [0] * 15))
 
@@ -91,8 +96,10 @@ class KeyStore:
 
         :param master_key: 32 bytes key, stored in OTP
         :return: encryption key to handle SB2 file (update capsule)
+        :raises SPSDKError: If invalid length of master key
         """
-        assert len(master_key) == 32
+        if len(master_key) != 32:
+            raise SPSDKError("Invalid length of master key")
         aes = AES.new(master_key, AES.MODE_ECB)
         return aes.encrypt(bytes([3] + [0] * 15 + [4] + [0] * 15))
 
@@ -103,8 +110,12 @@ class KeyStore:
         :param master_key: 32 bytes key, stored in OTP
         :param otfad_input: 16 bytes input, stored in OTP
         :return: OTFAD encryption key for FLASH encryption/decryption
+        :raises SPSDKError: If invalid length of master key
+        :raises SPSDKError: If invalid length of input
         """
-        assert len(master_key) == 32
-        assert len(otfad_input) == 16
+        if len(master_key) != 32:
+            raise SPSDKError("Invalid length of master key")
+        if len(otfad_input) != 16:
+            raise SPSDKError("Invalid length of input")
         aes = AES.new(master_key, AES.MODE_ECB)
         return aes.encrypt(otfad_input)

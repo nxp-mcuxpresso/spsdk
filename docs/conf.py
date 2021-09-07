@@ -35,7 +35,6 @@ source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
 }
-autodoc_mock_imports = ["hidapi", "hid"]
 
 autoclass_content = "both"
 

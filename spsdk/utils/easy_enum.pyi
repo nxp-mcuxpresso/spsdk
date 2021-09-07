@@ -1,8 +1,8 @@
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 # This is stub for Enum class implemented in easy_enum, to provide info about differences implemented in Meta class
 
-from typing import Iterator, Optional, Union, Sequence, Tuple, Type, TypeVar
 from enum import IntEnum
+from typing import Iterator, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 # type that represents a key for enum: either integer or string (name)
 EnumKeyType = Union[str, int]

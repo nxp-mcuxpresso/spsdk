@@ -11,10 +11,10 @@ import struct
 from numbers import Number
 from typing import Callable, Dict, List, Optional
 
-import spsdk
 import spsdk.sbfile.commands as commands
 import spsdk.utils.crypto as crypto
 import spsdk.utils.misc as misc
+from spsdk import SPSDKError
 
 
 def get_command(cmd_name: str) -> Callable[[Dict], commands.CmdBaseClass]:
@@ -50,7 +50,7 @@ def _load(cmd_args: dict) -> commands.CmdLoad:
     """Returns a CmdLoad object initialized based on cmd_args.
 
     :param cmd_args: dictionary holding path to file or values and address
-    :raises spsdk.SPSDKError: if dict doesn't contain 'file' or 'values' key
+    :raises SPSDKError: If dict doesn't contain 'file' or 'values' key
     :return: CmdLoad object
     """
     address = cmd_args["address"]
@@ -62,7 +62,7 @@ def _load(cmd_args: dict) -> commands.CmdLoad:
         values = [int(s, 16) for s in cmd_args["values"].split(",")]
         data = struct.pack(f"<{len(values)}L", *values)
         return commands.CmdLoad(address=address, data=data)
-    raise spsdk.SPSDKError(f"Unsupported LOAD command args: {cmd_args}")
+    raise SPSDKError(f"Unsupported LOAD command args: {cmd_args}")
 
 
 def _erase_cmd_handler(cmd_args: dict) -> commands.CmdErase:
@@ -102,11 +102,11 @@ def _encrypt(cmd_args: dict) -> commands.CmdLoad:
     }
 
     :param cmd_args: dictionary holding list of keyblobs, keyblob ID and load dict
-    :raises SPSDKError: if keyblob to be used is not in the list or is invalid
+    :raises SPSDKError: If keyblob to be used is not in the list or is invalid
     :return: CmdLoad object
     """
-    keyblobs = cmd_args.get("keyblobs", [])
     keyblob_id = cmd_args["keyblob_id"]
+    keyblobs = cmd_args.get("keyblobs", [])
     load_dict = cmd_args.get("load", {})
 
     address = load_dict["address"]
@@ -119,11 +119,11 @@ def _encrypt(cmd_args: dict) -> commands.CmdLoad:
 
     try:
         valid_keyblob = _validate_keyblob(keyblobs, keyblob_id)
-    except spsdk.SPSDKError:
+    except SPSDKError:
         raise
 
     if valid_keyblob is None:
-        raise spsdk.SPSDKError(f"Missing keyblob {keyblob_id} for encryption.")
+        raise SPSDKError(f"Missing keyblob {keyblob_id} for encryption.")
 
     start_addr = valid_keyblob["keyblob_content"][0]["start"]
     end_addr = valid_keyblob["keyblob_content"][0]["end"]
@@ -150,7 +150,7 @@ def _keywrap(cmd_args: dict) -> commands.CmdLoad:
     }
 
     :param cmd_args: dictionary holding list of keyblobs, keyblob ID and load dict
-    :raises SPSDKError: if keyblob to be used is not in the list or is invalid
+    :raises SPSDKError: If keyblob to be used is not in the list or is invalid
     :return: CmdLoad object
     """
     # iterate over keyblobs
@@ -163,10 +163,10 @@ def _keywrap(cmd_args: dict) -> commands.CmdLoad:
 
     try:
         valid_keyblob = _validate_keyblob(keyblobs, keyblob_id)
-    except spsdk.SPSDKError:
+    except SPSDKError:
         raise
     if valid_keyblob is None:
-        raise spsdk.SPSDKError(f"Missing keyblob {keyblob_id} for given keywrap")
+        raise SPSDKError(f"Missing keyblob {keyblob_id} for given keywrap")
 
     start_addr = valid_keyblob["keyblob_content"][0]["start"]
     end_addr = valid_keyblob["keyblob_content"][0]["end"]
@@ -225,19 +225,19 @@ def _validate_keyblob(keyblobs: List, keyblob_id: Number) -> Optional[Dict]:
 
     :param keyblobs: list of dicts defining keyblobs
     :param keyblob_id: id of keyblob we want to check
-    :raises SPSDKError: if the keyblob definition is empty
-    :raises SPSDKError: if the kyeblob definition is missing one key
-    :return: keyblob if exists and is valid, None otherwise
+    :raises SPSDKError: If the keyblob definition is empty
+    :raises SPSDKError: If the kyeblob definition is missing one key
+    :return: keyblob If exists and is valid, None otherwise
     """
     for kb in keyblobs:
         if keyblob_id == kb["keyblob_id"]:
             kb_content = kb["keyblob_content"]
             if len(kb_content) == 0:
-                raise spsdk.SPSDKError(f"Keyblob {keyblob_id} definition is empty!")
+                raise SPSDKError(f"Keyblob {keyblob_id} definition is empty!")
 
             for key in ["start", "end", "key", "counter"]:
                 if key not in kb_content[0]:
-                    raise spsdk.SPSDKError(f"Keyblob {keyblob_id} is missing '{key}' definition!")
+                    raise SPSDKError(f"Keyblob {keyblob_id} is missing '{key}' definition!")
 
             return kb
         else:

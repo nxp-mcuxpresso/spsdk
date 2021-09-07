@@ -1,0 +1,10 @@
+socc: 0x0004
+uuid: "E004090E6BDD2155BBCE9E0665805BE3"
+cc_socu: 0x03FF
+cc_vu: 0x5678
+cc_beacon: 0
+rot_meta:
+- new_rotk_secp384r1.pub
+rot_id: 0
+rotk: new_rotk_secp384r1.pem
+dck: new_dck_secp384r1.pub

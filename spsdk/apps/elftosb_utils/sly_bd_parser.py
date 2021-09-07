@@ -15,12 +15,12 @@ from sly import Parser
 from sly.lex import Token
 from sly.yacc import YaccProduction
 
-import spsdk
 import spsdk.apps.elftosb_utils.sly_bd_lexer as bd_lexer
+from spsdk import SPSDKError
 
 
 # pylint: disable=too-many-public-methods,too-many-lines
-# too-many-public-methods : every method in the parser represents a sytnax rule,
+# too-many-public-methods : every method in the parser represents a syntax rule,
 #   this is necessary and thus can't be omitted. From this perspective this check
 #   is disabled.
 # too-many-lines : the class can't be shortened, as all the methods represent
@@ -42,11 +42,11 @@ class BDParser(Parser):
     # Uncomment this line to output parser debug file
     # debugfile = "parser.out"
 
-    log = logging.getLogger("bd_parser")
+    log = logging.getLogger(__name__)
     log.setLevel(logging.ERROR)
 
     def __init__(self) -> None:
-        """Initiliazation method."""
+        """Initialization method."""
         super().__init__()
         self._variables: List[bd_lexer.Variable] = []
         self._sources: List[bd_lexer.Variable] = []
@@ -249,7 +249,7 @@ class BDParser(Parser):
         For now, we don't store the constants in the final bd file.
 
         :param token: object holding the content defined in decorator.
-        :return: dictionary holding the content of constatns block.
+        :return: dictionary holding the content of constants block.
         """
         dictionary: Dict = {}
         return dictionary
@@ -267,7 +267,7 @@ class BDParser(Parser):
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
-        :return: dictionary holding empty constatn definition.
+        :return: dictionary holding empty constant definition.
         """
         return token.empty
 
@@ -414,7 +414,7 @@ class BDParser(Parser):
     # def keyblob_options_list(self, token):
     #     # After discussion with Lukas Zajac we will ignore empty definitions in keyblob
     #     # It's not clear, whether this has some effect on the final sb file or not.
-    #     # C++ elftosb implemenation is able to parse the file even without empty
+    #     # C++ elftosb implementation is able to parse the file even without empty
     #     # parenthesis
     #     return token.empty
 
@@ -688,7 +688,7 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :return: dictionary hodling the content of a load statement.
         """
-        if token.load_data.get("pattern"):
+        if token.load_data.get("pattern") is not None:
             cmd = "fill"
         else:
             cmd = "load"
@@ -732,9 +732,9 @@ class BDParser(Parser):
             if token.SOURCE_NAME == source.name:
                 return {"file": source.value}
 
-        # with current implemenation, this code won't be ever reached. In case
+        # with current implementation, this code won't be ever reached. In case
         # a not defined source file is used as `load_data`, the parser detects
-        # it as a diffeerent rule:
+        # it as a different rule:
         #
         # load_data ::= int_const_expr
         #
@@ -845,7 +845,7 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of enable statement.
         """
-        dictionary: Dict = {token.ENABLE : {}}
+        dictionary: Dict = {token.ENABLE: {}}
         dictionary[token.ENABLE].update(token.mem_opt)
         dictionary[token.ENABLE]["address"] = token.int_const_expr
         return dictionary
@@ -1107,61 +1107,59 @@ class BDParser(Parser):
         dictionary: Dict = {}
         return dictionary
 
-    @_("KEYSTORE_TO_NV mem_opt address_or_range") # type: ignore
-    def keystore_stmt(self, token: YaccProduction) -> Dict: # type: ignore
+    @_("KEYSTORE_TO_NV mem_opt address_or_range")  # type: ignore
+    def keystore_stmt(self, token: YaccProduction) -> Dict:  # type: ignore
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content keystore statmenet.
         """
-        dictionary = {token.KEYSTORE_TO_NV : {}}
+        dictionary = {token.KEYSTORE_TO_NV: {}}
         dictionary[token.KEYSTORE_TO_NV].update(token.mem_opt)
         dictionary[token.KEYSTORE_TO_NV].update(token.address_or_range)
         return dictionary
 
-    @_("KEYSTORE_FROM_NV mem_opt address_or_range") # type: ignore
-    def keystore_stmt(self, token: YaccProduction) -> Dict: # type: ignore
+    @_("KEYSTORE_FROM_NV mem_opt address_or_range")  # type: ignore
+    def keystore_stmt(self, token: YaccProduction) -> Dict:  # type: ignore
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
-        :return: dictionary holding the content keystore statmenet.
+        :return: dictionary holding the content keystore statement.
         """
-        dictionary = {token.KEYSTORE_FROM_NV : {}}
+        dictionary = {token.KEYSTORE_FROM_NV: {}}
         dictionary[token.KEYSTORE_FROM_NV].update(token.mem_opt)
         dictionary[token.KEYSTORE_FROM_NV].update(token.address_or_range)
         return dictionary
 
-    @_("IDENT") # type: ignore
-    def mem_opt(self, token: YaccProduction) -> None: # type: ignore
+    @_("IDENT")  # type: ignore
+    def mem_opt(self, token: YaccProduction) -> None:  # type: ignore
         """Parser rule.
 
         Unsupported syntax right now.
 
         :param token: object holding the content defined in decorator.
-        :return: dictionary holding the content of identifier.
         """
         # search in variables for token.IDENT variable and get it's value
         self.error(token, ": identifier as memory option is not supported.")
 
-    @_("'@' int_const_expr") # type: ignore
-    def mem_opt(self, token: YaccProduction) -> Dict: # type: ignore
+    @_("'@' int_const_expr")  # type: ignore
+    def mem_opt(self, token: YaccProduction) -> Dict:  # type: ignore
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :type token:
         :return: dictionary holding the content of memory type.
         """
-        dictionary = {"mem_opt" : token.int_const_expr}
+        dictionary = {"mem_opt": token.int_const_expr}
         return dictionary
 
-    @_("empty") # type: ignore
-    def mem_opt(self, token: YaccProduction) -> None: # type: ignore
+    @_("empty")  # type: ignore
+    def mem_opt(self, token: YaccProduction) -> None:  # type: ignore
         """Parser rule.
 
         Unsupported syntax right now.
 
         :param token: object holding the content defined in decorator.
-        :return: content of empty production - empty dict.
         """
         self.error(token, ": empty memory option is not supported.")
 
@@ -1382,6 +1380,12 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :return: number stored under identifier.
         """
+        # we need to convert the IDENT into a value stored under that identifier
+        # search the variables and check, whether there is a name of IDENT
+        for var in self._variables:
+            if var.name == token.IDENT:
+                return var.value
+
         return token.IDENT
 
     @_("symbol_ref")  # type: ignore
@@ -1502,7 +1506,7 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :param msg: error message to use.
 
-        :raises spsdk.SPSDKError: raises error with 'msg' message.
+        :raises SPSDKError: Raises error with 'msg' message.
         """
         self._parse_error = True
 
@@ -1511,12 +1515,12 @@ class BDParser(Parser):
             if lineno != -1:
                 column = BDParser._find_column(self._input, token)
                 error_line = BDParser._find_line(self._input, lineno - 1)
-                raise spsdk.SPSDKError(
+                raise SPSDKError(
                     f"bdcompiler:{lineno}:{column}: error{msg}\n\n{error_line}\n"
                     + (column - 1) * " "
                     + "^\n"
                 )
             else:
-                raise spsdk.SPSDKError(f"bdcompiler: error{msg}\n")
+                raise SPSDKError(f"bdcompiler: error{msg}\n")
 
-        raise spsdk.SPSDKError("bdcompiler: unspecified error.")
+        raise SPSDKError("bdcompiler: unspecified error.")

@@ -16,38 +16,48 @@ from typing import Optional, Sequence, Tuple
 import pytest
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.serialization import PrivateFormat, NoEncryption
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from spsdk.crypto import generate_certificate, save_crypto_item, Encoding
-from spsdk.crypto import generate_rsa_private_key, generate_rsa_public_key, save_rsa_private_key
+from cryptography.hazmat.primitives.serialization import (
+    NoEncryption,
+    PrivateFormat,
+    load_pem_private_key,
+)
+
+from spsdk.crypto import (
+    Encoding,
+    generate_certificate,
+    generate_rsa_private_key,
+    generate_rsa_public_key,
+    save_crypto_item,
+    save_rsa_private_key,
+)
 from spsdk.image import (
-    BootImgRT,
-    SrkTable,
-    SrkItem,
-    PaddingFCB,
-    FlexSPIConfBlockFCB,
     MAC,
-    hab_audit_log,
-    BeeRegionHeader,
+    BeeFacRegion,
     BeeKIB,
     BeeProtectRegionBlock,
-    BeeFacRegion,
+    BeeRegionHeader,
+    BootImgRT,
+    FlexSPIConfBlockFCB,
+    PaddingFCB,
+    SrkItem,
+    SrkTable,
+    hab_audit_log,
 )
-from spsdk.mboot import McuBoot, ExtMemId, PropertyTag
+from spsdk.mboot import ExtMemId, McuBoot, PropertyTag
 from spsdk.mboot import scan_usb as mboot_scan_usb
 from spsdk.sbfile.sb1 import (
-    SecureBootV1,
     BootSectionV1,
-    SecureBootFlagsV1,
-    CmdFill,
-    CmdMemEnable,
     CmdErase,
+    CmdFill,
     CmdLoad,
+    CmdMemEnable,
+    SecureBootFlagsV1,
+    SecureBootV1,
 )
-from spsdk.sdp import SDP, ResponseValue, StatusCode, SdpCommandError
+from spsdk.sdp import SDP, ResponseValue, SdpCommandError, StatusCode
 from spsdk.sdp import scan_usb as sdp_scan_usb
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import load_binary, DebugInfo, align, align_block
+from spsdk.utils.misc import DebugInfo, align, align_block, load_binary
 from tests.misc import compare_bin_files, write_dbg_log
 
 # ############################## EXECUTION PARAMETERS ##############################

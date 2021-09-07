@@ -14,13 +14,11 @@ from typing import List, Optional, Tuple
 import pytest
 from bitstring import BitArray
 
-from spsdk.image import KeySourceType, KeyStore
-from spsdk.image import MasterBootImage, MasterBootImageType
-from spsdk.image import TrustZone
-from spsdk.mboot import McuBoot, scan_usb, PropertyTag, ExtMemId, KeyProvUserKeyType
+from spsdk.image import KeySourceType, KeyStore, MasterBootImage, MasterBootImageType, TrustZone
+from spsdk.mboot import ExtMemId, KeyProvUserKeyType, McuBoot, PropertyTag, scan_usb
+from spsdk.sbfile.commands import CmdErase, CmdFill, CmdLoad, CmdMemEnable
 from spsdk.sbfile.images import BootImageV21, BootSectionV2, CertBlockV2, SBV2xAdvancedParams
-from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdFill, CmdMemEnable
-from spsdk.utils.crypto import Otfad, KeyBlob, Certificate
+from spsdk.utils.crypto import Certificate, KeyBlob, Otfad
 from spsdk.utils.misc import align_block, load_binary
 from tests.misc import compare_bin_files, write_dbg_log
 
@@ -104,7 +102,7 @@ def write_sb(data_dir: str, sb_file_name: str, bin_data: bytes, key_store: KeySt
 #######################################################################################################################
 
 
-def write_shadow_regs(data_dir: str, writes: List[Tuple[int, int]]) -> None:
+def write_shadow_regis(data_dir: str, writes: List[Tuple[int, int]]) -> None:
     """Write shadow registers:
     - prepares and burns into FLASH a binary application for initialization of shadow registers
     - the application is launched using "execute" command
@@ -636,7 +634,7 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     :param image_name: file name of the unsigned image WITHOUT file extension
     """
     if not TEST_IMG_CONTENT:
-        write_shadow_regs(data_dir, [(0x40130194, 0x00000080)])  # BOOT_CFG[5]: USE_PUF = 1
+        write_shadow_regis(data_dir, [(0x40130194, 0x00000080)])  # BOOT_CFG[5]: USE_PUF = 1
 
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.txt"), "r") as f:
         sbkek_str = f.readline()
@@ -655,6 +653,7 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
         build_number=1,
         # parameters fixed for test only (to have always same output), do not use in production
         advanced_params=adv_params,
+        flags=0x0008,
     )
 
     # certificate + private key
@@ -704,7 +703,7 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     :param data_dir: absolute path of the directory with data files for the test
     :param image_name: file name of the unsigned image WITHOUT file extension
     """
-    write_shadow_regs(
+    write_shadow_regis(
         data_dir,
         [
             (0x40130194, 0x00000000),  # BOOT_CFG[5]: USE_OTP = 0
@@ -737,6 +736,7 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
         build_number=1,
         # parameters fixed for test only (to have always same output), do not use in production
         advanced_params=adv_params,
+        flags=0x0008,
     )
 
     # certificate + private key
@@ -787,7 +787,7 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
     :param image_name: file name of the signed or encrypted image WITHOUT file extension
     """
     if not TEST_IMG_CONTENT:
-        write_shadow_regs(
+        write_shadow_regis(
             data_dir,
             [
                 (0x40130194, 0x00000080),  # BOOT_CFG[5]: USE_PUF = 1
@@ -816,6 +816,7 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
         build_number=1,
         # parameters fixed for test only (to have always same output), do not use in production
         advanced_params=adv_params,
+        flags=0x0008,
     )
 
     # certificate + private key
@@ -867,7 +868,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     """
     if not TEST_IMG_CONTENT:
         secure_boot_en = 0x900000 if secure else 0  # BOOT_CFG[0]: SECURE_BOOT_EN=?
-        write_shadow_regs(
+        write_shadow_regis(
             data_dir,
             [
                 (0x40130194, 0x00000080),  # BOOT_CFG[5]: USE_PUF = 1
@@ -896,6 +897,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
         build_number=1,
         # parameters fixed for test only (to have always same output), do not use in production
         advanced_params=adv_params,
+        flags=0x0008,
     )
 
     # certificate + private key
@@ -977,7 +979,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     """
     if not TEST_IMG_CONTENT:
         secure_boot_en = 0x900000 if secure else 0  # BOOT_CFG[0]: SECURE_BOOT_EN=?
-        write_shadow_regs(
+        write_shadow_regis(
             data_dir,
             [
                 (0x401301A8, 0x00001000),  # OTFAD CFG
@@ -988,7 +990,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
                 (0x401301BC, 0x78DDDDDD),
             ],
         )
-        write_shadow_regs(
+        write_shadow_regis(
             data_dir,
             [
                 # MASTER KEY - 000102030405060708090a0b0c0d0e0f00112233445566778899aabbccddeeff
@@ -1027,6 +1029,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
         build_number=1,
         # parameters fixed for test only (to have always same output), do not use in production
         advanced_params=adv_params,
+        flags=0x0008,
     )
 
     # certificate + private key

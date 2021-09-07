@@ -8,16 +8,16 @@
 
 import pytest
 
-from spsdk.sbfile.sb31.commands import BaseCmd, MainCmd, CmdErase, CmdLoadKeyBlob
-from spsdk.sbfile.sb31.functions import add_trailing_zeros, add_leading_zeros
-from spsdk.sbfile.sb31.functions import _get_key_derivation_data, KeyDerivator
+from spsdk import SPSDKError
+from spsdk.sbfile.sb31.commands import BaseCmd, CmdErase, MainCmd
+from spsdk.sbfile.sb31.functions import KeyDerivator, _get_key_derivation_data, derive_block_key
 
 
 def test_invalid_header_parse():
     """Test invalid header parse function."""
     valid_tag = BaseCmd.TAG  # TAG = 0x55aaaa55
     invalid_tag = bytes(BaseCmd.SIZE)
-    with pytest.raises(ValueError):
+    with pytest.raises(SPSDKError):
         BaseCmd.header_parse(cmd_tag=0, data=invalid_tag)
 
 
@@ -97,3 +97,10 @@ def test_key_derivator():
     assert derivator.get_block_key(10) == bytearray.fromhex("40902f79dd0ec371307f7069590ad07a")
     assert derivator.get_block_key(13) == bytearray.fromhex("69362b5634b99b689a7c43df76f15b63")
     assert derivator.get_block_key(6) == bytearray.fromhex("4c28803b5de193c21f31e6fa10c76b03")
+
+
+def test_key_derivator_invalid():
+    with pytest.raises(SPSDKError, match="Invalid kdk access rights"):
+        derive_block_key(kdk=bytes(50), block_number=1, key_length=5, kdk_access_rights=6)
+    with pytest.raises(SPSDKError, match="Invalid key length"):
+        derive_block_key(kdk=bytes(50), block_number=1, key_length=5, kdk_access_rights=0)

@@ -7,7 +7,7 @@
 
 """Module with Debug Authentication Challenge (DAC) Packet."""
 
-from struct import unpack_from, pack, calcsize
+from struct import calcsize, pack, unpack_from
 
 
 class DebugAuthenticationChallenge:

@@ -143,10 +143,10 @@
             "is_manual": false
         },
         {
-            "name": "hidapi",
-            "license": "BSD",
-            "home_page": "https://github.com/trezor/cython-hidapi",
-            "is_manual": true
+            "name": "libusbsio",
+            "license": "BSD-3-Clause",
+            "home_page": "https://pypi.org/project/libusbsio/",
+            "is_manual": false
         },
         {
             "name": "humanfriendly",

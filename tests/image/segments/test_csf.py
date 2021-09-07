@@ -7,12 +7,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os.path
+
 import pytest
 
-from spsdk.image import CmdCheckData, CmdWriteData, EnumWriteOps
-from spsdk.image import SegCSF, EnumCheckOps
-from spsdk.image.segments import SegDCD
+from spsdk import SPSDKError
+from spsdk.image import CmdCheckData, CmdWriteData, EnumCheckOps, EnumWriteOps, SegCSF
 from spsdk.image.secret import Signature
+from spsdk.image.segments import SegDCD
 from spsdk.utils.misc import extend_block
 
 
@@ -104,3 +105,9 @@ def test_SegCSF_export_parse():
     # with padding
     obj.padding_len = 0x10
     assert obj.export() == extend_block(data, obj.size + 0x10)
+
+
+def test_SegCSF_invalid_append_command():
+    obj = SegCSF(enabled=True)
+    with pytest.raises(SPSDKError, match="Invalid command"):
+        obj.append_command(cmd=6)

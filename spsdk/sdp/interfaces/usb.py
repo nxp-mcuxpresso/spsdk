@@ -11,15 +11,16 @@ import logging
 import platform
 from typing import Sequence, Tuple, Union
 
-import hid
+import libusbsio
 
+from spsdk import SPSDKError
 from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
 from ..commands import CmdPacket, CmdResponse
-from ..exceptions import SdpConnectionError
+from ..exceptions import SdpCommandError, SdpConnectionError, SdpError
 from .base import Interface
 
-logger = logging.getLogger("SDP:USB")
+logger = logging.getLogger(__name__)
 
 # import os
 # os.environ['PYUSB_DEBUG'] = 'debug'
@@ -158,13 +159,11 @@ class RawHid(Interface):
         try:
             if not self.device:
                 raise SdpConnectionError("No device available")
-            self.device.open_path(self.path)
-            self.device.set_nonblocking(False)
-            # self.device.read(1021, 1000)
+            self.device.Open(self.path)
             self._opened = True
         except Exception as error:
             raise SdpConnectionError(
-                "Unable to open device VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
+                f"Unable to open device '{self.path}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
             ) from error
 
     def close(self) -> None:
@@ -177,18 +176,18 @@ class RawHid(Interface):
         if not self.device:
             raise SdpConnectionError("No device available")
         try:
-            self.device.close()
+            self.device.Close()
             self._opened = False
         except OSError as error:
             raise SdpConnectionError(
-                "Unable to close device VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
+                f"Unable to close device '{self.path}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
             ) from error
 
     def write(self, packet: Union[CmdPacket, bytes]) -> None:
         """Write data on the OUT endpoint associated to the HID interfaces.
 
         :param packet: Data to send
-        :raises ValueError: Raises an error if packet type is incorrect
+        :raises SdpError: Raises an error if packet type is incorrect
         :raises SdpConnectionError: Raises an error if device is openned for writing
         :raises SdpConnectionError: Raises if device is not available
         :raises SdpConnectionError: Raises if writing to device fails
@@ -203,7 +202,7 @@ class RawHid(Interface):
             report_id, report_size, hid_ep1 = HID_REPORT["DATA"]
             data = packet
         else:
-            raise ValueError("Packet has to be either 'CmdPacket' or 'bytes'")
+            raise SdpError("Packet has to be either 'CmdPacket' or 'bytes'")
 
         if not self.device:
             raise SdpConnectionError("No device available")
@@ -211,7 +210,7 @@ class RawHid(Interface):
         while data_index < len(data):
             try:
                 raw_data, data_index = self._encode_report(report_id, report_size, data, data_index)
-                self.device.write(raw_data)
+                self.device.Write(raw_data, timeout_ms=self.timeout)
             except Exception as e:
                 raise SdpConnectionError(str(e)) from e
 
@@ -229,9 +228,7 @@ class RawHid(Interface):
         if not self.device:
             raise SdpConnectionError("No device available")
         try:
-            raw_data = self.device.read(1024, self.timeout)
-            if raw_data[0] == 0x04 and platform.system() == "Linux":
-                raw_data += self.device.read(1024, self.timeout)
+            (raw_data, result) = self.device.Read(1024, timeout_ms=self.timeout)
             return self._decode_report(bytes(raw_data))
         except Exception as e:
             raise SdpConnectionError(str(e)) from e
@@ -244,13 +241,14 @@ class RawHid(Interface):
         :return: List of interfaces found
         """
         devices = []
-        all_hid_devices = hid.enumerate()
+        sio = libusbsio.usbsio()
+        all_hid_devices = sio.HIDAPI_Enumerate()
 
         # iterate on all devices found
         for dev in all_hid_devices:
             if usb_device_filter.compare(dev) is True:
                 new_device = RawHid()
-                new_device.device = hid.device()
+                new_device.device = sio.HIDAPI_DeviceCreate()
                 new_device.vid = dev["vendor_id"]
                 new_device.pid = dev["product_id"]
                 new_device.vendor_name = dev["manufacturer_string"]

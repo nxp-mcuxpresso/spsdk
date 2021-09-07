@@ -13,7 +13,8 @@ from typing import Any, Mapping, Optional, Type
 
 from crcmod.predefined import mkPredefinedCrcFun
 
-from spsdk.mboot import ExtMemId
+from spsdk import SPSDKError
+from spsdk.mboot import ExtMemId, MemId
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.common import swap16
 from spsdk.utils.easy_enum import Enum
@@ -71,7 +72,8 @@ class CmdHeader:
 
     def __init__(self, tag: int, flags: int = 0) -> None:
         """Initialize header."""
-        assert tag in EnumCmdTag.tags()
+        if tag not in EnumCmdTag.tags():
+            raise SPSDKError("Incorrect command tag")
         self.tag = tag
         self.flags = flags
         self.address = 0
@@ -108,7 +110,7 @@ class CmdHeader:
         :param offset: The offset of input data
         :return: CMDHeader object
         :raise Exception: raised when size is incorrect
-        :raise ValueError: raised when CRC is incorrect
+        :raises SPSDKError: Raised when CRC is incorrect
         """
         if calcsize(cls.FORMAT) > len(data) - offset:
             raise Exception()
@@ -117,7 +119,7 @@ class CmdHeader:
             cls.FORMAT, data, offset
         )
         if crc != obj.crc:
-            raise ValueError("CRC does not match")
+            raise SPSDKError("CRC does not match")
         return obj
 
 
@@ -176,9 +178,11 @@ class CmdNop(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: CMD Nop object
+        :raises SPSDKError: When there is incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.NOP
+        if header.tag != EnumCmdTag.NOP:
+            raise SPSDKError("Incorrect header tag")
         return cls()
 
 
@@ -199,9 +203,11 @@ class CmdTag(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: parsed instance
+        :raises SPSDKError: When there is incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.TAG
+        if header.tag != EnumCmdTag.TAG:
+            raise SPSDKError("Incorrect header tag")
         result = cls()
         result._header = header
         return result
@@ -220,8 +226,10 @@ class CmdLoad(CmdBaseClass):
         """Setter.
 
         :param value: address in target processor to load data
+        :raises SPSDKError: When there is incorrect address
         """
-        assert 0x00000000 <= value <= 0xFFFFFFFF
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Incorrect address")
         self._header.address = value
 
     @property
@@ -265,16 +273,18 @@ class CmdLoad(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: CMD Load object
-        :raise ValueError: raised when there is invalid CRC
+        :raises SPSDKError: Raised when there is invalid CRC
+        :raises SPSDKError: When there is incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.LOAD
+        if header.tag != EnumCmdTag.LOAD:
+            raise SPSDKError("Incorrect header tag")
         offset += CmdHeader.SIZE
         header_count = SecBootBlckSize.align(header.count)
         cmd_data = data[offset : offset + header_count]
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         if header.data != crc32_function(cmd_data, 0xFFFFFFFF):
-            raise ValueError("Invalid CRC in the command header")
+            raise SPSDKError("Invalid CRC in the command header")
         obj = CmdLoad(header.address, cmd_data)
         obj.header.data = header.data
         obj.header.flags = header.flags
@@ -295,7 +305,8 @@ class CmdFill(CmdBaseClass):
     @address.setter
     def address(self, value: int) -> None:
         """Set address for the command Fill."""
-        assert 0x00000000 <= value <= 0xFFFFFFFF
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Incorrect address")
         self._header.address = value
 
     @property
@@ -313,15 +324,27 @@ class CmdFill(CmdBaseClass):
         :param address: to write data
         :param pattern: data to be written
         :param length: length of data to be filled, defaults to 4
-        :raise ValueError: raised when size is not aligned to 4 bytes
+        :raises SPSDKError: Raised when size is not aligned to 4 bytes
         """
         super().__init__(EnumCmdTag.FILL)
         length = length or 4
         if length % 4:
-            raise ValueError("Length of memory range to fill must be a multiple of 4")
-        pattern_bytes = pattern.to_bytes(math.ceil(pattern.bit_length() / 8), "big")
+            raise SPSDKError("Length of memory range to fill must be a multiple of 4")
+        # if the pattern is a zero, the length is considered also as zero and the
+        # conversion to bytes produces empty byte "array", which is wrong, as
+        # zero should be converted to zero byte. Thus in case the pattern_len
+        # evaluates to 0, we set it to 1.
+        pattern_len = pattern.bit_length() / 8 or 1
+        # We can get a number of 3 bytes, so we consider this as a word and set
+        # the length to 4 bytes with the first byte being zero.
+        if 3 == math.ceil(pattern_len):
+            pattern_len = 4
+        pattern_bytes = pattern.to_bytes(math.ceil(pattern_len), "big")
+        # The pattern length is computed above, but as we transform the number
+        # into bytes, compute the len again just in case - a bit paranoid
+        # approach chosen.
         if len(pattern_bytes) not in [1, 2, 4]:
-            raise ValueError("Pattern must be 1, 2 or 4 bytes long")
+            raise SPSDKError("Pattern must be 1, 2 or 4 bytes long")
         replicate = 4 // len(pattern_bytes)
         final_pattern = replicate * pattern_bytes
         self.address = address
@@ -355,9 +378,11 @@ class CmdFill(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: Command Fill object
+        :raises SPSDKError: If incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.FILL
+        if header.tag != EnumCmdTag.FILL:
+            raise SPSDKError("Incorrect header tag")
         # The last 4 bytes of header are part of pattern value
         offset += CmdHeader.SIZE - 4
         return cls(header.address, header.data, header.count)
@@ -374,7 +399,8 @@ class CmdJump(CmdBaseClass):
     @address.setter
     def address(self, value: int) -> None:
         """Set address of the command Jump."""
-        assert 0x00000000 <= value <= 0xFFFFFFFF
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Incorrect address")
         self._header.address = value
 
     @property
@@ -385,7 +411,8 @@ class CmdJump(CmdBaseClass):
     @argument.setter
     def argument(self, value: int) -> None:
         """Set command's argument."""
-        assert 0x00 <= value <= 0xFF
+        if value < 0x00 or value > 0xFF:
+            raise SPSDKError("Incorrect argument")
         self._header.data = value
 
     @property
@@ -426,9 +453,11 @@ class CmdJump(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: Command Jump object
+        :raises SPSDKError: If incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.JUMP
+        if header.tag != EnumCmdTag.JUMP:
+            raise SPSDKError("Incorrect header tag")
         return cls(header.address, header.data, header.count if header.flags else None)
 
 
@@ -447,7 +476,8 @@ class CmdCall(CmdBaseClass):
     @address.setter
     def address(self, value: int) -> None:
         """Set command's address."""
-        assert 0x00000000 <= value <= 0xFFFFFFFF
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Incorrect address")
         self._header.address = value
 
     @property
@@ -476,9 +506,11 @@ class CmdCall(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: Command Call object
+        :raises SPSDKError: If incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.CALL
+        if header.tag != EnumCmdTag.CALL:
+            raise SPSDKError("Incorrect header tag")
         return cls(header.address, header.data)
 
 
@@ -493,7 +525,8 @@ class CmdErase(CmdBaseClass):
     @address.setter
     def address(self, value: int) -> None:
         """Set command's address."""
-        assert 0x00000000 <= value <= 0xFFFFFFFF
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Incorrect address")
         self._header.address = value
 
     @property
@@ -535,9 +568,11 @@ class CmdErase(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: Command Erase object
+        :raises SPSDKError: If incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.ERASE
+        if header.tag != EnumCmdTag.ERASE:
+            raise SPSDKError("Invalid header tag")
         return cls(header.address, header.count, header.flags)
 
 
@@ -555,9 +590,11 @@ class CmdReset(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: Cmd Reset object
+        :raises SPSDKError: If incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.RESET
+        if header.tag != EnumCmdTag.RESET:
+            raise SPSDKError("Invalid header tag")
         return cls()
 
 
@@ -585,19 +622,19 @@ class CmdMemEnable(CmdBaseClass):
         self._header.count = value
 
     @property
-    def mem_type(self) -> ExtMemId:
+    def mem_type(self) -> MemId:
         """Return memory to be enabled."""
-        return ExtMemId.from_int(swap16(self._header.flags))
+        return MemId.from_int(swap16(self._header.flags))
 
     @mem_type.setter
-    def mem_type(self, value: ExtMemId) -> None:
+    def mem_type(self, value: MemId) -> None:
         """Setter.
 
         :param value: memory to be enabled
         """
         self._header.flags = swap16(value)
 
-    def __init__(self, address: int, size: int, mem_type: ExtMemId):
+    def __init__(self, address: int, size: int, mem_type: MemId):
         """Initialize CmdMemEnable.
 
         :param address: source address with configuration data for memory initialization
@@ -619,10 +656,12 @@ class CmdMemEnable(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: Command Memory Enable object
+        :raises SPSDKError: If incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.MEM_ENABLE
-        return cls(header.address, header.count, ExtMemId.from_int(swap16(header.flags)))
+        if header.tag != EnumCmdTag.MEM_ENABLE:
+            raise SPSDKError("Invalid header tag")
+        return cls(header.address, header.count, MemId.from_int(swap16(header.flags)))
 
 
 class CmdProg(CmdBaseClass):
@@ -639,9 +678,11 @@ class CmdProg(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: parsed command object
+        :raises SPSDKError: If incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.PROG
+        if header.tag != EnumCmdTag.PROG:
+            raise SPSDKError("Invalid header tag")
         return cls()
 
 
@@ -664,9 +705,11 @@ class CmdVersionCheck(CmdBaseClass):
 
         :param ver_type: version check type, see `VersionCheckType` enum
         :param version: to be checked
+        :raises SPSDKError: If invalid version check type
         """
         super().__init__(EnumCmdTag.FW_VERSION_CHECK)
-        assert ver_type in VersionCheckType.tags()
+        if ver_type not in VersionCheckType.tags():
+            raise SPSDKError("Invalid version check type")
         self.header.address = ver_type
         self.header.count = version
 
@@ -693,9 +736,11 @@ class CmdVersionCheck(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: parsed command object
+        :raises SPSDKError: If incorrect header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == EnumCmdTag.FW_VERSION_CHECK
+        if header.tag != EnumCmdTag.FW_VERSION_CHECK:
+            raise SPSDKError("Invalid header tag")
         ver_type = VersionCheckType.from_int(header.address)
         version = header.count
         return CmdVersionCheck(ver_type, version)
@@ -720,11 +765,15 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
 
         :param address: where to backup key-store or source for restoring key-store
         :param controller_id: ID of the memory to backup key-store or source memory to load key-store back
+        :raises SPSDKError: If invalid address
+        :raises SPSDKError: If invalid id of memory
         """
         super().__init__(self.cmd_id())
-        assert 0 <= address <= 0xFFFFFFFF
+        if address < 0 or address > 0xFFFFFFFF:
+            raise SPSDKError("Invalid address")
         self.header.address = address
-        assert 0 <= controller_id <= 0xFF
+        if controller_id < 0 or controller_id > 0xFF:
+            raise SPSDKError("Invalid ID of memory")
         self.header.flags = (self.header.flags & ~self.ROM_MEM_DEVICE_ID_MASK) | (
             (controller_id << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK
         )
@@ -749,9 +798,11 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: CmdKeyStoreBackupRestore object
+        :raises SPSDKError: When there is invalid header tag
         """
         header = CmdHeader.parse(data, offset)
-        assert header.tag == cls.cmd_id()
+        if header.tag != cls.cmd_id():
+            raise SPSDKError("Invalid header tag")
         address = header.address
         controller_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
         return cls(address, controller_id)  # type: ignore
@@ -801,9 +852,9 @@ def parse_command(data: bytes, offset: int = 0) -> CmdBaseClass:
     :param data: Input data as bytes
     :param offset: The offset of input data to start parsing
     :return: parsed command object
-    :raise ValueError: raised when there is unsupported command provided
+    :raises SPSDKError: Raised when there is unsupported command provided
     """
     header_tag = data[offset + 1]
     if header_tag not in _CMD_CLASS:
-        raise ValueError(f"Unsupported command: {str(header_tag)}")
+        raise SPSDKError(f"Unsupported command: {str(header_tag)}")
     return _CMD_CLASS[header_tag].parse(data, offset)

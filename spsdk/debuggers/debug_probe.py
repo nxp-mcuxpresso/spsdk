@@ -8,34 +8,34 @@
 
 from typing import Dict
 
-from spsdk.exceptions import SPSDKError
+from spsdk import SPSDKError
 
 
-class DebugProbeError(SPSDKError):
+class SPSDKDebugProbeError(SPSDKError):
     """The general issue with debug probe exception for use with SPSDK."""
 
 
-class ProbeNotFoundError(DebugProbeError):
+class SPSDKProbeNotFoundError(SPSDKDebugProbeError):
     """The Probe not found exception for use with SPSDK."""
 
 
-class DebugMailBoxAPNotFoundError(DebugProbeError):
+class SPSDKDebugMailBoxAPNotFoundError(SPSDKDebugProbeError):
     """The target doesn't have debug mailbox access port exception for use with SPSDK."""
 
 
-class DebugProbeTransferError(DebugProbeError):
+class SPSDKDebugProbeTransferError(SPSDKDebugProbeError):
     """The communication error exception for use with SPSDK."""
 
 
-class DebugProbeNotOpenError(DebugProbeError):
+class SPSDKDebugProbeNotOpenError(SPSDKDebugProbeError):
     """The debug probe is not opened exception for use with SPSDK."""
 
 
-class DebugProbeMemoryInterfaceAPNotFoundError(DebugProbeError):
+class SPSDKDebugProbeMemoryInterfaceAPNotFoundError(SPSDKDebugProbeError):
     """The target doesn't have memory interface access port exception for use with SPSDK."""
 
 
-class DebugProbeMemoryInterfaceNotEnabled(DebugProbeError):
+class SPSDKDebugProbeMemoryInterfaceNotEnabled(SPSDKDebugProbeError):
     """The target doesn't have memory interface enabled exception for use with SPSDK."""
 
 

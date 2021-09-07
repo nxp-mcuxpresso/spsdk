@@ -7,19 +7,25 @@
 
 """Module for general utilities used by applications."""
 
+import logging
+import os
 import re
 import sys
 from functools import wraps
-from typing import Union, Any, Callable, Tuple
+from typing import Any, Callable, Tuple, Union
 
 import click
+import commentjson as json
 import hexdump
+import yaml
 
 from spsdk import SPSDKError
 from spsdk.mboot import interfaces as MBootInterfaceModule
 from spsdk.mboot.interfaces import Interface as MBootInterface
 from spsdk.sdp import interfaces as SDPInterfaceModule
 from spsdk.sdp.interfaces import Interface as SDPInterface
+
+logger = logging.getLogger(__name__)
 
 
 class INT(click.ParamType):
@@ -60,7 +66,7 @@ class INT(click.ParamType):
 
 
 def get_interface(
-    module: str, port: str = None, usb: str = None, timeout: int = 5000
+    module: str, port: str = None, usb: str = None, timeout: int = 5000, lpcusbsio: str = None
 ) -> Union[MBootInterface, SDPInterface]:
     """Get appropriate interface.
 
@@ -70,16 +76,19 @@ def get_interface(
     :param port: name and speed of the serial port (format: name[,speed]), defaults to None
     :param usb: PID,VID of the USB interface, defaults to None
     :param timeout: timeout in milliseconds
+    :param lpcusbsio: LPCUSBSIO spi or i2c config string
     :return: Selected interface instance
     :rtype: Interface
-    :raises ValueError: only one of 'port' or 'usb' must be specified
-    :raises SPSDKError: when SPSDK-specific error occurs
+    :raises SPSDKError: Only one of 'port' or 'usb' must be specified
+    :raises SPSDKError: When SPSDK-specific error occurs
     """
     # check that one and only one interface is defined
-    if port is None and usb is None:
-        raise ValueError("One of 'port' or 'uart' must be specified.")
-    if port is not None and usb is not None:
-        raise ValueError("Only one of 'port' or 'uart' must be specified.")
+    all_interfaces = (port, usb, lpcusbsio)
+    count_interfaces = sum(i is not None for i in all_interfaces)
+    if count_interfaces == 0:
+        raise SPSDKError("One of '--port', '--usb' or '--lpcusbsio' must be specified.")
+    if count_interfaces > 1:
+        raise SPSDKError("Only one of '--port', '--usb' or '--lpcusbsio' must be specified.")
 
     interface_module = {"mboot": MBootInterfaceModule, "sdp": SDPInterfaceModule}[module]
     devices = []
@@ -98,6 +107,10 @@ def get_interface(
         if len(devices) > 1:
             raise SPSDKError(f"More than one device '{format_vid_pid(vid_pid)}' found")
         devices[0].timeout = timeout
+    if lpcusbsio:
+        devices = interface_module.scan_usbsio(lpcusbsio)  # type: ignore
+        if len(devices) != 1:
+            raise SPSDKError(f"Cannot initialize USBSIO device '{lpcusbsio}'.")
     return devices[0]
 
 
@@ -140,9 +153,11 @@ def catch_spsdk_error(function: Callable) -> Callable:
             return retval
         except (AssertionError, SPSDKError) as spsdk_exc:
             click.echo(f"ERROR:{spsdk_exc}")
+            logger.debug(str(spsdk_exc), exc_info=True)
             sys.exit(2)
-        except Exception as base_exc:  # pylint: disable=broad-except
+        except (Exception, KeyboardInterrupt) as base_exc:  # pylint: disable=broad-except
             click.echo(f"GENERAL ERROR: {type(base_exc).__name__}: {base_exc}")
+            logger.debug(str(base_exc), exc_info=True)
             sys.exit(3)
 
     return wrapper
@@ -186,3 +201,58 @@ def parse_hex_data(hex_data: str) -> bytes:
     if not result:
         raise SPSDKError("Incorrect hex-data: Unable to get any data")
     return bytes(byte_pieces)
+
+
+def check_destination_dir(path: str, create_folder: bool = False) -> None:
+    """Checks path's destination dir, optionally create the destination folder.
+
+    :param path: Path to file to create/consider
+    :param create_folder: Create destination folder
+    """
+    dest_dir = os.path.dirname(path)
+    if not dest_dir:
+        return
+    if create_folder:
+        os.makedirs(dest_dir, exist_ok=True)
+        return
+    if not os.path.isdir(dest_dir):
+        click.echo(f"Can't create '{path}', folder '{dest_dir}' doesn't exit.")
+        sys.exit(1)
+
+
+def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type: ignore
+    """Check if file exists, exits if file exists and overwriting is disabled.
+
+    :param path: Path to a file
+    :param force_overwrite: allows file overwriting
+    :return: if file overwriting is allowed, it return True if file exists
+    """
+    if force_overwrite:
+        return os.path.isfile(path)
+    if os.path.isfile(path) and not force_overwrite:
+        click.echo(f"File '{path}' already exists. Use --force to overwrite it.")
+        sys.exit(1)
+
+
+def load_configuration(path: str) -> dict:
+    """Load configuration from yml/json file.
+
+    :param path: Path to configuration file
+    :raises SPSDKError: When unsupported file is provided
+    :return: Content of configuration as dictionary
+    """
+    content = None
+    try:
+        with open(path) as f:
+            content = json.load(f)
+            return content
+    except json.JSONLibraryException:
+        content = None
+    try:
+        with open(path) as f:
+            content = yaml.safe_load(f)
+    except yaml.YAMLError:
+        content = None
+    if content is None:
+        raise SPSDKError(f"Unable to load '{path}'.")
+    return content

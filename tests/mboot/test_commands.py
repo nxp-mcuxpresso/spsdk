@@ -6,17 +6,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+
+from spsdk import SPSDKError
 from spsdk.mboot.commands import (
-    ResponseTag,
-    CommandTag,
     CmdHeader,
     CmdPacket,
     CmdResponse,
+    CommandTag,
+    FlashReadOnceResponse,
+    FlashReadResourceResponse,
     GenericResponse,
     GetPropertyResponse,
     ReadMemoryResponse,
-    FlashReadOnceResponse,
-    FlashReadResourceResponse,
+    ResponseTag,
+    TrustProvisioningResponse,
     parse_cmd_response,
 )
 
@@ -103,4 +106,15 @@ def test_flash_read_resource_response_class():
     assert response.header == CmdHeader(ResponseTag.FLASH_READ_RESOURCE, 0, 0, 2)
     assert response.status == 0
     assert response.length == 4
+    assert response.info()
+
+
+def test_tp_hsm_gen_key_response_class():
+    response = parse_cmd_response(
+        b"\xb6\x00\x00\x03\x00\x00\x00\x00\x30\x00\x00\x00\x40\x00\x00\x00"
+    )
+    assert isinstance(response, TrustProvisioningResponse)
+    assert response.header == CmdHeader(tag=0xB6, flags=0x00, reserved=0, params_count=3)
+    assert response.status == 0
+    assert response.values == [48, 64]
     assert response.info()

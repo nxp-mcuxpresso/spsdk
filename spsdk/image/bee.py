@@ -8,14 +8,15 @@
 
 
 import logging
-from struct import pack, unpack_from, calcsize
+from struct import calcsize, pack, unpack_from
 from typing import Any, List, Optional, Sequence
 
 from Crypto.Cipher import AES
 
-from spsdk.utils.crypto import crypto_backend, Counter
+from spsdk import SPSDKError
+from spsdk.utils.crypto import Counter, crypto_backend
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import extend_block, DebugInfo
+from spsdk.utils.misc import DebugInfo, extend_block
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -78,10 +79,10 @@ class BeeBaseClass:
         :param data: binary data to be parsed
         :param offset: to start parsing the data
         :return: instance created from binary data; this method returns just `0`
-        :raise ValueError: if size of the data is not sufficient
+        :raises SPSDKError: If size of the data is not sufficient
         """
         if len(data) - offset < cls._size():
-            raise ValueError("Insufficient size of the data")
+            raise SPSDKError("Insufficient size of the data")
         return 0
 
 
@@ -118,11 +119,14 @@ class BeeFacRegion(BeeBaseClass):
 
     def validate(self) -> None:
         """Validates the configuration of the instance."""
-        assert (self.start_addr & _ENCR_BLOCK_ADDR_MASK == 0) and (
-            self.length & _ENCR_BLOCK_ADDR_MASK == 0
-        )
-        assert 0 <= self.protected_level <= 3
-        assert 0 <= self.start_addr < self.end_addr <= 0xFFFFFFFF
+        if (self.start_addr & _ENCR_BLOCK_ADDR_MASK != 0) and (
+            self.length & _ENCR_BLOCK_ADDR_MASK != 0
+        ):
+            raise SPSDKError("Invalid configuration of the instance")
+        if self.protected_level < 0 or self.protected_level > 3:
+            raise SPSDKError("Invalid protected level")
+        if self.start_addr < 0 or self.end_addr > 0xFFFFFFFF or self.start_addr >= self.end_addr:
+            raise SPSDKError("Invalid start/end address")
 
     def export(self) -> bytes:
         """Exports the binary representation."""
@@ -142,14 +146,14 @@ class BeeFacRegion(BeeBaseClass):
         :param data: binary data to be parsed
         :param offset: to start parsing the data
         :return: instance created from binary data
-        :raise ValueError: if reserved area is non-zero
+        :raises SPSDKError: If reserved area is non-zero
         """
         super().parse(data, offset)  # check size of the data
         (start, end, protected_level, _reserved) = unpack_from(
             BeeFacRegion._struct_format(), data, offset
         )
         if _reserved != b"\x00" * 20:
-            raise ValueError("Reserved area is non-zero")
+            raise SPSDKError("Reserved area is non-zero")
         return BeeFacRegion(start, end - start, protected_level)
 
 
@@ -242,18 +246,19 @@ class BeeProtectRegionBlock(BeeBaseClass):
         return result
 
     def validate(self) -> None:
-        """Validates settings of the instance.
-
-        :raises AssertionError: if settings invalid
-        """
-        assert 0 <= self._start_addr <= 0xFFFFFFFF
-        assert self._start_addr <= self._end_addr <= 0xFFFFFFFF
-        assert (
-            self.mode == BeeProtectRegionBlockAesMode.CTR
-        ), "only AES/CTR encryption mode supported now"  # TODO
-        assert len(self.counter) == 16
-        assert self.counter[-4:] == b"\x00\x00\x00\x00", "last four bytes must be zero"
-        assert 0 < self.fac_count <= self.FAC_REGIONS
+        """Validates settings of the instance."""
+        if self._start_addr < 0 or self._start_addr > 0xFFFFFFFF:
+            raise SPSDKError("Invalid start address")
+        if self._start_addr > self._end_addr or self._end_addr > 0xFFFFFFFF:
+            raise SPSDKError("Invalid start/end address")
+        if self.mode != BeeProtectRegionBlockAesMode.CTR:
+            raise SPSDKError("Only AES/CTR encryption mode supported now")  # TODO
+        if len(self.counter) != 16:
+            raise SPSDKError("Invalid conter")
+        if self.counter[-4:] != b"\x00\x00\x00\x00":
+            raise SPSDKError("last four bytes must be zero")
+        if self.fac_count <= 0 or self.fac_count > self.FAC_REGIONS:
+            raise SPSDKError("Invalid FAC regions")
         for fac in self.fac_regions:
             fac.validate()
 
@@ -285,7 +290,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
         :param data: binary data to be parsed
         :param offset: to start parsing the data
         :return: instance created from binary data
-        :raise ValueError: if format does not match
+        :raises SPSDKError: If format does not match
         """
         super().parse(data, offset)  # check size of the input data
         (
@@ -302,11 +307,11 @@ class BeeProtectRegionBlock(BeeBaseClass):
         ) = unpack_from(BeeProtectRegionBlock._struct_format(), data, offset)
         #
         if (tagl != BeeProtectRegionBlock.TAGL) or (tagh != BeeProtectRegionBlock.TAGH):
-            raise ValueError("Invalid tag or unsupported version")
+            raise SPSDKError("Invalid tag or unsupported version")
         if version != BeeProtectRegionBlock.VERSION:
-            raise ValueError("Unsupported version")
+            raise SPSDKError("Unsupported version")
         if _reserved_32 != b"\x00" * 32:
-            raise ValueError("Reserved area is non-zero")
+            raise SPSDKError("Reserved area is non-zero")
         #
         result = BeeProtectRegionBlock(mode, lock_options, counter[::-1])
         result._start_addr = start_addr
@@ -326,16 +331,22 @@ class BeeProtectRegionBlock(BeeBaseClass):
         :param start_addr: start address of the data
         :param data: binary block to be encrypted; the block size must be BEE_ENCR_BLOCK_SIZE
         :return: encrypted block if it is inside any FAC region; untouched block if it is not in any FAC region
+        :raises SPSDKError: When incorrect length of binary block
+        :raises SPSDKError: When encryption mode different from AES/CTR provided
+        :raises SPSDKError: When invalid length of key
+        :raises SPSDKError: When invalid range of region
         """
-        assert len(data) == BEE_ENCR_BLOCK_SIZE
+        if len(data) != BEE_ENCR_BLOCK_SIZE:
+            raise SPSDKError("Incorrect length of binary block to be encrypted")
         if self._start_addr <= start_addr < self._end_addr:
-            assert (
-                self.mode == BeeProtectRegionBlockAesMode.CTR
-            ), "only AES/CTR encryption mode supported now"
-            assert len(key) == 16
+            if self.mode != BeeProtectRegionBlockAesMode.CTR:
+                raise SPSDKError("only AES/CTR encryption mode supported now")
+            if len(key) != 16:
+                raise SPSDKError("Invalid length of key")
             for fac in self.fac_regions:
                 if fac.start_addr <= start_addr < fac.end_addr:
-                    assert start_addr + len(data) <= fac.end_addr
+                    if start_addr + len(data) > fac.end_addr:
+                        raise SPSDKError("Invalid range of region")
                     cntr_key = Counter(
                         self.counter,
                         ctr_value=start_addr >> 4,
@@ -373,10 +384,13 @@ class BeeKIB(BeeBaseClass):
     def validate(self) -> None:
         """Validates settings of the instance.
 
-        :raises AssertionError: if settings invalid
+        :raises SPSDKError: If invalid length of kib key
+        :raises SPSDKError: If invalid length of kib iv
         """
-        assert len(self.kib_key) == self._KEY_LEN
-        assert len(self.kib_iv) == self._KEY_LEN
+        if len(self.kib_key) != self._KEY_LEN:
+            raise SPSDKError("Invalid length of kib key")
+        if len(self.kib_iv) != self._KEY_LEN:
+            raise SPSDKError("Invalid length of kib iv")
 
     def export(self) -> bytes:
         """Exports binary representation of the region (serialization)."""
@@ -408,8 +422,8 @@ class BeeRegionHeader(BeeBaseClass):
 
     @classmethod
     def _struct_format(cls) -> str:
-        """:raise AssertionError: it is not expected to called for the class."""
-        raise AssertionError(
+        """:raises SPSDKError: It is not expected to called for the class."""
+        raise SPSDKError(
             "This method is not expected to be used for this class, format depends on its fields"
         )
 
@@ -472,11 +486,12 @@ class BeeRegionHeader(BeeBaseClass):
     def validate(self) -> None:
         """Validates settings of the instance.
 
-        :raises AssertionError: if settings invalid
+        :raises SPSDKError: If settings invalid
         """
         self._kib.validate()
         self._prdb.validate()
-        assert len(self._sw_key) == 16
+        if len(self._sw_key) != 16:
+            raise SPSDKError("Invalid settings")
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Serialization to binary representation.
@@ -508,9 +523,11 @@ class BeeRegionHeader(BeeBaseClass):
         :param offset: to start parsing the data
         :param sw_key: SW key used to decrypt the EKIB data (the key is marked as SW_GP2 on RT10xx)
         :return: instance created from binary data
+        :raises SPSDKError: If invalid sw key
         """
         super().parse(data, offset)  # check size of the input data
-        assert len(sw_key) == 16
+        if len(sw_key) != 16:
+            raise SPSDKError("Invalid sw key")
         aes = AES.new(sw_key, AES.MODE_ECB)
         decr_data = aes.decrypt(data[offset : offset + BeeKIB._size()])
         kib = BeeKIB.parse(decr_data)

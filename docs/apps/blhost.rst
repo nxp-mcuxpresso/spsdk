@@ -1,5 +1,3 @@
-.. TODO: [SPSDK-685] Add missing sub-commands into blhost user guide when available
-
 .. |br| raw:: html
 
    <br/>
@@ -44,9 +42,6 @@ The BusPal acts as a bus translator running on selected platforms. BusPal assist
 
 blhost - LPCUSBSIO
 ==================
-
-.. warning::
-    LPCUSBSIO is not supported in SPSDK
 
 LPCUSBSIO - LPC USB Serial I/O(LPCUSBSIO), a firmware built in LPC Link2. The LPCUSBSIO acts as a bus translator, and establishes connection with *blhost* over USB-HID, and the MCU bootloader device over I2C and SPI.
 
@@ -434,3 +429,6 @@ After the reset the device boots from flash and user image is programmed success
 
 ..note:: Elf files are not supported yet.
 
+.. click:: spsdk.apps.blhost:trust_provisioning
+    :prog: blhost trust-provisioning
+    :nested: full

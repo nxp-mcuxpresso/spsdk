@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 from spsdk import SPSDKError
-from spsdk.sdp import SdpError, SdpCommandError, SdpConnectionError
+from spsdk.sdp import SdpCommandError, SdpConnectionError, SdpError
 
 
 def raise_and_catch(raising_exc, catching_exc) -> bool:

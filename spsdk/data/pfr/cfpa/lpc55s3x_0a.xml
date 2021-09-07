@@ -167,7 +167,7 @@
       <alias type="CMSIS" value="FLASH_CFPA_VENDOR_USAGE_INVERSE_VALUE(x)"/>
     </bit_field>
   </register>
-  <register offset="0x58" width="32" name="DCFG_CC_SOCU_PIN" description="DCFG_CC_SOCU_PIN">
+  <register offset="0x58" width="32" name="DCFG_CC_SOCU_PIN" description="With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only. In this scenario, or easy of development, Level-1 customer releases the part to always allow non-secure debug. To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used. ROM uses this word to further restrict the debug access.">
     <alias type="CMSIS" value="CFPA.DCFG_CC_SOCU_PIN"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_PIN_NIDEN(x)"/>
@@ -220,7 +220,7 @@
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_PIN_INVERSE_VALUE(x)"/>
     </bit_field>
   </register>
-  <register offset="0x5C" width="32" name="DCFG_CC_SOCU_DFLT" description="DCFG_CC_SOCU_DFLT">
+  <register offset="0x5C" width="32" name="DCFG_CC_SOCU_DFLT" description="With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only. In this scenario, or easy of development, Level-1 customer releases the part to always allow non-secure debug. To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used. ROM uses this word to further restrict the debug access.">
     <alias type="CMSIS" value="CFPA.DCFG_CC_SOCU_DFLT"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_DFLT_NIDEN(x)"/>
@@ -280,7 +280,7 @@
       <alias type="CMSIS" value="FLASH_CFPA_CMPA_PROG_IN_PROGRESS_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x68" width="32" name="CMAC_UPD" description="CMAC_UPD">
+  <register offset="0x68" width="32" name="CMAC_UPD" description="CMAC Update">
     <alias type="CMSIS" value="CFPA.CMAC_UPD"/>
     <bit_field offset="0" width="2" name="IMG_UPD" access="RO" reset_value="0" description="Image Updated">
       <alias type="CMSIS" value="FLASH_CFPA_CMAC_UPD_IMG_UPD(x)"/>
@@ -289,7 +289,7 @@
       <bit_field_value name="CMAC_UPD_IMG_UPD_IMAGE1_CMAC_UPDATED" value="0b10" description="Update image 1 CMAC"/>
       <bit_field_value name="CMAC_UPD_IMG_UPD_BOTH_IMAGE0_IMAGE1_CMAC_UPDATED" value="0b11" description="Update CMAC for both images"/>
     </bit_field>
-    <bit_field offset="2" width="3" name="CMPA_UPD" access="RO" reset_value="0" description="CMPA Updated">
+    <bit_field offset="2" width="3" name="CMPA_UPD" access="RO" reset_value="0" description="CMPA page updated through ROM API. Thus compute CMAC on sub-sequent boot. This field is checked only in OEM_OPEN (0x3) LC state.">
       <alias type="CMSIS" value="FLASH_CFPA_CMAC_UPD_CMPA_UPD(x)"/>
       <bit_field_value name="CMAC_UPD_CMPA_UPD_NO_ACTION" value="0b000" description="No action"/>
       <bit_field_value name="CMAC_UPD_CMPA_UPD_IGNORED_0" value="0b001" description="Combination is ignored."/>

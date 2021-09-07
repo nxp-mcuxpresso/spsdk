@@ -21,15 +21,17 @@ from spsdk.sdp import SDP
 from spsdk.sdp.commands import ResponseValue
 
 
-@click.group()
+@click.group(no_args_is_help=True)
 @optgroup.group("Interface configuration", cls=MutuallyExclusiveOptionGroup)
 @optgroup.option(
-    "-p", "--port",
+    "-p",
+    "--port",
     metavar="COM[,speed]",
     help="Serial port.",
 )
 @optgroup.option(
-    "-u", "--usb",
+    "-u",
+    "--usb",
     metavar="VID,PID",
     help="""USB device identifier.
     Following formats are supported: <vid>, <vid:pid> or <vid,pid>, device/instance path, device name.
@@ -39,22 +41,29 @@ from spsdk.sdp.commands import ResponseValue
 """,
 )
 @click.option(
-    "-j", "--json", "use_json",
+    "-j",
+    "--json",
+    "use_json",
     is_flag=True,
     help="Use JSON output",
 )
 @click.option(
-    "-v", "--verbose", "log_level",
+    "-v",
+    "--verbose",
+    "log_level",
     flag_value=logging.INFO,
     help="Displays more verbose output",
 )
 @click.option(
-    "-d", "--debug", "log_level",
+    "-d",
+    "--debug",
+    "log_level",
     flag_value=logging.DEBUG,
     help="Display debugging info",
 )
 @click.option(
-    "-t", "--timeout",
+    "-t",
+    "--timeout",
     metavar="<ms>",
     help="Set packet timeout in milliseconds",
     default=5000,

@@ -51,6 +51,14 @@ SBFile Version 3.1. functions
    :show-inheritance:
 
 
+SBFile Version 3.1. commands
+-------------------------------
+.. automodule:: spsdk.sbfile.sb31.commands
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 SBFile Version 3.1. images
 ----------------------------
 .. automodule:: spsdk.sbfile.sb31.images

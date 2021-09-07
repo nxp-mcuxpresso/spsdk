@@ -8,9 +8,9 @@
 
 """Exceptions used in the MBoot module."""
 
-from .error_codes import StatusCode
-from ..exceptions import SPSDKError
+from spsdk import SPSDKError
 
+from .error_codes import StatusCode
 
 ########################################################################################################################
 # McuBoot Exceptions

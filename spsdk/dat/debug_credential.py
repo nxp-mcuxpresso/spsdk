@@ -7,16 +7,13 @@
 
 """Module with Debugcredential class."""
 
-from struct import pack, unpack_from, calcsize
+from struct import calcsize, pack, unpack_from
 from typing import Any, List, Type
 
-from spsdk import crypto
+from spsdk import SPSDKError, crypto
 from spsdk.crypto import SignatureProvider
-from spsdk.dat.utils import (
-    ecc_public_numbers_to_bytes,
-    ecc_key_to_bytes,
-    rsa_key_to_bytes,
-)
+from spsdk.crypto.loaders import extract_public_key
+from spsdk.dat.utils import ecc_key_to_bytes, ecc_public_numbers_to_bytes, rsa_key_to_bytes
 from spsdk.utils.crypto.backend_internal import internal_backend
 
 
@@ -27,6 +24,7 @@ class DebugCredential:
     FORMAT = "INVALID_FORMAT"
     FORMAT_NO_SIG = "INVALID_FORMAT"
     VERSION = "0.0"
+    HASH_LENGTH = 32
 
     def __init__(
         self,
@@ -69,9 +67,11 @@ class DebugCredential:
         """Export to binary form (serialization).
 
         :return: binary representation of the debug credential
+        :raises SPSDKError: When Debug Credential Signature is not set, call the .sign method first
         """
         # make sure user called .sign before
-        assert self.signature, "Debug Credential Signature is not set, call the .sign method first"
+        if not self.signature:
+            raise SPSDKError("Debug Credential Signature is not set, call the .sign method first")
         data = pack(
             self.FORMAT,
             *[int(v) for v in self.VERSION.split(".")],
@@ -102,9 +102,11 @@ class DebugCredential:
 
     def sign(self) -> None:
         """Sign the DC data using SignatureProvider."""
-        assert self.signature_provider, f"Debug Credential Signature provider is not set"
+        if not self.signature_provider:
+            raise SPSDKError("Debug Credential Signature provider is not set")
         signature = self.signature_provider.sign(self._get_data_to_sign())
-        assert signature, f"Debug Credential Signature provider didn't return any signature"
+        if not signature:
+            raise SPSDKError("Debug Credential Signature provider didn't return any signature")
         self.signature = signature
 
     def _get_data_to_sign(self) -> bytes:
@@ -195,8 +197,16 @@ class DebugCredential:
         version = "{}.{}".format(*unpack_from("<2H", data, offset))
         socc = unpack_from("<L", data, offset + 4)
         klass = cls._get_class(version, socc[0])
-        _versionH, _versionL, *rest = unpack_from(klass.FORMAT, data, offset)
-        return klass(*rest)
+        return klass.get_instance_from_challenge(data[offset:])
+
+    @classmethod
+    def get_instance_from_challenge(cls, data: bytes) -> "DebugCredential":
+        """Returns instance of class from DAP authentication challenge data.
+
+        :return: Instance of this class.
+        """
+        _versionH, _versionL, *rest = unpack_from(cls.FORMAT, data, 0)
+        return cls(*rest)
 
 
 class DebugCredentialRSA(DebugCredential):
@@ -216,7 +226,7 @@ class DebugCredentialRSA(DebugCredential):
         """
         rot_meta = bytearray(128)
         for index, rot_key in enumerate(rot_pub_keys):
-            rot = crypto.load_public_key(file_path=rot_key)
+            rot = extract_public_key(file_path=rot_key, password=None)
             assert isinstance(rot, crypto.RSAPublicKey)
             data = rsa_key_to_bytes(key=rot, exp_length=3, modulus_length=None)
             result = internal_backend.hash(data)
@@ -243,7 +253,7 @@ class DebugCredentialRSA(DebugCredential):
         :return: binary representing the rotk public key
         """
         pub_key_path = rot_pub_keys[rot_pub_id]
-        pub_key = crypto.load_public_key(pub_key_path)
+        pub_key = extract_public_key(file_path=pub_key_path, password=None)
         assert isinstance(pub_key, crypto.RSAPublicKey)
         return rsa_key_to_bytes(key=pub_key, exp_length=4)
 
@@ -259,7 +269,8 @@ class DebugCredentialECC(DebugCredential):
     def sign(self) -> None:
         """Sign the DC data using SignatureProvider."""
         super().sign()
-        assert self.signature, "Debug Credential Signature is not set in base class"
+        if not self.signature:
+            raise SPSDKError("Debug Credential Signature is not set in base class")
         r, s = crypto.utils_cryptography.decode_dss_signature(self.signature)
         public_numbers = crypto.EllipticCurvePublicNumbers(r, s, self.CURVE)
         self.signature = ecc_public_numbers_to_bytes(
@@ -277,7 +288,7 @@ class DebugCredentialECC(DebugCredential):
         """
         rot_meta = bytearray(528)
         for index, rot_key in enumerate(rot_pub_keys):
-            rot = crypto.load_public_key(file_path=rot_key)
+            rot = extract_public_key(file_path=rot_key, password=None)
             assert isinstance(rot, crypto.EllipticCurvePublicKey)
             data = ecc_key_to_bytes(key=rot, length=66)
             rot_meta[index * 132 : (index + 1) * 132] = data
@@ -306,9 +317,9 @@ class DebugCredentialECC(DebugCredential):
         :return: binary representation
         """
         pub_key_path = rot_pub_keys[rot_pub_id]
-        pub_key = crypto.load_public_key(pub_key_path)
+        pub_key = extract_public_key(file_path=pub_key_path, password=None)
         assert isinstance(pub_key, crypto.EllipticCurvePublicKey)
-        curve_index = {256: 1, 386: 2, 521: 3}[pub_key.curve.key_size]
+        curve_index = {256: 1, 384: 2, 521: 3}[pub_key.curve.key_size]
         return pack("<2H", rot_pub_id, curve_index)
 
 
@@ -385,7 +396,7 @@ class N4AnalogMixin(DebugCredentialECC):
         :return: binary representing the rotk public key
         """
         root_key = rot_pub_keys[rot_pub_id]
-        root_public_key = crypto.load_public_key(root_key)
+        root_public_key = extract_public_key(file_path=root_key, password=None)
         length = root_public_key.key_size // 8
         assert isinstance(root_public_key, crypto.EllipticCurvePublicKey)
         data = ecc_key_to_bytes(root_public_key, length=length)
@@ -402,13 +413,15 @@ class N4AnalogMixin(DebugCredentialECC):
         msg += f"CC_SOCC : {hex(self.cc_socu)}\n"
         msg += f"CC_VU   : {hex(self.cc_vu)}\n"
         msg += f"BEACON  : {self.cc_beacon}\n"
-        if self.rot_meta[3] == b"\x80":
-            msg += f"CA FLAG IS SET \n"
         ctrk_records_num = self.rot_meta[0] >> 4
         if ctrk_records_num == 1:
-            msg += f"CRTK table not present \n"
+            msg += "CRTK table not present \n"
         else:
             msg += f"CRTK table has {ctrk_records_num} entries\n"
+            # Compute and show RKTH HASH
+            key_length = 256 if (len(self.rot_meta) - 4) == 32 else 384
+            ctrk_hash = internal_backend.hash(data=self.rot_meta[4:], algorithm=f"sha{key_length}")
+            msg += f"CRTK Hash: {ctrk_hash.hex()}"
         return msg
 
     @property
@@ -428,7 +441,7 @@ class N4AnalogMixin(DebugCredentialECC):
             return bytes()
         ctrk_table = bytes()
         for pub_key_path in rot_pub_keys:
-            pub_key = crypto.load_public_key(pub_key_path)
+            pub_key = extract_public_key(file_path=pub_key_path, password=None)
             assert isinstance(pub_key, crypto.EllipticCurvePublicKey)
             key_length = pub_key.key_size
             data = ecc_key_to_bytes(key=pub_key, length=key_length // 8)
@@ -492,6 +505,7 @@ class N4AnalogMixin(DebugCredentialECC):
         :param data: Raw data as bytes
         :param offset: Offset of input data
         :return: DebugCredential object
+        :raises SPSDKError: When flag is invalid
         """
         format_head = "<2HL16s4L"
         (
@@ -504,7 +518,8 @@ class N4AnalogMixin(DebugCredentialECC):
             beacon,
             flags,
         ) = unpack_from(format_head, data)
-        assert flags & 0x8000_0000
+        if not flags & 0x8000_0000:
+            raise SPSDKError("Invalid flag")
         records_num = (flags & 0xF0) >> 4
         rot_meta_len = 4
         ctrk_hash_table = bytes()
@@ -532,6 +547,14 @@ class N4AnalogMixin(DebugCredentialECC):
             signature=signature,
         )
 
+    @classmethod
+    def get_instance_from_challenge(cls, data: bytes) -> "DebugCredential":
+        """Returns instance of class from DAP authentication challenge data.
+
+        :return: Instance of this class.
+        """
+        return cls.parse(data, 0)
+
 
 class DebugCredentialECC256N4Analog(N4AnalogMixin):
     """DebugCredential class for LPC55s3x for version 2.0 (p256)."""
@@ -539,6 +562,7 @@ class DebugCredentialECC256N4Analog(N4AnalogMixin):
     HASH_LENGTH = 32
     CORD_LENGTH = 32
     KEY_LENGTH = 256
+    VERSION = "2.0"
 
 
 class DebugCredentialECC384N4Analog(N4AnalogMixin):
@@ -547,6 +571,7 @@ class DebugCredentialECC384N4Analog(N4AnalogMixin):
     HASH_LENGTH = 48
     CORD_LENGTH = 48
     KEY_LENGTH = 384
+    VERSION = "2.1"
 
 
 _version_mapping = {

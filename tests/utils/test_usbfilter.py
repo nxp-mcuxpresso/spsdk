@@ -4,7 +4,6 @@
 # Copyright 2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-import re
 from unittest.mock import MagicMock, patch
 
 import pytest

@@ -4,10 +4,7 @@
 # Copyright 2021 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-import pytest
-from spsdk.image.misc import size_fmt
-from spsdk.mboot.memories import FlashRegion, RamRegion, ExtMemRegion, MemoryRegion
+from spsdk.mboot.memories import ExtMemRegion, FlashRegion, RamRegion
 
 
 def test_ram_region():

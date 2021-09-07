@@ -18,14 +18,15 @@
 import os
 from os import path
 
+from spsdk import SPSDKError
 from spsdk.crypto import (
     RSAPublicKey,
-    validate_certificate_chain,
     get_public_key_from_certificate,
-    validate_certificate,
     is_ca_flag_set,
-    load_public_key,
     load_certificate,
+    load_public_key,
+    validate_certificate,
+    validate_certificate_chain,
 )
 
 
@@ -43,12 +44,12 @@ def main() -> None:
     # Check if public key of certificate has proper format
     assert isinstance(pubkey_from_ca0_cert, RSAPublicKey)
     # Compare CA's public key from file and the one from certificate
-    assert (
-        ca0_pubkey_rsa2048.public_numbers() == pubkey_from_ca0_cert.public_numbers()
-    ), "Keys are not the same (the one from disc and the one from cert)"
+    if ca0_pubkey_rsa2048.public_numbers() != pubkey_from_ca0_cert.public_numbers():
+        raise SPSDKError("Keys are not the same (the one from disc and the one from cert)")
     # Load certificate, which is singed by CA
     crt = load_certificate(path.join(data_dir, "crt_pem.crt"))
-    assert validate_certificate(crt, ca0_cert)
+    if not validate_certificate(crt, ca0_cert):
+        raise SPSDKError("The certificate is not valid")
     print("The certificate was signed by the CA.")
     # Load chain of certificate
     chain = ["chain_crt2_pem.crt", "chain_crt_pem.crt", "ca_cert_pem.crt"]
@@ -57,12 +58,16 @@ def main() -> None:
     ch3_crt = load_certificate(path.join(data_dir, "chain_crt_pem.crt"))
     ch3_ca = load_certificate(path.join(data_dir, "ca_cert_pem.crt"))
     # Validate the chain (if corresponding items in chain are singed by one another)
-    assert validate_certificate_chain(chain_cert)
+    if not validate_certificate_chain(chain_cert):
+        raise SPSDKError("The certificate chain is not valid")
     print("The chain of certificates is valid.")
     # Checks if CA flag is set correctly
-    assert not is_ca_flag_set(ch3_crt2)
-    assert is_ca_flag_set(ch3_crt)
-    assert is_ca_flag_set(ch3_ca)
+    if is_ca_flag_set(ch3_crt2):
+        raise SPSDKError("CA flag is set")
+    if not is_ca_flag_set(ch3_crt):
+        raise SPSDKError("CA flag is not set")
+    if not is_ca_flag_set(ch3_ca):
+        raise SPSDKError("CA flag is not set")
 
 
 if __name__ == "__main__":

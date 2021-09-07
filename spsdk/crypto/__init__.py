@@ -36,6 +36,7 @@ It provides following functionality:
 - loading the private key from file
 - loading the x.509 certificate from file
 """
+import cryptography.hazmat.primitives.asymmetric.utils as utils_cryptography
 from cryptography import x509
 from cryptography.exceptions import *
 from cryptography.hazmat.backends import *
@@ -44,18 +45,15 @@ from cryptography.hazmat.backends.openssl.rsa import *
 from cryptography.hazmat.primitives import *
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import *
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.asymmetric.ec import *
 from cryptography.hazmat.primitives.asymmetric.rsa import *  # type: ignore
 from cryptography.hazmat.primitives.serialization import *
-import cryptography.hazmat.primitives.asymmetric.utils as utils_cryptography
-
 from cryptography.x509 import *
 from cryptography.x509 import (
     AuthorityInformationAccessOID,
-    CRLEntryExtensionOID,
     CertificatePoliciesOID,
+    CRLEntryExtensionOID,
     ExtendedKeyUsageOID,
     ExtensionOID,
     NameOID,
@@ -69,6 +67,7 @@ from .loaders import (
     _get_encoding_type,
     generic_load,
     load_certificate,
+    load_certificate_as_bytes,
     load_private_key,
     load_public_key,
 )

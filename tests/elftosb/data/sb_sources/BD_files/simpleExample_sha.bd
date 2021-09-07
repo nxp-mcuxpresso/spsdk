@@ -1,0 +1,82 @@
+# This BD configuration file serves as a minimal working example
+# to test the python parser
+options {
+    flags = 0x8008; // bd file format: 0x8 encrypted + signed (always 0x8), 0x8000 means include SHA in final image
+    buildNumber = 0x1;
+    productVersion = "1.00.00";
+    componentVersion = "1.00.00";
+	secureBinaryVersion = "2.1";
+}
+sources {
+     myImage = "sb_sources/output_images/application_signed.bin"; // Put location of Signed or UnSigned image input
+	 key_store = "sb_sources/key_store/key_store_rt5xx.bin";
+	 fcb_block = "sb_sources/input_images/rt500_oct_flash_fcb.bin";
+}
+keyblob (0) {
+	(
+		start = 0x08001000,
+		end = 0x082013ff,
+		key = "00112233445566778899001122334455",
+		counter = "1122334455667788",
+		byteSwap = false
+	)
+}
+keyblob (1) {
+	(
+		start = 0x08201400,
+		end = 0x082017FF,
+		key = "aabbccddeeffaabbccddeeffaabbccdd",
+		counter = "1122334455667788",
+		byteSwap = false
+	)
+}
+keyblob (2) {
+	(
+		start = 0x08201800,
+		end = 0x08201BFF,
+		key = "aabbccddeeffaabbccddeeffaabbcc11",
+		counter = "1122334455667788",
+		byteSwap = false
+	)
+}
+keyblob (3) {
+	(
+		start = 0x08201C00,
+		end = 0x08201FFF,
+		key = "aabbccddeeffaabbccddeeffaabbcc22",
+		counter = "1122334455667788",
+		byteSwap = false
+	)
+}
+section (0) {
+	load 0xc0403006 > 0x10C000; // Memory config word for Octal Flash
+	enable @0x9 0x10C000;
+	erase 0x8000000..0x8300000;  //0x8040000 Erase 3MB 0x300000 block at first ,
+
+	encrypt (0){
+		load myImage > 0x08001000;
+	}
+
+	keywrap (0) {
+		load {{00000000000000000000000000000000}} > 0x08000000;
+	}
+
+	keywrap (1) {
+		load {{00000000000000000000000000000000}} > 0x08000100;
+	}
+
+	keywrap (2) {
+		load {{00000000000000000000000000000000}} > 0x08000200;
+	}
+
+	keywrap (3) {
+		load {{00000000000000000000000000000000}} > 0x08000300;
+	}
+
+	//load 0xf000000f > 0x10d000;
+	//enable @0x9 0x10d000;       // Load new FCB by boot ROM code
+	load fcb_block > 0x08000400;  // Load FCB block manually (workaround)
+
+	load key_store > 0x08000800;  // Key Store will be copied to external Flash, offset 0x800
+
+}
