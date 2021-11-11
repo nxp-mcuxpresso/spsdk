@@ -43,6 +43,50 @@ To install *SPSDK* under *Linux* follow:
 
 *SPSDK* help for command-line applications should be displayed.
 
+
+UART under Linux
+================
+
+Several steps need to be performed before *SPSDK* can list and use NXP devices connected to the host PC under Linux using UART.
+
+By default on *Ubuntu* tty serial devices are only accessible to users in group *dialout*. The permissions for /dev/ttyACM0 can be permanently solved by adding the user to the *dialout* group:
+
+.. code-block:: bash
+
+    sudo usermod -a -G dialout $USER
+
+Then the user has to perform logout and login from the system for the group changes to take effect. Afterward, the UART device could be shown in ``nxpdevscan`` and are ready for use.
+
+
+USB under Linux
+===============
+
+For *SPSDK* to access connected devices using USB, it is necessary to configure ``udev`` rules.
+
+.. note:: NXP VIDs list - :ref:`USB - VID & PID`.
+
+1. Create a file for example ``50-nxp.rules`` containing following rules:
+
+.. code::
+
+    SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ATTRS{idVendor}=="0d28", MODE="0666"
+    SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ATTRS{idVendor}=="1fc9", MODE="0666"
+    SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ATTRS{idVendor}=="15a2", MODE="0666"
+
+2. To install rules copy the file to ``/etc/udev/rules.d``:
+
+.. code-block:: bash
+
+    sudo cp 50-nxp.rules /etc/udev/rules.d
+
+    sudo udevadm control --reload-rules
+
+    sudo udevadm trigger
+
+3. Plug your NXP device(s) and call ``nxpdevscan``.
+
+
+
 -------------
 macOS @ Intel
 -------------
