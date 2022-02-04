@@ -2,70 +2,58 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module implementing functionality of srktool, dcdgen, mkimage and other similar tools."""
 
-from .bee import BeeRegionHeader, BeeKIB, BeeProtectRegionBlock, BeeFacRegion
+import os
+
+from spsdk import SPSDK_DATA_FOLDER
+
+IMG_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "image")
+TZ_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_tz.yml")
+MBIMG_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_mbimg.yml")
+SB3_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_sb3.yml")
+
+from .bee import BeeFacRegion, BeeKIB, BeeProtectRegionBlock, BeeRegionHeader
 from .commands import (
-    EnumWriteOps,
-    EnumCheckOps,
-    EnumCertFormat,
-    EnumInsKey,
-    EnumAuthDat,
-    EnumEngine,
-    EnumItm,
-    CmdWriteData,
+    CmdAuthData,
     CmdCheckData,
+    CmdInitialize,
+    CmdInstallKey,
     CmdNop,
     CmdSet,
-    CmdInitialize,
     CmdUnlock,
     CmdUnlockCAAM,
     CmdUnlockOCOTP,
     CmdUnlockSNVS,
-    CmdInstallKey,
-    CmdAuthData,
+    CmdWriteData,
+    EnumAuthDat,
+    EnumCertFormat,
+    EnumCheckOps,
+    EnumEngine,
+    EnumInsKey,
+    EnumItm,
+    EnumWriteOps,
 )
+from .exceptions import SPSDKUnsupportedImageType
+from .images import BootImg2, BootImg3a, BootImg3b, BootImg4, BootImgRT, EnumAppType, parse
+from .keystore import KeySourceType, KeyStore
+from .mbi_mixin import MasterBootImageManifest, MultipleImageEntry, MultipleImageTable
+from .mbimg import MasterBootImage, get_mbi_class
+from .secret import MAC, CertificateImg, EnumAlgorithm, SecretKeyBlob, Signature, SrkItem, SrkTable
 from .segments import (
+    FlexSPIConfBlockFCB,
+    PaddingFCB,
+    SegAPP,
+    SegBDT,
+    SegCSF,
+    SegDCD,
     SegIVT2,
     SegIVT3a,
     SegIVT3b,
-    SegBDT,
-    SegAPP,
-    SegDCD,
-    SegCSF,
-    PaddingFCB,
-    FlexSPIConfBlockFCB,
-)
-from .secret import (
-    SrkTable,
-    SrkItem,
-    CertificateImg,
-    Signature,
-    MAC,
-    SecretKeyBlob,
-    EnumAlgorithm,
-)
-from .images import (
-    parse,
-    BootImgRT,
-    BootImg2,
-    BootImg3a,
-    BootImg3b,
-    BootImg4,
-    EnumAppType,
-)
-from .keystore import KeySourceType, KeyStore
-from .mbimg import (
-    MasterBootImage,
-    MasterBootImageN4Analog,
-    MasterBootImageType,
-    MasterBootImageManifest,
-    MultipleImageEntry,
-    MultipleImageTable,
 )
 from .trustzone import TrustZone, TrustZoneType
 
@@ -77,7 +65,6 @@ __all__ = [
     "BootImg3b",
     "BootImg4",
     "MasterBootImage",
-    "MasterBootImageType",
     # multiple images for MasterBootImage (relocation table)
     "MultipleImageEntry",
     "MultipleImageTable",

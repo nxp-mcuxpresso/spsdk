@@ -1,6 +1,7 @@
 {
     "licenses": [
         "Apache 2.0",
+        "Apache-2.0 license",
         "Apache License 2.0",
         "Apache License, Version 2.0",
         "BSD",
@@ -13,7 +14,8 @@
         "PSF",
         "Public Domain",
         "Public domain",
-        "The MIT License: http://www.opensource.org/licenses/mit-license.php"
+        "The MIT License: http://www.opensource.org/licenses/mit-license.php",
+        "The MIT http://www.opensource.org/licenses/mit-license.php"
     ],
     "packages": [
         {
@@ -35,6 +37,12 @@
             "is_manual": false
         },
         {
+            "name": "PyYAML",
+            "license": "MIT",
+            "home_page": "https://pyyaml.org/",
+            "is_manual": false
+        },
+        {
             "name": "appdirs",
             "license": "MIT",
             "home_page": "http://github.com/ActiveState/appdirs",
@@ -44,7 +52,7 @@
             "name": "argparse-addons",
             "license": "MIT",
             "home_page": "https://github.com/eerimoq/argparse_addons",
-            "is_manual": true
+            "is_manual": false
         },
         {
             "name": "asn1crypto",
@@ -62,13 +70,19 @@
             "name": "bincopy",
             "license": "MIT",
             "home_page": "https://github.com/eerimoq/bincopy",
-            "is_manual": true
+            "is_manual": false
         },
         {
             "name": "bitstring",
             "license": "The MIT License: http://www.opensource.org/licenses/mit-license.php",
             "home_page": "https://github.com/scott-griffiths/bitstring",
-            "is_manual": false
+            "is_manual": true
+        },
+        {
+            "name": "capstone",
+            "license": "BSD",
+            "home_page": "http://www.capstone-engine.org",
+            "is_manual": true
         },
         {
             "name": "cffi",
@@ -131,10 +145,28 @@
             "is_manual": false
         },
         {
+            "name": "deepmerge",
+            "license": "MIT",
+            "home_page": "http://deepmerge.readthedocs.io",
+            "is_manual": true
+        },
+        {
+            "name": "fastjsonschema",
+            "license": "BSD",
+            "home_page": "https://github.com/seznam/python-fastjsonschema",
+            "is_manual": false
+        },
+        {
             "name": "future",
             "license": "MIT",
             "home_page": "https://python-future.org",
             "is_manual": false
+        },
+        {
+            "name": "hidapi",
+            "license": "BSD",
+            "home_page": "https://github.com/trezor/cython-hidapi",
+            "is_manual": true
         },
         {
             "name": "hexdump",
@@ -143,15 +175,9 @@
             "is_manual": false
         },
         {
-            "name": "libusbsio",
-            "license": "BSD-3-Clause",
-            "home_page": "https://pypi.org/project/libusbsio/",
-            "is_manual": false
-        },
-        {
             "name": "humanfriendly",
             "license": "MIT",
-            "home_page": "https://github.com/xolox/python-humanfriendly",
+            "home_page": "https://humanfriendly.readthedocs.io",
             "is_manual": false
         },
         {
@@ -179,15 +205,15 @@
             "is_manual": false
         },
         {
-            "name": "milksnake",
-            "license": "Apache License 2.0",
-            "home_page": "https://github.com/getsentry/milksnake",
+            "name": "libusbsio",
+            "license": "BSD-3-Clause",
+            "home_page": "UNKNOWN",
             "is_manual": false
         },
         {
-            "name": "munch",
-            "license": "MIT",
-            "home_page": "https://github.com/Infinidat/munch",
+            "name": "milksnake",
+            "license": "Apache License 2.0",
+            "home_page": "https://github.com/getsentry/milksnake",
             "is_manual": false
         },
         {
@@ -259,7 +285,7 @@
         {
             "name": "pyreadline",
             "license": "BSD",
-            "home_page": "https://github.com/pyreadline/pyreadline",
+            "home_page": "http://ipython.org/pyreadline.html",
             "is_manual": false
         },
         {
@@ -305,15 +331,33 @@
             "is_manual": false
         },
         {
+            "name": "sly",
+            "license": "BSD",
+            "home_page": "https://github.com/dabeaz/sly",
+            "is_manual": false
+        },
+        {
             "name": "sortedcontainers",
             "license": "Apache 2.0",
             "home_page": "http://www.grantjenks.com/docs/sortedcontainers/",
             "is_manual": false
         },
         {
+            "name": "typing_extensions",
+            "license": "PSF",
+            "home_page": "https://github.com/python/typing/tree/master/typing_extensions",
+            "is_manual": true
+        },
+        {
             "name": "typing-extensions",
             "license": "PSF",
             "home_page": "https://github.com/python/typing/tree/master/typing_extensions",
+            "is_manual": true
+        },
+        {
+            "name": "spsdk",
+            "license": "BSD-3-Clause",
+            "home_page": "https://confluence.sw.nxp.com/display/SPSDK",
             "is_manual": false
         },
         {

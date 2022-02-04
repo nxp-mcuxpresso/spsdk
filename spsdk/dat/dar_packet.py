@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,8 @@ from typing import Type
 
 from spsdk import SPSDKError, crypto
 from spsdk.crypto.signature_provider import PlainFileSP
-from spsdk.dat import DebugAuthenticationChallenge, DebugCredential
+from spsdk.dat import DebugAuthenticationChallenge
+from spsdk.dat.debug_credential import DebugCredential
 from spsdk.dat.utils import ecc_public_numbers_to_bytes
 from spsdk.utils.crypto.backend_internal import internal_backend
 
@@ -83,13 +84,14 @@ class DebugAuthenticateResponse:
         :param data: Raw data as bytes
         :param offset: Offset of input data
         :return: DebugAuthenticateResponse object
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
     def _get_class(cls, version: str, socc: int) -> "Type[DebugAuthenticateResponse]":
         if socc == 4:
-            return _n4analog_version_mapping[version]
+            return _lpc55s3x_version_mapping[version]
         return _version_mapping[version]
 
     @classmethod
@@ -146,8 +148,8 @@ class DebugAuthenticateResponseECC(DebugAuthenticateResponse):
         return signature
 
 
-class DebugAuthenticateResponseN4A(DebugAuthenticateResponse):
-    """Class for N4A specific of DAR."""
+class DebugAuthenticateResponseLpc55s3x(DebugAuthenticateResponse):
+    """Class for LPC55S3x specific of DAR."""
 
     def _get_common_data(self) -> bytes:
         """Collects dc, auth_beacon and UUID."""
@@ -157,8 +159,8 @@ class DebugAuthenticateResponseN4A(DebugAuthenticateResponse):
         return data
 
 
-class DebugAuthenticateResponseN4A_256(DebugAuthenticateResponseN4A):
-    """Class for N4A specific of DAR, 256 bits sized keys."""
+class DebugAuthenticateResponseLpc55s3x_256(DebugAuthenticateResponseLpc55s3x):
+    """Class for LPC55S3x specific of DAR, 256 bits sized keys."""
 
     def _get_signature(self) -> bytes:
         """Sign the DAR data using SignatureProvider."""
@@ -168,8 +170,8 @@ class DebugAuthenticateResponseN4A_256(DebugAuthenticateResponseN4A):
         return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=32)
 
 
-class DebugAuthenticateResponseN4A_384(DebugAuthenticateResponseN4A):
-    """Class for N4A specific of DAR, 384 bits sized keys."""
+class DebugAuthenticateResponseLpc55s3x_384(DebugAuthenticateResponseLpc55s3x):
+    """Class for LPC55S3x specific of DAR, 384 bits sized keys."""
 
     def _get_signature(self) -> bytes:
         """Sign the DAR data using SignatureProvider."""
@@ -187,7 +189,7 @@ _version_mapping = {
     "2.2": DebugAuthenticateResponseECC,
 }
 
-_n4analog_version_mapping = {
-    "2.0": DebugAuthenticateResponseN4A_256,
-    "2.1": DebugAuthenticateResponseN4A_384,
+_lpc55s3x_version_mapping = {
+    "2.0": DebugAuthenticateResponseLpc55s3x_256,
+    "2.1": DebugAuthenticateResponseLpc55s3x_384,
 }

@@ -99,28 +99,30 @@ The bit number that identifies whether a command is present is the command's tag
     :align: left
 
     ======== ================================
-    0        flash-erase-all (0x01)
-    1        flash-erase-region (0x02)
-    2        read-memory (0x03)
-    3        write-memory (0x04)
-    4        fill-memory (0x05)
-    5        flash-security-disable (0x06)
-    6        get-property (0x07)
-    7        receive-sb-file (0x08)
-    8        execute (0x09)
-    9        call (0x0a)
-    10       reset (0x0b)
-    11       set-property (0x0c)
-    12       flash-erase-all-unsecure (0x0d)
-    13       flash-program-once (0x0e)
-    14       flash-read-once (0x0f)
-    15       flash-read-resource (0x10)
-    16       configure-memory (0x11)
-    17       reliable-update (0x12)
-    18       generate-key-blob (0x13)
-    19       reserved
-    20       key-provisioning (0x15)
-    [31:21]  reserved
+    1        flash-erase-all (0x01)
+    2        flash-erase-region (0x02)
+    3        read-memory (0x03)
+    4        write-memory (0x04)
+    5        fill-memory (0x05)
+    6        flash-security-disable (0x06)
+    7        get-property (0x07)
+    8        receive-sb-file (0x08)
+    9        execute (0x09)
+    10        call (0x0a)
+    11       reset (0x0b)
+    12       set-property (0x0c)
+    13       flash-erase-all-unsecure (0x0d)
+    14       flash-program-once (0x0e)
+    15       flash-read-once (0x0f)
+    16       flash-read-resource (0x10)
+    17       configure-memory (0x11)
+    18       reliable-update (0x12)
+    19       generate-key-blob (0x13)
+    20       program-fuse (0x14)
+    21       key-provisioning (0x15)
+    22       trust-provisioning (0x16)
+    23       fuse-read (0x17)
+    [31:24]  reserved
     ======== ================================
 
 MCU Bootloader operation
@@ -431,4 +433,8 @@ After the reset the device boots from flash and user image is programmed success
 
 .. click:: spsdk.apps.blhost:trust_provisioning
     :prog: blhost trust-provisioning
+    :nested: full
+
+.. click:: spsdk.apps.blhost:batch
+    :prog: blhost batch
     :nested: full

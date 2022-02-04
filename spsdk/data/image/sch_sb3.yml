@@ -1,0 +1,386 @@
+# Copyright 2021 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+sb3_family:
+  type: object
+  title: Basic Settings
+  properties:
+    family:
+      type: string
+      title: MCU family.
+      description: MCU family name.
+      enum:
+        - lpc55s3x
+      template_value: lpc55s3x
+  required: [family]
+
+sb3_output:
+  type: object
+  title: Basic Settings
+  properties:
+    containerOutputFile:
+      type: string
+      title: SB3 filename.
+      description: Generated SB3 container filename.
+      template_value: my_new.sb3
+  required: [containerOutputFile]
+
+sb3:
+  type: object
+  title: Secure Binary v3.1 Settings
+  properties:
+    containerKeyBlobEncryptionKey:
+      type: string
+      title: Part Common Key.
+      description: Path to PCK/NPK key in plain hex string format.
+      format: optional_file
+      template_value: my_pck.txt
+    isNxpContainer:
+      type: boolean
+      title: Enable NXP Container format.
+      description: Internal usage only, used for generating SB files with NXP content e.g. provisioning firmware, sentinel firmware...
+      template_value: false
+    description:
+      type: string
+      title: Description.
+      description: Description up to 16 characters, longer will be truncated by elftosb, stored in SB3.1 manifest. If not provided, inserted elftosb version automatically.
+      template_value: This is description of my generated SB file.
+    kdkAccessRights:
+      type: number
+      title: KDK access rights.
+      description: Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process, more details can be in CSSv2 manual.  Once will be development finished, one fixed value will be used and probably not required as user input.
+      enum: [0, 1, 2, 3]
+      template_value: 0
+    containerConfigurationWord:
+      type: [string, number]
+      title: Container configuration word.
+      description: Flag value in SB3.1 manifest, not used by silicons with LPC55S3x ROM. Value can be keep 0, or item removed from json file.
+      format: number
+      template_value: 0x0
+
+sb3_test:
+  type: object
+  title: Secure Binary v3.1 Testing Settings
+  properties:
+    isEncrypted:
+      type: boolean
+      title: Enable NXP Container encryption.
+      description: If false, generated SB3.1 blocks are not encrypted, only for testing, ROM cannot accept unencrypted SB3.1 file. If option is missing, SB3.1 file is automatically encrypted.
+      template_value: true
+    timestamp:
+      type: [string, number]
+      title: SB3 file force timestamp.
+      description: For testing purposes this option can override real timestamp of SB3 file.
+      format: number
+      template_value: 1234567890
+
+sb3_commands:
+  type: object
+  title: Secure Binary v3.1 Commands Settings
+  required: [commands]
+  properties:
+    commands:
+      type: array
+      title: SB3.1 Commands
+      description: Secure Binary v3.1 commands block, take this list as a full possible example - Modify it regarding your application
+      items:
+        type: object
+        properties:
+          erase:
+            type: object
+            title: Erase
+            description: Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Address of memory block to be erased.
+                format: number
+                template_value: 0x0
+              size:
+                type: [string, number]
+                title: Size
+                description: Size of memory block to be erased.
+                format: number
+                template_value: 4096
+              memoryId:
+                type: [string, number]
+                title: Memory ID
+                description: ID of memory block to be erased.
+                format: number
+                template_value: 0
+            required: [address, size]
+
+          load:
+            type: object
+            title: Load
+            description: If set, then the data to write immediately follows the range header. The length field contains the actual data length
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Address of memory block to be loaded.
+                format: number
+                template_value: 0x0
+              memoryId:
+                type: [string, number]
+                title: Memory ID
+                description: ID of memory block to be loaded.
+                format: number
+                template_value: 0
+              file:
+                type: string
+                title: Binary file.
+                description: Binary file to be loaded.
+                format: file
+                template_value: my_binary.bin
+              values:
+                type: string
+                title: Binary values.
+                description: Binary values delimited by comma to be loaded.
+                template_value: 0x1234, 0x5678, 0, 12345678
+              authentication:
+                type: string
+                title: Authentication.
+                description: Type of Image authentication [None, cmac, hashlocking]. If authentication is not used, just omit this option.
+                template_value: cmac
+            required: [address]
+
+          execute:
+            type: object
+            title: Execute
+            description: The startAddress will be the jump-to address. No further processing of SB after jump, ROM do not expect to return.
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Jump-to address to start execute code.
+                format: number
+                template_value: 0x0
+            required: [address]
+
+          call:
+            type: object
+            title: Call
+            description: The startAddress will be the address to jump, however, the state machine should expect a return to the next statement to continue processing the sb file
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Jump-to address to start execute code.
+                format: number
+                template_value: 0x0
+            required: [address]
+
+          programFuses:
+            type: object
+            title: Program Fuses
+            description: The startAddress will be the address of fuse register, length will be number of fuse words to program. The data to write to the fuse registers will immediately follow the header.
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Address of fuses to be burned.
+                format: number
+                template_value: 0x0
+              values:
+                type: string
+                title: Binary values.
+                description: Binary values delimited by comma to be burned.
+                template_value: 0x1234, 0x5678, 0, 12345678
+            required: [address, values]
+
+          programIFR:
+            type: object
+            title: Program IFR
+            description: The startAddress will be the address into the IFR region, length will be in number of bytes to write to IFR region. The data to write to IFR region at the given address will immediately follow the header
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Address of IFR region to be programmed.
+                format: number
+                template_value: 0x0
+              file:
+                type: string
+                title: Binary file.
+                description: Binary file to be programmed.
+                format: file
+                template_value: my_binary.bin
+            required: [address, file]
+
+          loadCMAC:
+            type: object
+            title: Load CMAC
+            description: If set, then the data to write immediately follows the range header. The length field contains the actual data length. ROM is calculating cmac from loaded data and storing on address known by ROM decided based on startAddress.
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Address of memory block to be CMAC loaded.
+                format: number
+                template_value: 0x0
+              memoryId:
+                type: [string, number]
+                title: Memory ID
+                description: ID of memory block to be CMAC loaded.
+                format: number
+                template_value: 0
+              file:
+                type: string
+                title: Binary file.
+                description: Binary file to be loaded.
+                format: file
+                template_value: my_cmac_binary.bin
+            required: [address, file]
+
+          copy:
+            type: object
+            title: Copy
+            description: Used for copying data from one place to another. 32 bytes fixed size.
+            properties:
+              addressFrom:
+                type: [string, number]
+                title: Address From
+                description: Address of memory block to be copied.
+                format: number
+                template_value: 0x0
+              memoryIdFrom:
+                type: [string, number]
+                title: Memory ID From
+                description: ID of memory block to be copied.
+                format: number
+                template_value: 0
+              size:
+                type: [string, number]
+                title: Size
+                description: Size of memory block to be copied.
+                format: number
+                template_value: 4096
+              addressTo:
+                type: [string, number]
+                title: Address To
+                description: Address of memory where block to be copied.
+                format: number
+                template_value: 0x2000_0000
+              memoryIdTo:
+                type: [string, number]
+                title: Memory ID To
+                description: ID of memory block where to be copied.
+                format: number
+                template_value: 0
+            required: [addressFrom, size, addressTo]
+
+          loadHashLocking:
+            type: object
+            title: Load with HASH locking
+            description: If set, then the data to write immediately follows the range header. The length field contains the actual data length. ROM is calculating hash of the data and storing the value in the last 64 bytes of the loaded data, which are reserved for it.
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Address of memory block to be loaded.
+                format: number
+                template_value: 0x0
+              memoryId:
+                type: [string, number]
+                title: Memory ID
+                description: ID of memory block to be loaded.
+                format: number
+                template_value: 0
+              file:
+                type: string
+                title: Binary file.
+                description: Binary file to be loaded.
+                format: file
+                template_value: my_hashlocking_binary.bin
+            required: [address, file]
+
+          loadKeyBlob:
+            type: object
+            title: Load Key Blob
+            description: Wrapped key blob immediately follows the range key blob header. The length field contains the actual data length.
+            properties:
+              offset:
+                type: [string, number]
+                title: Offset
+                description: Offset of the key blob.
+                format: number
+                template_value: 0x0
+              wrappingKeyId:
+                type: string
+                title: Wrapping key ID
+                description: Wrapping ID of key blob.
+                enum: [NXP_CUST_KEK_INT_SK, NXP_CUST_KEK_EXT_SK]
+                template_value: 0
+              file:
+                type: string
+                title: Binary file.
+                description: Binary file to be loaded.
+                format: file
+                template_value: my_keyblob.bin
+            required: [offset, wrappingKeyId, file]
+
+          configureMemory:
+            type: object
+            title: Configure memory
+            description: Configure memory.
+            properties:
+              configAddress:
+                type: [string, number]
+                title: Address
+                description: Configuration address.
+                format: number
+                template_value: 0x0
+              memoryId:
+                type: [string, number]
+                title: Memory ID
+                description: ID of memory block to be configured.
+                format: number
+                template_value: 0
+            required: [configAddress]
+
+          fillMemory:
+            type: object
+            title: Fill memory
+            description: Used for filling of the memory range by same repeated int32 pattern.
+            properties:
+              address:
+                type: [string, number]
+                title: Address
+                description: Address of memory block to be filled.
+                format: number
+                template_value: 0x0
+              size:
+                type: [string, number]
+                title: Size
+                description: Size of memory block to be filled.
+                format: number
+                template_value: 4096
+              pattern:
+                type: [string, number]
+                title: Pattern
+                description: Pattern which will be used to fill memory.
+                format: number
+                template_value: 0xA5A5A5A5
+            required: [address, size, pattern]
+
+          checkFwVersion:
+            type: object
+            title: Check firmware version
+            description: Used to execute check of provided counter value with value stored in specified monotonous counter in device. If values are not same, SB file is rejected.
+            properties:
+              value:
+                type: [string, number]
+                title: Value - Firmware version
+                description: Firmware version to be compared.
+                format: number
+                template_value: 0x0000_0001
+              counterId:
+                type: string
+                title: Counter ID
+                description: ID of FW counter to be checked.
+                enum: [none, nonsecure, secure, radio, snt, bootloader]
+                template_value: secure
+            required: [value, counterId]

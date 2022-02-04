@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Contains support for BEE encryption for RT10xx devices."""
@@ -53,8 +53,12 @@ class BeeBaseClass:
         return self.__class__._size()
 
     def info(self) -> str:
-        """:return: text description of the instance."""
-        raise NotImplementedError("abstract method")
+        """Info method.
+
+        :return: text description of the instance.
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def update(self) -> None:
         """Updates internal fields of the instance."""

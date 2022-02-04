@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Script to list all SPSDK dependencies and their dependencies."""
 
 import argparse
-import itertools
 import json
 import math
 import os
+import subprocess
 import sys
-from typing import Dict, Iterator, List, NamedTuple, Optional, Union, no_type_check
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 from pip import __version__ as pip_version
-from pip._internal.commands.show import _PackageInfo, search_packages_info
+from pip._internal.cli.main import main as pip_main
 
 APPROVED_LICENSES_FILE_NAME = "approved_packages.json"
 APPROVED_LICENSES_FILE = os.path.abspath(
@@ -38,16 +38,6 @@ class DependencyInfo(NamedTuple):
         if self.is_manual:
             dep_info += f" (Manual license entry; please check {self.home_page})"
         return dep_info
-
-    @staticmethod
-    def from_pgk_meta(pgk_meta_item: _PackageInfo) -> "DependencyInfo":
-        """Extract data from package's meta info."""
-        return DependencyInfo(
-            name=pgk_meta_item.name,
-            license=pgk_meta_item.license,
-            home_page=pgk_meta_item.homepage,
-            is_manual=pgk_meta_item.license == "UNKNOWN",
-        )
 
 
 # pylint: disable=not-an-iterable, no-member
@@ -84,25 +74,81 @@ class DependenciesList(List[DependencyInfo]):
         return data["licenses"]
 
     @staticmethod
-    def from_pip_meta(root_package: str = ROOT_PACKAGE) -> "DependenciesList":
-        """Create DependenciesList from pip."""
-        dep_names_iterator = itertools.chain(*DependenciesList._get_requires([root_package]))
-        # exhaust the iterator and filter duplicates
-        dep_names = list(set(list(dep_names_iterator)))
-        pkg_meta = search_packages_info(dep_names)
-        dependencies_list = DependenciesList(
-            [DependencyInfo.from_pgk_meta(item) for item in pkg_meta]
-        )
-        dependencies_list.sort(key=lambda x: x.name)
-        return dependencies_list
+    def decode_package_info(package_str: str) -> Tuple[DependencyInfo, List[str]]:
+        """Decode package info from pip show output.
+
+        :param package_str: Package info string.
+        :return: Tuple with DependencyInfo and List of package dependencies.
+        """
+
+        def get_line_value(lines: List[str], key: str) -> str:
+            """Get the value of line.
+
+            :param key: Key of value
+            :return: Value of key
+            """
+            line_start = f"{key}: "
+            for line in lines:
+                if line.startswith(line_start):
+                    return line.replace(line_start, "")
+            return ""
+
+        lines = package_str.splitlines()
+        name = get_line_value(lines, "Name")
+        license = get_line_value(lines, "License")
+        home_page = get_line_value(lines, "Home-page")
+        is_manual = license in ["UNKNOWN", ""]
+        dependencies = get_line_value(lines, "Requires").split(", ")
+        dependencies = [] if dependencies == [""] else dependencies
+        return DependencyInfo(name, license, home_page, is_manual), dependencies
 
     @staticmethod
-    @no_type_check  # Mypy doesn't like the recursive 'yield from' magic
-    def _get_requires(module_names: List[str]) -> Iterator[List[str]]:
-        """Get `requires` fields from given set of package names."""
-        for pkg_info in search_packages_info(module_names):
-            yield pkg_info.requires
-            yield from DependenciesList._get_requires(pkg_info.requires)
+    def get_packages_info(packages: List[str]) -> List[Tuple[DependencyInfo, List[str]]]:
+        """Get packages info for list of packages.
+
+        :param packages: List of packages names.
+        :return: List of Tuples with DependencyInfo and List of package dependencies.
+        """
+        packages_info: List[str] = []
+        try:
+            output = subprocess.check_output(f"pip show {' '.join(packages)}".split()).decode(
+                "utf-8"
+            )
+            if "WARNING: Package(s) not found:" in output:
+                raise ValueError(f"Some package(s) not found: \n{output}")
+
+            packages_info = output.split("---")
+
+        except BaseException as exc:
+            print(f"Some package(s) from {packages} has not been found: {str(exc)}")
+
+        ret = []
+        for package_info in packages_info:
+            ret.append(DependenciesList.decode_package_info(package_info))
+
+        return ret
+
+    @staticmethod
+    def _from_pip_meta(packages: List[str], base_list: "DependenciesList") -> None:
+        """Recursive function to get the full list of dependencies."""
+        packages_info = DependenciesList.get_packages_info(packages)
+        dependencies_info = []
+        dependencies = []
+        for package_info_dep, dependency in packages_info:
+            dependencies_info.append(package_info_dep)
+            dependencies.extend(dependency)
+        base_list.extend(dependencies_info)
+        packages_names = list(set(dependencies) - set(base_list.names()))
+        if len(packages_names) > 0:
+            DependenciesList._from_pip_meta(packages_names, base_list)
+
+    @staticmethod
+    def from_pip_meta(root_package: str = ROOT_PACKAGE) -> "DependenciesList":
+        """Create DependenciesList from pip."""
+        actual_list = DependenciesList()
+        DependenciesList._from_pip_meta([root_package], actual_list)
+        actual_list.sort()
+        return actual_list
 
 
 def parse_inputs(input_args: List[str] = None) -> dict:

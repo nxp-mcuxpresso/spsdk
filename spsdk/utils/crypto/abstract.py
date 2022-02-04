@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -161,7 +161,7 @@ class BackendClass(ABC):
 ########################################################################################################################
 # Abstract Class for Data Classes
 ########################################################################################################################
-# TODO Refactor: this calss should not be part of crypto module
+# TODO Refactor: this class should not be part of crypto module
 class BaseClass(ABC):
     """Abstract Class for Data Classes."""
 
@@ -169,8 +169,12 @@ class BaseClass(ABC):
         """Check object equality."""
         return isinstance(obj, self.__class__) and vars(obj) == vars(self)
 
+    def __ne__(self, obj: Any) -> bool:
+        return not self.__eq__(obj)
+
     def __str__(self) -> str:
         """Object description in string format."""
+        return self.info()
 
     @abstractmethod
     def info(self) -> str:

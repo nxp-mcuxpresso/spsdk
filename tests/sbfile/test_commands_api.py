@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@ import pytest
 
 from spsdk import SPSDKError
 from spsdk.mboot import ExtMemId
-from spsdk.sbfile.commands import (
+from spsdk.sbfile.sb2.commands import (
     CmdCall,
     CmdErase,
     CmdFill,
@@ -438,3 +438,9 @@ def test_load_cmd_invalid_crc():
 def test_invalid_cmd_header():
     with pytest.raises(SPSDKError, match="Incorrect command tag"):
         CmdHeader(tag=9999999)
+
+
+def test_cmd_header_comparision():
+    cmd_header = CmdHeader(tag=1)
+    cmd = CmdNop()
+    assert cmd_header != cmd

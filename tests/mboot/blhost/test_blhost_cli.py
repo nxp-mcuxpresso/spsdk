@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -37,9 +37,12 @@ data_responses = {
     # efuse-read-one 0x98 with unknown error code 0xbeef (48,879)
     b"\x5a\xa4\x0c\x00\x2e\x7b\x0f\x00\x00\x02\x98\x00\x00\x00\x04\x00\x00\x00":
         b"\x5a\xa1\x5a\xa4\x0c\x00\x36\xc2\xaf\x00\x00\x02\xef\xbe\x00\x00\x00\x00\x00\x00",
-    # use get-property 99 as a vehicle to emulate no response from target
-    b"\x5a\xa4\x0c\x00\x55\x31\x07\x00\x00\x02\x63\x00\x00\x00\x00\x00\x00\x00":
+    # use get-property 13 (reserved) as a vehicle to emulate no response from target
+    b"\x5a\xa4\x0c\x00\xfc\x22\x07\x00\x00\x02\x0d\x00\x00\x00\x00\x00\x00\x00":
         b"",
+    # get-property 0xff - unknown property
+    b"\x5a\xa4\x0c\x00\xd7\xe0\x07\x00\x00\x02\xff\x00\x00\x00\x00\x00\x00\x00":
+        b"\x5a\xa1\x5a\xa4\x08\x00\x92\x68\xa7\x00\x00\x01\x3c\x28\x00\x00",
     # flash-read-once 1 4
     b"\x5a\xa4\x0c\x00\x12\xe2\x0f\x00\x00\x02\x01\x00\x00\x00\x04\x00\x00\x00":
         b"\x5a\xa1\x5a\xa4\x10\x00\x3f\x6f\xaf\x00\x00\x03\x00\x00\x00\x00\x04\x00\x00\x00\x78\x56\x34\x12",
@@ -156,18 +159,25 @@ def test_efuse_read_once(caplog):
 
 def test_efuse_read_once_unknown_error(caplog):
     cmd = "-p super-com efuse-read-once 0x98"
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
     assert "Response word 1 = 4 (0x4)" not in result.output
     assert "Unknown error code" in result.output
 
 
 def test_no_response(caplog):
-    # use get-property 99 as a vehicle to emulate no response from target
-    cmd = "-p super-com get-property 99"
-    result = run_blhost_proxy(caplog, cmd)
+    # use get-property 13 (reserved) as a vehicle to emulate no response from target
+    cmd = "-p super-com get-property 13"
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
     assert (
         "Response status = 10004 (0x2714) No response packet from target device." in result.output
     )
+
+
+def test_unknown_property(caplog):
+    # get-property 0xff
+    cmd = "-p super-com get-property 0xff"
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    assert "Response status = 10300 (0x283c) Unknown Property." in result.output
 
 
 def test_flash_read_once(caplog):
@@ -186,13 +196,13 @@ def test_flash_program_once(caplog):
 
 def test_flash_security_disable(caplog):
     cmd = "-p super-com flash-security-disable 0102030405060708"
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
 def test_flash_erase_all_unsecure(caplog):
     cmd = "-p super-com flash-erase-all-unsecure"
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
@@ -232,19 +242,19 @@ def test_flash_read_resource_to_file(caplog, tmpdir):
 
 def test_reliable_update(caplog):
     cmd = "-p super-com reliable-update 0xfe000"
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
 def test_fuse_read(caplog):
     cmd = "-p super-com fuse-read 0x1 8"
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
 def test_fuse_program(caplog):
     cmd = "-p super-com fuse-program 3 {{12345678}} 0"
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
@@ -304,7 +314,7 @@ def test_tp_oem_gen_master_share(caplog):
     assert "Cust Cert Puk size: 64 (0x40)" in result.output
 
 
-def test_tp_hsm_enc_blk(caplog):
+def test_tp_oem_set_master_share(caplog):
     cmd = "-p super-com trust-provisioning oem_set_master_share 0x20008000 16 0x20009000 64"
     result = run_blhost_proxy(caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
@@ -319,3 +329,18 @@ def test_oem_get_cust_cert_dice_puk(caplog):
     assert "Response word 1 = 64 (0x40)" in result.output
     assert "Output data size/value(s) is(are):" in result.output
     assert "Cust Cert Dice Puk size: 64 (0x40)" in result.output
+
+
+def test_batch(caplog, data_dir):
+    command_file = os.path.join(data_dir, "blhost_commands.bcf")
+    cmd = f"-p super-com batch {command_file}"
+    result = run_blhost_proxy(caplog, cmd)
+    # we expect 3 successful command execution
+    assert result.output.count("Response status = 0 (0x0) Success.") == 3
+
+
+def test_batch_error(caplog, data_dir):
+    command_file = os.path.join(data_dir, "bad_blhost_commands.bcf")
+    cmd = f"-p super-com batch {command_file}"
+    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    assert "Unknown command" in str(result.exception)

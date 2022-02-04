@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for registers utility."""
 
 import os
-from typing import List
 
 import pytest
 from ruamel.yaml import YAML
@@ -152,7 +151,7 @@ def test_basic_regs(tmpdir):
         regs.add_register("Invalid Parameter")
 
     regt.set_value(TEST_REG_VALUE)
-    assert reg1.get_value() == TEST_REG_VALUE.to_bytes(4, "big")
+    assert reg1.get_value() == TEST_REG_VALUE
 
     filename = os.path.join(tmpdir, TEST_XML_FILE)
     regs.write_xml(filename)
@@ -307,9 +306,8 @@ def test_enum_bytes():
 
 def test_enum_invalidval():
     """Enum test with INVALID value."""
-    enum = RegsEnum(TEST_ENUM_NAME, "InvalidValue", TEST_ENUM_DESCR, TEST_ENUM_MAXWIDTH)
-    printed_str = str(enum)
-    assert "N/A" in printed_str
+    with pytest.raises(SPSDKRegsError):
+        RegsEnum(TEST_ENUM_NAME, "InvalidValue", TEST_ENUM_DESCR, TEST_ENUM_MAXWIDTH)
 
 
 def test_bitfield():
@@ -617,6 +615,28 @@ def test_registers_xml(data_dir, tmpdir):
     assert str(regs) == str(regs2)
 
 
+def test_registers_xml_hidden(data_dir, tmpdir):
+    """Test registers XML support."""
+    regs = Registers(TEST_DEVICE_NAME)
+
+    with use_working_directory(data_dir):
+        regs.load_registers_from_xml("registers_reserved.xml")
+
+    assert len(regs.get_registers()[0].get_bitfields()) == 1
+    assert regs.get_registers()[0].get_bitfields()[0].get_value() == 0xA
+    assert regs.get_registers()[0].get_value() == 0x550A00
+
+    with use_working_directory(tmpdir):
+        regs.write_xml("registers_reserved.xml")
+
+    regs2 = Registers(TEST_DEVICE_NAME)
+
+    with use_working_directory(tmpdir):
+        regs2.load_registers_from_xml("registers_reserved.xml")
+
+    assert str(regs) == str(regs2)
+
+
 def test_registers_xml_bad_format(data_dir):
     """Test registers XML support - BAd XML format exception."""
     regs = Registers(TEST_DEVICE_NAME)
@@ -650,7 +670,7 @@ def test_basic_grouped_register(data_dir):
     assert reg.offset == 0x400
     assert reg.width == 4 * 32
 
-    reg.set_value("01020304_11121314_21222324_31323334")
+    reg.set_value("0x01020304_11121314_21222324_31323334")
     assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
     assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
     assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
@@ -659,7 +679,7 @@ def test_basic_grouped_register(data_dir):
     assert regs.find_reg("TestRegA1", include_group_regs=True).reverse == False
     assert regs.find_reg("TestRegA2", include_group_regs=True).reverse == False
     assert regs.find_reg("TestRegA3", include_group_regs=True).reverse == False
-    assert reg.get_hex_value() == "01020304111213142122232431323334"
+    assert reg.get_hex_value() == "0x01020304111213142122232431323334"
 
 
 def test_basic_grouped_register_reversed_value(data_dir):
@@ -684,7 +704,7 @@ def test_basic_grouped_register_reversed_value(data_dir):
     assert regs.find_reg("TestRegA2", include_group_regs=True).reverse == True
     assert regs.find_reg("TestRegA3", include_group_regs=True).reverse == True
 
-    assert reg.get_hex_value() == "01020304111213142122232431323334"
+    assert reg.get_hex_value() == "0x01020304111213142122232431323334"
 
 
 @pytest.mark.parametrize(
@@ -718,7 +738,7 @@ def test_load_grouped_register_value(data_dir):
         data = yaml.load(yml_file)
     regs.load_yml_config(data)
     reg = regs.find_reg("TestRegA")
-    assert reg.get_hex_value() == "01020304111213142122232431323334"
+    assert reg.get_hex_value() == "0x01020304111213142122232431323334"
     assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
     assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
     assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
@@ -736,197 +756,11 @@ def test_load_grouped_register_value_compatibility(data_dir):
         data = yaml.load(yml_file)
     regs.load_yml_config(data)
     reg = regs.find_reg("TestRegA")
-    assert reg.get_hex_value() == "01020304111213142122232431323334"
+    assert reg.get_hex_value() == "0x01020304111213142122232431323334"
     assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
     assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
     assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
     assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x31323334"
-
-
-def test_backward_compatibility_regs():
-    """Simple test for backward compatibility for registers names in configuration."""
-
-    def bc_reg(reg: RegsRegister) -> List[str]:
-        """Test translator for bc compatibility."""
-        return [TEST_REG_BC_NAME]
-
-    regs = Registers(TEST_DEVICE_NAME)
-    reg = RegsRegister(
-        TEST_REG_NAME,
-        TEST_REG_OFFSET,
-        TEST_REG_WIDTH,
-        TEST_REG_DESCR,
-        TEST_REG_REV,
-        TEST_REG_ACCESS,
-    )
-    regs.add_register(reg)
-
-    assert regs.get_bc_reg("Invalid") is None
-    regs.enable_backward_compatibility(bc_reg)
-
-    assert regs.get_bc_reg(TEST_REG_BC_NAME) == TEST_REG_NAME
-    assert regs.get_bc_reg("Invalid") is None
-
-
-def test_backward_compatibility_bitfields():
-    """Simple test for backward compatibility for bitfields names in configuration."""
-
-    def bc_bitfield(reg: RegsRegister, bitfield: RegsBitField) -> List[str]:
-        """Test translator for bc compatibility."""
-        return [TEST_BITFIELD_BC_NAME]
-
-    reg = RegsRegister(
-        TEST_REG_NAME,
-        TEST_REG_OFFSET,
-        TEST_REG_WIDTH,
-        TEST_REG_DESCR,
-        TEST_REG_REV,
-        TEST_REG_ACCESS,
-    )
-
-    bitfield = RegsBitField(
-        reg,
-        TEST_BITFIELD_NAME,
-        TEST_BITFIELD_OFFSET,
-        TEST_BITFIELD_WIDTH,
-        TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
-        TEST_BITFIELD_ACCESS,
-    )
-    reg.add_bitfield(bitfield)
-
-    assert reg.get_bc_bitfield("Invalid") is None
-    reg.enable_backward_compatibility(bc_bitfield)
-
-    assert reg.get_bc_bitfield(TEST_BITFIELD_BC_NAME) == TEST_BITFIELD_NAME
-    assert reg.get_bc_bitfield("Invalid") is None
-
-
-def test_backward_compatibility_enums():
-    """Simple test for backward compatibility for enum names in configuration."""
-
-    def bc_enum(reg: RegsRegister, bitfield: RegsBitField, enum: RegsEnum) -> List[str]:
-        """Test translator for bc compatibility."""
-        return [TEST_ENUM_BC_NAME]
-
-    reg = RegsRegister(
-        TEST_REG_NAME,
-        TEST_REG_OFFSET,
-        TEST_REG_WIDTH,
-        TEST_REG_DESCR,
-        TEST_REG_REV,
-        TEST_REG_ACCESS,
-    )
-
-    bitfield = RegsBitField(
-        reg,
-        TEST_BITFIELD_NAME,
-        TEST_BITFIELD_OFFSET,
-        TEST_BITFIELD_WIDTH,
-        TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
-        TEST_BITFIELD_ACCESS,
-    )
-
-    enum = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR, TEST_BITFIELD_WIDTH)
-    reg.add_bitfield(bitfield)
-    bitfield.add_enum(enum)
-
-    assert bitfield.get_bc_enum("Invalid") is None
-    bitfield.enable_backward_compatibility(bc_enum)
-
-    assert bitfield.get_bc_enum(TEST_ENUM_BC_NAME) == TEST_ENUM_NAME
-    assert bitfield.get_bc_enum("Invalid") is None
-
-
-def test_backward_compatibility_enums_global():
-    """Simple test for backward compatibility for enum names in configuration."""
-
-    def bc_enum(reg: RegsRegister, bitfield: RegsBitField, enum: RegsEnum) -> List[str]:
-        """Test translator for bc compatibility."""
-        return [TEST_ENUM_BC_NAME]
-
-    regs = Registers(TEST_DEVICE_NAME)
-
-    reg = RegsRegister(
-        TEST_REG_NAME,
-        TEST_REG_OFFSET,
-        TEST_REG_WIDTH,
-        TEST_REG_DESCR,
-        TEST_REG_REV,
-        TEST_REG_ACCESS,
-    )
-
-    bitfield = RegsBitField(
-        reg,
-        TEST_BITFIELD_NAME,
-        TEST_BITFIELD_OFFSET,
-        TEST_BITFIELD_WIDTH,
-        TEST_BITFIELD_DESCR,
-        TEST_BITFIELD_RESET_VAL,
-        TEST_BITFIELD_ACCESS,
-    )
-
-    enum = RegsEnum(TEST_ENUM_NAME, 0, TEST_ENUM_DESCR, TEST_BITFIELD_WIDTH)
-    reg.add_bitfield(bitfield)
-    bitfield.add_enum(enum)
-
-    regs.add_register(reg)
-
-    assert bitfield.get_bc_enum("Invalid") is None
-    regs.enable_backward_compatibility_enums(bc_enum)
-
-    assert bitfield.get_bc_enum(TEST_ENUM_BC_NAME) == TEST_ENUM_NAME
-    assert bitfield.get_bc_enum("Invalid") is None
-
-
-def test_backward_compatibility_regs_yml():
-    """Simple test for backward compatibility for registers names in configuration."""
-
-    def bc_reg(reg: RegsRegister) -> List[str]:
-        """Test translator for bc compatibility."""
-        if reg.name == TEST_REG_NAME:
-            return [TEST_REG_BC_NAME]
-
-        return []
-
-    yml = {TEST_REG_BC_NAME: {"value": 0x01}}
-
-    regs = Registers(TEST_DEVICE_NAME)
-    reg = RegsRegister(
-        TEST_REG_NAME,
-        TEST_REG_OFFSET,
-        TEST_REG_WIDTH,
-        TEST_REG_DESCR,
-        TEST_REG_REV,
-        TEST_REG_ACCESS,
-    )
-    regs.add_register(reg)
-
-    assert regs.get_bc_reg(TEST_REG_BC_NAME) is None
-    regs.enable_backward_compatibility(bc_reg)
-
-    regs.load_yml_config(yml)
-    assert reg.get_int_value() == 0x01
-
-
-def test_backward_nodata_yml():
-    """Simple test for backward compatibility for registers names in configuration."""
-
-    yml = {TEST_REG_NAME: {"invalid_key": 0x01}}
-
-    regs = Registers(TEST_DEVICE_NAME)
-    reg = RegsRegister(
-        TEST_REG_NAME,
-        TEST_REG_OFFSET,
-        TEST_REG_WIDTH,
-        TEST_REG_DESCR,
-        TEST_REG_REV,
-        TEST_REG_ACCESS,
-    )
-    regs.add_register(reg)
-    regs.load_yml_config(yml)
-    assert reg.get_int_value() != 0x01
 
 
 def test_create_yml():

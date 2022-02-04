@@ -2,14 +2,15 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Helper module for more human-friendly interpretation of the target device properties."""
 
 
-from typing import Any, List, Optional, Tuple, Type, Union
+import ctypes
+from typing import List, Optional, Tuple, Type, Union
 
 from spsdk.mboot.exceptions import McuBootError
 from spsdk.utils.easy_enum import Enum
@@ -36,7 +37,7 @@ def size_fmt(value: Union[int, float], kibibyte: bool = True) -> str:
             break
         value /= base
 
-    return "{} {}".format(value, x) if x == "B" else "{:3.1f} {}".format(value, x)
+    return f"{value} {x}" if x == "B" else f"{value:3.1f} {x}"
 
 
 ########################################################################################################################
@@ -64,10 +65,10 @@ class Version:
             else:
                 raise McuBootError("Value must be 'str' or 'int' type !")
 
-    def __eq__(self, obj: Any) -> bool:
+    def __eq__(self, obj: object) -> bool:
         return isinstance(obj, Version) and vars(obj) == vars(self)
 
-    def __ne__(self, obj: Any) -> bool:
+    def __ne__(self, obj: object) -> bool:
         return not self.__eq__(obj)
 
     def __lt__(self, obj: "Version") -> bool:
@@ -138,71 +139,60 @@ class Version:
 # McuBoot Properties
 ########################################################################################################################
 
-
+# fmt: off
 class PropertyTag(Enum):
     """McuBoot Properties."""
 
-    # LIST_PROPERTIES = (0x00, 'ListProperties', 'List Properties')
-    CURRENT_VERSION = (0x01, "CurrentVersion", "Current Version")
-    AVAILABLE_PERIPHERALS = (0x02, "AvailablePeripherals", "Available Peripherals")
-    FLASH_START_ADDRESS = (0x03, "FlashStartAddress", "Flash Start Address")
-    FLASH_SIZE = (0x04, "FlashSize", "Flash Size")
-    FLASH_SECTOR_SIZE = (0x05, "FlashSectorSize", "Flash Sector Size")
-    FLASH_BLOCK_COUNT = (0x06, "FlashBlockCount", "Flash Block Count")
-    AVAILABLE_COMMANDS = (0x07, "AvailableCommands", "Available Commands")
-    CRC_CHECK_STATUS = (0x08, "CrcCheckStatus", "CRC Check Status")
-    LAST_ERROR = (0x09, "LastError", "Last Error Value")
-    VERIFY_WRITES = (0x0A, "VerifyWrites", "Verify Writes")
-    MAX_PACKET_SIZE = (0x0B, "MaxPacketSize", "Max Packet Size")
-    RESERVED_REGIONS = (0x0C, "ReservedRegions", "Reserved Regions")
-    VALIDATE_REGIONS = (0x0D, "ValidateRegions", "Validate Regions")
-    RAM_START_ADDRESS = (0x0E, "RamStartAddress", "RAM Start Address")
-    RAM_SIZE = (0x0F, "RamSize", "RAM Size")
-    SYSTEM_DEVICE_IDENT = (0x10, "SystemDeviceIdent", "System Device Identification")
-    FLASH_SECURITY_STATE = (0x11, "FlashSecurityState", "Security State")
-    UNIQUE_DEVICE_IDENT = (0x12, "UniqueDeviceIdent", "Unique Device Identification")
-    FLASH_FAC_SUPPORT = (0x13, "FlashFacSupport", "Flash Fac. Support")
-    FLASH_ACCESS_SEGMENT_SIZE = (
-        0x14,
-        "FlashAccessSegmentSize",
-        "Flash Access Segment Size",
-    )
-    FLASH_ACCESS_SEGMENT_COUNT = (
-        0x15,
-        "FlashAccessSegmentCount",
-        "Flash Access Segment Count",
-    )
-    FLASH_READ_MARGIN = (0x16, "FlashReadMargin", "Flash Read Margin")
-    QSPI_INIT_STATUS = (0x17, "QspiInitStatus", "QuadSPI Initialization Status")
-    TARGET_VERSION = (0x18, "TargetVersion", "Target Version")
-    EXTERNAL_MEMORY_ATTRIBUTES = (
-        0x19,
-        "ExternalMemoryAttributes",
-        "External Memory Attributes",
-    )
-    RELIABLE_UPDATE_STATUS = (0x1A, "ReliableUpdateStatus", "Reliable Update Status")
-    FLASH_PAGE_SIZE = (0x1B, "FlashPageSize", "Flash Page Size")
-    IRQ_NOTIFIER_PIN = (0x1C, "IrqNotifierPin", "Irq Notifier Pin")
-    PFR_KEYSTORE_UPDATE_OPT = (0x1D, "PfrKeystoreUpdateOpt", "PFR Keystore Update Opt")
+    # LIST_PROPERTIES            = (0x00, 'ListProperties', 'List Properties')
+    CURRENT_VERSION            = (0x01, "CurrentVersion", "Current Version")
+    AVAILABLE_PERIPHERALS      = (0x02, "AvailablePeripherals", "Available Peripherals")
+    FLASH_START_ADDRESS        = (0x03, "FlashStartAddress", "Flash Start Address")
+    FLASH_SIZE                 = (0x04, "FlashSize", "Flash Size")
+    FLASH_SECTOR_SIZE          = (0x05, "FlashSectorSize", "Flash Sector Size")
+    FLASH_BLOCK_COUNT          = (0x06, "FlashBlockCount", "Flash Block Count")
+    AVAILABLE_COMMANDS         = (0x07, "AvailableCommands", "Available Commands")
+    CRC_CHECK_STATUS           = (0x08, "CrcCheckStatus", "CRC Check Status")
+    LAST_ERROR                 = (0x09, "LastError", "Last Error Value")
+    VERIFY_WRITES              = (0x0A, "VerifyWrites", "Verify Writes")
+    MAX_PACKET_SIZE            = (0x0B, "MaxPacketSize", "Max Packet Size")
+    RESERVED_REGIONS           = (0x0C, "ReservedRegions", "Reserved Regions")
+    VALIDATE_REGIONS           = (0x0D, "ValidateRegions", "Validate Regions")
+    RAM_START_ADDRESS          = (0x0E, "RamStartAddress", "RAM Start Address")
+    RAM_SIZE                   = (0x0F, "RamSize", "RAM Size")
+    SYSTEM_DEVICE_IDENT        = (0x10, "SystemDeviceIdent", "System Device Identification")
+    FLASH_SECURITY_STATE       = (0x11, "FlashSecurityState", "Security State")
+    UNIQUE_DEVICE_IDENT        = (0x12, "UniqueDeviceIdent", "Unique Device Identification")
+    FLASH_FAC_SUPPORT          = (0x13, "FlashFacSupport", "Flash Fac. Support")
+    FLASH_ACCESS_SEGMENT_SIZE  = (0x14, "FlashAccessSegmentSize", "Flash Access Segment Size",)
+    FLASH_ACCESS_SEGMENT_COUNT = (0x15, "FlashAccessSegmentCount", "Flash Access Segment Count",)
+    FLASH_READ_MARGIN          = (0x16, "FlashReadMargin", "Flash Read Margin")
+    QSPI_INIT_STATUS           = (0x17, "QspiInitStatus", "QuadSPI Initialization Status")
+    TARGET_VERSION             = (0x18, "TargetVersion", "Target Version")
+    EXTERNAL_MEMORY_ATTRIBUTES = (0x19, "ExternalMemoryAttributes", "External Memory Attributes",)
+    RELIABLE_UPDATE_STATUS     = (0x1A, "ReliableUpdateStatus", "Reliable Update Status")
+    FLASH_PAGE_SIZE            = (0x1B, "FlashPageSize", "Flash Page Size")
+    IRQ_NOTIFIER_PIN           = (0x1C, "IrqNotifierPin", "Irq Notifier Pin")
+    PFR_KEYSTORE_UPDATE_OPT    = (0x1D, "PfrKeystoreUpdateOpt", "PFR Keystore Update Opt")
+    BYTE_WRITE_TIMEOUT_MS      = (0x1E, "ByteWriteTimeoutMs", "Byte Write Timeout in ms")
 
 
 class PeripheryTag(Enum):
     """Tags representing peripherals."""
 
-    UART = (0x01, "UART", "UART Interface")
+    UART      = (0x01, "UART", "UART Interface")
     I2C_SLAVE = (0x02, "I2C-Slave", "I2C Slave Interface")
     SPI_SLAVE = (0x04, "SPI-Slave", "SPI Slave Interface")
-    CAN = (0x08, "CAN", "CAN Interface")
-    USB_HID = (0x10, "USB-HID", "USB HID-Class Interface")
-    USB_CDC = (0x20, "USB-CDC", "USB CDC-Class Interface")
-    USB_DFU = (0x40, "USB-DFU", "USB DFU-Class Interface")
+    CAN       = (0x08, "CAN", "CAN Interface")
+    USB_HID   = (0x10, "USB-HID", "USB HID-Class Interface")
+    USB_CDC   = (0x20, "USB-CDC", "USB CDC-Class Interface")
+    USB_DFU   = (0x40, "USB-DFU", "USB DFU-Class Interface")
 
 
 class FlashReadMargin(Enum):
     """Scopes for flash read."""
 
-    NORMAL = (0, "Normal")
-    USER = (1, "User")
+    NORMAL  = (0, "Normal")
+    USER    = (1, "User")
     FACTORY = (2, "Factory")
 
 
@@ -210,8 +200,8 @@ class PfrKeystoreUpdateOpt(Enum):
     """Options for PFR updating."""
 
     KEY_PROVISIONING = (0, "KeyProvisioning")
-    WRITE_MEMORY = (1, "WriteMemory")
-
+    WRITE_MEMORY     = (1, "WriteMemory")
+# fmt: on
 
 ########################################################################################################################
 # McuBoot Properties Values
@@ -242,10 +232,10 @@ class PropertyValueBase:
 
         Derived classes should implement this function.
 
-        :raises NotImplementedError: Derived class didn't provide implementation
         :return: String representation
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
 
 class IntValue(PropertyValueBase):
@@ -279,6 +269,8 @@ class IntValue(PropertyValueBase):
             str_value = f"0x{self.value:08X}"
         elif self._fmt == "dec":
             str_value = str(self.value)
+        elif self._fmt == "int32":
+            str_value = str(ctypes.c_int32(self.value).value)
         else:
             str_value = self._fmt.format(self.value)
         return str_value
@@ -299,9 +291,9 @@ class BoolValue(PropertyValueBase):
         self,
         tag: int,
         raw_values: List[int],
-        true_values: Tuple = (1,),
+        true_values: Tuple[int] = (1,),
         true_string: str = "YES",
-        false_values: Tuple = (0,),
+        false_values: Tuple[int] = (0,),
         false_string: str = "NO",
     ) -> None:
         """Initialize the Boolean-based property object.
@@ -604,7 +596,10 @@ PROPERTIES = {
     },
     PropertyTag.FLASH_BLOCK_COUNT: {"class": IntValue, "kwargs": {"str_format": "dec"}},
     PropertyTag.AVAILABLE_COMMANDS: {"class": AvailableCommandsValue, "kwargs": {}},
-    PropertyTag.CRC_CHECK_STATUS: {"class": IntValue, "kwargs": {"str_format": "hex"}},
+    PropertyTag.CRC_CHECK_STATUS: {
+        "class": EnumValue,
+        "kwargs": {"enum": StatusCode, "na_msg": "Unknown CRC Status code"},
+    },
     PropertyTag.VERIFY_WRITES: {
         "class": BoolValue,
         "kwargs": {"true_string": "ON", "false_string": "OFF"},
@@ -645,7 +640,7 @@ PROPERTIES = {
     },
     PropertyTag.FLASH_ACCESS_SEGMENT_COUNT: {
         "class": IntValue,
-        "kwargs": {"str_format": "dec"},
+        "kwargs": {"str_format": "int32"},
     },
     PropertyTag.FLASH_READ_MARGIN: {
         "class": EnumValue,
@@ -670,11 +665,15 @@ PROPERTIES = {
         "class": EnumValue,
         "kwargs": {"enum": PfrKeystoreUpdateOpt, "na_msg": "Unknown"},
     },
+    PropertyTag.BYTE_WRITE_TIMEOUT_MS: {
+        "class": IntValue,
+        "kwargs": {"str_format": "dec"},
+    },
 }
 
 
 def parse_property_value(
-    property_tag: int, raw_values: list, ext_mem_id: int = None
+    property_tag: int, raw_values: List[int], ext_mem_id: int = None
 ) -> Optional[PropertyValueBase]:
     """Parse the property value received from the device.
 

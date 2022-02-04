@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,7 @@ import os
 import sys
 from time import sleep
 
-from spsdk import sdp, mboot
+from spsdk import mboot, sdp
 
 # Uncomment for printing debug messages
 # import logging

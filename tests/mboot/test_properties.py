@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,10 +10,13 @@ import pytest
 from spsdk.mboot.commands import CommandTag
 from spsdk.mboot.exceptions import McuBootError
 from spsdk.mboot.properties import (
+    AvailablePeripheralsValue,
     BoolValue,
     DeviceUidValue,
     EnumValue,
+    ExternalMemoryAttributesValue,
     IntValue,
+    IrqNotifierPinValue,
     PropertyTag,
     Version,
     VersionValue,
@@ -77,6 +80,28 @@ def test_int_value():
     assert value.desc == PropertyTag.desc(PropertyTag.FLASH_SIZE)
     assert value.value == 1024
     assert value.to_str() == "1.0 kiB"
+    assert value.to_int() == 1024
+
+
+def test_int_value_fmt():
+    value = IntValue(tag=3, raw_values=[2, 4, 5], str_format="hex")
+    assert isinstance(value, IntValue)
+    assert value.to_str() == "0x00000002"
+    value = IntValue(tag=3, raw_values=[2, 4, 5])
+    assert isinstance(value, IntValue)
+    assert value.to_str() == "2"
+    value = IntValue(tag=3, raw_values=[2, 4, 5], str_format="size")
+    assert isinstance(value, IntValue)
+    assert value.to_str() == "2 B"
+    value = IntValue(tag=3, raw_values=[2, 4, 5], str_format="sth")
+    assert isinstance(value, IntValue)
+    assert value.to_str() == "sth"
+    value = IntValue(tag=3, raw_values=[0], str_format="int32")
+    assert isinstance(value, IntValue)
+    assert value.to_str() == "0"
+    value = IntValue(tag=3, raw_values=[0xFFFFFFFF], str_format="int32")
+    assert isinstance(value, IntValue)
+    assert value.to_str() == "-1"
 
 
 def test_version_value():
@@ -144,3 +169,31 @@ def test_reserved_regions():
     ]
     for expected_string in expected_strings:
         assert expected_string in str(value)
+
+
+def test_available_peripherals_value():
+    value = AvailablePeripheralsValue(tag=3, raw_values=[2, 3])
+    assert value.to_int() == 2
+    assert value.to_str() == "I2C-Slave"
+
+
+def test_irq_notifier_pin_value():
+    value = IrqNotifierPinValue(tag=4, raw_values=[2, 3])
+    assert value.pin == 2
+    assert value.port == 0
+    assert value.enabled == False
+    assert value.to_str() == "IRQ Port[0], Pin[2] is disabled"
+    assert bool(value) == False
+
+
+def test_external_memory_attributes():
+    value = ExternalMemoryAttributesValue(tag=4, raw_values=[2, 3, 4, 5, 6, 7])
+    assert value.to_str() == "Total Size:    4.0 kiB"
+    value = ExternalMemoryAttributesValue(tag=4, raw_values=[1, 3, 4, 5, 6, 7])
+    assert value.to_str() == "Start Address: 0x00000003"
+    value = ExternalMemoryAttributesValue(tag=4, raw_values=[4, 3, 4, 5, 6, 7])
+    assert value.to_str() == "Page Size:     5 B"
+    value = ExternalMemoryAttributesValue(tag=4, raw_values=[8, 3, 4, 5, 6, 7])
+    assert value.to_str() == "Sector Size:   6 B"
+    value = ExternalMemoryAttributesValue(tag=4, raw_values=[16, 3, 4, 5, 6, 7])
+    assert value.to_str() == "Block Size:    7 B"

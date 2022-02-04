@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """NXP USB Device Scanner."""
 
+import logging
 import sys
 from typing import IO
 
 import click
-import logging
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils import catch_spsdk_error
@@ -52,8 +52,8 @@ def main(extend_vids: str, out: IO[str]) -> None:
 @catch_spsdk_error
 def safe_main() -> None:
     """Call the main function."""
-    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+    sys.exit(main())  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == "__main__":
-    safe_main()  # pragma: no cover
+    safe_main()

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +16,7 @@ from spsdk.image import CmdNop, CmdWriteData, EnumWriteOps
     "input_data", [[(0, 1)], ((0, 1),)]  # input data as list  # input data as tuple
 )
 def test_write_value_cmd_basic(input_data):
-    """ Basic test with input data in format: list """
+    """Basic test with input data in format: list"""
     cmd = CmdWriteData(data=input_data)
 
     cmd.num_bytes = 1

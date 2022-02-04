@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,23 +17,18 @@ Generates a report of files that are:
 
 import os
 import re
-
 from collections import namedtuple
 from datetime import datetime
 from typing import List, Tuple
 
-ROOT_FOLDERS = ['spsdk', 'tests', 'examples', 'tools']
+ROOT_FOLDERS = ["spsdk", "tests", "examples", "tools"]
 CWD = os.path.abspath(os.curdir)
-ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
-ROOT_FOLDERS = [
-    os.path.relpath(os.path.join(ROOT_DIR, path), CWD) for path in ROOT_FOLDERS
-]
+ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT_FOLDERS = [os.path.relpath(os.path.join(ROOT_DIR, path), CWD) for path in ROOT_FOLDERS]
 
-CLRInfo = namedtuple('CLRInfo', ['path', 'copyrights', 'license'])
+CLRInfo = namedtuple("CLRInfo", ["path", "copyrights", "license"])
 
-COPYRIGHT_REGEX = re.compile(
-    r"Copyright.*(?P<from>\d{4})?-?(?P<till>\d{4}) (?P<holder>.*)"
-)
+COPYRIGHT_REGEX = re.compile(r"Copyright.*(?P<from>\d{4})?-?(?P<till>\d{4}) (?P<holder>.*)")
 LICENSE_REGEX = re.compile(r"SPDX-License-Identifier:[#\s]*(?P<license>.*)", re.MULTILINE)
 
 
@@ -43,18 +38,15 @@ def format_copyright_instance(copyright_instance: tuple) -> str:
     ('YEAR_FROM', 'YEAR_TO', 'HOLDER') -> '[YEAR_FROM-]YEAR_TO HOLDER'
     """
     from_year, to_year, holder = copyright_instance
-    msg = f'{from_year}-' if from_year else ''
-    msg += f'{to_year}'
-    msg += f' {holder}'
+    msg = f"{from_year}-" if from_year else ""
+    msg += f"{to_year}"
+    msg += f" {holder}"
     return msg
 
 
 def format_copyright(copyright_info: List[Tuple[str]]) -> List[str]:
     """Transforms a list of tuples of Copyright info into a list."""
-    return [
-        format_copyright_instance(instance)
-        for instance in copyright_info
-    ]
+    return [format_copyright_instance(instance) for instance in copyright_info]
 
 
 def process_file(file_path: str) -> CLRInfo:
@@ -73,43 +65,42 @@ def get_all_files(root_folders: List[str]) -> List[str]:
     for root_folder in root_folders:
         for root, _, file_names in os.walk(root_folder):
             for file_name in file_names:
-                if file_name.endswith('.py'):
+                if file_name.endswith(".py"):
                     all_files.append(os.path.join(root, file_name))
     return all_files
 
 
 def main() -> None:
     """Main function."""
-    clr_info_list = [
-        process_file(file_path)
-        for file_path in get_all_files(ROOT_FOLDERS)
-    ]
+    clr_info_list = [process_file(file_path) for file_path in get_all_files(ROOT_FOLDERS)]
 
     no_cr_list = [item for item in clr_info_list if len(item.copyrights) == 0]
-    print(f'{len(no_cr_list)} Files without copyright info')
+    print(f"{len(no_cr_list)} Files without copyright info")
     for clr_info in no_cr_list:
-        print(f' - {clr_info.path}')
+        print(f" - {clr_info.path}")
 
-    no_nxp_cp = [item for item in clr_info_list if not any('NXP' in x for x in item.copyrights)]
+    no_nxp_cp = [item for item in clr_info_list if not any("NXP" in x for x in item.copyrights)]
     print(f'{len(no_nxp_cp)} Files without "NXP" copyright')
     for clr_info in no_nxp_cp:
-        print(f' - {clr_info.path}: {clr_info.copyrights}')
+        print(f" - {clr_info.path}: {clr_info.copyrights}")
 
     no_lic = [item for item in clr_info_list if not item.license]
-    print(f'{len(no_lic)} Files without license info')
+    print(f"{len(no_lic)} Files without license info")
     for clr_info in no_lic:
-        print(f' - {clr_info.path}')
+        print(f" - {clr_info.path}")
 
-    no_bsd_3 = [item for item in clr_info_list if item.license != 'BSD-3-Clause']
+    no_bsd_3 = [item for item in clr_info_list if item.license != "BSD-3-Clause"]
     print(f'{len(no_bsd_3)} Files without "BSD-3-Clause" license')
     for clr_info in no_bsd_3:
-        print(f' - {clr_info.path}: {clr_info.license}')
+        print(f" - {clr_info.path}: {clr_info.license}")
 
     this_year = datetime.now().year
-    not_this_year = [item for item in clr_info_list if not any(f'{this_year} NXP' in x for x in item.copyrights)]
+    not_this_year = [
+        item for item in clr_info_list if not any(f"{this_year} NXP" in x for x in item.copyrights)
+    ]
     print(f'{len(not_this_year)} Files without "{this_year} NXP" copyright')
     for clr_info in not_this_year:
-        print(f' - {clr_info.path}: {clr_info.copyrights}')
+        print(f" - {clr_info.path}: {clr_info.copyrights}")
 
 
 if __name__ == "__main__":

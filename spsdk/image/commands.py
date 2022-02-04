@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -229,8 +229,9 @@ class CmdBase:
         :param data: being parsed
         :param offset: current position to readd from data
         :return: parse command
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
 
 ########################################################################################################################
@@ -494,11 +495,6 @@ class CmdNop(CmdBase):
 
     def __repr__(self) -> str:
         return "CmdNop"
-
-    def __eq__(self, cmd: Any) -> bool:
-        if not isinstance(cmd, CmdNop):
-            return False
-        return True
 
     def info(self) -> str:
         """Text description of the command."""

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Segments within image module."""
@@ -14,7 +14,7 @@ from struct import calcsize, pack, unpack_from
 from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 from spsdk import SPSDKError
-from spsdk.utils.misc import DebugInfo, align, align_block, extend_block
+from spsdk.utils.misc import DebugInfo, align, align_block, extend_block, size_fmt
 
 from .bee import BEE_ENCR_BLOCK_SIZE, BeeRegionHeader
 from .commands import (
@@ -31,7 +31,6 @@ from .commands import (
     parse_command,
 )
 from .header import CorruptedException, Header, Header2, SegTag
-from .misc import size_fmt
 from .secret import MAC, BaseClass
 
 logger = logging.getLogger(__name__)
@@ -85,17 +84,26 @@ class BaseSegment(ABC):
         return isinstance(other, self.__class__) and vars(other) == vars(self)
 
     def info(self) -> str:
-        """String representation of the BaseSegment."""
-        raise NotImplementedError()
+        """String representation of the BaseSegment.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def export(self) -> bytes:
-        """Export interface."""
-        raise NotImplementedError()
+        """Export interface.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
     def parse(cls, buffer: bytes) -> "BaseSegment":
-        """Parse interfaces."""
-        raise NotImplementedError()
+        """Parse interfaces.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
 
 ########################################################################################################################
@@ -141,8 +149,9 @@ class AbstractFCB(BaseSegment):
 
         :param dbg_info: instance allowing to debug output
         :return: binary representation
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
 
 class SegFCB(AbstractFCB, ABC):

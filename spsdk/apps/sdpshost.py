@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,10 +14,9 @@ import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import get_interface, catch_spsdk_error
+from spsdk.apps.utils import catch_spsdk_error, get_interface
 from spsdk.sdp import SDPS
 from spsdk.sdp.sdps import ROM_INFO
-
 
 WARNING_MSG = """
 !!! THIS IS AN EXPERIMENTAL UTILITY! USE WITH CAUTION !!!
@@ -86,8 +85,8 @@ def write_file(ctx: click.Context, bin_file: click.File) -> None:
 @catch_spsdk_error
 def safe_main() -> None:
     """Call the main function."""
-    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+    sys.exit(main())  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == "__main__":
-    safe_main()  # pragma: no cover
+    safe_main()

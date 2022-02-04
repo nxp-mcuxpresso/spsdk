@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd">
-  <register offset="0" width="32" name="BOOT_CFG" description="BOOT_CFG.">
+  <register offset="0" width="32" name="BOOT_CFG" description="Boot Configuration">
     <alias type="CMSIS" value="BOOT_CFG"/>
     <reserved_bit_field offset="0" width="4" reset_value="0"/>
     <bit_field offset="4" width="3" name="DEFAULT_ISP_MODE" access="RW" reset_value="0" description="Default ISP mode:">
@@ -23,145 +23,145 @@
       <alias type="CMSIS" value="FLASH_CMPA_BOOT_CFG_BOOT_FAILURE_PIN(x)"/>
     </bit_field>
   </register>
-  <register offset="0x4" width="32" name="SPI_FLASH_CFG" description="SPI_FLASH_CFG.">
+  <register offset="0x4" width="32" name="SPI_FLASH_CFG" description="SPI Flash Configuration">
     <alias type="CMSIS" value="SPI_FLASH_CFG"/>
     <bit_field offset="0" width="5" name="SPI_RECOVERY_BOOT_EN" access="RW" reset_value="0" description="SPI flash recovery boot is enabled, if non-zero value is written to this field.">
       <alias type="CMSIS" value="FLASH_CMPA_SPI_FLASH_CFG_SPI_RECOVERY_BOOT_EN(x)"/>
     </bit_field>
     <reserved_bit_field offset="5" width="27" reset_value="0"/>
   </register>
-  <register offset="0x8" width="32" name="USB_ID" description="USB_ID.">
+  <register offset="0x8" width="32" name="USB_ID" description="USB Identifiers">
     <alias type="CMSIS" value="USB_ID"/>
-    <bit_field offset="0" width="16" name="USB_VENDOR_ID" access="RW" reset_value="0" description="USB_VENDOR_ID.">
+    <bit_field offset="0" width="16" name="USB_VENDOR_ID" access="RW" reset_value="0" description="USB Vendor ID">
       <alias type="CMSIS" value="FLASH_CMPA_USB_ID_USB_VENDOR_ID(x)"/>
     </bit_field>
-    <bit_field offset="16" width="16" name="USB_PRODUCT_ID" access="RW" reset_value="0" description="USB_PRODUCT_ID.">
+    <bit_field offset="16" width="16" name="USB_PRODUCT_ID" access="RW" reset_value="0" description="USB Product ID">
       <alias type="CMSIS" value="FLASH_CMPA_USB_ID_USB_PRODUCT_ID(x)"/>
     </bit_field>
   </register>
-  <register offset="0xC" width="32" name="SDIO_CFG" description="SDIO_CFG.">
+  <register offset="0xC" width="32" name="SDIO_CFG" description="SDIO Configuration">
     <alias type="CMSIS" value="SDIO_CFG"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CMPA_SDIO_CFG_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x10" width="32" name="CC_SOCU_PIN" description="CC_SOCU_PIN.">
-    <alias type="CMSIS" value="CC_SOCU_PIN"/>
+  <register offset="0x10" width="32" name="DCFG_CC_SOCU_PIN" description="Device Configuration Credential Constraints for SoC specific Use Pinned">
+    <alias type="CMSIS" value="DCFG_CC_SOCU_PIN"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_NIDEN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_NIDEN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_NIDEN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_NIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_NIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_NIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="1" width="1" name="DBGEN" access="RW" reset_value="0" description="Non Secure debug enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_DBGEN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_DBGEN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_DBGEN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_DBGEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_DBGEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_DBGEN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="2" width="1" name="SPNIDEN" access="RW" reset_value="0" description="Secure non-invasive debug enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_SPNIDEN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_SPNIDEN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_SPNIDEN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_SPNIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_SPNIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_SPNIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="3" width="1" name="SPIDEN" access="RW" reset_value="0" description="Secure invasive debug enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_SPIDEN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_SPIDEN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_SPIDEN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_SPIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_SPIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_SPIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="4" width="1" name="TAPEN" access="RW" reset_value="0" description="JTAG TAP enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_TAPEN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_TAPEN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_TAPEN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_TAPEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_TAPEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_TAPEN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="5" width="1" name="MCM33_DBGEN" access="RW" reset_value="0" description="CPU1 (Micro cortex M33) invasive debug enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_MCM33_DBGEN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_MCM33_DBGEN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_MCM33_DBGEN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_MCM33_DBGEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_MCM33_DBGEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_MCM33_DBGEN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RW" reset_value="0" description="ISP Boot Command enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_ISP_CMD_EN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_ISP_CMD_EN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_ISP_CMD_EN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_ISP_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_ISP_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_ISP_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="7" width="1" name="FA_ME_CMD_EN" access="RW" reset_value="0" description="Fault Analysis/Mass Erase Command enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_FA_ME_CMD_EN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_FA_ME_CMD_EN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_FA_ME_CMD_EN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_FA_ME_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_FA_ME_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_FA_ME_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <reserved_bit_field offset="8" width="1" reset_value="0"/>
     <bit_field offset="9" width="1" name="MCM33_NIDEN" access="RW" reset_value="0" description="CPU1 (Micro cortex M33) non-invasive debug enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_MCM33_NIDEN(x)"/>
-      <bit_field_value name="CC_SOCU_PIN_MCM33_NIDEN_ENABLE" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="CC_SOCU_PIN_MCM33_NIDEN_DISABLE" value="0b1" description="Fixed state"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_MCM33_NIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_MCM33_NIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_PIN_MCM33_NIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <reserved_bit_field offset="10" width="5" reset_value="0"/>
     <bit_field offset="15" width="1" name="UUID_CHECK" access="RW" reset_value="0" description="Enforce UUID match during Debug authentication.">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_UUID_CHECK(x)"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_UUID_CHECK(x)"/>
     </bit_field>
     <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_INVERSE_VALUE(x)"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_INVERSE_VALUE(x)"/>
     </bit_field>
   </register>
-  <register offset="0x14" width="32" name="CC_SOCU_DFLT" description="CC_SOCU_DFLT.">
-    <alias type="CMSIS" value="CC_SOCU_DFLT"/>
+  <register offset="0x14" width="32" name="DCFG_CC_SOCU_DFLT" description="Device Configuration Credential Constraints for SoC specific Use Debug Filter">
+    <alias type="CMSIS" value="DCFG_CC_SOCU_DFLT"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug fixed state">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_NIDEN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_NIDEN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_NIDEN_ENABLE" value="0b1" description="Enable"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_NIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_NIDEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_NIDEN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="1" width="1" name="DBGEN" access="RW" reset_value="0" description="Non Secure debug fixed state">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_DBGEN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_DBGEN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_DBGEN_ENABLE" value="0b1" description="Enable"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_DBGEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_DBGEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_DBGEN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="2" width="1" name="SPNIDEN" access="RW" reset_value="0" description="Secure non-invasive debug fixed state">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_SPNIDEN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_SPNIDEN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_SPNIDEN_ENABLE" value="0b1" description="Enable"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_SPNIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_SPNIDEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_SPNIDEN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="3" width="1" name="SPIDEN" access="RW" reset_value="0" description="Secure invasive debug fixed state">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_SPIDEN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_SPIDEN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_SPIDEN_ENABLE" value="0b1" description="Enable"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_SPIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_SPIDEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_SPIDEN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="4" width="1" name="TAPEN" access="RW" reset_value="0" description="JTAG TAP fixed state">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_TAPEN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_TAPEN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_TAPEN_ENABLE" value="0b1" description="Enable"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_TAPEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_TAPEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_TAPEN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="5" width="1" name="MCM33_DBGEN" access="RW" reset_value="0" description="CPU1 (Micro cortex M33) invasive debug fixed state">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_MCM33_DBGEN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_MCM33_DBGEN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_MCM33_DBGEN_ENABLE" value="0b1" description="Enable"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_MCM33_DBGEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_MCM33_DBGEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_MCM33_DBGEN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RW" reset_value="0" description="ISP Boot Command fixed state">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_ISP_CMD_EN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_ISP_CMD_EN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_ISP_CMD_EN_ENABLE" value="0b1" description="Enable"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_ISP_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_ISP_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_ISP_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
-    <bit_field offset="7" width="1" name="FA_ME_CMD_EN" access="RW" reset_value="0" description="Fault Analysis/Mass Erase Command enable">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_FA_ME_CMD_EN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_FA_ME_CMD_EN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_FA_ME_CMD_EN_ENABLE" value="0b1" description="Enable"/>
+    <bit_field offset="7" width="1" name="FA_ME_CMD_EN" access="RW" reset_value="0" description="Fault Analysis/Mass Erase Command fixed state">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_FA_ME_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_FA_ME_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_FA_ME_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <reserved_bit_field offset="8" width="1" reset_value="0"/>
     <bit_field offset="9" width="1" name="MCM33_NIDEN" access="RW" reset_value="0" description="CPU1 (Micro cortex M33) non-invasive debug fixed state">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_MCM33_NIDEN(x)"/>
-      <bit_field_value name="CC_SOCU_DFLT_MCM33_NIDEN_DISABLE" value="0b0" description="Disable"/>
-      <bit_field_value name="CC_SOCU_DFLT_MCM33_NIDEN_ENABLE" value="0b1" description="Enable"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_MCM33_NIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_MCM33_NIDEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_DFLT_MCM33_NIDEN_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <reserved_bit_field offset="10" width="6" reset_value="0"/>
     <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
-      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_INVERSE_VALUE(x)"/>
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_INVERSE_VALUE(x)"/>
     </bit_field>
   </register>
-  <register offset="0x18" width="32" name="VENDOR_USAGE" description="VENDOR_USAGE.">
+  <register offset="0x18" width="32" name="VENDOR_USAGE" description="Vendor Usage">
     <alias type="CMSIS" value="VENDOR_USAGE"/>
     <reserved_bit_field offset="0" width="16" reset_value="0"/>
     <bit_field offset="16" width="16" name="VENDOR_USAGE" access="RW" reset_value="0" description="Upper 16 bits of vendor usage field defined in DAP. Lower 16-bits come from customer field area.">
       <alias type="CMSIS" value="FLASH_CMPA_VENDOR_USAGE_VENDOR_USAGE(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1C" width="32" name="SECURE_BOOT_CFG" description="Secure boot configuration flags.">
+  <register offset="0x1C" width="32" name="SECURE_BOOT_CFG" description="Secure boot configuration">
     <alias type="CMSIS" value="SECURE_BOOT_CFG"/>
     <bit_field offset="0" width="2" name="RSA4K" access="RW" reset_value="0" description="Use RSA4096 keys only.">
       <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_RSA4K(x)"/>
@@ -224,7 +224,7 @@
       <bit_field_value name="SECURE_BOOT_CFG_SEC_BOOT_EN_ENABLE_2" value="0b11" description="Boot signed images. (internal flash, RSA signed)"/>
     </bit_field>
   </register>
-  <register offset="0x20" width="32" name="PRINCE_BASE_ADDR" description="PRINCE_BASE_ADDR.">
+  <register offset="0x20" width="32" name="PRINCE_BASE_ADDR" description="Prince Base Address">
     <alias type="CMSIS" value="PRINCE_BASE_ADDR"/>
     <bit_field offset="0" width="4" name="ADDR0_PRG" access="RW" reset_value="0" description="Programmable portion of the base address of region 0">
       <alias type="CMSIS" value="FLASH_CMPA_PRINCE_BASE_ADDR_ADDR0_PRG(x)"/>

@@ -25,6 +25,10 @@ The "help" guide of *shadowregs* lists all of the options and sub-commands suppo
 
     shadowregs --help
 
+.. click:: spsdk.apps.shadowregs:getreg
+    :prog: shadowregs getreg
+    :nested: full
+
 .. click:: spsdk.apps.shadowregs:info
     :prog: shadowregs info
     :nested: full
@@ -33,27 +37,23 @@ The "help" guide of *shadowregs* lists all of the options and sub-commands suppo
     :prog: shadowregs listdevs
     :nested: full
 
-.. click:: spsdk.apps.shadowregs:getreg
-    :prog: shadowregs getreg
-    :nested: full
-
-.. click:: spsdk.apps.shadowregs:setreg
-    :prog: shadowregs setreg
+.. click:: spsdk.apps.shadowregs:loadconfig
+    :prog: shadowregs loadconfig
     :nested: full
 
 .. click:: spsdk.apps.shadowregs:printregs
     :prog: shadowregs printregs
     :nested: full
 
-.. click:: spsdk.apps.shadowregs:loadconfig
-    :prog: shadowregs loadconfig
+.. click:: spsdk.apps.shadowregs:reset
+    :prog: shadowregs reset
     :nested: full
 
 .. click:: spsdk.apps.shadowregs:saveconfig
     :prog: shadowregs saveconfig
     :nested: full
 
-.. click:: spsdk.apps.shadowregs:reset
-    :prog: shadowregs reset
+.. click:: spsdk.apps.shadowregs:setreg
+    :prog: shadowregs setreg
     :nested: full
 

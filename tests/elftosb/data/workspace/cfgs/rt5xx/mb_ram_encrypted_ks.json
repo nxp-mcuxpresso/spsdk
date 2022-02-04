@@ -19,5 +19,6 @@
     "rootCertificate3File": ".\\sb_sources\\keys_and_certs\\root_k3_signed_cert0_noca.der.cert",
     "mainCertChainId": 1,
     "mainCertPrivateKeyFile": ".\\sb_sources\\keys_and_certs\\k1_cert0_2048.pem",
-    "masterBootOutputFile": ".\\workspace\\output_images\\rt5xx\\mb_ram_encrypted_ks_legacy.bin"
+    "masterBootOutputFile": ".\\workspace\\output_images\\rt5xx\\mb_ram_encrypted_ks_legacy.bin",
+    "CtrInitVector": "0xc3df2316fd40b15586cb5ae49483aee2"
 }

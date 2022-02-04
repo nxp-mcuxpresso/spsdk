@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -25,8 +25,8 @@ def test_dac_packet_info(data_dir):
     assert "AA55AA55" in dac_info
 
 
-def test_dac_packet_export_parse_N4A(data_dir):
-    value = load_binary(data_dir, "sample_dac_analog.bin")
+def test_dac_packet_export_parse_Lpc55s3x(data_dir):
+    value = load_binary(data_dir, "sample_dac_lpc55s3x.bin")
     dac = DebugAuthenticationChallenge.parse(value, offset=0)
     exported_dac = dac.export()
     assert exported_dac == value, "Export and parse of DAC packet do not work"

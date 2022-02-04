@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,7 @@ from typing import List
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.sbfile.commands import (
+from spsdk.sbfile.sb2.commands import (
     CmdCall,
     CmdErase,
     CmdJump,
@@ -24,7 +24,7 @@ from spsdk.sbfile.commands import (
     CmdVersionCheck,
     VersionCheckType,
 )
-from spsdk.sbfile.images import (
+from spsdk.sbfile.sb2.images import (
     BootImageV20,
     BootImageV21,
     BootSectionV2,

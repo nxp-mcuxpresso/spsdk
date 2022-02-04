@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for certificate management (generating certificate, CSR, validating certificate, chains)
@@ -11,6 +11,7 @@ from os import path
 from typing import List
 
 import pytest
+import yaml
 from click.testing import CliRunner
 
 from spsdk import SPSDKError
@@ -35,7 +36,7 @@ from spsdk.crypto import (
     validate_certificate,
     validate_certificate_chain,
 )
-from spsdk.crypto.certificate_management import generate_name_struct
+from spsdk.crypto.certificate_management import generate_name
 from spsdk.utils.misc import use_working_directory
 
 
@@ -193,21 +194,37 @@ def test_certificate_generation(tmpdir):
     assert path.isfile(path.join(tmpdir, "ca_private_key.pem"))
     assert path.isfile(path.join(tmpdir, "ca_pub_key.pem"))
 
-    subject = issuer = generate_name_struct("highest", "CZ")
+    data = yaml.safe_load(
+        """
+        COMMON_NAME: xyz
+        DOMAIN_COMPONENT: [com, nxp, wbi]
+        ORGANIZATIONAL_UNIT_NAME: [NXP, CZ, Managed Users, Developers]
+        """
+    )
+    subject = issuer = generate_name(data)
     ca_cert = generate_certificate(subject, issuer, ca_pub_key, ca_priv_key, if_ca=True)
     save_crypto_item(ca_cert, path.join(tmpdir, "ca_cert.pem"))
     assert path.isfile(path.join(tmpdir, "ca_cert.pem"))
 
-    srk_priv_key = generate_rsa_private_key()
-    save_rsa_private_key(srk_priv_key, path.join(tmpdir, "srk_priv_key.pem"))
-    assert path.isfile(path.join(tmpdir, "srk_priv_key.pem"))
-    srk_pub_key = generate_rsa_public_key(srk_priv_key)
-    save_rsa_public_key(srk_pub_key, path.join(tmpdir, "srk_pub_key.pem"))
-    assert path.isfile(path.join(tmpdir, "srk_pub_key.pem"))
-    srk_subject = generate_name_struct("srk", "UK")
-    srk_cert = generate_certificate(srk_subject, issuer, srk_pub_key, ca_priv_key, if_ca=False)
-    save_crypto_item(srk_cert, path.join(tmpdir, "srk1.pem"))
-    assert path.isfile(path.join(tmpdir, "srk1.pem"))
+    data = yaml.safe_load(
+        """
+        - COMMON_NAME: ccccc
+        - DOMAIN_COMPONENT: [com, nxp, wbi]
+        - ORGANIZATIONAL_UNIT_NAME: NXP
+        - ORGANIZATIONAL_UNIT_NAME: CZ
+        - ORGANIZATIONAL_UNIT_NAME: Managed Users
+        - ORGANIZATIONAL_UNIT_NAME: Developers
+        """
+    )
+    subject = issuer = generate_name(data)
+    ca_cert = generate_certificate(subject, issuer, ca_pub_key, ca_priv_key, if_ca=True)
+    save_crypto_item(ca_cert, path.join(tmpdir, "ca_cert_1.pem"))
+    assert path.isfile(path.join(tmpdir, "ca_cert_1.pem"))
+
+
+def test_certificate_generation_invalid():
+    with pytest.raises(SPSDKError, match="Invalid value of certificate attribute: COMM"):
+        generate_name({"COMM": "first"})
 
 
 @pytest.mark.parametrize("json, encoding", [(True, "PEM"), (False, "Der")])

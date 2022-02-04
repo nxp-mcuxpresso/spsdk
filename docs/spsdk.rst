@@ -73,8 +73,8 @@ Supported OS
 ============
 
 - Windows 10, 64-bit
-- Ubuntu 16.04 or above, 64-bit
-- Mac OS 10.13 or above, x64, M1
+- Ubuntu 18.04 or above, 64-bit
+- Mac OS 10.15 or above, x64, ARM64
 
 =====================
 Supported Environment

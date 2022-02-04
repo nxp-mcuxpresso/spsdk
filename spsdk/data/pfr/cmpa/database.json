@@ -60,12 +60,13 @@
             "address": "0x3_E200",
             "seal_start": "CMPA_CMAC0",
             "seal_count": 4,
-	    "mandatory_computed_regs": 1,
+            "mandatory_computed_regs": 1,
             "grouped_registers": [
                 {
                     "name": "ROTKH",
                     "width": 384,
                     "reverse": 1,
+                    "config_as_hexstring": true,
                     "description": "ROTKH field is compounded by 12 32-bit fields and contains Root key table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four SHA-256 digests computed over four OEM public keys (OEM has four private-public key pairs in case one of its private keys becomes compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit SHA-384 digest."
                 }
             ]
@@ -78,12 +79,13 @@
             "address": "0x3_E200",
             "seal_start": "CMPA_CMAC0",
             "seal_count": 4,
-	    "mandatory_computed_regs": 1,
+            "mandatory_computed_regs": 1,
             "grouped_registers": [
                 {
                     "name": "ROTKH",
                     "width": 384,
                     "reverse": 1,
+                    "config_as_hexstring": true,
                     "description": "ROTKH field is compounded by 12 32-bit fields and contains Root key table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four SHA-256 digests computed over four OEM public keys (OEM has four private-public key pairs in case one of its private keys becomes compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit SHA-384 digest."
                 }
             ]
@@ -97,14 +99,15 @@
             "name": "ROTKH",
             "width": 256,
             "reverse": 1,
+            "config_as_hexstring": true,
             "description": "ROTKH field is compounded by 8 32-bit fields and contains Root key table hash"
         }
     ],
     "computed_fields": {
-        "CC_SOCU_PIN": {
+        "DCFG_CC_SOCU_PIN": {
             "INVERSE_VALUE": "pfr_reg_inverse_high_half"
         },
-        "CC_SOCU_DFLT": {
+        "DCFG_CC_SOCU_DFLT": {
             "INVERSE_VALUE": "pfr_reg_inverse_high_half"
         }
     },
@@ -113,40 +116,5 @@
     ],
     "seal_start": "SHA256_DIGEST0",
     "seal_count": 8,
-    "mandatory_computed_regs": 0,
-    "backward_compatibility": {
-        "CC_SOCU_PIN": {
-            "bitfields": {
-                "MCM33_DBGEN": [
-                    "CPU1_DBGEN"
-                ],
-                "MCM33_NIDEN": [
-                    "CPU1_NIDEN"
-                ],
-                "FA_ME_CMD_EN": [
-                    "PMCMD_EN"
-                ]
-            }
-        },
-        "CC_SOCU_DFLT": {
-            "bitfields": {
-                "MCM33_DBGEN": [
-                    "CPU1_DBGEN"
-                ],
-                "MCM33_NIDEN": [
-                    "CPU1_NIDEN"
-                ],
-                "FA_ME_CMD_EN": [
-                    "PMCMD_EN"
-                ]
-            }
-        },
-        "SECURE_BOOT_CFG": {
-            "bitfields": {
-                "DICE_INC_NXP_CFG": [
-                    "DICE_ENC_NXP_CFG"
-                ]
-            }
-        }
-    }
+    "mandatory_computed_regs": 0
 }

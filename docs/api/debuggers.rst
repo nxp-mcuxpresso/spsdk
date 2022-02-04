@@ -35,3 +35,11 @@ Module for DebugMailbox PyOCD Debug probes support
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+Module with common utils for debuggers module
+----------------------------------------------
+.. automodule:: spsdk.debuggers.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:

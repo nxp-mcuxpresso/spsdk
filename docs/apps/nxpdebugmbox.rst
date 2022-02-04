@@ -41,6 +41,14 @@ The "help" guide of *nxpdebugmbox* lists all of the options and sub-commands sup
     :prog: nxpdebugmbox famode
     :nested: full
 
+.. click:: spsdk.apps.nxpdebugmbox:gendc
+    :prog: nxpdebugmbox gendc
+    :nested: full
+
+.. click:: spsdk.apps.nxpdebugmbox:get_cfg_template
+    :prog: nxpdebugmbox get-cfg-template
+    :nested: full
+
 .. click:: spsdk.apps.nxpdebugmbox:ispmode
     :prog: nxpdebugmbox ispmode
     :nested: full

@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for creation commands."""
 
 from abc import abstractmethod
 from struct import calcsize, pack, unpack_from
-from typing import Mapping, Tuple, Type
+from typing import Any, Dict, Mapping, Tuple, Type, Union
 
 from spsdk import SPSDKError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import align_block
+from spsdk.utils.misc import align_block, load_binary, value_to_int
 
 ########################################################################################################################
 # Main Class
@@ -33,17 +33,36 @@ class MainCmd:
 
     @abstractmethod
     def info(self) -> str:
-        """Get info of command."""
-        raise NotImplementedError("Info must be implemented in the derived class.")
+        """Get info of command.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def export(self) -> bytes:
-        """Export command as bytes."""
-        raise NotImplementedError("Export must be implemented in the derived class.")
+        """Export command as bytes.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> object:
-        """Parse command from bytes array."""
-        raise NotImplementedError("Parse must be implemented in the derived class.")
+        """Parse command from bytes array.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
+
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "MainCmd":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
 
 ########################################################################################################################
@@ -94,8 +113,11 @@ class BaseCmd(MainCmd):
         self.cmd_tag = cmd_tag
 
     def info(self) -> str:
-        """Get info of command."""
-        raise NotImplementedError("Info must be implemented in the derived class.")
+        """Get info of command.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def export(self) -> bytes:
         """Export command as bytes."""
@@ -197,6 +219,16 @@ class CmdLoadBase(BaseCmd):
         # pylint: disable=no-value-for-parameter
         return cls(address=address, data=data, memory_id=memory_id)  # type: ignore
 
+    # pylint: disable=redundant-returns-doc
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> MainCmd:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        assert False
+
 
 class CmdErase(BaseCmd):
     """Erase given address range. The erase will be rounded up to the sector size."""
@@ -238,6 +270,18 @@ class CmdErase(BaseCmd):
             raise SPSDKError("Invalid padding")
         return cls(address=address, length=length, memory_id=memory_id)
 
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdErase":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        address = value_to_int(config["address"], 0)
+        length = value_to_int(config["size"], 0)
+        memory_id = value_to_int(config.get("memoryId", "0"), 0)
+        return CmdErase(address=address, length=length, memory_id=memory_id)
+
 
 class CmdLoad(CmdLoadBase):
     """Data to write follows the range header."""
@@ -250,6 +294,36 @@ class CmdLoad(CmdLoadBase):
         :param memory_id: Memory ID
         """
         super().__init__(cmd_tag=EnumCmdTag.LOAD, address=address, data=data, memory_id=memory_id)
+
+    @classmethod
+    def load_from_config(
+        cls, config: Dict[str, Any]
+    ) -> Union["CmdLoad", "CmdLoadHashLocking", "CmdLoadCmac"]:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        :raises SPSDKError: Invalid configuration field.
+        """
+        authentication = config.get("authentication")
+        address = value_to_int(config["address"], 0)
+        memory_id = value_to_int(config.get("memoryId", "0"), 0)
+        if authentication == "hashlocking":
+            data = load_binary(config["file"])
+            return CmdLoadHashLocking.load_from_config(config)  # Backward compatibility
+        if authentication == "cmac":
+            data = load_binary(config["file"])
+            return CmdLoadCmac.load_from_config(config)  # Backward compatibility
+        # general non-authenticated load command
+        if config.get("file"):
+            data = load_binary(config["file"])
+            return CmdLoad(address=address, data=data, memory_id=memory_id)
+        if config.get("values"):
+            values = [value_to_int(s, 0) for s in config["values"].split(",")]
+            data = pack(f"<{len(values)}L", *values)
+            return CmdLoad(address=address, data=data, memory_id=memory_id)
+
+        raise SPSDKError(f"Unsupported LOAD command args: {config}")
 
 
 class CmdExecute(BaseCmd):
@@ -277,6 +351,16 @@ class CmdExecute(BaseCmd):
         address, _ = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.EXECUTE)
         return cls(address=address)
 
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdExecute":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        address = value_to_int(config["address"], 0)
+        return CmdExecute(address=address)
+
 
 class CmdCall(BaseCmd):
     """Address will be the address to jump."""
@@ -302,6 +386,16 @@ class CmdCall(BaseCmd):
         """
         address, _ = cls.header_parse(data=data, offset=offset, cmd_tag=EnumCmdTag.CALL)
         return cls(address=address)
+
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdCall":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        address = value_to_int(config["address"], 0)
+        return CmdCall(address=address)
 
 
 class CmdProgFuses(CmdLoadBase):
@@ -345,6 +439,18 @@ class CmdProgFuses(CmdLoadBase):
         address, _, data, _, _ = cls._extract_data(data=data, offset=offset)
         return cls(address=address, data=data)
 
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdProgFuses":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        address = value_to_int(config["address"], 0)
+        fuses = [value_to_int(fuse, 0) for fuse in config["values"].split(",")]
+        data = pack(f"<{len(fuses)}L", *fuses)
+        return CmdProgFuses(address=address, data=data)
+
 
 class CmdProgIfr(CmdLoadBase):
     """Address will be the address into the IFR region."""
@@ -370,6 +476,17 @@ class CmdProgIfr(CmdLoadBase):
         address, _, data, _, _ = cls._extract_data(data=data, offset=offset)
         return cls(address=address, data=data)
 
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdProgIfr":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        address = value_to_int(config["address"], 0)
+        data = load_binary(config["file"])
+        return CmdProgIfr(address=address, data=data)
+
 
 class CmdLoadCmac(CmdLoadBase):
     """Load cmac. ROM is calculating cmac from loaded data."""
@@ -387,6 +504,20 @@ class CmdLoadCmac(CmdLoadBase):
             data=data,
             memory_id=memory_id,
         )
+
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdLoadCmac":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        :raises SPSDKError: Invalid configuration field.
+        """
+        address = value_to_int(config["address"], 0)
+        memory_id = value_to_int(config.get("memoryId", "0"), 0)
+
+        data = load_binary(config["file"])
+        return CmdLoadCmac(address=address, data=data, memory_id=memory_id)
 
 
 class CmdCopy(BaseCmd):
@@ -450,6 +581,26 @@ class CmdCopy(BaseCmd):
             memory_id_to=memory_id_to,
         )
 
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdCopy":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        address = value_to_int(config["addressFrom"], 0)
+        length = value_to_int(config["size"], 0)
+        destination_address = value_to_int(config["addressTo"], 0)
+        memory_id_from = value_to_int(config["memoryIdFrom"], 0)
+        memory_id_to = value_to_int(config["memoryIdTo"], 0)
+        return CmdCopy(
+            address=address,
+            length=length,
+            destination_address=destination_address,
+            memory_id_from=memory_id_from,
+            memory_id_to=memory_id_to,
+        )
+
 
 class CmdLoadHashLocking(CmdLoadBase):
     """Load hash. ROM is calculating hash."""
@@ -473,6 +624,20 @@ class CmdLoadHashLocking(CmdLoadBase):
         data = super().export()
         data += bytes(64)
         return data
+
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdLoadHashLocking":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        :raises SPSDKError: Invalid configuration field.
+        """
+        address = value_to_int(config["address"], 0)
+        memory_id = value_to_int(config.get("memoryId", "0"), 0)
+
+        data = load_binary(config["file"])
+        return CmdLoadHashLocking(address=address, data=data, memory_id=memory_id)
 
 
 class CmdLoadKeyBlob(BaseCmd):
@@ -528,6 +693,19 @@ class CmdLoadKeyBlob(BaseCmd):
         key_blob_data = unpack_from(f"<{length}s", data, offset + cls.SIZE)[0]
         return cls(offset=cmpa_offset, key_wrap_id=key_wrap_id, data=key_blob_data)
 
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdLoadKeyBlob":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        data = load_binary(config["file"])
+        offset = value_to_int(config["offset"], 0)
+        key_wrap_name = config["wrappingKeyId"]
+        key_wrap_id = CmdLoadKeyBlob.KeyWraps[key_wrap_name]
+        return CmdLoadKeyBlob(offset=offset, data=data, key_wrap_id=key_wrap_id)
+
 
 class CmdConfigureMemory(BaseCmd):
     """Configure memory."""
@@ -561,6 +739,18 @@ class CmdConfigureMemory(BaseCmd):
             cmd_tag=EnumCmdTag.CONFIGURE_MEMORY, data=data, offset=offset
         )
         return cls(address=address, memory_id=memory_id)
+
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdConfigureMemory":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        memory_id = value_to_int(config["memoryId"], 0)
+        return CmdConfigureMemory(
+            address=value_to_int(config["configAddress"], 0), memory_id=memory_id
+        )
 
 
 class CmdFillMemory(BaseCmd):
@@ -601,6 +791,18 @@ class CmdFillMemory(BaseCmd):
             raise SPSDKError("Invalid padding")
         return cls(address=address, length=length, pattern=pattern)
 
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdFillMemory":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        address = value_to_int(config["address"], 0)
+        length = value_to_int(config["size"], 0)
+        pattern = value_to_int(config["pattern"], 0)
+        return CmdFillMemory(address=address, length=length, pattern=pattern)
+
 
 class CmdFwVersionCheck(BaseCmd):
     """Check counter value with stored value, if values are not same, SB file is rejected."""
@@ -613,7 +815,7 @@ class CmdFwVersionCheck(BaseCmd):
         SECURE = (2, "secure")
         RADIO = (3, "radio")
         SNT = (4, "snt")
-        BOOTLOADER = (3, "bootloader")
+        BOOTLOADER = (5, "bootloader")
 
     def __init__(self, value: int, counter_id: int) -> None:
         """Constructor for command.
@@ -645,6 +847,18 @@ class CmdFwVersionCheck(BaseCmd):
             data=data, offset=offset, cmd_tag=EnumCmdTag.FW_VERSION_CHECK
         )
         return cls(value=value, counter_id=counter_id)
+
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdFwVersionCheck":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        """
+        value = value_to_int(config["value"], 0)
+        counter_id_str = config["counterId"]
+        counter_id = CmdFwVersionCheck.COUNTER_ID[counter_id_str]
+        return CmdFwVersionCheck(value=value, counter_id=counter_id)
 
 
 class CmdSectionHeader(MainCmd):
@@ -687,6 +901,17 @@ class CmdSectionHeader(MainCmd):
         section_uid, section_type, length, _ = unpack_from(cls.FORMAT, data, offset)
         return cls(section_uid=section_uid, section_type=section_type, length=length)
 
+    # pylint: disable=redundant-returns-doc
+    @classmethod
+    def load_from_config(cls, config: Dict[str, Any]) -> "CmdSectionHeader":
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        :return: Command object loaded from configration.
+        :raises SPSDKError: This situation cannot raise (the function here is just MYPY/PYLINT checks).
+        """
+        raise SPSDKError("Section header cannot be loaded from configuration.")
+
 
 TAG_TO_CLASS: Mapping[int, Type[BaseCmd]] = {
     EnumCmdTag.ERASE: CmdErase,
@@ -703,6 +928,23 @@ TAG_TO_CLASS: Mapping[int, Type[BaseCmd]] = {
     EnumCmdTag.FILL_MEMORY: CmdFillMemory,
     EnumCmdTag.FW_VERSION_CHECK: CmdFwVersionCheck,
 }
+
+CFG_NAME_TO_CLASS: Mapping[str, Type[BaseCmd]] = {
+    "erase": CmdErase,
+    "load": CmdLoad,
+    "execute": CmdExecute,
+    "call": CmdCall,
+    "programFuses": CmdProgFuses,
+    "programIFR": CmdProgIfr,
+    "loadCMAC": CmdLoadCmac,
+    "copy": CmdCopy,
+    "loadHashLocking": CmdLoadHashLocking,
+    "loadKeyBlob": CmdLoadKeyBlob,
+    "configureMemory": CmdConfigureMemory,
+    "fillMemory": CmdFillMemory,
+    "checkFwVersion": CmdFwVersionCheck,
+}
+
 ########################################################################################################################
 # Command parser from raw data
 ########################################################################################################################

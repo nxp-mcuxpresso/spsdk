@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
@@ -42,6 +42,7 @@ def test_file_size_composite(input_param, exp_path, exp_size):
         ("{{11223344}}", b"\x11\x22\x33\x44"),
         ("{{11 22 33 44}}", b"\x11\x22\x33\x44"),
         (" { { 11    22 33 44}}", b"\x11\x22\x33\x44"),
+        ("{{bcd}}", b"\xbc\x0d"),
     ],
 )
 def test_parse_hex_data(input_hex_data, output_bytes):
@@ -57,7 +58,6 @@ def test_parse_hex_data(input_hex_data, output_bytes):
         ("{{11223344"),
         ("11223344}}"),
         ("{11223344}"),
-        ("{{123}}"),
         ("{{11 xa}}"),
         ("{{ab zz}}"),
     ],

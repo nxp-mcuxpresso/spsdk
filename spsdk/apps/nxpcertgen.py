@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -29,6 +29,7 @@ from spsdk.crypto import (
     save_crypto_item,
     x509,
 )
+from spsdk.crypto.certificate_management import generate_name
 
 NXPCERTGEN_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpcertgen")
 
@@ -53,16 +54,6 @@ class CertificateParametersConfig:
             self.subject_name = generate_name(config_data["subject"])
         except KeyError as e:
             raise SPSDKError(f"Error found in configuration: {e} not found")
-
-
-def generate_name(config_data: dict) -> x509.Name:
-    """Set the issuer/subject distinguished attribute's."""
-    attributes = []
-    for key, value in config_data.items():
-        if not hasattr(x509.NameOID, key):
-            raise SPSDKError(f"Invalid NameOID: {key}")
-        attributes.append(x509.NameAttribute(getattr(x509.NameOID, key), str(value)))
-    return x509.Name(attributes)
 
 
 @click.group(no_args_is_help=True)  # type: ignore
@@ -178,8 +169,8 @@ def get_cfg_template(output: click.Path, force: bool) -> None:
 @catch_spsdk_error
 def safe_main() -> None:
     """Call the main function."""
-    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+    sys.exit(main())  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == "__main__":
-    safe_main()  # pragma: no cover
+    safe_main()

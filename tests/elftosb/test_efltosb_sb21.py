@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ from click.testing import CliRunner
 
 import spsdk.apps.elftosb as elftosb
 from spsdk import SPSDKError
-from spsdk.sbfile.images import BootImageV21
+from spsdk.sbfile.sb2.images import BootImageV21
 from spsdk.utils.misc import use_working_directory
 
 

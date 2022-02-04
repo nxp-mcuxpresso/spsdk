@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Debug probes support."""
@@ -28,6 +28,8 @@ PROBES = {
 
 logger = logging.getLogger(__name__)
 
+colorama.init()
+
 
 class ProbeDescription:
     """NamedTuple for DAT record of debug probe description."""
@@ -51,7 +53,7 @@ class ProbeDescription:
         self.description = description
         self.probe = probe
 
-    def get_probe(self, user_params: Dict = None) -> Any:
+    def get_probe(self, user_params: Dict = None) -> DebugProbe:
         """Get instance of probe.
 
         :param user_params: The dictionary with optional user parameters
@@ -115,8 +117,6 @@ class DebugProbes(list):
 
     def print(self) -> None:
         """Prints the List of Probes to nice colored table."""
-        colorama.init()
-
         # Print all PyOCD probes and then Pemicro with local index
         table = prettytable.PrettyTable(["#", "Interface", "Id", "Description"])
         table.align = "l"
@@ -157,7 +157,7 @@ class DebugProbeUtils:
         :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
         :param hardware_id: None to list all probes, otherwise the the only probe with matching
         :param user_params: The dictionary with optional user parameters
-        hardware id is listed.
+            hardware id is listed.
         :return: list of probe_description's
         """
         probes = DebugProbes()

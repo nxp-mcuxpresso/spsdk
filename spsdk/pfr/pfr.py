@@ -1,33 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module provides support for Protected Flash Region areas (CMPA, CFPA)."""
 import copy
-import json
 import logging
 import math
 import os
 from typing import Any, Dict, List, Optional, Union
 
-import yaml
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from ruamel.yaml.comments import CommentedMap as CM
 
 from spsdk import SPSDKError
 from spsdk import __author__ as spsdk_author
 from spsdk import __release__ as spsdk_release
 from spsdk import __version__ as spsdk_version
+from spsdk.apps.utils import load_configuration
+from spsdk.crypto import PublicKey, ec, rsa
 from spsdk.utils.crypto.abstract import BackendClass
 from spsdk.utils.crypto.backend_openssl import openssl_backend
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
 from spsdk.utils.misc import change_endianism, value_to_int
 from spsdk.utils.reg_config import RegConfig
-from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
+from spsdk.utils.registers import Registers, RegsRegister
 
 from . import PFR_DATA_FOLDER
 from .exceptions import (
@@ -145,69 +143,20 @@ class PfrConfiguration:
         except KeyError as exc:
             raise SPSDKPfrConfigReadError("Missing fields in YAML configuration.") from exc
 
-    def set_config_json(self, file_name: str) -> None:
-        """Apply JSON configuration from file.
-
-        :param file_name: Name of JSON configuration file.
-        :raises SPSDKPfrConfigReadError: Invalid JSON file.
-        """
-        try:
-            with open(file_name, "r") as file_json:
-                data = json.load(file_json)
-        except (FileNotFoundError, TypeError, ValueError) as exc:
-            raise SPSDKPfrConfigReadError(
-                f"Cannot load JSON configuration file. ({file_name}) - {exc}"
-            ) from exc
-
-        try:
-            self.set_config_dict(data)
-        except SPSDKPfrConfigReadError as exc:
-            raise SPSDKPfrConfigReadError(
-                f"Decoding error({str(exc)}) with JSON configuration file. ({file_name})"
-            ) from exc
-
-    def set_config_yml(self, file_name: str) -> None:
-        """Apply YML configuration from file.
-
-        :param file_name: Name of YML configuration file.
-        :raises SPSDKPfrConfigReadError: Invalid YML commented map.
-        """
-        try:
-            with open(file_name, "r") as file_yml:
-                yml_raw = file_yml.read()
-            data = yaml.safe_load(yml_raw)
-        except (FileNotFoundError, TypeError, ValueError) as exc:
-            raise SPSDKPfrConfigReadError(
-                f"Cannot load YAML configuration file. ({file_name})."
-            ) from exc
-
-        try:
-            self.set_config_dict(data)
-        except SPSDKPfrConfigReadError as exc:
-            raise SPSDKPfrConfigReadError(
-                f"Decoding error with YAML configuration file. ({file_name})"
-            ) from exc
-
     def set_config(self, config: Union[str, CM, dict]) -> None:
         """Apply configuration from file.
 
         :param config: Name of configuration file or Commented map.
+        :raises SPSDKPfrConfigReadError: The configuration file cannot be loaded.
         """
         if isinstance(config, (CM, dict)):
             self.set_config_dict(config)
         else:
-            extension = os.path.splitext(config)[1]
-            # Try open configuration file by its extensions
-            if extension == ".json":
-                self.set_config_json(config)
-            elif extension in (".yml", ".yaml"):
-                self.set_config_yml(config)
-            else:
-                # Just try to open one by one to be lucky
-                try:
-                    self.set_config_json(config)
-                except SPSDKPfrConfigReadError:
-                    self.set_config_yml(config)
+            try:
+                data = load_configuration(config)
+            except SPSDKError as exc:
+                raise SPSDKPfrConfigReadError(str(exc)) from exc
+            self.set_config_dict(data)
 
     def get_yaml_config(self, data: CM, indent: int = 0) -> CM:
         """Return YAML configuration In PfrConfiguration format.
@@ -276,6 +225,7 @@ class BaseConfigArea:
     ROTKH_REGISTER = "ROTKH"
     MARK = b"SEAL"
     DESCRIPTION = "Base Config Area"
+    IMAGE_PREFILL_PATTERN = 0
 
     def __init__(
         self, device: str = None, revision: str = None, user_config: PfrConfiguration = None
@@ -289,7 +239,6 @@ class BaseConfigArea:
         :raises SPSDKError: When no device is not supported
         :raises SPSDKError: When there is invalid revision
         """
-        self.bc_cfg = None
         if not (device or user_config):
             raise SPSDKError("No device provided")
         self.config = self._load_config()
@@ -318,9 +267,6 @@ class BaseConfigArea:
         for reg, fields in self.config.get_computed_fields(self.device).items():
             reg_obj = self.registers.find_reg(reg)
             reg_obj.add_setvalue_hook(self.reg_computed_fields_handler, fields)
-
-        # Solve backward compatibility of configuration
-        self._apply_backward_compatibility()
 
         self.user_config = PfrConfiguration(
             config=user_config,
@@ -351,16 +297,15 @@ class BaseConfigArea:
         return val
 
     @staticmethod
-    def pfr_reg_inverse_high_half(val: bytes) -> bytes:
+    def pfr_reg_inverse_high_half(val: int) -> int:
         """Function that inverse low 16-bits of register value to high 16 bits.
 
         :param val: Input current reg value.
         :return: Returns the complete register value with updated higher half field.
         """
-        ret = bytearray(val)
-        ret[0] = ret[2] ^ 0xFF
-        ret[1] = ret[3] ^ 0xFF
-        return bytes(ret)
+        ret = val & 0xFFFF
+        ret |= (ret ^ 0xFFFF) << 16
+        return ret
 
     @classmethod
     def _load_config(cls) -> RegConfig:
@@ -474,7 +419,7 @@ the latest: '{config.revision}' has been used."
 
         return copy_of_self.get_yaml_config(exclude_computed)
 
-    def _calc_rotkh(self, keys: Union[List[RSAPublicKey], List[EllipticCurvePublicKey]]) -> bytes:
+    def _calc_rotkh(self, keys: List[PublicKey]) -> bytes:
         """Calculate ROTKH (Root Of Trust Key Hash).
 
         :param keys: List of Keys to compute ROTKH.
@@ -484,12 +429,12 @@ the latest: '{config.revision}' has been used."
         # the data structure use for computing final ROTKH is 4*32B long
         # 32B is a hash of individual keys
         # 4 is the max number of keys, if a key is not provided the slot is filled with '\x00'
-        # The niobe4analog has two options to compute ROTKH, so it's needed to be
+        # The LPC55S3x has two options to compute ROTKH, so it's needed to be
         # detected the right algorithm and mandatory warn user about this selection because
         # it's MUST correspond to settings in eFuses!
         reg_rotkh = self.registers.find_reg("ROTKH")
         width = reg_rotkh.width
-        if isinstance(keys[0], RSAPublicKey):
+        if isinstance(keys[0], rsa.RSAPublicKey):
             algorithm_width = 256
         else:
             algorithm_width = keys[0].key_size
@@ -527,7 +472,7 @@ the latest: '{config.revision}' has been used."
             raise SPSDKError("Can't find 'seal_count' in database.json")
         return value_to_int(count)
 
-    def export(self, add_seal: bool = False, keys: List[RSAPublicKey] = None) -> bytes:
+    def export(self, add_seal: bool = False, keys: List[PublicKey] = None) -> bytes:
         """Generate binary output.
 
         :param add_seal: The export is finished in the PFR record by seal.
@@ -547,22 +492,9 @@ the latest: '{config.revision}' has been used."
                     "This device doesn't contain ROTKH register!"
                 ) from exc
 
-        data = bytearray(self.BINARY_SIZE)
+        data = bytearray([self.IMAGE_PREFILL_PATTERN] * self.BINARY_SIZE)
         for reg in self._get_registers():
-            # rewriting 4B at the time
-            if reg.has_group_registers():
-                for grp_reg in reg.sub_regs:
-                    val = (
-                        grp_reg.get_value()
-                        if grp_reg.reverse
-                        else change_endianism(bytearray(grp_reg.get_value()))
-                    )
-                    data[grp_reg.offset : grp_reg.offset + grp_reg.width // 8] = val
-            else:
-                val = (
-                    reg.get_value() if reg.reverse else change_endianism(bytearray(reg.get_value()))
-                )
-                data[reg.offset : reg.offset + reg.width // 8] = val
+            data[reg.offset : reg.offset + reg.width // 8] = reg.get_bytes_value()
 
         if add_seal:
             seal_start = self._get_seal_start_address()
@@ -583,57 +515,6 @@ the latest: '{config.revision}' has been used."
             # don't change endian if register is meant to be used in 'reverse' (array of bytes)
             reg.set_value(value if reg.reverse else change_endianism(value), raw=True)
 
-    def _bc_bitfields(self, reg: RegsRegister, bitfield: RegsBitField) -> List[str]:
-        """Function returns list of backward compatibility names for bitfield.
-
-        :param reg: The current register
-        :param bitfield: Current bitfield
-        :return: List of backward compatibility names
-        """
-        bc_config: Dict = self.config.get_value("backward_compatibility", self.device)
-        return bc_config[reg.name]["bitfields"].get(bitfield.name, [])
-
-    def _bc_enums(self, reg: RegsRegister, bitfield: RegsBitField, enum: RegsEnum) -> List[str]:
-        """Function returns list of backward compatibility names for enums.
-
-        :param reg: The current register
-        :param bitfield: Current bitfield
-        :param enum: Current enum
-        :return: List of backward compatibility names
-        :raises SPSDKError: If register is not provided
-        """
-        if not self.bc_cfg:
-            raise SPSDKError("No register provided")
-        ret = []
-        bitfield_n = [bitfield.name]
-        reg_n = [reg.name]
-        reg = self.bc_cfg.get(reg.name, None)
-        if reg:
-            # This piece of code is ready for use when also the register names should be backward compatible
-            # reg_n.extend(reg.get("name", []))
-            #     if "bitfields" in reg.keys():
-            bitfield_n.extend(reg["bitfields"].get(bitfield.name, []))
-
-        for r in reg_n:
-            for b in bitfield_n:
-                ret.append(f"{r}_{b}_VALUE_{enum.get_value_int()}")
-                if bitfield.width == 1:
-                    ret.append(f"{r}_{b}_{'ENABLE' if enum.get_value_int() == 1 else 'DISABLE'}")
-
-        return ret
-
-    def _apply_backward_compatibility(self) -> None:
-        """Apply backward compatibility feature for configuration files."""
-        self.bc_cfg = self.config.get_value("backward_compatibility", self.device)
-        if self.bc_cfg:
-            for bc_reg_name in self.bc_cfg:
-                # This piece of code is ready for use when also the register names should be backward compatible
-                # if "bitfields" in self.bc_cfg[bc_reg_name].keys():
-                bc_reg = self.registers.find_reg(bc_reg_name)
-                bc_reg.enable_backward_compatibility(self._bc_bitfields)
-
-            self.registers.enable_backward_compatibility_enums(self._bc_enums)
-
 
 class CMPA(BaseConfigArea):
     """Customer Manufacturing Configuration Area."""
@@ -650,7 +531,7 @@ class CFPA(BaseConfigArea):
 
 
 def calc_pub_key_hash(
-    public_key: Union[RSAPublicKey, EllipticCurvePublicKey],
+    public_key: PublicKey,
     backend: BackendClass = openssl_backend,
     sha_width: int = 256,
 ) -> bytes:
@@ -659,18 +540,21 @@ def calc_pub_key_hash(
     :param public_key: List of public keys to compute hash from.
     :param backend: Crypto subsystem backend.
     :param sha_width: Used hash algorithm.
+    :raises SPSDKError: Unsupported public key type
     :return: Computed hash.
     """
-    if isinstance(public_key, RSAPublicKey):
+    if isinstance(public_key, rsa.RSAPublicKey):
         n_1 = public_key.public_numbers().e  # type: ignore # MyPy is unable to pickup the class member
         n1_len = math.ceil(n_1.bit_length() / 8)
         n_2 = public_key.public_numbers().n  # type: ignore # MyPy is unable to pickup the class member
         n2_len = math.ceil(n_2.bit_length() / 8)
-    else:
+    elif isinstance(public_key, ec.EllipticCurvePublicKey):
         n_1 = public_key.public_numbers().y  # type: ignore # MyPy is unable to pickup the class member
         n1_len = sha_width // 8
         n_2 = public_key.public_numbers().x  # type: ignore # MyPy is unable to pickup the class member
         n2_len = sha_width // 8
+    else:
+        raise SPSDKError(f"Unsupported key type: {type(public_key)}")
 
     n1_bytes = n_1.to_bytes(n1_len, "big")
     n2_bytes = n_2.to_bytes(n2_len, "big")

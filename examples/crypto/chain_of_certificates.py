@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,17 +14,15 @@ import os
 from os import path
 
 from spsdk.crypto import (
-    generate_certificate,
-    save_crypto_item,
-    load_private_key,
-    x509,
     Encoding,
-    load_public_key,
-    RSAPublicKey,
     RSAPrivateKey,
-    generate_name_struct,
+    RSAPublicKey,
+    generate_certificate,
+    generate_name,
+    load_private_key,
+    load_public_key,
+    save_crypto_item,
 )
-
 
 #          Certificates' structure
 #              CA Certificate
@@ -48,7 +46,7 @@ def main() -> None:
     # load associated public key
     public_key_2048_ca = load_public_key(path.join(data_dir, "ca_publickey_rsa2048.pem"))
     assert isinstance(public_key_2048_ca, RSAPublicKey)
-    subject = issuer = generate_name_struct("first", "CZ")
+    subject = issuer = generate_name([{"COMMON_NAME": "first"}, {"COUNTRY_NAME": "CZ"}])
     # generate CA certificate (self-signed certificate)
     ca_cert = generate_certificate(
         subject=subject,
@@ -66,7 +64,7 @@ def main() -> None:
     print("The CA Certificate was created in der and pem format.")
 
     # Create first chain certificate signed by private key of the CA certificate
-    subject_crt1 = generate_name_struct("second", "CZ")
+    subject_crt1 = generate_name([{"COMMON_NAME": "second"}, {"COUNTRY_NAME": "CZ"}])
     public_key_2048_subject = load_public_key(path.join(data_dir, "crt_publickey_rsa2048.pem"))
     assert isinstance(public_key_2048_subject, RSAPublicKey)
     crt1 = generate_certificate(
@@ -86,7 +84,7 @@ def main() -> None:
     )
 
     # First chain certificate signed by private key of the CA certificate
-    subject_crt2 = generate_name_struct("third", "CZ")
+    subject_crt2 = generate_name([{"COMMON_NAME": "third"}, {"COUNTRY_NAME": "CZ"}])
     private_key_2048_subject_1 = load_private_key(
         path.join(data_dir, "chain_privatekey_rsa2048.pem")
     )
@@ -111,7 +109,7 @@ def main() -> None:
     )
 
     # Create first chain certificate signed by private key of first certificate
-    subject_crt3 = generate_name_struct("fourth", "CZ")
+    subject_crt3 = generate_name([{"COMMON_NAME": "fourth"}, {"COUNTRY_NAME": "CZ"}])
     issuer_crt3 = subject_crt2
     public_key_2048_subject_2 = load_public_key(
         path.join(data_dir, "chain_crt2_publickey_rsa2048.pem")

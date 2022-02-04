@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Debug probes support."""
@@ -71,9 +71,9 @@ class DebugProbe:
             matching hardware id is listed.
         :param user_params: The user params dictionary
         :return: ProbeDescription
-        :raises NotImplementedError: The get_connected_probes is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @property
     def debug_mailbox_access_port(self) -> int:
@@ -102,9 +102,9 @@ class DebugProbe:
         The function is used to initialize the connection to target and enable using debug probe
         for DAT purposes.
 
-        :raises NotImplementedError: The open is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def enable_memory_interface(self) -> None:
         """Debug probe enabling memory interface.
@@ -119,9 +119,9 @@ class DebugProbe:
 
         This is general closing function for SPSDK library to support various DEBUG PROBES.
 
-        :raises NotImplementedError: The close is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def dbgmlbx_reg_read(self, addr: int = 0) -> int:
         """Read debug mailbox access port register.
@@ -130,9 +130,9 @@ class DebugProbe:
 
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises NotImplementedError: The dbgmlbx_reg_read is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write debug mailbox access port register.
@@ -141,9 +141,9 @@ class DebugProbe:
 
         :param addr: the register address
         :param data: the data to be written into register
-        :raises NotImplementedError: The dbgmlbx_reg_write is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def mem_reg_read(self, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
@@ -153,9 +153,9 @@ class DebugProbe:
 
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises NotImplementedError: The mem_reg_read is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write 32-bit register in memory space of MCU.
@@ -165,9 +165,9 @@ class DebugProbe:
 
         :param addr: the register address
         :param data: the data to be written into register
-        :raises NotImplementedError: The mem_reg_write is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
     def get_coresight_ap_address(cls, access_port: int, address: int) -> int:
@@ -191,9 +191,9 @@ class DebugProbe:
         :param access_port: if True, the Access Port (AP) register will be read(default), otherwise the Debug Port
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
-        :raises NotImplementedError: The coresight_reg_read is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def coresight_reg_write(self, access_port: bool = True, addr: int = 0, data: int = 0) -> None:
         """Write coresight register.
@@ -203,19 +203,22 @@ class DebugProbe:
         :param access_port: if True, the Access Port (AP) register will be write(default), otherwise the Debug Port
         :param addr: the register address
         :param data: the data to be written into register
-        :raises NotImplementedError: The coresight_reg_read is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def reset(self) -> None:
         """Reset a target.
 
         It resets a target.
 
-        :raises NotImplementedError: The coresight_reg_read is NOT implemented
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def __del__(self) -> None:
         """General Debug Probe 'END' event handler."""
-        self.close()
+        try:
+            self.close()
+        except NotImplementedError:
+            pass

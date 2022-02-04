@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """The test file for PFR API."""
@@ -80,8 +80,8 @@ def test_seal_cfpa():
     assert data[0x1E0:] == CFPA.MARK * 8
 
 
-def test_seal_cmpa_n4analog():
-    """Test PFR tool - Test CMPA seal on Niobe 4Analog."""
+def test_seal_cmpa_lpc55s3x():
+    """Test PFR tool - Test CMPA seal on LPC55S3x."""
     cfpa = CFPA("lpc55s3x")
 
     data = cfpa.export(add_seal=False)
@@ -98,7 +98,7 @@ def test_basic_cmpa():
     CMPA("lpc55s6x")
 
 
-def test_config_cfpa():
+def test_config_cfpa(data_dir):
     """Test PFR tool - Test CFPA configuration."""
     cfpa = CFPA("lpc55s6x")
     config = cfpa.generate_config()
@@ -107,8 +107,13 @@ def test_config_cfpa():
     assert config != config2
 
     cfpa2 = CFPA("lpc55s6x", user_config=PfrConfiguration(config2))
-    cfpa2.parse(bytes(512))
+    cfpa2.parse(bytes(512))  # Parse 512-bytes of empty CFPA page content
+    cfpa2_pfr_cfg = PfrConfiguration(
+        data_dir + "/cfpa_after_reset.yml"
+    )  # Apply known CFPA fields after reset values
+    cfpa2.set_config(cfpa2_pfr_cfg)
     out = cfpa2.get_yaml_config(exclude_computed=False)
+
     assert out == config2
 
 
@@ -375,18 +380,18 @@ def test_missing_rotkh():
         cfpa.export(keys=["Invalid"])
 
 
-def test_n4a_load_yml_without_change(data_dir):
-    """Test silicon niobe4analog mandatory computing of antipole values."""
+def test_lpc55s3x_load_yml_without_change(data_dir):
+    """Test silicon LPC55S3x mandatory computing of antipole values."""
     cfpa = CFPA(user_config=PfrConfiguration(f"{data_dir}/cfpa_no_change.yml"))
     data = cfpa.export()
 
     assert len(data) == 512
-    with open(data_dir + "/n4a_CFPA_basic.bin", "rb") as binary:
+    with open(data_dir + "/lpc55s3x_CFPA_basic.bin", "rb") as binary:
         assert data == binary.read()
 
 
-def test_n4a_binary_ec256(data_dir):
-    """Test silicon niobe4analog EC 256. Binary generation/ROTKH computation"""
+def test_lpc55s3x_binary_ec256(data_dir):
+    """Test silicon LPC55S3x ECC256. Binary generation/ROTKH computation"""
     cmpa = CMPA("lpc55s3x")
     keys_path = [
         data_dir + "/ec_secp256r1_cert0.pem",
@@ -398,12 +403,12 @@ def test_n4a_binary_ec256(data_dir):
     data = cmpa.export(keys=extract_public_keys(keys_path, password=None))
 
     assert len(data) == 512
-    with open(data_dir + "/n4a_CMPA.bin", "rb") as binary:
+    with open(data_dir + "/lpc55s3x_CMPA.bin", "rb") as binary:
         assert data == binary.read()
 
 
-def test_n4a_binary_ec384(data_dir):
-    """Test silicon niobe4analog EC 384. Binary generation/ROTKH computation"""
+def test_lpc55s3x_binary_ec384(data_dir):
+    """Test silicon LPC55S3x ECC384. Binary generation/ROTKH computation"""
     cfpa = CMPA("lpc55s3x")
     keys_path = [
         data_dir + "/ec_secp384r1_cert0.pem",
@@ -415,7 +420,7 @@ def test_n4a_binary_ec384(data_dir):
     data = cfpa.export(keys=extract_public_keys(keys_path, password=None))
 
     assert len(data) == 512
-    with open(data_dir + "/n4a_CMPA_384.bin", "rb") as binary:
+    with open(data_dir + "/lpc55s3x_CMPA_384.bin", "rb") as binary:
         assert data == binary.read()
 
 
@@ -431,15 +436,6 @@ def test_invalid_key_size(data_dir):
 
     with pytest.raises(SPSDKPfrError):
         cfpa.export(keys=extract_public_keys(keys_path, password=None))
-
-
-def test_config_cmpa_without_bc(data_dir):
-    """Test PFR tool - Test CMPA configuration."""
-    bc_pfr_data = CMPA.CONFIG_DIR
-    CMPA.CONFIG_DIR = data_dir
-    cmpa = CMPA("lpc55s6x")
-    CMPA.CONFIG_DIR = bc_pfr_data
-    assert cmpa.bc_cfg == None
 
 
 @pytest.mark.parametrize(

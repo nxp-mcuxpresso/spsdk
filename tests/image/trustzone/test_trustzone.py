@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -117,3 +117,8 @@ def test_tz_incorrect_data(sample_tz_data):
             tz_type=TrustZoneType.CUSTOM,
             customizations=sample_tz_data,
         )
+
+
+def test_tz_incorrect_config(sample_tz_data):
+    with pytest.raises(SPSDKError):
+        TrustZone.from_config(config_data=bytes(4))

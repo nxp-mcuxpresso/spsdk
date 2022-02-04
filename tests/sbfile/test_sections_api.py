@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +10,8 @@ import os
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.sbfile.commands import CmdErase, CmdLoad, CmdReset
-from spsdk.sbfile.sections import BootSectionV2, CertSectionV2
+from spsdk.sbfile.sb2.commands import CmdErase, CmdLoad, CmdReset
+from spsdk.sbfile.sb2.sections import BootSectionV2, CertSectionV2
 from spsdk.utils.crypto import CertBlockV2, Certificate, Counter, crypto_backend
 
 
@@ -32,10 +32,52 @@ def test_boot_section_v2():
     assert data
     assert BootSectionV2.parse(data, 0, False, dek, mac, Counter(nonce))
 
-    with pytest.raises(Exception):
+    with pytest.raises(SPSDKError, match="Invalid type of dek, should be bytes"):
+        BootSectionV2.parse(
+            data=data, offset=0, plain_sect=False, dek=4, mac=mac, counter=Counter(nonce)
+        )
+
+    with pytest.raises(SPSDKError, match="Invalid type of mac, should be bytes"):
+        BootSectionV2.parse(
+            data=data, offset=0, plain_sect=False, dek=dek, mac=4, counter=Counter(nonce)
+        )
+
+    with pytest.raises(SPSDKError, match="Invalid type of counter"):
+        BootSectionV2.parse(data=data, offset=0, plain_sect=False, dek=dek, mac=mac, counter=5)
+
+    with pytest.raises(SPSDKError):
         assert BootSectionV2.parse(
             data, 0, False, dek, crypto_backend().random_bytes(32), Counter(nonce)
         )
+
+
+def test_boot_section_v2_invalid_export():
+    boot_section = BootSectionV2(
+        0, CmdErase(address=0, length=100000), CmdLoad(address=0, data=b"0123456789"), CmdReset()
+    )
+    dek = 32
+    mac = 4
+    nonce = crypto_backend().random_bytes(16)
+    with pytest.raises(SPSDKError, match="Invalid type of dek, should be bytes"):
+        boot_section.export(dek, mac, Counter(nonce))
+    dek = crypto_backend().random_bytes(32)
+    with pytest.raises(SPSDKError, match="Invalid type of mac, should be bytes"):
+        boot_section.export(dek, mac, Counter(nonce))
+    counter = 5
+    mac = crypto_backend().random_bytes(32)
+    with pytest.raises(SPSDKError, match="Invalid type of counter"):
+        boot_section.export(dek, mac, counter)
+
+
+def test_boot_section_v2_raw_size():
+    b_section = BootSectionV2(uid=2)
+    b_section.HMAC_SIZE = 3
+    assert b_section.raw_size == 32
+
+
+def test_boot_section_v2_hmac_count():
+    b_section = BootSectionV2(uid=2, hmac_count=0)
+    assert b_section.uid == 2
 
 
 def _create_cert_block_v2(data_dir: str) -> CertBlockV2:
@@ -61,7 +103,7 @@ def test_certificate_section_v2(data_dir: str) -> None:
     assert data
     assert CertSectionV2.parse(data, 0, dek, mac, Counter(nonce))
 
-    with pytest.raises(Exception):
+    with pytest.raises(SPSDKError):
         CertSectionV2.parse(data, 0, dek, crypto_backend().random_bytes(32), Counter(nonce))
 
 
@@ -132,3 +174,8 @@ def test_invalid_header_flag(data_dir):
     valid_data = cs.export(dek, mac, Counter(nonce))
     with pytest.raises(SPSDKError, match="Mark"):
         CertSectionV2.parse(data=valid_data, mac=mac, dek=dek, counter=Counter(nonce))
+
+
+def test_cert_section(data_dir):
+    cs = CertSectionV2(_create_cert_block_v2(data_dir))
+    assert "CertSectionV2: Length=1296" == cs.__str__()

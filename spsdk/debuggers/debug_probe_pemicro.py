@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Pemicro Debug probes support."""
@@ -52,7 +52,7 @@ class DebugProbePemicro(DebugProbe):
         self.pemicro: Optional[PyPemicro] = None
         self.last_access_memory = False
 
-        logger.debug(f"The SPSDK Pemicro Interface has been initialized")
+        logger.debug("The SPSDK Pemicro Interface has been initialized")
 
     @classmethod
     def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> list:
@@ -91,17 +91,17 @@ class DebugProbePemicro(DebugProbe):
         try:
             self.pemicro = DebugProbePemicro.get_pemicro_lib()
             if self.pemicro is None:
-                raise SPSDKDebugProbeError(f"Getting of J-Link library failed.")
+                raise SPSDKDebugProbeError("Getting of J-Link library failed.")
         except SPSDKDebugProbeError as exc:
-            raise SPSDKDebugProbeError(f"Getting of J-Link library failed({str(exc)}).")
+            raise SPSDKDebugProbeError(f"Getting of J-Link library failed({str(exc)}).") from exc
         try:
             self.pemicro.open(debug_hardware_name_ip_or_serialnum=self.hardware_id)
             self.pemicro.connect(PEMicroInterfaces.SWD)  # type: ignore
             dbgmlbx_ap_ix = self._get_dmbox_ap()
         except PEMicroException as exc:
             raise SPSDKDebugProbeError(
-                f"Pemicro cannot establish communication with target({str(exc)})."
-            )
+                f"Pemicro cannot establish  communication with target({str(exc)})."
+            ) from exc
 
         if self.dbgmlbx_ap_ix == -1:
             if dbgmlbx_ap_ix == -1:
@@ -258,7 +258,7 @@ class DebugProbePemicro(DebugProbe):
         try:
             self.pemicro.reset_target()
         except PEMicroException as exc:
-            logger.warning(f"The reset sequence occurred some errors.")
+            logger.warning("The reset sequence occurred some errors.")
             self.pemicro.control_reset_line(assert_reset=False)
 
     def _get_dmbox_ap(self) -> int:

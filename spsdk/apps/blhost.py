@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,6 +11,7 @@ import inspect
 import json
 import logging
 import os
+import shlex
 import sys
 
 import click
@@ -26,6 +27,7 @@ from spsdk.apps.blhost_helper import (
     parse_property_tag,
     parse_trust_prov_key_type,
     parse_trust_prov_oem_key_type,
+    progress_bar,
 )
 from spsdk.apps.utils import (
     INT,
@@ -36,6 +38,7 @@ from spsdk.apps.utils import (
     parse_hex_data,
 )
 from spsdk.mboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_property_value
+from spsdk.mboot.error_codes import stringify_status_code
 
 
 @click.group(no_args_is_help=True)
@@ -44,7 +47,8 @@ from spsdk.mboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_proper
     "-p",
     "--port",
     metavar="COM[,speed]",
-    help="""Serial port configuration. Use 'nxpdevscan' utility to list devices on serial port.""",
+    help="""Serial port configuration. Default baud rate is 57600.
+    Use 'nxpdevscan' utility to list devices on serial port.""",
 )
 @optgroup.option(
     "-u",
@@ -114,7 +118,8 @@ def main(
     timeout: int,
 ) -> int:
     """Utility for communication with the bootloader on target."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    log_level = log_level or logging.WARNING
+    logging.basicConfig(level=log_level)
 
     # print help for get-property if property tag is 0 or 'list-properties'
     if ctx.invoked_subcommand == "get-property":
@@ -133,8 +138,42 @@ def main(
                 module="mboot", port=port, usb=usb, timeout=timeout, lpcusbsio=lpcusbsio
             ),
             "use_json": use_json,
+            "suppress_progress_bar": use_json or log_level < logging.WARNING,
         }
     return 0
+
+
+@main.command()
+@click.argument("command_file", type=click.Path(file_okay=True))
+@click.pass_context
+def batch(ctx: click.Context, command_file: str) -> None:
+    """Invoke blhost commands defined in command file.
+
+    Command file contains one blhost command per line.
+    example: "read-memory 0 4096 memory.bin"
+    example: "get-property 24 # read target version"
+
+    Comment are supported. Everything after '#' is a comment (just like in Python/Shell)
+
+    Note: This is an early experimental format, it may change at any time.
+
+    \b
+    COMMAND_FILE    - path to blhost command file
+    """
+    click.secho("This is an experimental command. Use at your own risk!", fg="yellow")
+
+    for line in open(command_file):
+        tokes = shlex.split(line, comments=True)
+        if len(tokes) < 1:
+            continue
+
+        command_name, *command_args = tokes
+        ctx.params = {}
+        cmd_obj = ctx.parent.command.commands.get(command_name)
+        if not cmd_obj:
+            raise SPSDKError(f"Unknown command: {command_name}")
+        cmd_obj.parse_args(ctx, command_args)
+        ctx.invoke(cmd_obj, **ctx.params)
 
 
 @main.command()
@@ -321,8 +360,16 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
                 if mboot.status_code != StatusCode.SUCCESS:
                     display_output([], mboot.status_code, ctx.obj["use_json"])
                     exit(1)
-        for segment in segments:
-            mboot.write_memory(address=segment.start, data=segment.data_bin, mem_id=mem_id)
+        for i, segment in enumerate(segments, start=1):
+            with progress_bar(
+                suppress=ctx.obj["suppress_progress_bar"], label=f"Writing segment #{i}"
+            ) as progress_callback:
+                mboot.write_memory(
+                    address=segment.start,
+                    data=segment.data_bin,
+                    mem_id=mem_id,
+                    progress_callback=progress_callback,
+                )
             display_output([], mboot.status_code, ctx.obj["use_json"])
 
 
@@ -570,7 +617,10 @@ def load_image(ctx: click.Context, boot_file: click.File) -> None:
     """
     data = boot_file.read()  # type: ignore
     with McuBoot(ctx.obj["interface"]) as mboot:
-        mboot.load_image(data)
+        with progress_bar(
+            suppress=ctx.obj["suppress_progress_bar"], label="Loading image"
+        ) as progress_callback:
+            mboot.load_image(data, progress_callback)
         display_output([], mboot.status_code, ctx.obj["use_json"])
 
 
@@ -619,6 +669,7 @@ def get_property(ctx: click.Context, property_tag: str, index: int) -> None:
     27 or 'flash-page-size'             Flash page size, <index> is required
     28 or 'irq-notify-pin'              Interrupt notifier pin
     29 or 'pfr-keystore_update-opt'     PFR key store update option
+    30 or 'byte-write-timeout-ms'       Byte write timeout in ms
 
     \b
     Note: Not all the properties are available for all devices.
@@ -650,6 +701,7 @@ def set_property(ctx: click.Context, property_tag: str, value: int) -> None:
     22 or 'flash-read-margin'           Read margin level of program flash
     28 or 'irq-notify-pin'              Interrupt notifier pin
     29 or 'pfr-keystore_update-opt'     PFR key store update option
+    30 or 'byte-write-timeout-ms'       Byte write timeout in ms
 
     \b
     Note: Not all properties can be set on all devices.
@@ -686,7 +738,10 @@ def read_memory(
     MEMORY_ID   - id of memory to read from (default: 0)
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
-        response = mboot.read_memory(address, byte_count, memory_id)
+        with progress_bar(
+            suppress=ctx.obj["suppress_progress_bar"], label="Reading memory"
+        ) as progress_callback:
+            response = mboot.read_memory(address, byte_count, memory_id, progress_callback)
 
     if response:
         if out_file:
@@ -704,8 +759,22 @@ def read_memory(
 
 @main.command()
 @click.argument("sb_file", metavar="FILE", type=click.File("rb"), required=True)
+@click.option(
+    "-c",
+    "--check-errors",
+    is_flag=True,
+    default=False,
+    help=(
+        "This flag should be used when the `receive-sb-file` operation fails using USB interface. "
+        "Without this flag USB transfer is significantly faster (roughly 20x) "
+        "However, the status code might be misleading in case of an error. "
+        "In case of an error using USB interface, "
+        "rerun `receive-sb-file` with this setting for clearer error message. "
+        "This setting has no effect interfaces other than USB."
+    ),
+)
 @click.pass_context
-def receive_sb_file(ctx: click.Context, sb_file: click.File) -> None:
+def receive_sb_file(ctx: click.Context, sb_file: click.File, check_errors: bool) -> None:
     """Receives a file in a Secure Binary (SB) format.
 
     An SB file is an encapsulated, binary stream of bootloader commands that can be optionally encrypted.
@@ -714,8 +783,11 @@ def receive_sb_file(ctx: click.Context, sb_file: click.File) -> None:
     FILE    - SB file to send to the target
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
-        data = sb_file.read()  # type: ignore
-        mboot.receive_sb_file(data)
+        with progress_bar(
+            suppress=ctx.obj["suppress_progress_bar"], label="Sending SB file"
+        ) as progress_callback:
+            data = sb_file.read()  # type: ignore
+            mboot.receive_sb_file(data, progress_callback, check_errors)
         display_output([], mboot.status_code, ctx.obj["use_json"])
 
 
@@ -771,7 +843,10 @@ def write_memory(ctx: click.Context, address: int, data_source: str, memory_id: 
             data = f.read(size)
 
     with McuBoot(ctx.obj["interface"]) as mboot:
-        response = mboot.write_memory(address, data, memory_id)
+        with progress_bar(
+            suppress=ctx.obj["suppress_progress_bar"], label="Writing memory"
+        ) as progress_callback:
+            response = mboot.write_memory(address, data, memory_id, progress_callback)
         display_output([len(data)] if response else None, mboot.status_code, ctx.obj["use_json"])
 
 
@@ -807,13 +882,13 @@ def generate_key_blob(
         key_sel_int = int(key_sel) if key_sel.isnumeric() else GenerateKeyBlobSelect.get(key_sel)
         assert isinstance(key_sel_int, int)
         write_response = mboot.generate_key_blob(data, key_sel=key_sel_int)
+        if write_response:
+            blob_file.write(write_response)  # type: ignore
         display_output(
             [mboot.status_code, len(write_response)] if write_response else None,
             mboot.status_code,
             ctx.obj["use_json"],
         )
-        if write_response:
-            blob_file.write(write_response)  # type: ignore
 
 
 @main.group()
@@ -986,13 +1061,13 @@ def read_key_store(ctx: click.Context, key_store_file: click.File) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         response = mboot.kp_read_key_store()
+        if response:
+            key_store_file.write(response)  # type: ignore
         display_output(
             [len(response)] if response else None,
             mboot.status_code,
             ctx.obj["use_json"],
         )
-        if response:
-            key_store_file.write(response)  # type: ignore
 
 
 @main.group()
@@ -1381,39 +1456,34 @@ def display_output(
             # this is just a visualization thing
             "response": response or [],
             "status": {
-                "description": decode_status_code(status_code),
+                "description": stringify_status_code(status_code),
                 "value": status_code,
             },
         }
         print(json.dumps(data, indent=3))
     else:
-        print(f"Response status = {decode_status_code(status_code)}")
+        print(f"Response status = {stringify_status_code(status_code)}")
         if isinstance(response, list):
             filtered_response = filter(lambda x: x is not None, response)
             for i, word in enumerate(filtered_response):
                 print(f"Response word {i + 1} = {word} ({word:#x})")
         if extra_output:
             print(extra_output)
+    # Force exit to handover the current status code.
+    # We could do that because this function is called as last from each subcommand
+    if status_code:
+        click.get_current_context().exit(1)
 
 
-def decode_status_code(status_code: int) -> str:
-    """Stringifies the MBoot status code.
-
-    :param status_code: MBoot status code
-    :type status_code: int
-    :return: String representation
-    """
-    return (
-        f"{status_code} ({status_code:#x}) "
-        f"{StatusCode.desc(status_code, f'Unknown error code ({status_code})')}."
-    )
+# For backward compatibility
+decode_status_code = stringify_status_code
 
 
 @catch_spsdk_error
 def safe_main() -> None:
     """Calls the main function."""
-    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+    sys.exit(main())  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == "__main__":
-    safe_main()  # pragma: no cover
+    safe_main()

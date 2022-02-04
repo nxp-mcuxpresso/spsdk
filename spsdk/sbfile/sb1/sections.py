@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,8 @@ from typing import List, Sequence
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.misc import DebugInfo
 
-from ..commands import (
+from ..misc import SecBootBlckSize
+from ..sb2.commands import (
     CmdBaseClass,
     CmdCall,
     CmdErase,
@@ -24,7 +25,6 @@ from ..commands import (
     CmdProg,
     CmdReset,
 )
-from ..misc import SecBootBlckSize
 from .commands import parse_v1_command
 from .headers import BootSectionHeaderV1, SecureBootFlagsV1
 
@@ -40,9 +40,6 @@ class BootSectionV1(BaseClass):
         """
         self._header = BootSectionHeaderV1(section_id, flags)
         self._commands: List[CmdBaseClass] = []
-
-    def __str__(self) -> str:
-        return self.info()
 
     @property
     def section_id(self) -> int:

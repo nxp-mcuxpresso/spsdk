@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -53,13 +53,13 @@ def test_dar_packet_rsa(
 @pytest.mark.parametrize(
     "yml_file_name, version, file_key, expected_length",
     [
-        ("new_dck_secp256_N4A.yml", "2.0", "new_dck_secp256r1.pem", 316),
-        ("new_dck_secp384_N4A.yml", "2.1", "new_dck_secp384r1.pem", 444),
+        ("new_dck_secp256_lpc55s3x.yml", "2.0", "new_dck_secp256r1.pem", 316),
+        ("new_dck_secp384_lpc55s3x.yml", "2.1", "new_dck_secp384r1.pem", 444),
     ],
 )
-def test_dar_packet_4_analog_256(data_dir, yml_file_name, version, file_key, expected_length):
+def test_dar_packet_lpc55s3x_256(data_dir, yml_file_name, version, file_key, expected_length):
     with use_working_directory(data_dir):
-        dac_bytes = load_binary(os.path.join(data_dir, "sample_dac_analog.bin"))
+        dac_bytes = load_binary(os.path.join(data_dir, "sample_dac_lpc55s3x.bin"))
         with open(os.path.join(data_dir, yml_file_name), "r") as f:
             yaml_config = yaml.safe_load(f)
         dc = DC.create_from_yaml_config(version=version, yaml_config=yaml_config)

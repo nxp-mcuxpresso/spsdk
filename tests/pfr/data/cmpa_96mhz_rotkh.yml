@@ -13,55 +13,55 @@ settings: # The PFR CMPA registers configuration.
       # - BOOT_CFG_BOOT_SPEED_SYSTEM_SPEED_CODE, (0): Defined by NMPA.SYSTEM_SPEED_CODE
       # - BOOT_CFG_BOOT_SPEED_FRO_96MHZ, (1): 96MHz FRO
       # - BOOT_CFG_BOOT_SPEED_FRO_48MHZ, (2): 48MHz FRO
-  CC_SOCU_PIN: # CC_SOCU_PIN.
+  DCFG_CC_SOCU_PIN: # DCFG_CC_SOCU_PIN.
     bitfields: # The register bitfields
-      NIDEN: CC_SOCU_PIN_NIDEN_DISABLE # Width: 1b[0-1], Description: Non Secure non-invasive debug enable
-      # - CC_SOCU_PIN_NIDEN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_NIDEN_DISABLE, (1): Fixed state
-      DBGEN: CC_SOCU_PIN_DBGEN_DISABLE # Width: 1b[0-1], Description: Non Secure debug enable
-      # - CC_SOCU_PIN_DBGEN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_DBGEN_DISABLE, (1): Fixed state
-      SPNIDEN: CC_SOCU_PIN_SPNIDEN_DISABLE # Width: 1b[0-1], Description: Secure non-invasive debug enable
-      # - CC_SOCU_PIN_SPNIDEN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_SPNIDEN_DISABLE, (1): Fixed state
-      SPIDEN: CC_SOCU_PIN_SPIDEN_DISABLE # Width: 1b[0-1], Description: Secure invasive debug enable
-      # - CC_SOCU_PIN_SPIDEN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_SPIDEN_DISABLE, (1): Fixed state
-      TAPEN: CC_SOCU_PIN_TAPEN_DISABLE # Width: 1b[0-1], Description: JTAG TAP enable
-      # - CC_SOCU_PIN_TAPEN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_TAPEN_DISABLE, (1): Fixed state
-      MCM33_DBGEN: CC_SOCU_PIN_MCM33_DBGEN_DISABLE # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) invasive debug enable
-      # - CC_SOCU_PIN_MCM33_DBGEN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_MCM33_DBGEN_DISABLE, (1): Fixed state
-      ISP_CMD_EN: CC_SOCU_PIN_ISP_CMD_EN_DISABLE # Width: 1b[0-1], Description: ISP Boot Command enable
-      # - CC_SOCU_PIN_ISP_CMD_EN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_ISP_CMD_EN_DISABLE, (1): Fixed state
-      FA_ME_CMD_EN: CC_SOCU_PIN_FA_ME_CMD_EN_DISABLE # Width: 1b[0-1], Description: Fault Analysis/Mass Erase Command enable
-      # - CC_SOCU_PIN_FA_ME_CMD_EN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_FA_ME_CMD_EN_DISABLE, (1): Fixed state
-      MCM33_NIDEN: CC_SOCU_PIN_MCM33_NIDEN_DISABLE # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) non-invasive debug enable
-      # - CC_SOCU_PIN_MCM33_NIDEN_ENABLE, (0): Use DAP to enable
-      # - CC_SOCU_PIN_MCM33_NIDEN_DISABLE, (1): Fixed state
-  CC_SOCU_DFLT: # CC_SOCU_DFLT.
+      NIDEN: DCFG_CC_SOCU_PIN_NIDEN_FIXED_STATE # Width: 1b[0-1], Description: Non Secure non-invasive debug enable
+      # - DCFG_CC_SOCU_PIN_NIDEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_NIDEN_FIXED_STATE, (1): Fixed state
+      DBGEN: DCFG_CC_SOCU_PIN_DBGEN_FIXED_STATE # Width: 1b[0-1], Description: Non Secure debug enable
+      # - DCFG_CC_SOCU_PIN_DBGEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_DBGEN_FIXED_STATE, (1): Fixed state
+      SPNIDEN: DCFG_CC_SOCU_PIN_SPNIDEN_FIXED_STATE # Width: 1b[0-1], Description: Secure non-invasive debug enable
+      # - DCFG_CC_SOCU_PIN_SPNIDEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_SPNIDEN_FIXED_STATE, (1): Fixed state
+      SPIDEN: DCFG_CC_SOCU_PIN_SPIDEN_FIXED_STATE # Width: 1b[0-1], Description: Secure invasive debug enable
+      # - DCFG_CC_SOCU_PIN_SPIDEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_SPIDEN_FIXED_STATE, (1): Fixed state
+      TAPEN: DCFG_CC_SOCU_PIN_TAPEN_FIXED_STATE # Width: 1b[0-1], Description: JTAG TAP enable
+      # - DCFG_CC_SOCU_PIN_TAPEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_TAPEN_FIXED_STATE, (1): Fixed state
+      MCM33_DBGEN: DCFG_CC_SOCU_PIN_MCM33_DBGEN_FIXED_STATE # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) invasive debug enable
+      # - DCFG_CC_SOCU_PIN_MCM33_DBGEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_MCM33_DBGEN_FIXED_STATE, (1): Fixed state
+      ISP_CMD_EN: DCFG_CC_SOCU_PIN_ISP_CMD_EN_FIXED_STATE # Width: 1b[0-1], Description: ISP Boot Command enable
+      # - DCFG_CC_SOCU_PIN_ISP_CMD_EN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_ISP_CMD_EN_FIXED_STATE, (1): Fixed state
+      FA_ME_CMD_EN: DCFG_CC_SOCU_PIN_FA_ME_CMD_EN_FIXED_STATE # Width: 1b[0-1], Description: Fault Analysis/Mass Erase Command enable
+      # - DCFG_CC_SOCU_PIN_FA_ME_CMD_EN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_FA_ME_CMD_EN_FIXED_STATE, (1): Fixed state
+      MCM33_NIDEN: DCFG_CC_SOCU_PIN_MCM33_NIDEN_FIXED_STATE # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) non-invasive debug enable
+      # - DCFG_CC_SOCU_PIN_MCM33_NIDEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_MCM33_NIDEN_FIXED_STATE, (1): Fixed state
+  DCFG_CC_SOCU_DFLT: # DCFG_CC_SOCU_DFLT.
     bitfields: # The register bitfields
-      NIDEN: CC_SOCU_DFLT_NIDEN_ENABLE # Width: 1b[0-1], Description: Non Secure non-invasive debug fixed state
-      # - CC_SOCU_DFLT_NIDEN_DISABLE, (0): Disable
-      # - CC_SOCU_DFLT_NIDEN_ENABLE, (1): Enable
-      DBGEN: CC_SOCU_DFLT_DBGEN_ENABLE # Width: 1b[0-1], Description: Non Secure debug fixed state
-      # - CC_SOCU_DFLT_DBGEN_DISABLE, (0): Disable
-      # - CC_SOCU_DFLT_DBGEN_ENABLE, (1): Enable
-      SPNIDEN: CC_SOCU_DFLT_SPNIDEN_ENABLE # Width: 1b[0-1], Description: Secure non-invasive debug fixed state
-      # - CC_SOCU_DFLT_SPNIDEN_DISABLE, (0): Disable
-      # - CC_SOCU_DFLT_SPNIDEN_ENABLE, (1): Enable
-      SPIDEN: CC_SOCU_DFLT_SPIDEN_ENABLE # Width: 1b[0-1], Description: Secure invasive debug fixed state
-      # - CC_SOCU_DFLT_SPIDEN_DISABLE, (0): Disable
-      # - CC_SOCU_DFLT_SPIDEN_ENABLE, (1): Enable
-      MCM33_DBGEN: CC_SOCU_DFLT_MCM33_DBGEN_ENABLE # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) invasive debug fixed state
-      # - CC_SOCU_DFLT_MCM33_DBGEN_DISABLE, (0): Disable
-      # - CC_SOCU_DFLT_MCM33_DBGEN_ENABLE, (1): Enable
-      MCM33_NIDEN: CC_SOCU_DFLT_MCM33_NIDEN_ENABLE # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) non-invasive debug fixed state
-      # - CC_SOCU_DFLT_MCM33_NIDEN_DISABLE, (0): Disable
-      # - CC_SOCU_DFLT_MCM33_NIDEN_ENABLE, (1): Enable
+      NIDEN: DCFG_CC_SOCU_DFLT_NIDEN_ENABLED # Width: 1b[0-1], Description: Non Secure non-invasive debug fixed state
+      # - DCFG_CC_SOCU_DFLT_NIDEN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_NIDEN_ENABLED, (1): Enabled
+      DBGEN: DCFG_CC_SOCU_DFLT_DBGEN_ENABLED # Width: 1b[0-1], Description: Non Secure debug fixed state
+      # - DCFG_CC_SOCU_DFLT_DBGEN_DISABLE, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_DBGEN_ENABLE, (1): Enabled
+      SPNIDEN: DCFG_CC_SOCU_DFLT_SPNIDEN_ENABLED # Width: 1b[0-1], Description: Secure non-invasive debug fixed state
+      # - DCFG_CC_SOCU_DFLT_SPNIDEN_DISABLE, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_SPNIDEN_ENABLE, (1): Enabled
+      SPIDEN: DCFG_CC_SOCU_DFLT_SPIDEN_ENABLED # Width: 1b[0-1], Description: Secure invasive debug fixed state
+      # - DCFG_CC_SOCU_DFLT_SPIDEN_DISABLE, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_SPIDEN_ENABLE, (1): Enabled
+      MCM33_DBGEN: DCFG_CC_SOCU_DFLT_MCM33_DBGEN_ENABLED # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) invasive debug fixed state
+      # - DCFG_CC_SOCU_DFLT_MCM33_DBGEN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_MCM33_DBGEN_ENABLED, (1): Enabled
+      MCM33_NIDEN: DCFG_CC_SOCU_DFLT_MCM33_NIDEN_ENABLED # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) non-invasive debug fixed state
+      # - DCFG_CC_SOCU_DFLT_MCM33_NIDEN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_MCM33_NIDEN_ENABLED, (1): Enabled
   SECURE_BOOT_CFG: # Secure boot configuration flags.
     bitfields: # The register bitfields
       SKIP_DICE: SECURE_BOOT_CFG_SKIP_DICE_DISABLE_0 # Width: 2b[0-3], Description: Skip DICE computation
@@ -75,4 +75,4 @@ settings: # The PFR CMPA registers configuration.
       # - SECURE_BOOT_CFG_SEC_BOOT_EN_ENABLE_2, (2): Boot signed images. (internal flash, RSA signed)
       # - SECURE_BOOT_CFG_SEC_BOOT_EN_ENABLE_3, (3): Boot signed images. (internal flash, RSA signed)
   ROTKH: # ROTKH field is compounded by 8 32-bit fields and contains Root key table hash
-    value: 04355cea4777d09d7674ad2c8e47dd38a05c434e5662fc47b83a0b2b50d22a3c # The value width: 256b
+    value: "04355cea4777d09d7674ad2c8e47dd38a05c434e5662fc47b83a0b2b50d22a3c" # The value width: 256b

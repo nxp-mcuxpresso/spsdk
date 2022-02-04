@@ -14,8 +14,6 @@ import os
 import sys
 import spsdk
 
-from recommonmark.transform import AutoStructify
-
 sys.path.insert(0, os.path.abspath(".."))
 sys.setrecursionlimit(1500)
 
@@ -48,7 +46,7 @@ extensions = [
     # 'sphinx_autodoc_annotation',
     "sphinx_autodoc_typehints",
     "sphinx.ext.todo",
-    "recommonmark",
+    "myst_parser",
     "sphinx_click",
 ]
 
@@ -86,15 +84,3 @@ html_static_path = ["_static"]
 html_css_files = [
     "css/nxp.css",
 ]
-
-# app setup hook
-def setup(app):
-    app.add_config_value(
-        "recommonmark_config",
-        {
-            "auto_toc_tree_section": "Contents",
-            "enable_eval_rst": True,
-        },
-        True,
-    )
-    app.add_transform(AutoStructify)

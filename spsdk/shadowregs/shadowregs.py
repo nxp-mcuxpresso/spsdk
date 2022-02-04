@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """The shadow registers control DAT support file."""
@@ -233,7 +233,7 @@ class ShadowRegisters:
 
         logger.debug(f"The shadow registers has been loaded from configuration.")
 
-    def reg_antipolize_src_handler(self, val: bytes, context: Any) -> bytes:
+    def reg_antipolize_src_handler(self, val: int, context: Any) -> int:
         """Antipolize given register value.
 
         :param val: Input register value.
@@ -241,14 +241,10 @@ class ShadowRegisters:
         :return: Antipolized value.
         """
         dst_reg: RegsRegister = context
-        newval = [0] * len(val)
-        for i, val_byte in enumerate(val):
-            newval[i] = val_byte ^ 0xFF
-        dst_reg.set_value(bytes(newval), raw=True)
-
+        dst_reg.set_value(val ^ 0xFFFFFFFF, raw=True)
         return val
 
-    def reg_antipolize_dst_handler(self, val: bytes, context: Any) -> bytes:
+    def reg_antipolize_dst_handler(self, val: int, context: Any) -> int:
         """Keep same antipolized register value in computed register.
 
         :param val: Input register value.
@@ -257,10 +253,8 @@ class ShadowRegisters:
         """
         src_reg: RegsRegister = context
         val = src_reg.get_value()
-        newval = [0] * len(val)
-        for i, val_byte in enumerate(val):
-            newval[i] = val_byte ^ 0xFF
-        return bytes(newval)
+        new_val = val ^ 0xFFFFFFFF
+        return new_val
 
     def reg_computed_fields_handler(self, val: bytes, context: Any) -> bytes:
         """Recalculate all fields for given register value.
@@ -309,33 +303,31 @@ class ShadowRegisters:
         return crc & 0xFF
 
     @staticmethod
-    def comalg_dcfg_cc_socu_crc8(val: bytes) -> bytes:
+    def comalg_dcfg_cc_socu_crc8(val: int) -> int:
         """Function that creates the crc for DCFG_CC_SOCU.
 
         :param val: Input DCFG_CC_SOCU Value.
         :return: Returns the value of DCFG_CC_SOCU with computed CRC8 field.
         """
-        ret = [0] * 4
-        ret[0:3] = val[0:3]
-        in_val = bytearray(val[0:3])
-        in_val.reverse()
-        ret[3] = ShadowRegisters.crc_update(in_val)
-        return bytes(ret)
+        in_val = bytearray(3)
+        for i in range(3):
+            in_val[i] = (val >> (8 + i * 8)) & 0xFF
+        val &= ~0xFF
+        val |= ShadowRegisters.crc_update(in_val)
+        return val
 
     @staticmethod
-    def comalg_dcfg_cc_socu_rsvd(val: bytes) -> bytes:
+    def comalg_dcfg_cc_socu_rsvd(val: int) -> int:
         """Function fill up the DCFG_CC_SOCU RSVD filed by 0x80 to satisfy MCU needs.
 
         :param val: Input DCFG_CC_SOCU Value.
         :return: Returns the value of DCFG_CC_SOCU with computed CRC8 field.
         """
-        new_val = bytearray(val)
-        new_val[0] &= ~0xFE
-        new_val[0] |= 0x80
+        new_val = val | 0x80000000
         return new_val
 
     @staticmethod
-    def comalg_do_nothing(val: bytes) -> bytes:
+    def comalg_do_nothing(val: int) -> int:
         """Function that do nothing.
 
         :param val: Input Value.

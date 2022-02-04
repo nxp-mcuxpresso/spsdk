@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,8 +16,8 @@ from spsdk.utils.easy_enum import Enum
 class KeySourceType(Enum):
     """Device key source."""
 
-    OTP = (0, "Device keys stored in OTP")
-    KEYSTORE = (1, "Device keys stored in KeyStore")
+    OTP = (0, "OTP", "Device keys stored in OTP")
+    KEYSTORE = (1, "KEYSTORE", "Device keys stored in KeyStore")
 
 
 class KeyStore:

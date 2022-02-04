@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for any git operations needed for checkers."""
 
-import subprocess
 import logging
 import re
+import subprocess
 
 
-def get_number_of_commits(repo_path: str, parent_branch: str = 'origin/master') -> int:
+def get_number_of_commits(repo_path: str, parent_branch: str = "origin/master") -> int:
     """Get number of commits.
 
     :param parent_branch: branch to examine
@@ -26,8 +26,9 @@ def get_number_of_commits(repo_path: str, parent_branch: str = 'origin/master') 
     return distance
 
 
-def get_changed_files(repo_path: str, commits: int = 1, cached: bool = False,
-                      file_extension_regex: str = r"\.py") -> list:
+def get_changed_files(
+    repo_path: str, commits: int = 1, cached: bool = False, file_extension_regex: str = r"\.py"
+) -> list:
     """Get list of changed files.
 
     :param repo_path: path to the repository
@@ -48,4 +49,3 @@ def get_changed_files(repo_path: str, commits: int = 1, cached: bool = False,
         if m:
             filtered.append(m.group("path"))
     return filtered
-

@@ -1,26 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """SB31 module of sbfile."""
 
 from spsdk.sbfile.sb31.commands import (
-    CmdErase,
-    CmdLoad,
-    CmdExecute,
     CmdCall,
+    CmdConfigureMemory,
+    CmdCopy,
+    CmdErase,
+    CmdExecute,
+    CmdFillMemory,
+    CmdLoad,
+    CmdLoadCmac,
+    CmdLoadHashLocking,
+    CmdLoadKeyBlob,
     CmdProgFuses,
     CmdProgIfr,
     CmdSectionHeader,
-    CmdLoadCmac,
-    CmdLoadHashLocking,
-    CmdCopy,
-    CmdFillMemory,
     parse_command,
-    CmdLoadKeyBlob,
-    CmdConfigureMemory,
 )
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 

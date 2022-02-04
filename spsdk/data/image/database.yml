@@ -1,0 +1,100 @@
+# Copyright 2021 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+map_tables:
+  targets:
+    int_xip: ["Internal flash (XIP)", xip]
+    ext_xip: ["External flash (XIP)"]
+    ram: ["RAM"]
+
+  authentication:
+    plain: [Plain]
+    crc: [CRC]
+    signed: [Signed, signed]
+    encrypted: ["Encrypted + Signed", encrypted]
+
+devices:
+  lpc55xx:
+    images:
+      int_xip:
+        plain: Mbi_PlainXip
+        crc: Mbi_CrcXip
+        signed: Mbi_SignedXip
+      # ram:
+
+  lpc55s0x:
+    images:
+      int_xip:
+        plain: Mbi_PlainXipRtxxx
+        crc: Mbi_CrcXipRtxxx
+        signed: Mbi_PlainSignedXipRtxxx
+      # ram:
+
+  lpc55s1x:
+    images:
+      int_xip:
+        plain: Mbi_PlainXipRtxxx
+        crc: Mbi_CrcXipRtxxx
+        signed: Mbi_PlainSignedXipRtxxx
+      # ram:
+
+  lpc552x:
+    images:
+      int_xip:
+        plain: Mbi_PlainXip
+        crc: Mbi_CrcXip
+        signed: Mbi_SignedXip
+      # ram:
+
+  lpc55s2x:
+    images:
+      int_xip:
+        plain: Mbi_PlainXip
+        crc: Mbi_CrcXip
+        signed: Mbi_SignedXip
+      # ram:
+
+  lpc55s6x:
+    images:
+      int_xip:
+        plain: Mbi_PlainXip
+        crc: Mbi_CrcXip
+        signed: Mbi_SignedXip
+      # ram:
+
+  rt5xx:
+    images:
+      ext_xip:
+        plain: Mbi_PlainXipRtxxx
+        crc: Mbi_CrcXipRtxxx
+        signed: Mbi_PlainSignedXipRtxxx
+      ram:
+        plain: Mbi_PlainRamRtxxx
+        crc: Mbi_CrcRamRtxxx
+        signed: Mbi_PlainSignedRamRtxxx
+        encrypted: Mbi_EncryptedRamRtxxx
+
+  rt6xx:
+    images:
+      ext_xip:
+        plain: Mbi_PlainXipRtxxx
+        crc: Mbi_CrcXipRtxxx
+        signed: Mbi_PlainSignedXipRtxxx
+      ram:
+        plain: Mbi_PlainRamRtxxx
+        crc: Mbi_CrcRamRtxxx
+        signed: Mbi_PlainSignedRamRtxxx
+        encrypted: Mbi_EncryptedRamRtxxx
+
+  lpc55s3x:
+    images:
+      int_xip:
+        crc: Mbi_CrcXipLpc55s3x
+        signed: Mbi_PlainXipSignedLpc55s3x
+      ext_xip:
+        crc: Mbi_CrcXipLpc55s3x
+        signed: Mbi_PlainXipSignedLpc55s3x
+      ram:
+        plain: Mbi_PlainRamLpc55s3x
+        crc: Mbi_CrcRamLpc55s3x

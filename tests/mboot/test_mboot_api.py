@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,14 +10,7 @@ import pytest
 from spsdk import SPSDKError
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, McuBootError
-from spsdk.mboot.mcuboot import (
-    CmdPacket,
-    CommandTag,
-    ExtMemId,
-    KeyProvUserKeyType,
-    PropertyTag,
-    StatusCode,
-)
+from spsdk.mboot.mcuboot import CmdPacket, CommandTag, KeyProvUserKeyType, PropertyTag, StatusCode
 from tests.mcu_examples.test_rt5xx import write_shadow_regis
 
 
@@ -53,6 +46,21 @@ def test_cmd_read_memory(mcuboot, target):
     assert len(data) == 1000
 
 
+def test_cmd_read_memory_callback(mcuboot, target):
+    iteration_counter = 0
+
+    def callback(transferred: int, total: int) -> None:
+        nonlocal iteration_counter
+        iteration_counter += 1
+        # NOTE: in our simulation read_memory always returns 1024B :(
+        assert transferred >= 500
+        assert total == 500
+
+    data = mcuboot.read_memory(0, 500, progress_callback=callback)
+    # TODO: currently we can test only single iteration
+    assert iteration_counter == 1
+
+
 def test_cmd_read_memory_data_abort(mcuboot, target):
     mcuboot._device.fail_step = StatusCode.FLASH_OUT_OF_DATE_CFPA_PAGE
     mcuboot.read_memory(0, 1000)
@@ -75,6 +83,20 @@ def test_cmd_write_memory(mcuboot, target):
     data = b"\x00" * 100
     assert mcuboot.write_memory(0, data)
     assert mcuboot.status_code == StatusCode.SUCCESS
+
+
+def test_cmd_write_memory_callback(mcuboot, target):
+    iteration_counter = 0
+    data = b"\x00" * 100
+
+    def callback(transferred: int, total: int) -> None:
+        nonlocal iteration_counter
+        iteration_counter += 1
+        assert transferred == 100
+        assert total == 100
+
+    assert mcuboot.write_memory(0, data, progress_callback=callback)
+    assert iteration_counter == 1
 
 
 def test_cmd_fill_memory(mcuboot, target):
@@ -177,7 +199,7 @@ def test_cmd_flash_read_once(mcuboot, target):
     # assert isinstance(value, bytes)
 
 
-def test_cmd_flash_read_once(mcuboot):
+def test_cmd_flash_read_once_invalid(mcuboot):
     with pytest.raises(SPSDKError, match="Invalid count of bytes. Must be 4 or 8"):
         mcuboot.flash_read_once(index=0, count=3)
 
@@ -197,11 +219,6 @@ def test_cmd_flash_read_resource(mcuboot, target):
     assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND
     assert value is None
     # assert isinstance(value, bytes)
-
-
-def test_cmd_configure_memory(mcuboot, target):
-    assert not mcuboot.configure_memory(0, ExtMemId.QUAD_SPI0)
-    assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND
 
 
 def test_cmd_reliable_update(mcuboot, target):
@@ -295,6 +312,6 @@ def test_load_image(mcuboot, target):
     mcuboot.status_code == StatusCode.SUCCESS
 
 
-def test_cmd_flash_read_resource(mcuboot):
+def test_cmd_flash_read_resource_invalid(mcuboot):
     with pytest.raises(McuBootError):
         mcuboot.flash_read_resource(address=1, length=3)

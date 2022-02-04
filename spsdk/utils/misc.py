@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,9 @@ import os
 import re
 import time
 from math import ceil
-from typing import Callable, Iterable, Iterator, List, Optional, TypeVar, Union
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, TypeVar, Union
+
+from bincopy import BinFile
 
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
@@ -30,10 +32,11 @@ def align(number: int, alignment: int = 4) -> int:
     """
     if alignment <= 0 or number < 0:
         raise SPSDKError("Wrong alignment")
+
     return (number + (alignment - 1)) // alignment * alignment
 
 
-def align_block(data: bytes, alignment: int = 4, padding: int = 0) -> bytes:
+def align_block(data: Union[bytes, bytearray], alignment: int = 4, padding: int = 0) -> bytes:
     """Align binary data block length to specified boundary by adding padding bytes to the end.
 
     :param data: to be aligned
@@ -42,7 +45,7 @@ def align_block(data: bytes, alignment: int = 4, padding: int = 0) -> bytes:
     :return: aligned block
     :raises SPSDKError: When there is wrong alignment
     """
-    assert isinstance(data, bytes)
+    assert isinstance(data, (bytes, bytearray))
 
     if alignment < 0:
         raise SPSDKError("Wrong alignment")
@@ -51,13 +54,13 @@ def align_block(data: bytes, alignment: int = 4, padding: int = 0) -> bytes:
     current_size = len(data)
     num_padding = align(current_size, alignment) - current_size
     if not num_padding:
-        return data
+        return bytes(data)
     if padding == -1:
         # pylint: disable=import-outside-toplevel
         from spsdk.utils.crypto.common import crypto_backend
 
-        return data + crypto_backend().random_bytes(num_padding)
-    return data + bytes([padding]) * num_padding
+        return bytes(data + crypto_backend().random_bytes(num_padding))
+    return bytes(data + bytes([padding]) * num_padding)
 
 
 def align_block_fill_random(data: bytes, alignment: int = 4) -> bytes:
@@ -93,25 +96,57 @@ def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optiona
     return next((a for a in iterable if predicate(a)), None)
 
 
-def load_binary(*args: str) -> bytes:
-    """Loads binary file into bytes.
+def load_binary_image(*path_segments: str) -> BinFile:
+    r"""Load binary data file.
 
-    :param args: list that consists of:
+    :param \*path_segments: list that consists of:
+        - absolute path
+        - optional sub-directory (any number)
+        - file name including file extension
+        All the fields together represents absolute path to the file
+    :raises SPSDKError: The binary file cannot be loaded.
+    :return: Binary data represented in BinFile class.
+    """
+    path = os.path.join(*path_segments)
+    path = path.replace("\\", "/")
+    try:
+        with open(path, "rb") as f:
+            data = f.read(4)
+    except Exception as e:
+        raise SPSDKError(f"Error loading file: {str(e)}") from e
+
+    if data == b"\x7fELF":
+        raise SPSDKError("Elf file is not supported")
+    binfile = BinFile()
+    try:
+        binfile.add_file(path)
+    except UnicodeDecodeError as e:
+        binfile.add_binary_file(path)
+    except Exception as e:
+        raise SPSDKError(f"Error loading file: {str(e)}") from e
+
+    return binfile
+
+
+def load_binary(*path_segments: str) -> bytes:
+    r"""Loads binary file into bytes.
+
+    :param \*path_segments: list that consists of:
         - absolute path
         - optional sub-directory (any number)
         - file name including file extension
         All the fields together represents absolute path to the file
     :return: content of the binary file as bytes
     """
-    data = load_file(*args, mode="rb")
+    data = load_file(*path_segments, mode="rb")
     assert isinstance(data, bytes)
     return data
 
 
 def load_text(*path_segments: str) -> str:
-    """Loads binary file into bytes.
+    r"""Loads binary file into bytes.
 
-    :param path_segments: list that consists of:
+    :param \*path_segments: list that consists of:
         - absolute path
         - optional sub-directory (any number)
         - file name including file extension
@@ -124,9 +159,10 @@ def load_text(*path_segments: str) -> str:
 
 
 def load_file(*path_segments: str, mode: str = "r") -> Union[str, bytes]:
-    """Loads a file into bytes.
+    # pylint: disable=missing-param-doc
+    r"""Loads a file into bytes.
 
-    :param path_segments: list that consists of:
+    :param \*path_segments: list that consists of:
         - absolute path
         - optional sub-directory (any number)
         - file name including file extension
@@ -141,10 +177,11 @@ def load_file(*path_segments: str, mode: str = "r") -> Union[str, bytes]:
 
 
 def write_file(data: Union[str, bytes], *path_segments: str, mode: str = "w") -> int:
-    """Writes data into a file.
+    # pylint: disable=missing-param-doc
+    r"""Writes data into a file.
 
     :param data: data to write
-    :param path_segments: pieces of path to the file, might be just a single str
+    :param \*path_segments: pieces of path to the file, might be just a single str
     :param mode: writing mode, 'w' for text, 'wb' for binary data, defaults to 'w'
     :return: number of written elements
     """
@@ -269,16 +306,18 @@ def format_value(value: int, size: int, delimeter: str = "_", use_prefix: bool =
     return f"{prefix}{rev}"
 
 
-def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True) -> int:
+def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True, byte_cnt: int = None) -> int:
     """Returns count of bytes needed to store handled integer.
 
     :param value: Input integer value.
     :param align_to_2n: The result will be aligned to standard sizes 1,2,4,8,12,16,20.
+    :param byte_cnt: The result count of bytes.
+    :raises SPSDKValueError: The integer input value doesn't fit into byte_cnt.
     :return: Number of bytes needed to store integer.
     """
     cnt = 0
     if value == 0:
-        return 1
+        return byte_cnt or 1
 
     while value != 0:
         value >>= 8
@@ -286,6 +325,13 @@ def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True) -> int:
 
     if align_to_2n and cnt > 2:
         cnt = int(ceil(cnt / 4)) * 4
+
+    if byte_cnt and cnt > byte_cnt:
+        raise SPSDKValueError(
+            f"Value takes more bytes than required byte count{byte_cnt} after align."
+        )
+
+    cnt = byte_cnt or cnt
 
     return cnt
 
@@ -305,21 +351,15 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) 
         return int.from_bytes(value, "big")
 
     if isinstance(value, str) and value != "":
-        # Remove possible underscore in HEX format
-        not_decimal = value.find("_") >= 0
-        value = value.replace("_", "")
-        value = value.replace("b'", "0b")
-        if value.lower().startswith("0x"):
-            return int(value, 16)
-        if value.lower().startswith("0b"):
-            return int(value, 2)
-        if value.isdecimal() and not not_decimal:
-            return int(value)
-        if value[0] != "-":
+        match = re.match(
+            r"(?P<prefix>[0b][bxX'])?(?P<number>[0-9a-fA-F_]+)(?P<suffix>[ulUL]{0,3})$",
+            value.strip(),
+        )
+        if match:
+            base = {"0b": 2, "b'": 2, "0x": 16, "0X": 16, None: 10}[match.group("prefix")]
             try:
-                # try to decode hex string without '0x' prefix
-                return int(value, 16)
-            except:  # pylint: disable=bare-except
+                return int(match.group("number"), base=base)
+            except ValueError:
                 pass
 
     if default is not None:
@@ -327,11 +367,18 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) 
     raise SPSDKError(f"Invalid input number type({type(value)}) with value ({value})")
 
 
-def value_to_bytes(value: Union[bytes, bytearray, int, str], align_to_2n: bool = True) -> bytes:
+def value_to_bytes(
+    value: Union[bytes, bytearray, int, str],
+    align_to_2n: bool = True,
+    byte_cnt: int = None,
+    endianism: str = "big",
+) -> bytes:
     """Function loads value from lot of formats.
 
     :param value: Input value.
     :param align_to_2n: When is set, the function aligns length of return array to 1,2,4,8,12 etc.
+    :param byte_cnt: The result count of bytes.
+    :param endianism: The rusult bytes endianism ['big', 'little'].
     :return: Value in bytes.
     """
     if isinstance(value, bytes):
@@ -341,7 +388,7 @@ def value_to_bytes(value: Union[bytes, bytearray, int, str], align_to_2n: bool =
         return bytes(value)
 
     value = value_to_int(value)
-    return value.to_bytes(get_bytes_cnt_of_int(value, align_to_2n), "big")
+    return value.to_bytes(get_bytes_cnt_of_int(value, align_to_2n, byte_cnt=byte_cnt), endianism)
 
 
 def value_to_bool(value: Union[bool, int, str]) -> bool:
@@ -485,7 +532,7 @@ class Timeout:
         """
         if self.enabled and self._get_current_time_us() > self.end_time and raise_exc:
             raise SPSDKTimeoutError("Timeout of operation.")
-
+        # pylint: disable=superfluous-parens     # because PEP20: Readability counts
         return ((self.end_time - self._get_current_time_us()) // 1000) if self.enabled else 0
 
     def overflow(self, raise_exc: bool = False) -> bool:
@@ -499,3 +546,29 @@ class Timeout:
         if overflow and raise_exc:
             raise SPSDKTimeoutError("Timeout of operation.")
         return overflow
+
+
+def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
+    """Size format."""
+    base, suffix = [(1000.0, "B"), (1024.0, "iB")][use_kibibyte]
+    i = "B"
+    for i in ["B"] + [i + suffix for i in list("kMGTP")]:
+        if num < base:
+            break
+        num /= base
+    return "{0:3.1f} {1:s}".format(num, i)
+
+
+def get_key_by_val(value: str, dict: Dict[str, List[str]]) -> str:
+    """Return key by its value.
+
+    :param value: Value to find.
+    :param dict: Dictionary to find in.
+    :raises SPSDKValueError: Value is not present in dictionary.
+    :return: Key name
+    """
+    for key, item in dict.items():
+        if value.lower() in [x.lower() for x in item]:
+            return key
+
+    raise SPSDKValueError(f"Value {value} is not in {dict}.")

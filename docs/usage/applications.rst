@@ -59,9 +59,10 @@ It allows user to:
 - program one word of OCOTP Field
 - read one word of OCOTP Field
 - erase region of the flash
-- erase all flash according to memory id
+- erase all flash/sections of flash according to memory id
+- erase complete flash memory and recover flash security section
 - fill memory with a pattern
-- get bootloader-specific property
+- get/set bootloader-specific property
 - write/read memory
 - reset the device
 - generate the Key Blob for a given DEK
@@ -69,8 +70,16 @@ It allows user to:
 - load a boot image to the device
 - key provisioning
 - execute an application at the address
-- apply configuration block at internal memory address
-- invoke code
+- write image to memory specified by ID
+- invoke code at an address
+- program aeskey
+- disable flash security by using of backdoor key
+- read resource of flash module
+- program/read fuse
+- list all memories
+- perform reliable update
+- invoke blhost commands defined in command file
+- perform trust-provisioning commands
 
 .. code:: bash
 
@@ -92,7 +101,12 @@ The tool for generating TrustZone, MasterBootImage, and SecureBinary images.
 :ref:`nxpcertgen`
 =================
 
-The *nxpcertgen* application allows the user to generate the self-signed x.509 certificates with properties given in the JSON configuration file. The certificates are self-signed and support only BasicConstrains (ca, path_length).
+The *nxpcertgen* application allows the user to:
+
+- generate the self-signed x.509 certificates with properties given in the JSON configuration file.
+- generate the template of Certificate generation YML configuration file
+
+The certificates are self-signed and support only BasicConstrains (ca, path_length).
 
 .. code:: bash
 
@@ -104,9 +118,13 @@ The *nxpcertgen* application allows the user to generate the self-signed x.509 c
 The *nxpdebugmbox* application allows user to:
 
 - perform the Debug Authentication
-- start/stop Debug Mailbox
+- start/exit Debug Mailbox
 - enter ISP mode
 - set Fault Analysis Mode
+- erase flash
+- test connection
+- generate debug credential files based on YAML configuration file
+- generate the template of Debug Credentials YML configuration file
 
 .. code:: bash
 
@@ -136,7 +154,7 @@ The *nxpdevscan* application allows users to list all connected USB and UART NXP
 The *nxpkeygen* application allows user to:
 
 - generate RSA/ECC key pairs (private and public) with various key's attributes
-- generate debug credential files based on YAML configuration file
+
 
 .. code:: bash
 

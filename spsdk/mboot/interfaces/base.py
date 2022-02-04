@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright (c) 2019-2021 NXP
+# Copyright (c) 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for functionality shared across all MBoot interfaces."""
 
 from abc import ABC
-from typing import Any, Union
+from typing import Union
 
-from spsdk.mboot.commands import CmdResponse
+from spsdk.mboot.commands import CmdPacket, CmdResponse
 
 
 class Interface(ABC):
@@ -42,7 +42,7 @@ class Interface(ABC):
     def read(self) -> Union[CmdResponse, bytes]:
         """Read data from the device."""
 
-    def write(self, packet: Any) -> None:
+    def write(self, packet: Union[CmdPacket, bytes]) -> None:
         """Write a packet to the device."""
 
     def info(self) -> str:

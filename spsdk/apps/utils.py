@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,7 +17,7 @@ from typing import Any, Callable, Tuple, Union
 import click
 import commentjson as json
 import hexdump
-import yaml
+from ruamel.yaml import YAML, YAMLError
 
 from spsdk import SPSDKError
 from spsdk.mboot import interfaces as MBootInterfaceModule
@@ -42,7 +42,7 @@ class INT(click.ParamType):
         super().__init__()
         self.base = base
 
-    def convert(self, value: str, param: click.Parameter = None, ctx: click.Context = None) -> int:
+    def convert(self, value: str, param: click.Parameter = None, ctx: click.Context = None) -> int:  # type: ignore
         """Perform the conversion str -> int.
 
         :param value: value to convert
@@ -108,7 +108,7 @@ def get_interface(
             raise SPSDKError(f"More than one device '{format_vid_pid(vid_pid)}' found")
         devices[0].timeout = timeout
     if lpcusbsio:
-        devices = interface_module.scan_usbsio(lpcusbsio)  # type: ignore
+        devices = interface_module.scan_usbsio(lpcusbsio, timeout=timeout)  # type: ignore
         if len(devices) != 1:
             raise SPSDKError(f"Cannot initialize USBSIO device '{lpcusbsio}'.")
     return devices[0]
@@ -190,8 +190,6 @@ def parse_hex_data(hex_data: str) -> bytes:
         raise SPSDKError("Incorrectly formated hex-data: Need to start with {{ and end with }}")
 
     hex_data = hex_data.replace("{{", "").replace("}}", "")
-    if len(hex_data) % 2:
-        raise SPSDKError("Incorrectly formated hex-data: Need to have even number of characters")
     if not re.fullmatch(r"[0-9a-fA-F]*", hex_data):
         raise SPSDKError("Incorrect hex-data: Need to have valid hex string")
 
@@ -241,18 +239,15 @@ def load_configuration(path: str) -> dict:
     :raises SPSDKError: When unsupported file is provided
     :return: Content of configuration as dictionary
     """
-    content = None
+    if not os.path.exists(path):
+        raise SPSDKError(f"File not found'{path}'.")
+
     try:
         with open(path) as f:
-            content = json.load(f)
-            return content
+            return json.load(f)
     except json.JSONLibraryException:
-        content = None
-    try:
-        with open(path) as f:
-            content = yaml.safe_load(f)
-    except yaml.YAMLError:
-        content = None
-    if content is None:
-        raise SPSDKError(f"Unable to load '{path}'.")
-    return content
+        try:
+            with open(path) as f:
+                return YAML(typ="safe").load(f)
+        except (YAMLError, UnicodeDecodeError):
+            raise SPSDKError(f"Unable to load '{path}'.")

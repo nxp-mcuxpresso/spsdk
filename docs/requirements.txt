@@ -1,7 +1,9 @@
 # docs
-sphinx==3.5.4
-sphinx-rtd-theme==0.5.2
+sphinx==4.2.0
+sphinx-rtd-theme==1.0.0
 sphinx-autodoc-annotation
 sphinx_autodoc_typehints
-recommonmark
+myst-parser
 sphinx-click
+jsonschema2md
+pytablewriter

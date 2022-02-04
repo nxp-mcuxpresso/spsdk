@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -66,6 +66,12 @@ class BaseClass:
         """
         self._header = Header(tag=tag, param=version)
 
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, self.__class__) and vars(other) == vars(self)
+
+    def __ne__(self, obj: Any) -> bool:
+        return not self.__eq__(obj)
+
     @property
     def version(self) -> int:
         """Format version."""
@@ -83,20 +89,27 @@ class BaseClass:
 
     @property
     def size(self) -> int:
-        """Size of the exported binary data."""
-        raise NotImplementedError()
+        """Size of the exported binary data.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def info(self) -> str:
-        """Description about the instance."""
-        raise NotImplementedError()
+        """Description about the instance.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Serialization to binary form.
 
         :param dbg_info: optional instance allowing to debug exported data; provides commented export
         :return: binary representation of the instance
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
 
 class SecretKeyBlob:
@@ -180,12 +193,6 @@ class CertificateImg(BaseClass):
             f"Certificate <Ver: {self.version_major}.{self.version_minor}, Size: {len(self._data)}>"
         )
 
-    def __eq__(self, obj: Any) -> bool:
-        return isinstance(obj, CertificateImg) and vars(obj) == vars(self)
-
-    def __ne__(self, obj: Any) -> bool:
-        return not self.__eq__(obj)
-
     def __len__(self) -> int:
         return len(self._data)
 
@@ -239,12 +246,6 @@ class Signature(BaseClass):
 
     def __repr__(self) -> str:
         return f"Signature <Ver: {self.version >> 4}.{self.version & 0xF}, Size: {len(self._data)}>"
-
-    def __eq__(self, obj: Any) -> bool:
-        return isinstance(obj, Signature) and vars(obj) == vars(self)
-
-    def __ne__(self, obj: Any) -> bool:
-        return not self.__eq__(obj)
 
     def __len__(self) -> int:
         return len(self._data)
@@ -390,12 +391,6 @@ class MAC(BaseClass):
             self.version_major, self.version_minor, self.nonce_len, self.mac_len
         )
 
-    def __eq__(self, obj: Any) -> bool:
-        return isinstance(obj, MAC) and vars(obj) == vars(self)
-
-    def __ne__(self, obj: Any) -> bool:
-        return not self.__eq__(obj)
-
     def __len__(self) -> int:
         return len(self._data)
 
@@ -468,30 +463,49 @@ class SrkItem:
     is an algorithm identifier, not a version number.
     """
 
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, self.__class__) and vars(other) == vars(self)
+
+    def __ne__(self, obj: Any) -> bool:
+        return not self.__eq__(obj)
+
     @property
     def size(self) -> int:
-        """Size of the exported binary data."""
-        raise NotImplementedError()
+        """Size of the exported binary data.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def info(self) -> str:
-        """Description about the instance."""
-        raise NotImplementedError()
+        """Description about the instance.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def sha256(self) -> bytes:
-        """Export SHA256 hash of the original data."""
-        raise NotImplementedError()
+        """Export SHA256 hash of the original data.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def hashed_entry(self) -> "SrkItem":
-        """This SRK item should be replaced with an incomplete entry with its digest."""
-        raise NotImplementedError()
+        """This SRK item should be replaced with an incomplete entry with its digest.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Serialization to binary form.
 
         :param dbg_info: optional instance allowing to debug exported data; provides commented export
         :return: binary representation of the instance
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "SrkItem":
@@ -555,12 +569,6 @@ class SrkItemHash(SrkItem):
 
     def __repr__(self) -> str:
         return "SRK Hash <Algorithm: {}>".format(EnumAlgorithm[self._header.param])  # type: ignore
-
-    def __eq__(self, obj: Any) -> bool:
-        return isinstance(obj, SrkItemHash) and vars(obj) == vars(self)
-
-    def __ne__(self, obj: Any) -> bool:
-        return not self.__eq__(obj)
 
     def info(self) -> str:
         """String representation of SrkItemHash."""
@@ -646,12 +654,6 @@ class SrkItemRSA(SrkItem):
             "YES" if self.flag == 0x80 else "NO",
         )  # type: ignore
 
-    def __eq__(self, obj: Any) -> bool:
-        return isinstance(obj, SrkItemRSA) and vars(obj) == vars(self)
-
-    def __ne__(self, obj: Any) -> bool:
-        return not self.__eq__(obj)
-
     def info(self) -> str:
         """String representation of SrkItemRSA."""
         msg = str()
@@ -705,7 +707,7 @@ class SrkItemRSA(SrkItem):
 
         flag = 0
         try:
-            key_usage = cert.extensions.get_extension_for_class(KeyUsage)
+            key_usage = cert.extensions.get_extension_for_class(KeyUsage)  # type:ignore
             assert isinstance(key_usage.value, KeyUsage)
             if key_usage.value.key_cert_sign:
                 flag = 0x80
@@ -750,12 +752,6 @@ class SrkTable(BaseClass):
         return "SRK_Table <Version: {:X}.{:X}, Keys: {}>".format(
             self.version_major, self.version_minor, len(self._keys)
         )
-
-    def __eq__(self, obj: Any) -> bool:
-        return isinstance(obj, SrkTable) and vars(obj) == vars(self)
-
-    def __ne__(self, obj: Any) -> bool:
-        return not self.__eq__(obj)
 
     def __len__(self) -> int:
         return len(self._keys)

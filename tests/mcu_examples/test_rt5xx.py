@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,10 +14,17 @@ from typing import List, Optional, Tuple
 import pytest
 from bitstring import BitArray
 
-from spsdk.image import KeySourceType, KeyStore, MasterBootImage, MasterBootImageType, TrustZone
+from spsdk.image import KeySourceType, KeyStore, MasterBootImage, TrustZone
+from spsdk.image.mbimg import (
+    Mbi_CrcRamRtxxx,
+    Mbi_CrcXipRtxxx,
+    Mbi_EncryptedRamRtxxx,
+    Mbi_PlainSignedRamRtxxx,
+    Mbi_PlainSignedXipRtxxx,
+)
 from spsdk.mboot import ExtMemId, KeyProvUserKeyType, McuBoot, PropertyTag, scan_usb
-from spsdk.sbfile.commands import CmdErase, CmdFill, CmdLoad, CmdMemEnable
-from spsdk.sbfile.images import BootImageV21, BootSectionV2, CertBlockV2, SBV2xAdvancedParams
+from spsdk.sbfile.sb2.commands import CmdErase, CmdFill, CmdLoad, CmdMemEnable
+from spsdk.sbfile.sb2.images import BootImageV21, BootSectionV2, CertBlockV2, SBV2xAdvancedParams
 from spsdk.utils.crypto import Certificate, KeyBlob, Otfad
 from spsdk.utils.misc import align_block, load_binary
 from tests.misc import compare_bin_files, write_dbg_log
@@ -390,9 +397,7 @@ def test_xip_crc(data_dir: str, image_file_name: str) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = MasterBootImage(
-        app=unsigned_image, load_addr=0x8001000, image_type=MasterBootImageType.CRC_XIP_IMAGE
-    )
+    mbi = Mbi_CrcXipRtxxx(app=unsigned_image)
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -416,9 +421,7 @@ def test_ram_crc(data_dir: str, image_file_name: str, ram_addr: int) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = MasterBootImage(
-        app=unsigned_image, load_addr=ram_addr, image_type=MasterBootImageType.CRC_RAM_IMAGE
-    )
+    mbi = Mbi_CrcRamRtxxx(app=unsigned_image, load_addr=ram_addr)
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -446,15 +449,14 @@ def test_ram_signed_otp(data_dir: str, image_file_name: str, ram_addr: int) -> N
 
     cert_block, priv_key_pem_data = create_cert_block(data_dir)
 
-    mbi = MasterBootImage(
+    mbi = Mbi_PlainSignedRamRtxxx(
         app=unsigned_img,
-        image_type=MasterBootImageType.SIGNED_RAM_IMAGE,
         load_addr=ram_addr,
         key_store=keystore,
         hmac_key=MASTER_KEY,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_pem_data=priv_key_pem_data,
+        priv_key_data=priv_key_pem_data,
     )
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_signed_otp.bin")
@@ -486,14 +488,13 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = MasterBootImage(
+    mbi = Mbi_PlainSignedRamRtxxx(
         app=org_data,
-        image_type=MasterBootImageType.SIGNED_RAM_IMAGE,
         load_addr=ram_addr,
         trust_zone=TrustZone.disabled(),
         key_store=key_store,
         cert_block=cert_block,
-        priv_key_pem_data=priv_key_pem_data,
+        priv_key_data=priv_key_pem_data,
         hmac_key=hmac_user_key,
     )
 
@@ -520,12 +521,10 @@ def test_xip_signed(data_dir: str, image_file_name: str) -> None:
 
     cert_block, priv_key_pem_data = create_cert_block(data_dir)
 
-    mbi = MasterBootImage(
+    mbi = Mbi_PlainSignedXipRtxxx(
         app=unsigned_img,
-        image_type=MasterBootImageType.SIGNED_XIP_IMAGE,
-        load_addr=0x8001000,
         cert_block=cert_block,
-        priv_key_pem_data=priv_key_pem_data,
+        priv_key_data=priv_key_pem_data,
     )
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_signed.bin")
@@ -555,13 +554,12 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = MasterBootImage(
+    mbi = Mbi_EncryptedRamRtxxx(
         app=org_data,
-        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
         load_addr=ram_addr,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_pem_data=priv_key_pem_data,
+        priv_key_data=priv_key_pem_data,
         hmac_key=hmac_user_key,
         key_store=key_store,
         ctr_init_vector=ENCR_CTR_IV,
@@ -596,13 +594,12 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = MasterBootImage(
+    mbi = Mbi_EncryptedRamRtxxx(
         app=org_data,
-        image_type=MasterBootImageType.ENCRYPTED_RAM_IMAGE,
         load_addr=ram_addr,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_pem_data=priv_key_pem_data,
+        priv_key_data=priv_key_pem_data,
         hmac_key=hmac_user_key,
         key_store=key_store,
         ctr_init_vector=ENCR_CTR_IV,

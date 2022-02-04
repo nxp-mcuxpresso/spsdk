@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -201,8 +201,8 @@ def ticket_info_param_hasher(args: tuple, kwargs: dict) -> int:
     return hash_val
 
 
-# @cachier(hash_params=ticket_info_param_hasher)
-def get_ticket_info(ticket: str, jira: JIRA) -> TicketRecord:
+@cachier(hash_params=ticket_info_param_hasher)
+def get_ticket_info(ticket: str, jira: Optional[JIRA]) -> TicketRecord:
     """Extract info for `ticket` from JIRA.
 
     The `@cachier` decorator produces persistant cache to alleviate load on JIRA server.
@@ -227,19 +227,25 @@ def main() -> None:
         logging.info("No tickets found in commit messages.")
         exit(1)
 
-    # ask for password if running in online more, user doesn't uses netrc, but specifies username
+    # ask for password if running in online mode, user doesn't uses netrc, but specifies username
     if not args.offline and args.user:
         password = getpass(f"Enter password for '{args.user}': ")
 
     # auth option is omitted for offline mode and online using netrc
-    auth = None if args.offline or args.netrc else (args.user, password)
+    # auth = None if args.offline or args.netrc else (args.user, password)
+    if args.offline or args.netrc:
+        auth = None
+    else:
+        assert isinstance(args.user, str)
+        assert isinstance(password, str)
+        auth = (args.user, password)
 
     if args.netrc and not os.path.isfile(os.path.expanduser("~/.netrc")):
         logging.error("NetRC authentication selected (-n) but ~/.netrc file not found")
         logging.error("Either create .netrc file or use username/pass authentication (-u)")
         exit(1)
 
-    # for offline more, we don't instantiate the JIRA connection
+    # for offline mode, we don't instantiate the JIRA connection
     jira_obj = None if args.offline else JIRA(server=JIRA_SERVER, max_retries=0, basic_auth=auth)
 
     ticket_infos = RecordsList(

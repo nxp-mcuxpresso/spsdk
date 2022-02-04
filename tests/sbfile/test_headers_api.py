@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.sbfile.headers import ImageHeaderV2
+from spsdk.sbfile.sb2.headers import ImageHeaderV2
 from spsdk.utils.crypto.backend_internal import internal_backend
 
 
@@ -51,5 +51,5 @@ def test_image_header_v2_invalid():
     with pytest.raises(SPSDKError, match="Invalid length of padding"):
         header.export(padding=bytes(9))
     with pytest.raises(SPSDKError, match="Invalid length of header"):
-        header.SIZE=5
+        header.SIZE = 5
         header.export()

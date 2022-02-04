@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -28,17 +28,6 @@ class StreamReadFailed(RawDataException):
 
 class NotEnoughBytesException(RawDataException):
     """Read_raw_data could not read enough data."""
-
-
-def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
-    """Size format."""
-    base, suffix = [(1000.0, "B"), (1024.0, "iB")][use_kibibyte]
-    i = "B"
-    for i in ["B"] + [i + suffix for i in list("kMGTP")]:
-        if num < base:
-            break
-        num /= base
-    return "{0:3.1f} {1:s}".format(num, i)
 
 
 def hexdump_fmt(data: bytes, tab: int = 4, length: int = 16, sep: str = ":") -> str:
@@ -95,23 +84,6 @@ def read_raw_segment(
     hrdata = read_raw_data(buffer, Header.SIZE, index)
     length = Header.parse(hrdata, 0, segment_tag).length - Header.SIZE
     return hrdata + read_raw_data(buffer, length)
-
-
-NUMBER_FORMAT = re.compile(r"(?P<prefix>0[bx])?(?P<number>[0-9a-fA-F_]+)(?P<suffix>[ulUL]{0,3})$")
-
-
-def parse_int(number: str) -> int:
-    """Convert string in HEX or DEC format into integer number.
-
-    :param number: input string
-    :return: corresponding integer value
-    :raises SPSDKError: If parameter is not valid number
-    """
-    match = NUMBER_FORMAT.match(number)
-    if match is None:
-        raise SPSDKError("invalid number")
-    base = {"0b": 2, "0x": 16, None: 10}[match.group("prefix")]
-    return int(match.group("number"), base=base)
 
 
 def dict_diff(main: dict, mod: dict) -> dict:

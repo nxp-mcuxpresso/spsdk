@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,9 @@ from cryptography.hazmat.backends import default_backend
 from spsdk import SPSDKError
 from spsdk.crypto.loaders import load_certificate
 from spsdk.image import MAC, CertificateImg, SecretKeyBlob, Signature, SrkItem, SrkTable
+from spsdk.image.commands import CmdNop
 from spsdk.image.secret import (
+    BaseClass,
     NotImplementedSRKCertificate,
     NotImplementedSRKItem,
     NotImplementedSRKPublicKeyType,
@@ -255,7 +257,19 @@ def test_srktable_invalid_flag():
         srk.flag = 8
 
 
-def test_srk_table_invalid_fuse(srk_pem):
+def test_srk_table_invalid_fuse():
     srk_table = SrkTable(version=0x40)
     with pytest.raises(SPSDKError, match="Incorrect index of the fuse"):
         srk_table.get_fuse(index=9)
+
+
+def test_srk_table_item_not_eq():
+    srk_table = SrkTable(version=0x40)
+    srk = SrkItemRSA(modulus=bytes(2048), exponent=bytes(4))
+    assert srk != srk_table
+
+
+def test_not_eq():
+    cmd = BaseClass(tag=3)
+    cmd2 = CmdNop()
+    assert cmd != cmd2

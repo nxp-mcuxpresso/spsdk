@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -42,22 +42,22 @@ class DebugMailboxCommand:
 
         req = self.id | (self.paramlen << 16)
         logger.debug(f"<- spin_write: {format_value(req, 32)}")
-        self.dm.spin_write(self.dm.registers.REQUEST.address, req)
+        self.dm.spin_write(self.dm.registers["REQUEST"]["address"], req)
 
         # Wait 30ms to allow reset of internal logic of debug mailbox
         time.sleep(0.03)
 
         for i in range(self.paramlen):
-            ret = self.dm.spin_read(self.dm.registers.RETURN.address)
+            ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
             logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
             if (ret & 0xFFFF) != 0xA5A5:
                 raise SPSDKError("Device did not send correct ACK answer!")
             if ((ret >> 16) & 0xFFFF) != (self.paramlen - i):
                 raise SPSDKError("Device expects parameters of different length we can provide!")
             logger.debug(f"<- spin_write: {format_value(params[i], 32)}")
-            self.dm.spin_write(self.dm.registers.REQUEST.address, params[i])
+            self.dm.spin_write(self.dm.registers["REQUEST"]["address"], params[i])
 
-        ret = self.dm.spin_read(self.dm.registers.RETURN.address)
+        ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
         resplen = (ret >> 16) & 0x7FFF
         status = ret & 0xFFFF
@@ -75,16 +75,16 @@ class DebugMailboxCommand:
         # ack the response
         ack = 0xA5A5 | (self.resplen << 16)
         logger.debug(f"<- spin_write: {format_value(ack, 32)}")
-        self.dm.spin_write(self.dm.registers.REQUEST.address, ack)
+        self.dm.spin_write(self.dm.registers["REQUEST"]["address"], ack)
 
         response = []
         for i in range(self.resplen):
-            ret = self.dm.spin_read(self.dm.registers.RETURN.address)
+            ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
             logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
             response.append(ret)
             ack = 0xA5A5 | ((self.resplen - i - 1) << 16)
             logger.debug(f"<- spin_write: {format_value(ack, 32)}")
-            self.dm.spin_write(self.dm.registers.REQUEST.address, ack)
+            self.dm.spin_write(self.dm.registers["REQUEST"]["address"], ack)
         return response
 
 

@@ -73,8 +73,32 @@ Support for KeyStore used in MasterBootImage
 
 
 Master Boot Image
--------------------
+-------------------------
 .. automodule:: spsdk.image.mbimg
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Master Boot Image - miscellaneous functions
+--------------------------------------------
+.. automodule:: spsdk.image.misc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Master Boot Image - mixin classes
+----------------------------------
+.. automodule:: spsdk.image.mbi_mixin
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Image Exceptions
+-----------------
+.. automodule:: spsdk.image.exceptions
    :members:
    :undoc-members:
    :show-inheritance:

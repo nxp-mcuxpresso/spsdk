@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,16 +13,17 @@ because it provides keys for certificate's generation.
 
 import os
 from os import path
+
 from spsdk.crypto.keys_management import (
-    generate_rsa_private_key,
-    generate_rsa_public_key,
-    save_rsa_private_key,
-    save_rsa_public_key,
     Encoding,
     generate_ecc_private_key,
     generate_ecc_public_key,
+    generate_rsa_private_key,
+    generate_rsa_public_key,
     save_ecc_private_key,
     save_ecc_public_key,
+    save_rsa_private_key,
+    save_rsa_public_key,
 )
 
 
@@ -128,7 +129,7 @@ def main() -> None:
     )
 
     # Generate and save ECC keys (curve P-256) - pem format
-    priv_key_p256 = generate_ecc_private_key(curve_name="P-256")
+    priv_key_p256 = generate_ecc_private_key(curve_name="secp256r1")
     pub_key_p256 = generate_ecc_public_key(priv_key_p256)
     save_ecc_private_key(priv_key_p256, path.join(data_dir, "ecc_privatekey_p256.pem"))
     save_ecc_public_key(pub_key_p256, path.join(data_dir, "ecc_publickey_p256.pem"))

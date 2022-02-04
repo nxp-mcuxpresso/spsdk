@@ -1,4 +1,4 @@
-# tox has to installed first
+# tox has to be installed first
 tox
 -r requirements.txt
 # testing
@@ -9,15 +9,20 @@ voluptuous
 jsonschema
 # metrics
 radon
-mypy>=0.800,<0.900
+mypy>=0.800,<=0.910
+types-requests>=2.26
 # codestyle
-pylint>=2.6.0
+pylint>=2.6.0,<2.12.2
 pydocstyle
-black
+black==21.12b0
 # cli executables
 pyinstaller
 # developement/CI tools
+bump2version==1.0.1
 pre-commit
 openpyxl
 cachier
 jira
+# examples
+flask
+requests

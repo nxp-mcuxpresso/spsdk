@@ -79,6 +79,14 @@ Device description
    :show-inheritance:
 
 
+Module for schema-based configuration validation
+--------------------------------------------------
+.. automodule:: spsdk.utils.schema_validator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Utils Exceptions
 ----------------
 .. automodule:: spsdk.utils.exceptions

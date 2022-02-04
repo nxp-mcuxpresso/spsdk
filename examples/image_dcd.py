@@ -1,21 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """This example shows various ways how to create/parse Device Configuration Data (DCD)."""
 
 from os import mkdir, path
-from spsdk.image import (
-    SegDCD,
-    CmdWriteData,
-    CmdCheckData,
-    CmdNop,
-    EnumWriteOps,
-    EnumCheckOps,
-)
+
+from spsdk.image import CmdCheckData, CmdNop, CmdWriteData, EnumCheckOps, EnumWriteOps, SegDCD
 
 TEMP_DIR = path.join(path.dirname(path.abspath(__file__)), "temp")
 

@@ -1,0 +1,11 @@
+# Copyright 2022 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+- req_id: "lpc55s3x_4.1"
+  desc: By default (blank device), the RoTKx_EN values are set to 0b00.
+    When secure boot is enabled (SEC_BOOT_EN != 0) there must be at
+    least one RoTKx_EN which is set to 0b01 or 0b00 (enabled) to allow device to boot
+    successfully.
+  msg: Secure boot is enabled. Make sure at least one Root of Trust Key Enable bit is set.
+  cond: CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CFPA.ROTKH_REVOKE.RoTK3_EN >=2 and CFPA.ROTKH_REVOKE.RoTK2_EN >=2 and CFPA.ROTKH_REVOKE.RoTK1_EN >=2 and CFPA.ROTKH_REVOKE.RoTK0_EN >=2

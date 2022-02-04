@@ -3,6 +3,7 @@
     "inputImageFile": ".\\workspace\\input_images\\normal_boot.bin",
     "outputImageExecutionTarget": "RAM",
     "imageLinkAddress": "0x0",
+    "outputImageExecutionAddress": "0x0",
     "outputImageAuthenticationType": "CRC",
     "enableTrustZone": false,
     "useKeyStore": false,

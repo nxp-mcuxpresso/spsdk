@@ -1,772 +1,838 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 """Master Boot Image."""
 
-import struct
-from typing import Any, List, Optional, Sequence, Union
 
-from crcmod.predefined import mkPredefinedCrcFun
+from copy import deepcopy
+from typing import Any, Dict, List, Tuple, Type, Union
+
 from Crypto.Cipher import AES
+from ruamel.yaml import YAML
 
-from spsdk import SPSDKError
 from spsdk.crypto import SignatureProvider
+from spsdk.exceptions import SPSDKValueError
+from spsdk.image import IMG_DATA_FOLDER, MBIMG_SCH_FILE
+from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeySourceType, KeyStore
-from spsdk.image.trustzone import TrustZone, TrustZoneType
-from spsdk.utils import misc
-from spsdk.utils.crypto import CertBlock, crypto_backend, serialize_ecc_signature
-from spsdk.utils.easy_enum import Enum
+from spsdk.image.mbi_mixin import (
+    MasterBootImageManifest,
+    Mbi_ExportMixinAppCertBlockManifest,
+    Mbi_ExportMixinAppTrustZone,
+    Mbi_ExportMixinAppTrustZoneCertBlock,
+    Mbi_ExportMixinCrcSign,
+    Mbi_ExportMixinEccSign,
+    Mbi_ExportMixinHmacKeyStoreFinalize,
+    Mbi_ExportMixinRsaSign,
+    Mbi_Mixin,
+    Mbi_MixinApp,
+    Mbi_MixinCertBlockV2,
+    Mbi_MixinCertBlockV31,
+    Mbi_MixinCtrInitVector,
+    Mbi_MixinFwVersion,
+    Mbi_MixinHmac,
+    Mbi_MixinHmacMandatory,
+    Mbi_MixinHwKey,
+    Mbi_MixinIvt,
+    Mbi_MixinKeyStore,
+    Mbi_MixinLoadAddress,
+    Mbi_MixinManifest,
+    Mbi_MixinRelocTable,
+    Mbi_MixinTrustZone,
+    Mbi_MixinTrustZoneMandatory,
+    MultipleImageTable,
+)
+from spsdk.image.trustzone import TrustZone
+from spsdk.utils.crypto.cert_blocks import CertBlockV2, CertBlockV31
+from spsdk.utils.misc import align_block, get_key_by_val
+from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas, check_config
+
+PLAIN_IMAGE = (0x00, "Plain Image (either XIP or Load-to-RAM)")
+SIGNED_RAM_IMAGE = (0x01, "Plain Signed Load-to-RAM Image")
+CRC_RAM_IMAGE = (0x02, "Plain CRC Load-to-RAM Image")
+ENCRYPTED_RAM_IMAGE = (0x03, "Encrypted Load-to-RAM Image")
+SIGNED_XIP_IMAGE = (0x04, "Plain Signed XIP Image")
+CRC_XIP_IMAGE = (0x05, "Plain CRC XIP Image")
+
+DEVICE_FILE = IMG_DATA_FOLDER + "/database.yml"
+
+# pylint: disable=too-many-ancestors
+def get_mbi_class(config: Dict[str, Any]) -> Type["MasterBootImage"]:
+    """Get Master Boot Image class.
+
+    :raises SPSDKUnsupportedImageType: The invalid configuration.
+    :return: MBI Class.
+    """
+    schema_cfg = ValidationSchemas.get_schema_file(MBIMG_SCH_FILE)
+    with open(DEVICE_FILE) as f:
+        device_cfg = YAML(typ="safe").load(f)
+    # Validate needed configuration to recognize MBI class
+    check_config(config, [schema_cfg["image_type"], schema_cfg["family"]])
+    try:
+        target = get_key_by_val(
+            config["outputImageExecutionTarget"], device_cfg["map_tables"]["targets"]
+        )
+        authentication = get_key_by_val(
+            config["outputImageAuthenticationType"], device_cfg["map_tables"]["authentication"]
+        )
+        family = config["family"]
+
+        cls_name = device_cfg["devices"][family]["images"][target][authentication]
+    except (KeyError, SPSDKValueError) as exc:
+        raise SPSDKUnsupportedImageType(
+            "The type of requested Master boot image is not supported for that device."
+        ) from exc
+
+    return globals()[cls_name]
+
+
+def get_mbi_classes(family: str) -> Dict[str, Tuple[Type["MasterBootImage"], str, str]]:
+    """Get all Master Boot Image supported classes for chip family.
+
+    :param family: Chip family.
+    :raises SPSDKValueError: The invalid family.
+    :return: Dictionary with key like image name and values are Tuple with it's MBI Class
+        and target and authentication type.
+    """
+    with open(DEVICE_FILE) as f:
+        device_cfg = YAML(typ="safe").load(f)
+    if not family in device_cfg["devices"]:
+        raise SPSDKValueError("Not supported family for Master Boot Image")
+
+    ret: Dict[str, Tuple[Type["MasterBootImage"], str, str]] = {}
+
+    images: Dict[str, Dict[str, str]] = device_cfg["devices"][family]["images"]
+
+    for target in images.keys():
+        for authentication in images[target]:
+            cls_name = images[target][authentication]
+
+            ret[f"{family}_{target}_{authentication}"] = (
+                globals()[cls_name],
+                device_cfg["map_tables"]["targets"][target][0],
+                device_cfg["map_tables"]["authentication"][authentication][0],
+            )
+
+    return ret
+
+
+def mbi_get_validation_schemas(sch_names: List[str]) -> List[Dict[str, Any]]:
+    """Get list of validation schemas by its names.
+
+    :return: Validation list of schemas.
+    """
+    schemas = []
+    schema_cfg = ValidationSchemas.get_schema_file(MBIMG_SCH_FILE)
+
+    for sch_name in sch_names:
+        schemas.append(schema_cfg[sch_name])
+
+    return schemas
+
+
+def mbi_generate_config_templates(family: str) -> Dict[str, str]:
+    """Generate all possible configuration for selected family.
+
+    :param family: Family description.
+    :raises SPSDKError: [description]
+    :return: Dictionary of individual templates (key is name of template, value is template itself).
+    """
+    ret: Dict[str, str] = {}
+    # 1: Generate all configuration for MBI
+    mbi_classes = get_mbi_classes(family)
+
+    for mbi in mbi_classes:
+        mbi_cls, target, authentication = mbi_classes[mbi]
+        schemas = []
+        schemas.extend(mbi_get_validation_schemas(["family", "image_type", "output_file"]))
+        schemas.extend(mbi_cls.get_validation_schemas())
+
+        override = {}
+        override["family"] = family
+        override["outputImageExecutionTarget"] = target
+        override["outputImageAuthenticationType"] = authentication
+        yaml_data = ConfigTemplate(
+            f"Master Boot Image Configuration template for {family}, {mbi_cls.IMAGE_TYPE[1]}.",
+            schemas,
+            override,
+        ).export_to_yaml()
+
+        ret[mbi] = yaml_data
+
+    return ret
+
+
+class MasterBootImage:
+    """Master Boot Image Interface."""
+
+    IMAGE_TYPE = PLAIN_IMAGE
+
+    @classmethod
+    def _get_mixins(cls) -> List[Type[Mbi_Mixin]]:
+        """Get the list of Mbi Mixin classes.
+
+        :return: List of Mbi_Mixins.
+        """
+        return [x for x in cls.__bases__ if issubclass(x, Mbi_Mixin)]
+
+    def __init__(self) -> None:
+        """Initialization of MBI."""
+        # Check if all needed class instation members are available (validation of class due to mixin problems)
+        for base in self._get_mixins():
+            for member in base.NEEDED_MEMBERS:
+                assert hasattr(self, member)
+
+    @property
+    def total_len(self) -> int:
+        """Compute final application data length.
+
+        :return: Final image data length.
+        """
+        ret = 0
+        for base in self._get_mixins():
+            ret += base.mix_len(self)  # type: ignore
+        return ret
+
+    @property
+    def app_len(self) -> int:
+        """Application data length.
+
+        :return: Application data length.
+        """
+        return self.total_len
+
+    def load_from_config(self, config: Dict[str, Any]) -> None:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        """
+        for base in self._get_mixins():
+            base.mix_load_from_config(self, config)  # type: ignore
+
+    collect_data: Any  # collect_data(self) -> bytes
+    encrypt: Any  # encrypt(self, raw_image: bytes) -> bytes
+    post_encrypt: Any  # post_encrypt(self, image: bytes) -> bytes
+    sign: Any  # sign(self, image: bytes) -> bytes
+    finalize: Any  # finalize(self, image: bytes) -> bytes
+
+    def export(self) -> bytes:
+        """Export final bootable image.
+
+        :return: Bootable Image in bytes.
+        """
+        # 1: Validate the input data
+        self.validate()
+        # 2: Collect all input data into raw image
+        raw_image = self.collect_data()
+        # 3: Optionally encrypt the image
+        encrypted_image = self.encrypt(raw_image)
+        # 4: Optionally do some post encrypt image updates
+        encrypted_image = self.post_encrypt(encrypted_image)
+        # 5: Optionally sign image
+        signed_image = self.sign(encrypted_image)
+        # 6: Finalize image
+        final_image = self.finalize(signed_image)
+
+        return final_image
+
+    def parse(self, data: bytes) -> None:
+        """Parse the final image to individual fields.
+
+        :param data: Final Image in bytes.
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
+
+    @classmethod
+    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+        """Create the validation schema for current image type.
+
+        :return: Validation schema.
+        """
+        schemas = []
+        schema_cfg = ValidationSchemas.get_schema_file(MBIMG_SCH_FILE)
+
+        for base in cls._get_mixins():
+            for sch in base.VALIDATION_SCHEMAS:
+                schemas.append(deepcopy(schema_cfg[sch]))
+            schemas.extend(deepcopy(base.mix_get_extra_validation_schemas()))
+
+        return schemas
+
+    def validate(self) -> None:
+        """Validate the setting of image."""
+        for base in self._get_mixins():
+            base.mix_validate(self)  # type: ignore
 
 
 ########################################################################################################################
 # Master Boot Image Class (LPC55)
 ########################################################################################################################
-class MasterBootImageType(Enum):
-    """Enumeration of various types of MBIs."""
 
-    PLAIN_IMAGE = (0x00, "Plain Image (either XIP or Load-to-RAM)")
-    SIGNED_RAM_IMAGE = (0x01, "Plain Signed Load-to-RAM Image")
-    CRC_RAM_IMAGE = (0x02, "Plain CRC Load-to-RAM Image")
-    ENCRYPTED_RAM_IMAGE = (0x03, "Encrypted Load-to-RAM Image")
-    SIGNED_XIP_IMAGE = (0x04, "Plain Signed XIP Image")
-    CRC_XIP_IMAGE = (0x05, "Plain CRC XIP Image")
-    SIGNED_XIP_NXP_IMAGE = (0x08, "Plain Signed XIP Image NXP Key")
+# pylint: disable=invalid-name
+# pylint: disable=abstract-method
+class Mbi_PlainXip(
+    MasterBootImage, Mbi_MixinApp, Mbi_MixinIvt, Mbi_MixinTrustZone, Mbi_ExportMixinAppTrustZone
+):
+    """Master Boot Plain XiP Image for LPC55xxx family."""
 
-    @staticmethod
-    def is_xip(image_type: int) -> bool:
-        """True is the image type is executed in place (XIP)."""
-        return image_type in [
-            MasterBootImageType.PLAIN_IMAGE,
-            MasterBootImageType.SIGNED_XIP_IMAGE,
-            MasterBootImageType.CRC_XIP_IMAGE,
-            MasterBootImageType.SIGNED_XIP_NXP_IMAGE,
-        ]
+    def __init__(self, app: bytes = None, trust_zone: TrustZone = None) -> None:
+        """Constructor for Master Boot Plain XiP Image for LPC55xxx family.
 
-    @staticmethod
-    def is_copied_to_ram(image_type: int) -> bool:
-        """True is the image type is copied and executed in RAM."""
-        return image_type in [
-            MasterBootImageType.CRC_RAM_IMAGE,
-            MasterBootImageType.SIGNED_RAM_IMAGE,
-            MasterBootImageType.ENCRYPTED_RAM_IMAGE,
-        ]
-
-    @staticmethod
-    def has_crc(image_type: int) -> bool:
-        """True is the image type contains CRC; False otherwise."""
-        return image_type in [
-            MasterBootImageType.CRC_XIP_IMAGE,
-            MasterBootImageType.CRC_RAM_IMAGE,
-        ]
-
-    @staticmethod
-    def is_signed(image_type: int) -> bool:
-        """True is the image type is signed; False otherwise."""
-        return image_type in [
-            MasterBootImageType.SIGNED_XIP_IMAGE,
-            MasterBootImageType.SIGNED_RAM_IMAGE,
-            MasterBootImageType.ENCRYPTED_RAM_IMAGE,
-            MasterBootImageType.SIGNED_XIP_NXP_IMAGE,
-        ]
-
-    @staticmethod
-    def is_encrypted(image_type: int) -> bool:
-        """True is the image type is encrypted; False otherwise."""
-        return image_type == MasterBootImageType.ENCRYPTED_RAM_IMAGE
-
-    @staticmethod
-    def has_hmac(image_type: int) -> bool:
-        """Whether the image contains HMAC."""
-        return MasterBootImageType.is_signed(image_type) and MasterBootImageType.is_copied_to_ram(
-            image_type
-        )
-
-
-class MultipleImageEntry:
-    """The class represents an entry in relocation table.
-
-    It also contains a corresponding image (binary)
-    """
-
-    # flag to simply copy load segment into target memory
-    LTI_LOAD = 1 << 0
-
-    def __init__(self, img: bytes, dst_addr: int, flags: int = LTI_LOAD):
-        """Constructor.
-
-        :param img: binary image data
-        :param dst_addr: destination address
-        :param flags: see LTI constants
-        :raises SPSDKError: If invalid destination address
-        :raises SPSDKError: Other section types (INIT) are not supported
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
         """
-        if dst_addr < 0 or dst_addr > 0xFFFFFFFF:
-            raise SPSDKError("Invalid destination address")
-        if flags != self.LTI_LOAD:
-            raise SPSDKError("for now, other section types (INIT) are not supported")
-        self._img = img
-        self._src_addr = 0
-        self._dst_addr = dst_addr
-        self._flags = flags
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        super().__init__()
 
-    @property
-    def image(self) -> bytes:
-        """Binary image data."""
-        return self._img
 
-    @property
-    def src_addr(self) -> int:
-        """Source address; this value is calculated automatically when building the image."""
-        return self._src_addr
+class Mbi_CrcXip(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_ExportMixinAppTrustZone,
+    Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC XiP Image for LPC55xxx family."""
 
-    @src_addr.setter
-    def src_addr(self, value: int) -> None:
-        """Setter.
+    IMAGE_TYPE = CRC_XIP_IMAGE
 
-        :param value: to set
+    def __init__(self, app: bytes = None, trust_zone: TrustZone = None) -> None:
+        """Constructor for Master Boot CRC XiP Image for LPC55xxx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
         """
-        self._src_addr = value
-
-    @property
-    def dst_addr(self) -> int:
-        """Destination address."""
-        return self._dst_addr
-
-    @property
-    def size(self) -> int:
-        """Size of the image (not aligned)."""
-        return len(self.image)
-
-    @property
-    def flags(self) -> int:
-        """Flags, currently not used."""
-        return self._flags
-
-    @property
-    def is_load(self) -> bool:
-        """True if entry represents LOAD section."""
-        return (self.flags & self.LTI_LOAD) != 0
-
-    def export_entry(self) -> bytes:
-        """Export relocation table entry in binary form."""
-        result = bytes()
-        result += struct.pack("<I", self.src_addr)  # source address
-        result += struct.pack("<I", self.dst_addr)  # dest address
-        result += struct.pack("<I", self.size)  # length
-        result += struct.pack("<I", self.flags)  # flags
-        return result
-
-    def export_image(self) -> bytes:
-        """Binary image aligned to the 4-bytes boundary."""
-        return misc.align_block(self.image, 4)
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        super().__init__()
 
 
-class MultipleImageTable:
-    """The class allows to merge several images into single image and add relocation table.
+class Mbi_SignedXip(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinCertBlockV2,
+    Mbi_ExportMixinAppTrustZoneCertBlock,
+    Mbi_ExportMixinRsaSign,
+):
+    """Master Boot Signed XiP Image for LPC55xxx family."""
 
-    It can be used for multicore images (one image for each core)
-    or trustzone images (merging secure and non-secure image)
-    """
+    IMAGE_TYPE = SIGNED_XIP_IMAGE
 
-    def __init__(self) -> None:
-        """Initialize the Multiple Image Table."""
-        self._entries: List[MultipleImageEntry] = list()
+    def __init__(
+        self,
+        app: bytes = None,
+        trust_zone: TrustZone = None,
+        cert_block: CertBlockV2 = None,
+        priv_key_data: bytes = None,
+    ) -> None:
+        """Constructor for Master Boot Signed XiP Image for LPC55xxx family.
 
-    @property
-    def header_version(self) -> int:
-        """Format version of the structure for the header."""
-        return 0
-
-    @property
-    def entries(self) -> Sequence[MultipleImageEntry]:
-        """List of all entries."""
-        return self._entries
-
-    def add_entry(self, entry: MultipleImageEntry) -> None:
-        """Add entry into relocation table.
-
-        :param entry: to add
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param cert_block: Certification block of image, defaults to None
+        :param priv_key_data: Private key used to sign image, defaults to None
         """
-        self._entries.append(entry)
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.cert_block = cert_block
+        self.priv_key_data = priv_key_data
+        super().__init__()
 
-    def reloc_table(self, start_addr: int) -> bytes:
-        """Relocate table.
 
-        :param start_addr: start address of the relocation table
-        :return: export relocation table in binary form
+########################################################################################################################
+# Master Boot Image Class (i.MXRT5xx/i.MXRT6xx)
+########################################################################################################################
+
+
+class Mbi_PlainRamRtxxx(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinLoadAddress,
+    Mbi_MixinHwKey,
+    Mbi_ExportMixinAppTrustZone,
+):
+    """Master Boot Plain Image for RTxxx."""
+
+    def __init__(
+        self,
+        app: bytes = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = None,
+        hwk: bool = False,
+    ) -> None:
+        """Constructor for Master Boot Plain XiP Image for RTxxx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param hwk: Enable HW user mode keys, defaults to false
         """
-        result = bytes()
-        # export relocation entries table
-        for entry in self.entries:
-            result += entry.export_entry()
-        # export relocation table header
-        result += struct.pack("<I", 0x4C54424C)  # header marker
-        result += struct.pack("<I", self.header_version)  # version
-        result += struct.pack("<I", len(self._entries))  # number of entries
-        result += struct.pack("<I", start_addr)  # pointer to entries
-        return result
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
+        self.user_hw_key_enabled = hwk
+        super().__init__()
 
-    def export(self, start_addr: int) -> bytes:
-        """Export.
 
-        :param start_addr: start address where the images are exported;
-                        the value matches source address for the first image
-        :return: images with relocation table
-        :raises SPSDKError: If there is no entry for export
+class Mbi_PlainSignedRamRtxxx(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinRelocTable,
+    Mbi_MixinLoadAddress,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinCertBlockV2,
+    Mbi_MixinHmac,
+    Mbi_MixinKeyStore,
+    Mbi_MixinHwKey,
+    Mbi_ExportMixinAppTrustZoneCertBlock,
+    Mbi_ExportMixinRsaSign,
+    Mbi_ExportMixinHmacKeyStoreFinalize,
+):
+    """Master Boot Plain Signed RAM Image for RTxxx family."""
+
+    IMAGE_TYPE = SIGNED_RAM_IMAGE
+
+    def __init__(
+        self,
+        app: bytes = None,
+        app_table: MultipleImageTable = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = None,
+        cert_block: CertBlockV2 = None,
+        priv_key_data: bytes = None,
+        hmac_key: Union[bytes, str] = None,
+        key_store: KeyStore = None,
+        hwk: bool = False,
+    ) -> None:
+        """Constructor for Master Boot Plain Signed RAM Image for RTxxx family.
+
+        :param app: Application image data, defaults to None
+        :param app_table: Application table for additional application binaries, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param cert_block: Certification block of image, defaults to None
+        :param priv_key_data: Private key used to sign image, defaults to None
+        :param hmac_key: HMAC key of image, defaults to None
+        :param key_store: Optional KeyStore object for image, defaults to None
+        :param hwk: Enable HW user mode keys, defaults to false
         """
-        if not self._entries:
-            raise SPSDKError("There must be at least one entry for export")
-        src_addr = start_addr
-        result = bytes()
-        for entry in self.entries:
-            if entry.is_load:
-                entry.src_addr = src_addr
-                entry_img = entry.export_image()
-                result += entry_img
-                src_addr += len(entry_img)
-        result += self.reloc_table(start_addr + len(result))
-        # TODO result += struct.pack("<I", src_addr)  # pointer to relocation table
-        return result
-
-
-# pylint: disable=too-many-instance-attributes
-class MasterBootImage:
-    """Basic representation of Master Boot Image layout."""
-
-    # offset alignment of the certificate position
-    _IMAGE_ALIGNMENT = 4
-
-    IMAGE_LENGTH_OFFSET = 0x20
-    # offset with flags: image type, trust zone, key-store and HW_USER_KEY_EN
-    IMAGE_FLAGS_OFFSET = 0x24
-    # flag for image type, if the image contains key-store
-    _KEY_STORE_FLAG = 0x8000
-    # flag that image contains relocation table
-    _RELOC_TABLE_FLAG = 0x800
-    # enableHwUserModeKeys : flag for controlling secure hardware key bus. If enabled(1), then it is possible to access
-    # keys on hardware secure bus from non-secure application, else non-secure application will read zeros.
-    _HW_USER_KEY_EN_FLAG = 0x1000
-
-    CRC_BLOCK_OFFSET = 0x28
-    CERTIFICATE_OFFSET = 0x28
-    LOAD_ADDR_OFFSET = 0x34
-    # offset in the image, where the HMAC table is located
-    HMAC_OFFSET = 64
-    # size of HMAC table in bytes
-    HMAC_SIZE = 32
-    # length of user key or master key, in bytes
-    _HMAC_KEY_LENGTH = 32
-    # length of derived key for HMAC, in bytes
-    _HMAC_DERIVED_KEY_LEN = 16
-    # length of counter initialization vector
-    _CTR_INIT_VECTOR_SIZE = 16
+        self.app = align_block(app) if app else None
+        self.app_table = app_table
+        self.load_address = load_addr
+        self.tz = trust_zone or TrustZone.enabled()
+        self.cert_block = cert_block
+        self.priv_key_data = priv_key_data
+        self.hmac_key = bytes.fromhex(hmac_key) if isinstance(hmac_key, str) else hmac_key
+        self.key_store = key_store
+        self.user_hw_key_enabled = hwk
+        super().__init__()
 
     @property
     def app_len(self) -> int:
-        """Length of binary app data; this includes also size of the relocation table."""
-        result = len(self.app)
-        if self.app_table:
-            result += len(self.app_table.export(0))
-        return result
+        """Application data length.
 
-    @property
-    def data(self) -> bytes:
-        """Plain, unsigned binary data for the image.
-
-        It consists of:
-        - application image
-        - optionally trust zone data
-        Please mind the result does not contain: certification block, HMAC, keystore and signature
+        :return: Application data length.
         """
-        # binary image
-        data = self.app
-        if self.app_table:
-            data += self.app_table.export(len(data))
-        # trust zone data
-        data += self.trust_zone.export()
-        return data
+        assert self.cert_block
+        return self.get_app_length() + len(self.cert_block.export()) + len(self.tz.export())
 
-    @property
-    def total_len(self) -> int:
-        """Total length of the image.
 
-        It is sum of:
-        - image length + length of trust zone data
-        - HMAC length
-        - KeyStore length
-        - certificate length (+ for encrypted images also encrypted header and CRT init vector)
-        - signature length
-        """
-        plain_data = self.data
-        certificate_len = len(self._certificate(plain_data))
-        hmac_data_len = len(self._hmac(self.data))
-        key_store_len = len(self.key_store.export()) if self.key_store else 0
-        return (
-            len(plain_data) + hmac_data_len + key_store_len + certificate_len + self.signature_len
-        )
+class Mbi_CrcRamRtxxx(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinRelocTable,
+    Mbi_MixinLoadAddress,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinHmac,
+    Mbi_MixinKeyStore,
+    Mbi_MixinHwKey,
+    Mbi_ExportMixinAppTrustZone,
+    Mbi_ExportMixinCrcSign,
+    Mbi_ExportMixinHmacKeyStoreFinalize,
+):
+    """Master Boot CRC RAM Image for RTxxx family."""
 
-    # pylint: disable=too-many-arguments
+    IMAGE_TYPE = CRC_RAM_IMAGE
+
     def __init__(
         self,
-        app: Union[bytes, bytearray],
-        load_addr: int,
-        image_type: MasterBootImageType = MasterBootImageType.PLAIN_IMAGE,
-        trust_zone: Optional[TrustZone] = None,
-        app_table: Optional[MultipleImageTable] = None,
-        cert_block: Optional[CertBlock] = None,
-        priv_key_pem_data: Optional[bytes] = None,
+        app: bytes = None,
+        app_table: MultipleImageTable = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = None,
         hmac_key: Union[bytes, str] = None,
         key_store: KeyStore = None,
-        enable_hw_user_mode_keys: bool = False,
-        ctr_init_vector: bytes = None,
+        hwk: bool = False,
     ) -> None:
-        """Constructor.
+        """Constructor for Master Boot CRC RAM Image for RTxxx family.
 
-        :param app: input image (binary)
-        :param load_addr: address in RAM, where 'RAM' image will be copied;
-            for XIP images address, where the image is located in FLASH memory
-        :param image_type: type of the master boot image
-        :param trust_zone: TrustZone instance; None to use default settings (TrustZone enabled)
-        :param app_table: optional table with additional images; None if no additional images needed
-        :param cert_block: block of certificates; None for unsigned image
-        :param priv_key_pem_data: private key to sign the image, decrypted binary data in PEM format
-        :param hmac_key: optional key for HMAC generation (either binary ot HEX string; 32 bytes);
-            None if HMAC is not in the image
-            If key_store.key_source == KeySourceType.KEYSTORE, this is a user-key from key-store
-            If key_store.key_source == KeySourceType.OTP, this is a master-key burned in OTP
-        :param key_store: optional key store binary content; None if key store is not in the image
-        :param enable_hw_user_mode_keys: flag for controlling secure hardware key bus. If true, then it is possible to
-            access keys on hardware secure bus from non-secure application, else non-secure application will read zeros.
-        :param ctr_init_vector: optional initial vector for encryption counter; None to use random vector
-        :raises SPSDKError: If type is not binary data
-        :raises SPSDKError: If images are not loaded from RAM
-        :raises SPSDKError: If invalid address
+        :param app: Application image data, defaults to None
+        :param app_table: Application table for additional application binaries, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param hmac_key: HMAC key of image, defaults to None
+        :param key_store: Optional KeyStore object for image, defaults to None
+        :param hwk: Enable HW user mode keys, defaults to false
         """
-        if not isinstance(app, (bytes, bytearray)):
-            raise SPSDKError("app must be binary data (bytes, bytearray)")
-        if app_table and not MasterBootImageType.is_copied_to_ram(image_type):
-            raise SPSDKError("app_table can be used only for images loaded to RAM")
-        if load_addr < 0:
-            raise SPSDKError("Invalid address")
-        self.load_addr = load_addr
-        self.image_type = image_type
-        alignment = MasterBootImage._IMAGE_ALIGNMENT
-        self.app = misc.align_block(bytes(app), alignment)
+        self.app = align_block(app) if app else None
         self.app_table = app_table
-        # hmac + key store
+        self.tz = trust_zone or TrustZone.enabled()
+        self.user_hw_key_enabled = hwk
+        self.load_address = load_addr
         self.hmac_key = bytes.fromhex(hmac_key) if isinstance(hmac_key, str) else hmac_key
         self.key_store = key_store
-        # trust zone
-        self.trust_zone = trust_zone or TrustZone.enabled()
-        # security stuff
-        self.cert_block = cert_block
-        if self.cert_block:
-            self.cert_block.alignment = 4  # type: ignore   # this value is used by elf-to-sb-gui
-            self.signature_len = self.cert_block.signature_size  # type: ignore
-        else:
-            self.signature_len = 0
-        self._priv_key_pem_data = priv_key_pem_data
-        self.enable_hw_user_mode_keys = enable_hw_user_mode_keys
-        self.ctr_init_vector = ctr_init_vector
-        if MasterBootImageType.is_encrypted(self.image_type) and not ctr_init_vector:
-            self.ctr_init_vector = crypto_backend().random_bytes(self._CTR_INIT_VECTOR_SIZE)
-        self._verify_private_key()
-        # validate parameters
-        self._validate_new_instance()
-
-    def _validate_new_instance(self) -> None:
-        """Validate new instance.
-
-        :raises SPSDKError: If there are invalid or conflicting parameters
-        """
-        # table
-        if self.app_table:
-            if not self.app_table.entries:
-                raise SPSDKError("app_table is empty")
-
-        # image size
-        if len(self.app) < self.HMAC_OFFSET:
-            raise SPSDKError("Image must be at least {} bytes".format(str(self.HMAC_OFFSET)))
-
-        # security stuff
-        if MasterBootImageType.is_signed(self.image_type):
-            if not self.cert_block:
-                raise SPSDKError(
-                    "Certificate block must be specified for signed image (cert_block)"
-                )
-            if not self._priv_key_pem_data:
-                raise SPSDKError("Private Key must be specified for signed image (priv_key_path)")
-        else:
-            if self.cert_block:
-                raise SPSDKError(
-                    "Certificate block must be specified only for signed image (cert_block)"
-                )
-            if self._priv_key_pem_data:
-                raise SPSDKError(
-                    "Private Key must be specified only for signed image (priv_key_path)"
-                )
-
-        if MasterBootImageType.is_encrypted(self.image_type):
-            if not self.ctr_init_vector or (
-                len(self.ctr_init_vector) != self._CTR_INIT_VECTOR_SIZE
-            ):
-                raise SPSDKError(
-                    f"Invalid length of CTR init vector, expected {str(self._CTR_INIT_VECTOR_SIZE)} bytes"
-                )
-
-        # hmac
-        if MasterBootImageType.has_hmac(self.image_type):
-            if not self.hmac_key:
-                raise SPSDKError(
-                    "HMAC key must be specified for load-to-ram signed images (hmac_key)"
-                )
-        else:
-            if self.hmac_key:
-                raise SPSDKError(
-                    "HMAC user key cannot be applied into selected image (hmac_user_key)"
-                )
-            if self.key_store:
-                raise SPSDKError("KeyStore cannot be applied into selected image (key_store)")
-
-    def _verify_private_key(self) -> None:
-        """Verifies private key.
-
-        :raises SPSDKError: If certification block is not present
-        :raises SPSDKError: If any parameter not valid
-        """
-        if self._priv_key_pem_data:
-            cert_blk = self.cert_block
-            if cert_blk is None:
-                raise SPSDKError("Certification block is not present")
-            if not cert_blk.verify_private_key(self._priv_key_pem_data):  # type: ignore
-                raise SPSDKError(
-                    "Signature verification failed, private key does not match to certificate"
-                )
-
-    def info(self) -> str:
-        """Text description of the instance."""
-        msg = "Master Boot Image"
-        msg += "Image type       : {}\n".format(MasterBootImageType.desc(self.image_type))
-        msg += "Img load addr    : {}\n".format(hex(self.load_addr))
-        msg += "Image length     : {}\n".format(len(self.data))
-        msg += "HW user mode keys: {}\n".format(
-            "enabled" if self.enable_hw_user_mode_keys else "disabled"
-        )
-        msg += "TrustZone        : {}\n".format(TrustZoneType.desc(self.trust_zone.type))
-        if self.cert_block:
-            msg += "[Certificate Block]\n"
-            msg += self.cert_block.info()
-        if self._priv_key_pem_data:
-            msg += "Private Key  : {Yes}\n"
-        return msg
-
-    def _calculate_flags(self) -> int:
-        flags = (self.trust_zone.type << 8) + self.image_type
-        if self.key_store and self.key_store.export():
-            flags |= self._KEY_STORE_FLAG
-        if self.app_table:
-            flags |= self._RELOC_TABLE_FLAG
-        if self.enable_hw_user_mode_keys:
-            flags |= self._HW_USER_KEY_EN_FLAG
-        return flags
-
-    def _update_ivt(self, data: bytes) -> bytes:
-        data = bytearray(data)
-        data[self.IMAGE_LENGTH_OFFSET : self.IMAGE_LENGTH_OFFSET + 4] = struct.pack(
-            "<I", self.total_len
-        )
-        # flags
-        flags = self._calculate_flags()
-        data[self.IMAGE_FLAGS_OFFSET : self.IMAGE_FLAGS_OFFSET + 4] = struct.pack("<I", flags)
-        #
-        data[self.LOAD_ADDR_OFFSET : self.LOAD_ADDR_OFFSET + 4] = struct.pack("<I", self.load_addr)
-        if MasterBootImageType.is_signed(self.image_type):
-            data[self.CERTIFICATE_OFFSET : self.CERTIFICATE_OFFSET + 4] = struct.pack(
-                "<I", self.app_len
-            )
-        if MasterBootImageType.has_crc(self.image_type):
-            # calculate CRC using MPEG2 specification over all of data (app and trustzone)
-            # expect for 4 bytes at CRC_BLOCK_OFFSET and put the resulting CRC there
-            crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
-            crc = crc32_function(data[: self.CRC_BLOCK_OFFSET])
-            crc = crc32_function(data[self.CRC_BLOCK_OFFSET + 4 :], crc)
-            data[self.CRC_BLOCK_OFFSET : self.CRC_BLOCK_OFFSET + 4] = struct.pack("<I", crc)
-        return bytes(data)
-
-    def _certificate(self, encr_data: bytes) -> bytes:
-        """Create certificate optionally followed by encrypted image header and CTR init vector.
-
-        :param encr_data: encrypted data for encrypted image; plain data otherwise
-        :return:
-        - for encrypted image: certificate with encrypted image header and CTR init vector
-        - for signed image: certificate
-        - for plain image: empty bytes
-        :raises SPSDKError: If initial vector for encryption counter is not present
-        """
-        if not self.cert_block:
-            return bytes()
-
-        # for encrypted image create encrypted header located behind certificate
-        if MasterBootImageType.is_encrypted(self.image_type):
-            if not self.ctr_init_vector:
-                raise SPSDKError("Initial vector for encryption counter is not present")
-            encr_header = encr_data[:56] + self.ctr_init_vector
-        else:
-            encr_header = bytes()
-        self.cert_block.image_length = len(encr_data) + len(self.cert_block.export()) + len(encr_header)  # type: ignore
-        return self.cert_block.export() + encr_header
-
-    def _hmac(self, data: bytes) -> bytes:
-        """Calculate HMAC for provided data.
-
-        :param data: to calculate hmac
-        :return: calculated hmac; empty bytes if the block does not contain any HMAC
-        :raises SPSDKError: If invalid hmac key
-        :raises SPSDKError: If invalid length of key
-        :raises SPSDKError: If invalid length of calculated hmac
-        :raises SPSDKError: Key_store must be specified for encrypted image
-        :raises SPSDKError: If invalid hmac key
-        :raises SPSDKError: If invalid initialization vector
-        :raises SPSDKError: Unsupported key_source
-        """
-        if not MasterBootImageType.has_hmac(self.image_type):
-            return bytes()
-
-        if not (self.hmac_key and len(self.hmac_key) == self._HMAC_KEY_LENGTH):
-            raise SPSDKError("Invalid hmac key")
-        key = KeyStore.derive_hmac_key(self.hmac_key)
-        if len(key) != self._HMAC_DERIVED_KEY_LEN:
-            raise SPSDKError("Invalid length of key")
-        result = crypto_backend().hmac(key, data)
-        if len(result) != self.HMAC_SIZE:
-            raise SPSDKError("Invalid length of calculated hmac")
-        return result
-
-    def _encrypt(self, data: bytes) -> bytes:
-        if not MasterBootImageType.is_encrypted(self.image_type):
-            return data
-
-        if not self.key_store:
-            raise SPSDKError("key_store must be specified for encrypted image")
-        if not (self.hmac_key and len(self.hmac_key) == self._HMAC_KEY_LENGTH):
-            raise SPSDKError("Invalid hmac key")
-        if not self.ctr_init_vector:
-            raise SPSDKError("Invalid initialization vector")
-
-        if self.key_store.key_source == KeySourceType.KEYSTORE:
-            key = self.hmac_key  # user_key, the key not derived
-        elif self.key_store.key_source == KeySourceType.OTP:
-            key = self.key_store.derive_enc_image_key(self.hmac_key)
-        else:
-            if True:
-                raise SPSDKError("Unsupported key_source")
-
-        aes = AES.new(key, AES.MODE_CTR, initial_value=self.ctr_init_vector, nonce=bytes())
-        return aes.encrypt(data)
-
-    def export(self) -> bytes:
-        """Master boot image (binary).
-
-        :raises SPSDKError: If private key not present
-        :raises SPSDKError: If wrong private key
-        :return: exported bytes
-        """
-        data = self._update_ivt(self.data)
-
-        # signed or encrypted
-        if MasterBootImageType.is_signed(self.image_type):
-            if not self._priv_key_pem_data:
-                raise SPSDKError("Private key not present")
-            cb = self.cert_block
-            if not ((cb is not None) and cb.verify_private_key(self._priv_key_pem_data)):  # type: ignore
-                raise SPSDKError("Wrong private key")
-            # encrypt
-            encr_data = self._encrypt(data)
-            encr_data = (
-                self._update_ivt(encr_data[: self.HMAC_OFFSET])
-                + encr_data[self.HMAC_OFFSET : self.app_len]  # header
-                + self._certificate(encr_data)  # encrypted image
-                + encr_data[self.app_len :]  # certificate + encoded image header + CTR init vector
-            )  # TZ encoded data
-            encr_data += crypto_backend().rsa_sign(self._priv_key_pem_data, encr_data)  # signature
-            # hmac + key store
-            if MasterBootImageType.has_hmac(self.image_type):
-                hmac_keystore = self._hmac(encr_data[: self.HMAC_OFFSET])
-                if self.key_store:
-                    hmac_keystore += self.key_store.export()
-                encr_data = (
-                    encr_data[: self.HMAC_OFFSET] + hmac_keystore + encr_data[self.HMAC_OFFSET :]
-                )
-            return bytes(encr_data)
-
-        return bytes(data)
-
-    @classmethod
-    def parse(cls, data: bytes, offset: int = 0, **kwargs: Any) -> None:
-        """Parse."""
-        raise NotImplementedError()
+        super().__init__()
 
 
-class MasterBootImageManifest:
-    """MasterBootImage Manifest used in LPC55s3x."""
+class Mbi_EncryptedRamRtxxx(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinRelocTable,
+    Mbi_MixinLoadAddress,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinCertBlockV2,
+    Mbi_MixinHwKey,
+    Mbi_MixinKeyStore,
+    Mbi_MixinHmacMandatory,
+    Mbi_MixinCtrInitVector,
+    Mbi_ExportMixinRsaSign,
+    Mbi_ExportMixinHmacKeyStoreFinalize,
+):
+    """Master Boot Encrypted RAM Image for RTxxx family."""
 
-    MAGIC = b"imgm"
-    # FORMAT = "<4s2H3L"
-    FORMAT = "<4s4L"
-    # FORMAT_VERSION = "1.0"
-    FORMAT_VERSION = 0x0001_0000
-    DIGEST_PRESENT_FLAG = 0x8000_0000
-
-    def __init__(
-        self, firmware_version: int, trust_zone: TrustZone, sign_hash_len: int = None
-    ) -> None:
-        """Initialize MBI Manifest object.
-
-        :param firmware_version: firmware version
-        :param sign_hash_len: length of hash used for singing, defaults to None
-        :param trust_zone: TrustZone instance, defaults to None
-        """
-        self.firmware_version = firmware_version
-        self.sign_hash_len = sign_hash_len
-        self.trust_zone = trust_zone
-        self.total_length = self._calculate_length()
-        self.flags = self._calculate_flags()
-
-    def _calculate_length(self) -> int:
-        length = struct.calcsize(self.FORMAT)
-        # trustzone is always present
-        length += len(self.trust_zone.export())
-        return length
-
-    def _calculate_flags(self) -> int:
-        if not self.sign_hash_len:
-            return 0
-        hash_len_types = {0: 0, 32: 1, 48: 2, 64: 3}
-        return self.DIGEST_PRESENT_FLAG | hash_len_types[self.sign_hash_len]
-
-    def export(self) -> bytes:
-        """Serialize MBI Manifest."""
-        data = struct.pack(
-            self.FORMAT,
-            self.MAGIC,
-            # *[int(part) for part in self.FORMAT_VERSION.split('.')],
-            self.FORMAT_VERSION,
-            self.firmware_version,
-            self.total_length,
-            self.flags,
-        )
-        return data
-
-
-class MasterBootImageN4Analog(MasterBootImage):
-    """Master Boot Image layout specific for LPC55s3x."""
-
-    # flag indication presence of boot image version (Used by LPC55s3x)
-    _BOOT_IMAGE_VERSION_FLAG = 0x400
+    IMAGE_TYPE = ENCRYPTED_RAM_IMAGE
 
     def __init__(
         self,
-        app: bytes,
-        load_addr: int,
-        firmware_version: int,
-        sign_hash_len: int = 0,
-        signature_provider: SignatureProvider = None,
-        **kwargs: Any,
+        app: bytes = None,
+        app_table: MultipleImageTable = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = None,
+        cert_block: CertBlockV2 = None,
+        priv_key_data: bytes = None,
+        hmac_key: Union[bytes, str] = None,
+        key_store: KeyStore = None,
+        ctr_init_vector: bytes = None,
+        hwk: bool = False,
     ) -> None:
-        """Initialize MBI for LPC55s3x.
+        """Constructor for Master Boot Encrypted RAM Image for RTxxx family..
 
-        :param app: application binary
-        :param load_addr: Address where to load application
-        :param firmware_version: Firmware version, defaults to None
-        :param sign_hash_len: Length of hash used for singing, defaults to 0
-        :param signature_provider: Signature provider meant to sign the image
-        :param kwargs: keyword arguments passed to MasterBootImage
-        :raises SPSDKError: If trustZone was not set in parent class
+        :param app: Application image data, defaults to None
+        :param app_table: Application table for additional application binaries, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param cert_block: Certification block of image, defaults to None
+        :param priv_key_data: Private key used to sign image, defaults to None
+        :param hwk: Enable HW user mode keys, defaults to false
+        :param key_store: Optional KeyStore object for image, defaults to None
+        :param hmac_key: HMAC key of image, defaults to None
+        :param ctr_init_vector: Counter initialization vector of image, defaults to None
         """
-        super().__init__(app=app, load_addr=load_addr, **kwargs)
+        self.app = align_block(app) if app else None
+        self.load_address = load_addr
+        self.app_table = app_table
+        self.tz = trust_zone or TrustZone.enabled()
+        self.cert_block = cert_block
+        self.priv_key_data = priv_key_data
+        self.user_hw_key_enabled = hwk
+        self.key_store = key_store
+        self.hmac_key = bytes.fromhex(hmac_key) if isinstance(hmac_key, str) else hmac_key
+        self.store_ctr_init_vector(ctr_init_vector)
+        self.img_len = 0
+        super().__init__()
+
+    def collect_data(self) -> bytes:
+        """Collect basic data to create image.
+
+        :return: Collected raw image.
+        """
+        assert self.cert_block
+        self.cert_block.alignment = 4  # type: ignore   # this value is used by elf-to-sb-gui
+
+        self.img_len = (
+            self.total_len + self.cert_block.signature_size + 56 + 16
+        )  # Encrypted IVT + IV
+
+        return self.update_ivt(
+            app_data=self.get_app_data() + self.tz.export(),
+            total_len=self.img_len,
+            crc_val_cert_offset=self.get_app_length(),
+        )
+
+    def encrypt(self, raw_image: bytes) -> bytes:
+        """Encrypt image if needed.
+
+        :param raw_image: Input raw image to encrypt.
+        :return: Encrypted image.
+        """
+        assert self.hmac_key and self.ctr_init_vector
+        key = self.hmac_key
+        if not self.key_store or self.key_store.key_source == KeySourceType.OTP:
+            key = KeyStore.derive_enc_image_key(key)
+        aes = AES.new(key, AES.MODE_CTR, initial_value=self.ctr_init_vector, nonce=bytes())
+        return aes.encrypt(raw_image + self.tz.export())
+
+    def post_encrypt(self, image: bytes) -> bytes:
+        """Optionally do some post encrypt image updates.
+
+        :param image: Encrypted image.
+        :return: Updated encrypted image.
+        """
+        assert self.cert_block
+        enc_ivt = self.update_ivt(
+            app_data=image[: self.HMAC_OFFSET],
+            total_len=self.img_len,
+            crc_val_cert_offset=self.get_app_length(),
+        )
+        # Create encrypted cert block (Encrypted IVT table + IV)
+        encrypted_header = image[:56] + self.ctr_init_vector
+
+        self.cert_block.image_length = (
+            len(image) + len(self.cert_block.export()) + len(encrypted_header)
+        )
+        enc_cert = self.cert_block.export() + encrypted_header
+
+        return (
+            enc_ivt
+            + image[self.HMAC_OFFSET : self.get_app_length()]  # header  # encrypted image
+            + enc_cert  # certificate + encoded image header + CTR init vector
+            + image[self.get_app_length() :]  # TZ encoded data
+        )
+
+
+class Mbi_PlainXipRtxxx(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinHwKey,
+    Mbi_ExportMixinAppTrustZone,
+):
+    """Master Boot Plain XiP Image for RTxxx."""
+
+    def __init__(self, app: bytes = None, trust_zone: TrustZone = None, hwk: bool = False) -> None:
+        """Constructor for Master Boot Plain XiP Image for RTxxx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param hwk: Enable HW user mode keys, defaults to false
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.user_hw_key_enabled = hwk
+        super().__init__()
+
+
+class Mbi_PlainSignedXipRtxxx(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinCertBlockV2,
+    Mbi_MixinHwKey,
+    Mbi_ExportMixinAppTrustZoneCertBlock,
+    Mbi_ExportMixinRsaSign,
+):
+    """Master Boot Plain Signed XiP Image for RTxxx family."""
+
+    IMAGE_TYPE = SIGNED_XIP_IMAGE
+
+    def __init__(
+        self,
+        app: bytes = None,
+        trust_zone: TrustZone = None,
+        cert_block: CertBlockV2 = None,
+        priv_key_data: bytes = None,
+        hwk: bool = False,
+    ) -> None:
+        """Constructor for Master Boot Plain Signed XiP Image for RTxxx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param cert_block: Certification block of image, defaults to None
+        :param priv_key_data: Private key used to sign image, defaults to None
+        :param hwk: Enable HW user mode keys, defaults to false
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.cert_block = cert_block
+        self.priv_key_data = priv_key_data
+        self.user_hw_key_enabled = hwk
+        super().__init__()
+
+
+class Mbi_CrcXipRtxxx(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinHwKey,
+    Mbi_ExportMixinAppTrustZone,
+    Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC XiP Image for RTxxx."""
+
+    IMAGE_TYPE = CRC_XIP_IMAGE
+
+    def __init__(self, app: bytes = None, trust_zone: TrustZone = None, hwk: bool = False) -> None:
+        """Constructor for Master Boot CRC XiP Image for RTxxx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param hwk: Enable HW user mode keys, defaults to false
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.user_hw_key_enabled = hwk
+        super().__init__()
+
+
+########################################################################################################################
+# Master Boot Image Class (LPC55x3x)
+########################################################################################################################
+class Mbi_PlainRamLpc55s3x(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZoneMandatory,
+    Mbi_MixinLoadAddress,
+    Mbi_MixinFwVersion,
+    Mbi_ExportMixinAppTrustZone,
+):
+    """Master Boot Plain RAM Image for LPC55s3x family."""
+
+    def __init__(
+        self,
+        app: bytes = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+    ) -> None:
+        """Constructor for Master Boot Plain RAM Image for LPC55s3x family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
         self.firmware_version = firmware_version
-        self.manifest = None
+        self.load_address = load_addr
+        super().__init__()
+
+
+class Mbi_CrcRamLpc55s3x(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZoneMandatory,
+    Mbi_MixinLoadAddress,
+    Mbi_MixinFwVersion,
+    Mbi_ExportMixinAppTrustZone,
+    Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC RAM Image for LPC55s3x family."""
+
+    IMAGE_TYPE = CRC_RAM_IMAGE
+
+    def __init__(
+        self,
+        app: bytes = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+    ) -> None:
+        """Constructor for Master Boot Signed RAM Image for LPC55s3x family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
+        self.firmware_version = firmware_version
+        super().__init__()
+
+
+class Mbi_PlainXipSignedLpc55s3x(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinCertBlockV31,
+    Mbi_MixinManifest,
+    Mbi_MixinFwVersion,
+    Mbi_ExportMixinAppCertBlockManifest,
+    Mbi_ExportMixinEccSign,
+):
+    """Master Boot Signed XIP Image for LPC55s3x family."""
+
+    IMAGE_TYPE = SIGNED_XIP_IMAGE
+
+    def __init__(
+        self,
+        app: bytes = None,
+        firmware_version: int = 0,
+        cert_block: CertBlockV31 = None,
+        manifest: MasterBootImageManifest = None,
+        signature_provider: SignatureProvider = None,
+    ) -> None:
+        """Constructor for Master Boot Signed XIP Image for LPC55s3x family.
+
+        :param app: Application image data, defaults to None
+        :param firmware_version: Firmware version of image, defaults to 0
+        :param cert_block: Certification block of image, defaults to None
+        :param manifest: Manifest of image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
+        """
+        self.app = align_block(app) if app else None
+        self.firmware_version = firmware_version
+        self.cert_block = cert_block
+        self.manifest = manifest
         self.signature_provider = signature_provider
-        if not self.trust_zone:
-            raise SPSDKError("TrustZone was not set in parent class!")
-        if MasterBootImageType.is_signed(self.image_type):
-            self.manifest = MasterBootImageManifest(
-                firmware_version,
-                sign_hash_len=sign_hash_len,
-                trust_zone=self.trust_zone,
-            )
+        super().__init__()
 
-    def _calculate_flags(self) -> int:
-        flags = super()._calculate_flags()
-        if self.firmware_version:
-            flags |= self._BOOT_IMAGE_VERSION_FLAG
-            flags |= self.firmware_version << 16
-        return flags
 
-    @property
-    def data(self) -> bytes:
-        """Plain, unsigned binary data for the image.
+class Mbi_CrcXipLpc55s3x(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZoneMandatory,
+    Mbi_MixinFwVersion,
+    Mbi_ExportMixinAppTrustZone,
+    Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC XiP Image for LPC55s3x family."""
 
-        It consists of:
-        - application image
-        - image manifest for signed image types
-        - optionally trust zone data
-        Please mind the result does not contain: certification block, HMAC, keystore and signature
-        :raises SPSDKError: If certificate Block is not set
-        :raises SPSDKError: If masterBootImageManifest is not set
-        :raises SPSDKError: If signature provider is not set
-        :raises SPSDKError: If signature is not set
+    IMAGE_TYPE = CRC_XIP_IMAGE
+
+    def __init__(
+        self, app: bytes = None, trust_zone: TrustZone = None, firmware_version: int = 0
+    ) -> None:
+        """Constructor for Master Boot CRC XiP Image for LPC55s3x family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param firmware_version: Firmware version of image, defaults to 0
         """
-        # binary image
-        data = self.app
-        if MasterBootImageType.is_signed(self.image_type):
-            if not self.cert_block:
-                raise SPSDKError("Certificate Block is not set!")
-            data += self.cert_block.export()
-            if not self.manifest:
-                raise SPSDKError("MasterBootImageManifest is not set!")
-            data += self.manifest.export()
-        # trust zone data
-        data += self.trust_zone.export()
-        return data
-
-    def _validate_new_instance(self) -> None:
-        """Temporarily disable instance checking due to external singing."""
-        pass
-
-    @property
-    def total_len(self) -> int:
-        """Return the total (expected) length of the image.
-
-        :raises SPSDKError: If MasterBootImageManifest is not set
-        :raises SPSDKError: If certificate Block is not set
-        :return: total length of the image
-        """
-        image_length = len(self.app)
-        image_length += len(self.trust_zone.export())
-        if MasterBootImageType.is_signed(self.image_type):
-            if not self.manifest:
-                raise SPSDKError("MasterBootImageManifest is not set!")
-            image_length += len(self.manifest.export())
-            if not self.cert_block:
-                raise SPSDKError("Certificate Block is not set!")
-            image_length += self.cert_block.expected_size  # type: ignore
-            # signature length
-            assert self.signature_provider, "Signature provider is not set!"
-            image_length += self.signature_provider.signature_length
-        return image_length
-
-    def export(self) -> bytes:
-        """Master boot image (binary)."""
-        data = self._update_ivt(self.data)
-        if MasterBootImageType.is_signed(self.image_type):
-            assert self.signature_provider, "Signature provider is not set!"
-            signature = self.signature_provider.sign(data)
-            assert signature, "Signature is not set!"
-            data += serialize_ecc_signature(signature, 32)
-            # data += signature
-        return data
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.firmware_version = firmware_version
+        super().__init__()

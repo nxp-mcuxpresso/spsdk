@@ -1,16 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
+
+import os
 
 import pytest
 
 from spsdk import SPSDKError
 from spsdk.sbfile.sb31.commands import BaseCmd, CmdErase, MainCmd
 from spsdk.sbfile.sb31.functions import KeyDerivator, _get_key_derivation_data, derive_block_key
+from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands, SecureBinary31Header
+from spsdk.utils.crypto import CertBlockV31
+from spsdk.utils.misc import load_binary
 
 
 def test_invalid_header_parse():
@@ -104,3 +109,152 @@ def test_key_derivator_invalid():
         derive_block_key(kdk=bytes(50), block_number=1, key_length=5, kdk_access_rights=6)
     with pytest.raises(SPSDKError, match="Invalid key length"):
         derive_block_key(kdk=bytes(50), block_number=1, key_length=5, kdk_access_rights=0)
+
+
+def test_header_validate():
+    """Test of validation function for Secure Binary header class."""
+    with pytest.raises(SPSDKError):
+        SecureBinary31Header(curve_name=None, firmware_version=None)
+    with pytest.raises(SPSDKError):
+        SecureBinary31Header(curve_name="Invalid", firmware_version=None)
+
+    sb3h = SecureBinary31Header(curve_name="secp256r1", firmware_version=0)
+    sb3h.validate()
+
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header flags."):
+        sb3h.flags = None
+        sb3h.validate()
+    sb3h.flags = 0
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header block count."):
+        sb3h.block_count = None
+        sb3h.validate()
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header block count."):
+        sb3h.block_count = -1
+        sb3h.validate()
+    sb3h.block_count = 0
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header curve name."):
+        sb3h.curve_name = None
+        sb3h.validate()
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header curve name."):
+        sb3h.curve_name = "Invalid"
+        sb3h.validate()
+    sb3h.curve_name = "secp256r1"
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header block size."):
+        sb3h.block_size = None
+        sb3h.validate()
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header block size."):
+        sb3h.block_size = 1
+        sb3h.validate()
+    sb3h.block_size = sb3h.calculate_block_size()
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header image type."):
+        sb3h.image_type = None
+        sb3h.validate()
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header image type."):
+        sb3h.image_type = 1
+        sb3h.validate()
+    sb3h.image_type = 6
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header firmware version."):
+        sb3h.firmware_version = None
+        sb3h.validate()
+    sb3h.firmware_version = 6
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header timestamp."):
+        sb3h.timestamp = None
+        sb3h.validate()
+    sb3h.timestamp = 1
+    tl = sb3h.image_total_length
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header image total length."):
+        sb3h.image_total_length = None
+        sb3h.validate()
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header image total length."):
+        sb3h.image_total_length = 1
+        sb3h.validate()
+    sb3h.image_total_length = tl
+    bl = sb3h.cert_block_offset
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header certification block offset."):
+        sb3h.cert_block_offset = None
+        sb3h.validate()
+    sb3h.cert_block_offset = bl
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header image description."):
+        sb3h.description = None
+        sb3h.validate()
+    with pytest.raises(SPSDKError, match="Invalid SB3.1 header image description."):
+        sb3h.description = "Short"
+        sb3h.validate()
+    sb3h.description = "                "
+    sb3h.validate()
+
+
+def test_commands_validate():
+    """Test of validation function for Secure Binary commands class."""
+    with pytest.raises(KeyError):
+        SecureBinary31Commands(curve_name=None)
+    with pytest.raises(KeyError):
+        SecureBinary31Commands(curve_name="Invalid")
+    with pytest.raises(SPSDKError):
+        SecureBinary31Commands(curve_name="secp256r1")
+
+    SecureBinary31Commands(curve_name="secp256r1", is_encrypted=False).validate()
+
+    sb3c = SecureBinary31Commands(
+        curve_name="secp256r1", pck=bytes(32), kdk_access_rights=1, timestamp=1
+    )
+    sb3c.key_derivator = None  # something broke key derivator
+    with pytest.raises(SPSDKError):
+        sb3c.validate()
+
+
+def test_secure_binary3_validate(data_dir):
+    """Test of validation function for Secure Binary class."""
+
+    rot = [load_binary(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem")) for x in range(4)]
+    cert_blk = CertBlockV31(root_certs=rot, ca_flag=1)
+
+    sb3 = SecureBinary31(
+        curve_name="secp256r1",
+        cert_block=cert_blk,
+        firmware_version=1,
+        signing_key=rot[0],
+        is_encrypted=False,
+    )
+    sb3.validate()
+    with pytest.raises(SPSDKError):
+        sb3.signing_key = None
+        sb3.validate()
+    with pytest.raises(SPSDKError):
+        sb3.signing_key = "Invalid"
+        sb3.validate()
+    sb3.signing_key = rot[0]
+    sb3.validate()
+
+
+def test_secure_binary3_info(data_dir):
+    """Test of info function for Secure Binary class."""
+
+    rot = [load_binary(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem")) for x in range(4)]
+    cert_blk = CertBlockV31(root_certs=rot, ca_flag=1)
+
+    sb3 = SecureBinary31(
+        curve_name="secp256r1",
+        cert_block=cert_blk,
+        firmware_version=1,
+        signing_key=rot[0],
+        is_encrypted=False,
+    )
+    info = sb3.info()
+    assert isinstance(info, str)
+    assert "SB3.1" in info
+
+
+def test_cert_block_validate(data_dir):
+    """Test of validation function for Secure Binary class."""
+
+    rot = [load_binary(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem")) for x in range(4)]
+    isk_cert = load_binary(os.path.join(data_dir, "ec_secp256r1_cert0.pem"))
+    cert_blk = CertBlockV31(
+        root_certs=rot, ca_flag=0, version="2.0", isk_private_key=rot[0], isk_cert=isk_cert
+    )
+    cert_blk.validate()
+
+    with pytest.raises(SPSDKError):
+        cert_blk.isk_certificate.isk_private_key = "invalid"
+        cert_blk.validate()

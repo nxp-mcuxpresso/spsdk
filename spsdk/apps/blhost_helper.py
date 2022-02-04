@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Helper module for blhost application."""
 
+import contextlib
 import math
-from typing import Any, List
+from typing import Any, Callable, Iterator, List, Union
 
 import bincopy
 import click
@@ -83,6 +84,7 @@ PROPERTIES_NAMES = {
     "flash-page-size": 27,
     "irq-notify-pin": 28,
     "pfr-keystore_update-opt": 29,
+    "byte-write-timeout-ms": 30,
 }
 
 
@@ -93,7 +95,8 @@ def parse_property_tag(property_tag: str) -> int:
     :return: Property integer tag
     """
     try:
-        return int(property_tag, 0)
+        value = int(property_tag, 0)
+        return value if value in PROPERTIES_NAMES.values() else 0xFF
     except:
         return PROPERTIES_NAMES.get(property_tag, 0xFF)
 
@@ -200,3 +203,26 @@ def parse_image_file(file_path: str) -> List[SegmentInfo]:
         ) from e
     except Exception as e:
         raise SPSDKError("Error loading file") from e
+
+
+@contextlib.contextmanager
+def progress_bar(
+    suppress: bool = False, **progress_bar_params: Union[str, int]
+) -> Iterator[Callable[[int, int], None]]:
+    """Creates a progress bar and return callback function for updating the progress bar.
+
+    :param suppress: Suppress the progress bar creation; return an empty callback, defaults to False
+    :param **progress_bar_params: Standard parameters for click.progressbar
+    :yield: Callback for updating the progess bar
+    """
+    if suppress:
+        yield lambda _x, _y: None
+    else:
+        with click.progressbar(length=100, **progress_bar_params) as bar:
+
+            def progress(step: int, total_steps: int) -> None:
+                per_step = 100 / total_steps
+                increment = step * per_step - bar.pos
+                bar.update(increment)
+
+            yield progress

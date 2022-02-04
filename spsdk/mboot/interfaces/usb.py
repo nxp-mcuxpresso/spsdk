@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for serial communication with a target device using MBoot protocol."""
@@ -53,6 +53,7 @@ USB_DEVICES = {
     "RT5xx_C": (0x1FC9, 0x0023),
     "RT5xx": (0x1FC9, 0x0023),
     "RT6xxM": (0x1FC9, 0x0024),
+    "LPC553x": (0x1FC9, 0x0025),
 }
 
 
@@ -200,7 +201,7 @@ class RawHid(Interface):
         # try to read a begging of the ABORT_FRAME
         if self.allow_abort and report_id == REPORT_ID["DATA_OUT"]:
             try:
-                (abort_data, result) = self.device.Read(1024, timeout_ms=10)
+                (abort_data, _result) = self.device.Read(1024, timeout_ms=10)
                 logger.debug(f"Read {len(abort_data)} bytes of abort data")
             except Exception as e:
                 raise McuBootConnectionError(str(e)) from e
@@ -210,7 +211,7 @@ class RawHid(Interface):
 
         try:
             raw_data = self._encode_report(report_id, data)
-            bytes_written = self.device.Write(raw_data, timeout_ms=self.timeout)
+            _bytes_written = self.device.Write(raw_data, timeout_ms=self.timeout)
 
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e

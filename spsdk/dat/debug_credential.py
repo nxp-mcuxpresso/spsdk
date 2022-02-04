@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -133,6 +133,7 @@ class DebugCredential:
         """Creates the RoT meta-data required by the device to corroborate.
 
         :return: binary representing the rot-meta data
+        :raises NotImplementedError: Derived class has to implement this method
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
@@ -141,6 +142,7 @@ class DebugCredential:
         """Loads the Debugger Public Key (DCK).
 
         :return: binary representing the DCK key
+        :raises NotImplementedError: Derived class has to implement this method
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
@@ -149,13 +151,14 @@ class DebugCredential:
         """Loads the vendor RoT Public key that corresponds to the private key used for singing.
 
         :return: binary representing the rotk public key
+        :raises NotImplementedError: Derived class has to implement this method
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
     def _get_class(cls, version: str, socc: int) -> "Type[DebugCredential]":
         if socc == 4:
-            return _n4analog_version_mapping[version]
+            return _lpc55s3x_version_mapping[version]
         return _version_mapping[version]
 
     @classmethod
@@ -360,7 +363,7 @@ class DebugCredentialECC521(DebugCredentialECC):
     CURVE = crypto.ec.SECP521R1()
 
 
-class N4AnalogMixin(DebugCredentialECC):
+class Lpc55s3xMixin(DebugCredentialECC):
     """LPC55s3x Class."""
 
     HASH_LENGTH = 0
@@ -373,8 +376,8 @@ class N4AnalogMixin(DebugCredentialECC):
 
         :return: binary representing the rot-meta data
         """
-        ctrk_hash_table = N4AnalogMixin.create_ctrk_table(rot_pub_keys)
-        flags = N4AnalogMixin.calculate_flags(used_root_cert, rot_pub_keys)
+        ctrk_hash_table = Lpc55s3xMixin.create_ctrk_table(rot_pub_keys)
+        flags = Lpc55s3xMixin.calculate_flags(used_root_cert, rot_pub_keys)
         return flags + ctrk_hash_table
 
     @staticmethod
@@ -556,7 +559,7 @@ class N4AnalogMixin(DebugCredentialECC):
         return cls.parse(data, 0)
 
 
-class DebugCredentialECC256N4Analog(N4AnalogMixin):
+class DebugCredentialECC256Lpc55s3x(Lpc55s3xMixin):
     """DebugCredential class for LPC55s3x for version 2.0 (p256)."""
 
     HASH_LENGTH = 32
@@ -565,7 +568,7 @@ class DebugCredentialECC256N4Analog(N4AnalogMixin):
     VERSION = "2.0"
 
 
-class DebugCredentialECC384N4Analog(N4AnalogMixin):
+class DebugCredentialECC384Lpc55s3x(Lpc55s3xMixin):
     """DebugCredential class for LPC55s3x for version 2.1 (p384)."""
 
     HASH_LENGTH = 48
@@ -582,7 +585,7 @@ _version_mapping = {
     "2.2": DebugCredentialECC521,
 }
 
-_n4analog_version_mapping = {
-    "2.0": DebugCredentialECC256N4Analog,
-    "2.1": DebugCredentialECC384N4Analog,
+_lpc55s3x_version_mapping = {
+    "2.0": DebugCredentialECC256Lpc55s3x,
+    "2.1": DebugCredentialECC384Lpc55s3x,
 }

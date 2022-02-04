@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import filecmp
@@ -10,6 +10,7 @@ import time
 from typing import Union
 
 import pytest
+from bincopy import BinFile
 
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
@@ -25,8 +26,10 @@ from spsdk.utils.misc import (
     format_value,
     get_bytes_cnt_of_int,
     load_binary,
+    load_binary_image,
     load_file,
     reverse_bytes_in_longs,
+    size_fmt,
     value_to_bool,
     value_to_bytes,
     value_to_int,
@@ -239,41 +242,46 @@ def test_reg_long_reverse():
 
 
 @pytest.mark.parametrize(
-    "num, output, align_2_2n",
+    "num, output, align_2_2n, byte_cnt, exception",
     [
-        (0, 1, True),
-        (1, 1, True),
-        ((1 << 8) - 1, 1, True),
-        ((1 << 8), 2, True),
-        ((1 << 16) - 1, 2, True),
-        ((1 << 16), 4, True),
-        ((1 << 24) - 1, 4, True),
-        ((1 << 24), 4, True),
-        ((1 << 32) - 1, 4, True),
-        ((1 << 32), 8, True),
-        ((1 << 64) - 1, 8, True),
-        ((1 << 64), 12, True),
-        ((1 << 128) - 1, 16, True),
-        ((1 << 128), 20, True),
-        (0, 1, False),
-        (1, 1, False),
-        ((1 << 8) - 1, 1, False),
-        ((1 << 8), 2, False),
-        ((1 << 16) - 1, 2, False),
-        ((1 << 16), 3, False),
-        ((1 << 24) - 1, 3, False),
-        ((1 << 24), 4, False),
-        ((1 << 32) - 1, 4, False),
-        ((1 << 32), 5, False),
-        ((1 << 64) - 1, 8, False),
-        ((1 << 64), 9, False),
-        ((1 << 128) - 1, 16, False),
-        ((1 << 128), 17, False),
+        (0, 1, True, None, False),
+        (1, 1, True, None, False),
+        ((1 << 8) - 1, 1, True, None, False),
+        ((1 << 8), 2, True, None, False),
+        ((1 << 16) - 1, 2, True, None, False),
+        ((1 << 16), 4, True, None, False),
+        ((1 << 24) - 1, 4, True, None, False),
+        ((1 << 24), 4, True, None, False),
+        ((1 << 32) - 1, 4, True, None, False),
+        ((1 << 32), 8, True, None, False),
+        ((1 << 64) - 1, 8, True, None, False),
+        ((1 << 64), 12, True, None, False),
+        ((1 << 128) - 1, 16, True, None, False),
+        ((1 << 128), 20, True, None, False),
+        (0, 1, False, None, False),
+        (1, 1, False, None, False),
+        ((1 << 8) - 1, 1, False, None, False),
+        ((1 << 8), 2, False, None, False),
+        ((1 << 16) - 1, 2, False, None, False),
+        ((1 << 16), 3, False, None, False),
+        ((1 << 24) - 1, 3, False, None, False),
+        ((1 << 24), 4, False, None, False),
+        ((1 << 32) - 1, 4, False, None, False),
+        ((1 << 32), 5, False, None, False),
+        ((1 << 64) - 1, 8, False, None, False),
+        ((1 << 64), 9, False, None, False),
+        ((1 << 128) - 1, 16, False, None, False),
+        ((1 << 128), 17, False, None, False),
+        ((1 << 128), 20, True, 18, True),
     ],
 )
-def test_get_bytes_cnt(num, output, align_2_2n):
+def test_get_bytes_cnt(num, output, align_2_2n, byte_cnt, exception):
     """Test of get_bytes_cnt_of_int function."""
-    assert output == get_bytes_cnt_of_int(num, align_2_2n)
+    if exception:
+        with pytest.raises(SPSDKValueError):
+            get_bytes_cnt_of_int(num, align_2_2n, byte_cnt=byte_cnt)
+    else:
+        assert output == get_bytes_cnt_of_int(num, align_2_2n, byte_cnt=byte_cnt)
 
 
 @pytest.mark.parametrize(
@@ -303,11 +311,15 @@ def test_change_endianism(value, res, exc):
         ("0", 0, False),
         ("-1", -1, True),
         ("0xffff", 65535, False),
-        ("ffff", 65535, False),
+        ("0xffffu", 65535, False),
+        ("0xffffU", 65535, False),
+        ("0xfffful", 65535, False),
+        ("0xffffUL", 65535, False),
+        ("ffff", 65535, True),
         ("0xff_ff", 65535, False),
-        ("ff_ff", 65535, False),
+        ("ff_ff", 65535, True),
         ("0b111_1", 15, False),
-        ("b'111_1", 15, False),
+        ("b'1111", 15, False),
         (b"\xff\x00", 65280, False),
         (bytearray(b"\xff\x00"), 65280, False),
         ("InvalidValue", 0, True),
@@ -329,10 +341,10 @@ def test_value_to_int(value, res, exc):
         ("0", b"\x00", False),
         ("-1", b"\xff", True),
         ("0xffff", b"\xff\xff", False),
-        ("ffff", b"\xff\xff", False),
+        ("ffff", b"\xff\xff", True),
         ("0xff_ff", b"\xff\xff", False),
         ("0b111_1", b"\x0f", False),
-        ("ff_ff", b"\xff\xff", False),
+        ("ff_ff", b"\xff\xff", True),
         ("b'111_1", b"\x0f", False),
         (b"\xff\x00", b"\xff\x00", False),
         (bytearray(b"\xff\x00"), b"\xff\x00", False),
@@ -397,3 +409,54 @@ def test_timeout_get_time():
         timeout.get_rest_time(True)
     with pytest.raises(SPSDKTimeoutError):
         timeout.get_rest_time_ms(True)
+
+
+@pytest.mark.parametrize(
+    "input_value, use_kibibyte, expected",
+    [
+        (0, False, "0.0 B"),
+        (0, True, "0.0 B"),
+        (1568, True, "1.5 kiB"),
+        (1568, False, "1.6 kB"),
+        (177768, True, "173.6 kiB"),
+        (157768, False, "157.8 kB"),
+        (15565654654654654654668, False, "15565.7 PB"),
+        (15565654654654654654668, True, "13501.1 PiB"),
+    ],
+)
+def test_size_format(input_value, use_kibibyte, expected):
+    assert size_fmt(input_value, use_kibibyte) == expected
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ("images/image.bin"),
+        ("images/image.hex"),
+        ("images/image.s19"),
+        ("images/image.srec"),
+    ],
+)
+def test_load_binary_image(path, data_dir):
+    binary = load_binary_image(os.path.join(data_dir, path))
+    assert binary
+    assert isinstance(binary, BinFile)
+    assert len(binary) > 0
+
+
+@pytest.mark.parametrize(
+    "path, error_msg",
+    [
+        ("images/image.axf", "Elf file is not supported"),
+        ("images/image.elf", "Elf file is not supported"),
+        ("images/image.out", "file is not supported"),
+        (
+            "images/image_corrupted.s19",
+            "SPSDK: Error loading file: expected crc 'D3' in record S21407F41001020100010600000200000000000000D4, but got 'D4'",
+        ),
+        ("invalid_file", "Error loading file"),
+    ],
+)
+def test_load_binary_image_invalid(path, error_msg, data_dir):
+    with pytest.raises(SPSDKError, match=error_msg):
+        load_binary_image(os.path.join(data_dir, path))

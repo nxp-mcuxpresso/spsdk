@@ -2,19 +2,18 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module implementing the SDP communication protocol."""
 
+from .commands import ResponseValue
+from .error_codes import StatusCode
+from .exceptions import SdpCommandError, SdpConnectionError, SdpError
+from .interfaces import scan_usb
 from .sdp import SDP
 from .sdps import SDPS
-from .interfaces import scan_usb
-from .exceptions import SdpError, SdpCommandError, SdpConnectionError
-from .error_codes import StatusCode
-from .commands import ResponseValue
-
 
 __all__ = [
     # Methods

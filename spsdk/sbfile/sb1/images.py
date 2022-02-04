@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -41,7 +41,8 @@ class SecureBootV1(BaseClass):
         """Initialize Secure Boot Image V1.x.
 
         :param version: string in format #.#
-        Major version of the boot image format, currently 1. Minor version of the boot image format, currently 1 or 2.
+            Major version of the boot image format, currently 1.
+            Minor version of the boot image format, currently 1 or 2.
         :param flags: for the header, 0 by default: Flags associated with the entire image.
         :param product_version: Product version.
         :param component_version: Component version.
@@ -49,9 +50,9 @@ class SecureBootV1(BaseClass):
         :param dek: DEK key for encrypted SB file; this is not supported yet
         :param mac: MAC for encrypted SB file, this is not supported yet
         :param digest: SHA-1 digest of all fields of the header (it will be updated before export anyway)
-                    The first 16 bytes (of 20 total) also act as the initialization vector for CBC-encrypted regions.
+            The first 16 bytes (of 20 total) also act as the initialization vector for CBC-encrypted regions.
         :param timestamp: datetime of the file creation, use None for current date/time
-                    Fixed value should be used only for regression testing to generate same results
+            Fixed value should be used only for regression testing to generate same results
         """
         self._dek = dek if dek else crypto_backend().random_bytes(32)
         self._mac = mac if mac else crypto_backend().random_bytes(32)

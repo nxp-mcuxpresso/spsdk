@@ -6,12 +6,93 @@ production deployment. The library allows the user to connect and communicate wi
 configure the device, prepare, download and upload data, including security operations. It is
 delivered in the form of a python library and command-line applications.
 
-Version: 1.5.0
+Version: 1.6.0
 ==============
-Date: 7-September-2021
+Date: 4-February-2022
 
 New features
 
+- blhost:
+    - add experimental batch mode into blhost
+    - support command get property 30
+    - change output display for blhost get-property 8
+    - provide the real exit code (status code) from BLHOST application
+    - report progress of data transfer operations in blhost
+    - performance boost in receive-sb-file
+- elftosb:
+    - validation inputs using jsonschemas
+    - reorganize and improve elftosb
+    - add support for more input file types
+    - [RTxxx] HMAC_KEY is now accepted in binary form
+- nxpdebugmbox:
+    - move gendc into nxpdebugmbox
+- pfr:
+    - unify CMPA/CFPA fields descriptions and bit-field values within XML registers data
+    - implement CMPA data generator and parser
+- improve documentation
+- remove dependency on munch and construct modules
+- add support for reserved bitfields in registers
+- support multiple occurrence of certificate attributes for subject/issuer
+- remove backward compatibility mode in Registers
+- reorganize functions from misc.py
+- add support for bumpversion
+
+Bugfixes
+
+- blhost:
+    - generate-key-blob does not generate blob.bin on RT1176
+    - parse_property_tag in blhost_helper converts incorrectly in some cases
+    - different return code on Linux/Mac and Windows
+    - USBSIO - fixed issue when busy signal on I2C was interpreted as data
+- crypto:
+    - DER encoded certificates are loaded as PEM
+    - fixed dependency on cryptography's internal keys
+    - moved to fully typed versions of cryptography
+- elftosb:
+    - cannot build CRC image into ext flash for lpc55s3x
+    - cannot generate signed image with <4 ROT keys
+    - fixed some failing cases in regards of TZ
+    - [rtxxx] missing plain for load-to-ram image
+    - configuration validation failed in some cases
+- nxpdebugmbox:
+    - return code is 0 in case of fail
+    - nxpdebugmbox fails on Linux
+- nxpdevhsm:
+    - generate ends with general error when no container is provided
+- pfr:
+    - fix problem in registers class with another size of register than 32 bits
+- pfrc:
+    - displays false brick conditions
+    - wrong validation of CMPA.CC_SOCU_PIN bits
+
+
+Supported devices
+=================
+
+- i.MX RT1170, RT1160
+- i.MX RT1064, RT1060, RT1050, RT1020, RT1010
+- i.MX RT685S, RT595S
+- LPC55S6x, LPC55S3x, LPC55S2x, LPC55S1x, LPC55S0x
+
+Note: More details in devices.txt
+
+System Requirements
+===================
+
+- Windows 10, 64-bit
+- Ubuntu 18.04 or above, 64-bit
+- Mac OS 10.15 or above, x64, ARM64
+
+Supported Environment
+=====================
+
+Python 3.6+ interpreter, old version 2.x is not supported
+
+
+Revision History
+================
+
+1.5.0
 - nxpdevhsm - new application added:
     - The nxpdevhsm is a tool to create initial provisioning SB3 file for LPC55S36 to provision device with SB KEK needed to validate in device all standard SB3 files.
 - LIBUSBSIO integration as a replacement for HID_API module:
@@ -48,9 +129,6 @@ New features
     - support Ctrl+C in cmd applications
 - replace functional asserts with raising a SPSDK-based exception
 - replace all general exception with SPSDK-based exceptions
-
-Bugfixes
-
 - nxpkeygen - regenerates a key without –force
 - elftosb - unclear error message: No such file or directory: ‘None’
 - pfr - duplicated error message: The silicon revision is not specified
@@ -59,31 +137,6 @@ Bugfixes
 - blhost - flash-erase-region command doesn’t accept the memory_id argument in hex form
 - elftosb - using kdkAccessRigths = 0 in SB31 is throwing an error in KeyDerivator
 
-Supported devices
-=================
-
-- i.MX RT1170, RT1160
-- i.MX RT1064, RT1060, RT1050, RT1020, RT1010
-- i.MX RT685S, RT595S
-- LPC55S6x, LPC55S3x, LPC55S2x, LPC55S1x, LPC55S0x
-
-Note: More details in devices.txt
-
-System Requirements
-===================
-
-- Windows 10, 64-bit
-- Ubuntu 16.04 or above, 64-bit
-- Mac OS 10.13 or above, x64, M1
-
-Supported Environment
-=====================
-
-Python 3.6+ interpreter, old version 2.x is not supported
-
-
-Revision History
-================
 
 1.4.0
 - version flag added for all command-line application

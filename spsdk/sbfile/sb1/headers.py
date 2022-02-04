@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,8 +17,8 @@ from spsdk.utils.crypto.common import crypto_backend, pack_timestamp, swap16, un
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo
 
-from ..commands import CmdHeader, CmdTag
 from ..misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
+from ..sb2.commands import CmdHeader, CmdTag
 
 
 class SecureBootFlagsV1(Enum):

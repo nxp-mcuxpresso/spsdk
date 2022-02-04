@@ -72,25 +72,7 @@ The ``Bus:Device`` can be listed using ``lsusb`` command. The ``Interface`` can 
 
 .. note::
 
-    For ``nxpdevscan`` to list and *SPSDK* to use connected devices, it is necessary to configure ``udev`` rules so the app can access them. For NXP VIDs see :ref:`USB - VID & PID`.
-
-    1. Create a file for example ``50-nxp.rules`` containing following rules:
-
-    .. code::
-
-        SUBSYSTEM=="usb", ATTRS{idVendor}=="0d28", MODE="0660"
-        SUBSYSTEM=="usb", ATTRS{idVendor}=="1fc9", MODE="0660"
-        SUBSYSTEM=="usb", ATTRS{idVendor}=="15a2", MODE="0660"
-
-    2. To install rules copy the file to ``/etc/udev/rules.d``:
-
-    .. code-block:: bash
-
-        sudo cp 50-nxp.rules /etc/udev/rules.d
-        sudo udevadm control --reload-rules
-        sudo udevadm trigger
-
-    3. Plug your NXP device(s) and call ``nxpdevscan``.
+    For Applications and APIs to use connected devices under Linux, it is necessary to configure ``udev`` rules see :ref:`USB under Linux`.
 
 USB - Device Path - Mac
 =======================

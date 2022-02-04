@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright (c) 2019-2021 NXP
+# Copyright (c) 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for USB-SIO communication with a target device using MBoot protocol."""
 
 import logging
-from typing import Any, List, Optional, Union
+from typing import List, Optional
 
 import libusbsio
 from libusbsio.libusbsio import LIBUSBSIO
 
 from spsdk import SPSDKError
-from spsdk.mboot.commands import CmdPacket, CmdResponse
-from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
+from spsdk.mboot.exceptions import McuBootConnectionError
 
 from .base import Interface
 from .uart import Uart
@@ -23,10 +22,11 @@ from .uart import Uart
 logger = logging.getLogger(__name__)
 
 
-def scan_usbsio(config: str = None) -> List[Interface]:
+def scan_usbsio(config: str = None, timeout: int = 5000) -> List[Interface]:
     """Scan connected USB-SIO bridge devices.
 
     :param config: configuration string identifying spi or i2c SIO interface
+    :param timeout: read timeout in milliseconds, defaults to 5000
     :return: list of matching RawHid devices
     :raises SPSDKError: When libusbsio library error or if no bridge device found
     """
@@ -52,18 +52,18 @@ def scan_usbsio(config: str = None) -> List[Interface]:
                 raise Exception("Cannot open libusbsio device")
             logger.debug(f"USBSIO device open: {sio.GetVersion()}")
     except libusbsio.LIBUSBSIO_Exception as e:
-        raise SPSDKError(f"Error in libusbsio interface: {e}")
+        raise SPSDKError(f"Error in libusbsio interface: {e}") from e
     except Exception as e:
-        raise SPSDKError(str(e))
+        raise SPSDKError(str(e)) from e
 
     device: Optional[UsbSio] = None
 
     if cfg[0] == "i2c":
         if sio.GetNumI2CPorts() > 0:
-            device = UsbSioI2C(config=config)
+            device = UsbSioI2C(config=config, timeout=timeout)
     elif cfg[0] == "spi":
         if sio.GetNumSPIPorts() > 0:
-            device = UsbSioSPI(config=config)
+            device = UsbSioSPI(config=config, timeout=timeout)
 
     if not device:
         raise SPSDKError(f"No {cfg[0]} interface available in libusbsio device")
@@ -81,14 +81,19 @@ class UsbSio(Uart):
     @property
     def is_opened(self) -> bool:
         """Indicates whether interface is open."""
-        return True if self.port else False
+        return bool(self.port)
 
-    def __init__(self, config: str = None) -> None:
-        """Initialize the Interface object."""
+    def __init__(self, config: str = None, timeout: int = 5000) -> None:
+        """Initialize the Interface object.
+
+        :param config: configuration string identifying spi or i2c SIO interface
+        :param timeout: read timeout in milliseconds, defaults to 5000
+        :raises SPSDKError: When LIBUSBSIO device is not opened.
+        """
         # device is the LIBUSBSIO.PORT instance (LIBUSBSIO.SPI or LIBUSBSIO.I2C class)
         self.port: Optional[LIBUSBSIO.PORT] = None
 
-        super().__init__()
+        super().__init__(timeout=timeout)
 
         # work with the global LIBUSBSIO instance
         self.sio = libusbsio.usbsio()
@@ -116,6 +121,7 @@ class UsbSioSPI(UsbSio):
         speed_khz: int = 1000,
         cpol: int = 1,
         cpha: int = 1,
+        timeout: int = 5000,
     ) -> None:
         """Initialize the UsbSioSPI Interface object.
 
@@ -126,9 +132,10 @@ class UsbSioSPI(UsbSio):
         :param speed_khz: SPI clock speed in kHz
         :param cpol: SPI clock polarity mode
         :param cpha: SPI clock phase mode
+        :param timeout: read timeout in milliseconds, defaults to 5000
         :raises SPSDKError: When port configuration cannot be parsed
         """
-        super().__init__(config=config)
+        super().__init__(config=config, timeout=timeout)
 
         # default configuration taken from parameters (and their default values)
         self.spi_port = port
@@ -155,7 +162,7 @@ class UsbSioSPI(UsbSio):
                     "Cannot parse lpcusbsio SPI parameters.\n"
                     "Expected: spi[,<port>,<pin>,<speed_kHz>,<cpol>,<cpha>]\n"
                     f"Given:    {config}"
-                )
+                ) from e
 
     def open(self) -> None:
         """Open the interface."""
@@ -218,7 +225,12 @@ class UsbSioI2C(UsbSio):
     """USBSIO I2C interface."""
 
     def __init__(
-        self, config: str = None, port: int = 0, address: int = 0x10, speed_khz: int = 100
+        self,
+        config: str = None,
+        port: int = 0,
+        address: int = 0x10,
+        speed_khz: int = 100,
+        timeout: int = 5000,
     ) -> None:
         """Initialize the UsbSioI2C Interface object.
 
@@ -226,9 +238,10 @@ class UsbSioI2C(UsbSio):
         :param port: default I2C port to be used, typically 0 as only one port is supported by LPCLink2/MCULink
         :param address: I2C target device address
         :param speed_khz: I2C clock speed in kHz
+        :param timeout: read timeout in milliseconds, defaults to 5000
         :raises SPSDKError: When port configuration cannot be parsed
         """
-        super().__init__(config=config)
+        super().__init__(config=config, timeout=timeout)
 
         # default configuration taken from parameters (and their default values)
         self.i2c_port = port
@@ -249,7 +262,7 @@ class UsbSioI2C(UsbSio):
                     "Cannot parse lpcusbsio I2C parameters.\n"
                     "Expected: i2c[,<address>,<speed_kHz>]\n"
                     f"Given:    {config}"
-                )
+                ) from e
 
     def open(self) -> None:
         """Open the interface."""

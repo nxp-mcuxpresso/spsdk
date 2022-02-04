@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -49,6 +49,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: POSIX :: Linux",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: MacOS :: MacOS X",
@@ -58,7 +59,7 @@ setup(
         "Topic :: System :: Hardware",
         "Topic :: Utilities",
     ],
-    packages=find_packages(exclude=["tests.*", "tests", "examples"]),
+    packages=find_packages(exclude=["tests.*", "tests", "examples.*", "examples"]),
     entry_points={
         "console_scripts": [
             "elftosb=spsdk.apps.elftosb:safe_main",

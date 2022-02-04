@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to covert Shadow register description EXCEL file to XML."""
@@ -82,20 +82,32 @@ class ShadowRegsXlsToXml:
         click.echo(f"Loaded XLSX file ({xls_file})")
 
     def convert(self) -> None:
-        """Convert XLS to XML."""
-        raise NotImplementedError
+        """Convert XLS to XML.
+
+        :raises NotImplementedError: Derived class has to implement this method.
+        """
+        raise NotImplementedError("")
 
     def _get_worksheet(self) -> Any:
-        """Find the valid worksheet with the fuse map."""
-        raise NotImplementedError
+        """Find the valid worksheet with the fuse map.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def _get_header(self) -> None:
-        """Returns the dictionary with cells of header."""
-        raise NotImplementedError
+        """Returns the dictionary with cells of header.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def _get_registers(self) -> None:
-        """Function finds all registers in XLS sheet and store them."""
-        raise NotImplementedError
+        """Function finds all registers in XLS sheet and store them.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def __del__(self) -> None:
         """Just close all open files."""

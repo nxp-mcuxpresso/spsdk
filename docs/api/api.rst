@@ -31,11 +31,6 @@
     pfr
 
 .. toctree::
-    :caption: shadowregs Module API
-
-    shadowregs
-
-.. toctree::
     :caption: sbfile Module API
 
     sbfile
@@ -44,6 +39,11 @@
     :caption: SDP Module API
 
     sdp
+
+.. toctree::
+    :caption: shadowregs Module API
+
+    shadowregs
 
 .. toctree::
     :caption: utils Module API

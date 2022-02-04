@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,12 +9,16 @@
 
 import re
 from struct import calcsize, pack, unpack_from
-from typing import List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from Crypto.PublicKey import ECC
 
 from spsdk import SPSDKError
+from spsdk.crypto.loaders import load_certificate_as_bytes
 from spsdk.utils import misc
+from spsdk.utils.crypto import CRYPTO_SCH_FILE
+from spsdk.utils.misc import value_to_int
+from spsdk.utils.schema_validator import ValidationSchemas
 
 from .abstract import BaseClass
 from .backend_internal import internal_backend
@@ -397,6 +401,64 @@ class CertBlockV2(CertBlock):
             offset += cls.RKH_SIZE
         return obj
 
+    @classmethod
+    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+        """Create the list of validation schemas.
+
+        :return: List of validation schemas.
+        """
+        sch_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
+        return [
+            sch_cfg["certificate_v2"],
+            sch_cfg["certificate_v2_chain_id"],
+            sch_cfg["certificate_root_keys"],
+        ]
+
+    @classmethod
+    def from_config(cls, config: Dict[str, Any]) -> "CertBlockV2":
+        """Creates instantion of CertBlockV2 from configuration.
+
+        :param config: Input standard configuration.
+        :return: Instantion of CertBlockV2
+        :raises SPSDKError: Invalid certificates detected.
+        """
+        image_build_number = value_to_int(config.get("imageBuildNumber", 0))
+        root_certificates: List[List[str]] = [[] for _ in range(4)]
+        # TODO we need to read the whole chain from the dict for a given
+        # selection based on mainCertPrivateKeyFile!!!
+        root_certificates[0].append(config.get("rootCertificate0File", None))
+        root_certificates[1].append(config.get("rootCertificate1File", None))
+        root_certificates[2].append(config.get("rootCertificate2File", None))
+        root_certificates[3].append(config.get("rootCertificate3File", None))
+        main_cert_chain_id = config.get("mainCertChainId", 0)
+
+        # get all certificate chain related keys from config
+        pattern = f"chainCertificate{main_cert_chain_id}File[0-3]"
+        keys = [key for key in config.keys() if re.fullmatch(pattern, key)]
+        # just in case, sort the chain certificate keys in order
+        keys.sort()
+        for key in keys:
+            root_certificates[main_cert_chain_id].append(config[key])
+
+        cert_block = CertBlockV2(build_number=image_build_number)
+
+        # add whole certificate chain used for image signing
+        for cert_path in root_certificates[main_cert_chain_id]:
+            cert_data = load_certificate_as_bytes(str(cert_path))
+            cert_block.add_certificate(cert_data)
+        # set root key hash of each root certificate
+        empty_rec = False
+        for cert_idx, cert_path in enumerate(root_certificates):
+            if cert_path[0]:
+                if empty_rec:
+                    raise SPSDKError("There are gaps in rootCertificateXFile definition")
+                cert_data = load_certificate_as_bytes(str(cert_path[0]))
+                cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
+            else:
+                empty_rec = True
+
+        return cert_block
+
 
 ########################################################################################################################
 # Certificate Block Class for SB 3.1
@@ -557,7 +619,7 @@ class RootKeyRecord(BaseClass):
 
         :param data:  Input data as bytes array
         :param offset: The offset of input data
-        :raises NotImplementedError: This operation is not supported.
+        :raises NotImplementedError: This operation is not supported
         """
         raise NotImplementedError("This operation is not supported.")
 
@@ -643,7 +705,7 @@ class IskCertificate(BaseClass):
 
         :param data:  Input data as bytes array
         :param offset: The offset of input data
-        :raises NotImplementedError: This operation is not supported.
+        :raises NotImplementedError: This operation is not supported
         """
         raise NotImplementedError("This operation is not supported.")
 
@@ -721,6 +783,73 @@ class CertBlockV31(CertBlock):
 
         :param data:  Input data as bytes array
         :param offset: The offset of input data
-        :raises NotImplementedError: This operation is not supported.
+        :raises NotImplementedError: This operation is not supported
         """
         raise NotImplementedError("This operation is not supported.")
+
+    @classmethod
+    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+        """Create the list of validation schemas.
+
+        :return: List of validation schemas.
+        """
+        sch_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
+        return [sch_cfg["certificate_v31"], sch_cfg["certificate_root_keys"]]
+
+    @classmethod
+    def from_config(cls, config: Dict[str, Any]) -> "CertBlockV31":
+        """Creates instantion of CertBlockV31 from configuration.
+
+        :param config: Input standard configuration.
+        :return: Instantion of CertBlockV3.1
+        :raises SPSDKError: If found gap in certificates from config file.
+        """
+        root_certificates_loaded: List[Optional[str]] = [
+            config.get(f"rootCertificate{idx}File") for idx in range(4)
+        ]
+        # filter out None and empty values
+        root_certificates = list(filter(None, root_certificates_loaded))
+        for org, filtered in zip(root_certificates_loaded, root_certificates):
+            if org != filtered:
+                raise SPSDKError("There are gaps in rootCertificateXFile definition")
+
+        main_root_cert_id = config.get("mainRootCertId", 0)
+        main_root_private_key_file = config.get("mainRootCertPrivateKeyFile")
+        use_isk = config.get("useIsk", False)
+        isk_certificate = config.get("signingCertificateFile")
+        isk_constraint = value_to_int(config.get("signingCertificateConstraint", "0"))
+        isk_sign_data_path = config.get("signCertData")
+
+        root_certs = [misc.load_binary(cert_file) for cert_file in root_certificates]
+        user_data = None
+        isk_private_key = None
+        isk_cert = None
+
+        if use_isk:
+            assert isk_certificate and main_root_private_key_file
+            if isk_sign_data_path:
+                user_data = misc.load_binary(isk_sign_data_path)
+            isk_private_key = misc.load_binary(main_root_private_key_file)
+            isk_cert = misc.load_binary(isk_certificate)
+
+        cert_block = CertBlockV31(
+            root_certs=root_certs,
+            used_root_cert=main_root_cert_id,
+            user_data=user_data,
+            constraints=isk_constraint,
+            isk_cert=isk_cert,
+            ca_flag=not use_isk,
+            isk_private_key=isk_private_key,
+        )
+
+        return cert_block
+
+    def validate(self) -> None:
+        """Validate the settings of class members.
+
+        :raises SPSDKError: Invalid configuration of certification block class members.
+        """
+        self.header.parse(self.header.export())
+        if self.isk_certificate:
+            if not isinstance(self.isk_certificate.isk_private_key, ECC.EccKey):
+                raise SPSDKError("Invalid ISK certificate.")

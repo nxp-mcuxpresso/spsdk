@@ -80,10 +80,10 @@
         "VENDOR_USAGE": {
             "INVERSE_VALUE": "pfr_reg_inverse_high_half"
         },
-        "DCFG_CC_SOCU_PIN": {
+        "DCFG_CC_SOCU_NS_PIN": {
             "INVERSE_VALUE": "pfr_reg_inverse_high_half"
         },
-        "DCFG_CC_SOCU_DFLT": {
+        "DCFG_CC_SOCU_NS_DFLT": {
             "INVERSE_VALUE": "pfr_reg_inverse_high_half"
         }
     },
@@ -94,33 +94,5 @@
     ],
     "seal_start": "SHA256_DIGEST0",
     "seal_count": 8,
-    "mandatory_computed_regs": 0,
-    "backward_compatibility": {
-        "DCFG_CC_SOCU_PIN": {
-            "bitfields": {
-                "MCM33_DBGEN": [
-                    "CPU1_DBGEN"
-                ],
-                "MCM33_NIDEN": [
-                    "CPU1_NIDEN"
-                ],
-                "FA_ME_CMD_EN": [
-                    "PMCMD_EN"
-                ]
-            }
-        },
-        "DCFG_CC_SOCU_DFLT": {
-            "bitfields": {
-                "MCM33_DBGEN": [
-                    "CPU1_DBGEN"
-                ],
-                "MCM33_NIDEN": [
-                    "CPU1_NIDEN"
-                ],
-                "FA_ME_CMD_EN": [
-                    "PMCMD_EN"
-                ]
-            }
-        }
-    }
+    "mandatory_computed_regs": 0
 }

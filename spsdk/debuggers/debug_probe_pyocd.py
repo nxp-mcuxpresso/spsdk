@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox PyOCD Debug probes support."""
@@ -11,7 +11,6 @@ from typing import Any, Dict
 
 import pylink
 import pyocd
-import six
 from pylink.errors import JLinkException
 from pyocd.core.exceptions import Error as PyOCDError
 from pyocd.core.helpers import ConnectHelper
@@ -413,6 +412,7 @@ class DebugProbePyOCD(DebugProbe):
 
         :raises SPSDKError: Unsupported communication protocol.
         :raises SPSDKDebugProbeNotOpenError: The PyOCD probe is NOT opened
+        :raises SPSDKDebugProbeError: General error with probe.
         """
         if self.pyocd_session is None:
             raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
@@ -447,7 +447,7 @@ class DebugProbePyOCD(DebugProbe):
             probe._link.coresight_configure()
             probe._protocol = protocol
         except JLinkException as exc:
-            six.raise_from(probe._convert_exception(exc), exc)
+            raise SPSDKDebugProbeError(probe._convert_exception(exc)) from exc
 
         def __read_idr(probe) -> int:
             """Read IDR register and get DP version."""

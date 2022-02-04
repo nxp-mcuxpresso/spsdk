@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -97,8 +97,11 @@ class BootImgBase:
         self._dcd = value
 
     def info(self) -> str:
-        """Text info about the instance."""
-        raise NotImplementedError()
+        """Text info about the instance.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def add_image(self, data: bytes, img_type: EnumAppType, address: int) -> None:
         """Add specific image into the main boot image.
@@ -106,12 +109,16 @@ class BootImgBase:
         :param data: Raw binary data of the application image
         :param img_type: see EnumAppType
         :param address: TBD
+        :raises NotImplementedError: Derived class has to implement this method
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Derived class has to implement this method.")
 
     def export(self) -> bytes:
-        """Binary representation of the instance (serialization)."""
-        raise NotImplementedError()
+        """Binary representation of the instance (serialization).
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
     def parse(
@@ -120,8 +127,11 @@ class BootImgBase:
         step: int = 0x100,
         size: Optional[int] = None,
     ) -> "BootImgBase":
-        """Parse of IMX Boot Image Base."""
-        raise NotImplementedError()
+        """Parse of IMX Boot Image Base.
+
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        raise NotImplementedError("Derived class has to implement this method.")
 
 
 ########################################################################################################################
@@ -2432,8 +2442,11 @@ class BootImg4(BootImgBase):
         return msg
 
     def add_image(self, data: bytes, img_type: int, address: int) -> None:
-        """Not implemented."""
-        raise NotImplementedError()
+        """Add image.
+
+        :raises NotImplementedError: Not yet implemented
+        """
+        raise NotImplementedError("Not yet implemented.")
 
     def export(self) -> bytes:
         """Export."""

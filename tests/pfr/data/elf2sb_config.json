@@ -16,5 +16,6 @@
     "rootCertificate2File": "",
     "mainCertChainId": 0,
     "mainCertPrivateKeyFile": "keys_and_certs/k0_cert0_2048.pem",
-    "masterBootOutputFile": "output_images/application_signed.bin"
+    "masterBootOutputFile": "output_images/application_signed.bin",
+    "chainCertificate0File0": "Invalid_file.der"
 }

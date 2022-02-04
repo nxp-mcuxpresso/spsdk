@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of dictionary compare."""
@@ -10,7 +10,7 @@ from spsdk.image.misc import dict_diff
 
 
 def test_simple_diff():
-    """ Simple test of dictionary compare with integers."""
+    """Simple test of dictionary compare with integers."""
     main = {"a": "0b00", "b": "0b01"}
     mod = {"b": "0b11"}
 
@@ -18,7 +18,7 @@ def test_simple_diff():
 
 
 def test_simple_diff_strings():
-    """ Simple test of dictionary compare with integers."""
+    """Simple test of dictionary compare with integers."""
     main = {"a": "0b00", "b": "Hello", "c": "Good Morning"}
     mod = {"b": "Cao", "c": "Good Morning"}
 
@@ -26,7 +26,7 @@ def test_simple_diff_strings():
 
 
 def test_nested_diff():
-    """ Simple test of dictionary compare with nested dictionaries."""
+    """Simple test of dictionary compare with nested dictionaries."""
     main = {
         "BOOT_CFG": {"DEFAULT_ISP_MODE": "0b000", "BOOT_SPEED": "0b00", "BOOT_FAILURE_PIN": "0x0"},
         "SPI_FLASH_CFG": "0b0_0000",

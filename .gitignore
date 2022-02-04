@@ -37,7 +37,7 @@ pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
-/reports
+/reports*
 .tox/
 .coverage
 .coverage.*
@@ -125,3 +125,10 @@ venv*
 
 # PyPI
 pip-wheel-metadata
+
+# incoming patches and diffs
+*.patch
+*.diff
+
+# Mac stuff
+.DS_Store

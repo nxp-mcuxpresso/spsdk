@@ -67,6 +67,18 @@ The "help" guide of *sdphost* lists all of the options and sub-commands supporte
     :prog: sdphost
     :nested: none
 
+.. click:: spsdk.apps.sdphost:error_status
+    :prog: sdphost error-status
+    :nested: full
+
+.. click:: spsdk.apps.sdphost:jump_address
+    :prog: sdphost jump-address
+    :nested: full
+
+.. note::
+
+    IVT can be part of the image or can be downloaded separately. It is a data structure used by ROM that provides information of the boot image entry point and other parameters used for authenticating the image for secure boot. IVT is described in more detail in device’s reference manual.
+
 .. click:: spsdk.apps.sdphost:read_register
     :prog: sdphost read-register
     :nested: full
@@ -84,15 +96,4 @@ The "help" guide of *sdphost* lists all of the options and sub-commands supporte
 
     Typically, write-file is used to program the device with boot image and jump-address is used to start execution of boot image on the device.
 
-.. click:: spsdk.apps.sdphost:error_status
-    :prog: sdphost error-status
-    :nested: full
-
-.. click:: spsdk.apps.sdphost:jump_address
-    :prog: sdphost jump-address
-    :nested: full
-
-.. note::
-
-    IVT can be part of the image or can be downloaded separately. It is a data structure used by ROM that provides information of the boot image entry point and other parameters used for authenticating the image for secure boot. IVT is described in more detail in device’s reference manual.
 

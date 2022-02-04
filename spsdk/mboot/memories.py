@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,29 +10,29 @@
 
 from typing import List, Optional
 
-from spsdk.image.misc import size_fmt
 from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import size_fmt
 
 ########################################################################################################################
 # McuBoot External Memory ID
 ########################################################################################################################
 
-
+# fmt: off
 class ExtMemId(Enum):
     """McuBoot External Memory Property Tags."""
 
-    QUAD_SPI0 = (1, "QSPI", "Quad SPI Memory 0")
-    IFR0 = (4, "IFR0", "Nonvolatile information register 0 (only used by SB loader)")
-    SEMC_NOR = (8, "SEMC-NOR", "SEMC NOR Memory")
-    FLEX_SPI_NOR = (9, "FLEX-SPI-NOR", "Flex SPI NOR Memory")
-    SPIFI_NOR = (10, "SPIFI-NOR", "SPIFI NOR Memory")
+    QUAD_SPI0       = (1, "QSPI", "Quad SPI Memory 0")
+    IFR0            = (4, "IFR0", "Nonvolatile information register 0 (only used by SB loader)")
+    SEMC_NOR        = (8, "SEMC-NOR", "SEMC NOR Memory")
+    FLEX_SPI_NOR    = (9, "FLEX-SPI-NOR", "Flex SPI NOR Memory")
+    SPIFI_NOR       = (10, "SPIFI-NOR", "SPIFI NOR Memory")
     FLASH_EXEC_ONLY = (16, "FLASH-EXEC", "Execute-Only region on internal Flash")
-    SEMC_NAND = (256, "SEMC-NAND", "SEMC NAND Memory")
-    SPI_NAND = (257, "SPI-NAND", "SPI NAND Memory")
-    SPI_NOR_EEPROM = (272, "SPI-MEM", "SPI NOR/EEPROM Memory")
-    I2C_NOR_EEPROM = (273, "I2C-MEM", "I2C NOR/EEPROM Memory")
-    SD_CARD = (288, "SD", "eSD/SD/SDHC/SDXC Memory Card")
-    MMC_CARD = (289, "MMC", "MMC/eMMC Memory Card")
+    SEMC_NAND       = (256, "SEMC-NAND", "SEMC NAND Memory")
+    SPI_NAND        = (257, "SPI-NAND", "SPI NAND Memory")
+    SPI_NOR_EEPROM  = (272, "SPI-MEM", "SPI NOR/EEPROM Memory")
+    I2C_NOR_EEPROM  = (273, "I2C-MEM", "I2C NOR/EEPROM Memory")
+    SD_CARD         = (288, "SD", "eSD/SD/SDHC/SDXC Memory Card")
+    MMC_CARD        = (289, "MMC", "MMC/eMMC Memory Card")
 
 
 class MemId(ExtMemId):
@@ -49,12 +49,13 @@ class MemId(ExtMemId):
 class ExtMemPropTags(Enum):
     """McuBoot External Memory Property Tags."""
 
-    INIT_STATUS = 0x00000000
-    START_ADDRESS = 0x00000001
-    SIZE_IN_KBYTES = 0x00000002
-    PAGE_SIZE = 0x00000004
-    SECTOR_SIZE = 0x00000008
-    BLOCK_SIZE = 0x00000010
+    INIT_STATUS     = 0x00000000
+    START_ADDRESS   = 0x00000001
+    SIZE_IN_KBYTES  = 0x00000002
+    PAGE_SIZE       = 0x00000004
+    SECTOR_SIZE     = 0x00000008
+    BLOCK_SIZE      = 0x00000010
+# fmt: on
 
 
 class MemoryRegion:
@@ -128,6 +129,7 @@ class ExtMemRegion(MemoryRegion):
         if not raw_values:
             self.value = None
             return
+        super().__init__(0, 0)
         self.start_address = raw_values[1] if raw_values[0] & ExtMemPropTags.START_ADDRESS else None
         self.total_size = (
             raw_values[2] * 1024 if raw_values[0] & ExtMemPropTags.SIZE_IN_KBYTES else None
@@ -144,7 +146,7 @@ class ExtMemRegion(MemoryRegion):
 
     def __str__(self) -> str:
         if not self.value:
-            return f"Not Configured"
+            return "Not Configured"
         info = f"Start Address = 0x{self.start_address:08X}  "
         if self.total_size:
             info += f"Total Size = {size_fmt(self.total_size)}  "

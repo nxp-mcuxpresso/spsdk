@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Loading methods for keys/certificates/CSR."""
 
 from typing import Any, Callable, Iterable, List, Optional
 
-from cryptography.hazmat._types import _PRIVATE_KEY_TYPES as PrivateKey
-from cryptography.hazmat._types import _PUBLIC_KEY_TYPES as PublicKey
-
 from spsdk import SPSDKError
 from spsdk.crypto import (
     Certificate,
     Encoding,
+    PrivateKey,
+    PublicKey,
+    _PublicKeyTuple,
     default_backend,
     load_der_private_key,
     load_der_public_key,
@@ -23,6 +23,7 @@ from spsdk.crypto import (
     load_pem_public_key,
     load_pem_x509_certificate,
 )
+from spsdk.utils.misc import load_binary
 
 
 def load_private_key(
@@ -130,8 +131,8 @@ def _get_encoding_type(file: str) -> Encoding:
     :return: encoding type (Encoding.PEM, Encoding.DER)
     """
     try:
-        with open(file, "r") as f:
-            f.read()
+        content = load_binary(file)
+        content.decode("utf-8")
     except UnicodeDecodeError:
         encoding = Encoding.DER
     else:
@@ -144,11 +145,12 @@ def extract_public_key(file_path: str, password: Optional[str]) -> PublicKey:
 
     :raises SPSDKError: Raised when file can not be loaded
     :return: private key of any type
-
     """
     cert_candidate = load_certificate(file_path)
     if cert_candidate:
-        return cert_candidate.public_key()
+        public_key = cert_candidate.public_key()
+        assert isinstance(public_key, _PublicKeyTuple)
+        return public_key
     private_candidate = load_private_key(file_path, password.encode() if password else None)
     if private_candidate:
         return private_candidate.public_key()

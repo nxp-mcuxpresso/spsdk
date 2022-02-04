@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -145,9 +145,13 @@ class Backend(BackendClass):
         :raises SPSDKError: If algorithm not found
         """
         if isinstance(private_key, bytes):
-            private_key = serialization.load_pem_private_key(private_key, None, default_backend())
-        assert isinstance(private_key, rsa.RSAPrivateKey)
-        return private_key.sign(
+            processed_private_key = serialization.load_pem_private_key(
+                private_key, None, default_backend()
+            )
+        if isinstance(private_key, rsa.RSAPrivateKey):
+            processed_private_key = private_key
+        assert isinstance(processed_private_key, rsa.RSAPrivateKey)
+        return processed_private_key.sign(
             data=data,
             padding=padding.PKCS1v15(),
             algorithm=self._get_algorithm(algorithm),
@@ -208,15 +212,18 @@ class Backend(BackendClass):
         :return: Signature, r and s coordinates as bytes
         """
         if isinstance(private_key, bytes):
-            private_key = serialization.load_pem_private_key(private_key, None, default_backend())
-        assert isinstance(private_key, ec.EllipticCurvePrivateKey)
-        hash_name = algorithm or f"sha{private_key.key_size}"
-        der_signature = private_key.sign(
-            data, signature_algorithm=ec.ECDSA(self._get_algorithm(hash_name))
-        )
+            processed_private_key = serialization.load_pem_private_key(
+                private_key, None, default_backend()
+            )
+        if isinstance(private_key, ec.EllipticCurvePrivateKey):
+            processed_private_key = private_key
+        assert isinstance(processed_private_key, ec.EllipticCurvePrivateKey)
+        hash_name = algorithm or f"sha{processed_private_key.key_size}"
+        # pylint: disable=no-value-for-parameter    # pylint is mixing RSA and ECC sing methods
+        der_signature = processed_private_key.sign(data, ec.ECDSA(self._get_algorithm(hash_name)))
         # pylint: disable=invalid-name  # we want to use established names
         r, s = utils.decode_dss_signature(der_signature)
-        coordinate_size = math.ceil(private_key.key_size / 8)
+        coordinate_size = math.ceil(processed_private_key.key_size / 8)
         r_bytes = r.to_bytes(coordinate_size, byteorder="big")
         s_bytes = s.to_bytes(coordinate_size, byteorder="big")
         return r_bytes + s_bytes
@@ -238,20 +245,25 @@ class Backend(BackendClass):
         :raises SPSDKError: Signature length is invalid
         """
         if isinstance(public_key, bytes):
-            public_key = serialization.load_pem_public_key(public_key, default_backend())
-        assert isinstance(public_key, ec.EllipticCurvePublicKey)
-        coordinate_size = math.ceil(public_key.key_size / 8)
+            processed_public_key = serialization.load_pem_public_key(public_key, default_backend())
+        if isinstance(public_key, ec.EllipticCurvePublicKey):
+            processed_public_key = public_key
+        assert isinstance(processed_public_key, ec.EllipticCurvePublicKey)
+        coordinate_size = math.ceil(processed_public_key.key_size / 8)
         if len(signature) != 2 * coordinate_size:
             raise SPSDKError(
                 f"Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}"
             )
-        hash_name = algorithm or f"sha{public_key.key_size}"
+        hash_name = algorithm or f"sha{processed_public_key.key_size}"
         der_signature = utils.encode_dss_signature(
             int.from_bytes(signature[:coordinate_size], byteorder="big"),
             int.from_bytes(signature[coordinate_size:], byteorder="big"),
         )
         try:
-            public_key.verify(der_signature, data, ec.ECDSA(self._get_algorithm(hash_name)))
+            # pylint: disable=no-value-for-parameter    # pylint is mixing RSA and ECC verify methods
+            processed_public_key.verify(
+                der_signature, data, ec.ECDSA(self._get_algorithm(hash_name))
+            )
             return True
         except InvalidSignature:
             return False

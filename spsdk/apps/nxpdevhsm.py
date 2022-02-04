@@ -1,32 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module is used to generate initialization SB file."""
-import json
+
 import logging
 import os
 import sys
-from typing import BinaryIO, Callable, Dict, List, Optional, TextIO, Tuple
+from typing import Any, BinaryIO, Callable, Dict, List, Tuple
 
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import SPSDKError, SPSDKValueError
 from spsdk import __version__ as version
-from spsdk.apps.elftosb_utils.sb_31_helper import SB31Config, get_cmd_from_json
-from spsdk.apps.utils import catch_spsdk_error, format_raw_data, get_interface
+from spsdk.apps.utils import catch_spsdk_error, format_raw_data, get_interface, load_configuration
+from spsdk.image import MBIMG_SCH_FILE, SB3_SCH_FILE
 from spsdk.mboot.commands import TrustProvKeyType, TrustProvOemKeyType
 from spsdk.mboot.interfaces import Interface as mbootInterface
 from spsdk.mboot.mcuboot import McuBoot
-from spsdk.sbfile.sb31.commands import BaseCmd, CmdLoadKeyBlob
+from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
 from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
 from spsdk.utils.crypto.cert_blocks import CertificateBlockHeader
 from spsdk.utils.crypto.common import crypto_backend
 from spsdk.utils.misc import value_to_int
+from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 logger = logging.getLogger(__name__)
 LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
@@ -61,7 +62,7 @@ class DeviceHsm:
         user_pck: bytes,
         oem_share_input: bytes,
         info_print: Callable,
-        container_conf: TextIO = None,
+        container_conf: str = None,
         workspace: str = None,
     ) -> None:
         """Initialization of device HSM class. Its design to create provisioned SB3 file.
@@ -78,8 +79,6 @@ class DeviceHsm:
         self.oem_share_input = oem_share_input
         self.info_print = info_print
         self.workspace = workspace
-        # if workspace and os.path.isdir(workspace) and os.listdir(workspace):
-        #     raise SPSDKError("The workspace directory is already exists!")
         if self.workspace and not os.path.isdir(self.workspace):
             os.mkdir(self.workspace)
 
@@ -92,21 +91,32 @@ class DeviceHsm:
         self.sb3_fw_ver = 0
 
         # Check the configuration file and options to update by user config
-        self.container_conf = None
+        self.config_data = None
         if container_conf:
-            config_data = json.load(container_conf)
-            self.container_conf = SB31Config(config_data)
-            if self.container_conf.firmware_version:
-                self.sb3_fw_ver = self.container_conf.firmware_version
-
-            if self.container_conf.description:
-                self.sb3_descr = self.container_conf.description
-
-            if self.container_conf.timestamp:
-                self.timestamp = value_to_int(str(self.container_conf.timestamp))
+            config_data = load_configuration(container_conf)
+            # validate input configration
+            check_config(config_data, DeviceHsm.get_validation_schemas())
+            self.sb3_fw_ver = config_data.get("firmwareVersion") or self.sb3_fw_ver
+            self.sb3_descr = config_data.get("description") or self.sb3_descr
+            if "timestamp" in config_data:
+                self.timestamp = value_to_int(str(config_data.get("timestamp")))
 
         self.wrapped_user_pck = bytes()
         self.final_sb = bytes()
+
+    @classmethod
+    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+        """Create the list of validation schemas.
+
+        :return: List of validation schemas.
+        """
+        mbi_sch_cfg = ValidationSchemas().get_schema_file(MBIMG_SCH_FILE)
+        sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
+
+        ret: List[Dict[str, Any]] = []
+        ret.extend([mbi_sch_cfg["firmware_version"]])
+        ret.extend([sb3_sch_cfg[x] for x in ["sb3", "sb3_commands", "sb3_test"]])
+        return ret
 
     def create_sb3(self) -> None:
         """Do device hsm process to create SB_KEK provisioning SB file."""
@@ -152,7 +162,15 @@ class DeviceHsm:
         sb3_data = SecureBinary31Commands(
             curve_name="secp256r1", is_encrypted=False, timestamp=self.timestamp
         )
-        sb3_data.set_commands(self.get_cmd_from_config(self.container_conf))
+        sb3_data.add_command(
+            CmdLoadKeyBlob(
+                offset=0x04,
+                data=self.wrapped_user_pck,
+                key_wrap_id=CmdLoadKeyBlob.KeyWraps["NXP_CUST_KEK_EXT_SK"],
+            )
+        )
+        sb3_data.load_from_config(self.get_cmd_from_config())
+
         logger.debug(f" 5.2: Created un-encrypted SB3 data: \n{sb3_data.info()}")
         # 5.3: Get SB3 file data part individual chunks
         data_cmd_blocks = sb3_data.get_cmd_blocks_to_export()
@@ -422,37 +440,25 @@ class DeviceHsm:
         with open(filename, "wb") as data_file:
             data_file.write(data)
 
-    def get_cmd_from_config(self, container: Optional[SB31Config]) -> List[BaseCmd]:
+    def get_cmd_from_config(self) -> List[Dict[str, Any]]:
         """Process command description into a command object.
 
-        :return: Command object
+        :return: Modified list of commands
         :raises SPSDKError: Unknown command
         """
-        commands = []
-        if container:
-            cfg_commands: List[Dict[str, str]] = container.commands
+        cfg_commands: List[Dict[str, Any]] = []
+        if self.config_data and self.config_data.get["commands"]:
+            cfg_commands = self.config_data.get["commands"]
             for cmd in cfg_commands:
                 cmd_cpy: dict = cmd.copy()
                 name, args = cmd_cpy.popitem()
                 if name == "loadKeyBlob" and value_to_int(str(args["offset"])) == 0x04:
-                    logger.warning(
+                    raise SPSDKError(
                         f"""The duplicated 'loadKeyBlob' on offset 0x04 from
-                    configuration file is Ignored:\n {args}."""
+                    configuration file:\n {args}."""
                     )
-                    cfg_commands.remove(cmd)
 
-            commands = get_cmd_from_json(container)
-
-        commands.insert(
-            0,
-            CmdLoadKeyBlob(
-                offset=0x04,
-                data=self.wrapped_user_pck,
-                key_wrap_id=CmdLoadKeyBlob.KeyWraps["NXP_CUST_KEK_EXT_SK"],
-            ),
-        )
-
-        return commands
+        return cfg_commands
 
     def encrypt_data_blocks(
         self, cust_fw_enc_key: bytes, sb3_header: bytes, data_cmd_blocks: List[bytes]
@@ -549,7 +555,7 @@ def get_oem_share_input(binary: BinaryIO) -> bytes:
     "log_level",
     metavar="LEVEL",
     default="warning",
-    help=f"Set the level of system logging output. "
+    help="Set the level of system logging output. "
     f'Available options are: {", ".join(LOG_LEVEL_NAMES)}',
     type=click.Choice(LOG_LEVEL_NAMES),
 )
@@ -566,7 +572,8 @@ def main(log_level: str) -> int:
     "-p",
     "--port",
     metavar="COM[,speed]",
-    help="""Serial port configuration. Use 'nxpdevscan' utility to list devices on serial port.""",
+    help="""Serial port configuration. Default baud rate is 57600.
+    Use 'nxpdevscan' utility to list devices on serial port.""",
 )
 @optgroup.option(
     "-u",
@@ -615,7 +622,6 @@ def main(log_level: str) -> int:
     type=click.File(mode="rb"),
     help="OEM share input file to use as a seed to randomize the provisioning process (16-bytes long binary file).",
 )
-@click.argument("output-path", type=click.File(mode="wb"))
 @click.option(
     "-w",
     "--workspace",
@@ -638,6 +644,7 @@ def main(log_level: str) -> int:
     help="""Sets timeout when waiting on data over a serial line. The default is 5000 milliseconds.""",
     default=5000,
 )
+@click.argument("output-path", type=click.File(mode="wb"))
 def generate(
     port: str,
     usb: str,
@@ -646,10 +653,10 @@ def generate(
     key: BinaryIO,
     output_path: BinaryIO,
     workspace: click.Path,
-    container_conf: TextIO,
+    container_conf: click.File,
     timeout: int,
 ) -> None:
-    """Generate provisioned SB file.
+    """Generate provisioning SB3.1 file.
 
     \b
     PATH    - output file path, where the final provisioned SB file will be stored.
@@ -668,8 +675,8 @@ def generate(
             user_pck=user_pck,
             oem_share_input=oem_share_in,
             info_print=click.echo,
-            container_conf=container_conf,
-            workspace=str(workspace),
+            container_conf=container_conf.name if container_conf else None,
+            workspace=workspace,
         )
 
         devhsm.create_sb3()
@@ -681,8 +688,8 @@ def generate(
 @catch_spsdk_error
 def safe_main() -> None:
     """Call the main function."""
-    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+    sys.exit(main())  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == "__main__":
-    safe_main()  # pragma: no cover
+    safe_main()

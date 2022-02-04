@@ -1,10 +1,92 @@
 .. NXP location
 
 .. _LIBUSBSIO_link: https://www.nxp.com/design/software/development-software/library-for-windows-macos-and-ubuntu-linux:LIBUSBSIO?tid=vanLIBUSBSIO
+.. _crypto: api/crypto.html
 
 =============
 Release Notes
 =============
+
+------------------------
+1.6.0 (04-February-2022)
+------------------------
+
+**New features**
+
+* :ref:`blhost`:
+
+  * add experimental batch mode into blhost
+  * support command get property 30
+  * change output display for blhost get-property 8
+  * provide the real exit code (status code) from BLHOST application
+  * report progress of data transfer operations in blhost
+  * performance boost in receive-sb-file
+
+* :ref:`elftosb`:
+
+  * validation inputs using jsonschemas
+  * reorganize and improve elftosb
+  * add support for more input file types
+  * [RTxxx] HMAC_KEY is now accepted in binary form
+
+* :ref:`nxpdebugmbox`:
+
+  * move gendc into nxpdebugmbox
+
+* :ref:`pfr`:
+
+  * unify CMPA/CFPA fields descriptions and bit-field values within XML registers data
+  * implement CMPA data generator and parser
+
+* improve documentation
+* remove dependency on munch and construct modules
+* add support for reserved bitfields in registers
+* support multiple occurrence of certificate attributes for subject/issuer
+* remove backward compatibility mode in Registers
+* reorganize functions from misc.py
+* add support for bumpversion
+
+**Bugfixes**
+
+
+* :ref:`blhost`:
+
+  * generate-key-blob does not generate blob.bin on RT1176
+  * parse_property_tag in blhost_helper converts incorrectly in some cases
+  * different return code on Linux/Mac and Windows
+  * USBSIO - fixed issue when busy signal on I2C was interpreted as data
+
+* `crypto`_:
+
+  * DER encoded certificates are loaded as PEM
+  * fixed dependency on cryptography's internal keys
+  * moved to fully typed versions of cryptography
+
+* :ref:`elftosb`:
+
+  * cannot build CRC image into ext flash for lpc55s3x
+  * cannot generate signed image with <4 ROT keys
+  * fixed some failing cases in regards of TZ
+  * [rtxxx] missing plain for load-to-ram image
+  * configuration validation failed in some cases
+
+* :ref:`nxpdebugmbox`:
+
+  * return code is 0 in case of fail
+  * nxpdebugmbox fails on Linux
+
+* :ref:`nxpdevhsm`:
+
+  * generate ends with general error when no container is provided
+
+* :ref:`pfr`:
+
+  * fix problem in registers class with another size of register than 32 bits
+
+* :ref:`pfrc`:
+
+  * displays false brick conditions
+  * wrong validation of CMPA.CC_SOCU_PIN bits
 
 ----------------------
 1.5.0 (07-August-2021)

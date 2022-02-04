@@ -1,28 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for certificate management (generating certificate, validating certificate, chains)."""
 
 from datetime import datetime, timedelta
-from typing import List, Union
+from typing import Dict, List, Union
 
 from spsdk import SPSDKError
 from spsdk.crypto import (
     Certificate,
     CertificateSigningRequest,
-    EllipticCurvePrivateKey,
-    EllipticCurvePublicKey,
     Encoding,
     ExtensionOID,
     InvalidSignature,
-    RSAPrivateKey,
-    RSAPublicKey,
+    PrivateKey,
+    PublicKey,
+    _PublicKeyTuple,
     default_backend,
     hashes,
     padding,
+    rsa,
     x509,
 )
 
@@ -30,8 +30,8 @@ from spsdk.crypto import (
 def generate_certificate(
     subject: x509.Name,
     issuer: x509.Name,
-    subject_public_key: Union[EllipticCurvePublicKey, RSAPublicKey],
-    issuer_private_key: Union[EllipticCurvePrivateKey, RSAPrivateKey],
+    subject_public_key: PublicKey,
+    issuer_private_key: PrivateKey,
     serial_number: int = None,
     if_ca: bool = True,
     duration: int = 3650,
@@ -101,6 +101,7 @@ def validate_certificate(subject_certificate: Certificate, issuer_certificate: C
 
     :param subject_certificate: subject's certificate
     :param issuer_certificate: issuer's certificate
+    :raises SPSDKError: Unsupported key type in Certificate
     :return: true/false whether certificate is valid or not
     """
     issuer_pub_key = get_public_key_from_certificate(issuer_certificate)
@@ -109,16 +110,18 @@ def validate_certificate(subject_certificate: Certificate, issuer_certificate: C
     )
 
     try:
-        issuer_pub_key.verify(
-            cert_to_check.signature,
-            cert_to_check.tbs_certificate_bytes,
-            padding.PKCS1v15(),
-            cert_to_check.signature_hash_algorithm,
-        )
+        if isinstance(issuer_pub_key, rsa.RSAPublicKey):
+            assert cert_to_check.signature_hash_algorithm
+            issuer_pub_key.verify(
+                cert_to_check.signature,
+                cert_to_check.tbs_certificate_bytes,
+                padding.PKCS1v15(),
+                cert_to_check.signature_hash_algorithm,
+            )
+            return True
+        raise SPSDKError(f"Certificate validation for {type(issuer_pub_key)} is not supported")
     except InvalidSignature:
         return False
-    else:
-        return True
 
 
 def is_ca_flag_set(certificate: Certificate) -> bool:
@@ -140,14 +143,14 @@ def validate_ca_flag_in_cert_chain(chain_list: List[Certificate]) -> bool:
     return is_ca_flag_set(chain_list[0])
 
 
-def get_public_key_from_certificate(certificate: Certificate) -> RSAPublicKey:
+def get_public_key_from_certificate(certificate: Certificate) -> PublicKey:
     """Get public keys from certificate.
 
     :param certificate: certificate item
     :return: RSA public key
     """
     public_key = certificate.public_key()
-    assert isinstance(public_key, RSAPublicKey), "Currently only RSA is supported"
+    assert isinstance(public_key, _PublicKeyTuple)
     return public_key
 
 
@@ -164,16 +167,36 @@ def convert_certificate_into_bytes(
     return certificate.public_bytes(encoding)
 
 
-def generate_name_struct(common_name: str, country: str) -> x509.Name:
-    """Set the issuer/subject distinguished name.
+x509NameConfig = Union[List[Dict[str, str]], Dict[str, Union[str, List[str]]]]
 
-    :param common_name: string representing  name
-    :param country: string representing country
-    :return: ordered list of attributes of certificate
+
+def generate_name(config: x509NameConfig) -> x509.Name:
+    """Generate x509 Name.
+
+    :param config: subject/issuer description
+    :return: x509.Name
     """
-    return x509.Name(
-        [
-            x509.NameAttribute(x509.oid.NameOID.COMMON_NAME, common_name),
-            x509.NameAttribute(x509.oid.NameOID.COUNTRY_NAME, country),
-        ]
-    )
+    attributes: List[x509.NameAttribute] = []
+
+    def _get_name_oid(name: str) -> x509.ObjectIdentifier:
+        try:
+            return getattr(x509.NameOID, name)
+        except:
+            raise SPSDKError(f"Invalid value of certificate attribute: {name}")
+
+    if isinstance(config, list):
+        for item in config:
+            for key, value in item.items():
+                name_oid = _get_name_oid(key)
+                attributes.append(x509.NameAttribute(name_oid, str(value)))
+
+    if isinstance(config, dict):
+        for key_second, value_second in config.items():
+            name_oid = _get_name_oid(key_second)
+            if isinstance(value_second, list):
+                for v in value_second:
+                    attributes.append(x509.NameAttribute(name_oid, str(v)))
+            else:
+                attributes.append(x509.NameAttribute(name_oid, str(value_second)))
+
+    return x509.Name(attributes)

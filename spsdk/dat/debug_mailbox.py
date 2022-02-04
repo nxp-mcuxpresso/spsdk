@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for NXP SPSDK DebugMailbox support."""
 
 import logging
 from time import sleep
-
-from munch import munchify
+from typing import Any, Dict
 
 from spsdk import SPSDKError
 from spsdk.debuggers.debug_probe import DebugProbe
@@ -48,7 +47,7 @@ class DebugMailbox:
         self.reset = reset
         self.moredelay = moredelay
         # setup registers and register bitfields
-        self.registers = REGISTERS
+        self.registers: Dict[str, Dict[str, Any]] = REGISTERS
         # set internal operation timeout
         self.op_timeout = op_timeout
 
@@ -65,8 +64,9 @@ class DebugMailbox:
         logger.debug(f"Reset mode: {self.reset!r}")
         if self.reset:
             self.debug_probe.dbgmlbx_reg_write(
-                addr=self.registers.CSW.address,
-                data=self.registers.CSW.bits.RESYNCH_REQ | self.registers.CSW.bits.CHIP_RESET_REQ,
+                addr=self.registers["CSW"]["address"],
+                data=self.registers["CSW"]["bits"]["RESYNCH_REQ"]
+                | self.registers["CSW"]["bits"]["CHIP_RESET_REQ"],
             )
 
         # Acknowledgement of initiation
@@ -83,9 +83,9 @@ class DebugMailbox:
 
         ret = None
         retries = 20
-        while ret is None or (ret & self.registers.CSW.bits.REQ_PENDING):
+        while ret is None or (ret & self.registers["CSW"]["bits"]["REQ_PENDING"]):
             try:
-                ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers.CSW.address)
+                ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
             except SPSDKError:
                 pass
             retries -= 1
@@ -133,8 +133,8 @@ class DebugMailbox:
                 self.debug_probe.dbgmlbx_reg_write(addr=reg, data=value)
                 # wait for rom code to read the data
                 while True:
-                    ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers.CSW.address)
-                    if (ret & self.registers.CSW.bits.REQ_PENDING) == 0:
+                    ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                    if (ret & self.registers["CSW"]["bits"]["REQ_PENDING"]) == 0:
                         break
                     if timeout.overflow():
                         raise SPSDKTimeoutError("Mailbox command request pending timeout.")
@@ -150,45 +150,43 @@ class DebugMailbox:
                 sleep(0.01)
 
 
-REGISTERS = munchify(
-    {
-        # Control and Status Word (CSW) is used to control
-        # the Debug Mailbox communication
-        "CSW": {
-            "address": 0x00,
-            "bits": {
-                # Debugger will set this bit to 1 to request a resynchronization
-                "RESYNCH_REQ": (1 << 0),
-                # Request is pending from debugger (i.e unread value in REQUEST)
-                "REQ_PENDING": (1 << 1),
-                # Debugger overrun error
-                # (previous REQUEST overwritten before being picked up by ROM)
-                "DBG_OR_ERR": (1 << 2),
-                # AHB overrun Error (Return value overwritten by ROM)
-                "AHB_OR_ERR": (1 << 3),
-                # Soft Reset for DM (write-only from AHB,
-                # not readable and self-clearing).
-                # A write to this bit will cause a soft reset for DM.
-                "SOFT_RESET": (1 << 4),
-                # Write only bit. Once written will cause the chip to reset
-                # (note that the DM is not reset by this reset as it is
-                #   only resettable by a SOFT reset or a POR/BOD event)
-                "CHIP_RESET_REQ": (1 << 5),
-            },
+REGISTERS: Dict[str, Any] = {
+    # Control and Status Word (CSW) is used to control
+    # the Debug Mailbox communication
+    "CSW": {
+        "address": 0x00,
+        "bits": {
+            # Debugger will set this bit to 1 to request a resynchronization
+            "RESYNCH_REQ": (1 << 0),
+            # Request is pending from debugger (i.e unread value in REQUEST)
+            "REQ_PENDING": (1 << 1),
+            # Debugger overrun error
+            # (previous REQUEST overwritten before being picked up by ROM)
+            "DBG_OR_ERR": (1 << 2),
+            # AHB overrun Error (Return value overwritten by ROM)
+            "AHB_OR_ERR": (1 << 3),
+            # Soft Reset for DM (write-only from AHB,
+            # not readable and self-clearing).
+            # A write to this bit will cause a soft reset for DM.
+            "SOFT_RESET": (1 << 4),
+            # Write only bit. Once written will cause the chip to reset
+            # (note that the DM is not reset by this reset as it is
+            #   only resettable by a SOFT reset or a POR/BOD event)
+            "CHIP_RESET_REQ": (1 << 5),
         },
-        # Request register is used to send data from debugger to device
-        "REQUEST": {
-            "address": 0x04,
-        },
-        # Return register is used to send data from device to debugger
-        # Note: Any read from debugger side will be stalled until new data is present.
-        "RETURN": {
-            "address": 0x08,
-        },
-        # IDR register is used to identify the access port
-        "IDR": {
-            "address": 0xFC,
-            "expected": 0x002A0000,
-        },
-    }
-)
+    },
+    # Request register is used to send data from debugger to device
+    "REQUEST": {
+        "address": 0x04,
+    },
+    # Return register is used to send data from device to debugger
+    # Note: Any read from debugger side will be stalled until new data is present.
+    "RETURN": {
+        "address": 0x08,
+    },
+    # IDR register is used to identify the access port
+    "IDR": {
+        "address": 0xFC,
+        "expected": 0x002A0000,
+    },
+}

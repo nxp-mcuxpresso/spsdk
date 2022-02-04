@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for crypto operations (certificate and key management).
@@ -36,33 +36,83 @@ It provides following functionality:
 - loading the private key from file
 - loading the x.509 certificate from file
 """
+from typing import Union
+
 import cryptography.hazmat.primitives.asymmetric.utils as utils_cryptography
 from cryptography import x509
+
+# Explicit import due to MYPY issue
 from cryptography.exceptions import *
+from cryptography.exceptions import InvalidSignature
+
+# Explicit import due to MYPY issue
 from cryptography.hazmat.backends import *
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.backends.interfaces import *
 from cryptography.hazmat.backends.openssl.rsa import *
+
+# Explicit import due to MYPY issue
 from cryptography.hazmat.primitives import *
 from cryptography.hazmat.primitives import hashes, serialization
+
+# Explicit import due to MYPY issue
 from cryptography.hazmat.primitives.asymmetric import *
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+
+# Explicit import due to MYPY issue
+# Explicit import due to MYPY issue
 from cryptography.hazmat.primitives.asymmetric.ec import *
+from cryptography.hazmat.primitives.asymmetric.ec import (
+    EllipticCurvePrivateKey,
+    EllipticCurvePrivateKeyWithSerialization,
+    EllipticCurvePublicKey,
+    EllipticCurvePublicNumbers,
+)
+
+# Explicit import due to MYPY issue
 from cryptography.hazmat.primitives.asymmetric.rsa import *  # type: ignore
+from cryptography.hazmat.primitives.asymmetric.rsa import (
+    RSAPrivateKey,
+    RSAPrivateKeyWithSerialization,
+    RSAPublicKey,
+)
+
+# Explicit import due to MYPY issue
 from cryptography.hazmat.primitives.serialization import *
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    load_der_private_key,
+    load_der_public_key,
+    load_pem_private_key,
+    load_pem_public_key,
+)
+
+# Explicit import due to MYPY issue
 from cryptography.x509 import *
 from cryptography.x509 import (
-    AuthorityInformationAccessOID,
-    CertificatePoliciesOID,
+    Certificate,
+    CertificateSigningRequest,
     CRLEntryExtensionOID,
     ExtendedKeyUsageOID,
     ExtensionOID,
     NameOID,
     ObjectIdentifier,
     SignatureAlgorithmOID,
+    load_der_x509_certificate,
+    load_pem_x509_certificate,
 )
+
+PublicKey = Union[rsa.RSAPublicKey, ec.EllipticCurvePublicKey]
+PrivateKey = Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
+
+# These tuples are helpers for 'isinstance' checks
+_PublicKeyTuple = (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)
+_PrivateKeyTuple = (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey)
 
 from .certificate_management import *
 from .keys_management import *
+
+# Explicit import due to MYPY issue
 from .loaders import (
     _get_encoding_type,
     generic_load,

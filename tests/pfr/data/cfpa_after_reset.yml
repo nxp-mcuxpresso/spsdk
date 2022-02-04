@@ -1,0 +1,18 @@
+# NXP lpc55s6x PFR CFPA configuration
+description:  # The PFR CFPA configuration description.
+  device: lpc55s6x  # The NXP device name.
+  revision: 1b # The NXP device revision.
+  type: CFPA # The PFR type (CMPA, CFPA).
+  version: 1.5.0 # The SPSDK tool version.
+  author: NXP # The author of the configuration.
+  release: alpha # The SPSDK release.
+# Modify PFR spsdk.pfr.pfr CFPA page for regression test
+settings: # The PFR non-zero after reset fields of CFPA registers configuration.
+  ROTKH_REVOKE:
+# Reg Description: .
+    name: ROTKH_REVOKE  # The name of the register
+    bitfields:
+      RoTK0_EN: 1 # The width: 2 bits
+      RoTK1_EN: 1 # The width: 2 bits
+      RoTK2_EN: 1 # The width: 2 bits
+      RoTK3_EN: 1 # The width: 2 bits

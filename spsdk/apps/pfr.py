@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,6 @@ import sys
 from typing import Optional, Tuple, Type, Union, no_type_check
 
 import click
-import commentjson as json
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 from ruamel.yaml import YAML
 
@@ -22,7 +21,7 @@ from spsdk import SPSDK_YML_INDENT
 from spsdk import __version__ as spsdk_version
 from spsdk import pfr
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
-from spsdk.apps.utils import catch_spsdk_error
+from spsdk.apps.utils import catch_spsdk_error, load_configuration
 from spsdk.crypto.loaders import extract_public_keys
 from spsdk.pfr.exceptions import SPSDKPfrConfigError
 
@@ -212,7 +211,7 @@ def generate_binary(
     root_of_trust = None
     keys = None
     if elf2sb_config:
-        public_keys = RootOfTrustInfo(json.load(elf2sb_config)).public_keys  # type: ignore
+        public_keys = RootOfTrustInfo(load_configuration(elf2sb_config.name)).public_keys  # type: ignore
         root_of_trust = tuple(public_keys)
     if secret_file:
         root_of_trust = secret_file
@@ -293,11 +292,11 @@ def devices() -> None:
 def echo_deprecated() -> None:
     """Print message about deprecated functions."""
     click.secho(
-        f"You are using deprecated function of SPSDK PFR tool.\n"
-        + f"There is list of deprecated function successors:\n"
-        + f"  - user-config -> get-cfg-template\n"
-        + f"  - parse -> parse-binary\n"
-        + f"  - generate -> generate-binary\n",
+        "You are using deprecated function of SPSDK PFR tool.\n"
+        + "There is list of deprecated function successors:\n"
+        + "  - user-config -> get-cfg-template\n"
+        + "  - parse -> parse-binary\n"
+        + "  - generate -> generate-binary\n",
         fg="yellow",
     )
 
@@ -484,8 +483,8 @@ def parse(
 @catch_spsdk_error
 def safe_main() -> None:
     """Call the main function."""
-    sys.exit(main())  # pragma: no cover  # pylint: disable=no-value-for-parameter
+    sys.exit(main())  # pylint: disable=no-value-for-parameter
 
 
 if __name__ == "__main__":
-    safe_main()  # pragma: no cover
+    safe_main()
