@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,7 +17,7 @@ from spsdk.mboot.commands import (
 )
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootDataAbortError
-from spsdk.mboot.interfaces import Interface
+from spsdk.mboot.interfaces import MBootInterface
 from spsdk.mboot.memories import ExtMemId
 
 
@@ -239,7 +239,7 @@ def cmd_no_command(*args, **kwargs):
 ########################################################################################################################
 # Virtual Device Class
 ########################################################################################################################
-class VirtualDevice(Interface):
+class VirtualDevice(MBootInterface):
     CMD = {
         CommandTag.NO_COMMAND: cmd_no_command,
         CommandTag.FLASH_ERASE_ALL: cmd_flash_erase_all,

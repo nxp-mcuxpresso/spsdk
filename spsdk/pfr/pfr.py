@@ -73,7 +73,8 @@ class PfrConfiguration:
             if config.settings:
                 self.settings = config.settings.copy()
 
-    def _detect_obsolete_style_of_settings(self, data: Union[CM, dict]) -> bool:
+    @staticmethod
+    def _detect_obsolete_style_of_settings(data: Union[CM, dict]) -> bool:
         """Detect obsolete style of configuration.
 
         :param data: As old JSON style as new YML style of settings data.

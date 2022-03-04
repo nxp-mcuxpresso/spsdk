@@ -246,6 +246,7 @@ class StatusCode(Enum):
     OTP_LOCKED                      = (52806, "OTP_FieldLocked", "OTP: Field is locked when programming")
     OTP_TIMEOUT                     = (52807, "OTP_Timeout", "OTP: Operation timed out")
     OTP_CRC_CHECK_PASS              = (52808, "OTP_CRCCheckPass", "OTP: CRC check passed")
+    OTP_VERIFY_FAIL                 = (52009, "OPT_VerifyFail", "OTP: Failed to verify OTP write")
 
     # FlexSPI statuses.
     FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT  = (70000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")

@@ -523,9 +523,9 @@ class BootImgRT(BootImgBase):
         entry_addr = unpack_from("<I", data, 4)[0]
         if entry_addr == 0:  # there can be padding for images located in RAM, see flashloader
             entry_addr = address
-            if not entry_addr > 0:
+            if entry_addr <= 0:
                 raise SPSDKError("entry_addr not detected from image, must be specified explicitly")
-        elif (address >= 0) and (address != entry_addr):
+        elif address >= 0 and address != entry_addr:
             raise SPSDKError("entry_address does not match with the image")
         self._ivt.app_address = entry_addr
         self.app.data = data
@@ -993,7 +993,7 @@ class BootImgRT(BootImgBase):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise SPSDKError(' Not correct value type: "{}" !'.format(type(stream)))
+            raise SPSDKError(f' Not correct value type: "{type(stream)}" !')
 
         header, start_pos, end_pos = cls._find_ivt_pos(stream, size)
 
@@ -1789,7 +1789,7 @@ class BootImg3a(BootImgBase):
         msg += "#" * 60 + "\n\n"
         for index, ivt in enumerate(self.ivt):
             msg += "-" * 60 + "\n"
-            msg += "- IVT[{}]\n".format(index)
+            msg += f"- IVT[{index}]\n"
             msg += "-" * 60 + "\n\n"
             msg += ivt.info()
         # Print BDI
@@ -1798,7 +1798,7 @@ class BootImg3a(BootImgBase):
         msg += "#" * 60 + "\n\n"
         for index, bdi in enumerate(self.bdt):
             msg += "-" * 60 + "\n"
-            msg += "- BDI[{}]\n".format(index)
+            msg += f"- BDI[{index}]\n"
             msg += "-" * 60 + "\n\n"
             msg += bdi.info()
         # Print DCD
@@ -2192,7 +2192,7 @@ class BootImg3b(BootImgBase):
         msg += "#" * 60 + "\n\n"
         for index, ivt in enumerate(self.ivt):
             msg += "-" * 60 + "\n"
-            msg += "- IVT[{}]\n".format(index)
+            msg += f"- IVT[{index}]\n"
             msg += "-" * 60 + "\n\n"
             msg += ivt.info()
         # Print BDI
@@ -2201,7 +2201,7 @@ class BootImg3b(BootImgBase):
         msg += "#" * 60 + "\n\n"
         for index, bdi in enumerate(self.bdt):
             msg += "-" * 60 + "\n"
-            msg += "- BDI[{}]\n".format(index)
+            msg += f"- BDI[{index}]\n"
             msg += "-" * 60 + "\n\n"
             msg += bdi.info()
         # Print DCD
@@ -2477,7 +2477,7 @@ class BootImg4(BootImgBase):
             stream = BytesIO(stream)
 
         if not isinstance(stream, (BufferedReader, BytesIO)):
-            raise SPSDKError(' Not correct value type: "{}" !'.format(type(stream)))
+            raise SPSDKError(f" Not correct value type: '{type(stream)}' !")
 
         start_index = stream.tell()
         last_index = stream.seek(0, SEEK_END)
@@ -2582,7 +2582,6 @@ class KernelImg:
 
     def info(self) -> None:
         """String representation of the IMX Kernel Image."""
-        pass
 
     def export(self) -> bytes:
         """Export."""
@@ -2623,7 +2622,7 @@ def parse(
         stream = BytesIO(stream)
 
     if not isinstance(stream, (BufferedReader, BytesIO)):
-        raise SPSDKError('Not correct value type: "{}" !'.format(type(stream)))
+        raise SPSDKError(f"Not correct value type: '{type(stream)}' !")
 
     # calculate stream size
     start_index = stream.tell()

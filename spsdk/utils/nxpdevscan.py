@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,18 +9,19 @@
 
 
 import logging
-from typing import Sequence
+from typing import List
 
-import libusbsio
+from libusbsio import LIBUSBSIO_Exception, usbsio
 from serial.tools.list_ports import comports
 
+from spsdk import SPSDKError
 from spsdk.mboot.interfaces.uart import scan_uart as mb_scan_uart
 from spsdk.sdp import SDP
 from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.interfaces.uart import Uart as SDP_Uart
 
 from .devicedescription import (
-    DeviceDescription,
+    SIODeviceDescription,
     UartDeviceDescription,
     USBDeviceDescription,
     convert_usb_path,
@@ -35,13 +36,13 @@ NXP_USB_DEVICE_VIDS = [
 logger = logging.getLogger(__name__)
 
 
-def search_nxp_usb_devices(extend_vid_list: list = None) -> Sequence[DeviceDescription]:
+def search_nxp_usb_devices(extend_vid_list: list = None) -> List[USBDeviceDescription]:
     """Searches all NXP USB devices based on their Vendor ID.
 
     :extend_vid_list: list of VIDs, to extend the default NXP VID list (int)
-    :return: list of dicts corresponding to NXP devices
+    :return: list of USBDeviceDescription corresponding to NXP devices
     """
-    sio = libusbsio.usbsio()
+    sio = usbsio()
     all_usb_devices = sio.HIDAPI_Enumerate()
     nxp_usb_devices = []
 
@@ -60,8 +61,9 @@ def search_nxp_usb_devices(extend_vid_list: list = None) -> Sequence[DeviceDescr
                 product_string = usb_device["product_string"]
                 manufacturer_string = usb_device["manufacturer_string"]
                 name = ", ".join(get_usb_device_name(vid, pid, None))
+                serial = usb_device["serial_number"]
                 usb_dev = USBDeviceDescription(
-                    vid, pid, path, product_string, manufacturer_string, name
+                    vid, pid, path, product_string, manufacturer_string, name, serial
                 )
 
                 nxp_usb_devices.append(usb_dev)
@@ -70,7 +72,7 @@ def search_nxp_usb_devices(extend_vid_list: list = None) -> Sequence[DeviceDescr
     return nxp_usb_devices
 
 
-def search_nxp_uart_devices() -> Sequence[DeviceDescription]:
+def search_nxp_uart_devices() -> List[UartDeviceDescription]:
     """Returns a list of all NXP devices connected via UART.
 
     :retval: list of UartDeviceDescription devices from devicedescription module
@@ -103,7 +105,6 @@ def search_nxp_uart_devices() -> Sequence[DeviceDescription]:
                 f"Exception {type(e).__name__} occurred while reading status via SDP. \
 Arguments: {e.args}"
             )
-            pass
 
     return retval
 
@@ -124,3 +125,23 @@ Arguments: {e.args}"
 #     retval["series_id"] = (sim_sdid >> 20) & 0xF
 #     retval["rev_id"] = (sim_sdid >> 12) & 0xF
 #     return retval
+
+
+def search_libusbsio_devices() -> List[SIODeviceDescription]:
+    """Returns a list of all LIBUSBSIO devices.
+
+    :retval: list of UartDeviceDescription devices from devicedescription module
+    :raises SPSDKError: In any case of LIBUSBSIO problems.
+    """
+    retval = []
+    try:
+        sio = usbsio()  # Get Singleton of LIBUSBSIO
+        for i in range(sio.GetNumPorts()):
+            info = sio.GetDeviceInfo(i)
+            if not info:
+                raise SPSDKError("Cannot retrive the Device Information.")
+            retval.append(SIODeviceDescription(info))
+    except (LIBUSBSIO_Exception, SPSDKError) as exc:
+        raise SPSDKError(f"LIBUSBSIO search devices fails: [{str(exc)}]") from exc
+
+    return retval

@@ -21,9 +21,9 @@ from ruamel.yaml import YAML, YAMLError
 
 from spsdk import SPSDKError
 from spsdk.mboot import interfaces as MBootInterfaceModule
-from spsdk.mboot.interfaces import Interface as MBootInterface
+from spsdk.mboot.interfaces import MBootInterface
 from spsdk.sdp import interfaces as SDPInterfaceModule
-from spsdk.sdp.interfaces import Interface as SDPInterface
+from spsdk.sdp.interfaces import SDPInterface
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,7 @@ class INT(click.ParamType):
         super().__init__()
         self.base = base
 
+    # pylint: disable=inconsistent-return-statements
     def convert(self, value: str, param: click.Parameter = None, ctx: click.Context = None) -> int:  # type: ignore
         """Perform the conversion str -> int.
 
@@ -78,7 +79,6 @@ def get_interface(
     :param timeout: timeout in milliseconds
     :param lpcusbsio: LPCUSBSIO spi or i2c config string
     :return: Selected interface instance
-    :rtype: Interface
     :raises SPSDKError: Only one of 'port' or 'usb' must be specified
     :raises SPSDKError: When SPSDK-specific error occurs
     """
@@ -110,7 +110,10 @@ def get_interface(
     if lpcusbsio:
         devices = interface_module.scan_usbsio(lpcusbsio, timeout=timeout)  # type: ignore
         if len(devices) != 1:
-            raise SPSDKError(f"Cannot initialize USBSIO device '{lpcusbsio}'.")
+            raise SPSDKError(
+                f"Cannot initialize USBSIO device '{lpcusbsio}',"
+                f" exactly one device has to be specified, found: {devices}. "
+            )
     return devices[0]
 
 
@@ -218,6 +221,7 @@ def check_destination_dir(path: str, create_folder: bool = False) -> None:
         sys.exit(1)
 
 
+# pylint: disable=inconsistent-return-statements
 def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type: ignore
     """Check if file exists, exits if file exists and overwriting is disabled.
 
@@ -249,5 +253,5 @@ def load_configuration(path: str) -> dict:
         try:
             with open(path) as f:
                 return YAML(typ="safe").load(f)
-        except (YAMLError, UnicodeDecodeError):
-            raise SPSDKError(f"Unable to load '{path}'.")
+        except (YAMLError, UnicodeDecodeError) as exc:
+            raise SPSDKError(f"Unable to load '{path}'.") from exc

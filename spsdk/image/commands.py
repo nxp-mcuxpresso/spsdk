@@ -162,7 +162,7 @@ class CmdBase:
         return 0
 
     @cmd_data_offset.setter
-    def cmd_data_offset(self, value: int) -> None:
+    def cmd_data_offset(self, value: int) -> None:  # pylint: disable=no-self-use
         """Setter.
 
         :param value: offset to set
@@ -180,7 +180,7 @@ class CmdBase:
         return None
 
     @cmd_data_reference.setter
-    def cmd_data_reference(self, value: BaseClass) -> None:
+    def cmd_data_reference(self, value: BaseClass) -> None:  # pylint: disable=no-self-use
         """Setter.
 
         By default, the command does not support cmd_data_reference
@@ -191,7 +191,7 @@ class CmdBase:
         """
         raise SPSDKError("cmd-data not supported by the command")
 
-    def parse_cmd_data(self, data: bytes, offset: int) -> Any:
+    def parse_cmd_data(self, data: bytes, offset: int) -> Any:  # pylint: disable=no-self-use
         """Parse additional command data from binary data.
 
         :param data: to be parsed
@@ -315,11 +315,9 @@ class CmdWriteData(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
-        msg += "Write Data Command (Ops: {0:s}, Bytes: {1:d})\n".format(
-            EnumWriteOps.name(self.ops), self.num_bytes
-        )
+        msg += f"Write Data Command (Ops: {EnumWriteOps.name(self.ops)}, Bytes: {self.num_bytes})\n"
         for cmd in self._data:
-            msg += "- Address: 0x{0:08X}, Value: 0x{1:08X}\n".format(cmd[0], cmd[1])
+            msg += f"- Address: 0x{cmd[0]:08X}, Value: 0x{cmd[1]:08X}\n"
         msg += "-" * 60 + "\n"
         return msg
 
@@ -435,23 +433,20 @@ class CmdCheckData(CmdBase):
         self._header.length += 4 + 4 + (4 if count else 0)
 
     def __repr__(self) -> str:
-        return "CmdCheckData <{}/{}, ADDR=0x{:X}, MASK=0x{:X}>".format(
-            EnumCheckOps[self.ops],  # type: ignore
-            self.num_bytes,
-            self.address,
-            self.mask,
+        return (
+            f"CmdCheckData <{EnumCheckOps[self.ops]}/{self.num_bytes}, "  # type: ignore
+            f"ADDR=0x{self.address:X}, MASK=0x{self.mask:X}>"
         )
 
     def info(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
-        msg += "Check Data Command (Ops: {0:s}, Bytes: {1:d})\n".format(
-            EnumCheckOps[self.ops], self.num_bytes  # type: ignore
-        )
-        msg += "- Address: 0x{0:08X}, Mask: 0x{1:08X}".format(self.address, self.mask)
+        msg += f"Check Data Command (Ops: {EnumCheckOps[self.ops]}, Bytes: {self.num_bytes})\n"  # type: ignore
+
+        msg += f"- Address: 0x{self.address:08X}, Mask: 0x{self.mask:08X}"
         if self.count:
-            msg += ", Count: {0:d}".format(self.count)
+            msg += f", Count: {self.count}"
         msg += "\n"
         msg += "-" * 60 + "\n"
         return msg
@@ -570,11 +565,9 @@ class CmdSet(CmdBase):
         self._header.length = CmdHeader.SIZE + 4
 
     def __repr__(self) -> str:
-        return "CmdSet <{}, {}, {}, eng_cfg=0x{:X}>".format(
-            EnumItm.name(self.itm),
-            EnumAlgorithm.name(self.hash_algorithm),
-            EnumEngine.name(self.engine),
-            self.engine_cfg,
+        return (
+            f"CmdSet <{EnumItm.name(self.itm)}, {EnumAlgorithm.name(self.hash_algorithm)},"
+            f" {EnumEngine.name(self.engine)}, eng_cfg=0x{self.engine_cfg:X}>"
         )
 
     def info(self) -> str:
@@ -641,7 +634,7 @@ class CmdInitialize(CmdBase):
         self._data = data if data else []
 
     def __repr__(self) -> str:
-        return "CmdInitialize <{}, {}>".format(EnumEngine[self.engine], len(self._data))  # type: ignore
+        return f"CmdInitialize <{EnumEngine[self.engine]}, {len(self._data)}>"  # type: ignore
 
     def __len__(self) -> int:
         return len(self._data)
@@ -659,10 +652,10 @@ class CmdInitialize(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
-        msg += "Initialize Command (Engine: {0:s})\n".format(EnumEngine[self.engine])  # type: ignore
+        msg += f"Initialize Command (Engine: {EnumEngine[self.engine]})\n"  # type: ignore
         cnt = 0
         for val in self._data:
-            msg += " {0:02d}) Value: 0x{1:08X}\n".format(cnt, val)
+            msg += f" {cnt:02d}) Value: 0x{val:08X}\n"
             cnt += 1
         msg += "-" * 60 + "\n"
         return msg
@@ -747,12 +740,7 @@ class CmdUnlockAbstract(CmdBase, ABC):
         return self.__iter__()
 
     def __repr__(self) -> str:
-        return "{} <{}, {}, {}>".format(
-            self.__class__.__name__,
-            EnumEngine.desc(self.engine),
-            self.features,
-            self.uid,
-        )
+        return f"{self.__class__.__name__} <{EnumEngine.desc(self.engine)}, {self.features}, {self.uid}>"
 
     @property
     def engine(self) -> EnumEngine:
@@ -980,8 +968,8 @@ class CmdUnlock(CmdUnlockAbstract):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
-        msg += "Features: {})\n".format(self.features)
-        msg += "UID:      {})\n".format(self.uid)
+        msg += f"Features: {self.features})\n"
+        msg += f"UID:      {self.uid})\n"
         msg += "-" * 60 + "\n"
         return msg
 
@@ -1183,31 +1171,23 @@ class CmdInstallKey(CmdBase):
         self._certificate_ref = value
 
     def __repr__(self) -> str:
-        return "CmdInstallKey <{}, {}, {}, {}, {}, 0x{:X}>".format(
-            EnumInsKey[self.flags],  # type: ignore
-            EnumCertFormat[self.certificate_format],  # type: ignore
-            EnumAlgorithm[self.hash_algorithm],  # type: ignore
-            self.source_index,
-            self.target_index,
-            self.cmd_data_location,
+        return (
+            f"CmdInstallKey <{EnumInsKey[self.flags]}, {EnumCertFormat[self.certificate_format]},"  # type: ignore
+            f" {EnumAlgorithm[self.hash_algorithm]}, {self.source_index}, "  # type: ignore
+            f"{self.target_index}, 0x{self.cmd_data_location:X}>"
         )
 
     def info(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
-        msg += " Flag      : {:d} ({})\n".format(self.flags, EnumInsKey.desc(self.flags))
-        msg += " CertFormat: {:d} ({})\n".format(
-            self.certificate_format, EnumCertFormat.desc(self.certificate_format)
-        )  # type: ignore
-        msg += " Algorithm : {:d} ({})\n".format(
-            self.hash_algorithm, EnumAlgorithm.desc(self.hash_algorithm)
-        )  # type: ignore
-        msg += " SrcKeyIdx : {:d} (Source key index) \n".format(self.source_index)
-        msg += " TgtKeyIdx : {:d} (Target key index) \n".format(self.target_index)
-        msg += " Location  : 0x{:08X} (Start address of certificate(s) to install) \n".format(
-            self.cmd_data_location
-        )
+        msg += f" Flag      : {self.flags} ({EnumInsKey.desc(self.flags)})\n"
+        msg += f" CertFormat: {self.certificate_format}"
+        msg += f"({EnumCertFormat.desc(self.certificate_format)})\n"  # type: ignore
+        msg += f" Algorithm : {self.hash_algorithm} ({EnumAlgorithm.desc(self.hash_algorithm)})\n"  # type: ignore
+        msg += f" SrcKeyIdx : {self.source_index} (Source key index) \n"
+        msg += f" TgtKeyIdx : {self.target_index} (Target key index) \n"
+        msg += f" Location  : 0x{self.cmd_data_location:08X} (Start address of certificate(s) to install) \n"
         if self.certificate_ref:
             msg += "[related-certificate]\n"
             msg += self.certificate_ref.info()
@@ -1378,7 +1358,7 @@ class CmdAuthData(CmdBase):
         :param data: to be parsed
         :param offset: start position in data to parse
         :return: parsed data object; command-specific: Signature or MAC
-        :raise ExpectedSignatureOrMACError: if unspported data object is provided
+        :raise ExpectedSignatureOrMACError: if unsupported data object is provided
         """
         header = Header.parse(data, offset)
         if header.tag == SegTag.MAC:
@@ -1403,12 +1383,9 @@ class CmdAuthData(CmdBase):
         self.cmd_data_reference = value
 
     def __repr__(self) -> str:
-        return "CmdAuthData <{}, {}, {}, key:{}, 0x{:X}>".format(
-            EnumAuthDat[self.flags],  # type: ignore
-            EnumEngine[self.engine],  # type: ignore
-            self.engine_cfg,
-            self.key_index,
-            self.location,
+        return (
+            f"CmdAuthData <{EnumAuthDat[self.flags]}, {EnumEngine[self.engine]},"  # type: ignore
+            f" {self.engine_cfg}, key:{self.key_index}, 0x{self.location:X}>"
         )
 
     def __len__(self) -> int:
@@ -1430,19 +1407,17 @@ class CmdAuthData(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().info()
-        msg += " Flag:        {:d} ({})\n".format(self.flags, EnumAuthDat.desc(self.flags))
-        msg += " Key index:   {:d}\n".format(self.key_index)
-        msg += " Engine:      {:d} ({})\n".format(self.engine, EnumEngine.desc(self.engine))
-        msg += " Engine Conf: {:d}\n".format(self.engine_cfg)
-        msg += " Location:    0x{:08X} (Start address of authentication data) \n".format(
-            self.location
-        )
+        msg += f" Flag:        {self.flags} ({EnumAuthDat.desc(self.flags)})\n"
+        msg += f" Key index:   {self.key_index}\n"
+        msg += f" Engine:      {self.engine} ({EnumEngine.desc(self.engine)})\n"
+        msg += f" Engine Conf: {self.engine_cfg}\n"
+        msg += f" Location:    0x{self.location:08X} (Start address of authentication data) \n"
         if self.signature:
             msg += "[related signature]\n"
             msg += self.signature.info()
         msg += "-" * 60 + "\n"
         for blk in self._blocks:
-            msg += "- Start: 0x{0:08X}, Length: {1:d} Bytes\n".format(blk[0], blk[1])
+            msg += f"- Start: 0x{blk[0]:08X}, Length: {blk[1]} Bytes\n"
         return msg
 
     def append(self, start_address: int, size: int) -> None:
@@ -1676,8 +1651,8 @@ def parse_command(data: bytes, offset: int = 0) -> CmdBase:
     :raises SPSDKError: If the command is not valid
     """
     try:
-        cmdtag = CmdTag.from_int(data[offset])
-    except ValueError:
-        raise SPSDKError("Unknown command at position: " + hex(offset))
-    cmd_class = _CMD_TO_CLASS[cmdtag]
+        cmd_tag = CmdTag.from_int(data[offset])
+    except ValueError as exc:
+        raise SPSDKError("Unknown command at position: " + hex(offset)) from exc
+    cmd_class = _CMD_TO_CLASS[cmd_tag]
     return cmd_class.parse(data, offset)

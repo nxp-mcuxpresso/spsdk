@@ -165,7 +165,7 @@ class RegsBitField:
             if "reset_value" in xml_element.attrib
             else 0
         )
-        hidden = False if xml_element.tag == "bit_field" else True
+        hidden = xml_element.tag != "bit_field"
         bitfield = cls(parent, name, offset, width, descr, reset_value, access, hidden)
 
         if xml_element.text:
@@ -253,7 +253,7 @@ class RegsBitField:
             try:
                 val_int = value_to_int(new_val)
             except TypeError:
-                raise exc
+                raise exc  # pylint: disable=raise-missing-from
         self.set_value(val_int, raw)
 
     def get_enum_value(self) -> Union[str, int]:
@@ -332,7 +332,7 @@ class RegsBitField:
         output += f"Reset val:{self.reset_value}\n"
         output += f"Description: \n {self.description}\n"
         if self.hidden:
-            output += f"This is hidden bitfield!\n"
+            output += "This is hidden bitfield!\n"
 
         i = 0
         for enum in self._enums:
@@ -528,9 +528,8 @@ class RegsRegister:
                         (value >> (self.width - index * subreg_width)) & ((1 << subreg_width) - 1)
                     )
 
-        except SPSDKError:
-            logger.error(f"Loaded invalid value {str(val)}")
-            raise SPSDKError(f"Loaded invalid value {str(val)}")
+        except SPSDKError as exc:
+            raise SPSDKError(f"Loaded invalid value {str(val)}") from exc
 
     def reset_value(self, raw: bool = False) -> None:
         """Reset the value of register.
@@ -673,7 +672,7 @@ class Registers:
         for reg in self._registers:
             if name == reg.name:
                 return reg
-            elif include_group_regs and reg.has_group_registers():
+            if include_group_regs and reg.has_group_registers():
                 for sub_reg in reg.sub_regs:
                     if name == sub_reg.name:
                         return sub_reg
@@ -813,7 +812,7 @@ class Registers:
         for reg in self.get_registers(regs_exclude):
             data.append(reg.get_html_data_element(fields_exclude))
 
-        jinja_env = Environment(loader=FileSystemLoader(utils.REGS_DATA_FOLDER))
+        jinja_env = Environment(loader=FileSystemLoader(utils.REGS_DATA_FOLDER), autoescape=True)
         template = jinja_env.get_template("regs_desc_template.html")
         return template.render(heading1=heading1, heading2=heading2, data=data)
 
@@ -890,6 +889,8 @@ class Registers:
         :param exclude_fields: Dictionary with lists of excluded bitfields
         """
         for reg_name in yml_data.keys():
+            if exclude_regs and reg_name in exclude_regs:
+                continue
             reg_dict = yml_data[reg_name]
             register = self.find_reg(reg_name, include_group_regs=True)
             if "value" in reg_dict.keys():
@@ -949,7 +950,7 @@ class Registers:
         :return: YAML commented map of registers value.
         """
         data = CM()
-        ix = 0
+        index = 0
         for reg in self.get_registers():
             if white_list and reg.name not in white_list.keys():
                 continue
@@ -959,12 +960,12 @@ class Registers:
             descr = reg.description if reg.description != "." else reg.name
             descr = descr.replace("&#10;", "\n# ")
             data.insert(
-                ix,
+                index,
                 reg.name,
                 reg_yml,
                 comment=descr,
             )
-            ix += 1
+            index += 1
             bitfields = reg.get_bitfields()
             if len(bitfields) > 0 and white_list and white_list[reg.name]:
                 btf_yml = CM()

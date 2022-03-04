@@ -9,7 +9,7 @@
 
 import logging
 from struct import pack, unpack_from
-from typing import Sequence, Union
+from typing import List, Union
 
 import libusbsio
 
@@ -17,7 +17,7 @@ from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
 from ..commands import CmdPacket, CmdResponse, parse_cmd_response
 from ..exceptions import McuBootConnectionError, McuBootDataAbortError, McuBootError
-from .base import Interface
+from .base import MBootInterface
 
 logger = logging.getLogger(__name__)
 
@@ -57,20 +57,20 @@ USB_DEVICES = {
 }
 
 
-def scan_usb(device_name: str = None) -> Sequence[Interface]:
+def scan_usb(device_id: str = None) -> List["RawHid"]:
     """Scan connected USB devices.
 
-    :param device_name: see USBDeviceFilter classes constructor for usb_id specification
+    :param device_id: see USBDeviceFilter classes constructor for usb_id specification
     :return: list of matching RawHid devices
     """
-    usb_filter = NXPUSBDeviceFilter(usb_id=device_name, nxp_device_names=USB_DEVICES)
+    usb_filter = NXPUSBDeviceFilter(usb_id=device_id, nxp_device_names=USB_DEVICES)
     return RawHid.enumerate(usb_filter)
 
 
 ########################################################################################################################
 # USB HID Interface Class
 ########################################################################################################################
-class RawHid(Interface):
+class RawHid(MBootInterface):
     """Base class for OS specific RAW HID Interface classes."""
 
     @property
@@ -243,7 +243,7 @@ class RawHid(Interface):
         return self._decode_report(bytes(raw_data))
 
     @staticmethod
-    def enumerate(usb_device_filter: USBDeviceFilter) -> Sequence[Interface]:
+    def enumerate(usb_device_filter: USBDeviceFilter) -> List["RawHid"]:
         """Get list of all connected devices matching the USBDeviceFilter object.
 
         :param usb_device_filter: USBDeviceFilter object
@@ -257,7 +257,7 @@ class RawHid(Interface):
 
         # iterate on all devices found
         for dev in all_hid_devices:
-            if usb_device_filter.compare(dev) is True:
+            if usb_device_filter.compare(vars(dev)) is True:
                 new_device = RawHid()
                 new_device.device = sio.HIDAPI_DeviceCreate()
                 new_device.vid = dev["vendor_id"]

@@ -27,7 +27,6 @@ from spsdk.crypto import (
     load_private_key,
     load_public_key,
     save_crypto_item,
-    x509,
 )
 from spsdk.crypto.certificate_management import generate_name
 
@@ -36,7 +35,7 @@ NXPCERTGEN_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpcertgen")
 logger = logging.getLogger(__name__)
 
 
-class CertificateParametersConfig:
+class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
     """Configuration object for creating the certificate."""
 
     def __init__(self, config_data: dict) -> None:
@@ -46,14 +45,14 @@ class CertificateParametersConfig:
             self.subject_public_key = config_data["subject_public_key"]
             self.serial_number = config_data["serial_number"]
             self.duration = config_data["duration"]
-            self.BasicConstrains_ca = config_data["extensions"]["BASIC_CONSTRAINTS"]["ca"]
-            self.BasicConstrains_path_length = config_data["extensions"]["BASIC_CONSTRAINTS"][
+            self.basic_constrains_ca = config_data["extensions"]["BASIC_CONSTRAINTS"]["ca"]
+            self.basic_constrains_path_length = config_data["extensions"]["BASIC_CONSTRAINTS"][
                 "path_length"
             ]
             self.issuer_name = generate_name(config_data["issuer"])
             self.subject_name = generate_name(config_data["subject"])
         except KeyError as e:
-            raise SPSDKError(f"Error found in configuration: {e} not found")
+            raise SPSDKError(f"Error found in configuration: {e} not found") from e
 
 
 @click.group(no_args_is_help=True)  # type: ignore
@@ -128,8 +127,8 @@ def generate(config: TextIO, output: BinaryIO, encoding: str, force: bool) -> No
         issuer_private_key=priv_key,
         serial_number=cert_config.serial_number,
         duration=cert_config.duration,
-        if_ca=cert_config.BasicConstrains_ca,
-        path_length=cert_config.BasicConstrains_path_length,
+        if_ca=cert_config.basic_constrains_ca,
+        path_length=cert_config.basic_constrains_path_length,
     )
     logger.info("Saving the generated certificate to the specified path...")
     encoding_type = Encoding.PEM if encoding.lower() == "pem" else Encoding.DER

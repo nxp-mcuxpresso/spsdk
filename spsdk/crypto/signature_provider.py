@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -32,7 +32,8 @@ class SignatureProvider(abc.ABC):
     def info(self) -> str:
         """Provide information about the Signature provide."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def signature_length(self) -> int:
         """Return length of the signature."""
 
@@ -71,8 +72,8 @@ class PlainFileSP(SignatureProvider):
     def __init__(
         self,
         file_path: str,
-        password: str = "",
-        encoding: str = "PEM",
+        password: str = "",  # pylint: disable=unused-argument
+        encoding: str = "PEM",  # pylint: disable=unused-argument
         hash_alg: str = None,
     ) -> None:
         """Initialize the plain file signature provider.

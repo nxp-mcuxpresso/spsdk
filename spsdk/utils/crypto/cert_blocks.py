@@ -169,7 +169,7 @@ class CertBlockV2(CertBlock):
 
         Note: Returned values are in format that should be passed for blhost
         """
-        result = list()
+        result = []
         rkht = self.rkht
         while rkht:
             fuse = int.from_bytes(rkht[:4], byteorder="little")

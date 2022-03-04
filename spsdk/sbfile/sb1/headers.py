@@ -105,7 +105,7 @@ class SecureBootHeaderV1(BaseClass):
         self.drive_tag = drive_tag
 
     def __str__(self) -> str:
-        return "Header: v{}, {}".format(self.version, self.image_blocks)
+        return f"Header: v{self.version}, {self.image_blocks}"
 
     @property
     def key_dictionary_block(self) -> int:
@@ -124,23 +124,23 @@ class SecureBootHeaderV1(BaseClass):
 
     def info(self) -> str:
         """Get info of Header as a string."""
-        nfo = str()
-        nfo += " Digest:               {}\n".format(self.digest.hex())
-        nfo += " Version:              {}\n".format(self.version)
-        nfo += " Flags:                0x{:04X}\n".format(self.flags)
-        nfo += " Image Blocks:         {}\n".format(self.image_blocks)
-        nfo += " First Boot Tag Block: {}\n".format(self.first_boot_tag_block)
-        nfo += " First Boot SectionID: {}\n".format(self.first_boot_section_id)
-        nfo += " Key Count:            {}\n".format(self.key_count)
-        nfo += " Key Dictionary Block: {}\n".format(self.key_dictionary_block)
-        nfo += " Header Blocks:        {}\n".format(self.header_blocks)
-        nfo += " Section Count:        {}\n".format(self.section_count)
-        nfo += " Section Header Size:  {}\n".format(self.section_header_size)
-        nfo += " Timestamp:            {}\n".format(self.timestamp)
-        nfo += " Product Version:      {}\n".format(self.product_version)
-        nfo += " Component Version:    {}\n".format(self.component_version)
-        nfo += " Drive Tag:            {}\n".format(self.drive_tag)
-        return nfo
+        return (
+            f" Digest:               {self.digest.hex()}\n"
+            f" Version:              {self.version}\n"
+            f" Flags:                0x{self.flags:04X}\n"
+            f" Image Blocks:         {self.image_blocks}\n"
+            f" First Boot Tag Block: {self.first_boot_tag_block}\n"
+            f" First Boot SectionID: {self.first_boot_section_id}\n"
+            f" Key Count:            {self.key_count}\n"
+            f" Key Dictionary Block: {self.key_dictionary_block}\n"
+            f" Header Blocks:        {self.header_blocks}\n"
+            f" Section Count:        {self.section_count}\n"
+            f" Section Header Size:  {self.section_header_size}\n"
+            f" Timestamp:            {self.timestamp}\n"
+            f" Product Version:      {self.product_version}\n"
+            f" Component Version:    {self.component_version}\n"
+            f" Drive Tag:            {self.drive_tag}\n"
+        )
 
     def export(
         self,
@@ -339,12 +339,12 @@ class SectionHeaderItemV1(BaseClass):
 
     def info(self) -> str:
         """Return Get text info of Header."""
-        nfo = str()
-        nfo += " Identifier: 0x{:08X}\n".format(self.identifier)
-        nfo += " Offset:     {}\n".format(self.offset)
-        nfo += " NumBlocks:  {}\n".format(self.num_blocks)
-        nfo += " Bootable:   {}\n".format("YES" if self.bootable else "NO")
-        return nfo
+        return (
+            f" Identifier: 0x{self.identifier:08X}\n"
+            f" Offset:     {self.offset}\n"
+            f" NumBlocks:  {self.num_blocks}\n"
+            f" Bootable:   {'YES' if self.bootable else 'NO'}\n"
+        )
 
     def export(self) -> bytes:
         """Return serialization to binary format."""

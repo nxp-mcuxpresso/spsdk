@@ -257,7 +257,7 @@ class DebugProbePemicro(DebugProbe):
 
         try:
             self.pemicro.reset_target()
-        except PEMicroException as exc:
+        except PEMicroException:
             logger.warning("The reset sequence occurred some errors.")
             self.pemicro.control_reset_line(assert_reset=False)
 

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 from unittest.mock import MagicMock, patch
 
 import pytest
+from libusbsio import LIBUSBSIO
 
 import spsdk.utils.devicedescription as devicedescription
 from spsdk.mboot.interfaces.usb import USB_DEVICES as MB_USB_DEVICES
@@ -26,7 +27,8 @@ def test_usb_device_description():
         "Vendor ID: 0x000a\n"
         "Product ID: 0x0014\n"
         "Path: some_path\n"
-        "Name: mboot device"
+        "Name: mboot device\n"
+        "Serial number: 12345678"
     )
     dev = devicedescription.USBDeviceDescription(
         vid=10,
@@ -35,9 +37,13 @@ def test_usb_device_description():
         product_string="my product",
         manufacturer_string="manufacturer X",
         name="mboot device",
+        serial="12345678",
     )
 
     assert dev.info() == formatted_output
+
+
+# Test SIO device description is done by NXPDEVSCAN tests :-)
 
 
 def test_str():

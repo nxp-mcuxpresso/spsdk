@@ -53,7 +53,7 @@ from spsdk.mboot.error_codes import stringify_status_code
 @optgroup.option(
     "-u",
     "--usb",
-    metavar="VID,PID",
+    metavar="VID:PID|USB_PATH|DEV_NAME",
     help="""USB device identifier.
     Following formats are supported: <vid>, <vid:pid> or <vid,pid>, device/instance path, device name.
     <vid>: hex or dec string; e.g. 0x0AB12, 43794.
@@ -64,16 +64,20 @@ from spsdk.mboot.error_codes import stringify_status_code
 @optgroup.option(
     "-l",
     "--lpcusbsio",
-    metavar="spi|i2c",
+    metavar="[usb,VID:PID|USB_PATH|SER_NUM,]spi|i2c",
     help="""USB-SIO bridge interface.
-    Following interfaces are supported:
+
+    Optional USB device filtering formats:
+    [usb,vid:pid|usb_path|serial_number]
+
+    Following serial interfaces are supported:
 
     spi[,port,pin,speed_kHz,polarity,phase]
-     - port ... bridge GPIO port used as SPI SSEL
+     - port ... bridge GPIO port used as SPI SSEL(default=0)
      - pin  ... bridge GPIO pin used as SPI SSEL
         default SSEL is set to 0.15 which works
         for the LPCLink2 bridge. The MCULink OB
-        bridge ignores the SSEL value anyway.
+        bridge ignores the SSEL value anyway.(default=15)
      - speed_kHz ... SPI clock in kHz (default 1000)
      - polarity ... SPI CPOL option (default=1)
      - phase ... SPI CPHA option (default=1)
@@ -162,18 +166,19 @@ def batch(ctx: click.Context, command_file: str) -> None:
     """
     click.secho("This is an experimental command. Use at your own risk!", fg="yellow")
 
-    for line in open(command_file):
-        tokes = shlex.split(line, comments=True)
-        if len(tokes) < 1:
-            continue
+    with open(command_file) as f:
+        for line in f.readlines():
+            tokes = shlex.split(line, comments=True)
+            if len(tokes) < 1:
+                continue
 
-        command_name, *command_args = tokes
-        ctx.params = {}
-        cmd_obj = ctx.parent.command.commands.get(command_name)
-        if not cmd_obj:
-            raise SPSDKError(f"Unknown command: {command_name}")
-        cmd_obj.parse_args(ctx, command_args)
-        ctx.invoke(cmd_obj, **ctx.params)
+            command_name, *command_args = tokes
+            ctx.params = {}
+            cmd_obj = ctx.parent.command.commands.get(command_name)
+            if not cmd_obj:
+                raise SPSDKError(f"Unknown command: {command_name}")
+            cmd_obj.parse_args(ctx, command_args)
+            ctx.invoke(cmd_obj, **ctx.params)
 
 
 @main.command()
@@ -219,8 +224,17 @@ def configure_memory(ctx: click.Context, address: int, memory_id: int) -> None:
     type=click.Choice(["nolock", "lock"]),
     default="nolock",
 )
+@click.option(
+    "-v / ",
+    "--verify/--no-verify",
+    is_flag=True,
+    default=True,
+    help="Verify write operation (verify by default)",
+)
 @click.pass_context
-def efuse_program_once(ctx: click.Context, address: int, data: int, lock: str) -> None:
+def efuse_program_once(
+    ctx: click.Context, address: int, data: int, lock: str, verify: bool
+) -> None:
     """Writes data to a specific efuse word.
 
     Each efuse bit can only be programmed once.
@@ -232,7 +246,7 @@ def efuse_program_once(ctx: click.Context, address: int, data: int, lock: str) -
     if lock == "lock":
         address = address | (1 << 24)
     with McuBoot(ctx.obj["interface"]) as mboot:
-        response = mboot.efuse_program_once(address, data)
+        response = mboot.efuse_program_once(address, data, verify=verify)
         display_output([response], mboot.status_code, ctx.obj["use_json"])
 
 
@@ -359,7 +373,7 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
                 )
                 if mboot.status_code != StatusCode.SUCCESS:
                     display_output([], mboot.status_code, ctx.obj["use_json"])
-                    exit(1)
+                    sys.exit(1)
         for i, segment in enumerate(segments, start=1):
             with progress_bar(
                 suppress=ctx.obj["suppress_progress_bar"], label=f"Writing segment #{i}"
@@ -590,17 +604,17 @@ def list_memory(ctx: click.Context) -> None:
     """Lists all memories, supported by the current device."""
     with McuBoot(ctx.obj["interface"]) as mboot:
         print("Internal Flash:")
-        int_flash = mboot._get_internal_flash()
-        for i in range(len(int_flash)):
-            print(f"    {int_flash[i]}")
+        int_flash = mboot._get_internal_flash()  # pylint: disable=protected-access
+        for flash in int_flash:
+            print(f"    {flash}")
         print("Internal RAM:")
-        int_ram = mboot._get_internal_ram()
-        for i in range(len(int_ram)):
-            print(f"    {int_ram[i]}")
+        int_ram = mboot._get_internal_ram()  # pylint: disable=protected-access
+        for ram in int_ram:
+            print(f"    {ram}")
         print("External Memories:")
-        ext_mem = mboot._get_ext_memories()
-        for i in range(len(ext_mem)):
-            print(f"{(ext_mem[i].name)}:\n  {ext_mem[i]}")
+        ext_mem = mboot._get_ext_memories()  # pylint: disable=protected-access
+        for mem in ext_mem:
+            print(f"{(mem.name)}:\n  {mem}")
 
 
 @main.command()
@@ -893,7 +907,7 @@ def generate_key_blob(
 
 @main.group()
 @click.pass_context
-def key_provisioning(ctx: click.Context) -> None:
+def key_provisioning(ctx: click.Context) -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to key provisioning."""
 
 
@@ -1072,7 +1086,7 @@ def read_key_store(ctx: click.Context, key_store_file: click.File) -> None:
 
 @main.group()
 @click.pass_context
-def trust_provisioning(ctx: click.Context) -> None:
+def trust_provisioning(ctx: click.Context) -> None:  # pylint: disable=unused-argument
     """Group of sub-commands related to trust provisioning."""
 
 

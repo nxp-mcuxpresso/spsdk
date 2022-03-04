@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module defining a USB filtering class."""
 import platform
 import re
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 
 class USBDeviceFilter:
@@ -84,7 +84,7 @@ class USBDeviceFilter:
         self.usb_id = usb_id
         self.search_by_pid = search_by_pid
 
-    def compare(self, usb_device_object: Any) -> bool:
+    def compare(self, usb_device_object: Dict[str, Any]) -> bool:
         """Compares the internal `usb_id` with provided `usb_device_object`.
 
         The provided USB ID during initialization may be VID or PID, VID/PID pair,
@@ -94,43 +94,55 @@ class USBDeviceFilter:
 
         :return: True on match, False otherwise
         """
-        vendor_id = usb_device_object["vendor_id"]
-        product_id = usb_device_object["product_id"]
-
-        # the Libusbsio/HID_API holds the path as bytes, so we convert it to string
-        usb_path = usb_device_object["path"].decode("utf-8")
-
-        if platform.system() == "Windows":
-            # On WIN, the user has an instance ID (+ the tool expects following format):
-            # 'HID\\VID_1FC9&PID_0130\\6&3B9928A5&0&0000'
-            # However, the path has following format:
-            # '\\\\?\\hid#vid_1fc9&pid_0130#6&1625c75b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}'
-            # There is a pattern, which matches, so we take the path and modify it
-            # to match the instance ID format. We convert the path to upper case and
-            # replace the hash sign with backslash
-            # usb_path = usb_path.upper()
-            usb_path = usb_path.replace("#", "\\")
-
-        if platform.system() == "Linux":
-            # The user input is expected in form of <dec_num>#<dec_num>. So we
-            # convert the path returned by Libusbsio/HID_API into this form so we can
-            # compare it. Alternatively, the input is the real device path,
-            # like '/dev/hidraw0' - in this case, just leave it as it is.
-            nums = usb_path.split(":")
-            if len(nums) >= 2:
-                usb_path = str.format("{}#{}", int(nums[0], 16), int(nums[1], 16))
-
         # Determine, whether given device matches one of the expected criterion
         if self.usb_id is None:
             return True
 
-        if self._is_path(usb_path=usb_path):
-            return True
+        vendor_id = usb_device_object.get("vendor_id")
+        product_id = usb_device_object.get("product_id")
+        serial_number = usb_device_object.get("serial_number")
+        device_name = usb_device_object.get("device_name")
+        # the Libusbsio/HID_API holds the path as bytes, so we convert it to string
+        usb_path_raw = usb_device_object.get("path")
+
+        if usb_path_raw:
+            usb_path = (
+                usb_path_raw.decode("utf-8")
+                if isinstance(usb_path_raw, (bytes, bytearray))
+                else usb_path_raw
+            )
+            if platform.system() == "Windows":
+                # On WIN, the user has an instance ID (+ the tool expects following format):
+                # 'HID\\VID_1FC9&PID_0130\\6&3B9928A5&0&0000'
+                # However, the path has following format:
+                # '\\\\?\\hid#vid_1fc9&pid_0130#6&1625c75b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}'
+                # There is a pattern, which matches, so we take the path and modify it
+                # to match the instance ID format. We convert the path to upper case and
+                # replace the hash sign with backslash
+                # usb_path = usb_path.upper()
+                usb_path = usb_path.replace("#", "\\")
+
+            if platform.system() == "Linux":
+                # The user input is expected in form of <dec_num>#<dec_num>. So we
+                # convert the path returned by Libusbsio/HID_API into this form so we can
+                # compare it. Alternatively, the input is the real device path,
+                # like '/dev/hidraw0' - in this case, just leave it as it is.
+                nums = usb_path.split(":")
+                if len(nums) >= 2:
+                    usb_path = str.format("{}#{}", int(nums[0], 16), int(nums[1], 16))
+            if self._is_path(usb_path=usb_path):
+                return True
 
         if self._is_vid_or_pid(vid=vendor_id, pid=product_id):
             return True
 
-        if self._is_vid_pid(vid=vendor_id, pid=product_id):
+        if vendor_id and product_id and self._is_vid_pid(vid=vendor_id, pid=product_id):
+            return True
+
+        if serial_number and self.usb_id.casefold() == serial_number.casefold():
+            return True
+
+        if device_name and self.usb_id.casefold() == device_name.casefold():
             return True
 
         return False
@@ -146,7 +158,7 @@ class USBDeviceFilter:
         """
         # we check the len of usb_id, because usb_id = "" is considered
         # to be always in the string returning True, which is not expected
-        # behaviour
+        # behavior
         # the provided usb string id fully matches the instance ID
         usb_id = self.usb_id or ""
         if usb_id.casefold() in usb_path.casefold() and len(usb_id) > 0:
@@ -154,7 +166,7 @@ class USBDeviceFilter:
 
         return False
 
-    def _is_vid_or_pid(self, vid: int, pid: int) -> bool:
+    def _is_vid_or_pid(self, vid: Optional[int], pid: Optional[int]) -> bool:
         # match anything starting with 0x or 0X followed by 0-9 or a-f or
         # match either 0 or decimal number not starting with zero
         # this regex is the same for vid and pid => xid
@@ -162,10 +174,10 @@ class USBDeviceFilter:
         usb_id = self.usb_id or ""
         if re.fullmatch(xid_regex, usb_id) is not None:
             # the string corresponds to the vid/pid specification, check a match
-            if self.search_by_pid:
+            if self.search_by_pid and pid:
                 if int(usb_id, 0) == pid:
                     return True
-            else:
+            elif vid:
                 if int(usb_id, 0) == vid:
                     return True
 
@@ -240,10 +252,9 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
 
         return False
 
-    def _is_vid_or_pid(self, vid: int, pid: int) -> bool:
-        if vid in NXPUSBDeviceFilter.NXP_VIDS:
-            if True == super()._is_vid_or_pid(vid, pid):
-                return True
+    def _is_vid_or_pid(self, vid: Optional[int], pid: Optional[int]) -> bool:
+        if vid and vid in NXPUSBDeviceFilter.NXP_VIDS:
+            return super()._is_vid_or_pid(vid, pid)
 
         return False
 

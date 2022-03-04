@@ -70,7 +70,7 @@ class Translator:
 
         return value
 
-    def _util_translate(self, key: str) -> int:
+    def _util_translate(self, key: str) -> int:  # pylint: disable=no-self-use
         """Handler for Utils data."""
         values = {"isUDSKeyCodeValid": False}
         return values[key]

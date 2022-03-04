@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,11 +12,11 @@ import pytest
 from spsdk.sdp.commands import CmdResponse, CommandTag, ResponseValue
 from spsdk.sdp.error_codes import StatusCode
 from spsdk.sdp.exceptions import SdpError
-from spsdk.sdp.interfaces.base import Interface
+from spsdk.sdp.interfaces.base import SDPInterface
 from spsdk.sdp.sdp import SDP, CmdPacket
 
 
-class VirtualDevice(Interface):
+class VirtualDevice(SDPInterface):
     def __init__(self, respond_sequence: list):
         self.respond_sequence = respond_sequence
 

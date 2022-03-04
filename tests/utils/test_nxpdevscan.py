@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import platform
 from unittest.mock import MagicMock, patch
 
+import libusbsio
 import pytest
 from serial import Serial
 from serial.tools.list_ports_common import ListPortInfo
 
 import spsdk.utils.devicedescription as devicedescription
 import spsdk.utils.nxpdevscan as nds
+from spsdk import SPSDKError
 
 
 def test_usb_device_search():
@@ -26,6 +29,7 @@ def test_usb_device_search():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
         {
             "vendor_id": 0x15,
@@ -33,6 +37,7 @@ def test_usb_device_search():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
         {
             "vendor_id": 0x1FC9,
@@ -40,6 +45,7 @@ def test_usb_device_search():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
         {
             "vendor_id": 0x15A2,
@@ -47,11 +53,12 @@ def test_usb_device_search():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
     ]
     result = [
-        devicedescription.USBDeviceDescription(0x1FC9, 0, "", "", "", ""),
-        devicedescription.USBDeviceDescription(0x15A2, 0, "", "", "", ""),
+        devicedescription.USBDeviceDescription(0x1FC9, 0, "", "", "", "", ""),
+        devicedescription.USBDeviceDescription(0x15A2, 0, "", "", "", "", ""),
     ]
 
     with patch("libusbsio.LIBUSBSIO.HIDAPI_Enumerate", MagicMock(return_value=test_vector)):
@@ -75,6 +82,7 @@ def test_usb_device_search_extended():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
         {
             "vendor_id": 0x0001,
@@ -82,6 +90,7 @@ def test_usb_device_search_extended():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
         {
             "vendor_id": 0x15,
@@ -89,6 +98,7 @@ def test_usb_device_search_extended():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
         {
             "vendor_id": 0x1FC9,
@@ -96,6 +106,7 @@ def test_usb_device_search_extended():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
         {
             "vendor_id": 0x0002,
@@ -103,6 +114,7 @@ def test_usb_device_search_extended():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
         {
             "vendor_id": 0x15A2,
@@ -110,13 +122,14 @@ def test_usb_device_search_extended():
             "path": b"",
             "manufacturer_string": "",
             "product_string": "",
+            "serial_number": "",
         },
     ]
     result = [
-        devicedescription.USBDeviceDescription(0x1FC9, 0, "", "", "", ""),
-        devicedescription.USBDeviceDescription(0x1FC9, 0, "", "", "", ""),
-        devicedescription.USBDeviceDescription(0x0002, 0, "", "", "", ""),
-        devicedescription.USBDeviceDescription(0x15A2, 0, "", "", "", ""),
+        devicedescription.USBDeviceDescription(0x1FC9, 0, "", "", "", "", ""),
+        devicedescription.USBDeviceDescription(0x1FC9, 0, "", "", "", "", ""),
+        devicedescription.USBDeviceDescription(0x0002, 0, "", "", "", "", ""),
+        devicedescription.USBDeviceDescription(0x15A2, 0, "", "", "", "", ""),
     ]
     with patch("libusbsio.LIBUSBSIO.HIDAPI_Enumerate", MagicMock(return_value=test_vector)):
         devices = nds.search_nxp_usb_devices([0x2])
@@ -207,3 +220,80 @@ def test_path_conversion():
             devicedescription.convert_usb_path(mac_path)
             == "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000"
         )
+
+
+PATH_BY_SYSTEM = {
+    "win": (b"some_path", "SOME_PATH"),
+    "linux": (b"000A:000B:00", "10#11"),
+    "darwin": (
+        b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
+        "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
+    ),
+}
+
+
+def mock_libusbsio_GetDeviceInfo(self, dev: int):
+    """MagicMock override function to return information."""
+    assert dev == 0
+    sio_info = libusbsio.LIBUSBSIO.HIDAPI_DEVICE_INFO_T()
+    sio_info.vendor_id = 10
+    sio_info.product_id = 20
+    sio_info.product_string = "my product"
+    sio_info.manufacturer_string = "manufacturer X"
+    sio_info.serial_number = "sio device"
+    sio_info.interface_number = 5
+    sio_info.release_number = 125
+
+    system = platform.system()
+    if system == "Windows":
+        sio_info.path = PATH_BY_SYSTEM["win"][0]
+    if system == "Linux":
+        sio_info.path = PATH_BY_SYSTEM["linux"][0]
+    if system == "Darwin":
+        sio_info.path = PATH_BY_SYSTEM["darwin"][0]
+
+    return sio_info
+
+
+@patch("libusbsio.LIBUSBSIO.GetNumPorts", MagicMock(return_value=1))
+@patch("libusbsio.LIBUSBSIO.GetDeviceInfo", mock_libusbsio_GetDeviceInfo)
+def test_sio_device_search():
+    """Test, that search method returns all NXP SIO devices."""
+
+    def get_return(path):
+        return (
+            "LIBUSBSIO - manufacturer X, my product\n"
+            "Vendor ID: 0x000a\n"
+            "Product ID: 0x0014\n"
+            f"Path: {path}\n"
+            "Serial number: sio device\n"
+            "Interface number: 5\n"
+            "Release number: 125"
+        )
+
+    with patch("platform.system", MagicMock(return_value="Windows")):
+        devices = nds.search_libusbsio_devices()
+        assert len(devices) == 1
+        assert devices[0].info() == get_return(PATH_BY_SYSTEM["win"][1])
+
+    with patch("platform.system", MagicMock(return_value="Linux")):
+        devices = nds.search_libusbsio_devices()
+        assert len(devices) == 1
+        assert devices[0].info() == get_return(PATH_BY_SYSTEM["linux"][1])
+
+    with patch("platform.system", MagicMock(return_value="Darwin")):
+        devices = nds.search_libusbsio_devices()
+        assert len(devices) == 1
+        assert devices[0].info() == get_return(PATH_BY_SYSTEM["darwin"][1])
+
+
+def mock_libusbsio_GetNumPorts(self, vidpids=None):
+    """Try to get number of ports from LIBUSBSIO, but it fails."""
+    raise libusbsio.LIBUSBSIO_Exception("Test Fail")
+
+
+@patch("libusbsio.LIBUSBSIO.GetNumPorts", mock_libusbsio_GetNumPorts)
+def test_sio_device_search_fail():
+    """Test, that search method returns all NXP SIO devices and its fails."""
+    with pytest.raises(SPSDKError):
+        nds.search_libusbsio_devices()

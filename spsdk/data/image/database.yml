@@ -93,8 +93,8 @@ devices:
         crc: Mbi_CrcXipLpc55s3x
         signed: Mbi_PlainXipSignedLpc55s3x
       ext_xip:
-        crc: Mbi_CrcXipLpc55s3x
-        signed: Mbi_PlainXipSignedLpc55s3x
+        crc: Mbi_CrcExtXipLpc55s3x
+        signed: Mbi_PlainExtXipSignedLpc55s3x
       ram:
         plain: Mbi_PlainRamLpc55s3x
         crc: Mbi_CrcRamLpc55s3x

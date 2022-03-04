@@ -126,17 +126,51 @@ class TrustZone:
             if not TrustZone.validate_custom_data(self.presets, self.customs):
                 raise SPSDKError(
                     "Invalid register found in customization data:\n"
-                    "%s" % [item for item in self.customs if item not in self.presets]
+                    f"{[item for item in self.customs if item not in self.presets]}"
                 )
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
-        """Create the validation schema.
+    def get_validation_schemas_family(cls) -> List[Dict[str, Any]]:
+        """Create the validation schema just for supported families.
 
-        :return: List of validation schemas.
+        :return: List of validation schemas for TZ supported families.
         """
         sch_cfg = ValidationSchemas.get_schema_file(TZ_SCH_FILE)
-        return [sch_cfg["tz"]]
+        return [sch_cfg["tz_family_rev"]]
+
+    @classmethod
+    def get_validation_schemas(cls, family: str, revision: str = "latest") -> List[Dict[str, Any]]:
+        """Create the validation schema.
+
+        :param family: Family description.
+        :param revision: Chip revision specification, as default, latest is used.
+        :raises SPSDKError: Family or revision is not supported.
+        :return: List of validation schemas.
+        """
+        config_file = cls.load_config_file()
+        sch_cfg = ValidationSchemas.get_schema_file(TZ_SCH_FILE)
+        preset_properties = {}
+
+        try:
+            real_rev = config_file[family][revision]
+
+            presets = load_configuration(
+                os.path.join(TrustZone.PRESET_DIR, config_file[family]["revisions"][real_rev])
+            )
+            for key, value in presets.items():
+                preset_properties[key] = {
+                    "type": ["string", "number"],
+                    "title": "TZ Preset",
+                    "description": f"Preset for {key}",
+                    "format": "number",
+                    "template_value": f"{value}",
+                }
+            sch_cfg["tz"]["properties"]["trustZonePreset"].pop("patternProperties")
+            sch_cfg["tz"]["properties"]["trustZonePreset"]["properties"] = preset_properties
+
+            return [sch_cfg["tz_family_rev"], sch_cfg["tz"]]
+        except (KeyError, SPSDKError) as exc:
+            raise SPSDKError(f"Family {family} or {revision} is not supported") from exc
 
     @classmethod
     def generate_config_template(cls, family: str) -> Dict[str, str]:
@@ -147,34 +181,19 @@ class TrustZone:
         """
         ret: Dict[str, str] = {}
 
-        config_file = cls.load_config_file()
-        schemas = cls.get_validation_schemas()
-        override = {}
-        override["family"] = family
-        override["revisions"] = config_file[family]["latest"]
-        preset_properties = {}
+        if family in cls.get_supported_families():
+            config_file = cls.load_config_file()
+            schemas = cls.get_validation_schemas(family)
+            override = {}
+            override["family"] = family
+            override["revisions"] = config_file[family]["latest"]
 
-        presets = load_configuration(
-            os.path.join(
-                TrustZone.PRESET_DIR, config_file[family]["revisions"][override["revisions"]]
-            )
-        )
-        for key, value in presets.items():
-            preset_properties[key] = {
-                "type": ["string", "number"],
-                "title": "TZ Preset",
-                "description": f"Preset for {key}",
-                "format": "number",
-                "template_value": f"{value}",
-            }
-        schemas[0]["properties"]["trustZonePreset"]["properties"] = preset_properties
-
-        yaml_data = ConfigTemplate(
-            f"Trust Zone Configuration template for {family}.",
-            schemas,
-            override,
-        ).export_to_yaml()
-        ret[f"{family}_tz"] = yaml_data
+            yaml_data = ConfigTemplate(
+                f"Trust Zone Configuration template for {family}.",
+                schemas,
+                override,
+            ).export_to_yaml()
+            ret[f"{family}_tz"] = yaml_data
 
         return ret
 
@@ -186,6 +205,17 @@ class TrustZone:
         """Load data from TZ config file."""
         with open(cls.CONFIG_FILE) as f:
             return json.load(f)
+
+    @staticmethod
+    def get_supported_families() -> List[str]:
+        """Return list of supported families.
+
+        :return: List of supported families.
+        """
+        tz_sch_cfg = ValidationSchemas().get_schema_file(TZ_SCH_FILE)
+        tz_families = tz_sch_cfg["tz_family_rev"]
+
+        return tz_families["properties"]["family"]["enum"]
 
     def get_families(self) -> list:
         """Return list of supported chip families."""

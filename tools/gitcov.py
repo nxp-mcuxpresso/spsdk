@@ -439,7 +439,7 @@ def main(argv: Sequence[str] = None) -> int:
         logger.info(f"processing: {f}")
 
         if is_skipped_file:
-            logger.info(f"The file is skipped and will not contribute to the error counter.")
+            logger.info("The file is skipped and will not contribute to the error counter.")
             if logger.level > logging.DEBUG:
                 logger.info("")  # Just add a new line
                 continue
@@ -448,7 +448,7 @@ def main(argv: Sequence[str] = None) -> int:
         logger.debug(f"cov lines: {cov_numbers}")
 
         if no_fails:
-            logger.info(f"File is fully covered.\n")
+            logger.info("File is fully covered.\n")
         else:
             changed_uncovered_lines_msg = (
                 changed_uncovered_lines if changed_uncovered_lines != set() else "None"

@@ -39,7 +39,7 @@ from .exceptions import (
     McuBootError,
     SPSDKError,
 )
-from .interfaces import Interface
+from .interfaces import MBootInterface
 from .memories import ExtMemId, ExtMemRegion, FlashRegion, MemoryRegion, RamRegion
 from .properties import PropertyTag, PropertyValueBase, Version, parse_property_value
 
@@ -69,7 +69,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """Return True if the device is open."""
         return self._device.is_opened
 
-    def __init__(self, device: Interface, cmd_exception: bool = False) -> None:
+    def __init__(self, device: MBootInterface, cmd_exception: bool = False) -> None:
         """Initialize the McuBoot object.
 
         :param device: The instance of communication interface class
@@ -681,16 +681,36 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return cmd_response.values[0]
         return None
 
-    def efuse_program_once(self, index: int, value: int) -> bool:
+    def efuse_program_once(self, index: int, value: int, verify: bool = True) -> bool:
         """Write into MCU once program region (OCOTP).
 
         :param index: Start index
         :param value: Int value (4 bytes long)
+        :param verify: Verify that data were written (by comparing value as bitmask)
         :return: False in case of any problem; True otherwise
         """
-        logger.info(f"CMD: FlashProgramOnce(index={index}, value=0x{value:X})")
+        logger.info(
+            f"CMD: FlashProgramOnce(index={index}, value=0x{value:X}) "
+            f"with{'' if verify else 'out'} verification."
+        )
         cmd_packet = CmdPacket(CommandTag.FLASH_PROGRAM_ONCE, CommandFlag.NONE, index, 4, value)
-        return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
+        cmd_response = self._process_cmd(cmd_packet)
+        if cmd_response.status != StatusCode.SUCCESS:
+            return False
+        if verify:
+            read_value = self.efuse_read_once(index=index)
+            if read_value is None:
+                return False
+            # We check only a bitmask, because OTP allows to burn individual bits separatelly
+            # Some other bits may have been already written
+            if read_value & value == value:
+                return True
+            # It may happen that ROM will not report error when attempting to write into locked OTP
+            # In such case we substitute the original SUCCESS code with custom-made OTP_VERIFY_FAIL
+            self._status_code = StatusCode.OTP_VERIFY_FAIL
+            return False
+        else:
+            return cmd_response.status == StatusCode.SUCCESS
 
     def flash_read_once(self, index: int, count: int = 4) -> Optional[bytes]:
         """Read from MCU flash program once region (max 8 bytes).

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -684,7 +684,7 @@ class BootImageV21(BaseClass):
         # Update internals
         if dbg_info is not None:
             dbg_info.append("[sb_file]")
-        bs_dbg_info: Optional[List[str]] = list() if dbg_info else None
+        bs_dbg_info: Optional[List[str]] = [] if dbg_info else None
         self.update()
         # Export Boot Sections
         bs_data = bytes()

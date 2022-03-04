@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,7 +20,6 @@ from spsdk.apps import elftosb
         ("lpc55xx"),
         ("lpc55s0x"),
         ("lpc55s1x"),
-        ("lpc55s2x"),
         ("lpc55s6x"),
         ("lpc55s3x"),
         ("rt5xx"),

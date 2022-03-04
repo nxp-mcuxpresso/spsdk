@@ -64,7 +64,7 @@ def _open_shadow_registers(pass_obj: Dict) -> ShadowRegisters:
 
         debug_probe.enable_memory_interface()
     except SPSDKError as exc:
-        raise SPSDKError(f"Error with opening debug probe: ({str(exc)})")
+        raise SPSDKError(f"Error with opening debug probe: ({str(exc)})") from exc
 
     return ShadowRegisters(
         debug_probe=debug_probe, config=regs_cfg, device=device, revision=revision
@@ -132,9 +132,8 @@ def main(
     for par in debug_probe_option:
         if par.count("=") != 1:
             raise SPSDKError(f"Invalid -o parameter {par}!")
-        else:
-            par_splitted = par.split("=")
-            probe_user_params[par_splitted[0]] = par_splitted[1]
+        par_splitted = par.split("=")
+        probe_user_params[par_splitted[0]] = par_splitted[1]
 
     ctx.obj = {
         "config_file": config_filename,
@@ -174,7 +173,7 @@ def saveconfig(pass_obj: dict, filename: str = "sr_config.yml", raw: bool = Fals
         shadow_regs.create_yml_config(filename, raw)
         click.echo(f"The Shadow registers has been saved into {filename} YAML file")
     except SPSDKError as exc:
-        raise SPSDKError(f"Save configuration of Shadow registers failed! ({str(exc)})")
+        raise SPSDKError(f"Save configuration of Shadow registers failed! ({str(exc)})") from exc
 
 
 @main.command()
@@ -202,7 +201,7 @@ def loadconfig(pass_obj: dict, filename: str = "sr_config.yml", raw: bool = Fals
         shadow_regs.sets_all_registers()
         click.echo(f"The Shadow registers has been loaded by configuration in {filename} YAML file")
     except SPSDKError as exc:
-        raise SPSDKError(f"Load configuration of Shadow registers failed ({str(exc)})!")
+        raise SPSDKError(f"Load configuration of Shadow registers failed ({str(exc)})!") from exc
 
 
 @main.command()
@@ -233,7 +232,7 @@ def printregs(pass_obj: dict, rich: bool = False) -> None:
                 click.echo(f"Register width:       {reg.width} bits")
             click.echo()
     except SPSDKError as exc:
-        raise SPSDKError(f"Print of Shadow registers failed! ({str(exc)})")
+        raise SPSDKError(f"Print of Shadow registers failed! ({str(exc)})") from exc
 
 
 @main.command()
@@ -247,7 +246,7 @@ def getreg(pass_obj: dict, reg: str) -> None:
         shadow_regs.reload_register(register)
         click.echo(f"Value of {reg} is: {register.get_hex_value()}")
     except SPSDKError as exc:
-        raise SPSDKError(f"Getting Shadow register failed! ({str(exc)})")
+        raise SPSDKError(f"Getting Shadow register failed! ({str(exc)})") from exc
 
 
 @main.command()
@@ -261,7 +260,7 @@ def setreg(pass_obj: dict, reg: str, reg_val: str) -> None:
         shadow_regs.set_register(reg, reg_val)
         click.echo(f"The Shadow register {reg} has been set to {reg_val} value")
     except SPSDKError as exc:
-        raise SPSDKError(f"Setting Shadow register failed! ({str(exc)})")
+        raise SPSDKError(f"Setting Shadow register failed! ({str(exc)})") from exc
 
 
 @main.command()
@@ -270,7 +269,7 @@ def reset(pass_obj: dict) -> None:
     """The command resets connected device."""
     shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
     shadow_regs.probe.reset()
-    click.echo(f"The target has been reset.")
+    click.echo("The target has been reset.")
 
 
 @main.command()

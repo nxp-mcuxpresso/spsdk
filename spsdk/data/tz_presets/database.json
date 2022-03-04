@@ -8,15 +8,7 @@
     },
     "lpc55s0x": {
         "revisions": {
-            "a0": "lpc55xx_a0.json",
-            "a1": "lpc55xx_a1.json"
-        },
-        "latest": "a1"
-    },
-    "lpc55s2x": {
-        "revisions": {
-            "a0": "lpc55xx_a0.json",
-            "a1": "lpc55xx_a1.json"
+            "a1": "lpc55s0x.json"
         },
         "latest": "a1"
     },

@@ -43,9 +43,9 @@ class CurveName(str, Enum):
     SECT283R1 = "sect283r1"
     SECT409R1 = "sect409r1"
     SECT571R1 = "sect571r1"
-    BrainpoolP256R1 = "brainpoolP256r1"
-    BrainpoolP384R1 = "brainpoolP384r1"
-    BrainpoolP512R1 = "brainpoolP512r1"
+    BrainpoolP256R1 = "brainpoolP256r1"  # pylint: disable=invalid-name
+    BrainpoolP384R1 = "brainpoolP384r1"  # pylint: disable=invalid-name
+    BrainpoolP512R1 = "brainpoolP512r1"  # pylint: disable=invalid-name
 
 
 def get_ec_curve_object(name: str) -> ec.EllipticCurve:

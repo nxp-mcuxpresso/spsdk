@@ -22,7 +22,9 @@ from spsdk.image.mbimg import (
     Mbi_PlainSignedRamRtxxx,
     Mbi_EncryptedRamRtxxx,
     Mbi_CrcXipLpc55s3x,
+    Mbi_CrcExtXipLpc55s3x,
     Mbi_PlainXipSignedLpc55s3x,
+    Mbi_PlainExtXipSignedLpc55s3x,
     Mbi_PlainRamLpc55s3x,
     Mbi_CrcRamLpc55s3x,
 )
@@ -46,10 +48,11 @@ cls_lst = [
     Mbi_PlainSignedRamRtxxx,
     Mbi_EncryptedRamRtxxx,
     Mbi_CrcXipLpc55s3x,
+    Mbi_CrcExtXipLpc55s3x,
     Mbi_PlainXipSignedLpc55s3x,
+    Mbi_PlainExtXipSignedLpc55s3x,
     Mbi_PlainRamLpc55s3x,
     Mbi_CrcRamLpc55s3x,
-    SecureBinary31,
 ]
 
 

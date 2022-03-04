@@ -13,7 +13,7 @@ from typing import Union
 from spsdk.mboot.commands import CmdPacket, CmdResponse
 
 
-class Interface(ABC):
+class MBootInterface(ABC):
     """Base class for all Mboot Interface classes."""
 
     @property
@@ -47,3 +47,7 @@ class Interface(ABC):
 
     def info(self) -> str:
         """Return string containing information about the interface."""
+
+
+# for backwards compatibility
+Interface = MBootInterface

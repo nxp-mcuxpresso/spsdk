@@ -138,8 +138,9 @@ class SecretKeyBlob:
         self._data = bytearray()
 
     def __repr__(self) -> str:
-        return "SecKeyBlob <Mode: {}, Algo: {}, Flag: 0x{:02X}, Size: {}>".format(
-            self.mode, self.algorithm, self.flag, len(self._data)
+        return (
+            f"SecKeyBlob <Mode: {self.mode}, Algo: {self.algorithm}, "
+            f"Flag: 0x{self.flag:02X}, Size: {len(self._data)}>"
         )
 
     def __eq__(self, obj: Any) -> bool:
@@ -153,10 +154,10 @@ class SecretKeyBlob:
         msg = "-" * 60 + "\n"
         msg += "SecKeyBlob\n"
         msg += "-" * 60 + "\n"
-        msg += "Mode:      {}\n".format(self.mode)
-        msg += "Algorithm: {}\n".format(self.algorithm)
-        msg += "Flag:      0x{:02X}\n".format(self.flag)
-        msg += "Size:      {} Bytes\n".format(len(self._data))
+        msg += f"Mode:      {self.mode}\n"
+        msg += f"Algorithm: {self.algorithm}\n"
+        msg += f"Flag:      0x{self.flag:02X}\n"
+        msg += f"Size:      {len(self._data)} Bytes\n"
         return msg
 
     def export(self) -> bytes:
@@ -208,8 +209,9 @@ class CertificateImg(BaseClass):
     def info(self) -> str:
         """String representation of the CertificateImg."""
         msg = "-" * 60 + "\n"
-        msg += "Certificate (Ver: {:X}.{:X}, Size: {})\n".format(
-            self.version >> 4, self.version & 0xF, len(self._data)
+        msg += (
+            f"Certificate (Ver: {self.version >> 4:X}.{self.version & 0xF:X}, "
+            f"Size: {len(self._data)})\n"
         )
         msg += "-" * 60 + "\n"
         return msg
@@ -262,9 +264,7 @@ class Signature(BaseClass):
     def info(self) -> str:
         """String representation of the signature."""
         msg = "-" * 60 + "\n"
-        msg += "Signature (Ver: {:X}.{:X}, Size: {})\n".format(
-            self.version >> 4, self.version & 0xF, len(self._data)
-        )
+        msg += f"Signature (Ver: {self.version >> 4:X}.{self.version & 0xF:X}, Size: {len(self._data)})\n"
         msg += "-" * 60 + "\n"
         return msg
 
@@ -387,8 +387,9 @@ class MAC(BaseClass):
         self.data = nonce + mac
 
     def __repr__(self) -> str:
-        return "MAC <Ver: {:X}.{:X}, Nonce: {}, MAC: {}>".format(
-            self.version_major, self.version_minor, self.nonce_len, self.mac_len
+        return (
+            f"MAC <Ver: {self.version_major:X}.{self.version_minor:X}, "
+            f"Nonce: {self.nonce_len}, MAC: {self.mac_len}>"
         )
 
     def __len__(self) -> int:
@@ -397,10 +398,10 @@ class MAC(BaseClass):
     def info(self) -> str:
         """Text info about the instance."""
         msg = "-" * 60 + "\n"
-        msg += "MAC (Version: {:X}.{:X})\n".format(self.version >> 4, self.version & 0xF)
+        msg += f"MAC (Version: {self.version >> 4:X}.{self.version & 0xF:X})\n"
         msg += "-" * 60 + "\n"
-        msg += "Nonce Len: {} Bytes\n".format(self.nonce_len)
-        msg += "MAC Len:   {} Bytes\n".format(self.mac_len)
+        msg += f"Nonce Len: {self.nonce_len} Bytes\n"
+        msg += f"MAC Len:   {self.mac_len} Bytes\n"
         msg += f"[{self._data.hex()}]\n"
         return msg
 
@@ -568,12 +569,12 @@ class SrkItemHash(SrkItem):
         self._header.length += len(digest)
 
     def __repr__(self) -> str:
-        return "SRK Hash <Algorithm: {}>".format(EnumAlgorithm[self._header.param])  # type: ignore
+        return f"SRK Hash <Algorithm: {EnumAlgorithm[self._header.param]}>"  # type: ignore
 
     def info(self) -> str:
         """String representation of SrkItemHash."""
         msg = str()
-        msg += "Hash algorithm: {}\n".format(EnumAlgorithm[self._header.param])  # type: ignore
+        msg += f"Hash algorithm: {EnumAlgorithm[self._header.param]}\n"  # type: ignore
         msg += "Hash value:\n"
         msg += hexdump_fmt(self.digest)
         return msg
@@ -649,22 +650,22 @@ class SrkItemRSA(SrkItem):
         self._header.length += 8 + len(self.modulus) + len(self.exponent)
 
     def __repr__(self) -> str:
-        return "SRK <Algorithm: {}, CA: {}>".format(
-            EnumAlgorithm[self.algorithm],  # type: ignore
-            "YES" if self.flag == 0x80 else "NO",
-        )  # type: ignore
+        return (
+            f"SRK <Algorithm: {EnumAlgorithm[self.algorithm]}, "  # type: ignore
+            f"CA: {'YES' if self.flag == 0x80 else 'NO'}>"
+        )
 
     def info(self) -> str:
         """String representation of SrkItemRSA."""
-        msg = str()
-        msg += "Algorithm: {}\n".format(EnumAlgorithm[self.algorithm])  # type: ignore
-        msg += "Flag:      0x{:02X} {}\n".format(self.flag, "(CA)" if self.flag == 0x80 else "")
-        msg += "Length:    {} bit\n".format(self.key_length)
-        msg += "Modulus:\n"
-        msg += modulus_fmt(self.modulus)
-        msg += "\n"
-        msg += "Exponent: {0} (0x{0:X})\n".format(int.from_bytes(self.exponent, "big"))
-        return msg
+        exp = int.from_bytes(self.exponent, "big")
+        return (
+            f"Algorithm: {EnumAlgorithm[self.algorithm]}\n"  # type: ignore
+            f"Flag:      0x{self.flag:02X} {'(CA)' if self.flag == 0x80 else ''}\n"
+            f"Length:    {self.key_length} bit\n"
+            "Modulus:\n"
+            f"{modulus_fmt(self.modulus)}\n"
+            f"Exponent: {exp} (0x{exp:X})\n"
+        )
 
     def sha256(self) -> bytes:
         """Export SHA256 hash of the data."""
@@ -749,8 +750,9 @@ class SrkTable(BaseClass):
         self._keys: List[SrkItem] = []
 
     def __repr__(self) -> str:
-        return "SRK_Table <Version: {:X}.{:X}, Keys: {}>".format(
-            self.version_major, self.version_minor, len(self._keys)
+        return (
+            f"SRK_Table <Version: {self.version_major:X}.{self.version_minor:X},"
+            f" Keys: {len(self._keys)}>"
         )
 
     def __len__(self) -> int:
@@ -769,8 +771,9 @@ class SrkTable(BaseClass):
     def info(self) -> str:
         """Text info about the instance."""
         msg = "-" * 60 + "\n"
-        msg += "SRK Table (Version: {:X}.{:X}, #Keys: {})\n".format(
-            self.version_major, self.version_minor, len(self._keys)
+        msg += (
+            f"SRK Table (Version: {self.version_major:X}.{self.version_minor:X}, "
+            f"#Keys: {len(self._keys)})\n"
         )
         msg += "-" * 60 + "\n"
         for i, srk in enumerate(self._keys):

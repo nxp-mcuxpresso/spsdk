@@ -167,10 +167,10 @@ def convert_certificate_into_bytes(
     return certificate.public_bytes(encoding)
 
 
-x509NameConfig = Union[List[Dict[str, str]], Dict[str, Union[str, List[str]]]]
+X509NameConfig = Union[List[Dict[str, str]], Dict[str, Union[str, List[str]]]]
 
 
-def generate_name(config: x509NameConfig) -> x509.Name:
+def generate_name(config: X509NameConfig) -> x509.Name:
     """Generate x509 Name.
 
     :param config: subject/issuer description
@@ -181,8 +181,8 @@ def generate_name(config: x509NameConfig) -> x509.Name:
     def _get_name_oid(name: str) -> x509.ObjectIdentifier:
         try:
             return getattr(x509.NameOID, name)
-        except:
-            raise SPSDKError(f"Invalid value of certificate attribute: {name}")
+        except Exception as exc:
+            raise SPSDKError(f"Invalid value of certificate attribute: {name}") from exc
 
     if isinstance(config, list):
         for item in config:
@@ -194,8 +194,8 @@ def generate_name(config: x509NameConfig) -> x509.Name:
         for key_second, value_second in config.items():
             name_oid = _get_name_oid(key_second)
             if isinstance(value_second, list):
-                for v in value_second:
-                    attributes.append(x509.NameAttribute(name_oid, str(v)))
+                for value in value_second:
+                    attributes.append(x509.NameAttribute(name_oid, str(value)))
             else:
                 attributes.append(x509.NameAttribute(name_oid, str(value_second)))
 

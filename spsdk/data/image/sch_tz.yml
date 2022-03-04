@@ -1,8 +1,8 @@
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-tz:
+tz_family_rev:
   type: object
   properties:
     family:
@@ -11,6 +11,7 @@ tz:
       description: MCU family name.
       enum:
         - lpc55xx
+        - lpc55s0x
         - lpc55s1x
         - lpc55s3x
         - lpc55s6x
@@ -24,6 +25,9 @@ tz:
       description: If needed this could be used to specify silicon revision of device.
       template_value: a1
 
+tz:
+  type: object
+  properties:
     tzpOutputFile:
       type: string
       title: Optional name of output file for TZ binary.

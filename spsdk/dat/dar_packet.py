@@ -11,6 +11,7 @@ from struct import pack
 from typing import Type
 
 from spsdk import SPSDKError, crypto
+from spsdk.crypto import rsa
 from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.dat import DebugAuthenticationChallenge
 from spsdk.dat.debug_credential import DebugCredential
@@ -128,6 +129,7 @@ class DebugAuthenticateResponseRSA(DebugAuthenticateResponse):
         :return: signature in bytes format
         """
         key = crypto.load_private_key(file_path=self.dck_priv)
+        assert isinstance(key, rsa.RSAPrivateKey)
         key_bytes = key.private_bytes(
             encoding=crypto.Encoding.PEM,
             format=crypto.serialization.PrivateFormat.PKCS8,

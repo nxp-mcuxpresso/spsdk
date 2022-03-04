@@ -8,7 +8,6 @@
 
 """Misc."""
 import io
-import re
 from io import SEEK_CUR
 from typing import Union
 
@@ -34,7 +33,7 @@ def hexdump_fmt(data: bytes, tab: int = 4, length: int = 16, sep: str = ":") -> 
     """Dump some potentially larger data in hex."""
     text = " " * tab
     for i, j in enumerate(data):
-        text += "{:02x}{}".format(j, sep)
+        text += f"{j:02x}{sep}"
         if ((i + 1) % length) == 0:
             text += "\n" + " " * tab
     return text
@@ -54,21 +53,21 @@ def read_raw_data(
     """Read raw data."""
     if index is not None:
         if index < 0:
-            raise SPSDKError(" Index must be non-negative, found {}".format(index))
+            raise SPSDKError(f" Index must be non-negative, found {index}")
         if index != stream.tell():
             stream.seek(index)
 
     if length < 0:
-        raise SPSDKError(" Length must be non-negative, found {}".format(length))
+        raise SPSDKError(f" Length must be non-negative, found {length}")
 
     try:
         data = stream.read(length)
-    except Exception:
-        raise StreamReadFailed(" stream.read() failed, requested {} bytes".format(length))
+    except Exception as exc:
+        raise StreamReadFailed(f" stream.read() failed, requested {length} bytes") from exc
 
     if len(data) != length:
         raise NotEnoughBytesException(
-            " Could not read enough bytes, expected {}, found {}".format(length, len(data))
+            f" Could not read enough bytes, expected {length}, found {len(data)}"
         )
 
     if no_seek:
@@ -92,7 +91,7 @@ def dict_diff(main: dict, mod: dict) -> dict:
     for key, value in mod.items():
         if isinstance(value, dict):
             sub = dict_diff(main[key], value)
-            if sub != dict():
+            if sub:
                 diff[key] = sub
         else:
             if key not in main:

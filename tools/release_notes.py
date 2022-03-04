@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import subprocess
+import sys
 from getpass import getpass
 from typing import List, NamedTuple, Optional
 
@@ -25,6 +26,8 @@ TICKET_REGEX = re.compile(r"(SPSDK-\d+)")
 
 
 class RNParams(NamedTuple):
+    """Release Notes Parameters."""
+
     since: str
     till: str
     include_id: bool
@@ -36,6 +39,8 @@ class RNParams(NamedTuple):
 
 
 class TicketRecord(NamedTuple):
+    """JIRA Ticket Record."""
+
     issue_id: str
     issue_type: str
     summary: str
@@ -62,6 +67,8 @@ class TicketRecord(NamedTuple):
 
 # pylint: disable=not-an-iterable, no-member
 class RecordsList(List[TicketRecord]):
+    """JIRA records list."""
+
     def get_components(self) -> List[str]:
         """Get component names from data."""
         return self.get_attributes("component")
@@ -225,7 +232,7 @@ def main() -> None:
 
     if not ticket_ids:
         logging.info("No tickets found in commit messages.")
-        exit(1)
+        sys.exit(1)
 
     # ask for password if running in online mode, user doesn't uses netrc, but specifies username
     if not args.offline and args.user:
@@ -243,7 +250,7 @@ def main() -> None:
     if args.netrc and not os.path.isfile(os.path.expanduser("~/.netrc")):
         logging.error("NetRC authentication selected (-n) but ~/.netrc file not found")
         logging.error("Either create .netrc file or use username/pass authentication (-u)")
-        exit(1)
+        sys.exit(1)
 
     # for offline mode, we don't instantiate the JIRA connection
     jira_obj = None if args.offline else JIRA(server=JIRA_SERVER, max_retries=0, basic_auth=auth)

@@ -62,7 +62,6 @@ class BeeBaseClass:
 
     def update(self) -> None:
         """Updates internal fields of the instance."""
-        pass
 
     def validate(self) -> None:
         """Validates the configuration of the instance.
@@ -211,7 +210,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
         )
 
         # - FAC regions, 1 - 4
-        self.fac_regions: List[BeeFacRegion] = list()
+        self.fac_regions: List[BeeFacRegion] = []
 
     def update(self) -> None:
         """Updates start and end address of the encryption region."""
@@ -476,7 +475,7 @@ class BeeRegionHeader(BeeBaseClass):
 
         The result is ordered, first value should be burned to the lowest address.
         """
-        result = list()
+        result = []
         for pos in range(16, 0, -4):
             result.append(unpack_from(">I", self._sw_key[pos - 4 : pos])[0])
         return result

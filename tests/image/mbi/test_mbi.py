@@ -12,6 +12,7 @@ from typing import Optional
 import pytest
 
 from spsdk import SPSDKError
+from spsdk.apps.utils import load_configuration
 from spsdk.image import MasterBootImage, MultipleImageEntry, MultipleImageTable, TrustZone
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbimg import (
@@ -20,6 +21,7 @@ from spsdk.image.mbimg import (
     Mbi_CrcXipLpc55s3x,
     Mbi_EncryptedRamRtxxx,
     Mbi_PlainSignedRamRtxxx,
+    Mbi_PlainXip,
     Mbi_SignedXip,
 )
 from spsdk.utils.crypto import CertBlockV2, Certificate
@@ -431,7 +433,7 @@ def test_signed_xip_certificates_chain_no_tz(
     """Test signed image with multiple certificates, different key length
     :param data_dir: absolute path, where test data are located
     :param der_certificates: list of filenames of der root certificates
-    :param chain_certificates: list of filenames of der cerificates
+    :param chain_certificates: list of filenames of der certificates
     :param priv_key: private key filename
     :param expected_mbi: filename of expected bootable image
     """
@@ -650,3 +652,17 @@ def test_invalid_export_mbi(data_dir):
     mbi.cert_block = None
     with pytest.raises(SPSDKError):
         mbi.export()
+
+
+def test_invalid_image_base_address(data_dir):
+    mbi = Mbi_PlainXip()
+    with pytest.raises(SPSDKError):
+        mbi.load_from_config(
+            load_configuration(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
+        )
+    # test bad alignment
+    mbi.app_ext_memory_align = 31
+    with pytest.raises(SPSDKError):
+        mbi.load_from_config(
+            load_configuration(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
+        )

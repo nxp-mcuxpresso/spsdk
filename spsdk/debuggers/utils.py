@@ -7,7 +7,7 @@
 """Module for DebugMailbox Debug probes support."""
 
 import logging
-from typing import Any, Dict, Type
+from typing import Dict, Type
 
 import colorama
 import prettytable
@@ -72,7 +72,7 @@ class DebugProbes(list):
         :raises SPSDKError: Invalid input types has been used.
         """
         if isinstance(item, ProbeDescription):
-            super(DebugProbes, self).append(item)
+            super().append(item)
         else:
             raise SPSDKError("The list accepts only ProbeDescription object")
 
@@ -84,7 +84,7 @@ class DebugProbes(list):
         :raises SPSDKError: Invalid input types has been used.
         """
         if isinstance(item, ProbeDescription):
-            super(DebugProbes, self).insert(index, item)
+            super().insert(index, item)
         else:
             raise SPSDKError("The list accepts only ProbeDescription object")
 
@@ -161,12 +161,12 @@ class DebugProbeUtils:
         :return: list of probe_description's
         """
         probes = DebugProbes()
-        for probe_key in PROBES:
-            if (interface is None) or (interface.lower() == probe_key):
+        for key, probe in PROBES.items():
+            if (interface is None) or (interface.lower() == key):
                 try:
-                    probes.extend(PROBES[probe_key].get_connected_probes(hardware_id, user_params))
+                    probes.extend(probe.get_connected_probes(hardware_id, user_params))
                 except SPSDKDebugProbeError as exc:
-                    logger.warning(f"The {probe_key} debug probe support is not ready({str(exc)}).")
+                    logger.warning(f"The {key} debug probe support is not ready({str(exc)}).")
 
         return probes
 

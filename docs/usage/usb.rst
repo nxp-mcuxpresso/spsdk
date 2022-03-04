@@ -17,9 +17,9 @@ USB - VID & PID
 
 NXP devices use those VIDs:
 
-- *0d28*
-- *1fc9*
-- *15a2*
+- *0x0d28*
+- *0x1fc9*
+- *0x15a2*
 
 Devices in *SPSDK* could be identified either by *VID only* or a combination of *VID/PID*.
 
@@ -31,7 +31,7 @@ Devices in *SPSDK* could be identified either by *VID only* or a combination of 
     :scale: 50 %
     :align: center
 
-    VID, PID detection using ``nxpdevscan``
+    VID, PID detection using `nxpdevscan`
 
 -----------------
 USB - Device Path
@@ -53,22 +53,22 @@ USB - Device Path - Windows
     :scale: 25 %
     :align: center
 
-    Device Path location using *Device Manager* or ``nxpdevscan``
+    Device Path location using *Device Manager* or `nxpdevscan`
 
 USB - Device Path - Linux
 =========================
 
-*Device Path* is a path in the following form: ``0003:0002:00``.
+*Device Path* is defined in following form:
 
-The first number represents the ``Bus``, the second ``Device``, and the third ``Interface``. The ``Bus:Device`` number is unique and the ``Interface`` is not necessary.
+.. code-block::
 
-The ``Bus:Device`` can be listed using ``lsusb`` command. The ``Interface`` can be observed using ``lsusb -t``. ``lsusb`` returns the ``Bus`` and ``Device`` as a 3-digit number. For the device identification in *SPSDK* ``<Bus in dec>#<Device in dec>``, e.g. ``3#11`` should be used.
+    /dev/hidraw0
 
 .. figure:: ../_static/images/linux_usb_device_path_location.png
-    :scale: 25 %
+    :scale: 50 %
     :align: center
 
-    Device Path location using ``nxpdevscan`` or ``lsusb``
+    Device Path location using `nxpdevscan`
 
 .. note::
 
@@ -81,15 +81,13 @@ USB - Device Path - Mac
 
 .. code-block::
 
-    IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS01@14100000/SE Blank RT Family @14100000/IOUSBHostInterface@0/AppleUserUSBHostHIDDevice
-
-*Device Path* could be found using the ``ioreg`` utility or using ``IO Hardware Registry Explorer`` tool. However, using the system report from ``About This MAC -> System Report -> USB`` a partial path can also be gathered. Using the name of the USB device from the ``USB Device Tree`` and appending the ``Location ID`` should work. The name can be ``SE Blank RT Family`` and the ``Location ID`` is in a form of <hex> / <dec>, e.g. ``0x14200000 / 18``. So the ``usb_id`` name should be ``SE Blank RT Family @14200000`` and the filter should be able to identify the required device.
+    DevSrvsID:4295302744
 
 .. figure:: ../_static/images/mac_usb_device_path_location.png
     :scale: 50 %
     :align: center
 
-    *Device Path* location using USB Device Tree or `nxpdevscan`
+    *Device Path* displayed by `nxpdevscan`
 
 -----------------
 USB - Device Name

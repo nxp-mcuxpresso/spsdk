@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -69,7 +69,9 @@ class BDParser(Parser):
         self._parse_error = False
         self._lexer.cleanup()
 
-    def parse(self, text: str, extern: List = None) -> Optional[Dict]:
+    def parse(
+        self, text: str, extern: List = None
+    ) -> Optional[Dict]:  # pylint: disable=arguments-differ
         """Parse the `input_text` and returns a dictionary of the file content.
 
         :param text: command file to be parsed in string format
@@ -1497,7 +1499,9 @@ class BDParser(Parser):
 
         return lines[line_num]
 
-    def error(self, token: YaccProduction, msg: str = "") -> YaccProduction:
+    def error(
+        self, token: YaccProduction, msg: str = ""
+    ) -> YaccProduction:  # pylint: disable=arguments-differ
         """Syntax error handler.
 
         On syntax error, we set an error flag and read the rest of input file
@@ -1520,7 +1524,7 @@ class BDParser(Parser):
                     + (column - 1) * " "
                     + "^\n"
                 )
-            else:
-                raise SPSDKError(f"bdcompiler: error{msg}\n")
+
+            raise SPSDKError(f"bdcompiler: error{msg}\n")
 
         raise SPSDKError("bdcompiler: unspecified error.")

@@ -319,7 +319,6 @@ def test_change_endianism(value, res, exc):
         ("0xff_ff", 65535, False),
         ("ff_ff", 65535, True),
         ("0b111_1", 15, False),
-        ("b'1111", 15, False),
         (b"\xff\x00", 65280, False),
         (bytearray(b"\xff\x00"), 65280, False),
         ("InvalidValue", 0, True),
@@ -345,7 +344,6 @@ def test_value_to_int(value, res, exc):
         ("0xff_ff", b"\xff\xff", False),
         ("0b111_1", b"\x0f", False),
         ("ff_ff", b"\xff\xff", True),
-        ("b'111_1", b"\x0f", False),
         (b"\xff\x00", b"\xff\x00", False),
         (bytearray(b"\xff\x00"), b"\xff\x00", False),
         ("InvalidValue", 0, True),
@@ -414,8 +412,8 @@ def test_timeout_get_time():
 @pytest.mark.parametrize(
     "input_value, use_kibibyte, expected",
     [
-        (0, False, "0.0 B"),
-        (0, True, "0.0 B"),
+        (0, False, "0 B"),
+        (0, True, "0 B"),
         (1568, True, "1.5 kiB"),
         (1568, False, "1.6 kB"),
         (177768, True, "173.6 kiB"),

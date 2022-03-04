@@ -9,7 +9,7 @@
 
 import concurrent.futures
 import time
-from concurrent.futures import CancelledError, Future, TimeoutError
+from concurrent.futures import CancelledError, Future
 from concurrent.futures.process import ProcessPoolExecutor
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
@@ -35,7 +35,7 @@ class TaskInfo:
     """Task information class."""
 
     def __init__(
-        self, name: str, method: Callable, dependencies: List[str] = None, *args: Any, **kwargs: Any
+        self, name: str, method: Callable, *args: Any, dependencies: List[str] = None, **kwargs: Any
     ) -> None:
         self.name = name
         self.method = method
@@ -64,13 +64,13 @@ class TaskInfo:
         return self._state
 
     @status.setter
-    def status(self, st: TaskState) -> None:
+    def status(self, state: TaskState) -> None:
         """Setter of task status.
 
-        :param st: New task status.
+        :param state: New task status.
         """
-        assert st in TaskState
-        self._state = st
+        assert state in TaskState
+        self._state = state
 
     def status_str(self) -> str:
         """Get task status in txt form.
@@ -81,10 +81,7 @@ class TaskInfo:
         return TaskState.name(self._state)
 
     def start_task(self) -> None:
-        """Start task event.
-
-        :return: True if OK, otherwise False.
-        """
+        """Start task event."""
         if self.is_failed():
             raise IndexError("The task is already failed.")
 
@@ -183,6 +180,7 @@ class TaskList(List[TaskInfo]):
         """Get the task from this list by its name.
 
         :param name: Task name.
+        :raises ValueError: Task name is not in active task list.
         :return: Task info object.
         """
         for task in self:
@@ -194,6 +192,7 @@ class TaskList(List[TaskInfo]):
         """Checks dependencies if is blocking or not.
 
         :param dependencies: List of names of tasks that must be finished before this task.
+        :raises ValueError: Dependency doesn't exits in task list.
         :return: 'Blocks', 'Failed', 'OK'
         """
         if not dependencies:
@@ -257,6 +256,7 @@ class PrettyProcessRunner:
         """Run all tasks in parallel and print status table.
 
         :param concurrent_runs: Maximal concurrent task runs at ones, defaults to 5
+        :param clear_console: Clear automatically console lines with task statuses.
         """
         futures: Dict[Future, TaskInfo] = {}
         start_time = time.perf_counter()
@@ -299,7 +299,9 @@ class PrettyProcessRunner:
                 f"\033[K{task.name} -> {task.get_color_by_status()}{task.status_str()}{colorama.Fore.RESET}"
             )
 
-    def _user_task_done_callback(self, future: Future, future_set: dict, task: TaskInfo) -> None:
+    def _user_task_done_callback(  # pylint: disable=no-self-use
+        self, future: Future, future_set: dict, task: TaskInfo
+    ) -> None:
         try:
             exc = future.exception()
             result = None if exc else future.result()

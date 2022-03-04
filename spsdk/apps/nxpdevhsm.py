@@ -20,7 +20,7 @@ from spsdk import __version__ as version
 from spsdk.apps.utils import catch_spsdk_error, format_raw_data, get_interface, load_configuration
 from spsdk.image import MBIMG_SCH_FILE, SB3_SCH_FILE
 from spsdk.mboot.commands import TrustProvKeyType, TrustProvOemKeyType
-from spsdk.mboot.interfaces import Interface as mbootInterface
+from spsdk.mboot.interfaces import MBootInterface
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
 from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
@@ -30,7 +30,9 @@ from spsdk.utils.misc import value_to_int
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 logger = logging.getLogger(__name__)
-LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
+LOG_LEVEL_NAMES = [
+    name.lower() for name in logging._nameToLevel  # pylint: disable=protected-access
+]
 
 
 class DeviceHsm:
@@ -632,7 +634,7 @@ def main(log_level: str) -> int:
 @click.option(
     "-j",
     "--container-conf",
-    type=click.File("r"),
+    type=click.Path(exists=True),
     required=False,
     help="""json container configuration file to produce secure binary v3.x.
     In this configuration file is enough to provide just commands and description section.""",
@@ -653,7 +655,7 @@ def generate(
     key: BinaryIO,
     output_path: BinaryIO,
     workspace: click.Path,
-    container_conf: click.File,
+    container_conf: click.Path,
     timeout: int,
 ) -> None:
     """Generate provisioning SB3.1 file.
@@ -664,7 +666,7 @@ def generate(
     interface = get_interface(
         module="mboot", port=port, usb=usb, lpcusbsio=lpcusbsio, timeout=timeout
     )
-    assert isinstance(interface, mbootInterface)
+    assert isinstance(interface, MBootInterface)
 
     oem_share_in = get_oem_share_input(oem_share_input)
     user_pck = get_user_pck(key)
@@ -675,7 +677,7 @@ def generate(
             user_pck=user_pck,
             oem_share_input=oem_share_in,
             info_print=click.echo,
-            container_conf=container_conf.name if container_conf else None,
+            container_conf=container_conf,
             workspace=workspace,
         )
 

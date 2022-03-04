@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox PyLink Debug probes support."""
 
 import logging
 from time import sleep
-from typing import Dict, Type
+from typing import Dict
 
 import pylink
-import pylink.protocols.swd as swd
 from pylink.errors import JLinkException
+from pylink.protocols.swd import ReadRequest, WriteRequest
 
 from .debug_probe import (
     DebugProbe,
@@ -54,8 +54,8 @@ class DebugProbePyLink(DebugProbe):
                 error=JLINK_LOGGER.error,
                 warn=JLINK_LOGGER.warn,
             )
-        except TypeError:
-            raise SPSDKDebugProbeError("Cannot open Jlink DLL")
+        except TypeError as exc:
+            raise SPSDKDebugProbeError("Cannot open Jlink DLL") from exc
 
     def __init__(self, hardware_id: str, user_params: Dict = None) -> None:
         """The PyLink class initialization.
@@ -74,7 +74,7 @@ class DebugProbePyLink(DebugProbe):
         # or the original swd interface- False (this did not work properly)
         self.use_coresight_rw = True
 
-        logger.debug(f"The SPSDK PyLink Interface has been initialized")
+        logger.debug("The SPSDK PyLink Interface has been initialized")
 
     @classmethod
     def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> list:
@@ -246,7 +246,7 @@ class DebugProbePyLink(DebugProbe):
 
         self.last_accessed_ap = -1
         try:
-            data_list = list()
+            data_list = []
             data_list.append(data)
             self.pylink.memory_write32(addr=addr, data=data_list)
         except (JLinkException, ValueError, TypeError) as exc:
@@ -276,11 +276,11 @@ class DebugProbePyLink(DebugProbe):
                 self.last_accessed_ap = -1
 
             if not self.use_coresight_rw:
-                request = swd.ReadRequest(addr // 4, ap=access_port)
+                request = ReadRequest(addr // 4, ap=access_port)
                 response = request.send(self.pylink)
                 if access_port:
                     sleep(0.1)
-                    request2 = swd.ReadRequest(3, ap=False)
+                    request2 = ReadRequest(3, ap=False)
                     response2 = request2.send(self.pylink)
                     return response2.data
 
@@ -315,7 +315,7 @@ class DebugProbePyLink(DebugProbe):
                 self.last_accessed_ap = -1
 
             if not self.use_coresight_rw:
-                request = swd.WriteRequest(addr // 4, data=data, ap=access_port)
+                request = WriteRequest(addr // 4, data=data, ap=access_port)
                 response = request.send(self.pylink)
                 if not response.ack():
                     raise SPSDKDebugProbeTransferError("No ack from JLink")

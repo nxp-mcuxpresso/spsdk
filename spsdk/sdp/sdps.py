@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -13,7 +13,7 @@ from struct import pack, unpack
 from typing import Mapping, Tuple
 
 from .exceptions import SdpConnectionError
-from .interfaces import Interface
+from .interfaces import SDPInterface
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class SDPS:
         """Get name."""
         return self.__name
 
-    def __init__(self, device: Interface, device_name: str) -> None:
+    def __init__(self, device: SDPInterface, device_name: str) -> None:
         """Initialize SDPS object.
 
         :param device: USB device
@@ -116,8 +116,8 @@ class SDPS:
 
             self._device.write(data)
 
-        except:
+        except Exception as exc:
             logger.info("RX-CMD: Timeout Error")
-            raise SdpConnectionError("Timeout Error")
+            raise SdpConnectionError("Timeout Error") from exc
 
         logger.info(f"TX-CMD: WriteFile(length={len(data)})")

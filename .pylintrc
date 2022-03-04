@@ -140,7 +140,8 @@ disable=print-statement,
         exception-escape,
         comprehension-escape,
         logging-fstring-interpolation,
-        duplicate-code
+        duplicate-code,
+        unspecified-encoding
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -250,14 +251,23 @@ good-names=i,
            Run,
            _,
            x,
+           y,
            e,
            f,
            logger,
            mb,
            sdp,
+           dc,
            di,
            dm,
-           id
+           id,
+           r,
+           s,
+           iv,
+           p1,
+           p2,
+           lc,
+           le
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
@@ -517,7 +527,7 @@ valid-metaclass-classmethod-first-arg=cls
 max-args=10
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=10
+max-attributes=20
 
 # Maximum number of boolean expressions in an if statement (see R0916).
 max-bool-expr=5
@@ -526,7 +536,7 @@ max-bool-expr=5
 max-branches=12
 
 # Maximum number of locals for function / method body.
-max-locals=15
+max-locals=20
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7

@@ -21,7 +21,7 @@ class DebugMailboxCommand:
     def __init__(
         self,
         dm: DebugMailbox,
-        id: int,
+        id: int,  # pylint: disable=redefined-builtin
         name: str = "",
         paramlen: int = 0,
         resplen: int = 0,
@@ -33,9 +33,10 @@ class DebugMailboxCommand:
         self.id = id
         self.name = name
 
-    def run(self, params: list = []) -> List[Any]:
+    def run(self, params: List[int] = None) -> List[Any]:
         """Run DebugMailboxCommand."""
-        if len(params) != self.paramlen:
+        paramslen = len(params) if params else 0
+        if paramslen != self.paramlen:
             raise SPSDKError(
                 "Provided parameters length is not equal to command parameters length!"
             )
@@ -47,15 +48,18 @@ class DebugMailboxCommand:
         # Wait 30ms to allow reset of internal logic of debug mailbox
         time.sleep(0.03)
 
-        for i in range(self.paramlen):
-            ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
-            logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
-            if (ret & 0xFFFF) != 0xA5A5:
-                raise SPSDKError("Device did not send correct ACK answer!")
-            if ((ret >> 16) & 0xFFFF) != (self.paramlen - i):
-                raise SPSDKError("Device expects parameters of different length we can provide!")
-            logger.debug(f"<- spin_write: {format_value(params[i], 32)}")
-            self.dm.spin_write(self.dm.registers["REQUEST"]["address"], params[i])
+        if params:
+            for i in range(paramslen):
+                ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
+                logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
+                if (ret & 0xFFFF) != 0xA5A5:
+                    raise SPSDKError("Device did not send correct ACK answer!")
+                if ((ret >> 16) & 0xFFFF) != (self.paramlen - i):
+                    raise SPSDKError(
+                        "Device expects parameters of different length we can provide!"
+                    )
+                logger.debug(f"<- spin_write: {format_value(params[i], 32)}")
+                self.dm.spin_write(self.dm.registers["REQUEST"]["address"], params[i])
 
         ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
@@ -93,7 +97,7 @@ class StartDebugMailbox(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super(StartDebugMailbox, self).__init__(dm, id=1, name="START_DBG_MB")
+        super().__init__(dm, id=1, name="START_DBG_MB")
 
 
 class GetCRPLevel(DebugMailboxCommand):
@@ -101,7 +105,7 @@ class GetCRPLevel(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super(GetCRPLevel, self).__init__(dm, id=2, name="GET_CRP_LEVEL")
+        super().__init__(dm, id=2, name="GET_CRP_LEVEL")
 
 
 class EraseFlash(DebugMailboxCommand):
@@ -109,7 +113,7 @@ class EraseFlash(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super(EraseFlash, self).__init__(dm, id=3, name="ERASE_FLASH")
+        super().__init__(dm, id=3, name="ERASE_FLASH")
 
 
 class ExitDebugMailbox(DebugMailboxCommand):
@@ -117,7 +121,7 @@ class ExitDebugMailbox(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super(ExitDebugMailbox, self).__init__(dm, id=4, name="EXIT_DBG_MB")
+        super().__init__(dm, id=4, name="EXIT_DBG_MB")
 
 
 class EnterISPMode(DebugMailboxCommand):
@@ -125,7 +129,15 @@ class EnterISPMode(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super(EnterISPMode, self).__init__(dm, id=5, name="ENTER_ISP_MODE", paramlen=1)
+        super().__init__(dm, id=5, name="ENTER_ISP_MODE", paramlen=1)
+
+
+class EnterBlankDebugAuthentication(DebugMailboxCommand):
+    """Class for EnterBlankDebugAuthentication."""
+
+    def __init__(self, dm: DebugMailbox) -> None:
+        """Initialize."""
+        super().__init__(dm, id=0x8, name="ENTER_BLANK_DEBUG_AUTH", paramlen=8)
 
 
 class SetFaultAnalysisMode(DebugMailboxCommand):
@@ -133,7 +145,7 @@ class SetFaultAnalysisMode(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super(SetFaultAnalysisMode, self).__init__(dm, id=6, name="SET_FA_MODE")
+        super().__init__(dm, id=6, name="SET_FA_MODE")
 
 
 class StartDebugSession(DebugMailboxCommand):
@@ -141,7 +153,7 @@ class StartDebugSession(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super(StartDebugSession, self).__init__(dm, id=7, name="START_DBG_SESSION")
+        super().__init__(dm, id=7, name="START_DBG_SESSION")
 
 
 class DebugAuthenticationStart(DebugMailboxCommand):
@@ -151,9 +163,7 @@ class DebugAuthenticationStart(DebugMailboxCommand):
         """Initialize."""
         # 26 words == 104 bytes (SHA256 - 32 Bytes)
         # 30 words == 120 bytes (SHA384 - 48 Bytes)
-        super(DebugAuthenticationStart, self).__init__(
-            dm, id=16, name="DBG_AUTH_START", resplen=resplen
-        )
+        super().__init__(dm, id=16, name="DBG_AUTH_START", resplen=resplen)
 
 
 class DebugAuthenticationResponse(DebugMailboxCommand):
@@ -161,6 +171,4 @@ class DebugAuthenticationResponse(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox, paramlen: int) -> None:
         """Initialize."""
-        super(DebugAuthenticationResponse, self).__init__(
-            dm, id=17, name="DBG_AUTH_RESP", paramlen=paramlen
-        )
+        super().__init__(dm, id=17, name="DBG_AUTH_RESP", paramlen=paramlen)

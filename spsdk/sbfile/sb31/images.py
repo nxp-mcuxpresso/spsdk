@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 
 from spsdk import SPSDKError
 from spsdk.image import MBIMG_SCH_FILE, SB3_SCH_FILE
-from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, BaseCmd, CmdSectionHeader, MainCmd
+from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
 from spsdk.sbfile.sb31.functions import KeyDerivator
 from spsdk.utils.crypto import CRYPTO_SCH_FILE
 from spsdk.utils.crypto.abstract import BaseClass
@@ -143,11 +143,11 @@ class SecureBinary31Header(BaseClass):
             raise SPSDKError("Invalid SB3.1 header flags.")
         if self.block_count is None or self.block_count < 0:
             raise SPSDKError("Invalid SB3.1 header block count.")
-        if self.curve_name is None or not self.curve_name in ["secp256r1", "secp384r1"]:
+        if self.curve_name is None or self.curve_name not in ["secp256r1", "secp384r1"]:
             raise SPSDKError("Invalid SB3.1 header curve name.")
         if self.block_size is None or self.block_size != self.calculate_block_size():
             raise SPSDKError("Invalid SB3.1 header block size.")
-        if self.image_type is None or not self.image_type in [6, 7]:
+        if self.image_type is None or self.image_type not in [6, 7]:
             raise SPSDKError("Invalid SB3.1 header image type.")
         if self.firmware_version is None:
             raise SPSDKError("Invalid SB3.1 header firmware version.")
@@ -201,13 +201,16 @@ class SecureBinary31Commands(BaseClass):
                 kdk_access_rights=kdk_access_rights,
             )
 
-    def _get_hash_length(self, curve_name: str) -> int:
+    @staticmethod
+    def _get_hash_length(curve_name: str) -> int:
         return {"secp256r1": 32, "secp384r1": 48}[curve_name]
 
-    def _get_key_length(self, curve_name: str) -> int:
+    @staticmethod
+    def _get_key_length(curve_name: str) -> int:
         return {"secp256r1": 128, "secp384r1": 256}[curve_name]
 
-    def _get_hash_type(self, curve_name: str) -> str:
+    @staticmethod
+    def _get_hash_type(curve_name: str) -> str:
         return {"secp256r1": "sha256", "secp384r1": "sha384"}[curve_name]
 
     def add_command(self, command: MainCmd) -> None:

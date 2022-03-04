@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for serial communication with a target device using SDP protocol."""
@@ -16,12 +16,12 @@ from serial.tools.list_ports import comports
 from spsdk.sdp.commands import CmdPacket, CmdResponse
 from spsdk.sdp.exceptions import SdpConnectionError
 
-from .base import Interface
+from .base import SDPInterface
 
 logger = logging.getLogger(__name__)
 
 
-def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List[Interface]:
+def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List["Uart"]:
     """Scan connected serial ports.
 
     Returns list of serial ports with devices that respond to PING command.
@@ -44,7 +44,7 @@ def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> Li
     return list(filter(None, all_ports))
 
 
-def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
+def _check_port(port: str, baudrate: int, timeout: int) -> Optional["Uart"]:
     """Check if device on comport 'port' could be openned.
 
     :param port: name of port to check
@@ -66,7 +66,7 @@ def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
 ########################################################################################################################
 
 
-class Uart(Interface):
+class Uart(SDPInterface):
     """UART interface."""
 
     @property

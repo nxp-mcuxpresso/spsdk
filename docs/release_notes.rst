@@ -2,10 +2,42 @@
 
 .. _LIBUSBSIO_link: https://www.nxp.com/design/software/development-software/library-for-windows-macos-and-ubuntu-linux:LIBUSBSIO?tid=vanLIBUSBSIO
 .. _crypto: api/crypto.html
+.. _usb_device_identification: usage/usb.html
 
 =============
 Release Notes
 =============
+
+---------------------
+1.6.1 (04-March-2022)
+---------------------
+
+**New features**
+
+* :ref:`blhost`:
+    - add parameter --no-verify for efuse-program-once
+    - add possibility to select USBSIO bridge device via VID:PID, USB path, serial number
+    - lower the timeout during MBoot's UART Ping command
+    - improve type hints for scan_* functions for detecting devices
+* :ref:`elftosb`:
+    - dynamically generate config json schema per family
+* :ref:`nxpdevscan`:
+    - extend scan with device serial number information
+    - list all connected USB or UART or SIO devices
+    - update device's USB path (`usb_device_identification`_)
+* :ref:`sdphost`:
+    - improve type hints for scan_* functions for detecting SDP devices
+* reduce number of findings from Pylint
+* update JINJA2 requirement
+
+**Bugfixes**
+
+* :ref:`blhost`:
+    - fix UART open operation for RT1176, RT1050 and LPC55S06 platforms (and probably others)
+* :ref:`elftosb`:
+    - fix preset data for lpc55s0x, lpc55s1x
+* SPI communication failure (changed FRAME_START_NOT_READY to 0xFF for SPI)
+* PYI files are not included in the distribution package
 
 ------------------------
 1.6.0 (04-February-2022)

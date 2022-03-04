@@ -33,12 +33,12 @@ EnumKeyType = Union[str, int]
 class MetaEnum(type):
     """Meta Class for Enum Type."""
 
-    def __new__(mcs, name, bases, attrs):
-        cls = super().__new__(mcs, name, bases, attrs)
-        cls._items_ = list()
+    def __new__(cls, name, bases, attrs):
+        _cls = super().__new__(cls, name, bases, attrs)
+        _cls._items_ = []
 
         for base in bases:
-            cls._items_ += base._items_
+            _cls._items_ += base._items_
 
         for attr, value in attrs.items():
             if attr in set(dir(type(name, (object,), {}))) or (
@@ -49,29 +49,29 @@ class MetaEnum(type):
                 continue
             if isinstance(value, tuple):
                 if len(value) == 2:
-                    cls._items_.append((attr, value[0], value[1]))
+                    _cls._items_.append((attr, value[0], value[1]))
                 else:
-                    cls._items_.append((value[1], value[0], value[2]))
-                setattr(cls, attr, value[0])
+                    _cls._items_.append((value[1], value[0], value[2]))
+                setattr(_cls, attr, value[0])
             else:
                 assert isinstance(value, int)
-                cls._items_.append((attr, value, ""))
-        return cls
+                _cls._items_.append((attr, value, ""))
+        return _cls
 
     def __getitem__(cls, key):
         if isinstance(key, str):
             for name, value, _ in cls._items_:
                 if key.upper() == name.upper():
                     return value
-            raise KeyError("'%s' has no item with name '%s'" % (cls.__name__, key))
+            raise KeyError(f"'{cls.__name__}' has no item with name '{key}'")
 
         if isinstance(key, int):
             for name, value, _ in cls._items_:
                 if key == value:
                     return name
-            raise KeyError("'%s' has no item with value '%d'" % (cls.__name__, key))
+            raise KeyError(f"'{cls.__name__}' has no item with value '{key}'")
 
-        raise TypeError("'%s' has no item with type '%r'" % (cls.__name__, type(key)))
+        raise TypeError(f"'{cls.__name__}' has no item with type '{type(key)}'")
 
     def __iter__(cls):
         return (item for item in cls._items_)
@@ -125,7 +125,7 @@ class Enum(metaclass=MetaEnum):
                     return desc
             return default
 
-        raise TypeError("'%s' has no item with type '%r'" % (cls.__name__, type(key)))
+        raise TypeError(f"'{cls.__name__}' has no item with type '{type(key)}'")
 
     @classmethod
     def name(cls, key: int, default: str = None) -> str:

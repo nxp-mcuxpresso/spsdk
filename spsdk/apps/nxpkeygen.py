@@ -28,7 +28,9 @@ from spsdk.crypto import (
 )
 
 logger = logging.getLogger(__name__)
-LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
+LOG_LEVEL_NAMES = [
+    name.lower() for name in logging._nameToLevel  # pylint: disable=protected-access
+]
 
 
 def get_list_of_supported_keys() -> List[str]:
@@ -37,8 +39,7 @@ def get_list_of_supported_keys() -> List[str]:
     :return: List of supported key types.
     """
     ret = ["rsa2048", "rsa3072", "rsa4096"]
-    # pylint: disable=protected-access
-    ret.extend(ec._CURVE_TYPES.keys())  # type: ignore
+    ret.extend(ec._CURVE_TYPES.keys())  # type: ignore # pylint: disable=protected-access
 
     return ret
 

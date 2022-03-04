@@ -13,8 +13,8 @@ from typing import Any, Dict, Tuple
 
 import click
 import openpyxl
-import openpyxl.utils as utils
-import openpyxl.utils.cell as cell_utils
+from openpyxl import utils
+from openpyxl.utils import cell as cell_utils
 
 from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
@@ -137,7 +137,7 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
         for head in XLS_COLUMN_NAMES:
             self.header_cells[head] = self._find_cell_coor_by_val(head)
 
-    def _filterout_bitrange(self, name: str) -> Tuple[str, bool]:
+    def _filterout_bitrange(self, name: str) -> Tuple[str, bool]:  # pylint: disable=no-self-use
         """Function filter out the bit ranges in various shapes from register name."""
         bits_rev1 = re.search(r"_\d{1,4}_\d{1,4}$", name)
         bits_rev2 = re.search(r"\[\d{1,4}:\d{1,4}\]$", name)
@@ -154,8 +154,8 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
         return name, reverse
 
     def _get_registers(self) -> None:
-        assert self.worksheet
         """Function finds all registers in XLS sheet and store them."""
+        assert self.worksheet
         regname_cr = cell_utils.coordinate_from_string(self.header_cells["Register Name"])
         sr_access_cr = cell_utils.coordinate_from_string(
             self.header_cells["Access rw = has shadow register"]

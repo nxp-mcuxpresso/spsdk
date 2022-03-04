@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -316,7 +316,7 @@ class Otfad:
 
     def __init__(self) -> None:
         """Constructor."""
-        self._key_blobs: List[KeyBlob] = list()
+        self._key_blobs: List[KeyBlob] = []
 
     def __getitem__(self, index: int) -> KeyBlob:
         return self._key_blobs[index]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,7 @@ from abc import ABC
 from typing import Any
 
 
-class Interface(ABC):
+class SDPInterface(ABC):
     """Base class for all Interface classes."""
 
     expect_status = True
@@ -37,3 +37,7 @@ class Interface(ABC):
 
     def info(self) -> str:
         """Return string containing information about the interface."""
+
+
+# for backwards compatibility
+Interface = SDPInterface

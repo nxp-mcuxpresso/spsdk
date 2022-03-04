@@ -120,7 +120,7 @@ def load_binary_image(*path_segments: str) -> BinFile:
     binfile = BinFile()
     try:
         binfile.add_file(path)
-    except UnicodeDecodeError as e:
+    except UnicodeDecodeError:
         binfile.add_binary_file(path)
     except Exception as e:
         raise SPSDKError(f"Error loading file: {str(e)}") from e
@@ -227,7 +227,7 @@ class DebugInfo:
 
         :param enabled: True if logging enabled; False otherwise
         """
-        self._lines: Optional[List[str]] = list() if enabled else None
+        self._lines: Optional[List[str]] = [] if enabled else None
 
     @property
     def enabled(self) -> bool:
@@ -285,7 +285,7 @@ class DebugInfo:
         """:return: list of logged lines; empty list if nothing logged or log disabled."""
         if self._lines:
             return self._lines
-        return list()
+        return []
 
     def info(self) -> str:
         """:return: multi-line text with log; empty string if nothing logged or log disabled."""
@@ -352,11 +352,11 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) 
 
     if isinstance(value, str) and value != "":
         match = re.match(
-            r"(?P<prefix>[0b][bxX'])?(?P<number>[0-9a-fA-F_]+)(?P<suffix>[ulUL]{0,3})$",
-            value.strip(),
+            r"(?P<prefix>0[box])?(?P<number>[0-9a-f_]+)(?P<suffix>[ul]{0,3})$",
+            value.strip().lower(),
         )
         if match:
-            base = {"0b": 2, "b'": 2, "0x": 16, "0X": 16, None: 10}[match.group("prefix")]
+            base = {"0b": 2, "0o": 8, "0": 10, "0x": 16, None: 10}[match.group("prefix")]
             try:
                 return int(match.group("number"), base=base)
             except ValueError:
@@ -556,19 +556,20 @@ def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
         if num < base:
             break
         num /= base
-    return "{0:3.1f} {1:s}".format(num, i)
+
+    return f"{int(num)} {i}" if i == "B" else f"{num:3.1f} {i}"
 
 
-def get_key_by_val(value: str, dict: Dict[str, List[str]]) -> str:
+def get_key_by_val(value: str, dictionary: Dict[str, List[str]]) -> str:
     """Return key by its value.
 
     :param value: Value to find.
-    :param dict: Dictionary to find in.
+    :param dictionary: Dictionary to find in.
     :raises SPSDKValueError: Value is not present in dictionary.
     :return: Key name
     """
-    for key, item in dict.items():
+    for key, item in dictionary.items():
         if value.lower() in [x.lower() for x in item]:
             return key
 
-    raise SPSDKValueError(f"Value {value} is not in {dict}.")
+    raise SPSDKValueError(f"Value {value} is not in {dictionary}.")

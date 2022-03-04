@@ -1,0 +1,22 @@
+{
+    "family": "lpc55s3x",
+    "outputImageExecutionTarget": "External flash (XIP)",
+    "outputImageAuthenticationType": "Signed",
+    "masterBootOutputFile": ".\\workspace\\output_images\\lpc55s3x\\mb_xip_ext_signed.bin",
+    "inputImageFile": ".\\workspace\\input_images\\lpcxpresso55s36_led_blinky_ext_flash.s19",
+    "firmwareVersion": 0,
+    "useIsk": true,
+    "signingCertificatePrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp384r1_sign_cert.pem",
+    "mainRootCertPrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp384r1_cert0.pem",
+    "signingCertificateFile": ".\\workspace\\keys_certs\\ec_secp384r1_sign_cert.pem",
+    "signingCertificateConstraint": "0x25",
+    "signCertData": ".\\workspace\\input_images\\testfffffff.bin",
+    "manifestSigningHashLength": 32,
+    "rootCertificate0File": ".\\workspace\\keys_certs\\ec_secp384r1_cert0.pem",
+    "rootCertificate1File": ".\\workspace\\keys_certs\\ec_secp384r1_cert1.pem",
+    "rootCertificate2File": ".\\workspace\\keys_certs\\ec_secp384r1_cert2.pem",
+    "rootCertificate3File": ".\\workspace\\keys_certs\\ec_secp384r1_cert3.pem",
+    "mainRootCertId": 0,
+    "enableTrustZone": false,
+    "trustZonePresetFile": ""
+}

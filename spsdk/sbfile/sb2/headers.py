@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -70,7 +70,7 @@ class ImageHeaderV2(BaseClass):
         self.build_number = build_number
 
     def __str__(self) -> str:
-        return "Header: v{}, {}".format(self.version, self.image_blocks)
+        return f"Header: v{self.version}, {self.image_blocks}"
 
     def flags_desc(self) -> str:
         """Return flag description."""
@@ -79,22 +79,22 @@ class ImageHeaderV2(BaseClass):
     def info(self) -> str:
         """Get info of Header as string."""
         nfo = str()
-        nfo += " Version:              {}\n".format(self.version)
+        nfo += f" Version:              {self.version}\n"
         if self.nonce is not None:
-            nfo += " Digest:               {}\n".format(self.nonce.hex().upper())
-        nfo += " Flag:                 0x{:X} ({})\n".format(self.flags, self.flags_desc())
-        nfo += " Image Blocks:         {}\n".format(self.image_blocks)
-        nfo += " First Boot Tag Block: {}\n".format(self.first_boot_tag_block)
-        nfo += " First Boot SectionID: {}\n".format(self.first_boot_section_id)
-        nfo += " Offset to Cert Block: {}\n".format(self.offset_to_certificate_block)
-        nfo += " Key Blob Block:       {}\n".format(self.key_blob_block)
-        nfo += " Header Blocks:        {}\n".format(self.header_blocks)
-        nfo += " Sections MAC Count:   {}\n".format(self.max_section_mac_count)
-        nfo += " Key Blob Block Count: {}\n".format(self.key_blob_block_count)
-        nfo += " Timestamp:            {}\n".format(self.timestamp.strftime("%H:%M:%S (%d.%m.%Y)"))
-        nfo += " Product Version:      {}\n".format(self.product_version)
-        nfo += " Component Version:    {}\n".format(self.component_version)
-        nfo += " Build Number:         {}\n".format(self.build_number)
+            nfo += f" Digest:               {self.nonce.hex().upper()}\n"
+        nfo += f" Flag:                 0x{self.flags:X} ({self.flags_desc()})\n"
+        nfo += f" Image Blocks:         {self.image_blocks}\n"
+        nfo += f" First Boot Tag Block: {self.first_boot_tag_block}\n"
+        nfo += f" First Boot SectionID: {self.first_boot_section_id}\n"
+        nfo += f" Offset to Cert Block: {self.offset_to_certificate_block}\n"
+        nfo += f" Key Blob Block:       {self.key_blob_block}\n"
+        nfo += f" Header Blocks:        {self.header_blocks}\n"
+        nfo += f" Sections MAC Count:   {self.max_section_mac_count}\n"
+        nfo += f" Key Blob Block Count: {self.key_blob_block_count}\n"
+        nfo += f" Timestamp:            {self.timestamp.strftime('%H:%M:%S (%d.%m.%Y)')}\n"
+        nfo += f" Product Version:      {self.product_version}\n"
+        nfo += f" Component Version:    {self.component_version}\n"
+        nfo += f" Build Number:         {self.build_number}\n"
         return nfo
 
     def export(self, padding: bytes = None) -> bytes:

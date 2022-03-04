@@ -122,3 +122,8 @@ def test_tz_incorrect_data(sample_tz_data):
 def test_tz_incorrect_config(sample_tz_data):
     with pytest.raises(SPSDKError):
         TrustZone.from_config(config_data=bytes(4))
+
+
+def test_tz_incorrect_family():
+    with pytest.raises(SPSDKError):
+        TrustZone.get_validation_schemas("nonsense")

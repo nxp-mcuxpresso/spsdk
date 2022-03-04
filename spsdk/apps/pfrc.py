@@ -9,7 +9,7 @@
 import logging
 import os
 import sys
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import click
 

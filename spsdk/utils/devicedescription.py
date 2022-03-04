@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,6 +11,8 @@ import platform
 import re
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple
+
+from libusbsio.libusbsio import LIBUSBSIO
 
 from spsdk.mboot.interfaces.usb import USB_DEVICES as MB_USB_DEVICES
 from spsdk.sdp.interfaces.usb import USB_DEVICES as SDP_USB_DEVICES
@@ -53,15 +55,18 @@ class UartDeviceDescription(DeviceDescription):
 
         The 'dev_type' can be in general any string identifying the device type.
 
-        :name: COM port name
-        :dev_type: 'mboot device' or 'SDP device'
+        :param name: COM port name
+        :param dev_type: 'mboot device' or 'SDP device'
         """
         self.name = name or "Unknown port"
         self.dev_type = dev_type or "Unknown device type"
 
     def info(self) -> str:
-        """Returns a formatted device description string."""
-        return "Port: {}\nType: {}".format(self.name, self.dev_type)
+        """Returns a formatted device description string.
+
+        :return: Text information about UART device.
+        """
+        return f"Port: {self.name}\nType: {self.dev_type}"
 
 
 class USBDeviceDescription(DeviceDescription):
@@ -80,14 +85,16 @@ class USBDeviceDescription(DeviceDescription):
         product_string: str,
         manufacturer_string: str,
         name: str,
+        serial: str,
     ) -> None:
         """Constructor.
 
-        :vid: Vendor ID
-        :pid: Product ID
-        :product_string: Product string
-        :manufacturer_string: Manufacturer string
-        :name: Name(s) of NXP devices as defined under spsdk.mboot.interfaces.usb or spsdk.sdp.interfaces.usb
+        :param vid: Vendor ID
+        :param pid: Product ID
+        :param product_string: Product string
+        :param manufacturer_string: Manufacturer string
+        :param name: Name(s) of NXP devices as defined under spsdk.mboot.interfaces.usb or spsdk.sdp.interfaces.usb
+        :param serial: The serial number of device.
 
         See :py:func:`get_usb_device_name` function to getg the name from
         VID and PID.
@@ -99,15 +106,57 @@ class USBDeviceDescription(DeviceDescription):
         self.product_string = product_string
         self.manufacturer_string = manufacturer_string
         self.name = name
+        self.serial = serial
 
     def info(self) -> str:
-        """Returns a formatted device description string."""
+        """Returns a formatted device description string.
+
+        :return: Text information of USB device.
+        """
         return (
-            "{} - {}\n".format(self.product_string, self.manufacturer_string)
-            + "Vendor ID: 0x{:04x}\n".format(self.vid)
-            + "Product ID: 0x{:04x}\n".format(self.pid)
-            + "Path: {}\n".format(self.path)
-            + "Name: {}".format(self.name)
+            f"{self.product_string} - {self.manufacturer_string}\n"
+            f"Vendor ID: 0x{self.vid:04x}\n"
+            f"Product ID: 0x{self.pid:04x}\n"
+            f"Path: {self.path}\n"
+            f"Name: {self.name}\n"
+            f"Serial number: {self.serial}"
+        )
+
+
+class SIODeviceDescription(DeviceDescription):
+    """Simple container holding information about LIBUSBSIO device.
+
+    This container contains information about LIBUSBSIOdevice.
+    """
+
+    def __init__(self, info: LIBUSBSIO.HIDAPI_DEVICE_INFO_T) -> None:
+        """Constructor.
+
+        :param info: LIBUSBSIO device information class.
+        """
+        self._info = info
+        self.pid = self._info.product_id
+        self.vid = self._info.vendor_id
+        self.manufacturer_string = self._info.manufacturer_string
+        self.product_string = self._info.product_string
+        self.path = convert_usb_path(self._info.path)
+        self.serial_number = self._info.serial_number
+        self.interface_number = self._info.interface_number
+        self.release_number = self._info.release_number
+
+    def info(self) -> str:
+        """Returns a formatted device description string.
+
+        :return: Text description of SIO device.
+        """
+        return (
+            f"LIBUSBSIO - {self.manufacturer_string}, {self.product_string}\n"
+            f"Vendor ID: 0x{self.vid:04x}\n"
+            f"Product ID: 0x{self.pid:04x}\n"
+            f"Path: {self.path}\n"
+            f"Serial number: {self.serial_number}\n"
+            f"Interface number: {self.interface_number}\n"
+            f"Release number: {self.release_number}"
         )
 
 
@@ -124,9 +173,9 @@ def get_usb_device_name(
     class intention is to be just a simple container. But to help the class
     to get the required inputs, this helper method has been provided.
 
-    :vid: Vendor ID we are interested in
-    :pid: Product ID we are interested in
-    :device_names: dict where str is device name, first int vid, second int pid
+    :param vid: Vendor ID we are interested in
+    :param pid: Product ID we are interested in
+    :param device_names: dict where str is device name, first int vid, second int pid
 
     :return: list containing device names with corresponding VID/PID
     """
@@ -157,7 +206,7 @@ def convert_usb_path(hid_api_usb_path: bytes) -> str:
     This method will most probably fail or provide improper results in case
     path from different USB API is provided.
 
-    :hid_api_usb_path: USB device path from Libusbsio/HID_API
+    :param hid_api_usb_path: USB device path from Libusbsio/HID_API
     :return: Libusbsio/HID_API path converted for given platform
     """
     if platform.system() == "Windows":

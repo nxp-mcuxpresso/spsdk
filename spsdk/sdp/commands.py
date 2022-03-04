@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -83,12 +83,9 @@ class CmdPacket:
 
     def info(self) -> str:
         """String representation of the command packet."""
-        return "Tag={tag}, Address=0x{address:04X}, Format={format}, Count={count}, Value=0x{value:08X}".format(
-            tag=CommandTag.get(self.tag, f"0x{self.tag:04X}"),
-            address=self.address,
-            format=self.format,
-            count=self.count,
-            value=self.value,
+        return (
+            f"Tag={CommandTag.get(self.tag, f'0x{self.tag:04X}')}, Address=0x{self.address:04X},"
+            f" Format={self.format}, Count={self.count}, Value=0x{self.value:08X}"
         )
 
     def to_bytes(self) -> bytes:

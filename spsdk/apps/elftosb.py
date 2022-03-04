@@ -42,7 +42,8 @@ SUPPORTED_FAMILIES = [
 def generate_trustzone_binary(tzm_conf: click.File) -> None:
     """Generate TrustZone binary from json configuration file."""
     config_data = load_configuration(tzm_conf.name)
-    check_config(config_data, TrustZone.get_validation_schemas())
+    check_config(config_data, TrustZone.get_validation_schemas_family())
+    check_config(config_data, TrustZone.get_validation_schemas(config_data["family"]))
     trustzone = TrustZone.from_config(config_data)
     tz_data = trustzone.export()
     output_file = config_data["tzpOutputFile"]
@@ -58,14 +59,14 @@ def generate_config_templates(family: str, output_folder: str) -> None:
     templates: Dict[str, str] = {}
     # 1: Generate all configuration for MBI
     templates.update(mbi_generate_config_templates(family))
-    # 2: Add TrustZone Configuration file
+    # 2: Optionally add TrustZone Configuration file
     templates.update(TrustZone.generate_config_template(family))
     # 3: Optionally add Secure Binary v3.1 Configuration file
     templates.update(SecureBinary31.generate_config_template(family))
 
     # And generate all config templates files
-    for template in templates:
-        file_name = f"{template}.yml"
+    for key, val in templates.items():
+        file_name = f"{key}.yml"
         if os.path.isfile(output_folder):
             raise SPSDKError(f"The specified path {output_folder} is file.")
         if not os.path.isdir(output_folder):
@@ -74,7 +75,7 @@ def generate_config_templates(family: str, output_folder: str) -> None:
         if not os.path.isfile(full_file_name):
             click.echo(f"Creating {file_name} template file.")
             with open(full_file_name, "w") as f:
-                f.write(templates[template])
+                f.write(val)
         else:
             click.echo(f"Skip creating {file_name}, this file already exists.")
 

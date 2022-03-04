@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -351,16 +351,16 @@ class BDLexer(Lexer):
     DOLLAR = r"\$"
 
     # Error handling rule
-    def error(self, token: Token) -> Token:
+    def error(self, t: Token) -> Token:
         """Token error handler.
 
         The lexing index is incremented so lexing can continue, however, an
         error token is returned. The token contains the whole text starting
         with the detected error.
 
-        :param token: invalid token.
+        :param t: invalid token.
         :return: the invalid token.
         """
         self.index += 1
-        token.value = token.value[0]
-        return token
+        t.value = t.value[0]
+        return t

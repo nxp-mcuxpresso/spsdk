@@ -1,0 +1,8 @@
+{
+    "family": "lpc55s3x",
+    "inputImageFile": ".\\workspace\\input_images\\lpcxpresso55s36_led_blinky_ext_flash.s19",
+    "masterBootOutputFile": ".\\workspace\\output_images\\lpc55s3x\\mb_xip_ext_crc.bin",
+    "outputImageAuthenticationType": "CRC",
+    "outputImageExecutionAddress": 0,
+    "outputImageExecutionTarget": "External flash (XIP)"
+}

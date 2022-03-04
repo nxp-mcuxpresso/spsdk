@@ -689,7 +689,9 @@ class CmdLoadKeyBlob(BaseCmd):
         :param offset: The offset of input data
         :return: CmdLoadKeyBlob
         """
-        tag, cmpa_offset, key_wrap_id, length, cmd = unpack_from(cls.FORMAT, data, offset)
+        tag, cmpa_offset, key_wrap_id, length, cmd = unpack_from(  # pylint: disable=unused-variable
+            cls.FORMAT, data, offset
+        )
         key_blob_data = unpack_from(f"<{length}s", data, offset + cls.SIZE)[0]
         return cls(offset=cmpa_offset, key_wrap_id=key_wrap_id, data=key_blob_data)
 
@@ -807,7 +809,7 @@ class CmdFillMemory(BaseCmd):
 class CmdFwVersionCheck(BaseCmd):
     """Check counter value with stored value, if values are not same, SB file is rejected."""
 
-    class COUNTER_ID(Enum):
+    class CounterID(Enum):
         """Counter IDs used by the CmdFwVersionCheck command."""
 
         NONE = (0, "none")
@@ -857,7 +859,7 @@ class CmdFwVersionCheck(BaseCmd):
         """
         value = value_to_int(config["value"], 0)
         counter_id_str = config["counterId"]
-        counter_id = CmdFwVersionCheck.COUNTER_ID[counter_id_str]
+        counter_id = CmdFwVersionCheck.CounterID[counter_id_str]
         return CmdFwVersionCheck(value=value, counter_id=counter_id)
 
 

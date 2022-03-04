@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 from unittest.mock import MagicMock, patch
@@ -220,3 +220,27 @@ def test_device_name_linux(filter_usb_id: str, vid: str, pid: str, path: str, ex
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
 
         assert usb_filter.compare(g_virtual_hid_device) == expected
+
+
+@pytest.mark.parametrize(
+    "filter_usb_id, name, expected",
+    [("MKL27", "MKL27", True), ("Nonsense", "MKL27", False)],
+)
+def test_general_device_name(filter_usb_id: str, name: str, expected: bool):
+
+    usb_filter = USBDeviceFilter(usb_id=filter_usb_id)
+    g_virtual_hid_device = {"device_name": name}
+
+    assert usb_filter.compare(g_virtual_hid_device) == expected
+
+
+@pytest.mark.parametrize(
+    "filter_usb_id, serial, expected",
+    [("1234567", "1234567", True), ("Nonsense", "1234567", False)],
+)
+def test_general_device_serial_number(filter_usb_id: str, serial: str, expected: bool):
+
+    usb_filter = USBDeviceFilter(usb_id=filter_usb_id)
+    g_virtual_hid_device = {"serial_number": serial}
+
+    assert usb_filter.compare(g_virtual_hid_device) == expected

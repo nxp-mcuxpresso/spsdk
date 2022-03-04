@@ -15,7 +15,6 @@ import sys
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 from pip import __version__ as pip_version
-from pip._internal.cli.main import main as pip_main
 
 APPROVED_LICENSES_FILE_NAME = "approved_packages.json"
 APPROVED_LICENSES_FILE = os.path.abspath(
@@ -84,6 +83,7 @@ class DependenciesList(List[DependencyInfo]):
         def get_line_value(lines: List[str], key: str) -> str:
             """Get the value of line.
 
+            :param lines: List of lines to get value from.
             :param key: Key of value
             :return: Value of key
             """
@@ -95,18 +95,19 @@ class DependenciesList(List[DependencyInfo]):
 
         lines = package_str.splitlines()
         name = get_line_value(lines, "Name")
-        license = get_line_value(lines, "License")
+        lic = get_line_value(lines, "License")
         home_page = get_line_value(lines, "Home-page")
-        is_manual = license in ["UNKNOWN", ""]
+        is_manual = lic in ["UNKNOWN", ""]
         dependencies = get_line_value(lines, "Requires").split(", ")
         dependencies = [] if dependencies == [""] else dependencies
-        return DependencyInfo(name, license, home_page, is_manual), dependencies
+        return DependencyInfo(name, lic, home_page, is_manual), dependencies
 
     @staticmethod
     def get_packages_info(packages: List[str]) -> List[Tuple[DependencyInfo, List[str]]]:
         """Get packages info for list of packages.
 
         :param packages: List of packages names.
+        :raises ValueError: Some of required packages doesn't exists.
         :return: List of Tuples with DependencyInfo and List of package dependencies.
         """
         packages_info: List[str] = []
@@ -119,7 +120,7 @@ class DependenciesList(List[DependencyInfo]):
 
             packages_info = output.split("---")
 
-        except BaseException as exc:
+        except BaseException as exc:  # pylint: disable=broad-except
             print(f"Some package(s) from {packages} has not been found: {str(exc)}")
 
         ret = []

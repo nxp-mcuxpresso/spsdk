@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,7 +23,7 @@ from spsdk.utils.crypto import crypto_backend
 from spsdk.utils.crypto.cert_blocks import CertBlockV2, CertBlockV31
 from spsdk.utils.crypto.common import serialize_ecc_signature
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import align_block, load_binary, load_binary_image, load_file, value_to_int
+from spsdk.utils.misc import align_block, load_binary, load_binary_image, value_to_int
 
 SCHEMA_FILE = IMG_DATA_FOLDER + "/sch_mbimg.yml"
 
@@ -163,7 +163,7 @@ class MultipleImageTable:
 
     def __init__(self) -> None:
         """Initialize the Multiple Image Table."""
-        self._entries: List[MultipleImageEntry] = list()
+        self._entries: List[MultipleImageEntry] = []
 
     @property
     def header_version(self) -> int:
@@ -233,7 +233,7 @@ class Mbi_Mixin:
     VALIDATION_SCHEMAS: List[str] = []
     NEEDED_MEMBERS: List[str] = []
 
-    def mix_len(self) -> int:
+    def mix_len(self) -> int:  # pylint: disable=no-self-use
         """Compute length of individual mixin.
 
         :return: Length of atomic Mixin.
@@ -271,6 +271,7 @@ class Mbi_MixinApp(Mbi_Mixin):
     NEEDED_MEMBERS: List[str] = ["app"]
 
     app: Optional[bytes]
+    app_ext_memory_align: int
 
     def mix_len(self) -> int:
         """Get size of plain input application image.
@@ -293,9 +294,15 @@ class Mbi_MixinApp(Mbi_Mixin):
         :param path: File path
         :raises SPSDKError: If invalid data file is detected.
         """
+        app_align = self.app_ext_memory_align if hasattr(self, "app_ext_memory_align") else 0
         binfile = load_binary_image(path)
-        if binfile.minimum_address != 0:
-            raise SPSDKError(f"Invalid input binary file {path}. It MUST starts at 0 offset.")
+        if app_align == 0 and binfile.minimum_address != 0:
+            raise SPSDKError(f"Invalid input binary file {path}. It MUST begins at 0 address.")
+        if app_align and binfile.minimum_address % app_align != 0:
+            raise SPSDKError(
+                f"Invalid input binary file {path}. It has to be aligned to {hex(app_align)}."
+            )
+
         self.app = align_block(binfile.as_binary())
 
 
@@ -1028,14 +1035,14 @@ class Mbi_MixinNoSignature(Mbi_Mixin):
 class Mbi_ExportMixin:
     """Base MBI Export Mixin class."""
 
-    def collect_data(self) -> bytes:
+    def collect_data(self) -> bytes:  # pylint: disable=no-self-use
         """Collect basic data to create image.
 
         :return: Collected raw image.
         """
         return bytes()
 
-    def encrypt(self, raw_image: bytes) -> bytes:
+    def encrypt(self, raw_image: bytes) -> bytes:  # pylint: disable=no-self-use
         """Encrypt image if needed.
 
         :param raw_image: Input raw image to encrypt.
@@ -1043,7 +1050,7 @@ class Mbi_ExportMixin:
         """
         return raw_image
 
-    def post_encrypt(self, image: bytes) -> bytes:
+    def post_encrypt(self, image: bytes) -> bytes:  # pylint: disable=no-self-use
         """Optionally do some post encrypt image updates.
 
         :param image: Encrypted image.
@@ -1051,7 +1058,7 @@ class Mbi_ExportMixin:
         """
         return image
 
-    def sign(self, image: bytes) -> bytes:
+    def sign(self, image: bytes) -> bytes:  # pylint: disable=no-self-use
         """Sign image (by signature or CRC).
 
         :param image: Image to sign.
@@ -1059,7 +1066,7 @@ class Mbi_ExportMixin:
         """
         return image
 
-    def finalize(self, image: bytes) -> bytes:
+    def finalize(self, image: bytes) -> bytes:  # pylint: disable=no-self-use
         """Finalize the image for export.
 
         This part could add HMAC/KeyStore etc.

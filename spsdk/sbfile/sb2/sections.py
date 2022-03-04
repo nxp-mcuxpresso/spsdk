@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -136,7 +136,7 @@ class BootSectionV2(BaseClass):
         cmd_dbg_info: Optional[List[str]] = None
         if dbg_info is not None:
             dbg_info.append("[bootable_section]")
-            cmd_dbg_info = list()
+            cmd_dbg_info = []
             cmd_dbg_info.append("[commands]")
         if not isinstance(dek, bytes):
             raise SPSDKError("Invalid type of dek, should be bytes")

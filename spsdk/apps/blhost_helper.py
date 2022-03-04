@@ -21,6 +21,7 @@ from spsdk.mboot.commands import (
     TrustProvOemKeyType,
     TrustProvWrappingKeyType,
 )
+from spsdk.utils.misc import value_to_int
 
 
 class OemGenMasterShareHelp(click.Command):
@@ -67,7 +68,7 @@ PROPERTIES_NAMES = {
     "verify-writes": 10,
     "max-packet-size": 11,
     "reserved-regions": 12,
-    "reserved": 13,
+    "reserved_1": 13,
     "ram-start-address": 14,
     "ram-size-in-bytes": 15,
     "system-device-id": 16,
@@ -95,9 +96,9 @@ def parse_property_tag(property_tag: str) -> int:
     :return: Property integer tag
     """
     try:
-        value = int(property_tag, 0)
+        value = value_to_int(property_tag)
         return value if value in PROPERTIES_NAMES.values() else 0xFF
-    except:
+    except SPSDKError:
         return PROPERTIES_NAMES.get(property_tag, 0xFF)
 
 
@@ -139,12 +140,14 @@ def parse_trust_prov_wrapping_key_type(key_type: str) -> int:
 
 def _parse_key_type(user_input: str, collection: Any, default: int = None) -> int:
     try:
-        return int(user_input, 0)
-    except:
+        return value_to_int(user_input)
+    except SPSDKError:
         key_type = user_input.upper()
         key_type_int = collection.get(key_type, default)
         if key_type_int is None:
-            raise SPSDKError(f"Unable to find '{user_input}' in '{collection.__name__}'")
+            raise SPSDKError(  # pylint: disable=raise-missing-from
+                f"Unable to find '{user_input}' in '{collection.__name__}'"
+            )
         return key_type_int
 
 
@@ -218,11 +221,11 @@ def progress_bar(
     if suppress:
         yield lambda _x, _y: None
     else:
-        with click.progressbar(length=100, **progress_bar_params) as bar:
+        with click.progressbar(length=100, **progress_bar_params) as p_bar:
 
             def progress(step: int, total_steps: int) -> None:
                 per_step = 100 / total_steps
-                increment = step * per_step - bar.pos
-                bar.update(increment)
+                increment = step * per_step - p_bar.pos
+                p_bar.update(increment)
 
             yield progress

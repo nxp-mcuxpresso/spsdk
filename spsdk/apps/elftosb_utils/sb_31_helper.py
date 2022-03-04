@@ -14,7 +14,7 @@ from spsdk.utils.crypto import CRYPTO_SCH_FILE
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 
-class RootOfTrustInfo:
+class RootOfTrustInfo:  # pylint: disable=too-few-public-methods
     """Filters out Root Of Trust information given to elf2sb application."""
 
     def __init__(self, data: dict) -> None:

@@ -65,7 +65,7 @@ class SecureBootV1(BaseClass):
             digest=digest,
             timestamp=timestamp,
         )
-        self._sections_hdr_table: List[SectionHeaderItemV1] = list()
+        self._sections_hdr_table: List[SectionHeaderItemV1] = []
         self._sections: List[BootSectionV1] = []
         self._signature = None
 
@@ -148,7 +148,7 @@ class SecureBootV1(BaseClass):
             + len(self._sections) * SectionHeaderItemV1.SIZE
             + BootSectionHeaderV1.SIZE
         )
-        new_hdr_table: List[SectionHeaderItemV1] = list()
+        new_hdr_table: List[SectionHeaderItemV1] = []
         for sect in self._sections:
             sect_blcks = SecBootBlckSize.to_num_blocks(sect.size - BootSectionHeaderV1.SIZE)
             hdr = SectionHeaderItemV1(sect.section_id, ofs_blocks, sect_blcks, sect.flags)

@@ -82,6 +82,7 @@ def get_signing_key(config_file) -> ECC.EccKey:
         ("mb_ram_crc_version.json", "lpc55s3x"),
         ("mb_xip_crc.json", "lpc55s3x"),
         ("mb_ext_xip_crc.json", "lpc55s3x"),
+        ("mb_ext_xip_crc_s19.json", "lpc55s3x"),
     ],
 )
 def test_elftosb_mbi_basic(data_dir, tmpdir, config_file, device):
@@ -105,6 +106,7 @@ def test_elftosb_mbi_basic(data_dir, tmpdir, config_file, device):
         ("mb_xip_256_none.json", "lpc55s3x", None),
         ("mb_xip_384_256.json", "lpc55s3x", None),
         ("mb_xip_384_384.json", "lpc55s3x", None),
+        ("mb_ext_xip_signed.json", "lpc55s3x", None),
     ],
 )
 def test_elftosb_mbi_signed(data_dir, tmpdir, config_file, device, sign_digest):

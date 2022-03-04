@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -133,7 +133,7 @@ class Header:
         tag, length, param = unpack_from(cls.FORMAT, data, offset)
         if required_tag is not None and tag != required_tag:
             raise UnparsedException(
-                " Invalid header tag: '0x{:02X}' expected '0x{:02X}' ".format(tag, required_tag)
+                f" Invalid header tag: '0x{tag:02X}' expected '0x{required_tag:02X}' "
             )
 
         return cls(tag, param, length)
@@ -198,7 +198,7 @@ class Header2(Header):
         param, length, tag = unpack_from(cls.FORMAT, data, offset)
         if required_tag is not None and tag != required_tag:
             raise UnparsedException(
-                " Invalid header tag: '0x{:02X}' expected '0x{:02X}' ".format(tag, required_tag)
+                f" Invalid header tag: '0x{tag:02X}' expected '0x{required_tag:02X}' "
             )
 
         return cls(tag, param, length)

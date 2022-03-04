@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
@@ -314,7 +314,7 @@ def test_parse_invalid_cmd_fillmemory_cmd_tag():
 
 def test_cmd_fwversioncheck():
     """Test value, counter_id, info value, size after export and parsing of CmdFwVersionCheck command."""
-    cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.COUNTER_ID.SECURE)
+    cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.CounterID.SECURE)
     assert cmd.value == 100
     assert cmd.counter_id == 2
     assert cmd.info()
@@ -328,7 +328,7 @@ def test_cmd_fwversioncheck():
 
 def test_parse_invalid_cmd_fwversioncheck_cmd_tag():
     """CmdFwVersionCheck tag validity test."""
-    cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.COUNTER_ID.SECURE)
+    cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.CounterID.SECURE)
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()
     with pytest.raises(SPSDKError):

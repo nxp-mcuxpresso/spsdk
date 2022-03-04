@@ -2,23 +2,21 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for USB communication with a terget using SDP protocol."""
 
 import logging
-import platform
-from typing import Sequence, Tuple, Union
+from typing import List, Tuple, Union
 
 import libusbsio
 
-from spsdk import SPSDKError
 from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
 from ..commands import CmdPacket, CmdResponse
-from ..exceptions import SdpCommandError, SdpConnectionError, SdpError
-from .base import Interface
+from ..exceptions import SdpConnectionError, SdpError
+from .base import SDPInterface
 
 logger = logging.getLogger(__name__)
 
@@ -59,20 +57,20 @@ USB_DEVICES = {
 }
 
 
-def scan_usb(device_name: str = None) -> Sequence[Interface]:
+def scan_usb(device_id: str = None) -> List["RawHid"]:
     """Scan connected USB devices. Return a list of all devices found.
 
-    :param device_name: see USBDeviceFilter classes constructor for usb_id specification
+    :param device_id: see USBDeviceFilter classes constructor for usb_id specification
     :return: list of matching RawHid devices
     """
-    usb_filter = NXPUSBDeviceFilter(usb_id=device_name, nxp_device_names=USB_DEVICES)
+    usb_filter = NXPUSBDeviceFilter(usb_id=device_id, nxp_device_names=USB_DEVICES)
     return RawHid.enumerate(usb_filter)
 
 
 ########################################################################################################################
 # USB HID Interface Class
 ########################################################################################################################
-class RawHid(Interface):
+class RawHid(SDPInterface):
     """Base class for OS specific RAW HID Interface classes."""
 
     @property
@@ -196,10 +194,10 @@ class RawHid(Interface):
             raise SdpConnectionError("Device is openned for writing")
 
         if isinstance(packet, CmdPacket):
-            report_id, report_size, hid_ep1 = HID_REPORT["CMD"]
+            report_id, report_size, hid_ep1 = HID_REPORT["CMD"]  # pylint: disable=unused-variable
             data = packet.to_bytes()
         elif isinstance(packet, (bytes, bytearray)):
-            report_id, report_size, hid_ep1 = HID_REPORT["DATA"]
+            report_id, report_size, hid_ep1 = HID_REPORT["DATA"]  # pylint: disable=unused-variable
             data = packet
         else:
             raise SdpError("Packet has to be either 'CmdPacket' or 'bytes'")
@@ -214,7 +212,7 @@ class RawHid(Interface):
             except Exception as e:
                 raise SdpConnectionError(str(e)) from e
 
-    def read(self, length: int = None) -> CmdResponse:
+    def read(self, length: int = None) -> CmdResponse:  # pylint: disable=unused-argument
         """Read data on the IN endpoint associated to the HID interface.
 
         :return: Return CmdResponse object.
@@ -228,13 +226,15 @@ class RawHid(Interface):
         if not self.device:
             raise SdpConnectionError("No device available")
         try:
-            (raw_data, result) = self.device.Read(1024, timeout_ms=self.timeout)
+            (raw_data, result) = self.device.Read(  # pylint: disable=unused-variable
+                1024, timeout_ms=self.timeout
+            )
             return self._decode_report(bytes(raw_data))
         except Exception as e:
             raise SdpConnectionError(str(e)) from e
 
     @staticmethod
-    def enumerate(usb_device_filter: USBDeviceFilter) -> Sequence[Interface]:
+    def enumerate(usb_device_filter: USBDeviceFilter) -> List["RawHid"]:
         """Get list of all connected devices which matches device_id.
 
         :param usb_device_filter: USBDeviceFilter object
@@ -246,7 +246,7 @@ class RawHid(Interface):
 
         # iterate on all devices found
         for dev in all_hid_devices:
-            if usb_device_filter.compare(dev) is True:
+            if usb_device_filter.compare(vars(dev)) is True:
                 new_device = RawHid()
                 new_device.device = sio.HIDAPI_DeviceCreate()
                 new_device.vid = dev["vendor_id"]

@@ -6,64 +6,37 @@ production deployment. The library allows the user to connect and communicate wi
 configure the device, prepare, download and upload data, including security operations. It is
 delivered in the form of a python library and command-line applications.
 
-Version: 1.6.0
+Version: 1.6.1
 ==============
-Date: 4-February-2022
+Date: 4-March-2022
 
 New features
 
 - blhost:
-    - add experimental batch mode into blhost
-    - support command get property 30
-    - change output display for blhost get-property 8
-    - provide the real exit code (status code) from BLHOST application
-    - report progress of data transfer operations in blhost
-    - performance boost in receive-sb-file
+    - add parameter --no-verify for efuse-program-once
+    - add possibility to select USBSIO bridge device via VID:PID, USB path, serial number
+    - lower the timeout during MBoot's UART Ping command
+    - improve type hints for scan_* functions for detecting MBoot devices
 - elftosb:
-    - validation inputs using jsonschemas
-    - reorganize and improve elftosb
-    - add support for more input file types
-    - [RTxxx] HMAC_KEY is now accepted in binary form
-- nxpdebugmbox:
-    - move gendc into nxpdebugmbox
-- pfr:
-    - unify CMPA/CFPA fields descriptions and bit-field values within XML registers data
-    - implement CMPA data generator and parser
-- improve documentation
-- remove dependency on munch and construct modules
-- add support for reserved bitfields in registers
-- support multiple occurrence of certificate attributes for subject/issuer
-- remove backward compatibility mode in Registers
-- reorganize functions from misc.py
-- add support for bumpversion
+    - dynamically generate config json schema per family
+- nxpdevscan:
+    - extend scan with device serial number information
+    - list all connected USB or UART or SIO devices
+    - update device's USB path
+- sdphost:
+    - improve type hints for scan_* functions for detecting SDP devices
+- reduce number of findings from Pylint
+- update JINJA2 requirement
+
 
 Bugfixes
 
 - blhost:
-    - generate-key-blob does not generate blob.bin on RT1176
-    - parse_property_tag in blhost_helper converts incorrectly in some cases
-    - different return code on Linux/Mac and Windows
-    - USBSIO - fixed issue when busy signal on I2C was interpreted as data
-- crypto:
-    - DER encoded certificates are loaded as PEM
-    - fixed dependency on cryptography's internal keys
-    - moved to fully typed versions of cryptography
+    - fix UART open operation for RT1176, RT1050 and LPC55S06 platforms (and probably others)
 - elftosb:
-    - cannot build CRC image into ext flash for lpc55s3x
-    - cannot generate signed image with <4 ROT keys
-    - fixed some failing cases in regards of TZ
-    - [rtxxx] missing plain for load-to-ram image
-    - configuration validation failed in some cases
-- nxpdebugmbox:
-    - return code is 0 in case of fail
-    - nxpdebugmbox fails on Linux
-- nxpdevhsm:
-    - generate ends with general error when no container is provided
-- pfr:
-    - fix problem in registers class with another size of register than 32 bits
-- pfrc:
-    - displays false brick conditions
-    - wrong validation of CMPA.CC_SOCU_PIN bits
+    - fix preset data for lpc55s0x, lpc55s1x
+- SPI communication failure (changed FRAME_START_NOT_READY to 0xFF for SPI)
+- PYI files are not included in the distribution package
 
 
 Supported devices
@@ -91,6 +64,56 @@ Python 3.6+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+1.6.0
+- blhost:
+    - add experimental batch mode into blhost
+    - support command get property 30
+    - change output display for blhost get-property 8
+    - provide the real exit code (status code) from BLHOST application
+    - report progress of data transfer operations in blhost
+    - performance boost in receive-sb-file
+- elftosb:
+    - validation inputs using jsonschemas
+    - reorganize and improve elftosb
+    - add support for more input file types
+    - [RTxxx] HMAC_KEY is now accepted in binary form
+- nxpdebugmbox:
+    - move gendc into nxpdebugmbox
+- pfr:
+    - unify CMPA/CFPA fields descriptions and bit-field values within XML registers data
+    - implement CMPA data generator and parser
+- improve documentation
+- remove dependency on munch and construct modules
+- add support for reserved bitfields in registers
+- support multiple occurrence of certificate attributes for subject/issuer
+- remove backward compatibility mode in Registers
+- reorganize functions from misc.py
+- add support for bumpversion
+- blhost:
+    - generate-key-blob does not generate blob.bin on RT1176
+    - parse_property_tag in blhost_helper converts incorrectly in some cases
+    - different return code on Linux/Mac and Windows
+    - USBSIO - fixed issue when busy signal on I2C was interpreted as data
+- crypto:
+    - DER encoded certificates are loaded as PEM
+    - fixed dependency on cryptography's internal keys
+    - moved to fully typed versions of cryptography
+- elftosb:
+    - cannot build CRC image into ext flash for lpc55s3x
+    - cannot generate signed image with <4 ROT keys
+    - fixed some failing cases in regards of TZ
+    - [rtxxx] missing plain for load-to-ram image
+    - configuration validation failed in some cases
+- nxpdebugmbox:
+    - return code is 0 in case of fail
+    - nxpdebugmbox fails on Linux
+- nxpdevhsm:
+    - generate ends with general error when no container is provided
+- pfr:
+    - fix problem in registers class with another size of register than 32 bits
+- pfrc:
+    - displays false brick conditions
+    - wrong validation of CMPA.CC_SOCU_PIN bits
 
 1.5.0
 - nxpdevhsm - new application added:
@@ -136,7 +159,6 @@ Revision History
 - nxpdebugmbox - add timeout to never ending loops in spin_read/write methods in Debug mailbox
 - blhost - flash-erase-region command doesn’t accept the memory_id argument in hex form
 - elftosb - using kdkAccessRigths = 0 in SB31 is throwing an error in KeyDerivator
-
 
 1.4.0
 - version flag added for all command-line application

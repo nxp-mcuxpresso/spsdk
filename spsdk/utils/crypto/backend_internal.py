@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -59,8 +59,8 @@ class Backend(BackendClass):
         # algo_cls = getattr(Hash, name.upper(), None)  # hack: get class object by name
         try:
             algo_cls = importlib.import_module(f"Crypto.Hash.{name.upper()}")
-        except ModuleNotFoundError as e:
-            raise SPSDKError(f"No module named 'Crypto.Hash.{name.upper()}")
+        except ModuleNotFoundError as exc:
+            raise SPSDKError(f"No module named 'Crypto.Hash.{name.upper()}") from exc
         if algo_cls is None:
             raise SPSDKError(f"Unsupported algorithm: Hash.{name}".format(name=name.upper()))
         return algo_cls.new(data)  # type: ignore  # pylint: disable=not-callable
@@ -159,7 +159,8 @@ class Backend(BackendClass):
             raise SPSDKError(f"Integrity Check Failed: {a:016X} (expected {iv:016X})")
         return b"".join(r[1:])
 
-    def aes_cbc_encrypt(self, key: bytes, plain_data: bytes, iv: bytes = None) -> bytes:
+    @staticmethod
+    def aes_cbc_encrypt(key: bytes, plain_data: bytes, iv: bytes = None) -> bytes:
         """Encrypt plain data with AES in CBC mode.
 
         :param key: Key for encryption
@@ -284,7 +285,7 @@ class Backend(BackendClass):
 
     def ecc_verify(
         self,
-        key: Union[ECC.EccKey, bytes],
+        key: Union[ECC.EccKey, bytes],  # TODO  - could we renamed abstract class to "key" only?
         signature: bytes,
         data: bytes,
         algorithm: str = None,

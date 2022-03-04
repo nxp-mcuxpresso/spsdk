@@ -7,7 +7,7 @@
 
 """Connection options for SDP."""
 
-from .base import Interface
+from .base import Interface, SDPInterface
 from .uart import Uart, scan_uart
 from .usb import (  # type: ignore  # ignore problems due to OS specific implementation
     RawHid,

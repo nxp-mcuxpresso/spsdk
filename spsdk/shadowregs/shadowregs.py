@@ -118,10 +118,9 @@ class ShadowRegisters:
             width = reg.width
 
             if width < len(value) * 8:
-                raise SPSDKError(f"Invalid length of data for shadow register write.")
+                raise SPSDKError("Invalid length of data for shadow register write.")
 
-            if width < 32:
-                width = 32
+            width = max(width, 32)
 
             data_aligned = bytearray(math.ceil(width / 8))
             data_aligned[len(data_aligned) - len(value) : len(data_aligned)] = value
@@ -139,7 +138,7 @@ class ShadowRegisters:
             reg.set_value(value, raw=True)
 
         except SPSDKError as exc:
-            raise SPSDKError(f"The get shadow register failed({str(exc)}).")
+            raise SPSDKError(f"The get shadow register failed({str(exc)}).") from exc
 
     def get_register(self, reg_name: str) -> bytes:
         """The function returns value of the requested register.
@@ -156,10 +155,7 @@ class ShadowRegisters:
             reg = self.regs.find_reg(reg_name)
 
             start_address = self.offset + reg.offset
-            width = reg.width
-
-            if width < 32:
-                width = 32
+            width = max(reg.width, 32)
 
             if width == 32:
                 array.extend(self.probe.mem_reg_read(start_address).to_bytes(4, "big"))
@@ -173,7 +169,7 @@ class ShadowRegisters:
             result = reverse_bytes_in_longs(bytes(array)) if reg.reverse else bytes(array)
 
         except SPSDKError as exc:
-            raise SPSDKError(f"The get shadow register failed({str(exc)}).")
+            raise SPSDKError(f"The get shadow register failed({str(exc)}).") from exc
 
         return result
 
@@ -222,8 +218,8 @@ class ShadowRegisters:
                 yaml = YAML()
                 yaml.indent(sequence=4, offset=2)
                 data = yaml.load(yml_config_file)
-        except FileNotFoundError:
-            raise SPSDKError("File with YML configuration doesn't exists.")
+        except FileNotFoundError as exc:
+            raise SPSDKError("File with YML configuration doesn't exists.") from exc
 
         self.regs.load_yml_config(data["registers"], antipole_regs, computed_fields)
         if not raw:
@@ -231,9 +227,10 @@ class ShadowRegisters:
             exclude_hooks = list(set(self.regs.get_reg_names()) - set(data["registers"].keys()))
             self.regs.run_hooks(exclude_hooks)
 
-        logger.debug(f"The shadow registers has been loaded from configuration.")
+        logger.debug("The shadow registers has been loaded from configuration.")
 
-    def reg_antipolize_src_handler(self, val: int, context: Any) -> int:
+    @staticmethod
+    def reg_antipolize_src_handler(val: int, context: Any) -> int:
         """Antipolize given register value.
 
         :param val: Input register value.
@@ -244,7 +241,8 @@ class ShadowRegisters:
         dst_reg.set_value(val ^ 0xFFFFFFFF, raw=True)
         return val
 
-    def reg_antipolize_dst_handler(self, val: int, context: Any) -> int:
+    @staticmethod
+    def reg_antipolize_dst_handler(val: int, context: Any) -> int:
         """Keep same antipolized register value in computed register.
 
         :param val: Input register value.

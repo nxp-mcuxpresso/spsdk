@@ -73,7 +73,7 @@ class DebugProbePyOCD(DebugProbe):
         self.dbgmlbx_ap = None
         self.mem_ap = None
 
-        logger.debug(f"The SPSDK PyOCD Interface has been initialized")
+        logger.debug("The SPSDK PyOCD Interface has been initialized")
 
     @classmethod
     def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> list:
@@ -272,8 +272,8 @@ class DebugProbePyOCD(DebugProbe):
             if access_port:
                 access_p = self._get_ap_by_addr(addr)
                 return access_p.read_reg(self.APADDR & addr)
-            else:
-                return self.pyocd_session.target.dp.read_dp(addr)
+
+            return self.pyocd_session.target.dp.read_dp(addr)
         except PyOCDError as exc:
             raise SPSDKDebugProbeTransferError("The Coresight read operation failed") from exc
 
@@ -430,7 +430,7 @@ class DebugProbePyOCD(DebugProbe):
 
         # Validate selected protocol.
         if protocol not in probe._supported_protocols:
-            raise SPSDKError("unsupported wire protocol %s" % protocol)
+            raise SPSDKError(f"unsupported wire protocol {protocol}")
 
         # Convert protocol to port enum.
         if protocol == PyOCDDebugProbe.Protocol.SWD:

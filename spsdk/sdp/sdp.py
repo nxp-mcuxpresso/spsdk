@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ from typing import Mapping, Optional, Tuple
 from .commands import CmdPacket, CommandTag, ResponseValue
 from .error_codes import StatusCode
 from .exceptions import SdpCommandError, SdpConnectionError, SdpError
-from .interfaces import Interface
+from .interfaces import SDPInterface
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class SDP:
         """
         return self._device.is_opened
 
-    def __init__(self, device: Interface, cmd_exception: bool = False) -> None:
+    def __init__(self, device: SDPInterface, cmd_exception: bool = False) -> None:
         """Initialize the SDP object.
 
         :param device: Interface to a device
@@ -95,10 +95,10 @@ class SDP:
         try:
             self._device.write(cmd_packet)
             response = self._device.read()
-        except Exception as e:
-            logger.debug(e)
+        except Exception as exc:
+            logger.debug(exc)
             logger.info("RX-CMD: Timeout Error")
-            raise SdpConnectionError("Timeout Error")
+            raise SdpConnectionError("Timeout Error") from exc
 
         logger.info(f"RX-PACKET: {response.info()}")
         if response.hab:
@@ -117,9 +117,9 @@ class SDP:
         try:
             response = self._device.read()
             logger.info(f"RX-PACKET: {response.info()}")
-        except:
+        except Exception as exc:
             logger.info("RX-CMD: Timeout Error")
-            raise SdpConnectionError("Timeout Error")
+            raise SdpConnectionError("Timeout Error") from exc
 
         return response.value
 
@@ -131,16 +131,16 @@ class SDP:
         :raises SdpCommandError: If command failed and the 'cmd_exception' is set to True
         :raises SdpConnectionError: Timeout or Connection error
         """
-        MAX_LENGTH = 64
+        max_length = 64
         data = b""
         remaining = length - len(data)
         while remaining > 0:
             try:
                 self._device.expect_status = False
-                response = self._device.read(min(remaining, MAX_LENGTH))
-            except:
+                response = self._device.read(min(remaining, max_length))
+            except Exception as exc:
                 logger.info("RX-CMD: Timeout Error")
-                raise SdpConnectionError("Timeout Error")
+                raise SdpConnectionError("Timeout Error") from exc
 
             if not response.hab:
                 data += response.raw_data
@@ -207,9 +207,9 @@ class SDP:
                 self._status_code = StatusCode.WRITE_IMAGE_FAILURE
                 ret_val = False
 
-        except:
+        except Exception as exc:
             logger.info("RX-CMD: Timeout Error")
-            raise SdpConnectionError("Timeout Error")
+            raise SdpConnectionError("Timeout Error") from exc
 
         if not ret_val and self._cmd_exception:
             raise SdpCommandError("SendData", self.status_code)
@@ -305,8 +305,7 @@ class SDP:
         align = count % (data_format // 8)
         if align > 0:
             count += (data_format // 8) - align
-        if count > 4:
-            count = 4
+        count = min(count, 4)
 
         return self.write(address, value, count, data_format)
 

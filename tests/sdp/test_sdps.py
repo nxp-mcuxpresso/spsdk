@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 
 from spsdk.sdp import SdpConnectionError
-from spsdk.sdp.interfaces.base import Interface
+from spsdk.sdp.interfaces.base import SDPInterface
 from spsdk.sdp.sdps import SDPS
 
 data = b"\xAD" * 100
 cmd_pack = b"BLTC\x01\x00\x00\x00d\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
 
-class VirtualDevice(Interface):
+class VirtualDevice(SDPInterface):
     def __init__(self):
         self._is_opened = False
         self.cmd_index = 0

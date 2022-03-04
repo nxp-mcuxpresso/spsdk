@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 from spsdk.mboot.memories import ExtMemRegion, FlashRegion, RamRegion
@@ -9,12 +9,12 @@ from spsdk.mboot.memories import ExtMemRegion, FlashRegion, RamRegion
 
 def test_ram_region():
     ram_region = RamRegion(index=4, start=0, size=10)
-    assert "Region 4: 0x00000000 - 0x00000009; Total Size: 10.0 B" == str(ram_region)
+    assert "Region 4: 0x00000000 - 0x00000009; Total Size: 10 B" == str(ram_region)
 
 
 def test_flash_region():
     flash_region = FlashRegion(index=4, start=0, size=10, sector_size=5)
-    assert "Region 4: 0x00000000 - 0x00000009; Total Size: 10.0 B Sector size: 5.0 B" == str(
+    assert "Region 4: 0x00000000 - 0x00000009; Total Size: 10 B Sector size: 5 B" == str(
         flash_region
     )
 

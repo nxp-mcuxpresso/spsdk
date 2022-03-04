@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -32,7 +32,7 @@ from spsdk.apps.blhost_helper import (
         ("list-properties", 0),
         ("target-version", 24),
         ("abc", 0xFF),
-        ("012", 0xFF),
+        ("012", 12),
         ("some-nonsense", 0xFF),
     ],
 )
@@ -48,7 +48,7 @@ def test_parse_property_tag(input, expected):
         ("0xa", 10),
         ("0b100", 4),
         ("abc", 0xFF),
-        ("012", 0xFF),
+        ("012", 12),
         ("some-nonsense", 0xFF),
         ("sbkek", 3),
         ("UDS", 12),
@@ -71,36 +71,6 @@ def test_parse_key_prov_key_type(input, expected):
 def test_parse_image_file_invalid(path, error_msg, data_dir):
     with pytest.raises(SPSDKError, match=error_msg):
         parse_image_file(os.path.join(data_dir, path))
-
-
-@pytest.mark.parametrize(
-    "path, segment_info_list",
-    [
-        (
-            "evkmimxrt685_led_blinky_ext_flash.srec",
-            [SegmentInfo(start=0x08001000, length=0x54EC, data_bin=None)],
-        ),
-        (
-            "sdk20-app.bin.s19",
-            [
-                SegmentInfo(start=0x7F400, length=512, data_bin=None),
-                SegmentInfo(start=0x80000, length=360, data_bin=None),
-                SegmentInfo(start=0x80180, length=58146, data_bin=None),
-            ],
-        ),
-        (
-            "iled_blinky_ide_1060.hex",
-            [SegmentInfo(start=0x60002000, length=0x32CC, data_bin=None)],
-        ),
-    ],
-)
-def test_parse_image_file(path, segment_info_list: List[SegmentInfo], data_dir):
-    result = parse_image_file(os.path.join(data_dir, path))
-    assert len(result) == len(segment_info_list)
-    for current, ref in zip(result, segment_info_list):
-        assert current.start == ref.start
-        assert current.length == ref.length
-        assert len(current.data_bin) == current.length
 
 
 @pytest.mark.parametrize(

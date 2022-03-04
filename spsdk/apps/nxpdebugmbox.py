@@ -21,7 +21,6 @@ from spsdk import SPSDK_DATA_FOLDER, SPSDKError, SPSDKValueError
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
 from spsdk.apps.utils import (
-    INT,
     catch_spsdk_error,
     check_destination_dir,
     check_file_exists,
@@ -179,7 +178,7 @@ def main(
 
 
 @main.command()
-@click.option("-b", "--beacon", type=INT(), help="Authentication beacon")
+@click.option("-b", "--beacon", type=int, help="Authentication beacon")
 @click.option("-c", "--certificate", help="Path to Debug Credentials.")
 @click.option("-k", "--key", help="Path to DCK private key.")
 @click.option(
@@ -260,7 +259,7 @@ def start(pass_obj: dict) -> None:
 
 @main.command()
 @click.pass_obj
-def exit(pass_obj: dict) -> None:
+def exit(pass_obj: dict) -> None:  # pylint: disable=redefined-builtin
     """Exit DebugMailBox."""
     result = False
     try:
@@ -309,6 +308,55 @@ def ispmode(pass_obj: dict, mode: int) -> None:
         result = True
     finally:
         print_output(result, "Entering into ISP mode")
+
+
+@main.command()
+@click.option("-f", "--file", type=str, required=True)
+@click.option(
+    "-n",
+    "--no-exit",
+    is_flag=True,
+    help="When used, exit debug mailbox command is not executed after debug authentication.",
+)
+@click.pass_obj
+def blankauth(pass_obj: dict, file: str, no_exit: bool) -> None:
+    """Debug Authentication for Blank Device."""
+    try:
+        token = []
+        logger.info("Starting Debug Authentication for Blank Device..")
+        with _open_debugmbox(pass_obj) as mail_box:
+            with open(file, "rb") as f:
+                while True:
+                    chunk = f.read(8).strip()
+                    if not chunk:
+                        break
+                    token.append(int(chunk, 16))
+                f.close()
+            dm_commands.EnterBlankDebugAuthentication(dm=mail_box).run(token)
+            if not no_exit:
+                exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
+                logger.debug(f"Exit response: {exit_response}")
+                # Re-open debug probe
+                mail_box.debug_probe.close()
+                mail_box.debug_probe.open()
+                # Do test of access to AHB bus
+                ahb_access_granted = test_ahb_access(mail_box.debug_probe)
+                res_str = (
+                    (colorama.Fore.GREEN + "successfully")
+                    if ahb_access_granted
+                    else (colorama.Fore.RED + "without AHB access")
+                )
+                logger.info(f"Debug Authentication ends {res_str}{colorama.Fore.RESET}.")
+                if not ahb_access_granted:
+                    click.get_current_context().exit(1)
+            else:
+                logger.info(
+                    "Debug Authentication ends without exit and without test of AHB access."
+                )
+
+    except SPSDKError as e:
+        logger.error(colorama.Fore.RED + f"Debug authentication for Blank device failed!\n{e}")
+        click.get_current_context().exit(1)
 
 
 @main.command()
@@ -402,7 +450,10 @@ def gendc(
     if plugin:
         # if a plugin is present simply load it
         # The SignatureProvider will automatically pick up any implementation(s)
-        from importlib.util import module_from_spec, spec_from_file_location
+        from importlib.util import (  # pylint: disable=import-outside-toplevel
+            module_from_spec,
+            spec_from_file_location,
+        )
 
         spec = spec_from_file_location(name="plugin", location=plugin)  # type: ignore
         assert spec

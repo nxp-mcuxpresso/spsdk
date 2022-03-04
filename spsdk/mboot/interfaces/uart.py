@@ -10,7 +10,9 @@
 
 import logging
 import struct
-from typing import List, NamedTuple, Optional, Tuple, Union
+import time
+from contextlib import contextmanager
+from typing import Generator, List, NamedTuple, Optional, Tuple, Union
 
 from crcmod.predefined import mkPredefinedCrcFun
 from serial import Serial
@@ -21,12 +23,12 @@ from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import Timeout
 
-from .base import Interface
+from .base import MBootInterface
 
 logger = logging.getLogger(__name__)
 
 
-def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List[Interface]:
+def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List["Uart"]:
     """Scan connected serial ports.
 
     Returns list of serial ports with devices that respond to PING command.
@@ -49,7 +51,7 @@ def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> Li
     return list(filter(None, all_ports))
 
 
-def _check_port(port: str, baudrate: int, timeout: int) -> Optional[Interface]:
+def _check_port(port: str, baudrate: int, timeout: int) -> Optional["Uart"]:
     """Check if device on comport 'port' responds to PING command.
 
     :param port: name of port to check
@@ -98,11 +100,21 @@ class PingResponse(NamedTuple):
 
     @classmethod
     def parse(cls, data: bytes) -> "PingResponse":
-        """Parse raw data into PingResponse object."""
-        version, options, crc = struct.unpack("<I2H", data)
+        """Parse raw data into PingResponse object.
+
+        :param data: bytes to be unpacked to PingResponse object
+            4B version, 2B data, 2B CRC16
+        :raises McuBootConnectionError: Received invalid ping response
+        :return: PingResponse
+        """
+        try:
+            version, options, crc = struct.unpack("<I2H", data)
+        except struct.error as err:
+            raise McuBootConnectionError("Received invalid ping response") from err
         return cls(version, options, crc)
 
 
+PING_TIMEOUT_MS = 500
 MAX_PING_RESPONSE_DUMMY_BYTES = 50
 MAX_UART_OPEN_ATTEMPTS = 3
 
@@ -121,7 +133,7 @@ class FPType(Enum):
     PINGR = 0xA7
 
 
-class Uart(Interface):
+class Uart(MBootInterface):
     """UART interface."""
 
     FRAME_START_BYTE = 0x5A
@@ -144,7 +156,8 @@ class Uart(Interface):
         try:
             self.timeout = timeout
             self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
-            self.close()
+            if port:
+                self.close()  # TODO: Is this really necessary here? Please advice somebody.
             self.protocol_version = 0
             self.options = 0
         except Exception as e:
@@ -155,11 +168,11 @@ class Uart(Interface):
 
         :raises McuBootConnectionError: In any case of fail of UART open operation.
         """
-        for n in range(MAX_UART_OPEN_ATTEMPTS):
+        for i in range(MAX_UART_OPEN_ATTEMPTS):
             try:
                 self.device.open()
                 self.ping()
-                logger.debug(f"Interface opened after {n + 1} attempts.")
+                logger.debug(f"Interface opened after {i + 1} attempts.")
                 return
             except (McuBootConnectionError, TimeoutError) as e:
                 self.device.close()
@@ -338,44 +351,60 @@ class Uart(Interface):
         :raises McuBootConnectionError: If the ping response is not received
         :raises McuBootConnectionError: If crc does not match
         """
-        ping = struct.pack("<BB", self.FRAME_START_BYTE, FPType.PING)
-        self._send_frame(ping, wait_for_ack=False)
+        with self.ping_timeout(timeout=PING_TIMEOUT_MS):
+            ping = struct.pack("<BB", self.FRAME_START_BYTE, FPType.PING)
+            self._send_frame(ping, wait_for_ack=False)
+            # after power cycle, MBoot v 3.0+ may respond to first command with a leading dummy data
+            # we read data from UART until the FRAME_START_BYTE byte
+            start_byte = b""
+            for i in range(MAX_PING_RESPONSE_DUMMY_BYTES):
+                start_byte = self._read(1)
+                if start_byte is None:
+                    raise McuBootConnectionError("Failed to receive initial byte")
 
-        # after power cycle, MBoot v 3.0+ may respond to first command with a leading dummy data
-        # we read data from UART until the FRAME_START_BYTE byte
-        start_byte = b""
-        for i in range(MAX_PING_RESPONSE_DUMMY_BYTES):
-            start_byte = self._read(1)
-            if start_byte is None:
-                raise McuBootConnectionError("Failed to receive initial byte")
+                if start_byte == self.FRAME_START_BYTE.to_bytes(length=1, byteorder="little"):
+                    logger.debug(f"FRAME_START_BYTE received in {i + 1}. attempt.")
+                    break
+            else:
+                raise McuBootConnectionError("Failed to receive FRAME_START_BYTE")
 
-            if start_byte == self.FRAME_START_BYTE.to_bytes(length=1, byteorder="little"):
-                logger.debug(f"FRAME_START_BYTE received in {i + 1}. attempt.")
-                break
-        else:
-            raise McuBootConnectionError("Failed to receive FRAME_START_BYTE")
+            header = to_int(start_byte)
+            if header != self.FRAME_START_BYTE:
+                raise McuBootConnectionError("Header is invalid")
+            frame_type = to_int(self._read(1))
+            if frame_type != FPType.PINGR:
+                raise McuBootConnectionError("Frame type is invalid")
 
-        header = to_int(start_byte)
-        if header != self.FRAME_START_BYTE:
-            raise McuBootConnectionError("Header is invalid")
-        frame_type = to_int(self._read(1))
-        if frame_type != FPType.PINGR:
-            raise McuBootConnectionError("Frame type is invalid")
+            response_data = self._read(8)
+            response = PingResponse.parse(response_data)
 
-        response_data = self._read(8)
-        if response_data is None:
-            raise McuBootConnectionError("Failed to receive ping response")
-        response = PingResponse.parse(response_data)
+            # ping response has different crc computation than the other responses
+            # that's why we can't use calc_frame_crc method
+            # crc data for ping excludes the last 2B of response data, which holds the CRC from device
+            crc_data = struct.pack(
+                f"<BB{len(response_data) -2}B", header, frame_type, *response_data[:-2]
+            )
+            crc = calc_crc(crc_data)
+            if crc != response.crc:
+                raise McuBootConnectionError("Received CRC doesn't match")
 
-        # ping response has different crc computation than the other responses
-        # that's why we can't use calc_frame_crc method
-        # crc data for ping excludes the last 2B of response data, which holds the CRC from device
-        crc_data = struct.pack(
-            f"<BB{len(response_data) -2}B", header, frame_type, *response_data[:-2]
-        )
-        crc = calc_crc(crc_data)
-        if crc != response.crc:
-            raise McuBootConnectionError("Received CRC doesn't match")
+            self.protocol_version = response.version
+            self.options = response.options
 
-        self.protocol_version = response.version
-        self.options = response.options
+    @contextmanager
+    def ping_timeout(self, timeout: int = PING_TIMEOUT_MS) -> Generator[None, None, None]:
+        """Context manager for changing UART's timeout.
+
+        :param timeout: New temporary timeout in milliseconds, defaults to PING_TIMEOUT_MS (500ms)
+        :return: Generator[None, None, None]
+        """
+        self.device.timeout = min(timeout, self.timeout) / 1000
+        logger.debug(f"Setting timeout to {self.device.timeout * 1000} ms")
+        # driver needs to be reconfigured after timeout change, wait for a little while
+        time.sleep(0.005)
+
+        yield
+
+        self.device.timeout = self.timeout / 1000
+        logger.debug(f"Restoring timeout to {self.device.timeout * 1000} ms")
+        time.sleep(0.005)

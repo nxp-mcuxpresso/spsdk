@@ -172,15 +172,17 @@ class DebugCredential:
         dc_obj = klass(
             socc=yaml_config["socc"],
             uuid=bytes.fromhex(yaml_config["uuid"]),
-            rot_meta=klass._get_rot_meta(
+            rot_meta=klass._get_rot_meta(  # pylint: disable=protected-access
                 used_root_cert=yaml_config["rot_id"],
                 rot_pub_keys=yaml_config["rot_meta"],
             ),
-            dck_pub=klass._get_dck(yaml_config["dck"]),
+            dck_pub=klass._get_dck(yaml_config["dck"]),  # pylint: disable=protected-access
             cc_socu=yaml_config["cc_socu"],
             cc_vu=yaml_config["cc_vu"],
             cc_beacon=yaml_config["cc_beacon"],
-            rot_pub=klass._get_rot_pub(yaml_config["rot_id"], yaml_config["rot_meta"]),
+            rot_pub=klass._get_rot_pub(  # pylint: disable=protected-access
+                yaml_config["rot_id"], yaml_config["rot_meta"]
+            ),
             signature_provider=SignatureProvider.create(
                 # if the yaml_config doesn't contain 'sign_provider' assume file-type
                 yaml_config.get("sign_provider")
@@ -197,7 +199,8 @@ class DebugCredential:
         :param offset: Offset of input data
         :return: DebugCredential object
         """
-        version = "{}.{}".format(*unpack_from("<2H", data, offset))
+        ver = unpack_from("<2H", data, offset)
+        version = f"{ver[0]}.{ver[1]}"
         socc = unpack_from("<L", data, offset + 4)
         klass = cls._get_class(version, socc[0])
         return klass.get_instance_from_challenge(data[offset:])
@@ -208,7 +211,7 @@ class DebugCredential:
 
         :return: Instance of this class.
         """
-        _versionH, _versionL, *rest = unpack_from(cls.FORMAT, data, 0)
+        _, _, *rest = unpack_from(cls.FORMAT, data, 0)
         return cls(*rest)
 
 
@@ -311,7 +314,7 @@ class DebugCredentialECC(DebugCredential):
     def _get_rot_pub(rot_pub_id: int, rot_pub_keys: List[str]) -> bytes:
         """Creates RoTKey_Pub (2 element 16-bit array (little endian).
 
-        CTRKtable index (RoT meta-data) of the public key used by the vendor to sign the DC.
+        CTRK table index (RoT meta-data) of the public key used by the vendor to sign the DC.
         Curve identifier:
         - Secp256r1: 0x0001
         - Secp384r1: 0x0002
@@ -428,12 +431,12 @@ class Lpc55s3xMixin(DebugCredentialECC):
         return msg
 
     @property
-    def FORMAT(self) -> str:  # type: ignore
+    def FORMAT(self) -> str:  # type: ignore # pylint: disable=invalid-name
         """Formatting string."""
         return f"<2HL16s3L{len(self.rot_meta)}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s"
 
     @property
-    def FORMAT_NO_SIG(self) -> str:  # type: ignore
+    def FORMAT_NO_SIG(self) -> str:  # type: ignore # pylint: disable=invalid-name
         """Formatting string without signature."""
         return f"<2HL16s3L{len(self.rot_meta)}s{self.HASH_LENGTH * 2}s{self.HASH_LENGTH * 2}s"
 
@@ -512,8 +515,8 @@ class Lpc55s3xMixin(DebugCredentialECC):
         """
         format_head = "<2HL16s4L"
         (
-            version_major,
-            version_minor,
+            version_major,  # pylint: disable=unused-variable
+            version_minor,  # pylint: disable=unused-variable
             socc,
             uuid,
             cc_socu,

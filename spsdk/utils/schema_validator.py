@@ -104,7 +104,8 @@ class ConfigTemplate:
         self.schemas = schemas
         self.override_values = override_values
 
-    def _get_required(self, key: str, block: Dict[str, Any]) -> str:
+    @staticmethod
+    def _get_required(key: str, block: Dict[str, Any]) -> str:
         """Function to determine if the config key is required or not.
 
         :param key: Name of config record
@@ -164,16 +165,24 @@ class ConfigTemplate:
                     f"[{p_required}], {p_title}, {p_descr}", column=len(cfg) - 1
                 )
 
-    def _fill_up_block(self, cfg: Union[CM, CS], block: Dict[str, Any]) -> None:
+    def _fill_up_block(
+        self,
+        cfg: Union[CM, CS],
+        block: Dict[str, Dict[str, Any]],
+        property_filter: List[str] = None,
+    ) -> None:
         """Private function used to fill up configuration block with data.
 
         :param cfg: CM base configuration object to fill up
         :param block: Source block with data
+        :param property_filter: Optional list of property names that should be processed.
         :raises SPSDKError: In case of invalid data pattern.
         """
         if not "properties" in block:
             return
         for key, val in block["properties"].items():
+            if property_filter and not key in property_filter:
+                continue
             schema_type = val.get("type")
             if schema_type is None:
                 raise SPSDKError("Invalid type in JSONSCHEMA.")
@@ -194,6 +203,17 @@ class ConfigTemplate:
                     p_default_val = self.override_values[key]
                 self._insert_to_cfg(cfg, key, block, p_default_val)
 
+    @staticmethod
+    def _get_schema_block_keys(schema: Dict[str, Dict[str, Any]]) -> List[str]:
+        """Creates list of property keys in given schema.
+
+        :param schema: Input schema piece.
+        :return: List of all property keys.
+        """
+        if "properties" not in schema:
+            return []
+        return list(schema["properties"].keys())
+
     def export(self) -> CM:
         """Export configuration template into CommentedMap.
 
@@ -201,26 +221,32 @@ class ConfigTemplate:
         :return: Configuration template in CM.
         """
         loc_schemas = copy.deepcopy(self.schemas)
-        # 1. Do pre-merge by schema titles
-        pre_merged: Dict[str, Any] = {}
+        # 1. Get blocks with their titles and lists of their keys
+        block_list: Dict[str, Dict[str, List[str]]] = {}
         for schema in loc_schemas:
             title = schema.get("title", "General Options")
-            if title in pre_merged:
-                deepmerge.always_merger.merge(pre_merged[title], schema)
+            if title in block_list:
+                block_list[title]["properties"].extend(self._get_schema_block_keys(schema))
             else:
-                pre_merged[title] = schema
+                block_list[title] = {}
+                block_list[title]["properties"] = self._get_schema_block_keys(schema)
+                block_list[title]["description"] = schema.get("description", "")
+
+        # 2. Merge all schemas together to get whole single schema
+        merged: Dict[str, Any] = {}
+        for schema in loc_schemas:
+            deepmerge.always_merger.merge(merged, schema)
 
         cfg = CM()
-        # 2. Add main title of configuration
+        # 3. Add main title of configuration
         cfg.yaml_set_start_comment(f"===========  {self.main_title}  ===========\n")
-        # 3. Go through all individual logic blocks
-        for block in pre_merged.values():
+        # 4. Go through all individual logic blocks
+        for title, info in block_list.items():
             try:
-                self._fill_up_block(cfg, block)
-                title = block.get("title", "General Options")
-                description = block.get("description", "")
+                self._fill_up_block(cfg, merged, info["properties"])
+                description = info["description"]
                 cfg.yaml_set_comment_before_after_key(
-                    list(block["properties"].keys())[0], f" \n == {title} == \n {description}"
+                    info["properties"][0], f" \n == {title} == \n {description}"
                 )
             except Exception as exc:
                 raise SPSDKError(f"Template generation failed: {str(exc)}") from exc

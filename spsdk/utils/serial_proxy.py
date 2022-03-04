@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,7 +22,7 @@ class SerialProxy:
     @patch(<your.package>.Serial, SerialProxy.init_proxy(pre_recorded_responses))
     """
 
-    responses: Dict[bytes, bytes] = dict()
+    responses: Dict[bytes, bytes] = {}
     ignore_ack: bool = False
 
     @classmethod
@@ -133,4 +133,3 @@ class SimpleReadSerialProxy(SerialProxy):
 
         :param data: Bytes to write, key in responses
         """
-        pass

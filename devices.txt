@@ -1,4 +1,4 @@
-List of devices and chip versions tested with SPSDK 1.4.0
+List of devices and chip versions tested with SPSDK 1.6.1
 
 - MIMXRT1170-EVK A
 - MIMXRT1160-EVK A1

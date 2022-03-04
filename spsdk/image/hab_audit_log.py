@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -256,7 +256,7 @@ def parse_hab_log(hab_sts: int, hab_cfg: int, hab_state: int, data: bytes) -> Li
     :return: list of lines to be displayed, that describes the HAB status and content of the LOG
     :raises SPSDKError: If a record has invalid data length
     """
-    result = list()
+    result = []
     result.append("=" * 60)
     result.append(f"HAB Status:  {get_hab_enum_description(HabStatus, hab_sts)}")
     result.append(f"HAB Config:  {get_hab_enum_description(HabConfig, hab_cfg)}")

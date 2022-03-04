@@ -220,7 +220,7 @@ def check_pylint_errors(input_log: str, output_log: str) -> Dict[str, Any]:
 def check_radon(output_log: str) -> Dict[str, Any]:
     """Check the project against radon rules."""
     with open(output_log, "w", encoding="utf-8") as f:
-        res = subprocess.call(f"radon cc --show-complexity spsdk".split(), stdout=f, stderr=f)
+        res = subprocess.call("radon cc --show-complexity spsdk".split(), stdout=f, stderr=f)
 
     return {"err_cnt": res, "output_log": output_log}
 
