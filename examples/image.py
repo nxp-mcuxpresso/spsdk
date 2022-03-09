@@ -10,6 +10,9 @@
 After the image is created, the DCD part, application segment are added.
 The basic info of the whole segment is displayed.
 The image is saved to a file.
+
+The application segment is a "plain load" image without a boot device header,
+IVT, boot data, etc.
 """
 
 import os
@@ -29,7 +32,7 @@ def main() -> None:
         img.dcd = SegDCD.parse_txt(f_txt.read())
 
     # Add application segment
-    with open(f"{DATA_DIR}/ivt_flashloader.bin", "rb") as f_bin:
+    with open(f"{DATA_DIR}/plain_load_ivt_flashloader.bin", "rb") as f_bin:
         img.add_image(data=f_bin.read())
 
     # Print image info
