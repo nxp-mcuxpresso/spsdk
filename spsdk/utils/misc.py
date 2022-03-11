@@ -10,9 +10,7 @@ import os
 import re
 import time
 from math import ceil
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, TypeVar, Union
-
-from bincopy import BinFile
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Optional, TypeVar, Union
 
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
@@ -20,6 +18,10 @@ from spsdk.utils.exceptions import SPSDKTimeoutError
 
 # for generics
 T = TypeVar("T")  # pylint: disable=invalid-name
+
+if TYPE_CHECKING:
+    # bincopy will be loaded lazily as needed, this is just to satisfy type-hint checkers
+    import bincopy
 
 
 def align(number: int, alignment: int = 4) -> int:
@@ -96,7 +98,7 @@ def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optiona
     return next((a for a in iterable if predicate(a)), None)
 
 
-def load_binary_image(*path_segments: str) -> BinFile:
+def load_binary_image(*path_segments: str) -> "bincopy.BinFile":
     r"""Load binary data file.
 
     :param \*path_segments: list that consists of:
@@ -117,10 +119,14 @@ def load_binary_image(*path_segments: str) -> BinFile:
 
     if data == b"\x7fELF":
         raise SPSDKError("Elf file is not supported")
-    binfile = BinFile()
+
+    # import bincopy only if needed to save startup time
+    import bincopy  # pylint: disable=import-outside-toplevel
+
+    binfile = bincopy.BinFile()
     try:
         binfile.add_file(path)
-    except UnicodeDecodeError:
+    except (UnicodeDecodeError, bincopy.UnsupportedFileFormatError):
         binfile.add_binary_file(path)
     except Exception as e:
         raise SPSDKError(f"Error loading file: {str(e)}") from e

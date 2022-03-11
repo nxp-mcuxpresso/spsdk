@@ -11,7 +11,6 @@ import contextlib
 import math
 from typing import Any, Callable, Iterator, List, Union
 
-import bincopy
 import click
 
 from spsdk import SPSDKError
@@ -195,12 +194,16 @@ def parse_image_file(file_path: str) -> List[SegmentInfo]:
     if data == b"\x7fELF":
         raise SPSDKError("Elf file is not supported")
     try:
+        # import bincopy only if needed to save startup time
+        import bincopy  # pylint: disable=import-outside-toplevel
+
         binfile = bincopy.BinFile(file_path)
+
         return [
             SegmentInfo(start=segment.address, length=len(segment.data), data_bin=segment.data)
             for segment in binfile.segments
         ]
-    except UnicodeDecodeError as e:
+    except (UnicodeDecodeError, bincopy.UnsupportedFileFormatError) as e:
         raise SPSDKError(
             "Error: please use write-memory command for binary file downloading."
         ) from e

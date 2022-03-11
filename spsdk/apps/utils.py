@@ -15,9 +15,7 @@ from functools import wraps
 from typing import Any, Callable, Tuple, Union
 
 import click
-import commentjson as json
 import hexdump
-from ruamel.yaml import YAML, YAMLError
 
 from spsdk import SPSDKError
 from spsdk.mboot import interfaces as MBootInterfaceModule
@@ -246,12 +244,22 @@ def load_configuration(path: str) -> dict:
     if not os.path.exists(path):
         raise SPSDKError(f"File not found'{path}'.")
 
+    # import YAML only if needed to save startup time
+    from ruamel.yaml import YAML, YAMLError  # pylint: disable=import-outside-toplevel
+
+    try:
+        with open(path) as f:
+            return YAML(typ="safe").load(f)
+    except (YAMLError, UnicodeDecodeError):
+        pass
+
+    # import json only if needed to save startup time
+    import commentjson as json  # pylint: disable=import-outside-toplevel
+
     try:
         with open(path) as f:
             return json.load(f)
     except json.JSONLibraryException:
-        try:
-            with open(path) as f:
-                return YAML(typ="safe").load(f)
-        except (YAMLError, UnicodeDecodeError) as exc:
-            raise SPSDKError(f"Unable to load '{path}'.") from exc
+        pass
+
+    raise SPSDKError(f"Unable to load '{path}'.")

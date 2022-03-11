@@ -82,3 +82,24 @@ Supported Environment
 
 SPSDK is tested on *Python 3.6+* interpreter, old version 2.x is not supported.
 
+===========
+Versioning
+===========
+
+In a given version ``spsdk x.y.z``
+
+* ``x`` major version (currently locked to 1; think 0 in classic `SemVer <https://semver.org/>`_)
+* ``y`` minor version
+* ``z`` patch version
+
+========================
+CLI/API stability notice
+========================
+
+``SPSDK`` is still in alpha (as noted in `PyPI <https://pypi.org/project/spsdk/>`_) and should be treated as such
+
+* Major releases are not planed in the foreseeable future
+* **Minor release may break compatibility!!!**
+* Patch release will not break backward compatibility (any occurrence is threated as a bug)
+
+New features might be implemented in both patch and minor releases.

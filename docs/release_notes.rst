@@ -9,6 +9,18 @@ Release Notes
 =============
 
 ---------------------
+1.6.2 (11-March-2022)
+---------------------
+
+**New features**
+
+* bump-up version of bincopy to <17.11
+* add plain load image to build example bootable i.MX-RT image
+* align docs requirements with project dependencies
+* add stability notice to documentation
+* speed-up application's start due to move of bincopy import
+
+---------------------
 1.6.1 (04-March-2022)
 ---------------------
 

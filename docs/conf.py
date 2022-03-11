@@ -6,13 +6,16 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import datetime
+import os
+import sys
+
+import spsdk
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
-import spsdk
 
 sys.path.insert(0, os.path.abspath(".."))
 sys.setrecursionlimit(1500)
@@ -20,7 +23,7 @@ sys.setrecursionlimit(1500)
 # -- Project information -----------------------------------------------------
 
 project = "SPSDK"
-copyright = "2019-2021, NXP"
+copyright = f"2019-{datetime.datetime.now().year}, NXP"
 author = "NXP"
 
 # The full version, including alpha/beta/rc tags
