@@ -81,7 +81,7 @@ class TrustZone:
             presets = config_data["trustZonePreset"]
             return cls.custom(family=family, customizations=presets, revision=revision)
         except (TypeError, SPSDKError) as exc:
-            raise SPSDKError("Invalid TrustZone configuration file.") from exc
+            raise SPSDKError(f"Invalid TrustZone configuration file: {str(exc)}") from exc
 
     def __init__(
         self,
@@ -186,7 +186,7 @@ class TrustZone:
             schemas = cls.get_validation_schemas(family)
             override = {}
             override["family"] = family
-            override["revisions"] = config_file[family]["latest"]
+            override["revision"] = config_file[family]["latest"]
 
             yaml_data = ConfigTemplate(
                 f"Trust Zone Configuration template for {family}.",

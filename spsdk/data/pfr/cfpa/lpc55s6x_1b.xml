@@ -32,28 +32,28 @@
   </register>
   <register offset="0x18" width="32" name="ROTKH_REVOKE" description="Root of Trust Key Hash Revoke">
     <alias type="CMSIS" value="ROTKH_REVOKE"/>
-    <bit_field offset="0" width="2" name="RoTK0_EN" access="RW" reset_value="0x1" description="RoT Key 0 enable.">
+    <bit_field offset="0" width="2" name="RoTK0_EN" access="RW" reset_value="0" description="RoT Key 0 enable.">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK0_EN(x)"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_INVALID" value="0b00" description="Invalid"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_ENABLED" value="0b01" description="Enabled"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_REVOKED_0" value="0b10" description="Key revoked"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_REVOKED_1" value="0b11" description="Key revoked"/>
     </bit_field>
-    <bit_field offset="2" width="2" name="RoTK1_EN" access="RW" reset_value="0x1" description="RoT Key 1 enable.">
+    <bit_field offset="2" width="2" name="RoTK1_EN" access="RW" reset_value="0" description="RoT Key 1 enable.">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK1_EN(x)"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_INVALID" value="0b00" description="Invalid"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_ENABLED" value="0b01" description="Enabled"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_REVOKED_0" value="0b10" description="Key revoked"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_REVOKED_1" value="0b11" description="Key revoked"/>
     </bit_field>
-    <bit_field offset="4" width="2" name="RoTK2_EN" access="RW" reset_value="0x1" description="RoT Key 2 enable.">
+    <bit_field offset="4" width="2" name="RoTK2_EN" access="RW" reset_value="0" description="RoT Key 2 enable.">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK2_EN(x)"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_INVALID" value="0b00" description="Invalid"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_ENABLED" value="0b01" description="Enabled"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_REVOKED_0" value="0b10" description="Key revoked"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_REVOKED_1" value="0b11" description="Key revoked"/>
     </bit_field>
-    <bit_field offset="6" width="2" name="RoTK3_EN" access="RW" reset_value="0x1" description="RoT Key 3 enable.">
+    <bit_field offset="6" width="2" name="RoTK3_EN" access="RW" reset_value="0" description="RoT Key 3 enable.">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK3_EN(x)"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_INVALID" value="0b00" description="Invalid"/>
       <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_ENABLED" value="0b01" description="Enabled"/>

@@ -12,13 +12,13 @@ deepmerge==0.3.0
 fastjsonschema >=2.15.1
 hexdump~=3.3
 jinja2>=2.11,<3.1
-libusbsio>=2.1.10
+libusbsio>=2.1.11
 oscrypto~=1.2
 pycryptodome>=3.9.3,<4
 pylink-square>=0.8.2,<0.11.9
 pyocd-pemicro>=1.1.1,<1.2.0
 pyocd>=0.28.3,<=0.31.0
-pypemicro>=0.1.8,<0.2.0
+pypemicro>=0.1.9,<0.2.0
 pyserial>=3.1,<4
 ruamel.yaml>=0.17,<0.18.0
 sly==0.4

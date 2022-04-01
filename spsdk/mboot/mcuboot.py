@@ -698,7 +698,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if cmd_response.status != StatusCode.SUCCESS:
             return False
         if verify:
-            read_value = self.efuse_read_once(index=index)
+            read_value = self.efuse_read_once(index=index & ((1 << 24) - 1))
             if read_value is None:
                 return False
             # We check only a bitmask, because OTP allows to burn individual bits separatelly

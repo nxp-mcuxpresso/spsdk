@@ -389,6 +389,8 @@ class UsbSioI2C(UsbSio):
     def close(self) -> None:
         """Close the interface."""
         if self.port:
+            # Preventive Reset of I2C device to be ready to reopen in case of any pending problem
+            self.port.Reset()
             self.port.Close()
             self.port = None
             # if not self.sio.IsAnyPortOpen(): #TODO temporary hack till new version of libusbsio greater than 2.1.11

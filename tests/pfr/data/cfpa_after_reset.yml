@@ -12,7 +12,7 @@ settings: # The PFR non-zero after reset fields of CFPA registers configuration.
 # Reg Description: .
     name: ROTKH_REVOKE  # The name of the register
     bitfields:
-      RoTK0_EN: 1 # The width: 2 bits
-      RoTK1_EN: 1 # The width: 2 bits
-      RoTK2_EN: 1 # The width: 2 bits
-      RoTK3_EN: 1 # The width: 2 bits
+      RoTK0_EN: 0 # The width: 2 bits
+      RoTK1_EN: 0 # The width: 2 bits
+      RoTK2_EN: 0 # The width: 2 bits
+      RoTK3_EN: 0 # The width: 2 bits

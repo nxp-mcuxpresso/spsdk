@@ -6,17 +6,21 @@ production deployment. The library allows the user to connect and communicate wi
 configure the device, prepare, download and upload data, including security operations. It is
 delivered in the form of a python library and command-line applications.
 
-Version: 1.6.2
+Version: 1.6.3
 ==============
-Date: 11-March-2022
+Date: 1-April-2022
 
 New features
 
-- bump-up version of bincopy to <17.11
-- add plain load image to build example bootable i.MX-RT image
-- align docs requirements with project dependencies
-- add stability notice to documentation
-- speed-up application's start due to move of bincopy import
+- pypemicro dependency update in order to cover latest bug fixes in this package
+- libusbsio update to version 2.1.11
+
+Bugfixes
+
+- fix in rescanning LIBUSBSIO devices when target MCU is not connected
+- efuse_program_once returns failure message when using 'lock' option but still the fuse is burnt
+- fix memory leaks in elftosb
+
 
 
 Supported devices
@@ -44,6 +48,13 @@ Python 3.6+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+1.6.2
+- bump-up version of bincopy to <17.11
+- add plain load image to build example bootable i.MX-RT image
+- align docs requirements with project dependencies
+- add stability notice to documentation
+- speed-up application's start due to move of bincopy import
+
 1.6.1
 - blhost:
     - add parameter --no-verify for efuse-program-once

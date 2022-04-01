@@ -9,6 +9,21 @@ Release Notes
 =============
 
 ---------------------
+1.6.3 (1-April-2022)
+---------------------
+
+**New features**
+
+* pypemicro dependency update in order to cover latest bug fixes in this package
+* libusbsio update to version 2.1.11
+
+**Bugfixes**
+
+* fix in rescanning LIBUSBSIO devices when target MCU is not connected
+* efuse_program_once returns failure message when using 'lock' option but still the fuse is burnt
+* fix memory leaks in elftosb
+
+---------------------
 1.6.2 (11-March-2022)
 ---------------------
 
