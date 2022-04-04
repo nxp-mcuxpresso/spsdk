@@ -127,7 +127,7 @@ def main(
 
     # print help for get-property if property tag is 0 or 'list-properties'
     if ctx.invoked_subcommand == "get-property":
-        args = click.get_os_args()
+        args = sys.argv[1:]
         # running this via pytest changes the args to a single arg, in that case skip
         if len(args) > 1 and "get-property" in args:
             tag_str = args[args.index("get-property") + 1]
@@ -136,7 +136,7 @@ def main(
                 ctx.exit(0)
 
     # if --help is provided anywhere on commandline, skip interface lookup and display help message
-    if "--help" not in click.get_os_args():
+    if "--help" not in sys.argv[1:]:
         ctx.obj = {
             "interface": get_interface(
                 module="mboot", port=port, usb=usb, timeout=timeout, lpcusbsio=lpcusbsio
