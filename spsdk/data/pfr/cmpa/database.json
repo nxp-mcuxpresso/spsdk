@@ -54,9 +54,10 @@
         },
         "lpc55s3x": {
             "revisions": {
-                "0a": "lpc55s3x_0a.xml"
+                "0a": "lpc55s3x_0a.xml",
+                "1a": "lpc55s3x_1a.xml"
             },
-            "latest": "0a",
+            "latest": "1a",
             "address": "0x3_E200",
             "seal_start": "CMPA_CMAC0",
             "seal_count": 4,
@@ -73,22 +74,39 @@
         },
         "lpc553x": {
             "revisions": {
-                "0a": "lpc553x_0a.xml"
+                "0a": "lpc553x_0a.xml",
+                "1a": "lpc553x_1a.xml"
             },
-            "latest": "0a",
+            "latest": "1a",
             "address": "0x3_E200",
-            "seal_start": "CMPA_CMAC0",
-            "seal_count": 4,
-            "mandatory_computed_regs": 1,
+            "seal_start": "CMPA_CRC32",
+            "seal_count": 1,
+            "mandatory_computed_regs": 1
+        },
+        "nhs52sxx":
+        {
+            "revisions": {
+                "a1": "nhs52s04.xml"
+            },
+            "latest": "a1",
+            "address": "0xF_E000",
             "grouped_registers": [
                 {
                     "name": "ROTKH",
-                    "width": 384,
+                    "width": 256,
                     "reverse": 1,
                     "config_as_hexstring": true,
-                    "description": "ROTKH field is compounded by 12 32-bit fields and contains Root key table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four SHA-256 digests computed over four OEM public keys (OEM has four private-public key pairs in case one of its private keys becomes compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit SHA-384 digest."
+                    "description": "ROTKH field is compounded by 8 32-bit fields and contains Root key table hash."
                 }
-            ]
+            ],
+            "computed_fields": {
+                "CC_SOCU_PIN": {
+                    "INVERSE_VALUE": "pfr_reg_inverse_high_half"
+                },
+                "CC_SOCU_DFLT": {
+                    "INVERSE_VALUE": "pfr_reg_inverse_high_half"
+                }
+            }
         }
     },
     "computed_registers": [

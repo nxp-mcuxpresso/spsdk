@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -34,7 +34,7 @@ def mboot_properties(name: str = None) -> Optional[list]:
 def main() -> None:
     """Main function.
 
-    :raises SPSDKError: When reading properting ends with error
+    :raises SPSDKError: When reading properties ends with error
     """
     property_list = mboot_properties()
     if not property_list:

@@ -294,14 +294,14 @@ def test_sb2x_builder(
         mode = "signed" + str(sign_bits)
     else:
         mode = "unsigned"
-    extected_file_name = f"expected_sb2_{str(sb_minor_ver)}_{sect_cont_str}_{mode}.sb2"
+    expected_file_name = f"expected_sb2_{str(sb_minor_ver)}_{sect_cont_str}_{mode}.sb2"
 
-    with open(os.path.join(data_dir, "sb2_x", extected_file_name), "rb") as f:
+    with open(os.path.join(data_dir, "sb2_x", expected_file_name), "rb") as f:
         expected = f.read()
 
     if result != expected:  # if result does not match, save it for debugging
         with open(
-            os.path.join(data_dir, "sb2_x", extected_file_name.replace("expected_", "generated_")),
+            os.path.join(data_dir, "sb2_x", expected_file_name.replace("expected_", "generated_")),
             "wb",
         ) as f:
             f.write(result)

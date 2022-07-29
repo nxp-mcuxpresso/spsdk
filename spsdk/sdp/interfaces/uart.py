@@ -45,12 +45,12 @@ def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> Li
 
 
 def _check_port(port: str, baudrate: int, timeout: int) -> Optional["Uart"]:
-    """Check if device on comport 'port' could be openned.
+    """Check if device on comport 'port' could be opened.
 
     :param port: name of port to check
     :param baudrate: speed of the UART interface, defaults to 56700
     :param timeout: timeout in milliseconds
-    :return: None if device can't be openned, instance of Interface if it does
+    :return: None if device can't be opened, instance of Interface if it does
     """
     try:
         logger.debug(f"Checking port: {port}, baudrate: {baudrate}, timeout: {timeout}")
@@ -71,7 +71,7 @@ class Uart(SDPInterface):
 
     @property
     def is_opened(self) -> bool:
-        """Return True if device is open, False othervise."""
+        """Return True if device is open, False otherwise."""
         return self.device.is_open
 
     def __init__(self, port: str = None, timeout: int = 5000, baudrate: int = 115200):

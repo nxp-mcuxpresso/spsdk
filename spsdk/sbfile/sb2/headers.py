@@ -12,9 +12,10 @@ from struct import calcsize, pack, unpack_from
 from typing import Optional
 
 from spsdk import SPSDKError
-from spsdk.sbfile.misc import BcdVersion3
+from spsdk.sbfile.misc import BcdVersion3, pack_timestamp, unpack_timestamp
 from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.crypto.common import crypto_backend, pack_timestamp, swap16, unpack_timestamp
+from spsdk.utils.crypto.common import crypto_backend
+from spsdk.utils.misc import swap16
 
 
 ########################################################################################################################

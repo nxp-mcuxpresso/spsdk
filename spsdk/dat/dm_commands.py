@@ -7,9 +7,10 @@
 
 """Commands for Debug Mailbox."""
 import time
-from typing import Any, List
+from typing import Any, List, Optional
 
 from spsdk import SPSDKError
+from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import format_value
 
 from .debug_mailbox import DebugMailbox, logger
@@ -18,6 +19,10 @@ from .debug_mailbox import DebugMailbox, logger
 class DebugMailboxCommand:
     """Class for DebugMailboxCommand."""
 
+    STATUS_IS_DATA_MASK = 0x00
+    # default delay after sending a command, in seconds
+    DELAY_DEFAULT = 0.03
+
     def __init__(
         self,
         dm: DebugMailbox,
@@ -25,6 +30,7 @@ class DebugMailboxCommand:
         name: str = "",
         paramlen: int = 0,
         resplen: int = 0,
+        delay: float = DELAY_DEFAULT,
     ):
         """Initialize."""
         self.dm = dm
@@ -32,6 +38,7 @@ class DebugMailboxCommand:
         self.resplen = resplen
         self.id = id
         self.name = name
+        self.delay = delay
 
     def run(self, params: List[int] = None) -> List[Any]:
         """Run DebugMailboxCommand."""
@@ -45,8 +52,8 @@ class DebugMailboxCommand:
         logger.debug(f"<- spin_write: {format_value(req, 32)}")
         self.dm.spin_write(self.dm.registers["REQUEST"]["address"], req)
 
-        # Wait 30ms to allow reset of internal logic of debug mailbox
-        time.sleep(0.03)
+        # Wait to allow reset of internal logic of debug mailbox
+        time.sleep(self.delay)
 
         if params:
             for i in range(paramslen):
@@ -63,14 +70,22 @@ class DebugMailboxCommand:
 
         ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
+
+        new_protocol = bool(ret >> 31)
+        # solve the case that response is in legacy protocol and there is some
+        # unwanted bits in none expected data. In this case return valid read data.
+        if not new_protocol and not ret & ~self.STATUS_IS_DATA_MASK:
+            logger.info("The data is returned by legacy protocol.")
+            return [ret]
+
         resplen = (ret >> 16) & 0x7FFF
         status = ret & 0xFFFF
 
+        if status != 0:
+            raise SPSDKError(f"Status code is not success: {status} !")
+
         if resplen != self.resplen:  # MSB is used to show it is the new protocol -> 0x7FFF
             raise SPSDKError("Device wants to send us different size than expected!")
-
-        if status != 0:
-            raise SPSDKError(f"Status code is not success: {ret & 0xFFFF} !")
 
         # do not send ack, in case no data follows
         if resplen == 0:
@@ -91,6 +106,16 @@ class DebugMailboxCommand:
             self.dm.spin_write(self.dm.registers["REQUEST"]["address"], ack)
         return response
 
+    def run_safe(self, raise_if_failure: bool = True, **args: Any) -> Optional[List[Any]]:
+        """Run a command and abort on first failure instead of looping forever."""
+        try:
+            return self.run(**args)
+        except (SPSDKTimeoutError, TimeoutError) as error:
+            if raise_if_failure:
+                raise error
+            logger.error(str(error))
+        return None
+
 
 class StartDebugMailbox(DebugMailboxCommand):
     """Class for StartDebugMailbox."""
@@ -103,6 +128,9 @@ class StartDebugMailbox(DebugMailboxCommand):
 class GetCRPLevel(DebugMailboxCommand):
     """Class for Get CRP Level."""
 
+    # Set STATUS_IS_DATA_MASK to range 0-255, because larger life cycle is not expected
+    STATUS_IS_DATA_MASK = 0xFF
+
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
         super().__init__(dm, id=2, name="GET_CRP_LEVEL")
@@ -113,7 +141,7 @@ class EraseFlash(DebugMailboxCommand):
 
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
-        super().__init__(dm, id=3, name="ERASE_FLASH")
+        super().__init__(dm, id=3, name="ERASE_FLASH", delay=0.5)
 
 
 class ExitDebugMailbox(DebugMailboxCommand):
@@ -172,3 +200,11 @@ class DebugAuthenticationResponse(DebugMailboxCommand):
     def __init__(self, dm: DebugMailbox, paramlen: int) -> None:
         """Initialize."""
         super().__init__(dm, id=17, name="DBG_AUTH_RESP", paramlen=paramlen)
+
+
+class StartDebugSessions(DebugMailboxCommand):
+    """Class for StartDebugSessions."""
+
+    def __init__(self, dm: DebugMailbox) -> None:
+        """Initialize."""
+        super().__init__(dm, id=7, name="START_DEBUG_SESSION")

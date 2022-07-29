@@ -136,8 +136,11 @@ class DebugProbePyOCD(DebugProbe):
 
         The PyOCD closing function for SPSDK library to support various DEBUG PROBES.
         """
-        if self.pyocd_session:
-            self.pyocd_session.close()
+        try:
+            if self.pyocd_session:
+                self.pyocd_session.close()
+        except OSError:
+            pass
 
     def mem_reg_read(self, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
@@ -157,8 +160,7 @@ class DebugProbePyOCD(DebugProbe):
         try:
             reg = self.mem_ap.read32(addr=addr)
         except PyOCDError as exc:
-            logger.error(f"Failed read memory({str(exc)}).")
-            raise SPSDKDebugProbeTransferError("The memory read operation failed") from exc
+            raise SPSDKDebugProbeTransferError(f"Failed read memory({str(exc)}).") from exc
         return reg
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
@@ -178,8 +180,7 @@ class DebugProbePyOCD(DebugProbe):
         try:
             self.mem_ap.write32(addr=addr, value=data)
         except PyOCDError as exc:
-            logger.error(f"Failed write memory({str(exc)}).")
-            raise SPSDKDebugProbeTransferError("The memory write operation failed") from exc
+            raise SPSDKDebugProbeTransferError(f"Failed write memory({str(exc)}).") from exc
 
     def dbgmlbx_reg_read(self, addr: int = 0) -> int:
         """Read debug mailbox access port register.

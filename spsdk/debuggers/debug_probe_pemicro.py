@@ -30,17 +30,20 @@ class DebugProbePemicro(DebugProbe):
 
     @classmethod
     def get_pemicro_lib(cls) -> PyPemicro:
-        """Get J-Link object.
+        """Get Pemicro object.
 
-        :return: The J-Link Object
-        :raises SPSDKDebugProbeError: The J-Link object get function failed.
+        :return: The Pemicro Object
+        :raises SPSDKDebugProbeError: The Pemicro object get function failed.
         """
-        return PyPemicro(
-            log_info=PEMICRO_LOGGER.info,
-            log_debug=PEMICRO_LOGGER.debug,
-            log_err=PEMICRO_LOGGER.error,
-            log_war=PEMICRO_LOGGER.warn,
-        )
+        try:
+            return PyPemicro(
+                log_info=PEMICRO_LOGGER.info,
+                log_debug=PEMICRO_LOGGER.debug,
+                log_err=PEMICRO_LOGGER.error,
+                log_war=PEMICRO_LOGGER.warn,
+            )
+        except PEMicroException as exc:
+            raise SPSDKDebugProbeError(f"Cannot get Pemicro library: ({str(exc)})") from exc
 
     def __init__(self, hardware_id: str, user_params: Dict = None) -> None:
         """The Pemicro class initialization.
@@ -91,9 +94,9 @@ class DebugProbePemicro(DebugProbe):
         try:
             self.pemicro = DebugProbePemicro.get_pemicro_lib()
             if self.pemicro is None:
-                raise SPSDKDebugProbeError("Getting of J-Link library failed.")
+                raise SPSDKDebugProbeError("Getting of Pemicro library failed.")
         except SPSDKDebugProbeError as exc:
-            raise SPSDKDebugProbeError(f"Getting of J-Link library failed({str(exc)}).") from exc
+            raise SPSDKDebugProbeError(f"Getting of Pemicro library failed({str(exc)}).") from exc
         try:
             self.pemicro.open(debug_hardware_name_ip_or_serialnum=self.hardware_id)
             self.pemicro.connect(PEMicroInterfaces.SWD)  # type: ignore
@@ -110,7 +113,7 @@ class DebugProbePemicro(DebugProbe):
         else:
             if dbgmlbx_ap_ix != self.dbgmlbx_ap_ix:
                 logger.info(
-                    "The detected debug mailbox accessport index is different to specified."
+                    "The detected debug mailbox access port index is different to specified."
                 )
 
     def close(self) -> None:
@@ -140,8 +143,7 @@ class DebugProbePemicro(DebugProbe):
         try:
             reg = self.pemicro.read_32bit(addr)
         except PEMicroException as exc:
-            logger.error(f"Failed read memory({str(exc)}).")
-            raise SPSDKError(str(exc)) from exc
+            raise SPSDKError(f"Failed read memory({str(exc)}).") from exc
         return reg
 
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
@@ -162,8 +164,7 @@ class DebugProbePemicro(DebugProbe):
         try:
             self.pemicro.write_32bit(address=addr, data=data)
         except PEMicroException as exc:
-            logger.error(f"Failed write memory({str(exc)}).")
-            raise SPSDKError(str(exc)) from exc
+            raise SPSDKError(f"Failed write memory({str(exc)}).") from exc
 
     def dbgmlbx_reg_read(self, addr: int = 0) -> int:
         """Read debug mailbox access port register.

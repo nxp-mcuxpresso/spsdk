@@ -225,6 +225,19 @@ def test_secure_binary3_validate(data_dir):
         sb3.validate()
     sb3.signing_key = rot[0]
     sb3.validate()
+    with pytest.raises(SPSDKError):
+        sb3.curve_name = "Invalid"
+        sb3.validate()
+    with pytest.raises(SPSDKError):
+        sb3.curve_name = "secp384r1"
+        sb3.validate()
+    sb3.curve_name = "secp256r1"
+    with pytest.raises(SPSDKError):
+        signig_key_bck = sb3.signing_key
+        sb3.signing_key = b"Invalid Key"
+        sb3.validate()
+    sb3.signing_key = signig_key_bck
+    sb3.validate()
 
 
 def test_secure_binary3_info(data_dir):

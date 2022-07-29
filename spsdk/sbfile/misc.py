@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Miscellaneous functions in SBFile module."""
 
+from datetime import datetime, timezone
 from typing import Any, Sequence, Union
 
 from spsdk import SPSDKError
@@ -171,3 +172,32 @@ class BcdVersion3:
     def nums(self) -> Sequence[int]:
         """Return array of version numbers: [major, minor, service]."""
         return [self.major, self.minor, self.service]
+
+
+def pack_timestamp(value: datetime) -> int:
+    """Converts datetime to millisecond since 1.1.2000.
+
+    :param value: datetime to be converted
+    :return: number of milliseconds since 1.1.2000  00:00:00; 64-bit integer
+    :raises SPSDKError: When there is incorrect result of conversion
+    """
+    assert isinstance(value, datetime)
+    start = datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp()
+    result = int((value.timestamp() - start) * 1000000)
+    if result < 0 or result > 0xFFFFFFFFFFFFFFFF:
+        raise SPSDKError("Incorrect result of conversion")
+    return result
+
+
+def unpack_timestamp(value: int) -> datetime:
+    """Converts timestamp in milliseconds into datetime.
+
+    :param value: number of milliseconds since 1.1.2000  00:00:00; 64-bit integer
+    :return: corresponding datetime
+    :raises SPSDKError: When there is incorrect result of conversion
+    """
+    assert isinstance(value, int)
+    if value < 0 or value > 0xFFFFFFFFFFFFFFFF:
+        raise SPSDKError("Incorrect result of conversion")
+    start = int(datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc).timestamp() * 1000000)
+    return datetime.fromtimestamp((start + value) / 1000000)

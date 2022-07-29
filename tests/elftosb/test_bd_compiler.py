@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
 import spsdk
-import spsdk.apps.elftosb_utils.sly_bd_lexer as bd_lexer
-import spsdk.apps.elftosb_utils.sly_bd_parser as bd_parser
-from spsdk.apps.elftosb_utils.sb_21_helper import _validate_keyblob
+import spsdk.sbfile.sb2.sly_bd_lexer as bd_lexer
+import spsdk.sbfile.sb2.sly_bd_parser as bd_parser
+from spsdk.sbfile.sb2.sb_21_helper import _validate_keyblob
 
 
 def test_parser():
@@ -299,7 +299,7 @@ def test_keyblob_validation():
 
 
 def test_parser_return_none():
-    """Test verifies, that on error an expection is raised."""
+    """Test verifies, that on error an exception is raised."""
     text = r"""nonsense"""
 
     parser = bd_parser.BDParser()
@@ -635,7 +635,7 @@ def test_if_stmt(input_text, throws_exception):
             r"""section (12) {
                 load ifr 0x10 > 0x50;
             }""",
-            True,
+            False,
         ),
         (
             r"""sources {
@@ -1171,6 +1171,14 @@ def test_bool_expr(input_text, throws_exception):
         (
             r"""constants {
                 id = 10 ^ 1;
+            }""",
+            False,
+        ),
+        (
+            r"""constants {
+                id = 10.w;
+                id = 10.b;
+                id = 10.h;
             }""",
             False,
         ),

@@ -17,7 +17,7 @@ from spsdk import SPSDKError
 from spsdk.crypto.loaders import load_certificate_as_bytes
 from spsdk.utils import misc
 from spsdk.utils.crypto import CRYPTO_SCH_FILE
-from spsdk.utils.misc import value_to_int
+from spsdk.utils.misc import find_file, value_to_int
 from spsdk.utils.schema_validator import ValidationSchemas
 
 from .abstract import BaseClass
@@ -415,11 +415,12 @@ class CertBlockV2(CertBlock):
         ]
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "CertBlockV2":
-        """Creates instantion of CertBlockV2 from configuration.
+    def from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CertBlockV2":
+        """Creates an instance of CertBlockV2 from configuration.
 
         :param config: Input standard configuration.
-        :return: Instantion of CertBlockV2
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Instance of CertBlockV2
         :raises SPSDKError: Invalid certificates detected.
         """
         image_build_number = value_to_int(config.get("imageBuildNumber", 0))
@@ -444,7 +445,9 @@ class CertBlockV2(CertBlock):
 
         # add whole certificate chain used for image signing
         for cert_path in root_certificates[main_cert_chain_id]:
-            cert_data = load_certificate_as_bytes(str(cert_path))
+            cert_data = load_certificate_as_bytes(
+                find_file(str(cert_path), search_paths=search_paths)
+            )
             cert_block.add_certificate(cert_data)
         # set root key hash of each root certificate
         empty_rec = False
@@ -452,7 +455,9 @@ class CertBlockV2(CertBlock):
             if cert_path[0]:
                 if empty_rec:
                     raise SPSDKError("There are gaps in rootCertificateXFile definition")
-                cert_data = load_certificate_as_bytes(str(cert_path[0]))
+                cert_data = load_certificate_as_bytes(
+                    find_file(str(cert_path[0]), search_paths=search_paths)
+                )
                 cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
             else:
                 empty_rec = True
@@ -581,9 +586,9 @@ class RootKeyRecord(BaseClass):
         if self.used_root_cert:
             flags |= self.used_root_cert << 8
         flags |= len(self.root_certs) << 4
-        if self.root_certs[0].curve == "NIST P-256":
+        if self.root_certs[0].curve in ["NIST P-256", "p256"]:
             flags |= 1 << 0
-        if self.root_certs[0].curve == "NIST P-384":
+        if self.root_certs[0].curve in ["NIST P-384", "p384"]:
             flags |= 1 << 1
         return flags
 
@@ -673,9 +678,9 @@ class IskCertificate(BaseClass):
         self.flags = 0
         if self.user_data:
             self.flags |= 1 << 31
-        if self.isk_cert.curve == "NIST P-256":
+        if self.isk_cert.curve in ["NIST P-256", "p256"]:
             self.flags |= 1 << 0
-        if self.isk_cert.curve == "NIST P-384":
+        if self.isk_cert.curve in ["NIST P-384", "p384"]:
             self.flags |= 1 << 1
 
     def create_isk_signature(self, key_record_data: bytes) -> None:
@@ -797,11 +802,12 @@ class CertBlockV31(CertBlock):
         return [sch_cfg["certificate_v31"], sch_cfg["certificate_root_keys"]]
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any]) -> "CertBlockV31":
-        """Creates instantion of CertBlockV31 from configuration.
+    def from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CertBlockV31":
+        """Creates an instance of CertBlockV31 from configuration.
 
         :param config: Input standard configuration.
-        :return: Instantion of CertBlockV3.1
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Instance of CertBlockV3.1
         :raises SPSDKError: If found gap in certificates from config file.
         """
         root_certificates_loaded: List[Optional[str]] = [
@@ -820,7 +826,10 @@ class CertBlockV31(CertBlock):
         isk_constraint = value_to_int(config.get("signingCertificateConstraint", "0"))
         isk_sign_data_path = config.get("signCertData")
 
-        root_certs = [misc.load_binary(cert_file) for cert_file in root_certificates]
+        root_certs = [
+            misc.load_binary(cert_file, search_paths=search_paths)
+            for cert_file in root_certificates
+        ]
         user_data = None
         isk_private_key = None
         isk_cert = None
@@ -828,9 +837,11 @@ class CertBlockV31(CertBlock):
         if use_isk:
             assert isk_certificate and main_root_private_key_file
             if isk_sign_data_path:
-                user_data = misc.load_binary(isk_sign_data_path)
-            isk_private_key = misc.load_binary(main_root_private_key_file)
-            isk_cert = misc.load_binary(isk_certificate)
+                user_data = misc.load_binary(isk_sign_data_path, search_paths=search_paths)
+            isk_private_key = misc.load_binary(
+                main_root_private_key_file, search_paths=search_paths
+            )
+            isk_cert = misc.load_binary(isk_certificate, search_paths=search_paths)
 
         cert_block = CertBlockV31(
             root_certs=root_certs,

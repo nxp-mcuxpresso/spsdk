@@ -127,7 +127,7 @@ class SDP:
         """Read data from device.
 
         :param length: Count of bytes
-        :return: bytes read if the read operation is successfull else None
+        :return: bytes read if the read operation is successful else None
         :raises SdpCommandError: If command failed and the 'cmd_exception' is set to True
         :raises SdpConnectionError: Timeout or Connection error
         """
@@ -157,7 +157,7 @@ class SDP:
 
         :param cmd_packet: Command packet object
         :param data: array with data to send
-        :return: True if the write operation is successfull
+        :return: True if the write operation is successful
         :raises SdpCommandError: If command failed and the 'cmd_exception' is set to True
         :raises SdpConnectionError: Timeout or Connection error
         """
@@ -180,7 +180,6 @@ class SDP:
             hab_response = self._device.read()
             logger.debug(f"RX-DATA: {hab_response.info()}")
             self._hab_status = hab_response.value
-            # TODO: Is this condition necessary?
             if hab_response.value != ResponseValue.UNLOCKED:
                 self._hab_status = StatusCode.HAB_IS_LOCKED
 
@@ -379,3 +378,15 @@ class SDP:
         if self._process_cmd(CmdPacket(CommandTag.ERROR_STATUS, 0, 0, 0)):
             return self._read_status()
         return None
+
+    def set_baudrate(self, baudrate: int) -> bool:
+        """Configure the UART baudrate on the device side.
+
+        The default baudrate is 115200.
+
+        :param baudrate: Baudrate to be set
+        :return: Return True if success else False.
+        """
+        logger.info(f"TX-CMD: Set baudrate to: {baudrate}")
+        cmd_packet = CmdPacket(CommandTag.SET_BAUDRATE, baudrate, 0, 0)
+        return self._process_cmd(cmd_packet)

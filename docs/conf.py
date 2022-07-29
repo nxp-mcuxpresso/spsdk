@@ -7,6 +7,7 @@
 # -- Path setup --------------------------------------------------------------
 
 import datetime
+import logging
 import os
 import sys
 
@@ -18,7 +19,9 @@ import spsdk
 #
 
 sys.path.insert(0, os.path.abspath(".."))
+sys.path.append(os.path.abspath("exts"))
 sys.setrecursionlimit(1500)
+logging.basicConfig(level=logging.INFO)
 
 # -- Project information -----------------------------------------------------
 
@@ -38,12 +41,16 @@ source_suffix = {
 }
 
 autoclass_content = "both"
-
+suppress_warnings = ["autosectionlabel.*"]
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "generate_schemas",
+    "generate_table",
+    "generate_apps_img",
+    "generate_project_struct_doc",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",
     # 'sphinx_autodoc_annotation',
@@ -85,5 +92,5 @@ html_static_path = ["_static"]
 # These paths are either relative to html_static_path
 # or fully qualified paths (eg. https://...)
 html_css_files = [
-    "css/nxp.css",
+    "custom.css",
 ]

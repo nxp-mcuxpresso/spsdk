@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Module for functionality shared accross all interfaces."""
+"""Module for functionality shared across all interfaces."""
 
 from abc import ABC
 from typing import Any

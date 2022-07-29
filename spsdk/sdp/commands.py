@@ -49,6 +49,7 @@ class ResponseValue(Enum):
     UNLOCKED = (0x56787856, "Hab Is Disabled (Unlocked)")
 
     HAB_SUCCESS = (0xF0F0F0F0, "HAB_Success", "HAB Success")
+    BAUDRATE_SET = (0x09D00D90, "Baudrate Setup Success")
 
 
 ########################################################################################################################
@@ -70,7 +71,6 @@ class CmdPacket:
         :param pformat: Format of the data: 8 = byte, 16 = half-word, 32 = word
         :param count: Count used by individual command
         :param value: Value to use in a particular command, defaults to 0
-        :type value: int, optional
         """
         self.tag = tag
         self.address = address

@@ -2,27 +2,29 @@
 tox
 -r requirements.txt
 # testing
-pyyaml
 pytest
 pytest-cov
+pyyaml
 voluptuous
-jsonschema
 # metrics
 radon
-mypy>=0.800,<=0.910
+mypy>=0.800,<=0.942
 types-requests>=2.26
+types-PyYAML
 # codestyle
 pylint>=2.6.0,<2.12.2
-pydocstyle
-black==21.12b0
+pydocstyle[toml]
+black
 # cli executables
-pyinstaller
+pyinstaller==5.0
+pyinstaller-hooks-contrib
 # developement/CI tools
 bump2version==1.0.1
 pre-commit
 openpyxl
 cachier
 jira
+InquirerPy
 # examples
 flask
 requests

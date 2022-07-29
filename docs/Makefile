@@ -14,13 +14,7 @@ help:
 
 .PHONY: help Makefile
 
-table:
-	python generate_table.py
-
-schemas:
-	python generate_schemas.py
-
-html: schemas table
+html:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 # Catch-all target: route all unknown targets to Sphinx using the new

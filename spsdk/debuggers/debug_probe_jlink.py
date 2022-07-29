@@ -95,14 +95,15 @@ class DebugProbePyLink(DebugProbe):
         probes = DebugProbes()
         connected_probes = jlink.connected_emulators()
         for probe in connected_probes:
-            probes.append(
-                ProbeDescription(
-                    "Jlink",
-                    str(probe.SerialNumber),
-                    "Segger " + probe.acProduct.decode("utf-8") + ": " + str(probe.SerialNumber),
-                    DebugProbePyLink,
+            if not hardware_id or hardware_id == str(probe.SerialNumber):
+                probes.append(
+                    ProbeDescription(
+                        "Jlink",
+                        str(probe.SerialNumber),
+                        f"Segger {probe.acProduct.decode('utf-8')}: {str(probe.SerialNumber)}",
+                        DebugProbePyLink,
+                    )
                 )
-            )
 
         return probes
 
@@ -124,7 +125,10 @@ class DebugProbePyLink(DebugProbe):
 
         try:
 
-            self.pylink.open(serial_no=self.hardware_id, ip_addr=self.user_params.get("ip_address"))
+            self.pylink.open(
+                serial_no=self.hardware_id,
+                ip_addr=self.user_params.get("ip_address") if self.user_params else None,
+            )
             self.pylink.set_tif(pylink.enums.JLinkInterfaces.SWD)
             self.pylink.coresight_configure()
             # Power Up the system and debug and clear sticky errors
@@ -139,7 +143,7 @@ class DebugProbePyLink(DebugProbe):
             else:
                 if debug_mbox_ap_ix != self.dbgmlbx_ap_ix:
                     logger.info(
-                        "The detected debug mailbox accessport index is different to specified."
+                        "The detected debug mailbox access port index is different to specified."
                     )
 
         except JLinkException as exc:
@@ -220,7 +224,6 @@ class DebugProbePyLink(DebugProbe):
         try:
             reg = self.pylink.memory_read32(addr=addr, num_words=1)
         except (JLinkException, ValueError, TypeError) as exc:
-            logger.error(f"Failed read memory({str(exc)}).")
             raise SPSDKDebugProbeTransferError(f"Failed read memory({str(exc)}).") from exc
         return reg[0]
 
@@ -250,7 +253,6 @@ class DebugProbePyLink(DebugProbe):
             data_list.append(data)
             self.pylink.memory_write32(addr=addr, data=data_list)
         except (JLinkException, ValueError, TypeError) as exc:
-            logger.error(f"Failed write memory({str(exc)}).")
             raise SPSDKDebugProbeTransferError(f"Failed write memory({str(exc)}).") from exc
 
     def coresight_reg_read(self, access_port: bool = True, addr: int = 0) -> int:
@@ -335,11 +337,15 @@ class DebugProbePyLink(DebugProbe):
         It resets a target.
 
         :raises SPSDKDebugProbeNotOpenError: The PyLink probe is NOT opened
+        :raises SPSDKDebugProbeError: The PyLink probe RESET function failed
         """
         if self.pylink is None:
             raise SPSDKDebugProbeNotOpenError("The PyLink debug probe is not opened yet")
 
-        self.pylink.reset()
+        try:
+            self.pylink.reset()
+        except JLinkException as exc:
+            raise SPSDKDebugProbeError(f"Jlink reset operation failed: {str(exc)}") from exc
 
     def _select_ap(self, addr: int) -> None:
         """Helper function to select the access port in DP.

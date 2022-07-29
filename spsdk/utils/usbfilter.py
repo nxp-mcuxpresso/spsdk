@@ -23,7 +23,7 @@ class USBDeviceFilter:
     Hex number must be preceded by 0x or 0X. Number of characters after 0x is
     1 - 4. Mixed upper & lower case letters is allowed. e.g. "0xaB12", "0XAB12",
     "0x1", "0x0001".
-    The decimal number is restrictred only to have 1 - 5 digits, e.g. "65535"
+    The decimal number is restricted only to have 1 - 5 digits, e.g. "65535"
     It's allowed to set the USB filter ID to decimal number "99999", however, as
     the USB VID number is four-byte hex number (max value is 65535), this will
     lead to zero results. Leading zeros are not allowed e.g. 0001. This will
@@ -184,7 +184,7 @@ class USBDeviceFilter:
         return False
 
     def _is_vid_pid(self, vid: int, pid: int) -> bool:
-        """If usb_id corresponds to VID/PID pair, comapres it with provided vid/pid.
+        """If usb_id corresponds to VID/PID pair, compares it with provided vid/pid.
 
         :param vid: vendor ID to compare.
         :param pid: product ID to compare.
@@ -214,7 +214,7 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
     a single number is provided, we expect that VID is out of range NXP_VIDS.
     """
 
-    NXP_VIDS = [0x1FC9, 0x15A2]
+    NXP_VIDS = [0x1FC9, 0x15A2, 0x0471, 0x0D28]
 
     def __init__(
         self,
@@ -242,15 +242,13 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
         vendor_id = usb_device_object["vendor_id"]
         product_id = usb_device_object["product_id"]
 
-        is_valid_id = super().compare(usb_device_object=usb_device_object)
+        if self.usb_id:
+            if super().compare(usb_device_object=usb_device_object):
+                return True
 
-        if is_valid_id:
-            return True
+            return self._is_nxp_device_name(vendor_id, product_id)
 
-        if self._is_nxp_device_name(vendor_id, product_id):
-            return True
-
-        return False
+        return self._is_nxp_device(vendor_id)
 
     def _is_vid_or_pid(self, vid: Optional[int], pid: Optional[int]) -> bool:
         if vid and vid in NXPUSBDeviceFilter.NXP_VIDS:
@@ -259,8 +257,14 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
         return False
 
     def _is_nxp_device_name(self, vid: int, pid: int) -> bool:
-        if self.usb_id in self.nxp_device_names:
-            vendor_id, product_id = self.nxp_device_names[self.usb_id]
+        nxp_device_name_to_compare = {k.lower(): v for k, v in self.nxp_device_names.items()}
+        assert isinstance(self.usb_id, str)
+        if self.usb_id.lower() in nxp_device_name_to_compare:
+            vendor_id, product_id = nxp_device_name_to_compare[self.usb_id.lower()]
             if vendor_id == vid and product_id == pid:
                 return True
         return False
+
+    @staticmethod
+    def _is_nxp_device(vid: int) -> bool:
+        return vid in NXPUSBDeviceFilter.NXP_VIDS

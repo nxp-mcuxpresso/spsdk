@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd">
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
   <register offset="0" width="32" name="BOOT_CFG" description="Boot Configuration">
     <alias type="CMSIS" value="BOOT_CFG"/>
     <reserved_bit_field offset="0" width="4" reset_value="0"/>
@@ -31,7 +31,7 @@
   </register>
   <register offset="0x8" width="32" name="USB_ID" description="USB Identifiers">
     <alias type="CMSIS" value="USB_ID"/>
-    <bit_field offset="0" width="16" name="USB_VENDOR_ID" access="RW" reset_value="0" description="USB Vendor ID.">
+    <bit_field offset="0" width="16" name="USB_VENDOR_ID" access="RW" reset_value="0" description="USB Vendor ID">
       <alias type="CMSIS" value="FLASH_CMPA_USB_ID_USB_VENDOR_ID(x)"/>
     </bit_field>
     <bit_field offset="16" width="16" name="USB_PRODUCT_ID" access="RW" reset_value="0" description="USB Product ID">

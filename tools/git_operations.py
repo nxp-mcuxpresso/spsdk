@@ -16,7 +16,7 @@ def get_number_of_commits(repo_path: str, parent_branch: str = "origin/master") 
 
     :param parent_branch: branch to examine
     :param repo_path: path to the repository
-    :return nuumber of commits
+    :return number of commits
     """
     cmd = f"git log --oneline {parent_branch}..HEAD"
     logging.debug(f"Executing: {cmd}")

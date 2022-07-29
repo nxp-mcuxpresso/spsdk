@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Tests for debug credential."""
+
+import os
 
 import pytest
 import yaml
@@ -61,8 +63,8 @@ def test_debugcredential_rsa_compare_with_reference(data_dir):
 
 def test_reconstruct_signature(data_dir):
     """Reconstructs the signature."""
-    signature_bytes = load_binary(data_dir, "signature_bytes.bin")
-    signature = load_binary(data_dir, "signature.bin")
+    signature_bytes = load_binary(os.path.join(data_dir, "signature_bytes.bin"))
+    signature = load_binary(os.path.join(data_dir, "signature.bin"))
     reconstructed_signature = utils.reconstruct_signature(signature_bytes)
     assert signature == reconstructed_signature
 
@@ -137,20 +139,20 @@ def test_debugcredential_ecc_compare_with_reference(data_dir):
             dc.sign()
             data = dc.export()
             pub_key = load_private_key(yaml_config["rotk"]).public_key()
-        data_without_singature = data[:-132]
+        data_without_signature = data[:-132]
         signature_bytes = data[-132:]
         with open("new_dck_secp256r1.cert", "rb") as f:
             data_loaded = f.read()
         ref_data_without_signature = data_loaded[:-132]
         ref_signature_bytes = data_loaded[-132:]
         assert (
-            data_without_singature == ref_data_without_signature
+            data_without_signature == ref_data_without_signature
         ), "The generated dc binary and the referenced one are not the same."
         signature = utils.reconstruct_signature(signature_bytes)
         ref_signature = utils.reconstruct_signature(ref_signature_bytes)
         try:
-            pub_key.verify(signature, data_without_singature, ec.ECDSA(hashes.SHA256()))
-            pub_key.verify(ref_signature, data_without_singature, ec.ECDSA(hashes.SHA256()))
+            pub_key.verify(signature, data_without_signature, ec.ECDSA(hashes.SHA256()))
+            pub_key.verify(ref_signature, data_without_signature, ec.ECDSA(hashes.SHA256()))
             assert True
         except InvalidSignature:
             assert False

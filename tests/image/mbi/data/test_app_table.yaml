@@ -1,0 +1,10 @@
+applicationTable:
+  - binary: tests/image/mbi/data/testfffffff.bin
+    destAddress: "0x1234"
+    load: True
+  - binary: tests/image/mbi/data/testfffffff.bin
+    destAddress: "0x5678"
+    load: True
+  - binary: tests/image/mbi/data/testfffffff.bin
+    destAddress: "0xabcd"
+    load: True

@@ -14,6 +14,7 @@ from spsdk.crypto import (
     Encoding,
     RSAPrivateKeyWithSerialization,
     RSAPublicKey,
+    RSAPublicNumbers,
     default_backend,
     ec,
     rsa,
@@ -131,6 +132,17 @@ def save_rsa_public_key(
         f.write(pem_data)
 
 
+def recreate_rsa_public_key(e: int, n: int) -> RSAPublicKey:
+    """Recreate RSA public key from Exponent and modulus.
+
+    :param e: Exponent of RSA key.
+    :param n: Modulus of RSA key.
+    :return: RSA public key.
+    """
+    public_numbers = RSAPublicNumbers(e=e, n=n)
+    return public_numbers.public_key()
+
+
 def generate_ecc_private_key(curve_name: str) -> EllipticCurvePrivateKeyWithSerialization:
     """Generate ECC private key.
 
@@ -192,3 +204,31 @@ def save_ecc_public_key(
     )
     with open(file_path, "wb") as f:
         f.write(pem_data)
+
+
+def recreate_ecc_public_key(coor_x: int, coor_y: int, curve: str) -> EllipticCurvePublicKey:
+    """Recreate ECC public key from coordinates.
+
+    :param coor_x: X coordinate of point on curve.
+    :param coor_y: Y coordinate of point on curve.
+    :param curve: Name of ECC curve.
+    :return: ECC public key.
+    """
+    pub_numbers = ec.EllipticCurvePublicNumbers(
+        x=coor_x, y=coor_y, curve=get_ec_curve_object(curve)
+    )
+    key = pub_numbers.public_key()
+    return key
+
+
+def recreate_ecc_public_key_from_data(coors: bytes, curve: str) -> EllipticCurvePublicKey:
+    """Recreate ECC public key from coordinates in data blob.
+
+    :param coors: Data blob of coordinates in bytes (X,Y in Big Endian)
+    :param curve: Name of ECC curve.
+    :return: ECC public key.
+    """
+    coordinate_length = len(coors) // 2
+    coor_x = int.from_bytes(coors[:coordinate_length], byteorder="big")
+    coor_y = int.from_bytes(coors[coordinate_length:], byteorder="big")
+    return recreate_ecc_public_key(coor_x=coor_x, coor_y=coor_y, curve=curve)

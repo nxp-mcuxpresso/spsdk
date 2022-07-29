@@ -17,9 +17,8 @@ from spsdk import SPSDKError
 from spsdk.mboot import ExtMemId, MemId
 from spsdk.sbfile.misc import SecBootBlckSize
 from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.crypto.common import swap16
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo
+from spsdk.utils.misc import DebugInfo, swap16
 
 
 ########################################################################################################################
@@ -135,7 +134,6 @@ class CmdBaseClass(BaseClass):
         """Initialize CmdBase."""
         self._header = CmdHeader(tag)
 
-    # TODO Refactor: so header is not published, it should not be accessed publicly
     @property
     def header(self) -> CmdHeader:
         """Return command header."""
@@ -235,6 +233,19 @@ class CmdLoad(CmdBaseClass):
         self._header.address = value
 
     @property
+    def mem_id(self) -> int:
+        """Return memory to be used."""
+        return swap16(self._header.flags)
+
+    @mem_id.setter
+    def mem_id(self, value: int) -> None:
+        """Setter.
+
+        :param value: memory to be used
+        """
+        self._header.flags = swap16(value)
+
+    @property
     def raw_size(self) -> int:
         """Return aligned size of the command including header and data."""
         size = CmdHeader.SIZE + len(self.data)
@@ -242,15 +253,16 @@ class CmdLoad(CmdBaseClass):
             size += CmdHeader.SIZE - (size % CmdHeader.SIZE)
         return size
 
-    def __init__(self, address: int, data: bytes) -> None:
+    def __init__(self, address: int, data: bytes, mem_id: int = 0) -> None:
         """Initialize CMD Load."""
         super().__init__(EnumCmdTag.LOAD)
         assert isinstance(data, (bytes, bytearray))
         self.address = address
         self.data = bytes(data)
+        self.mem_id = mem_id
 
     def __str__(self) -> str:
-        return f"LOAD: Address=0x{self.address:08X}, DataLen={len(self.data)}"
+        return f"LOAD: Address=0x{self.address:08X}, DataLen={len(self.data)}, MemId=0x{self.mem_id:08X}"
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Export command as binary."""
@@ -287,7 +299,8 @@ class CmdLoad(CmdBaseClass):
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         if header.data != crc32_function(cmd_data, 0xFFFFFFFF):
             raise SPSDKError("Invalid CRC in the command header")
-        obj = CmdLoad(header.address, cmd_data)
+        mem_id = swap16(header.flags)
+        obj = CmdLoad(header.address, cmd_data, mem_id)
         obj.header.data = header.data
         obj.header.flags = header.flags
         obj._update_data()
@@ -669,9 +682,99 @@ class CmdMemEnable(CmdBaseClass):
 class CmdProg(CmdBaseClass):
     """Command Program class."""
 
-    def __init__(self) -> None:
-        """Initialize Cmd Program."""
+    # bit mask for memory ID inside flags
+    ROM_MEM_DEVICE_ID_MASK = 0xFF00
+    # shift for memory ID inside flags
+    ROM_MEM_DEVICE_ID_SHIFT = 8
+
+    @property
+    def address(self) -> int:
+        """Return address in target processor to program data."""
+        return self._header.address
+
+    @address.setter
+    def address(self, value: int) -> None:
+        """Setter.
+
+        :param value: address in target processor to load data
+        :raises SPSDKError: When there is incorrect address
+        """
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Incorrect address")
+        self._header.address = value
+
+    @property
+    def flags(self) -> int:
+        """Return command's flag."""
+        return self._header.flags
+
+    @flags.setter
+    def flags(self, value: int) -> None:
+        """Set command's flag."""
+        self._header.flags = self.is_eight_byte
+        self._header.flags |= value
+
+    @property
+    def data_word1(self) -> int:
+        """Return data word 1."""
+        return self._header.count
+
+    @data_word1.setter
+    def data_word1(self, value: int) -> None:
+        """Setter.
+
+        :param value: first data word
+        :raises SPSDKError: When there is incorrect value
+        """
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Incorrect data word 1")
+        self._header.count = value
+
+    @property
+    def data_word2(self) -> int:
+        """Return data word 2."""
+        return self._header.data
+
+    @data_word2.setter
+    def data_word2(self, value: int) -> None:
+        """Setter.
+
+        :param value: second data word
+        :raises SPSDKError: When there is incorrect value
+        """
+        if value < 0x00000000 or value > 0xFFFFFFFF:
+            raise SPSDKError("Incorrect data word 2")
+        self._header.data = value
+
+    def __init__(
+        self, address: int, mem_id: int, data_word1: int, data_word2: int = 0, flags: int = 0
+    ) -> None:
+        """Initialize CMD Prog."""
         super().__init__(EnumCmdTag.PROG)
+
+        if data_word2:
+            self.is_eight_byte = 1
+        else:
+            self.is_eight_byte = 0
+
+        if mem_id < 0 or mem_id > 0xFF:
+            raise SPSDKError("Invalid ID of memory")
+
+        self.address = address
+        self.data_word1 = data_word1
+        self.data_word2 = data_word2
+        self.mem_id = mem_id
+        self.flags = flags
+
+        self.flags = (self.flags & ~self.ROM_MEM_DEVICE_ID_MASK) | (
+            (self.mem_id << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK
+        )
+
+    def __str__(self) -> str:
+        return (
+            f"PROG: Index=0x{self.address:08X}, DataWord1=0x{self.data_word1:08X}, "
+            f"DataWord2=0x{self.data_word2:08X}, Flags=0x{self.flags:08X}, MemId=0x{self.mem_id:08X}"
+        )
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "CmdProg":
@@ -685,7 +788,8 @@ class CmdProg(CmdBaseClass):
         header = CmdHeader.parse(data, offset)
         if header.tag != EnumCmdTag.PROG:
             raise SPSDKError("Invalid header tag")
-        return cls()
+        mem_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
+        return cls(header.address, mem_id, header.count, header.data, header.flags)
 
 
 class VersionCheckType(Enum):

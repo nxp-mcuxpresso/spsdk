@@ -6,21 +6,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """ Test of common crypto utilities module."""
 
-import datetime
-from datetime import datetime, timezone
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
 
 from spsdk import SPSDKError
 from spsdk.utils.crypto import Counter
-from spsdk.utils.crypto.common import (
-    EllipticCurvePublicNumbers,
-    ecc_public_numbers_to_bytes,
-    pack_timestamp,
-    swap16,
-    unpack_timestamp,
-)
+from spsdk.utils.crypto.common import EllipticCurvePublicNumbers, ecc_public_numbers_to_bytes
 
 
 def test_counter():
@@ -66,18 +58,3 @@ def test_ecc_public_numbers_to_bytes():
         ecc_public_numbers_to_bytes(ecc, 8)
         == b"\x12\x34\x56\x78\x90\xab\xcd\xef\xef\xcd\xab\x90\x78\x56\x34\x12"
     )
-
-
-def test_swap16_invalid():
-    with pytest.raises(SPSDKError, match="Incorrect number to be swapped"):
-        swap16(0xFFFFA)
-
-
-def test_pack_timestamp_invalid():
-    with pytest.raises(SPSDKError, match="Incorrect result of convertion"):
-        pack_timestamp(value=datetime(1000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc))
-
-
-def test_unpack_timestamp_invalid():
-    with pytest.raises(SPSDKError, match="Incorrect result of convertion"):
-        unpack_timestamp(value=99999999999999999999999)

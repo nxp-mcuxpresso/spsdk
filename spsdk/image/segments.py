@@ -731,8 +731,6 @@ class SegIVT2(BaseSegment):
             raise SPSDKError(
                 f"Not valid DCD address: 0x{self.dcd_address:X} < 0x{self.ivt_address:X}"
             )
-        # TODO: resolve commented code: if self.app_address and self.app_address < self.ivt_address:
-        #  raise SPSDKError("Not valid APP address: 0x{:X} < 0x{:X}".format(self.app_address, self.ivt_address))
         if self.csf_address and self.csf_address < self.ivt_address:
             raise SPSDKError(
                 f"Not valid CSF address: 0x{self.csf_address:X} < 0x{self.ivt_address:X}"
@@ -1245,7 +1243,7 @@ class SegCSF(BaseSegment):
         #   - key is an offset of the data section in segment
         #   - value is an instance of the data section
         self._cmd_data: Dict[int, BaseClass] = {}
-        # this allows to export segment, that was parsered, but certificate and private keys are not available
+        # this allows to export segment, that was parsed, but certificate and private keys are not available
         self.no_signature_updates = False
 
     @property
@@ -1797,7 +1795,6 @@ class SegBDS3a(BaseSegment):
     def info(self) -> str:
         """String representation of the SegBDS3a."""
         msg = f" IMAGES: {self.images_count}\n"
-        # TODO: why the code commented-out?   msg += " Data size: {}\n".format(self.boot_data_size)
         msg += f" DFLAGS: 0x{self.boot_data_flag:08X}\n\n"
         for i in range(self.images_count):
             msg += f" IMAGE[{i}] \n"
@@ -1955,7 +1952,6 @@ class SegBDS3b(BaseSegment):
     def info(self) -> str:
         """String representation of the SegBDS3b."""
         msg = f" IMAGES: {self.images_count}\n"
-        # TODO: why the code commented-out? msg += " Data size: {}\n".format(self.boot_data_size)
         msg += f" DFLAGS: 0x{self.boot_data_flag:08X}\n\n"
         for i in range(self.images_count):
             msg += f" IMAGE[{i}] \n"
@@ -2339,6 +2335,6 @@ def _format_ivt_item(item_address: int, digit_count: int = 8) -> str:
 
     :param item_address: Address if IVT item
     :param digit_count: Number of digits to , defaults to 8
-    :return: Formated number
+    :return: Formatted number
     """
     return f"{item_address:#0{digit_count + 2}x}" if item_address else "none"

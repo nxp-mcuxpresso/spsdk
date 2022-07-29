@@ -45,7 +45,7 @@ def test_version_class():
         _ = Version(0.5)
 
 
-def test_mone_value():
+def test_none_value():
     value = parse_property_value(1000, [0])
     assert value is None
 

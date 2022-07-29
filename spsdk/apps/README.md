@@ -4,11 +4,13 @@ After installing SPSDK, several applications are present directly on PATH as exe
 
 - [spsdk](spsdk_apps.py) - entry point for all available applications.
 - [blhost](blhost.py) - console script for MBoot module.
-- [elftosb](elftosb.py) - utility for generating TrustZone, MasterBootImage and SecureBinary images.
+- [elftosb](elftosb.py) - (Deprecated; replaced by nxpimage) utility for generating TrustZone, MasterBootImage and SecureBinary images.
 - [nxpcertgen](nxpcertgen.py) - utility for generating  the self-signed x.509 certificate.
 - [nxpdebugmbox](nxpdebugmbox.py) - utility for performing the Debug Authentication.
 - [nxpdevscan](nxpdevscan.py) - utility for listing all connected NXP USB and UART devices.
-- [nxpkeygen](nxpkeygen.py) - utility for generating RSA/ECC key pairs and debug credential files based on YAML configuration file.
+- [nxpkeygen](nxpkeygen.py) - (Deprecated; replaced by nxpcrypto) utility for generating RSA/ECC key pairs.
+- [nxpcrypto](nxpcrypto.py) - utility for generating/verifying RSA/ECC key pairs, and converting key file format (PEM/DER/RAW).
+- [nxpimage](nxpimage.py) - utility for generating TrustZone, MasterBootImage and SecureBinary images.
 - [pfr](pfr.py) - simple utility for creation and analysis of protected regions - CMPA and CFPA.
 - [pfrc](pfrc.py) - simple utility for search of brick-conditions in PFR settings.
 - [sdphost](sdphost.py) - console script for SDP module.

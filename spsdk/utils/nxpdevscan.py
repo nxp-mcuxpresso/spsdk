@@ -42,7 +42,8 @@ def search_nxp_usb_devices(extend_vid_list: list = None) -> List[USBDeviceDescri
     :extend_vid_list: list of VIDs, to extend the default NXP VID list (int)
     :return: list of USBDeviceDescription corresponding to NXP devices
     """
-    sio = usbsio()
+    libusbsio_logger = logging.getLogger("libusbsio")
+    sio = usbsio(loglevel=libusbsio_logger.getEffectiveLevel())
     all_usb_devices = sio.HIDAPI_Enumerate()
     nxp_usb_devices = []
 
@@ -135,11 +136,12 @@ def search_libusbsio_devices() -> List[SIODeviceDescription]:
     """
     retval = []
     try:
-        sio = usbsio()  # Get Singleton of LIBUSBSIO
+        libusbsio_logger = logging.getLogger("libusbsio")
+        sio = usbsio(loglevel=libusbsio_logger.getEffectiveLevel())
         for i in range(sio.GetNumPorts()):
             info = sio.GetDeviceInfo(i)
             if not info:
-                raise SPSDKError("Cannot retrive the Device Information.")
+                raise SPSDKError("Cannot retrieve the Device Information.")
             retval.append(SIODeviceDescription(info))
     except (LIBUSBSIO_Exception, SPSDKError) as exc:
         raise SPSDKError(f"LIBUSBSIO search devices fails: [{str(exc)}]") from exc

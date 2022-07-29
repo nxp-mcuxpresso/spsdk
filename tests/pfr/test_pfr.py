@@ -31,9 +31,9 @@ from spsdk.utils.misc import load_file
 
 def test_generate_cmpa(data_dir):
     """Test PFR tool - Generating CMPA binary."""
-    binary = load_file(data_dir, "CMPA_96MHz.bin", mode="rb")
+    binary = load_file(os.path.join(data_dir, "CMPA_96MHz.bin"), mode="rb")
     key = load_pem_private_key(
-        load_file(data_dir, "selfsign_privatekey_rsa2048.pem", mode="rb"),
+        load_file(os.path.join(data_dir, "selfsign_privatekey_rsa2048.pem"), mode="rb"),
         password=None,
         backend=default_backend(),
     )
@@ -49,7 +49,7 @@ def test_generate_cmpa(data_dir):
 
 def test_generate_cfpa(data_dir):
     """Test PFR tool - Generating CFPA binary."""
-    binary = load_file(data_dir, "CFPA_test.bin", mode="rb")
+    binary = load_file(os.path.join(data_dir, "CFPA_test.bin"), mode="rb")
 
     pfr_cfg_json = PfrConfiguration(os.path.join(data_dir, "cfpa_test.json"))
     cfpa_json = CFPA("lpc55s6x", user_config=pfr_cfg_json)
@@ -263,7 +263,7 @@ def test_load_cfg_none_obsolete():
 
 
 def test_cfg_compare():
-    """Test the comparision capability of PFR configuration."""
+    """Test the comparison capability of PFR configuration."""
     assert PfrConfiguration() != 1
     assert PfrConfiguration(device="1") != PfrConfiguration(device="2")
     assert PfrConfiguration(revision="1") != PfrConfiguration(revision="2")

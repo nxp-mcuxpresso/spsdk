@@ -68,7 +68,7 @@ class DebugProbes(list):
     def append(self, item: ProbeDescription) -> None:
         """Overriding build-in function by check the type.
 
-        :param item: ProbeDestription item.
+        :param item: ProbeDescription item.
         :raises SPSDKError: Invalid input types has been used.
         """
         if isinstance(item, ProbeDescription):
@@ -76,10 +76,10 @@ class DebugProbes(list):
         else:
             raise SPSDKError("The list accepts only ProbeDescription object")
 
-    def insert(self, index: int, item: ProbeDescription) -> None:
+    def insert(self, index: int, item: ProbeDescription) -> None:  # type: ignore[override]
         """Overriding build-in function by check the type.
 
-        :param item: ProbeDestription item.
+        :param item: ProbeDescription item.
         :param index: Index in list to insert.
         :raises SPSDKError: Invalid input types has been used.
         """

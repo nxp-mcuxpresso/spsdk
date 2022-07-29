@@ -4,6 +4,7 @@
 # Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 import filecmp
 import os
 import time
@@ -15,21 +16,24 @@ from bincopy import BinFile
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
+from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     Timeout,
     align,
     align_block,
     align_block_fill_random,
-    change_endianism,
+    change_endianness,
     extend_block,
+    find_file,
     find_first,
     format_value,
     get_bytes_cnt_of_int,
     load_binary,
-    load_binary_image,
     load_file,
     reverse_bytes_in_longs,
     size_fmt,
+    swap16,
+    use_working_directory,
     value_to_bool,
     value_to_bytes,
     value_to_int,
@@ -187,8 +191,8 @@ def test_find_first():
 
 def test_load_binary(data_dir):
     """Test loading binary files using load_binary and load_file."""
-    data = load_binary(data_dir, "file.bin")
-    data2 = load_file(data_dir, "file.bin", mode="rb")
+    data = load_binary(os.path.join(data_dir, "file.bin"))
+    data2 = load_file(os.path.join(data_dir, "file.bin"), mode="rb")
 
     assert data == data2
     assert data == bytes(i for i in range(10))
@@ -196,20 +200,46 @@ def test_load_binary(data_dir):
 
 def test_load_file(data_dir):
     """Test loading text file."""
-    text = load_file(data_dir, "file.txt")
+    text = load_file(os.path.join(data_dir, "file.txt"))
     assert text == "Hello\nworld"
 
 
 def test_write_file(data_dir, tmpdir):
     """Test writing data to data using write_file."""
-    data = load_binary(data_dir, "file.bin")
-    text = load_file(data_dir, "file.txt")
+    data = load_binary(os.path.join(data_dir, "file.bin"))
+    text = load_file(os.path.join(data_dir, "file.txt"))
 
-    write_file(data, tmpdir, "file.bin", mode="wb")
-    write_file(text, tmpdir, "file.txt")
+    write_file(data, os.path.join(tmpdir, "file.bin"), mode="wb")
+    write_file(text, os.path.join(tmpdir, "file.txt"))
 
     assert filecmp.cmp(os.path.join(data_dir, "file.bin"), os.path.join(tmpdir, "file.bin"))
     assert filecmp.cmp(os.path.join(data_dir, "file.txt"), os.path.join(tmpdir, "file.txt"))
+
+
+def test_file_file(data_dir):
+    test_file = "file.txt"
+    test_file_full_path = os.path.join(data_dir, "top_dir", "sub_dir1", test_file)
+    test_file_full_path = test_file_full_path.replace("\\", "/")
+
+    with use_working_directory(data_dir):
+        assert find_file(test_file, search_paths=["top_dir/sub_dir1"])
+
+    assert test_file_full_path == find_file(
+        test_file, search_paths=[os.path.join(data_dir, "top_dir", "sub_dir1")]
+    )
+    assert test_file_full_path == find_file(
+        os.path.join(data_dir, "top_dir", "sub_dir1", test_file)
+    )
+
+
+def test_find_file_invalid(data_dir):
+    test_file = "file.txt"
+
+    with use_working_directory(data_dir):
+        with pytest.raises(SPSDKError):
+            assert not find_file(test_file, use_cwd=False)
+        with pytest.raises(SPSDKError):
+            assert not find_file(test_file, use_cwd=False, search_paths=["top_dir"])
 
 
 @pytest.mark.parametrize(
@@ -295,13 +325,13 @@ def test_get_bytes_cnt(num, output, align_2_2n, byte_cnt, exception):
         (b"\x12\x34\x56\x78\x12\x34\x56", b"\x78\x56\x34\x12\x78\x56\x34", True),
     ],
 )
-def test_change_endianism(value, res, exc):
-    """Test of change_endianism function"""
+def test_change_endianness(value, res, exc):
+    """Test of change_endianness function"""
     if not exc:
-        assert res == change_endianism(value)
+        assert res == change_endianness(value)
     else:
         with pytest.raises(SPSDKError):
-            change_endianism(value)
+            change_endianness(value)
 
 
 @pytest.mark.parametrize(
@@ -436,18 +466,15 @@ def test_size_format(input_value, use_kibibyte, expected):
     ],
 )
 def test_load_binary_image(path, data_dir):
-    binary = load_binary_image(os.path.join(data_dir, path))
+    binary = BinaryImage.load_binary_image(os.path.join(data_dir, path))
     assert binary
-    assert isinstance(binary, BinFile)
+    assert isinstance(binary, BinaryImage)
     assert len(binary) > 0
 
 
 @pytest.mark.parametrize(
     "path, error_msg",
     [
-        ("images/image.axf", "Elf file is not supported"),
-        ("images/image.elf", "Elf file is not supported"),
-        ("images/image.out", "file is not supported"),
         (
             "images/image_corrupted.s19",
             "SPSDK: Error loading file: expected crc 'D3' in record S21407F41001020100010600000200000000000000D4, but got 'D4'",
@@ -457,4 +484,9 @@ def test_load_binary_image(path, data_dir):
 )
 def test_load_binary_image_invalid(path, error_msg, data_dir):
     with pytest.raises(SPSDKError, match=error_msg):
-        load_binary_image(os.path.join(data_dir, path))
+        BinaryImage.load_binary_image(os.path.join(data_dir, path))
+
+
+def test_swap16_invalid():
+    with pytest.raises(SPSDKError, match="Incorrect number to be swapped"):
+        swap16(0xFFFFA)

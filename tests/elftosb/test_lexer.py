@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk.apps.elftosb_utils.sly_bd_lexer import BDLexer, Variable
+from spsdk.sbfile.sb2.sly_bd_lexer import BDLexer, Variable
 
 
 class myToken:

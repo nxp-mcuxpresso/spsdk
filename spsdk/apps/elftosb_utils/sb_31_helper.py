@@ -17,8 +17,13 @@ from spsdk.utils.schema_validator import ValidationSchemas, check_config
 class RootOfTrustInfo:  # pylint: disable=too-few-public-methods
     """Filters out Root Of Trust information given to elf2sb application."""
 
-    def __init__(self, data: dict) -> None:
-        """Create object out of data loaded from elf2sb configuration file."""
+    def __init__(self, data: dict, search_paths: List[str] = None) -> None:
+        """Create object out of data loaded from elf2sb configuration file.
+
+        :param data: Configuration data.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :raises SPSDKError: If not valid configuration is detected.
+        """
         # Validate input
         sch_cfg = ValidationSchemas.get_schema_file(MBIMG_SCH_FILE)
         sch_crypto_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
@@ -26,7 +31,7 @@ class RootOfTrustInfo:  # pylint: disable=too-few-public-methods
         val_schemas.extend(
             [sch_crypto_cfg[x] for x in ["certificate_v2_chain_id", "certificate_root_keys"]]
         )
-        check_config(data, val_schemas)
+        check_config(data, val_schemas, search_paths=search_paths)
 
         self.config_data = data
         self.private_key = data.get("mainCertPrivateKeyFile") or data.get(

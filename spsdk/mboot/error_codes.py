@@ -77,6 +77,11 @@ class StatusCode(Enum):
 
     # SDMMC driver errors.
 
+    # FlexSPI statuses.
+    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT  = (7000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")
+    FLEXSPI_INVALID_SEQUENCE            = (7001, "FLEXSPI_InvalidSequence", "FLEXSPI: Invalid Sequence")
+    FLEXSPI_DEVICE_TIMEOUT              = (7002, "FLEXSPI_DeviceTimeout", "FLEXSPI: Device Timeout")
+
     # Bootloader errors.
     UNKNOWN_COMMAND             = (10000, "UnknownCommand", "Unknown Command")
     SECURITY_VIOLATION          = (10001, "SecurityViolation", "Security Violation")
@@ -248,10 +253,43 @@ class StatusCode(Enum):
     OTP_CRC_CHECK_PASS              = (52808, "OTP_CRCCheckPass", "OTP: CRC check passed")
     OTP_VERIFY_FAIL                 = (52009, "OPT_VerifyFail", "OTP: Failed to verify OTP write")
 
-    # FlexSPI statuses.
-    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT  = (70000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")
-    FLEXSPI_INVALID_SEQUENCE            = (70001, "FLEXSPI_InvalidSequence", "FLEXSPI: Invalid Sequence")
-    FLEXSPI_DEVICE_TIMEOUT              = (70002, "FLEXSPI_DeviceTimeout", "FLEXSPI: Device Timeout")
+    # TrustProvisioning statuses.
+    TP_SUCCESS                  = (0,     "TP_SUCCESS", "TP: SUCCESS")
+    TP_GENERAL_ERROR            = (80000, "TP_GENERAL_ERROR", "TP: General error")
+    TP_MBEDTLS_ERROR            = (80001, "TP_MBEDTLS_ERROR", "TP: mBED TLS error")
+    TP_NULLPTR_ERROR            = (80002, "TP_NULLPTR_ERROR", "TP: NULL pointer dereference or when buffer could not be allocated")
+    TP_ALREADYINITIALIZED       = (80003, "TP_ALREADYINITIALIZED", "TP: Already initialized")
+    TP_BUFFERSMALL              = (80004, "TP_BUFFERSMALL", "TP: Buffer is too small")
+    TP_ADDRESS_ERROR            = (80005, "TP_ADDRESS_ERROR", "TP: Address out of allowed range or buffer could not be allocated")
+    TP_CONTAINERINVALID         = (80006, "TP_CONTAINERINVALID", "TP: Container header or size is invalid")
+    TP_CONTAINERENTRYINVALID    = (80007, "TP_CONTAINERENTRYINVALID", "TP: Container entry invalid")
+    TP_CONTAINERENTRYNOTFOUND   = (80008, "TP_CONTAINERENTRYNOTFOUND", "TP: Container entry not found in container")
+    TP_INVALIDSTATEOPERATION    = (80009, "TP_INVALIDSTATEOPERATION", "TP: Attempt to process command in disallowed state")
+    TP_COMMAND_ERROR            = (80010, "TP_COMMAND_ERROR", "TP: ISP command arguments are invalid")
+    TP_PUF_ERROR                = (80011, "TP_PUF_ERROR", "TP: PUF operation error")
+    TP_FLASH_ERROR              = (80012, "TP_FLASH_ERROR", "TP: Flash erase/program/verify_erase failed")
+    TP_SECRETBOX_ERROR          = (80013, "TP_SECRETBOX_ERROR", "TP: SBKEK or USER KEK cannot be stored in secret box")
+    TP_PFR_ERROR                = (80014, "TP_PFR_ERROR", "TP: Protected Flash Region operation failed")
+    TP_VERIFICATION_ERROR       = (80015, "TP_VERIFICATION_ERROR", "TP: Container signature verification failed")
+    TP_CFPA_ERROR               = (80016, "TP_CFPA_ERROR", "TP: CFPA page cannot be stored")
+    TP_CMPA_ERROR               = (80017, "TP_CMPA_ERROR", "TP: CMPA page cannot be stored or ROTKH or SECU registers are invalid")
+    TP_ADDR_OUT_OF_RANGE        = (80018, "TP_ADDR_OUT_OF_RANGE", "TP: Address is out of range")
+    TP_CONTAINER_ADDR_ERROR     = (80019, "TP_CONTAINER_ADDR_ERROR", "TP: Container address in write context is invalid or there is no memory for entry storage")
+    TP_CONTAINER_ADDR_UNALIGNED = (80020, "TP_CONTAINER_ADDR_UNALIGNED", "TP: Container address in read context is unaligned")
+    TP_CONTAINER_BUFF_SMALL     = (80021, "TP_CONTAINER_BUFF_SMALL", "TP: There is not enough memory to store the container")
+    TP_CONTAINER_NO_ENTRY       = (80022, "TP_CONTAINER_NO_ENTRY", "TP: Attempt to sign an empty container")
+    TP_CERT_ADDR_ERROR          = (80023, "TP_CERT_ADDR_ERROR", "TP: Destination address of OEM certificate is invalid")
+    TP_CERT_ADDR_UNALIGNED      = (80024, "TP_CERT_ADDR_UNALIGNED", "TP: Destination address of certificate is unaligned")
+    TP_CERT_OVERLAPPING         = (80025, "TP_CERT_OVERLAPPING", "TP: OEM certificates are overlapping due to wrong destination addresses")
+    TP_PACKET_ERROR             = (80026, "TP_PACKET_ERROR", "TP: Error during packet sending/receiving")
+    TP_PACKET_DATA_ERROR        = (80027, "TP_PACKET_DATA_ERROR", "TP: Data in packet handle are invalid")
+    TP_UNKNOWN_COMMAND          = (80028, "TP_UNKNOWN_COMMAND", "TP: Unknown command was received")
+    # TP_CRITICAL_ERROR_START     (80100)
+    TP_GENERAL_CRITICAL_ERROR       = (80101, "TP_GENERAL_CRITICAL_ERROR", "TP: Critical error")
+    TP_MBEDTLS_CRITICAL_ERROR       = (80102, "TP_MBEDTLS_CRITICAL_ERROR", "TP: Initialization or seed generation in MbedTLS failed")
+    TP_PUF_CRITICAL_ERROR           = (80103, "TP_PUF_CRITICAL_ERROR", "TP: Initialization or start of the PUF periphery failed")
+    TP_PFR_CRITICAL_ERROR           = (80104, "TP_PFR_CRITICAL_ERROR", "TP: Initialization of PFR or reading of activation code failed")
+    TP_PERIPHERAL_CRITICAL_ERROR    = (80105, "TP_PERIPHERAL_CRITICAL_ERROR", "TP: Peripheral failure")
 
 # fmt: on
 

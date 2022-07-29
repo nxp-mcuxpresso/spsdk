@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -68,7 +68,7 @@ def test_generate_cmpa_with_elf2sb(data_dir, tmpdir):
     cmd1 = cmd + f" -o {org_file} -f rotk0_rsa_2048.pub -f rotk1_rsa_2048.pub"
     # elf2sb config file contains previous two keys + one empty line + 4th entry is not present
     cmd2 = cmd + f" -o {new_file} -e elf2sb_config.json"
-    # keys on commandline are in exclusion with elf2sb configuration, the command fails
+    # keys on command line are in exclusion with elf2sb configuration, the command fails
     cmd3 = (
         cmd
         + f" -o {big_file} -e big_elf2sb_config.json -f rotk0_rsa_2048.pub -f rotk1_rsa_2048.pub"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -31,9 +31,9 @@ def generate_trustzone() -> None:
     For this example we have only few settings in configuration file.
     The full set is available in `spsdk/data/tz_presets` folder
     """
-    supperted_families = TrustZone().get_families()
+    supported_families = TrustZone().get_families()
     print("Supported families:")
-    print("\n".join(supperted_families))
+    print("\n".join(supported_families))
 
     with open(os.path.join(DATA_DIR, "lpc55xx_tz.json")) as config_file:
         config_data = json.load(config_file)
@@ -48,7 +48,7 @@ def generate_trustzone() -> None:
 def generate_pfr() -> None:
     """Generate CFPA data.
 
-    Alternatively, to generate data you may use the `pfr` commandline utility
+    Alternatively, to generate data you may use the `pfr` command line utility
     After generating the data, you can upload them to the device using McuBoot.write_memory
     !!! Caution !!!
     Incorrectly configured data may lock the device from further use

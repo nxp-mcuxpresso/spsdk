@@ -25,7 +25,7 @@ class KeyStore:
 
     # size of key store in bytes
     KEY_STORE_SIZE = (
-        1424  # TODO size can be device-specific, the current value is valid for RT5xx and RT6xx
+        1424  # Size can be device-specific, the current value is valid for RT5xx and RT6xx
     )
 
     @property

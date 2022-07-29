@@ -4,7 +4,7 @@
 # Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-from spsdk.mboot.memories import ExtMemRegion, FlashRegion, RamRegion
+from spsdk.mboot.memories import ExtMemRegion, FlashRegion, MemId, RamRegion
 
 
 def test_ram_region():
@@ -32,3 +32,12 @@ def test_ext_mem_region():
         "Start Address = 0x08000000  Total Size = 16.0 MiB  Page Size = 0  Sector Size = 0  "
         == str(ext_mem_region)
     )
+
+
+def test_legacy_mem_ids():
+    assert MemId.get_legacy_int(4) == "ifr"
+    assert MemId.get_legacy_str("ifr") == 4
+    assert MemId.get_legacy_str("fuse") == 4
+    assert MemId.get(4) == "IFR0"
+    assert MemId.get("IFR0") == 4
+    assert MemId.get("FUSE") == 4

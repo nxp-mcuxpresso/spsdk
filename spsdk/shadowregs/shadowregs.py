@@ -17,7 +17,7 @@ from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.dm_commands import StartDebugSession
 from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.debuggers.utils import test_ahb_access
-from spsdk.utils.misc import change_endianism, reverse_bytes_in_longs, value_to_bytes
+from spsdk.utils.misc import change_endianness, reverse_bytes_in_longs, value_to_bytes
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister
 
@@ -132,7 +132,7 @@ class ShadowRegisters:
                 val = data_aligned[i * 4 : i * 4 + 4]
                 self._write_shadow_reg(
                     addr,
-                    int.from_bytes(change_endianism(val) if reg.reverse else val, "big"),
+                    int.from_bytes(change_endianness(val) if reg.reverse else val, "big"),
                 )
 
             reg.set_value(value, raw=True)
@@ -265,7 +265,7 @@ class ShadowRegisters:
         fields: dict = context
         for method in fields.values():
             if hasattr(self, method):
-                method_ref = getattr(self, method, None)
+                method_ref = getattr(self, method)
                 val = method_ref(val)
             else:
                 raise SPSDKError(f"The '{method}' compute function doesn't exists.")

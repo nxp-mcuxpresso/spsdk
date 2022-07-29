@@ -1,0 +1,10 @@
+family: lpc55s3x
+description: LPC55S36 SB3 keyblob 4
+commands:
+  - load:
+      address: "0x10000000"
+      file: test_bin.bin
+  - loadKeyBlob:
+      offset: 4
+      wrappingKeyId: NXP_CUST_KEK_EXT_SK
+      file: test_bin.bin

@@ -8,7 +8,7 @@
 
 from abc import abstractmethod
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, Mapping, Tuple, Type, Union
+from typing import Any, Dict, List, Mapping, Tuple, Type, Union
 
 from spsdk import SPSDKError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
@@ -55,11 +55,12 @@ class MainCmd:
         raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "MainCmd":
+    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "MainCmd":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         :raises NotImplementedError: Derived class has to implement this method
         """
         raise NotImplementedError("Derived class has to implement this method.")
@@ -221,11 +222,12 @@ class CmdLoadBase(BaseCmd):
 
     # pylint: disable=redundant-returns-doc
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> MainCmd:
+    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> MainCmd:
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         assert False
 
@@ -271,11 +273,12 @@ class CmdErase(BaseCmd):
         return cls(address=address, length=length, memory_id=memory_id)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdErase":
+    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CmdErase":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         address = value_to_int(config["address"], 0)
         length = value_to_int(config["size"], 0)
@@ -297,26 +300,31 @@ class CmdLoad(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any]
+        cls, config: Dict[str, Any], search_paths: List[str] = None
     ) -> Union["CmdLoad", "CmdLoadHashLocking", "CmdLoadCmac"]:
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         :raises SPSDKError: Invalid configuration field.
         """
         authentication = config.get("authentication")
         address = value_to_int(config["address"], 0)
         memory_id = value_to_int(config.get("memoryId", "0"), 0)
         if authentication == "hashlocking":
-            data = load_binary(config["file"])
-            return CmdLoadHashLocking.load_from_config(config)  # Backward compatibility
+            data = load_binary(config["file"], search_paths=search_paths)
+            return CmdLoadHashLocking.load_from_config(
+                config, search_paths=search_paths
+            )  # Backward compatibility
         if authentication == "cmac":
-            data = load_binary(config["file"])
-            return CmdLoadCmac.load_from_config(config)  # Backward compatibility
+            data = load_binary(config["file"], search_paths=search_paths)
+            return CmdLoadCmac.load_from_config(
+                config, search_paths=search_paths
+            )  # Backward compatibility
         # general non-authenticated load command
         if config.get("file"):
-            data = load_binary(config["file"])
+            data = load_binary(config["file"], search_paths=search_paths)
             return CmdLoad(address=address, data=data, memory_id=memory_id)
         if config.get("values"):
             values = [value_to_int(s, 0) for s in config["values"].split(",")]
@@ -352,11 +360,14 @@ class CmdExecute(BaseCmd):
         return cls(address=address)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdExecute":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdExecute":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         address = value_to_int(config["address"], 0)
         return CmdExecute(address=address)
@@ -388,11 +399,12 @@ class CmdCall(BaseCmd):
         return cls(address=address)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdCall":
+    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CmdCall":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         address = value_to_int(config["address"], 0)
         return CmdCall(address=address)
@@ -440,11 +452,14 @@ class CmdProgFuses(CmdLoadBase):
         return cls(address=address, data=data)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdProgFuses":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdProgFuses":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         address = value_to_int(config["address"], 0)
         fuses = [value_to_int(fuse, 0) for fuse in config["values"].split(",")]
@@ -477,14 +492,17 @@ class CmdProgIfr(CmdLoadBase):
         return cls(address=address, data=data)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdProgIfr":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdProgIfr":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         address = value_to_int(config["address"], 0)
-        data = load_binary(config["file"])
+        data = load_binary(config["file"], search_paths=search_paths)
         return CmdProgIfr(address=address, data=data)
 
 
@@ -506,17 +524,20 @@ class CmdLoadCmac(CmdLoadBase):
         )
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdLoadCmac":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdLoadCmac":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         :raises SPSDKError: Invalid configuration field.
         """
         address = value_to_int(config["address"], 0)
         memory_id = value_to_int(config.get("memoryId", "0"), 0)
 
-        data = load_binary(config["file"])
+        data = load_binary(config["file"], search_paths=search_paths)
         return CmdLoadCmac(address=address, data=data, memory_id=memory_id)
 
 
@@ -582,11 +603,12 @@ class CmdCopy(BaseCmd):
         )
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdCopy":
+    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CmdCopy":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         address = value_to_int(config["addressFrom"], 0)
         length = value_to_int(config["size"], 0)
@@ -626,17 +648,20 @@ class CmdLoadHashLocking(CmdLoadBase):
         return data
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdLoadHashLocking":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdLoadHashLocking":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         :raises SPSDKError: Invalid configuration field.
         """
         address = value_to_int(config["address"], 0)
         memory_id = value_to_int(config.get("memoryId", "0"), 0)
 
-        data = load_binary(config["file"])
+        data = load_binary(config["file"], search_paths=search_paths)
         return CmdLoadHashLocking(address=address, data=data, memory_id=memory_id)
 
 
@@ -696,13 +721,16 @@ class CmdLoadKeyBlob(BaseCmd):
         return cls(offset=cmpa_offset, key_wrap_id=key_wrap_id, data=key_blob_data)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdLoadKeyBlob":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdLoadKeyBlob":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
-        data = load_binary(config["file"])
+        data = load_binary(config["file"], search_paths=search_paths)
         offset = value_to_int(config["offset"], 0)
         key_wrap_name = config["wrappingKeyId"]
         key_wrap_id = CmdLoadKeyBlob.KeyWraps[key_wrap_name]
@@ -743,11 +771,14 @@ class CmdConfigureMemory(BaseCmd):
         return cls(address=address, memory_id=memory_id)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdConfigureMemory":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdConfigureMemory":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         memory_id = value_to_int(config["memoryId"], 0)
         return CmdConfigureMemory(
@@ -794,11 +825,14 @@ class CmdFillMemory(BaseCmd):
         return cls(address=address, length=length, pattern=pattern)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdFillMemory":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdFillMemory":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         address = value_to_int(config["address"], 0)
         length = value_to_int(config["size"], 0)
@@ -851,11 +885,14 @@ class CmdFwVersionCheck(BaseCmd):
         return cls(value=value, counter_id=counter_id)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdFwVersionCheck":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdFwVersionCheck":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         """
         value = value_to_int(config["value"], 0)
         counter_id_str = config["counterId"]
@@ -905,11 +942,14 @@ class CmdSectionHeader(MainCmd):
 
     # pylint: disable=redundant-returns-doc
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "CmdSectionHeader":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "CmdSectionHeader":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
-        :return: Command object loaded from configration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Command object loaded from configuration.
         :raises SPSDKError: This situation cannot raise (the function here is just MYPY/PYLINT checks).
         """
         raise SPSDKError("Section header cannot be loaded from configuration.")

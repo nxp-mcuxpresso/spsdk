@@ -34,3 +34,6 @@ lpc55s3x:
     - rules_common.yaml
     - rules_lpc55s3x.yaml
 
+lpc553x:
+  rules:
+    - rules_lpc553x.yaml

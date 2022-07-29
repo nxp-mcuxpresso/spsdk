@@ -5,7 +5,7 @@
 # Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Module for USB communication with a terget using SDP protocol."""
+"""Module for USB communication with a target using SDP protocol."""
 
 import logging
 from typing import List, Tuple, Union
@@ -54,6 +54,7 @@ USB_DEVICES = {
     "MX8QM": (0x1FC9, 0x0129),
     "MX815": (0x1FC9, 0x013E),
     "MX865": (0x1FC9, 0x0146),
+    "MX93": (0x1FC9, 0x014E),
 }
 
 
@@ -88,7 +89,7 @@ class RawHid(SDPInterface):
     def is_opened(self) -> bool:
         """Indicates whether device is open.
 
-        :return: True if device is open, False othervise.
+        :return: True if device is open, False otherwise.
         """
         return self.device is not None and self._opened
 
@@ -186,12 +187,12 @@ class RawHid(SDPInterface):
 
         :param packet: Data to send
         :raises SdpError: Raises an error if packet type is incorrect
-        :raises SdpConnectionError: Raises an error if device is openned for writing
+        :raises SdpConnectionError: Raises an error if device is opened for writing
         :raises SdpConnectionError: Raises if device is not available
         :raises SdpConnectionError: Raises if writing to device fails
         """
         if not self.is_opened:
-            raise SdpConnectionError("Device is openned for writing")
+            raise SdpConnectionError("Device is opened for writing")
 
         if isinstance(packet, CmdPacket):
             report_id, report_size, hid_ep1 = HID_REPORT["CMD"]  # pylint: disable=unused-variable
@@ -216,12 +217,12 @@ class RawHid(SDPInterface):
         """Read data on the IN endpoint associated to the HID interface.
 
         :return: Return CmdResponse object.
-        :raises SdpConnectionError: Raises an error if device is openned for reading
+        :raises SdpConnectionError: Raises an error if device is opened for reading
         :raises SdpConnectionError: Raises an error if device is not available
         :raises SdpConnectionError: Raises an error if data can not be read from device
         """
         if not self.is_opened:
-            raise SdpConnectionError("Device is openned for reading")
+            raise SdpConnectionError("Device is opened for reading")
 
         if not self.device:
             raise SdpConnectionError("No device available")
@@ -241,7 +242,8 @@ class RawHid(SDPInterface):
         :return: List of interfaces found
         """
         devices = []
-        sio = libusbsio.usbsio()
+        libusbsio_logger = logging.getLogger("libusbsio")
+        sio = libusbsio.usbsio(loglevel=libusbsio_logger.getEffectiveLevel())
         all_hid_devices = sio.HIDAPI_Enumerate()
 
         # iterate on all devices found

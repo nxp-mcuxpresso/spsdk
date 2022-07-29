@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -105,9 +105,9 @@ CSF_VERSION = 0x42
 # version of the SB file
 SB_FILE_VERSION = "1.2"
 
-# direcotry to the test_rt10xx.py (this file) "./"
+# directory to the test_rt10xx.py (this file) "./"
 MAIN_FILE_DIR = os.path.dirname(__file__)
-# direcotry to the cpu specific data for test
+# directory to the cpu specific data for test
 DATA_DIR = os.path.join(MAIN_FILE_DIR, "data")
 
 
@@ -238,7 +238,7 @@ def srk_table4(cpu_params: CpuParams) -> SrkTable:
     result = SrkTable()
     for cert_prefix in ["SRK1", "SRK2", "SRK3", "SRK4"]:
         cert_data = load_binary(
-            cpu_params.cert_data_dir, cert_prefix + "_sha256_2048_65537_v3_ca_crt.pem"
+            os.path.join(cpu_params.cert_data_dir, cert_prefix + "_sha256_2048_65537_v3_ca_crt.pem")
         )
         certificate = x509.load_pem_x509_certificate(cert_data, default_backend())
         result.append(SrkItem.from_certificate(certificate))
@@ -288,12 +288,12 @@ def _to_authenticated_image(
     csf_prefix = "CSF" + str(srk_key_index + 1) + "_1_sha256_2048_65537_v3_usr_"
     img_prefix = "IMG" + str(srk_key_index + 1) + "_1_sha256_2048_65537_v3_usr_"
     csf_priv_key = load_pem_private_key(
-        load_binary(cpu_params.keys_data_dir, csf_prefix + "key.pem"),
+        load_binary(os.path.join(cpu_params.keys_data_dir, csf_prefix + "key.pem")),
         password=PRIV_KEY_PASSWORD,
         backend=default_backend(),
     )
     img_priv_key = load_pem_private_key(
-        load_binary(cpu_params.keys_data_dir, img_prefix + "key.pem"),
+        load_binary(os.path.join(cpu_params.keys_data_dir, img_prefix + "key.pem")),
         password=PRIV_KEY_PASSWORD,
         backend=default_backend(),
     )
@@ -308,9 +308,9 @@ def _to_authenticated_image(
             CSF_VERSION,
             srk_table4(cpu_params),
             srk_key_index,
-            load_binary(cpu_params.cert_data_dir, csf_prefix + "crt.pem"),
+            load_binary(os.path.join(cpu_params.cert_data_dir, csf_prefix + "crt.pem")),
             csf_priv_key_data,
-            load_binary(cpu_params.cert_data_dir, img_prefix + "crt.pem"),
+            load_binary(os.path.join(cpu_params.cert_data_dir, img_prefix + "crt.pem")),
             img_priv_key_data,
         )
     else:
@@ -318,9 +318,9 @@ def _to_authenticated_image(
             CSF_VERSION,
             srk_table4(cpu_params),
             srk_key_index,
-            load_binary(cpu_params.cert_data_dir, csf_prefix + "crt.pem"),
+            load_binary(os.path.join(cpu_params.cert_data_dir, csf_prefix + "crt.pem")),
             csf_priv_key_data,
-            load_binary(cpu_params.cert_data_dir, img_prefix + "crt.pem"),
+            load_binary(os.path.join(cpu_params.cert_data_dir, img_prefix + "crt.pem")),
             img_priv_key_data,
         )
 
@@ -338,7 +338,9 @@ def init_flashloader(cpu_params: CpuParams) -> McuBoot:
     )  # check whether flashloader is already running
     if len(devs) == 0:
         # if flash-loader not running yet, it must be downloaded to RAM and launched
-        flshldr_img = BootImgRT.parse(load_binary(cpu_params.data_dir, "ivt_flashloader.bin"))
+        flshldr_img = BootImgRT.parse(
+            load_binary(os.path.join(cpu_params.data_dir, "ivt_flashloader.bin"))
+        )
 
         devs = sdp_scan_usb(cpu_params.com_processor_name)
         if len(devs) != 1:
@@ -589,7 +591,7 @@ def write_image(
     otpmk_bee_regions: Tuple[BeeFacRegion, ...] = tuple(),
 ) -> None:
     """Write image to the external flash
-    The method behaviour depends on TEST_IMG_CONTENT:
+    The method behavior depends on TEST_IMG_CONTENT:
     - if True (TEST MODE), the method generates the image and compare with previous version
     - if False (PRODUCTION), the method generates the image and burn into FLASH
 
@@ -644,7 +646,7 @@ def write_image(
 
 def write_sb(cpu_params: CpuParams, image_file_name: str, img: SecureBootV1) -> None:
     """Write SB image to the external flash
-    The method behaviour depends on TEST_IMG_CONTENT:
+    The method behavior depends on TEST_IMG_CONTENT:
     - if True (TEST MODE), the method generates the image and compare with previous version
     - if False (PRODUCTION), the method generates the image and burn into FLASH
 
@@ -716,11 +718,11 @@ def test_unsigned(
     """
     image_name = cpu_params.board + "_" + image_name
     # create bootable image object
-    app_data = load_binary(cpu_params.data_dir, image_name + ".bin")
+    app_data = load_binary(os.path.join(cpu_params.data_dir, image_name + ".bin"))
     boot_img = BootImgRT(tgt_address)
     boot_img.add_image(app_data)
     if dcd:
-        boot_img.add_dcd_bin(load_binary(cpu_params.data_dir, dcd))
+        boot_img.add_dcd_bin(load_binary(os.path.join(cpu_params.data_dir, dcd)))
 
     # write image to disk and to processor
     write_image(cpu_params, image_name + "_unsigned.bin", boot_img)
@@ -754,11 +756,11 @@ def test_nor_flash_fcb(cpu_params: CpuParams, fcb: bool) -> None:
 
     image_name = f"{cpu_params.board}_iled_blinky_ext_FLASH"
     # create bootable image object
-    app_data = load_binary(cpu_params.data_dir, image_name + ".bin")
+    app_data = load_binary(os.path.join(cpu_params.data_dir, image_name + ".bin"))
     boot_img = BootImgRT(EXT_FLASH_ADDR)
     boot_img.add_image(app_data)
     if fcb:
-        boot_img.set_flexspi_fcb(load_binary(cpu_params.data_dir, "flex_spi.fcb"))
+        boot_img.set_flexspi_fcb(load_binary(os.path.join(cpu_params.data_dir, "flex_spi.fcb")))
     else:
         boot_img.fcb = PaddingFCB(0, enabled=False)
 
@@ -801,7 +803,7 @@ def test_signed(cpu_params: CpuParams, srk_key_index: int) -> None:
     tgt_address = EXT_FLASH_ADDR
 
     boot_img = BootImgRT(tgt_address)
-    app_data = load_binary(cpu_params.data_dir, image_name + ".bin")
+    app_data = load_binary(os.path.join(cpu_params.data_dir, image_name + ".bin"))
     _to_authenticated_image(cpu_params, boot_img, app_data, srk_key_index)
     write_image(cpu_params, image_name + f"_signed_key{str(srk_key_index + 1)}.bin", boot_img)
 
@@ -817,7 +819,7 @@ def test_signed_flashloader(cpu_params: CpuParams) -> None:
     tgt_address = INT_RAM_ADDR_CODE
 
     flashloader_unsigned_img = BootImgRT.parse(
-        load_binary(cpu_params.data_dir, image_name + ".bin")
+        load_binary(os.path.join(cpu_params.data_dir, image_name + ".bin"))
     )
     app_data = flashloader_unsigned_img.app.data
     assert app_data
@@ -884,7 +886,7 @@ def test_generate_csf_img(
     gen_pub_key = generate_rsa_public_key(gen_priv_key)
     # load private key of the issuer (SRK)
     srk_priv_key = load_pem_private_key(
-        load_binary(cpu_params.keys_data_dir, srk_name + "_key.pem"),
+        load_binary(os.path.join(cpu_params.keys_data_dir, srk_name + "_key.pem")),
         password=PRIV_KEY_PASSWORD,
         backend=default_backend(),
     )
@@ -917,10 +919,10 @@ def test_hab_encrypted(cpu_params: CpuParams) -> None:
     tgt_address = INT_RAM_ADDR_CODE
     srk_key_index = 0
 
-    app_data = load_binary(cpu_params.data_dir, image_name + ".bin")
+    app_data = load_binary(os.path.join(cpu_params.data_dir, image_name + ".bin"))
     # Encryption params (nonce + dek): use only for test purpose, for production use None
     nonce = bytes.fromhex("24eb311ce02a61d74cad460739")
-    dek = load_binary(cpu_params.rt10xx_data_dir, f"hab_dek.bin")
+    dek = load_binary(os.path.join(cpu_params.rt10xx_data_dir, f"hab_dek.bin"))
     #
     boot_img = BootImgRT(tgt_address)
     _to_authenticated_image(cpu_params, boot_img, app_data, srk_key_index, -1, dek, nonce)
@@ -961,11 +963,11 @@ def test_sdhc(
     """
     image_name = cpu_params.board + "_" + image_name
     # create bootable image object
-    app_data = load_binary(cpu_params.data_dir, image_name + ".bin")
+    app_data = load_binary(os.path.join(cpu_params.data_dir, image_name + ".bin"))
     boot_img = BootImgRT(tgt_address, BootImgRT.IVT_OFFSET_OTHER)
     boot_img.fcb = PaddingFCB(0, enabled=False)
     if dcd:
-        boot_img.add_dcd_bin(load_binary(cpu_params.data_dir, dcd))
+        boot_img.add_dcd_bin(load_binary(os.path.join(cpu_params.data_dir, dcd)))
 
     if plain0_signed1_encr2 == 0:
         boot_img.add_image(app_data)
@@ -998,7 +1000,9 @@ def test_sb(cpu_params: CpuParams) -> None:
 
     # load application to add into SB
     img_name = f"{cpu_params.board}_iled_blinky_ext_FLASH_unsigned_nopadding"
-    app_data = load_binary(cpu_params.data_dir, OUTPUT_IMAGES_SUBDIR, img_name + ".bin")
+    app_data = load_binary(
+        os.path.join(cpu_params.data_dir, OUTPUT_IMAGES_SUBDIR, img_name + ".bin")
+    )
     boot_img = BootImgRT.parse(app_data)  # parse to retrieve IVT offset
 
     sb = SecureBootV1(version=SB_FILE_VERSION, timestamp=timestamp)
@@ -1045,7 +1049,9 @@ def test_sb_multiple_sections(cpu_params: CpuParams) -> None:
 
     # load application to add into SB
     img_name = f"{cpu_params.board}_iled_blinky_ext_FLASH_unsigned_nofcb"
-    app_data = load_binary(cpu_params.data_dir, OUTPUT_IMAGES_SUBDIR, img_name + ".bin")
+    app_data = load_binary(
+        os.path.join(cpu_params.data_dir, OUTPUT_IMAGES_SUBDIR, img_name + ".bin")
+    )
     boot_img = BootImgRT.parse(app_data)  # parse to retrieve IVT offset
 
     sb = SecureBootV1(version=SB_FILE_VERSION, timestamp=timestamp)
@@ -1075,7 +1081,11 @@ def test_sb_multiple_sections(cpu_params: CpuParams) -> None:
     sb.append(sect)
     # add second section, just for the test
     sect2 = BootSectionV1(1, SecureBootFlagsV1.ROM_SECTION_BOOTABLE)
-    sect2.append(CmdLoad(0x6000F000, load_binary(cpu_params.srk_data_dir, "SRK_hash_table.bin")))
+    sect2.append(
+        CmdLoad(
+            0x6000F000, load_binary(os.path.join(cpu_params.srk_data_dir, "SRK_hash_table.bin"))
+        )
+    )
     sb.append(sect2)
     #
     write_sb(cpu_params, "sb_file_2_sections" + ".sb", sb)
@@ -1096,7 +1106,7 @@ def test_bee_otmpk(cpu_params: CpuParams) -> None:
 
     boot_img = BootImgRT(tgt_address)
     boot_img.fcb.enabled = False
-    app_data = load_binary(cpu_params.data_dir, image_name + ".bin")
+    app_data = load_binary(os.path.join(cpu_params.data_dir, image_name + ".bin"))
     _to_authenticated_image(cpu_params, boot_img, app_data, 0)  # use signed image
     write_image(
         cpu_params,
@@ -1117,7 +1127,11 @@ def test_bee_unsigned_sw_key(cpu_params: CpuParams) -> None:
     :param cpu_params: processor specific parameters of the test
     """
     img = BootImgRT(EXT_FLASH_ADDR)
-    img.add_image(load_binary(cpu_params.data_dir, f"{cpu_params.board}_iled_blinky_ext_FLASH.bin"))
+    img.add_image(
+        load_binary(
+            os.path.join(cpu_params.data_dir, f"{cpu_params.board}_iled_blinky_ext_FLASH.bin")
+        )
+    )
     # the following parameters are fixed for the test only, to produce stable result; for production use random number
     cntr1 = bytes.fromhex("112233445566778899AABBCC00000000")
     kib_key1 = bytes.fromhex("C1C2C3C4C5C6C7C8C9CACBCCCDCECFC0")

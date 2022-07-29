@@ -855,7 +855,7 @@ class CmdUnlockCAAM(CmdUnlockAbstract):
 
     # Leave Job Ring and DECO Master IP unlocked
     FEATURE_UNLOCK_MID = 1
-    # Leave RNG unititialized
+    # Leave RNG uninitialized
     FEATURE_UNLOCK_RNG = 2
     # Keep manufacturing protection key in internal memory
     FEATURE_UNLOCK_MFG = 4

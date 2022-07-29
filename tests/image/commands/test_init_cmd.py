@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -57,7 +57,7 @@ def test_init_cmd_export_parse_with_data():
 
 
 def test_init_cmd_export_parse_with_offset():
-    # raw_data is made from appending 5,6 into cmdinit
+    # raw_data is made from appending 5,6 into cmd init
     raw_data = b"\xb4\x00\x0c\x00\x00\x00\x00\x05\x00\x00\x00\x06"
     raw_data = b"\x01\x02\x03\x04" + raw_data
     cmd = CmdInitialize.parse(raw_data, offset=4)

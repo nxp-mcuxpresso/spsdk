@@ -40,6 +40,7 @@
 # credentials. A class can contain just a single revision of a single SoC model, if the
 # granularity of debug control warrants it.
 # Examples list of possible settings:
+# 0x0000:       i.MXRT595, i.MXRT685,
 # 0x0001:       LPC550x, LPC55s0x, LPC551x, LPC55s1x, LPC552x, LPC55s2x, LPC55s6x
 # 0x0004:       LPC55s3x
 

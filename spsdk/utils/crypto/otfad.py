@@ -7,6 +7,7 @@
 
 """The module provides support for On-The-Fly encoding for RTxxx devices."""
 
+import logging
 from struct import pack
 from typing import List, Optional, Union
 
@@ -16,6 +17,8 @@ from spsdk import SPSDKError
 
 from ..misc import align_block
 from . import Counter, crypto_backend
+
+logger = logging.getLogger(__name__)
 
 
 class KeyBlob:
@@ -267,7 +270,6 @@ class KeyBlob:
         :param byte_swap: this probably depends on the flash device, how bytes are organized there
                 True should be used for FLASH on EVK RT6xx; False for FLASH on EVK RT5xx
         :return: encrypted data
-        :raises SPSDKError: If start_addr or end_addr does not match with base_address (+ data length)
         :raises SPSDKError: If start address is not valid
         """
         if base_address % 16 != 0:
@@ -276,14 +278,17 @@ class KeyBlob:
         data_len = len(data)
 
         # check start and end addresses
+        # [SPSDK-1464] Support dual image boot, do not raise exception
         if not self.matches_range(base_address, base_address + data_len - 1):
-            raise SPSDKError(
-                f"Image address range is not within key blob: {hex(self.start_addr)}-{hex(self.end_addr)}"
+            logger.warning(
+                f"Image address range is not within key blob: {hex(self.start_addr)}-{hex(self.end_addr)}."
+                " Ignore this if flash remap feature is used"
             )
 
         result = bytes()
+        # SPSDK-936 change base address to start address of keyblob to allow flash remap on RT5xx/RT6xx
         counter = Counter(
-            self._get_ctr_nonce(), ctr_value=base_address, ctr_byteorder_encoding="big"
+            self._get_ctr_nonce(), ctr_value=self.start_addr, ctr_byteorder_encoding="big"
         )
 
         for index in range(0, data_len, 16):

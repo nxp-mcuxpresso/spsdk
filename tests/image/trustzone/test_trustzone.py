@@ -50,7 +50,7 @@ def test_tz_types(sample_tz_data):
 
 def test_errors(sample_tz_data):
     with pytest.raises(SPSDKError):
-        TrustZone.custom(family="totaly_legit_family", customizations=sample_tz_data)
+        TrustZone.custom(family="totally_legit_family", customizations=sample_tz_data)
     # throw error when TZ is disabled, but tz data are present
     with pytest.raises(SPSDKError):
         TrustZone(tz_type=TrustZoneType.DISABLED, customizations=sample_tz_data)

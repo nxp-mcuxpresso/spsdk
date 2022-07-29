@@ -7,7 +7,7 @@ tz_family_rev:
   properties:
     family:
       type: string
-      title: MCU family.
+      title: MCU family
       description: MCU family name.
       enum:
         - lpc55xx
@@ -21,7 +21,7 @@ tz_family_rev:
 
     revision:
       type: string
-      title: Chip silicon revision.
+      title: Chip silicon revision
       description: If needed this could be used to specify silicon revision of device.
       template_value: a1
 
@@ -30,14 +30,14 @@ tz:
   properties:
     tzpOutputFile:
       type: string
-      title: Optional name of output file for TZ binary.
+      title: Optional name of output file for TZ binary
       description: The name of output binary file with Trust Zone data.
       format: file_name
       template_value: my_tz_file.bin
 
     trustZonePreset:
       type: object
-      title: Customization of standard preset values.
+      title: Customization of standard preset values
       description: Trust Zone preset dictionary, with trust zone configuration.
       patternProperties:
         ^.*$:

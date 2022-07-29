@@ -10,7 +10,8 @@
 
 
 from copy import deepcopy
-from typing import Any, Dict, List, Tuple, Type, Union
+from inspect import isclass
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 from Crypto.Cipher import AES
 from ruamel.yaml import YAML
@@ -121,18 +122,19 @@ def get_mbi_classes(family: str) -> Dict[str, Tuple[Type["MasterBootImage"], str
     return ret
 
 
-def mbi_get_validation_schemas(sch_names: List[str]) -> List[Dict[str, Any]]:
-    """Get list of validation schemas by its names.
+def get_all_mbi_classes() -> List[Type["MasterBootImage"]]:
+    """Get all Master Boot Image supported classes.
 
-    :return: Validation list of schemas.
+    :return: List with all MBI Classes.
     """
-    schemas = []
-    schema_cfg = ValidationSchemas.get_schema_file(MBIMG_SCH_FILE)
+    ret: Set[Type["MasterBootImage"]] = set()
 
-    for sch_name in sch_names:
-        schemas.append(schema_cfg[sch_name])
+    for var in globals():
+        obj = globals()[var]
+        if isclass(obj) and issubclass(obj, MasterBootImage) and obj is not MasterBootImage:
+            ret.add(obj)
 
-    return schemas
+    return sorted(ret, key=lambda x: x.__name__)
 
 
 def mbi_generate_config_templates(family: str) -> Dict[str, str]:
@@ -144,13 +146,14 @@ def mbi_generate_config_templates(family: str) -> Dict[str, str]:
     """
     ret: Dict[str, str] = {}
     # 1: Generate all configuration for MBI
-    mbi_classes = get_mbi_classes(family)
+    try:
+        mbi_classes = get_mbi_classes(family)
+    except SPSDKValueError:
+        return ret
 
     for key, mbi in mbi_classes.items():
         mbi_cls, target, authentication = mbi
-        schemas = []
-        schemas.extend(mbi_get_validation_schemas(["family", "image_type", "output_file"]))
-        schemas.extend(mbi_cls.get_validation_schemas())
+        schemas = mbi_cls.get_validation_schemas()
 
         override = {}
         override["family"] = family
@@ -165,6 +168,17 @@ def mbi_generate_config_templates(family: str) -> Dict[str, str]:
         ret[key] = yaml_data
 
     return ret
+
+
+def mbi_get_supported_families() -> List[str]:
+    """Get supported families by MBI.
+
+    :return: List of supported family names.
+    """
+    with open(DEVICE_FILE) as f:
+        device_cfg = YAML(typ="safe").load(f)
+    devices: Dict[str, Any] = device_cfg["devices"]
+    return list(devices.keys())
 
 
 class MasterBootImage:
@@ -182,7 +196,8 @@ class MasterBootImage:
 
     def __init__(self) -> None:
         """Initialization of MBI."""
-        # Check if all needed class instation members are available (validation of class due to mixin problems)
+        # Check if all needed class instance members are available (validation of class due to mixin problems)
+        self.search_paths: Optional[List[str]] = None
         for base in self._get_mixins():
             for member in base.NEEDED_MEMBERS:
                 assert hasattr(self, member)
@@ -206,11 +221,13 @@ class MasterBootImage:
         """
         return self.total_len
 
-    def load_from_config(self, config: Dict[str, Any]) -> None:
+    def load_from_config(self, config: Dict[str, Any], search_paths: List[str] = None) -> None:
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
+        :param search_paths: List of paths where to search for the file, defaults to None
         """
+        self.search_paths = search_paths
         for base in self._get_mixins():
             base.mix_load_from_config(self, config)  # type: ignore
 
@@ -249,6 +266,26 @@ class MasterBootImage:
         raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
+    def get_supported_families(cls) -> List[str]:
+        """Create the list of supported families by this class.
+
+        :return: List of supported families.
+        """
+        ret = set()
+        with open(DEVICE_FILE) as f:
+            device_cfg = YAML(typ="safe").load(f)
+
+        devices: Dict[str, Dict] = device_cfg["devices"]
+        for device, dev_val in devices.items():
+            images: Dict[str, Dict[str, str]] = dev_val["images"]
+            for image in images.values():
+                for klass in image.values():
+                    if klass == cls.__name__:
+                        ret.add(device)
+
+        return list(ret)
+
+    @classmethod
     def get_validation_schemas(cls) -> List[Dict[str, Any]]:
         """Create the validation schema for current image type.
 
@@ -256,7 +293,11 @@ class MasterBootImage:
         """
         schemas = []
         schema_cfg = ValidationSchemas.get_schema_file(MBIMG_SCH_FILE)
-
+        family_schema = deepcopy(schema_cfg["family"])
+        family_schema["properties"]["family"]["enum"] = cls.get_supported_families()
+        schemas.append(family_schema)
+        schemas.append(deepcopy(schema_cfg["image_type"]))
+        schemas.append(deepcopy(schema_cfg["output_file"]))
         for base in cls._get_mixins():
             for sch in base.VALIDATION_SCHEMAS:
                 schemas.append(deepcopy(schema_cfg[sch]))
@@ -315,6 +356,34 @@ class Mbi_CrcXip(
         super().__init__()
 
 
+class Mbi_CrcRam(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinLoadAddress,
+    Mbi_ExportMixinAppTrustZone,
+    Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC RAM Image for LPC55xxx family."""
+
+    IMAGE_TYPE = CRC_RAM_IMAGE
+
+    def __init__(
+        self, app: bytes = None, trust_zone: TrustZone = None, load_addr: int = None
+    ) -> None:
+        """Constructor for Master Boot CRC XiP Image for LPC55xxx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
+        super().__init__()
+
+
 class Mbi_SignedXip(
     MasterBootImage,
     Mbi_MixinApp,
@@ -344,6 +413,44 @@ class Mbi_SignedXip(
         """
         self.app = align_block(app) if app else None
         self.tz = trust_zone or TrustZone.enabled()
+        self.cert_block = cert_block
+        self.priv_key_data = priv_key_data
+        super().__init__()
+
+
+class Mbi_SignedRam(
+    MasterBootImage,
+    Mbi_MixinApp,
+    Mbi_MixinIvt,
+    Mbi_MixinTrustZone,
+    Mbi_MixinLoadAddress,
+    Mbi_MixinCertBlockV2,
+    Mbi_ExportMixinAppTrustZoneCertBlock,
+    Mbi_ExportMixinRsaSign,
+):
+    """Master Boot Signed RAM Image for LPC55xxx family."""
+
+    IMAGE_TYPE = SIGNED_XIP_IMAGE
+
+    def __init__(
+        self,
+        app: bytes = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = None,
+        cert_block: CertBlockV2 = None,
+        priv_key_data: bytes = None,
+    ) -> None:
+        """Constructor for Master Boot Signed XiP Image for LPC55xxx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param cert_block: Certification block of image, defaults to None
+        :param priv_key_data: Private key used to sign image, defaults to None
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
         self.cert_block = cert_block
         self.priv_key_data = priv_key_data
         super().__init__()
@@ -394,7 +501,7 @@ class Mbi_PlainSignedRamRtxxx(
     Mbi_MixinIvt,
     Mbi_MixinTrustZone,
     Mbi_MixinCertBlockV2,
-    Mbi_MixinHmac,
+    Mbi_MixinHmacMandatory,
     Mbi_MixinKeyStore,
     Mbi_MixinHwKey,
     Mbi_ExportMixinAppTrustZoneCertBlock,
@@ -457,12 +564,9 @@ class Mbi_CrcRamRtxxx(
     Mbi_MixinLoadAddress,
     Mbi_MixinIvt,
     Mbi_MixinTrustZone,
-    Mbi_MixinHmac,
-    Mbi_MixinKeyStore,
     Mbi_MixinHwKey,
     Mbi_ExportMixinAppTrustZone,
     Mbi_ExportMixinCrcSign,
-    Mbi_ExportMixinHmacKeyStoreFinalize,
 ):
     """Master Boot CRC RAM Image for RTxxx family."""
 
@@ -474,8 +578,6 @@ class Mbi_CrcRamRtxxx(
         app_table: MultipleImageTable = None,
         trust_zone: TrustZone = None,
         load_addr: int = None,
-        hmac_key: Union[bytes, str] = None,
-        key_store: KeyStore = None,
         hwk: bool = False,
     ) -> None:
         """Constructor for Master Boot CRC RAM Image for RTxxx family.
@@ -484,8 +586,6 @@ class Mbi_CrcRamRtxxx(
         :param app_table: Application table for additional application binaries, defaults to None
         :param trust_zone: TrustZone object, defaults to None
         :param load_addr: Load/Execution address in RAM of image, defaults to 0
-        :param hmac_key: HMAC key of image, defaults to None
-        :param key_store: Optional KeyStore object for image, defaults to None
         :param hwk: Enable HW user mode keys, defaults to false
         """
         self.app = align_block(app) if app else None
@@ -493,8 +593,6 @@ class Mbi_CrcRamRtxxx(
         self.tz = trust_zone or TrustZone.enabled()
         self.user_hw_key_enabled = hwk
         self.load_address = load_addr
-        self.hmac_key = bytes.fromhex(hmac_key) if isinstance(hmac_key, str) else hmac_key
-        self.key_store = key_store
         super().__init__()
 
 
@@ -642,6 +740,7 @@ class Mbi_PlainSignedXipRtxxx(
     MasterBootImage,
     Mbi_MixinApp,
     Mbi_MixinIvt,
+    Mbi_MixinLoadAddress,
     Mbi_MixinTrustZone,
     Mbi_MixinCertBlockV2,
     Mbi_MixinHwKey,
@@ -656,6 +755,7 @@ class Mbi_PlainSignedXipRtxxx(
         self,
         app: bytes = None,
         trust_zone: TrustZone = None,
+        load_addr: int = None,
         cert_block: CertBlockV2 = None,
         priv_key_data: bytes = None,
         hwk: bool = False,
@@ -664,12 +764,14 @@ class Mbi_PlainSignedXipRtxxx(
 
         :param app: Application image data, defaults to None
         :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
         :param cert_block: Certification block of image, defaults to None
         :param priv_key_data: Private key used to sign image, defaults to None
         :param hwk: Enable HW user mode keys, defaults to false
         """
         self.app = align_block(app) if app else None
         self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
         self.cert_block = cert_block
         self.priv_key_data = priv_key_data
         self.user_hw_key_enabled = hwk
@@ -680,6 +782,7 @@ class Mbi_CrcXipRtxxx(
     MasterBootImage,
     Mbi_MixinApp,
     Mbi_MixinIvt,
+    Mbi_MixinLoadAddress,
     Mbi_MixinTrustZone,
     Mbi_MixinHwKey,
     Mbi_ExportMixinAppTrustZone,
@@ -689,15 +792,23 @@ class Mbi_CrcXipRtxxx(
 
     IMAGE_TYPE = CRC_XIP_IMAGE
 
-    def __init__(self, app: bytes = None, trust_zone: TrustZone = None, hwk: bool = False) -> None:
+    def __init__(
+        self,
+        app: bytes = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = None,
+        hwk: bool = False,
+    ) -> None:
         """Constructor for Master Boot CRC XiP Image for RTxxx family.
 
         :param app: Application image data, defaults to None
         :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
         :param hwk: Enable HW user mode keys, defaults to false
         """
         self.app = align_block(app) if app else None
         self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
         self.user_hw_key_enabled = hwk
         super().__init__()
 

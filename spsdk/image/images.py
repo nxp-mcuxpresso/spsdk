@@ -168,7 +168,7 @@ class BootImgRT(BootImgBase):
     # The length of BDT segment
     BDT_SIZE = 0x20
     # The length of DEK key section; Note: Dek key is just 16 bytes
-    DEK_SIZE = 0x200  # TODO this is sector size alignment???
+    DEK_SIZE = 0x200  # Is this sector size alignment???
 
     def __init__(
         self,
@@ -1601,7 +1601,7 @@ class BootImg8m(BootImgBase):
         obj.app.data = read_raw_data(stream, app_size, app_start)
         obj.app.padding = 0
         # Parse CSF
-        # TODO finalize the code below
+        # Finalize the code below
         # if obj.ivt.csf_address:
         #    obj.csf = SegCSF.parse(buffer)
         #    obj.csf.padding = obj.bdt.length - ((obj.ivt.csf_address - obj.ivt.ivt_address) + obj.csf.size)
@@ -1957,7 +1957,6 @@ class BootImg3a(BootImgBase):
             raise SPSDKError("Not an i.MX Boot Image!")
 
         obj = cls(version=header.param)
-        # TODO: not used right now: img_size = last_index - start_index
         if start_index > 0:
             obj.offset = start_index
         # Parse IVT
@@ -2367,7 +2366,6 @@ class BootImg3b(BootImgBase):
             raise SPSDKError("Not an i.MX Boot Image!")
 
         obj = cls(version=header.param)
-        # TODO: not used right now: img_size = last_index - start_index
         if start_index > 0:
             obj.offset = start_index
         # Parse IVT
@@ -2454,7 +2452,7 @@ class BootImg4(BootImgBase):
         data = bytes()
         data += self._cont1_header.export()
         data += self._cont2_header.export()
-        # TODO: Complete Implementation
+        # Complete Implementation
         return data
 
     @classmethod
@@ -2498,7 +2496,6 @@ class BootImg4(BootImgBase):
         if not imx_image:
             raise SPSDKError(" Not an i.MX Boot Image !")
 
-        # TODO: not used right now: img_size = last_index - start_index
         obj = cls()
         if start_index > 0:
             obj.offset = start_index
@@ -2506,7 +2503,7 @@ class BootImg4(BootImgBase):
         # Parse Containers
         obj._cont1_header = SegBIC1.parse(read_raw_data(stream, 0x400))
         obj._cont2_header = SegBIC1.parse(read_raw_data(stream, 0x400))
-        # TODO: Complete Implementation
+        # Complete Implementation
         return obj
 
 

@@ -21,7 +21,9 @@ devices:
         plain: Mbi_PlainXip
         crc: Mbi_CrcXip
         signed: Mbi_SignedXip
-      # ram:
+      ram:
+        crc: Mbi_CrcRam
+        signed: Mbi_SignedRam
 
   lpc55s0x:
     images:
@@ -29,7 +31,19 @@ devices:
         plain: Mbi_PlainXipRtxxx
         crc: Mbi_CrcXipRtxxx
         signed: Mbi_PlainSignedXipRtxxx
-      # ram:
+      ram:
+        crc: Mbi_CrcRam
+        signed: Mbi_SignedRam
+
+  lpc550x:
+    images:
+      int_xip:
+        plain: Mbi_PlainXip
+        crc: Mbi_CrcXip
+        signed: Mbi_SignedXip
+      ram:
+        crc: Mbi_CrcRam
+        signed: Mbi_SignedRam
 
   lpc55s1x:
     images:
@@ -37,15 +51,19 @@ devices:
         plain: Mbi_PlainXipRtxxx
         crc: Mbi_CrcXipRtxxx
         signed: Mbi_PlainSignedXipRtxxx
-      # ram:
+      ram:
+        crc: Mbi_CrcRam
+        signed: Mbi_SignedRam
 
-  lpc552x:
+  lpc551x:
     images:
       int_xip:
         plain: Mbi_PlainXip
         crc: Mbi_CrcXip
         signed: Mbi_SignedXip
-      # ram:
+      ram:
+        crc: Mbi_CrcRam
+        signed: Mbi_SignedRam
 
   lpc55s2x:
     images:
@@ -53,7 +71,19 @@ devices:
         plain: Mbi_PlainXip
         crc: Mbi_CrcXip
         signed: Mbi_SignedXip
-      # ram:
+      ram:
+        crc: Mbi_CrcRam
+        signed: Mbi_SignedRam
+
+  lpc552x:
+    images:
+      int_xip:
+        plain: Mbi_PlainXip
+        crc: Mbi_CrcXip
+        signed: Mbi_SignedXip
+      ram:
+        crc: Mbi_CrcRam
+        signed: Mbi_SignedRam
 
   lpc55s6x:
     images:
@@ -61,7 +91,9 @@ devices:
         plain: Mbi_PlainXip
         crc: Mbi_CrcXip
         signed: Mbi_SignedXip
-      # ram:
+      ram:
+        crc: Mbi_CrcRam
+        signed: Mbi_SignedRam
 
   rt5xx:
     images:
@@ -90,9 +122,25 @@ devices:
   lpc55s3x:
     images:
       int_xip:
+        plain: Mbi_PlainRamLpc55s3x
         crc: Mbi_CrcXipLpc55s3x
         signed: Mbi_PlainXipSignedLpc55s3x
       ext_xip:
+        plain: Mbi_PlainRamLpc55s3x
+        crc: Mbi_CrcExtXipLpc55s3x
+        signed: Mbi_PlainExtXipSignedLpc55s3x
+      ram:
+        plain: Mbi_PlainRamLpc55s3x
+        crc: Mbi_CrcRamLpc55s3x
+
+  lpc553x:
+    images:
+      int_xip:
+        plain: Mbi_PlainRamLpc55s3x
+        crc: Mbi_CrcXipLpc55s3x
+        signed: Mbi_PlainXipSignedLpc55s3x
+      ext_xip:
+        plain: Mbi_PlainRamLpc55s3x
         crc: Mbi_CrcExtXipLpc55s3x
         signed: Mbi_PlainExtXipSignedLpc55s3x
       ram:

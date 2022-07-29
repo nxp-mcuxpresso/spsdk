@@ -12,11 +12,13 @@ import sys
 from typing import Dict, List
 
 import click
+from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import catch_spsdk_error, load_configuration
+from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
 from spsdk.pfr import PFR_DATA_FOLDER, Processor, Translator
 from spsdk.pfr.pfr import PfrConfiguration
+from spsdk.utils.misc import load_configuration
 
 PFRC_DATA_FOLDER = os.path.join(PFR_DATA_FOLDER, "pfrc")
 DATABASE_FILE = os.path.join(PFRC_DATA_FOLDER, "database.yaml")
@@ -39,12 +41,12 @@ def load_rules(family: str, additional_rules_file: click.Path = None) -> List[Di
         rules.extend(load_configuration(os.path.join(PFRC_DATA_FOLDER, rules_file)))
 
     if additional_rules_file:
-        rules.extend(load_configuration(additional_rules_file))
+        rules.extend(load_configuration(str(additional_rules_file)))
 
     return rules
 
 
-@click.command(no_args_is_help=True)
+@click.command(name="pfrc", no_args_is_help=True)
 @click.option(
     "-m",
     "--cmpa-config",
@@ -66,33 +68,45 @@ def load_rules(family: str, additional_rules_file: click.Path = None) -> List[Di
     type=click.Path(exists=True),
     help="Custom additional file containing checker rules",
 )
-@click.option("-d", "--debug", is_flag=True, default=False, help="Enable debugging output")
+@optgroup.group("Additional info specification", cls=MutuallyExclusiveOptionGroup)
+@optgroup.option(
+    "-v",
+    "--verbose",
+    "log_level",
+    flag_value=logging.INFO,
+    help="Print more detailed information",
+)
+@optgroup.option(
+    "-vv",
+    "--debug",
+    "log_level",
+    flag_value=logging.DEBUG,
+    help="Display more debugging information.",
+)
 @click.version_option(spsdk_version, "--version")
 def main(
     cmpa_config: click.Path,
     cfpa_config: click.Path,
     rules_file: click.Path,
-    debug: bool,
+    log_level: str,
 ) -> None:
     """Utility to search for brick-conditions in PFR settings."""
-    logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+    logging.basicConfig(level=log_level or logging.WARNING)
 
-    cmpa_prf_cfg = PfrConfiguration(cmpa_config)
-    cfpa_prf_cfg = PfrConfiguration(cfpa_config)
+    cmpa_prf_cfg = PfrConfiguration(str(cmpa_config))
+    cfpa_prf_cfg = PfrConfiguration(str(cfpa_config))
     if cmpa_prf_cfg.device != cfpa_prf_cfg.device:
-        click.echo(
+        raise SPSDKAppError(
             "Error: CMPA has different chip family than CFPA configuration."
             f" {cmpa_prf_cfg.device}!={cfpa_prf_cfg.device}"
         )
-        click.get_current_context().exit(3)
     chip_family = cmpa_prf_cfg.device
 
     if chip_family not in SUPPORTED_FAMILIES:
-        click.echo(
+        raise SPSDKAppError(
             "Error: chip family from configuration is not supported. "
             f"{chip_family} is not in supported families:{SUPPORTED_FAMILIES}"
         )
-        click.get_current_context().exit(3)
 
     assert chip_family
     rules = load_rules(chip_family, rules_file)
@@ -118,16 +132,14 @@ def main(
             click.echo("-" * 40)
 
     except SyntaxError as e:
-        click.echo(f"\nERROR: Unable to parse: '{e}'")
-        click.get_current_context().exit(2)
+        raise SPSDKAppError(f"\nERROR: Unable to parse: '{e}'") from e
     except (KeyError, ValueError, TypeError) as e:
-        click.echo(f"\nERROR: Unable to lookup identifier: {e}")
-        click.get_current_context().exit(2)
+        raise SPSDKAppError(f"\nERROR: Unable to lookup identifier: {e}") from e
     except Exception as e:  # pylint: disable=broad-except
-        click.echo(f"Error e({e}) while evaluating {rule['cond']}")
-        click.get_current_context().exit(2)
+        raise SPSDKAppError(f"Error e({e}) while evaluating {rule['cond']}") from e
 
-    click.get_current_context().exit(0 if valid else 1)
+    if not valid:
+        raise SPSDKAppError()
 
 
 @catch_spsdk_error

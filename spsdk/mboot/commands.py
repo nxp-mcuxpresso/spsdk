@@ -48,6 +48,7 @@ class CommandTag(Enum):
     KEY_PROVISIONING            = (0x15, "KeyProvisioning", "Key Provisioning")
     TRUST_PROVISIONING          = (0x16, "TrustProvisioning", "Trust Provisioning")
     FUSE_READ                   = (0x17, "ReadFuse", "Read Fuse")
+    UPDATE_LIFE_CYCLE           = (0x18, "UpdateLifeCycle", "Update Life Cycle")
 
     # reserved commands
     CONFIGURE_I2C = (0xC1, "ConfigureI2c", "Configure I2C")
@@ -97,6 +98,8 @@ class KeyProvUserKeyType(Enum):
     PRINCE_REGION_0 = (7, "PRINCE0", "Key for Prince region 0")  # LPC55Sxx
     PRINCE_REGION_1 = (8, "PRINCE1", "Key for Prince region 1")  # LPC55Sxx
     PRINCE_REGION_2 = (9, "PRINCE2", "Key for Prince region 2")  # LPC55Sxx
+    PRINCE_REGION_3 = (10, "PRINCE3", "Key for Prince region 3")  # NHS52xx
+
     USERKEK         = (11, "USERKEK", "Encrypted boot image key")  # LPC55Sxx and RTxxx
     UDS             = (12, "UDS", "Universal Device Secret for DICE")  # LPC55Sxx and RTxxx
 
@@ -117,6 +120,10 @@ class GenerateKeyBlobSelect(Enum):
 
 
 class TrustProvOperation(Enum):
+    """Operations supported by Trust Provisioning flow."""
+
+    PROVE_GENUINITY = (0xF4, "ProveGenuinity", "Start the proving genuinity process")
+    ISP_SET_WRAPPED_DATA = (0xF0, "SetWrappedData", "Start processing Wrapped data")
     """Type of trust provisioning operation."""
 
     OEM_GEN_MASTER_SHARE        = (0, "OemGenMasterShare", "Enroll Operation")
@@ -131,8 +138,8 @@ class TrustProvOperation(Enum):
 class TrustProvOemKeyType(Enum):
     """Type of oem key type definition."""
 
-    MFWISK      = (0xC3A5, "MFWISK", "ECDSA Manufactoring Firmware Signing Key")
-    MFWENCK     = (0xA5C3, "MFWENCK", "CKDF Master Key for Manufactoring Firmware Encryption Key")
+    MFWISK      = (0xC3A5, "MFWISK", "ECDSA Manufacturing Firmware Signing Key")
+    MFWENCK     = (0xA5C3, "MFWENCK", "CKDF Master Key for Manufacturing Firmware Encryption Key")
     GENSIGNK    = (0x5A3C, "GENSIGNK", "Generic ECDSA Signing Key")
     GETCUSTMKSK = (0x3C5A, "GETCUSTMKSK", "CKDF Master Key for Production Firmware Encryption Key")
 

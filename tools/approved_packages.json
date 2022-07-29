@@ -9,7 +9,9 @@
         "BSD (3 clause)",
         "BSD or Apache License, Version 2.0",
         "BSD, Public Domain",
+        "BSD, Public Domain, Apache",
         "BSD-3-Clause",
+        "LGPL-2.1",
         "MIT",
         "MIT license",
         "PSF",
@@ -148,7 +150,7 @@
         {
             "name": "deepmerge",
             "license": "MIT",
-            "home_page": "http://deepmerge.readthedocs.io",
+            "home_page": "https://github.com/toumorokoshi/deepmerge",
             "is_manual": true
         },
         {
@@ -183,7 +185,7 @@
         },
         {
             "name": "importlib-metadata",
-            "license": "Apache License, Version 2.0",
+            "license": "Apache Software License",
             "home_page": "https://github.com/python/importlib_metadata",
             "is_manual": true
         },
@@ -290,6 +292,12 @@
             "is_manual": false
         },
         {
+            "name": "pyscard",
+            "license": "LGPL-2.1",
+            "home_page": "https://github.com/LudovicRousseau/pyscard",
+            "is_manual": true
+        },
+        {
             "name": "pyserial",
             "license": "BSD",
             "home_page": "https://github.com/pyserial/pyserial",
@@ -298,7 +306,7 @@
         {
             "name": "pyusb",
             "license": "BSD-3-Clause",
-            "home_page": "https://pyusb.github.io/pyusb",
+            "home_page": "https://github.com/pyusb/pyusb",
             "is_manual": true
         },
         {
@@ -346,13 +354,13 @@
         {
             "name": "typing_extensions",
             "license": "PSF",
-            "home_page": "https://github.com/python/typing/tree/master/typing_extensions",
+            "home_page": "https://github.com/python/typing_extensions",
             "is_manual": true
         },
         {
             "name": "typing-extensions",
             "license": "PSF",
-            "home_page": "https://github.com/python/typing/tree/master/typing_extensions",
+            "home_page": "https://github.com/python/typing_extensions",
             "is_manual": true
         },
         {

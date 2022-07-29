@@ -8,10 +8,25 @@
 
 """Various types of memory identifiers used in the MBoot module."""
 
-from typing import List, Optional
+from typing import Any, List, Optional, Union
 
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.easy_enum import Enum, EnumKeyType
 from spsdk.utils.misc import size_fmt
+
+LEGACY_MEM_ID = {
+    "internal": "INTERNAL",
+    "qspi": "QSPI",
+    "fuse": "FUSE",
+    "ifr": "IFR0",
+    "semcnor": "SEMC_NOR",
+    "flexspinor": "FLEX-SPI-NOR",
+    "semcnand": "SEMC-NAND",
+    "spinand": "SPI-NAND",
+    "spieeprom": "SPI-MEM",
+    "i2ceeprom": "I2C-MEM",
+    "sdcard": "SD",
+    "mmccard": "MMC",
+}
 
 ########################################################################################################################
 # McuBoot External Memory ID
@@ -22,7 +37,8 @@ class ExtMemId(Enum):
     """McuBoot External Memory Property Tags."""
 
     QUAD_SPI0       = (1, "QSPI", "Quad SPI Memory 0")
-    IFR0            = (4, "IFR0", "Nonvolatile information register 0 (only used by SB loader)")
+    IFR             = (4, "IFR0", "Nonvolatile information register 0 (only used by SB loader)")
+    FUSE            = (4, "FUSE", "Nonvolatile information register 0 (only used by SB loader)")
     SEMC_NOR        = (8, "SEMC-NOR", "SEMC NOR Memory")
     FLEX_SPI_NOR    = (9, "FLEX-SPI-NOR", "Flex SPI NOR Memory")
     SPIFI_NOR       = (10, "SPIFI-NOR", "SPIFI NOR Memory")
@@ -34,8 +50,39 @@ class ExtMemId(Enum):
     SD_CARD         = (288, "SD", "eSD/SD/SDHC/SDXC Memory Card")
     MMC_CARD        = (289, "MMC", "MMC/eMMC Memory Card")
 
+# fmt: on
+    @classmethod
+    def get_legacy_str(cls, key: str) -> Union[EnumKeyType, None]:
+        """Converts legacy str to new enum key.
 
-class MemId(ExtMemId):
+        :param key: str value of legacy enum
+        :return: new enum value
+        """
+        value = None
+
+        new_key = LEGACY_MEM_ID.get(key)
+        if isinstance(new_key, str):
+            value = cls.get(new_key)
+
+        return value
+
+    @classmethod
+    def get_legacy_int(cls, key: int) -> Union[EnumKeyType, None]:
+        """Converts legacy int to new enum key.
+
+        :param key: int value of legacy enum
+        :return: new enum value
+        """
+        value = None
+
+        if isinstance(key, int):
+            new_value = cls.get(key)
+            if new_value:
+                value = [k for k, v in LEGACY_MEM_ID.items() if v == new_value][0]
+
+        return value
+# fmt: off
+class MemId(ExtMemId): # type: ignore[misc]
     """McuBoot Internal/External Memory Property Tags."""
 
     INTERNAL_MEMORY = (0, "RAM/FLASH", "Internal RAM/FLASH (Used for the PRINCE configuration)")

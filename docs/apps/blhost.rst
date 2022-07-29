@@ -10,9 +10,9 @@ This user’s guide describes how to interface with the *MCU bootloader* using *
 
 The *blhost* application is a command-line utility used on the host computer to initiate communication and issue commands to the *MCU bootloader*. The application only sends one command per invocation.
 
-----------------------
-blhost - Communication
-----------------------
+-------------
+Communication
+-------------
 
 The *blhost* application can communicate directly with the *MCU bootloader* over the host computer’s UART (Serial Port) or USB connections.
 
@@ -35,9 +35,6 @@ blhost - UART
 blhost - BUSPAL
 ===============
 
-.. warning::
-    BUSPAL is not supported in SPSDK
-
 The BusPal acts as a bus translator running on selected platforms. BusPal assists *blhost* in carrying out commands and responses from the target device through an established connection with *blhost* over UART, and the target device over I2C, SPI, or CAN.
 
 blhost - LPCUSBSIO
@@ -45,9 +42,9 @@ blhost - LPCUSBSIO
 
 LPCUSBSIO - LPC USB Serial I/O(LPCUSBSIO), a firmware built in LPC Link2. The LPCUSBSIO acts as a bus translator, and establishes connection with *blhost* over USB-HID, and the MCU bootloader device over I2C and SPI.
 
------------------------
-blhost - MCU bootloader
------------------------
+----------------
+ MCU bootloader
+----------------
 
 The MCU bootloader is intended to be the standard bootloader for all MCU devices. It provides a standard interface to the device using any of the peripherals supported by the bootloader on a given NXP MCU device.
 
@@ -122,7 +119,8 @@ The bit number that identifies whether a command is present is the command's tag
     21       key-provisioning (0x15)
     22       trust-provisioning (0x16)
     23       fuse-read (0x17)
-    [31:24]  reserved
+    24       update-life-cycle(0x18)
+    [31:25]  reserved
     ======== ================================
 
 MCU Bootloader operation
@@ -147,9 +145,10 @@ If the ``-p COMx`` option is used, the UART is the active peripheral and all fut
 .. note::
     After the MCU bootloader is in the “Process Commands” state, the device has to be reset to communicate over a different peripheral or at a different baud rate over the same UART peripheral.
 
----------------------
-blhost - Sub-commands
----------------------
+
+----------------------
+Command line interface
+----------------------
 
 *blhost* consist of a set of sub-commands followed by options and arguments.
 The options and the sub-command are separated with a ‘--’.
@@ -437,4 +436,8 @@ After the reset the device boots from flash and user image is programmed success
 
 .. click:: spsdk.apps.blhost:batch
     :prog: blhost batch
+    :nested: full
+
+.. click:: spsdk.apps.blhost:update_life_cycle
+    :prog: blhost update-life-cycle
     :nested: full

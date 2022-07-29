@@ -1,82 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to handle registers configuration."""
 
-import json
-import logging
 import os
 from typing import Any, Dict, List, Optional
 
 from spsdk import SPSDKError
+from spsdk.utils.database import Database
 
-logger = logging.getLogger(__name__)
 
-
-class RegConfig:
+class RegConfig(Database):
     """Class that helps manage the registers configuration."""
-
-    def __init__(self, path: str) -> None:
-        """Register Configuration class constructor.
-
-        :param path: The path to configuration JSON file.
-        """
-        self.path = path
-        self.config = RegConfig.load_config(path)
-
-    @classmethod
-    def load_config(cls, path: str) -> dict:
-        """Load config file.
-
-        :param path: The path to database file.
-        :return: The database.
-        """
-        with open(path) as config_file:
-            return json.load(config_file)
-
-    @classmethod
-    def devices(cls, path: str) -> List[str]:
-        """Classmethod to get list of suppported devices.
-
-        :param path: Path to database file.
-        :return: List of all supported devices.
-        """
-        config = cls.load_config(path)
-        return list(config["devices"].keys())
-
-    def _get_device(self, device: str = None) -> dict:
-        """Return JSON device structure.
-
-        :param device: String Key with device name.
-        :return: Dictionary device configuration structure or None:
-        """
-        return self.config["devices"].get(device, None)
-
-    def get_latest_revision(self, device: str) -> str:
-        """Get latest revision for device.
-
-        :param device: The device name.
-        :return: The name of latest revision.
-        """
-        return self.config["devices"][device]["latest"]
-
-    def get_devices(self) -> List[str]:
-        """Get list of supported devices.
-
-        :return: List of supported device.
-        """
-        return list(self.config["devices"].keys())
-
-    def get_revisions(self, device: str) -> List[str]:
-        """Get list of revisions for given device.
-
-        :param device: The device name.
-        :return: List of all supported device version.
-        """
-        return list(self.config["devices"][device]["revisions"].keys())
 
     def get_address(self, device: str, remove_underscore: bool = False) -> str:
         """Get the area address in chip memory.
@@ -193,9 +131,4 @@ class RegConfig:
         :param default: The default Value in case that is not specified in config file.
         :return: The Value of parameter by handled Key.
         """
-        dev = self._get_device(device)
-        # Try to get device specific
-        if dev and key in dev.keys():
-            return dev[key]
-        # get the general one if available, default otherwise
-        return self.config.get(key, default)
+        return self.get_device_value(key=key, device=device, default=default)

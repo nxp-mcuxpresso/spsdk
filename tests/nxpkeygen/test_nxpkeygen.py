@@ -21,17 +21,7 @@ def test_command_line_interface():
     runner = CliRunner()
     result = runner.invoke(main, ["--help"])
     assert result.exit_code == 0
-
-    assert "Usage: main [OPTIONS] PATH" in result.output
-    assert "NXP Key Generator Tool." in result.output
-    assert (
-        "PATH    - output file path, where the key pairs (private and public key) will be stored."
-        in result.output
-    )
-    assert (
-        "-k, --key-type KEY-TYPE  Set of the supported key types. Default is RSA2048."
-        in result.output
-    )
+    assert "Show this message and exit." in result.output
 
 
 def test_generate_rsa_key(tmpdir) -> None:

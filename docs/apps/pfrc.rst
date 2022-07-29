@@ -6,6 +6,10 @@ User Guide - pfrc
 
 This user’s guide describes how to use *pfrc* application.
 
+----------------------
+Command line interface
+----------------------
+
 .. click:: spsdk.apps.pfrc:main
     :prog: pfrc
     :nested: full

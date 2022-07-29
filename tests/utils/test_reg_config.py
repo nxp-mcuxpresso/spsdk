@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for registers utility."""
@@ -194,7 +194,7 @@ def test_reg_config_get_value(data_dir):
     assert "FIELD_GENERAL" in ignored_fields
 
     none_exist = reg_config.get_value("none_exist_key", default="Yuppie")
-    assert "Yuppie" is none_exist
+    assert "Yuppie" == none_exist
 
     none_exist = reg_config.get_value("none_exist_key")
     assert None is none_exist

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,7 +19,7 @@ from spsdk.sdp import SDP, scan_usb
 def read_memory(address: int, length: int, device_name: str = None) -> Optional[bytes]:
     """Read memory using USB interface.
 
-    To see all availabe device names (and their respective VID:PID):
+    To see all available device names (and their respective VID:PID):
       spsdk/sdp/interfaces/usb.py -> USB_DEVICES
     If device_name is not specified, function will use first available SDP device.
 

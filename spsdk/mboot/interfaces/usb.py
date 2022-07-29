@@ -179,15 +179,15 @@ class RawHid(MBootInterface):
 
         :param packet: Data to send
         :raises McuBootError: Raises an error if packet type is incorrect
-        :raises McuBootConnectionError: Raises an error if device is not openned for writing
+        :raises McuBootConnectionError: Raises an error if device is not opened for writing
         :raises McuBootConnectionError: Raises an error if device is not available
         :raises McuBootConnectionError: Raises an error if write operation fails
-        :raises McuBootDataAbortError: May happen when ROM rejects SB file in shortenned evaluation
+        :raises McuBootDataAbortError: May happen when ROM rejects SB file in shortened evaluation
         """
         if not self.device:
             raise McuBootConnectionError("No device available")
         if not self.is_opened:
-            raise McuBootConnectionError("Device is openned for writing")
+            raise McuBootConnectionError("Device is opened for writing")
 
         if isinstance(packet, CmdPacket):
             report_id = REPORT_ID["CMD_OUT"]
@@ -220,13 +220,13 @@ class RawHid(MBootInterface):
         """Read data on the IN endpoint associated to the HID interface.
 
         :return: Return CmdResponse object.
-        :raises McuBootConnectionError: Raises an error if device is not openned for reading
+        :raises McuBootConnectionError: Raises an error if device is not opened for reading
         :raises McuBootConnectionError: Raises if device is not available
         :raises McuBootConnectionError: Raises if reading fails
         :raises TimeoutError: Time-out
         """
         if not self.is_opened:
-            raise McuBootConnectionError("Device is not openned for reading")
+            raise McuBootConnectionError("Device is not opened for reading")
         if not self.device:
             raise McuBootConnectionError("Device not available")
         try:
@@ -252,7 +252,8 @@ class RawHid(MBootInterface):
         devices = []
 
         # use HID_API of LIBUSBSIO library to enumerate all USB HID devices
-        sio = libusbsio.usbsio()
+        libusbsio_logger = logging.getLogger("libusbsio")
+        sio = libusbsio.usbsio(loglevel=libusbsio_logger.getEffectiveLevel())
         all_hid_devices = sio.HIDAPI_Enumerate()
 
         # iterate on all devices found
@@ -269,3 +270,6 @@ class RawHid(MBootInterface):
                 devices.append(new_device)
 
         return devices
+
+    def __hash__(self) -> int:
+        return hash(self.path)

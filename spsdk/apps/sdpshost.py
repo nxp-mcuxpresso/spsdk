@@ -11,10 +11,13 @@ import logging
 import sys
 
 import click
-from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
-from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import catch_spsdk_error, get_interface
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroup,
+    isp_interfaces,
+    spsdk_apps_common_options,
+)
+from spsdk.apps.utils.utils import catch_spsdk_error, get_interface
 from spsdk.sdp import SDPS
 from spsdk.sdp.sdps import ROM_INFO
 
@@ -23,39 +26,16 @@ WARNING_MSG = """
 """
 
 
-@click.group(no_args_is_help=True)
-@optgroup.group("Interface configuration", cls=MutuallyExclusiveOptionGroup)
-@optgroup.option("-p", "--port", help="Serial port")
-@optgroup.option("-u", "--usb", help="USB device's PID:VID")
-@click.option("-n", "--name", type=click.Choice(ROM_INFO.keys()), help="Name of the device")
-@click.option(
-    "-v",
-    "--verbose",
-    "log_level",
-    flag_value=logging.INFO,
-    help="Display more verbose output",
-)
-@click.option(
-    "-d",
-    "--debug",
-    "log_level",
-    flag_value=logging.DEBUG,
-    help="Display debugging info",
-)
-@click.option(
-    "-t",
-    "--timeout",
-    metavar="<ms>",
-    help="Set packet timeout in milliseconds",
-    default=5000,
-)
-@click.version_option(spsdk_version, "--version")
+@click.group(name="sdpshost", no_args_is_help=True, cls=CommandsTreeGroup)
+@isp_interfaces(uart=True, usb=True)
+@click.option("-n", "--name", type=click.Choice(list(ROM_INFO.keys())), help="Name of the device")
+@spsdk_apps_common_options
 @click.pass_context
 def main(ctx: click.Context, port: str, usb: str, name: str, log_level: int, timeout: int) -> int:
     """Utility for communication with ROM on i.MX targets using SDPS protocol."""
     logging.basicConfig(level=log_level or logging.WARNING)
     click.echo(WARNING_MSG)
-    # if --help is provided anywhere on commandline, skip interface lookup and display help message
+    # if --help is provided anywhere on command line, skip interface lookup and display help message
     if "--help " in sys.argv:
         port, usb = None, None  # type: ignore
     ctx.obj = {

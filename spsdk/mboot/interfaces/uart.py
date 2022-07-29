@@ -88,7 +88,7 @@ def to_int(data: bytes, little_endian: bool = True) -> int:
     :return: integer
     """
     byte_order = "little" if little_endian else "big"
-    return int.from_bytes(data, byteorder=byte_order)
+    return int.from_bytes(data, byteorder=byte_order)  # type: ignore[arg-type]
 
 
 class PingResponse(NamedTuple):
@@ -141,7 +141,7 @@ class Uart(MBootInterface):
 
     @property
     def is_opened(self) -> bool:
-        """Return True if device is open, False othervise."""
+        """Return True if device is open, False otherwise."""
         return self.device.is_open
 
     def __init__(self, port: str = None, baudrate: int = 57600, timeout: int = 5000) -> None:
@@ -157,7 +157,7 @@ class Uart(MBootInterface):
             self.timeout = timeout
             self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
             if port:
-                self.close()  # TODO: Is this really necessary here? Please advice somebody.
+                self.close()  # TODO: [SPSDK-1212] Is this really necessary here? Please advice somebody.
             self.protocol_version = 0
             self.options = 0
         except Exception as e:
@@ -213,12 +213,12 @@ class Uart(MBootInterface):
         :raises McuBootConnectionError: When received invalid CRC
         """
         _, frame_type = self._read_frame_header()
-        length = to_int(self._read(2))
-        crc = to_int(self._read(2))
+        length = to_int(self._read_default(2))
+        crc = to_int(self._read_default(2))
         if not length:
             self._send_ack()
             raise McuBootDataAbortError()
-        data = self._read(length)
+        data = self._read_default(length)
         self._send_ack()
         calculated_crc = self._calc_frame_crc(data, frame_type)
         if crc != calculated_crc:
@@ -231,15 +231,28 @@ class Uart(MBootInterface):
         """Write data to the device; data might be in form of 'CmdPacket' or bytes.
 
         :param packet: Packet to send
+        :raises AttributeError: frame type is incorrect
         """
+        data, frame_type = None, None
         if isinstance(packet, CmdPacket):
             data = packet.to_bytes(padding=False)
             frame_type = FPType.CMD
         if isinstance(packet, (bytes, bytearray)):
             data = packet
             frame_type = FPType.DATA
+        if not data or not frame_type:
+            raise AttributeError("Incorrect packet type")
         frame = self._create_frame(data, frame_type)
         self._send_frame(frame, wait_for_ack=True)
+
+    def _read_default(self, length: int) -> bytes:
+        """Read 'length' amount of bytes from device, this function can be overridden in child class.
+
+        :param length: Number of bytes to read
+        :type length: int
+        :return: Data read from the device
+        """
+        return self._read(length)
 
     def _read(self, length: int) -> bytes:
         """Read 'length' amount for bytes from device.
@@ -297,14 +310,16 @@ class Uart(MBootInterface):
         :raises McuBootConnectionError: When received invalid ACK
         """
         timeout = Timeout(self.timeout, "ms")
+        header = -1
         while not timeout.overflow():
-            header = to_int(self._read(1))
+            header = to_int(self._read_default(1))
             if header != self.FRAME_START_BYTE_NOT_READY:
                 break
 
         if header != self.FRAME_START_BYTE:
             raise McuBootConnectionError(
                 f"Received invalid frame header '{header:#X}' expected '{self.FRAME_START_BYTE:#X}'"
+                + "\nTry increasing the timeout, some operations might take longer"
             )
         frame_type = to_int(self._read(1))
         if frame_type == FPType.ABORT:
@@ -354,11 +369,12 @@ class Uart(MBootInterface):
         with self.ping_timeout(timeout=PING_TIMEOUT_MS):
             ping = struct.pack("<BB", self.FRAME_START_BYTE, FPType.PING)
             self._send_frame(ping, wait_for_ack=False)
+
             # after power cycle, MBoot v 3.0+ may respond to first command with a leading dummy data
             # we read data from UART until the FRAME_START_BYTE byte
             start_byte = b""
             for i in range(MAX_PING_RESPONSE_DUMMY_BYTES):
-                start_byte = self._read(1)
+                start_byte = self._read_default(1)
                 if start_byte is None:
                     raise McuBootConnectionError("Failed to receive initial byte")
 
@@ -371,11 +387,13 @@ class Uart(MBootInterface):
             header = to_int(start_byte)
             if header != self.FRAME_START_BYTE:
                 raise McuBootConnectionError("Header is invalid")
-            frame_type = to_int(self._read(1))
+            frame_type = to_int(self._read_default(1))
             if frame_type != FPType.PINGR:
                 raise McuBootConnectionError("Frame type is invalid")
 
-            response_data = self._read(8)
+            response_data = self._read_default(8)
+            if response_data is None:
+                raise McuBootConnectionError("Failed to receive ping response")
             response = PingResponse.parse(response_data)
 
             # ping response has different crc computation than the other responses

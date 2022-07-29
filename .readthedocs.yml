@@ -11,8 +11,14 @@ sphinx:
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  version: 3.7
+  version: "3.7"
   install:
     - method: pip
-      path: .
+      path: .[tp]
     - requirements: docs/requirements.txt
+
+build:
+  apt_packages:
+    - swig
+    - pcscd
+    - libpcsclite-dev

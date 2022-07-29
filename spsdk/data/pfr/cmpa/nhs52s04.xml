@@ -1,0 +1,1494 @@
+<?xml version="1.0"?>
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd">
+  <register offset="0" width="32" name="BOOT_CFG" description=".">
+    <alias type="CMSIS" value="BOOT_CFG"/>
+    <reserved_bit_field offset="0" width="4" reset_value="0"/>
+    <bit_field offset="4" width="3" name="DEFAULT_ISP_MODE" access="RW" reset_value="0" description="Default ISP mode:">
+      <alias type="CMSIS" value="FLASH_CMPA_BOOT_CFG_DEFAULT_ISP_MODE(x)"/>
+      <bit_field_value name="BOOT_CFG_DEFAULT_ISP_MODE_VALUE_0" value="0b000" description="Auto ISP"/>
+      <bit_field_value name="BOOT_CFG_DEFAULT_ISP_MODE_VALUE_1" value="0b001" description="Reserved"/>
+      <bit_field_value name="BOOT_CFG_DEFAULT_ISP_MODE_VALUE_2" value="0b010" description="UART ISP"/>
+      <bit_field_value name="BOOT_CFG_DEFAULT_ISP_MODE_VALUE_3" value="0b011" description="SPI Slave ISP"/>
+      <bit_field_value name="BOOT_CFG_DEFAULT_ISP_MODE_VALUE_4" value="0b100" description="I2C Slave ISP"/>
+      <bit_field_value name="BOOT_CFG_DEFAULT_ISP_MODE_VALUE_7" value="0b111" description="Disable ISP fall through"/>
+    </bit_field>
+    <bit_field offset="7" width="2" name="BOOT_SPEED" access="RW" reset_value="0" description="Core clock:">
+      <alias type="CMSIS" value="FLASH_CMPA_BOOT_CFG_BOOT_SPEED(x)"/>
+      <bit_field_value name="BOOT_CFG_BOOT_SPEED_VALUE_0" value="0b00" description="Defined by NMPA.SYSTEM_SPEED_CODE"/>
+      <bit_field_value name="BOOT_CFG_BOOT_SPEED_VALUE_1" value="0b01" description="12MHz FRO"/>
+      <bit_field_value name="BOOT_CFG_BOOT_SPEED_VALUE_2" value="0b10" description="32MHz FRO"/>
+    </bit_field>
+    <reserved_bit_field offset="9" width="15" reset_value="0"/>
+    <bit_field offset="24" width="8" name="BOOT_FAILURE_PIN" access="RW" reset_value="0" description="GPIO port and pin number to use for indicating failure reason. The toggle rate of the pin is used to decode the error type. [2:0] - Defines GPIO port [7:3] - Defines GPIO pin">
+      <alias type="CMSIS" value="FLASH_CMPA_BOOT_CFG_BOOT_FAILURE_PIN(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x4" width="32" name="SPI_FLASH_CFG" description=".">
+    <alias type="CMSIS" value="SPI_FLASH_CFG"/>
+    <bit_field offset="0" width="5" name="SPI_RECOVERY_BOOT_EN" access="RW" reset_value="0" description="SPI flash recovery boot is enabled, if non-zero value is written to this field.">
+      <alias type="CMSIS" value="FLASH_CMPA_SPI_FLASH_CFG_SPI_RECOVERY_BOOT_EN(x)"/>
+    </bit_field>
+    <reserved_bit_field offset="5" width="27" reset_value="0"/>
+  </register>
+  <register offset="0x8" width="32" name="CC_SOCU_PIN" description=".">
+    <alias type="CMSIS" value="CC_SOCU_PIN"/>
+    <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_NIDEN(x)"/>
+      <bit_field_value name="CC_SOCU_PIN_NIDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="CC_SOCU_PIN_NIDEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RW" reset_value="0" description="Non Secure debug enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_DBGEN(x)"/>
+      <bit_field_value name="CC_SOCU_PIN_DBGEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="CC_SOCU_PIN_DBGEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="SPNIDEN" access="RW" reset_value="0" description="Secure non-invasive debug enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_SPNIDEN(x)"/>
+      <bit_field_value name="CC_SOCU_PIN_SPNIDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="CC_SOCU_PIN_SPNIDEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="SPIDEN" access="RW" reset_value="0" description="Secure invasive debug enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_SPIDEN(x)"/>
+      <bit_field_value name="CC_SOCU_PIN_SPIDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="CC_SOCU_PIN_SPIDEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="4" width="1" name="TAPEN" access="RW" reset_value="0" description="JTAG TAP enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_TAPEN(x)"/>
+      <bit_field_value name="CC_SOCU_PIN_TAPEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="CC_SOCU_PIN_TAPEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <reserved_bit_field offset="5" width="1" reset_value="0"/>
+    <bit_field offset="6" width="1" name="ISPCMDEN" access="RW" reset_value="0" description="ISP Boot Command enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_ISPCMDEN(x)"/>
+      <bit_field_value name="CC_SOCU_PIN_ISPCMDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="CC_SOCU_PIN_ISPCMDEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="PMCMDEN" access="RW" reset_value="0" description="Programmers Mode Command enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_PMCMDEN(x)"/>
+      <bit_field_value name="CC_SOCU_PIN_PMCMDEN_VALUE_0" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="CC_SOCU_PIN_PMCMDEN_VALUE_1" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <reserved_bit_field offset="8" width="7" reset_value="0"/>
+    <bit_field offset="15" width="1" name="UUID_CHECK" access="RW" reset_value="0" description="Enforce UUID match during Debug authentication.">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_UUID_CHECK(x)"/>
+    </bit_field>
+    <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_INVERSE_VALUE(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xC" width="32" name="CC_SOCU_DFLT" description=".">
+    <alias type="CMSIS" value="CC_SOCU_DFLT"/>
+    <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug fixed state">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_NIDEN(x)"/>
+      <bit_field_value name="CC_SOCU_DFLT_NIDEN_DISABLE" value="0b0" description="Disable"/>
+      <bit_field_value name="CC_SOCU_DFLT_NIDEN_ENABLE" value="0b1" description="Enable"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RW" reset_value="0" description="Non Secure debug fixed state">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_DBGEN(x)"/>
+      <bit_field_value name="CC_SOCU_DFLT_DBGEN_DISABLE" value="0b0" description="Disable"/>
+      <bit_field_value name="CC_SOCU_DFLT_DBGEN_ENABLE" value="0b1" description="Enable"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="SPNIDEN" access="RW" reset_value="0" description="Secure non-invasive debug fixed state">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_SPNIDEN(x)"/>
+      <bit_field_value name="CC_SOCU_DFLT_SPNIDEN_DISABLE" value="0b0" description="Disable"/>
+      <bit_field_value name="CC_SOCU_DFLT_SPNIDEN_ENABLE" value="0b1" description="Enable"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="SPIDEN" access="RW" reset_value="0" description="Secure invasive debug fixed state">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_SPIDEN(x)"/>
+      <bit_field_value name="CC_SOCU_DFLT_SPIDEN_DISABLE" value="0b0" description="Disable"/>
+      <bit_field_value name="CC_SOCU_DFLT_SPIDEN_ENABLE" value="0b1" description="Enable"/>
+    </bit_field>
+    <bit_field offset="4" width="1" name="TAPEN" access="RW" reset_value="0" description="JTAG TAP fixed state">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_TAPEN(x)"/>
+      <bit_field_value name="CC_SOCU_DFLT_TAPEN_DISABLE" value="0b0" description="Disable"/>
+      <bit_field_value name="CC_SOCU_DFLT_TAPEN_ENABLE" value="0b1" description="Enable"/>
+    </bit_field>
+    <reserved_bit_field offset="5" width="1" reset_value="0"/>
+    <bit_field offset="6" width="1" name="ISPCMDEN" access="RW" reset_value="0" description="ISP Boot Command fixed state">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_ISPCMDEN(x)"/>
+      <bit_field_value name="CC_SOCU_DFLT_ISPCMDEN_DISABLE" value="0b0" description="Disable"/>
+      <bit_field_value name="CC_SOCU_DFLT_ISPCMDEN_ENABLE" value="0b1" description="Enable"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="PMCMDEN" access="RW" reset_value="0" description="Programmers Mode fixed state">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_PMCMDEN(x)"/>
+      <bit_field_value name="CC_SOCU_DFLT_PMCMDEN_DISABLE" value="0b0" description="Disable"/>
+      <bit_field_value name="CC_SOCU_DFLT_PMCMDEN_ENABLE" value="0b1" description="Enable"/>
+    </bit_field>
+    <reserved_bit_field offset="8" width="8" reset_value="0"/>
+    <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_DFLT_INVERSE_VALUE(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x10" width="32" name="VENDOR_USAGE" description=".">
+    <alias type="CMSIS" value="VENDOR_USAGE"/>
+    <reserved_bit_field offset="0" width="16" reset_value="0"/>
+    <bit_field offset="16" width="16" name="VENDOR_USAGE" access="RW" reset_value="0" description="Upper 16 bits of vendor usage field defined in DAP.">
+      <alias type="CMSIS" value="FLASH_CMPA_VENDOR_USAGE_VENDOR_USAGE(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x14" width="32" name="SECURE_BOOT_CFG" description=".">
+    <alias type="CMSIS" value="SECURE_BOOT_CFG"/>
+    <bit_field offset="0" width="2" name="RSA4K" access="RW" reset_value="0" description="Use RSA4096 keys only.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_RSA4K(x)"/>
+    </bit_field>
+    <bit_field offset="2" width="2" name="DICE_INC_NXP_CFG" access="RW" reset_value="0" description="Include NXP area in DICE computation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_DICE_INC_NXP_CFG(x)"/>
+    </bit_field>
+    <bit_field offset="4" width="2" name="DICE_CUST_CFG" access="RW" reset_value="0" description="Include Customer factory area (including keys) in DICE computation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_DICE_CUST_CFG(x)"/>
+    </bit_field>
+    <bit_field offset="6" width="2" name="SKIP_DICE" access="RW" reset_value="0" description="Skip DICE computation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_SKIP_DICE(x)"/>
+    </bit_field>
+    <bit_field offset="8" width="2" name="TZM_IMAGE_TYPE" access="RW" reset_value="0" description="TrustZone-M mode.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_TZM_IMAGE_TYPE(x)"/>
+    </bit_field>
+    <bit_field offset="10" width="2" name="BLOCK_SET_KEY" access="RW" reset_value="0" description="Block PUF key code generation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_BLOCK_SET_KEY(x)"/>
+    </bit_field>
+    <reserved_bit_field offset="12" width="2" reset_value="0"/>
+    <bit_field offset="14" width="2" name="DICE_INC_SEC_EPOCH" access="RW" reset_value="0" description="Include security EPOCH in DICE">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_DICE_INC_SEC_EPOCH(x)"/>
+    </bit_field>
+    <bit_field offset="16" width="2" name="SKIP_BOOT_SEED" access="RW" reset_value="0" description="Skip boot seed calculation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_SKIP_BOOT_SEED(x)"/>
+    </bit_field>
+    <bit_field offset="18" width="2" name="BOOT_SEED_INC_NXP_CFG" access="RW" reset_value="0" description="Include NXP area in BOOT SEED computation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_BOOT_SEED_INC_NXP_CFG(x)"/>
+    </bit_field>
+    <bit_field offset="20" width="2" name="BOOT_SEED_CUST_CFG" access="RW" reset_value="0" description="Include Customer factory area (including keys) in BOOT SEED computation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_BOOT_SEED_CUST_CFG(x)"/>
+    </bit_field>
+    <bit_field offset="22" width="2" name="BOOT_SEED_INC_SEC_EPOCH" access="RW" reset_value="0" description="Include security EPOCH in BOOT_SEED computation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_BOOT_SEED_INC_SEC_EPOCH(x)"/>
+    </bit_field>
+    <reserved_bit_field offset="24" width="6" reset_value="0"/>
+    <bit_field offset="30" width="2" name="SEC_BOOT_EN" access="RW" reset_value="0" description="Secure boot enable.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_SEC_BOOT_EN(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1C" width="32" name="PRINCE_CFG" description="Prince Configuration">
+    <alias type="CMSIS" value="PRINCE_CFG"/>
+    <reserved_bit_field offset="0" width="1" reset_value="0"/>
+    <bit_field offset="1" width="1" name="GEE" access="RW" reset_value="0" description="Global Encryption Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_CFG_GEE(x)"/>
+    </bit_field>
+    <reserved_bit_field offset="2" width="3" reset_value="0"/>
+    <bit_field offset="5" width="1" name="GDE" access="RW" reset_value="0" description="Global Decryption Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_CFG_GDE(x)"/>
+    </bit_field>
+    <reserved_bit_field offset="6" width="3" reset_value="0"/>
+    <bit_field offset="9" width="1" name="SLK" access="RW" reset_value="0" description="System Lock Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_CFG_SLK(x)"/>
+    </bit_field>
+    <reserved_bit_field offset="10" width="3" reset_value="0"/>
+    <bit_field offset="13" width="1" name="GLK" access="RW" reset_value="0" description="Global Lock Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_CFG_GLK(x)"/>
+    </bit_field>
+    <reserved_bit_field offset="14" width="18" reset_value="0"/>
+  </register>
+  <register offset="0x20" width="32" name="BMAPCTX0" description="Bitmap Control for Memory Context 0">
+    <alias type="CMSIS" value="BMAPCTX[0]"/>
+    <bit_field offset="0" width="1" name="BEN0" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN0(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN0_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN0_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="BEN1" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN1(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN1_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN1_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="BEN2" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN2(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN2_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN2_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="BEN3" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN3(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN3_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN3_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="4" width="1" name="BEN4" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN4(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN4_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN4_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="5" width="1" name="BEN5" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN5(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN5_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN5_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="BEN6" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN6(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN6_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN6_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="BEN7" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN7(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN7_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN7_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="BEN8" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN8(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN8_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN8_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="9" width="1" name="BEN9" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN9(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN9_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN9_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="10" width="1" name="BEN10" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN10(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN10_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN10_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="11" width="1" name="BEN11" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN11(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN11_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN11_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="12" width="1" name="BEN12" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN12(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN12_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN12_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="13" width="1" name="BEN13" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN13(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN13_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN13_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="14" width="1" name="BEN14" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN14(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN14_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN14_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="15" width="1" name="BEN15" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN15(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN15_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN15_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="16" width="1" name="BEN16" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN16(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN16_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN16_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="17" width="1" name="BEN17" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN17(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN17_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN17_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="18" width="1" name="BEN18" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN18(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN18_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN18_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="19" width="1" name="BEN19" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN19(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN19_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN19_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="20" width="1" name="BEN20" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN20(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN20_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN20_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="21" width="1" name="BEN21" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN21(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN21_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN21_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="22" width="1" name="BEN22" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN22(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN22_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN22_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="23" width="1" name="BEN23" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN23(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN23_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN23_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="24" width="1" name="BEN24" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN24(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN24_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN24_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="25" width="1" name="BEN25" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN25(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN25_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN25_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="26" width="1" name="BEN26" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN26(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN26_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN26_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="27" width="1" name="BEN27" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN27(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN27_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN27_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="28" width="1" name="BEN28" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN28(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN28_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN28_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="29" width="1" name="BEN29" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN29(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN29_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN29_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="30" width="1" name="BEN30" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN30(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN30_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN30_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="31" width="1" name="BEN31" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN31(x)"/>
+      <bit_field_value name="BMAPCTX0_BEN31_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX0_BEN31_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+  </register>
+  <register offset="0x24" width="32" name="BMAPCTX1" description="Bitmap Control for Memory Context 1">
+    <alias type="CMSIS" value="BMAPCTX[1]"/>
+    <bit_field offset="0" width="1" name="BEN0" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN0(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN0_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN0_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="BEN1" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN1(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN1_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN1_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="BEN2" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN2(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN2_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN2_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="BEN3" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN3(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN3_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN3_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="4" width="1" name="BEN4" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN4(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN4_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN4_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="5" width="1" name="BEN5" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN5(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN5_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN5_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="BEN6" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN6(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN6_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN6_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="BEN7" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN7(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN7_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN7_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="BEN8" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN8(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN8_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN8_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="9" width="1" name="BEN9" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN9(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN9_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN9_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="10" width="1" name="BEN10" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN10(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN10_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN10_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="11" width="1" name="BEN11" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN11(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN11_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN11_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="12" width="1" name="BEN12" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN12(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN12_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN12_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="13" width="1" name="BEN13" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN13(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN13_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN13_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="14" width="1" name="BEN14" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN14(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN14_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN14_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="15" width="1" name="BEN15" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN15(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN15_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN15_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="16" width="1" name="BEN16" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN16(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN16_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN16_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="17" width="1" name="BEN17" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN17(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN17_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN17_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="18" width="1" name="BEN18" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN18(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN18_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN18_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="19" width="1" name="BEN19" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN19(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN19_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN19_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="20" width="1" name="BEN20" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN20(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN20_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN20_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="21" width="1" name="BEN21" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN21(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN21_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN21_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="22" width="1" name="BEN22" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN22(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN22_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN22_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="23" width="1" name="BEN23" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN23(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN23_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN23_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="24" width="1" name="BEN24" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN24(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN24_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN24_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="25" width="1" name="BEN25" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN25(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN25_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN25_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="26" width="1" name="BEN26" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN26(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN26_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN26_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="27" width="1" name="BEN27" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN27(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN27_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN27_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="28" width="1" name="BEN28" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN28(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN28_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN28_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="29" width="1" name="BEN29" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN29(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN29_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN29_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="30" width="1" name="BEN30" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN30(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN30_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN30_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="31" width="1" name="BEN31" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN31(x)"/>
+      <bit_field_value name="BMAPCTX1_BEN31_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX1_BEN31_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+  </register>
+  <register offset="0x28" width="32" name="BMAPCTX2" description="Bitmap Control for Memory Context 2">
+    <alias type="CMSIS" value="BMAPCTX[2]"/>
+    <bit_field offset="0" width="1" name="BEN0" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN0(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN0_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN0_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="BEN1" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN1(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN1_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN1_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="BEN2" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN2(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN2_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN2_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="BEN3" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN3(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN3_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN3_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="4" width="1" name="BEN4" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN4(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN4_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN4_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="5" width="1" name="BEN5" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN5(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN5_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN5_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="BEN6" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN6(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN6_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN6_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="BEN7" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN7(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN7_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN7_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="BEN8" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN8(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN8_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN8_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="9" width="1" name="BEN9" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN9(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN9_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN9_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="10" width="1" name="BEN10" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN10(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN10_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN10_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="11" width="1" name="BEN11" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN11(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN11_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN11_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="12" width="1" name="BEN12" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN12(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN12_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN12_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="13" width="1" name="BEN13" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN13(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN13_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN13_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="14" width="1" name="BEN14" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN14(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN14_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN14_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="15" width="1" name="BEN15" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN15(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN15_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN15_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="16" width="1" name="BEN16" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN16(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN16_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN16_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="17" width="1" name="BEN17" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN17(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN17_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN17_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="18" width="1" name="BEN18" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN18(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN18_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN18_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="19" width="1" name="BEN19" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN19(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN19_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN19_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="20" width="1" name="BEN20" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN20(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN20_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN20_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="21" width="1" name="BEN21" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN21(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN21_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN21_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="22" width="1" name="BEN22" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN22(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN22_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN22_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="23" width="1" name="BEN23" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN23(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN23_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN23_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="24" width="1" name="BEN24" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN24(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN24_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN24_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="25" width="1" name="BEN25" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN25(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN25_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN25_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="26" width="1" name="BEN26" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN26(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN26_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN26_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="27" width="1" name="BEN27" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN27(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN27_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN27_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="28" width="1" name="BEN28" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN28(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN28_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN28_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="29" width="1" name="BEN29" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN29(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN29_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN29_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="30" width="1" name="BEN30" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN30(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN30_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN30_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="31" width="1" name="BEN31" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN31(x)"/>
+      <bit_field_value name="BMAPCTX2_BEN31_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX2_BEN31_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+  </register>
+  <register offset="0x2C" width="32" name="BMAPCTX3" description="Bitmap Control for Memory Context 3">
+    <alias type="CMSIS" value="BMAPCTX[3]"/>
+    <bit_field offset="0" width="1" name="BEN0" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN0(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN0_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN0_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="BEN1" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN1(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN1_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN1_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="BEN2" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN2(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN2_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN2_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="BEN3" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN3(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN3_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN3_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="4" width="1" name="BEN4" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN4(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN4_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN4_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="5" width="1" name="BEN5" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN5(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN5_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN5_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="BEN6" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN6(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN6_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN6_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="BEN7" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN7(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN7_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN7_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="BEN8" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN8(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN8_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN8_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="9" width="1" name="BEN9" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN9(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN9_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN9_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="10" width="1" name="BEN10" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN10(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN10_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN10_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="11" width="1" name="BEN11" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN11(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN11_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN11_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="12" width="1" name="BEN12" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN12(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN12_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN12_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="13" width="1" name="BEN13" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN13(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN13_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN13_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="14" width="1" name="BEN14" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN14(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN14_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN14_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="15" width="1" name="BEN15" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN15(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN15_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN15_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="16" width="1" name="BEN16" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN16(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN16_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN16_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="17" width="1" name="BEN17" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN17(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN17_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN17_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="18" width="1" name="BEN18" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN18(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN18_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN18_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="19" width="1" name="BEN19" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN19(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN19_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN19_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="20" width="1" name="BEN20" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN20(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN20_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN20_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="21" width="1" name="BEN21" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN21(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN21_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN21_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="22" width="1" name="BEN22" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN22(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN22_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN22_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="23" width="1" name="BEN23" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN23(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN23_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN23_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="24" width="1" name="BEN24" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN24(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN24_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN24_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="25" width="1" name="BEN25" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN25(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN25_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN25_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="26" width="1" name="BEN26" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN26(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN26_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN26_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="27" width="1" name="BEN27" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN27(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN27_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN27_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="28" width="1" name="BEN28" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN28(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN28_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN28_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="29" width="1" name="BEN29" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN29(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN29_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN29_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="30" width="1" name="BEN30" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN30(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN30_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN30_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+    <bit_field offset="31" width="1" name="BEN31" access="RW" reset_value="0" description="Block enable for encryption/decryption">
+      <alias type="CMSIS" value="FLASH_CMPA_BMAPCTX_BEN31(x)"/>
+      <bit_field_value name="BMAPCTX3_BEN31_DISABLE" value="0b0" description="Disable encryption/decryption"/>
+      <bit_field_value name="BMAPCTX3_BEN31_ENABLE" value="0b1" description="Enable encryption/decryption"/>
+    </bit_field>
+  </register>
+  <register offset="0x50" width="32" name="XTAL_32KHZ_CAPABANK_TRIM" description="Xtal 32kHz capabank triming.">
+    <alias type="CMSIS" value="XTAL_32KHZ_CAPABANK_TRIM"/>
+    <bit_field offset="0" width="1" name="TRIM_VALID" access="RW" reset_value="0" description="0 : Capa Bank trimmings not valid.">
+      <alias type="CMSIS" value="FLASH_CMPA_XTAL_32KHZ_CAPABANK_TRIM_TRIM_VALID(x)"/>
+    </bit_field>
+    <bit_field offset="1" width="10" name="XTAL_LOAD_CAP_IEC_PF_X100" access="RW" reset_value="0" description="Load capacitance, pF x 100.">
+      <alias type="CMSIS" value="FLASH_CMPA_XTAL_32KHZ_CAPABANK_TRIM_XTAL_LOAD_CAP_IEC_PF_X100(x)"/>
+    </bit_field>
+    <bit_field offset="11" width="10" name="PCB_XIN_PARA_CAP_PF_X100" access="RW" reset_value="0" description="PCB XIN parasitic capacitance, pF x 100.">
+      <alias type="CMSIS" value="FLASH_CMPA_XTAL_32KHZ_CAPABANK_TRIM_PCB_XIN_PARA_CAP_PF_X100(x)"/>
+    </bit_field>
+    <bit_field offset="21" width="10" name="PCB_XOUT_PARA_CAP_PF_X100" access="RW" reset_value="0" description="PCB XOUT parasitic capacitance, pF x 100.">
+      <alias type="CMSIS" value="FLASH_CMPA_XTAL_32KHZ_CAPABANK_TRIM_PCB_XOUT_PARA_CAP_PF_X100(x)"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register offset="0x58" width="32" name="FLASH_REMAP_SIZE" description="This 32-bit register contains the size of the image to remap, in bytes.">
+    <alias type="CMSIS" value="FLASH_REMAP_SIZE"/>
+    <bit_field offset="0" width="32" name="FLASH_REMAP_SIZE" access="RW" reset_value="0" description="This 32-bit register contains the size of the image to remap, in bytes.">
+      <alias type="CMSIS" value="FLASH_CMPA_FLASH_REMAP_SIZE_FLASH_REMAP_SIZE(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x5C" width="32" name="FLASH_REMAP_OFFSET" description="This 32-bit register contains the offset by which the image is to be remapped.">
+    <alias type="CMSIS" value="FLASH_REMAP_OFFSET"/>
+    <bit_field offset="0" width="32" name="FLASH_REMAP_OFFSET" access="RW" reset_value="0" description="This 32-bit register contains the offset by which the image is to be remapped.">
+      <alias type="CMSIS" value="FLASH_CMPA_FLASH_REMAP_OFFSET_FLASH_REMAP_OFFSET(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x60" width="32" name="ROTKH0" description="ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]">
+    <alias type="CMSIS" value="ROTKH[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x64" width="32" name="ROTKH1" description="ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]">
+    <alias type="CMSIS" value="ROTKH[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x68" width="32" name="ROTKH2" description="ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]">
+    <alias type="CMSIS" value="ROTKH[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x6C" width="32" name="ROTKH3" description="ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]">
+    <alias type="CMSIS" value="ROTKH[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x70" width="32" name="ROTKH4" description="ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]">
+    <alias type="CMSIS" value="ROTKH[4]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x74" width="32" name="ROTKH5" description="ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]">
+    <alias type="CMSIS" value="ROTKH[5]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x78" width="32" name="ROTKH6" description="ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]">
+    <alias type="CMSIS" value="ROTKH[6]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x7C" width="32" name="ROTKH7" description="ROTKH0 for Root of Trust Keys Table hash[255:224] ROTKH1 for Root of Trust Keys Table hash[223:192] ROTKH2 for Root of Trust Keys Table hash[191:160] ROTKH3 for Root of Trust Keys Table hash[159:128] ROTKH4 for Root of Trust Keys Table hash[127:96] ROTKH5 for Root of Trust Keys Table hash[95:64] ROTKH6 for Root of Trust Keys Table hash[63:32] ROTKH7 for Root of Trust Keys Table hash[31:0]">
+    <alias type="CMSIS" value="ROTKH[7]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x80" width="32" name="CUSTOMER_DEFINED0" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x84" width="32" name="CUSTOMER_DEFINED1" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x88" width="32" name="CUSTOMER_DEFINED2" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x8C" width="32" name="CUSTOMER_DEFINED3" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x90" width="32" name="CUSTOMER_DEFINED4" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[4]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x94" width="32" name="CUSTOMER_DEFINED5" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[5]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x98" width="32" name="CUSTOMER_DEFINED6" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[6]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x9C" width="32" name="CUSTOMER_DEFINED7" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[7]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xA0" width="32" name="CUSTOMER_DEFINED8" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[8]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xA4" width="32" name="CUSTOMER_DEFINED9" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[9]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xA8" width="32" name="CUSTOMER_DEFINED10" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[10]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xAC" width="32" name="CUSTOMER_DEFINED11" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[11]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xB0" width="32" name="CUSTOMER_DEFINED12" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[12]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xB4" width="32" name="CUSTOMER_DEFINED13" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[13]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xB8" width="32" name="CUSTOMER_DEFINED14" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[14]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xBC" width="32" name="CUSTOMER_DEFINED15" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[15]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xC0" width="32" name="CUSTOMER_DEFINED16" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[16]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xC4" width="32" name="CUSTOMER_DEFINED17" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[17]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xC8" width="32" name="CUSTOMER_DEFINED18" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[18]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xCC" width="32" name="CUSTOMER_DEFINED19" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[19]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xD0" width="32" name="CUSTOMER_DEFINED20" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[20]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xD4" width="32" name="CUSTOMER_DEFINED21" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[21]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xD8" width="32" name="CUSTOMER_DEFINED22" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[22]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xDC" width="32" name="CUSTOMER_DEFINED23" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[23]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xE0" width="32" name="CUSTOMER_DEFINED24" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[24]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xE4" width="32" name="CUSTOMER_DEFINED25" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[25]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xE8" width="32" name="CUSTOMER_DEFINED26" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[26]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xEC" width="32" name="CUSTOMER_DEFINED27" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[27]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xF0" width="32" name="CUSTOMER_DEFINED28" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[28]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xF4" width="32" name="CUSTOMER_DEFINED29" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[29]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xF8" width="32" name="CUSTOMER_DEFINED30" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[30]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xFC" width="32" name="CUSTOMER_DEFINED31" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[31]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x100" width="32" name="CUSTOMER_DEFINED32" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[32]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x104" width="32" name="CUSTOMER_DEFINED33" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[33]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x108" width="32" name="CUSTOMER_DEFINED34" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[34]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x10C" width="32" name="CUSTOMER_DEFINED35" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[35]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x110" width="32" name="CUSTOMER_DEFINED36" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[36]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x114" width="32" name="CUSTOMER_DEFINED37" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[37]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x118" width="32" name="CUSTOMER_DEFINED38" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[38]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x11C" width="32" name="CUSTOMER_DEFINED39" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[39]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x120" width="32" name="CUSTOMER_DEFINED40" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[40]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x124" width="32" name="CUSTOMER_DEFINED41" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[41]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x128" width="32" name="CUSTOMER_DEFINED42" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[42]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x12C" width="32" name="CUSTOMER_DEFINED43" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[43]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x130" width="32" name="CUSTOMER_DEFINED44" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[44]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x134" width="32" name="CUSTOMER_DEFINED45" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[45]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x138" width="32" name="CUSTOMER_DEFINED46" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[46]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x13C" width="32" name="CUSTOMER_DEFINED47" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[47]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x140" width="32" name="CUSTOMER_DEFINED48" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[48]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x144" width="32" name="CUSTOMER_DEFINED49" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[49]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x148" width="32" name="CUSTOMER_DEFINED50" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[50]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x14C" width="32" name="CUSTOMER_DEFINED51" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[51]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x150" width="32" name="CUSTOMER_DEFINED52" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[52]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x154" width="32" name="CUSTOMER_DEFINED53" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[53]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x158" width="32" name="CUSTOMER_DEFINED54" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[54]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x15C" width="32" name="CUSTOMER_DEFINED55" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[55]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x160" width="32" name="CUSTOMER_DEFINED56" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[56]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x164" width="32" name="CUSTOMER_DEFINED57" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[57]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x168" width="32" name="CUSTOMER_DEFINED58" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[58]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x16C" width="32" name="CUSTOMER_DEFINED59" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[59]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x170" width="32" name="CUSTOMER_DEFINED60" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[60]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x174" width="32" name="CUSTOMER_DEFINED61" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[61]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x178" width="32" name="CUSTOMER_DEFINED62" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[62]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x17C" width="32" name="CUSTOMER_DEFINED63" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[63]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x180" width="32" name="CUSTOMER_DEFINED64" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[64]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x184" width="32" name="CUSTOMER_DEFINED65" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[65]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x188" width="32" name="CUSTOMER_DEFINED66" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[66]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x18C" width="32" name="CUSTOMER_DEFINED67" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[67]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x190" width="32" name="CUSTOMER_DEFINED68" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[68]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x194" width="32" name="CUSTOMER_DEFINED69" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[69]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x198" width="32" name="CUSTOMER_DEFINED70" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[70]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x19C" width="32" name="CUSTOMER_DEFINED71" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[71]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1A0" width="32" name="CUSTOMER_DEFINED72" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[72]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1A4" width="32" name="CUSTOMER_DEFINED73" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[73]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1A8" width="32" name="CUSTOMER_DEFINED74" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[74]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1AC" width="32" name="CUSTOMER_DEFINED75" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[75]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1B0" width="32" name="CUSTOMER_DEFINED76" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[76]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1B4" width="32" name="CUSTOMER_DEFINED77" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[77]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1B8" width="32" name="CUSTOMER_DEFINED78" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[78]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1BC" width="32" name="CUSTOMER_DEFINED79" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[79]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1C0" width="32" name="CUSTOMER_DEFINED80" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[80]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1C4" width="32" name="CUSTOMER_DEFINED81" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[81]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1C8" width="32" name="CUSTOMER_DEFINED82" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[82]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1CC" width="32" name="CUSTOMER_DEFINED83" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[83]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1D0" width="32" name="CUSTOMER_DEFINED84" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[84]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1D4" width="32" name="CUSTOMER_DEFINED85" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[85]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1D8" width="32" name="CUSTOMER_DEFINED86" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[86]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1DC" width="32" name="CUSTOMER_DEFINED87" description="Customer Defined (Programable through ROM API)">
+    <alias type="CMSIS" value="CUSTOMER_DEFINED[87]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_CUSTOMER_DEFINED_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1E0" width="32" name="SHA256_DIGEST0" description="SHA256_DIGEST0 for DIGEST[31:0] SHA256_DIGEST1 for DIGEST[63:32] SHA256_DIGEST2 for DIGEST[95:64] SHA256_DIGEST3 for DIGEST[127:96] SHA256_DIGEST4 for DIGEST[159:128] SHA256_DIGEST5 for DIGEST[191:160] SHA256_DIGEST6 for DIGEST[223:192] SHA256_DIGEST7 for DIGEST[255:224]">
+    <alias type="CMSIS" value="SHA256_DIGEST[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_SHA256_DIGEST_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1E4" width="32" name="SHA256_DIGEST1" description="SHA256_DIGEST0 for DIGEST[31:0] SHA256_DIGEST1 for DIGEST[63:32] SHA256_DIGEST2 for DIGEST[95:64] SHA256_DIGEST3 for DIGEST[127:96] SHA256_DIGEST4 for DIGEST[159:128] SHA256_DIGEST5 for DIGEST[191:160] SHA256_DIGEST6 for DIGEST[223:192] SHA256_DIGEST7 for DIGEST[255:224]">
+    <alias type="CMSIS" value="SHA256_DIGEST[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_SHA256_DIGEST_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1E8" width="32" name="SHA256_DIGEST2" description="SHA256_DIGEST0 for DIGEST[31:0] SHA256_DIGEST1 for DIGEST[63:32] SHA256_DIGEST2 for DIGEST[95:64] SHA256_DIGEST3 for DIGEST[127:96] SHA256_DIGEST4 for DIGEST[159:128] SHA256_DIGEST5 for DIGEST[191:160] SHA256_DIGEST6 for DIGEST[223:192] SHA256_DIGEST7 for DIGEST[255:224]">
+    <alias type="CMSIS" value="SHA256_DIGEST[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_SHA256_DIGEST_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1EC" width="32" name="SHA256_DIGEST3" description="SHA256_DIGEST0 for DIGEST[31:0] SHA256_DIGEST1 for DIGEST[63:32] SHA256_DIGEST2 for DIGEST[95:64] SHA256_DIGEST3 for DIGEST[127:96] SHA256_DIGEST4 for DIGEST[159:128] SHA256_DIGEST5 for DIGEST[191:160] SHA256_DIGEST6 for DIGEST[223:192] SHA256_DIGEST7 for DIGEST[255:224]">
+    <alias type="CMSIS" value="SHA256_DIGEST[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_SHA256_DIGEST_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1F0" width="32" name="SHA256_DIGEST4" description="SHA256_DIGEST0 for DIGEST[31:0] SHA256_DIGEST1 for DIGEST[63:32] SHA256_DIGEST2 for DIGEST[95:64] SHA256_DIGEST3 for DIGEST[127:96] SHA256_DIGEST4 for DIGEST[159:128] SHA256_DIGEST5 for DIGEST[191:160] SHA256_DIGEST6 for DIGEST[223:192] SHA256_DIGEST7 for DIGEST[255:224]">
+    <alias type="CMSIS" value="SHA256_DIGEST[4]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_SHA256_DIGEST_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1F4" width="32" name="SHA256_DIGEST5" description="SHA256_DIGEST0 for DIGEST[31:0] SHA256_DIGEST1 for DIGEST[63:32] SHA256_DIGEST2 for DIGEST[95:64] SHA256_DIGEST3 for DIGEST[127:96] SHA256_DIGEST4 for DIGEST[159:128] SHA256_DIGEST5 for DIGEST[191:160] SHA256_DIGEST6 for DIGEST[223:192] SHA256_DIGEST7 for DIGEST[255:224]">
+    <alias type="CMSIS" value="SHA256_DIGEST[5]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_SHA256_DIGEST_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1F8" width="32" name="SHA256_DIGEST6" description="SHA256_DIGEST0 for DIGEST[31:0] SHA256_DIGEST1 for DIGEST[63:32] SHA256_DIGEST2 for DIGEST[95:64] SHA256_DIGEST3 for DIGEST[127:96] SHA256_DIGEST4 for DIGEST[159:128] SHA256_DIGEST5 for DIGEST[191:160] SHA256_DIGEST6 for DIGEST[223:192] SHA256_DIGEST7 for DIGEST[255:224]">
+    <alias type="CMSIS" value="SHA256_DIGEST[6]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_SHA256_DIGEST_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1FC" width="32" name="SHA256_DIGEST7" description="SHA256_DIGEST0 for DIGEST[31:0] SHA256_DIGEST1 for DIGEST[63:32] SHA256_DIGEST2 for DIGEST[95:64] SHA256_DIGEST3 for DIGEST[127:96] SHA256_DIGEST4 for DIGEST[159:128] SHA256_DIGEST5 for DIGEST[191:160] SHA256_DIGEST6 for DIGEST[223:192] SHA256_DIGEST7 for DIGEST[255:224]">
+    <alias type="CMSIS" value="SHA256_DIGEST[7]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+      <alias type="CMSIS" value="FLASH_CMPA_SHA256_DIGEST_FIELD(x)"/>
+    </bit_field>
+  </register>
+</regs:peripheral>

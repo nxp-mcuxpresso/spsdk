@@ -88,10 +88,10 @@ class SerialProxy:
         return self.__class__.__name__
 
     def reset_input_buffer(self) -> None:
-        """Simulates reseting input buffer."""
+        """Simulates resetting input buffer."""
 
     def reset_output_buffer(self) -> None:
-        """Simulates reseting output buffer."""
+        """Simulates resetting output buffer."""
 
     def flush(self) -> None:
         """Simulates flushing input buffer."""

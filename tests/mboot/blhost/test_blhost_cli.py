@@ -13,7 +13,10 @@ from click.testing import CliRunner
 
 import spsdk
 from spsdk.apps import blhost
+from spsdk.mboot.interfaces.buspal import BBConstants, BuspalMode, Response
+from spsdk.mboot.interfaces.buspal_i2c import BuspalI2C, I2cModeCommand
 from spsdk.utils.misc import load_binary
+from spsdk.utils.serial_buspal_proxy import SerialBuspalProxy
 from spsdk.utils.serial_proxy import SerialProxy
 
 # fmt: off
@@ -103,6 +106,91 @@ data_responses = {
     b"\x5a\xa4\x18\x00\x01\xca\x16\x00\x00\x05\x02\x00\x00\x00\x00\x50\x01\x30\x20\x00\x00\x00\x00\x60\x01\x30\x40\x00\x00\x00":
         b"\x5a\xa1\x5a\xa4\x0c\x00\x20\xea\xb6\x00\x00\x02\x00\x00\x00\x00\x40\x00\x00\x00",
 }
+
+
+data_responses_buspal_i2c = {
+    # reset mode
+    b"\x00": b"\x42\x42\x49\x4f\x31",
+    # i2c mode
+    b"\x02": b"\x49\x32\x43\x31",
+    # set i2c address to 16
+    b"\x70\x10": b"\x01",
+    # Set I2C speed to 100bps
+    b"\x60\x64\x00\x00\x00": b"\x01",
+    # ping
+    b"\x08\x02\x00\x00\x00\x5a\xa6": [
+        b"\x01",
+        b"\x01",
+        b"\x5a",
+        b"\x01",
+        b"\xa7",
+        b"\x01",
+        b"\x00\x03\x01\x50\x00\x00\xfb\x40",
+    ],
+    # get-property
+    b"\x08\x12\x00\x00\x00\x5a\xa4\x0c\x00\x4b\x33\x07\x00\x00\x02\x01\x00\x00\x00\x00\x00\x00\x00": [
+        b"\x01",
+        b"\x01",
+        b"\x5a",
+        b"\x01",
+        b"\xa1",
+        b"\x01",
+        b"\x5a",
+        b"\x01",
+        b"\xa4",
+        b"\x01",
+        b"\x0c\x00",
+        b"\x01",
+        b"\x65\x1c",
+        b"\x01",
+        b"\xa7\x00\x00\x02\x00\x00\x00\x00\x00\x00\x03\x4b",
+    ],
+    # get-property response
+    b"\x08\x02\x00\x00\x00\x5a\xa1": b"\x01",
+}
+
+
+data_responses_buspal_spi = {
+    # reset mode
+    b"\x00": b"\x42\x42\x49\x4f\x31",
+    # spi mode
+    b"\x01": b"\x53\x50\x49\x31",
+    # set spi config
+    b"\x86": b"\x01",
+    # set spi speed to 5bps
+    b"\x60\x05\x00\x00\x00": b"\x01",
+    # ping
+    b"\x04\x02\x00\x00\x00\x5a\xa6": [
+        b"\x01",
+        b"\x01",
+        b"\x5a",
+        b"\x01",
+        b"\xa7",
+        b"\x01",
+        b"\x00\x03\x01\x50\x00\x00\xfb\x40",
+    ],
+    # get-property
+    b"\x04\x12\x00\x00\x00\x5a\xa4\x0c\x00\x4b\x33\x07\x00\x00\x02\x01\x00\x00\x00\x00\x00\x00\x00": [
+        b"\x01",
+        b"\x01",
+        b"\x5a",
+        b"\x01",
+        b"\xa1",
+        b"\x01",
+        b"\x5a",
+        b"\x01",
+        b"\xa4",
+        b"\x01",
+        b"\x0c\x00",
+        b"\x01",
+        b"\x65\x1c",
+        b"\x01",
+        b"\xa7\x00\x00\x02\x00\x00\x00\x00\x00\x00\x03\x4b",
+    ],
+    # get-property response
+    b"\x04\x02\x00\x00\x00\x5a\xa1": b"\x01",
+}
+
 # fmt: on
 
 
@@ -133,6 +221,32 @@ def test_get_property(caplog):
     cmd = "-p super-com get-property 1"
     result = run_blhost_proxy(caplog, cmd)
     assert "Current Version = K3.0.0" in result.output
+
+
+def test_buspal_i2c_get_property(caplog):
+    caplog.set_level(100_000)
+    runner = CliRunner()
+    cmd = "-b i2c -p super-com get-property 1"
+    with patch(
+        "spsdk.mboot.interfaces.uart.Serial",
+        SerialBuspalProxy.init_buspal_proxy("i2c", data_responses_buspal_i2c),
+    ):
+        result = runner.invoke(blhost.main, cmd.split())
+        assert result.exit_code == 0
+        assert "Current Version = K3.0.0" in result.output
+
+
+def test_buspal_spi_get_property(caplog):
+    caplog.set_level(100_000)
+    runner = CliRunner()
+    cmd = "-b spi,5 -p super-com get-property 1"
+    with patch(
+        "spsdk.mboot.interfaces.uart.Serial",
+        SerialBuspalProxy.init_buspal_proxy("spi", data_responses_buspal_spi),
+    ):
+        result = runner.invoke(blhost.main, cmd.split())
+        assert result.exit_code == 0
+        assert "Current Version = K3.0.0" in result.output
 
 
 def test_get_property_hex_input(caplog):

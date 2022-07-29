@@ -12,10 +12,11 @@ from struct import calcsize, pack, unpack_from
 from typing import Optional
 
 from spsdk import SPSDKError
+from spsdk.sbfile.misc import pack_timestamp, unpack_timestamp
 from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.crypto.common import crypto_backend, pack_timestamp, swap16, unpack_timestamp
+from spsdk.utils.crypto.common import crypto_backend
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo
+from spsdk.utils.misc import DebugInfo, swap16
 
 from ..misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
 from ..sb2.commands import CmdHeader, CmdTag
@@ -334,7 +335,7 @@ class SectionHeaderItemV1(BaseClass):
 
     @property
     def size(self) -> int:
-        """Return size of expored data in bytes."""
+        """Return size of exported data in bytes."""
         return self.SIZE
 
     def info(self) -> str:

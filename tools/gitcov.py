@@ -177,7 +177,7 @@ def get_changed_files(
     all_files = subprocess.check_output(cmd.split(), cwd=repo_path).decode("utf-8")
     logger.debug(f"Result:\n{all_files}")
 
-    # fetch changed files that are potentionally not committed yet
+    # fetch changed files that are potentially not committed yet
     logger.info("Fetching uncommitted files\n")
     cmd = "git diff --name-status"
     logger.debug(f"Executing: {cmd}")
@@ -230,7 +230,7 @@ def extract_linenumber(base_dir: str, file_path: str, parent_branch: str) -> Seq
 
 
 def _cov_statement_category(line: et.Element) -> str:
-    """Get the coverate category for one record of statement coverage."""
+    """Get the coverage category for one record of statement coverage."""
     hit = int(line.attrib["hits"])
     return "hit" if hit else "miss"
 
@@ -300,7 +300,7 @@ def calc_coverage(cov_data: dict) -> Tuple[float, float]:
 
 
 def did_pass(number: float, cutoff: float) -> bool:
-    """Check whether cutoff treshold is met."""
+    """Check whether cutoff threshold is met."""
     return number == -1 or number >= cutoff
 
 
@@ -329,7 +329,7 @@ def get_parent_commit() -> str:
     :return: sha of found commit
     :raises: CalledProcessError
     """
-    # !!!Warning: This approcha will fail, if applied for branch B1 to get M!!!
+    # !!!Warning: This approach will fail, if applied for branch B1 to get M!!!
     # M ---A----B-----C
     # B1    \---D--E
     # B2         \---F--G
@@ -340,7 +340,7 @@ def get_parent_commit() -> str:
     #
     # 1. get the current sha: $ git rev-parse HEAD
     # iterate is_crossroad:
-    #   2. get all branches the commit is part of: $ git branch -a --cotains {SHA}
+    #   2. get all branches the commit is part of: $ git branch -a --contains {SHA}
     #   3. check whether returned branches contain other branches except the one
     #   we are on (crossrad)
     #   4. we haven't found a crossroad, get next sha: $ git rev-parse {SHA}^
@@ -358,7 +358,18 @@ def get_parent_commit() -> str:
     # We are on a crossroad -> return D sha
     current_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
     logging.debug(f"Initial sha: {current_sha}")
+    merge_commits = (
+        subprocess.check_output(["git", "rev-list", "--merges", current_sha])
+        .strip()
+        .decode("utf-8")
+        .split("\n")
+    )
+
     while 1:
+
+        # first check if we're not on a merge commit
+        if current_sha in merge_commits:
+            break
 
         current_branches = subprocess.check_output(
             ["git", "branch", "-a", "--contains", current_sha]

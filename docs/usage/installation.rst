@@ -2,10 +2,18 @@
 Installation Guide
 ==================
 
-- Make sure to have `Python 3.6+ <https://www.python.org>`_ installed (old version 2.x is not supported).
+------------
+Requirements
+------------
+
+- Make sure to have `Python 3.7+ <https://www.python.org>`_ installed (old version 2.x is not supported).
 - Create and activate a virtual environment (``venv``, ``pipenv``, etc.)
 - Upgrade PyPI to the latest version
 - Install SPSDK
+
+.. warning::
+
+    Please note that not all SPSDK dependencies might be distributed as wheels (built package format for Python). In this case please ensure that you have C compiler on your system. In some cases `rust compiler <https://rustup.rs/>`_ is also needed
 
 -------
 Windows
@@ -199,4 +207,34 @@ To install *SPSDK* from source code follow:
 
         pip install --upgrade pip
 
+-----------
+PyInstaller
+-----------
 
+PyInstaller bundles SPSDK applications into executable binaries which might be executed without Python interpreter.
+
+To bundle SPSDK applications into executables run the following line:
+
+.. code:: bash
+
+    $ pyinstaller --clean --noconfirm apps.spec
+
+
+-------------------
+Trust Provisioning
+-------------------
+
+Extra dependencies must be installed in order to use Trust Provisioning.
+Also you will need `swig compiler <http://www.swig.org>`_ which is a requirement for pyscard
+
+.. note::
+
+    In **Mac OS** you need to install gcc, swig (http://www.swig.org), and pcsc-lite (https://pcsclite.apdu.fr/).
+    (**brew install swig pcsc-lite**)
+    In **Linux** you need to install pcscd and libpcsclite-dev. (**sudo apt install pcdcs libpcsclite-dev**)
+
+.. code:: bash
+
+    $ pip install 'spsdk[tp]'
+
+This command will install SPSDK with Trust Provisioning support

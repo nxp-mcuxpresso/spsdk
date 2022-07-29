@@ -5,8 +5,6 @@ APIs
 *SPSDK* offers SDK separated into modules, see bellow:
 
 .. figure:: ../_static/images/spsdk-architecture-apis.png
-    :align: center
-    :scale: 50 %
 
 .. note:: See how to install *SPSDK* in :ref:`Installation Guide` chapter.
 

@@ -7,8 +7,8 @@
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.apps import utils
-from spsdk.apps.utils import catch_spsdk_error, load_configuration
+from spsdk.apps.utils import utils
+from spsdk.apps.utils.utils import catch_spsdk_error, load_configuration
 from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.utils.misc import use_working_directory
 

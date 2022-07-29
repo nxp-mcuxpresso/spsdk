@@ -7,9 +7,10 @@
 """Module used for generation SecureBinary V3.1."""
 from datetime import datetime
 from struct import calcsize, pack
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from spsdk import SPSDKError
+from spsdk.crypto.loaders import load_private_key_from_data
 from spsdk.image import MBIMG_SCH_FILE, SB3_SCH_FILE
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
 from spsdk.sbfile.sb31.functions import KeyDerivator
@@ -44,10 +45,10 @@ class SecureBinary31Header(BaseClass):
     ) -> None:
         """Initialize the SecureBinary V3.1 Header.
 
-        :param firmware_version: Firmaware version (must be bigger than current CMPA record)
+        :param firmware_version: Firmware version (must be bigger than current CMPA record)
         :param curve_name: Name of the ECC curve used for Secure binary (secp256r1/secp384r1)
         :param description: Custom description up to 16 characters long, defaults to None
-        :param timestamp: Timestap (number of seconds since Jan 1st, 200), if None use current time
+        :param timestamp: Timestamp (number of seconds since Jan 1st, 200), if None use current time
         :param is_nxp_container: NXP provisioning SB file, defaults to False
         :param flags: Flags for SB file, defaults to 0
         """
@@ -104,6 +105,16 @@ class SecureBinary31Header(BaseClass):
         info += f" Certificate block offset:    {self.cert_block_offset}\n"
         info += f" Description:                 {self.description.decode('ascii')}\n"
         return info
+
+    def update(self, commands: "SecureBinary31Commands", cert_block: CertBlockV31) -> None:
+        """Updates the volatile fields in header by real commands and certification block data.
+
+        :param commands: SB3.1 Commands block
+        :param cert_block: SB3.1 Certification block.
+        """
+        self.block_count = commands.block_count
+        self.image_total_length += len(commands.final_hash) + cert_block.expected_size
+        self.image_total_length += 2 * len(commands.final_hash)
 
     def export(self) -> bytes:
         """Serialize the SB file to bytes."""
@@ -221,15 +232,22 @@ class SecureBinary31Commands(BaseClass):
         """Set all SB3.1 commands at once."""
         self.commands = commands.copy()
 
-    def load_from_config(self, config: List[Dict[str, Any]]) -> None:
+    def load_from_config(
+        self, config: List[Dict[str, Any]], search_paths: List[str] = None
+    ) -> None:
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
+        :param search_paths: List of paths where to search for the file, defaults to None
         """
         for cfg_cmd in config:
             cfg_cmd_key = list(cfg_cmd.keys())[0]
             cfg_cmd_value = cfg_cmd[cfg_cmd_key]
-            self.add_command(CFG_NAME_TO_CLASS[cfg_cmd_key].load_from_config(cfg_cmd_value))
+            self.add_command(
+                CFG_NAME_TO_CLASS[cfg_cmd_key].load_from_config(
+                    cfg_cmd_value, search_paths=search_paths
+                )
+            )
 
     def get_cmd_blocks_to_export(self) -> List[bytes]:
         """Export commands as bytes."""
@@ -328,7 +346,7 @@ class SecureBinary31(BaseClass):
 
         :param curve_name: Name of the ECC curve used for Secure binary (secp256r1/secp384r1).
         :param cert_block: Certification block.
-        :param firmware_version: Firmaware version (must be bigger than current CMPA record).
+        :param firmware_version: Firmware version (must be bigger than current CMPA record).
         :param signing_key: Key to final sign of SB3.1 image.
         :param pck: Part Common Key (needed if `is_encrypted` is True), defaults to None
         :param kdk_access_rights: Key Derivation Key access rights (needed if `is_encrypted` is True), defaults to None
@@ -367,6 +385,11 @@ class SecureBinary31(BaseClass):
             kdk_access_rights=self.kdk_access_rights,
         )
 
+    @staticmethod
+    def _get_prv_key_length(curve_name: str) -> int:
+        """Get size of key for curve in bits."""
+        return {"secp256r1": 256, "secp384r1": 384}[curve_name]
+
     @classmethod
     def get_validation_schemas(
         cls, include_test_configuration: bool = False
@@ -395,17 +418,22 @@ class SecureBinary31(BaseClass):
             ]
         )
         ret.extend([crypto_sch_cfg[x] for x in ["certificate_v31", "certificate_root_keys"]])
-        ret.extend([sb3_sch_cfg[x] for x in ["sb3_family", "sb3", "sb3_commands"]])
+        ret.extend(
+            [sb3_sch_cfg[x] for x in ["sb3_family", "sb3", "sb3_description", "sb3_commands"]]
+        )
         if include_test_configuration:
             ret.append(sb3_sch_cfg["sb3_test"])
         return ret
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any]) -> "SecureBinary31":
-        """Creates instantion of SecureBinary31 from configuration.
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: List[str] = None
+    ) -> "SecureBinary31":
+        """Creates an instance of SecureBinary31 from configuration.
 
         :param config: Input standard configuration.
-        :return: Instantion of Secure Binary V3.1 class
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: Instance of Secure Binary V3.1 class
         """
         container_keyblob_enc_key_path = config.get("containerKeyBlobEncryptionKey")
         is_nxp_container = config.get("isNxpContainer", False)
@@ -420,7 +448,7 @@ class SecureBinary31(BaseClass):
         if timestamp:  # re-format it
             timestamp = value_to_int(timestamp)
 
-        cert_block = CertBlockV31.from_config(config)
+        cert_block = CertBlockV31.from_config(config, search_paths=search_paths)
 
         # if use_isk is set, we use for signing the ISK certificate instead of root
         signing_key_path = (
@@ -435,13 +463,17 @@ class SecureBinary31(BaseClass):
         )
         assert curve_name and isinstance(curve_name, str)
         assert signing_key_path
-        signing_key = load_binary(signing_key_path) if signing_key_path else None
+        signing_key = (
+            load_binary(signing_key_path, search_paths=search_paths) if signing_key_path else None
+        )
         assert signing_key
 
         pck = None
         if is_encrypted:
             assert container_keyblob_enc_key_path
-            pck = bytes.fromhex(load_text(container_keyblob_enc_key_path))
+            pck = bytes.fromhex(
+                load_text(container_keyblob_enc_key_path, search_paths=search_paths)
+            )
 
         # Create SB3 object
         sb3 = SecureBinary31(
@@ -459,7 +491,7 @@ class SecureBinary31(BaseClass):
         )
 
         # Add commands into the SB3 object
-        sb3.sb_commands.load_from_config(commands)
+        sb3.sb_commands.load_from_config(commands, search_paths=search_paths)
 
         return sb3
 
@@ -468,10 +500,24 @@ class SecureBinary31(BaseClass):
 
         :raises SPSDKError: Invalid configuration of SB3.1 class members.
         """
-        # TODO add checking length of signing key
         if self.signing_key is None or not isinstance(self.signing_key, bytes):
             raise SPSDKError(f"SB3.1 Signing Key is invalid: {self.signing_key}")
 
+        try:
+            prv_key_length = self._get_prv_key_length(self.curve_name)
+        except KeyError as exc:
+            raise SPSDKError(f"Invalid SB3 curve name: ({self.curve_name})") from exc
+
+        try:
+            prv_key = load_private_key_from_data(self.signing_key)
+        except SPSDKError as exc:
+            raise SPSDKError(f"Invalid SB3 Signing key: ({str(exc)})") from exc
+
+        if prv_key.key_size != prv_key_length:
+            raise SPSDKError(
+                f"Invalid length of SB3.1 signing key({len(self.signing_key)} != {prv_key_length})"
+                f" for used curve: {self.curve_name}!"
+            )
         self.cert_block.validate()
         self.sb_header.validate()
         self.sb_commands.validate()
@@ -485,13 +531,10 @@ class SecureBinary31(BaseClass):
 
         cert_block_data = self.cert_block.export()
         sb3_commands_data = self.sb_commands.export()
-        self.sb_header.block_count = self.sb_commands.block_count
-        self.sb_header.image_total_length += len(self.sb_commands.final_hash) + len(cert_block_data)
-        # TODO: use proper signature len calculation
-        self.sb_header.image_total_length += 2 * len(self.sb_commands.final_hash)
 
         final_data = bytes()
         # HEADER OF SB 3.1 FILE
+        self.sb_header.update(self.sb_commands, self.cert_block)
         final_data += self.sb_header.export()
 
         # HASH OF PREVIOUS BLOCK

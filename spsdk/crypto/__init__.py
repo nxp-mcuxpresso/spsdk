@@ -75,6 +75,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import (
     RSAPrivateKey,
     RSAPrivateKeyWithSerialization,
     RSAPublicKey,
+    RSAPublicNumbers,
 )
 
 # Explicit import due to MYPY issue
@@ -113,12 +114,5 @@ from .certificate_management import *
 from .keys_management import *
 
 # Explicit import due to MYPY issue
-from .loaders import (
-    _get_encoding_type,
-    generic_load,
-    load_certificate,
-    load_certificate_as_bytes,
-    load_private_key,
-    load_public_key,
-)
+from .loaders import load_certificate, load_certificate_as_bytes, load_private_key, load_public_key
 from .signature_provider import SignatureProvider

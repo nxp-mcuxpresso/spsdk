@@ -7,19 +7,27 @@
 
 """Boot Image V2.0, V2.1."""
 
+import logging
+import os
 from datetime import datetime
 from typing import Iterator, List, Optional
 
 from spsdk import SPSDKError
+from spsdk.crypto.loaders import load_certificate_as_bytes
 from spsdk.utils.crypto import CertBlockV2, Counter, crypto_backend
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.backend_internal import internal_backend
+from spsdk.utils.crypto.certificate import Certificate
 from spsdk.utils.crypto.common import calc_cypher_block_count
-from spsdk.utils.misc import find_first
+from spsdk.utils.misc import find_first, load_binary, write_file
 
+from . import sb_21_helper as elf2sb_helper21
+from . import sly_bd_parser as bd_parser
 from .commands import CmdHeader
 from .headers import ImageHeaderV2
 from .sections import BootSectionV2, CertSectionV2
+
+logger = logging.getLogger(__name__)
 
 
 class SBV2xAdvancedParams:
@@ -688,7 +696,6 @@ class BootImageV21(BaseClass):
         self.update()
         # Export Boot Sections
         bs_data = bytes()
-        # TODO: implement helper method for get key size in bytes. Now is working only with internal backend
         bs_offset = (
             ImageHeaderV2.SIZE
             + self.HEADER_MAC_SIZE
@@ -774,7 +781,7 @@ class BootImageV21(BaseClass):
         index = offset
         header_raw_data = data[index : index + ImageHeaderV2.SIZE]
         index += ImageHeaderV2.SIZE
-        # TODO not used right now: hmac_data = data[index: index + cls.HEADER_MAC_SIZE]
+        # Not used right now: hmac_data = data[index: index + cls.HEADER_MAC_SIZE]
         index += cls.HEADER_MAC_SIZE
         key_blob = data[index : index + cls.KEY_BLOB_SIZE]
         index += cls.KEY_BLOB_SIZE
@@ -791,7 +798,7 @@ class BootImageV21(BaseClass):
 
         # Verify Signature
         signature_index = index
-        # The image may containt SHA, in such a case the signature is placed
+        # The image may contain SHA, in such a case the signature is placed
         # after SHA. Thus we must shift the index by SHA size.
         if header.flags & BootImageV21.FLAGS_SHA_PRESENT_BIT:
             signature_index += BootImageV21.SHA_256_SIZE
@@ -809,7 +816,7 @@ class BootImageV21(BaseClass):
             index += BootImageV21.SHA_256_SIZE
         index += cert_block.signature_size
         # Check first Boot Section HMAC
-        # TODO: not implemented yet
+        # Not implemented yet
         # hmac_data_calc = crypto_backend().hmac(mac, data[index + CmdHeader.SIZE: index + CmdHeader.SIZE + ((2) * 32)])
         # if hmac_data != hmac_data_calc:
         #    raise Exception()
@@ -846,3 +853,176 @@ class BootImageV21(BaseClass):
         obj.cert_block = cert_block
         obj.add_boot_section(boot_section)
         return obj
+
+
+def generate_SB21(
+    bd_file_path: str,
+    key_file_path: str,
+    private_key_file_path: str,
+    signing_certificate_file_paths: List[str],
+    root_key_certificate_paths: List[str],
+    hoh_out_path: str,
+    external_files: List[str],
+) -> bytes:
+    """Generate SecureBinary image from BD command file.
+
+    :param bd_file_path: path to BD file.
+    :param key_file_path: path to key file.
+    :param private_key_file_path: path to private key file for signing. This key
+        relates to last certificate from signing certificate chain.
+    :param signing_certificate_file_paths: signing certificate chain.
+    :param root_key_certificate_paths: paths to root key certificate(s) for
+        verifying other certificates. Only 4 root key certificates are allowed,
+        others are ignored. One of the certificates must match the first certificate
+        passed in signing_certificate_file_paths.
+    :param hoh_out_path: output path to hash of hashes of root keys. If set to
+        None, 'hash.bin' is created under working directory.
+    :param external_files: external files referenced from BD file.
+
+    :raises SPSDKError: If incorrect bd file is provided
+    """
+    # Create lexer and parser, load the BD file content and parse it for
+    # further execution - the parsed BD file is a dictionary in JSON format
+    with open(str(bd_file_path)) as bd_file:
+        bd_file_content = bd_file.read()
+
+    parser = bd_parser.BDParser()
+
+    parsed_bd_file = parser.parse(text=bd_file_content, extern=external_files)
+    if parsed_bd_file is None:
+        raise SPSDKError("Invalid bd file, secure binary file generation terminated")
+
+    # The dictionary contains following content:
+    # {
+    #   options: {
+    #       opt1: value,...
+    #   },
+    #   sections: [
+    #       {section_id: value, options: {}, commands: {}},
+    #       {section_id: value, options: {}, commands: {}}
+    #   ]
+    # }
+    # TODO check, that section_ids differ in sections???
+
+    # we need to encrypt and sign the image, let's check, whether we have
+    # everything we need
+    # It appears, that flags option in BD file are irrelevant for 2.1 secure
+    # binary images regarding encryption/signing - SB 2.1 must be encrypted
+    # and signed.
+    # However, bit 15 represents, whether the final SB 2.1 must include a
+    # SHA-256 of the bootable section.
+    flags = parsed_bd_file["options"].get(
+        "flags", BootImageV21.FLAGS_SHA_PRESENT_BIT | BootImageV21.FLAGS_ENCRYPTED_SIGNED_BIT
+    )
+    if (
+        private_key_file_path is None
+        or signing_certificate_file_paths is None
+        or root_key_certificate_paths is None
+    ):
+        raise SPSDKError(
+            "error: Signed image requires private key with -s option, "
+            "one or more certificate(s) using -S option and one or more root key "
+            "certificates using -R option"
+        )
+
+    # Versions and build number are up to the user. If he doesn't provide any,
+    # we set these to following values.
+    product_version = parsed_bd_file["options"].get("productVersion", "")
+    component_version = parsed_bd_file["options"].get("componentVersion", "")
+    build_number = parsed_bd_file["options"].get("buildNumber", -1)
+
+    if not product_version:
+        product_version = "1.0.0"
+        logger.warning("Production version not defined, defaults to '1.0.0'")
+
+    if not component_version:
+        component_version = "1.0.0"
+        logger.warning("Component version not defined, defaults to '1.0.0'")
+
+    if build_number == -1:
+        build_number = 1
+        logger.warning("Build number not defined, defaults to '1.0.0'")
+
+    if key_file_path is None:
+        # Legacy elf2sb doesn't report no key provided, but this should
+        # be definitely reported to tell the user, what kind of key is being
+        # used
+        logger.warning("No KEK key provided, using a zero KEK key")
+        sb_kek = bytes.fromhex("0" * 64)
+    else:
+        with open(str(key_file_path)) as kek_key_file:
+            # TODO maybe we should validate the key length and content, to make
+            # sure the key provided in the file is valid??
+            sb_kek = bytes.fromhex(kek_key_file.readline())
+
+    # validate keyblobs and perform appropriate actions
+    keyblobs = parsed_bd_file.get("keyblobs", [])
+
+    # Based on content of parsed BD file, create a BootSectionV2 and assign
+    # commands to them.
+    # The content of section looks like this:
+    # sections: [
+    #   {
+    #       section_id: <number>,
+    #       options: {}, this is left empty for now...
+    #       commands: [
+    #           {<cmd1>: {<param1>: value, ...}},
+    #           {<cmd2>: {<param1>: value, ...}},
+    #           ...
+    #       ]
+    #   },
+    #   {
+    #       section_id: <number>,
+    #       ...
+    #   }
+    # ]
+    sb_sections = []
+    bd_sections = parsed_bd_file["sections"]
+    for bd_section in bd_sections:
+        section_id = bd_section["section_id"]
+        commands = []
+        for cmd in bd_section["commands"]:
+            for key, value in cmd.items():
+                # we use a helper function, based on the key ('load', 'erase'
+                # etc.) to create a command object. The helper function knows
+                # how to handle the parameters of each command.
+                cmd_fce = elf2sb_helper21.get_command(key)
+                if key in ("keywrap", "encrypt"):
+                    keyblob = {"keyblobs": keyblobs}
+                    value.update(keyblob)
+                cmd = cmd_fce(value)
+                commands.append(cmd)
+
+        sb_sections.append(BootSectionV2(section_id, *commands))
+
+    # We have a list of sections and their respective commands, lets create
+    # a boot image v2.1 object
+    secure_binary = BootImageV21(
+        sb_kek,
+        *sb_sections,
+        product_version=product_version,
+        component_version=component_version,
+        build_number=build_number,
+        flags=flags,
+    )
+
+    # create certificate block
+    cert_block = CertBlockV2(build_number=build_number)
+    for cert_path in signing_certificate_file_paths:
+        cert_data = load_certificate_as_bytes(str(cert_path))
+        cert_block.add_certificate(cert_data)
+    for cert_idx, cert_path in enumerate(root_key_certificate_paths):
+        cert_data = load_certificate_as_bytes(str(cert_path))
+        cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
+
+    # We have our secure binary, now we attach to it the certificate block and
+    # the private key content
+    secure_binary.cert_block = cert_block
+    secure_binary.private_key_pem_data = load_binary(private_key_file_path)
+
+    if hoh_out_path is None:
+        hoh_out_path = os.path.join(os.getcwd(), "hash.bin")
+
+    write_file(secure_binary.cert_block.rkht, hoh_out_path, mode="wb")
+
+    return secure_binary.export()

@@ -8,8 +8,7 @@
 """Helper module for blhost application."""
 
 import contextlib
-import math
-from typing import Any, Callable, Iterator, List, Union
+from typing import Any, Callable, Iterator, Union
 
 import click
 
@@ -150,67 +149,6 @@ def _parse_key_type(user_input: str, collection: Any, default: int = None) -> in
         return key_type_int
 
 
-class SegmentInfo:
-    """SegmentInfo class containing: start, length and data of segment."""
-
-    ALIGNMENT = 1024
-
-    def __init__(self, start: int, length: int, data_bin: bytes) -> None:
-        """Initialize the SegmentInfo object.
-
-        :param start: start address of segment
-        :param length: length of segment
-        :param data_bin: binary data in segment
-        """
-        self.start = start
-        self.length = length
-        self.data_bin = data_bin
-
-    @property
-    def aligned_start(self) -> int:
-        """Returns aligned start address for erasing purposes."""
-        return math.floor(self.start / self.ALIGNMENT) * self.ALIGNMENT
-
-    @property
-    def aligned_length(self) -> int:
-        """Returns aligned length for erasing purposes."""
-        end_address = self.start + self.length
-        aligned_end = math.ceil(end_address / self.ALIGNMENT) * self.ALIGNMENT
-        aligned_len = aligned_end - self.aligned_start
-        return aligned_len
-
-
-def parse_image_file(file_path: str) -> List[SegmentInfo]:
-    """Parse image.
-
-    :param file_path: path, where the image is stored
-    :raises SPSDKError: When elf/axf files are used
-    :raises SPSDKError: When binary file is used
-    :raises SPSDKError: When unsupported file is used
-    :return: SegmentInfo object
-    """
-    with open(file_path, "rb") as f:
-        data = f.read(4)
-    if data == b"\x7fELF":
-        raise SPSDKError("Elf file is not supported")
-    try:
-        # import bincopy only if needed to save startup time
-        import bincopy  # pylint: disable=import-outside-toplevel
-
-        binfile = bincopy.BinFile(file_path)
-
-        return [
-            SegmentInfo(start=segment.address, length=len(segment.data), data_bin=segment.data)
-            for segment in binfile.segments
-        ]
-    except (UnicodeDecodeError, bincopy.UnsupportedFileFormatError) as e:
-        raise SPSDKError(
-            "Error: please use write-memory command for binary file downloading."
-        ) from e
-    except Exception as e:
-        raise SPSDKError("Error loading file") from e
-
-
 @contextlib.contextmanager
 def progress_bar(
     suppress: bool = False, **progress_bar_params: Union[str, int]
@@ -219,16 +157,16 @@ def progress_bar(
 
     :param suppress: Suppress the progress bar creation; return an empty callback, defaults to False
     :param **progress_bar_params: Standard parameters for click.progressbar
-    :yield: Callback for updating the progess bar
+    :yield: Callback for updating the progress bar
     """
     if suppress:
         yield lambda _x, _y: None
     else:
-        with click.progressbar(length=100, **progress_bar_params) as p_bar:
+        with click.progressbar(length=100, **progress_bar_params) as p_bar:  # type: ignore
 
             def progress(step: int, total_steps: int) -> None:
                 per_step = 100 / total_steps
                 increment = step * per_step - p_bar.pos
-                p_bar.update(increment)
+                p_bar.update(round(increment))
 
             yield progress

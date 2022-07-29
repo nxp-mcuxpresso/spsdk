@@ -5,7 +5,6 @@ Applications
 *SPSDK* includes several applications which could be called directly from the command line.
 
 .. figure:: ../_static/images/spsdk-architecture-apps.png
-    :align: center
     :scale: 50 %
 
 Command-line applications are available in ``PATH`` after activating a virtual environment with SPSDK installed in it.
@@ -18,10 +17,6 @@ All applications could be accessed either using a special application called ``s
 .. code:: bash
 
     spsdk --help
-
-.. figure:: ../_static/images/spsdk-help.png
-    :align: center
-    :scale: 50 %
 
 ------------------------
 Application Connectivity
@@ -42,7 +37,6 @@ Application Overview
 SPSDK applications are used for various functions and not all applications are valid for all NXP MCU device portfolios. The table mapping particular applications to a specific device is below.
 
 .. figure:: ../_static/images/spsdk-applications.png
-    :align: center
     :scale: 50 %
 
 .. note:: Please note that elftosb features marked with light green are supported but not tested and should be used with caution.
@@ -94,6 +88,8 @@ The tool for generating TrustZone, MasterBootImage, and SecureBinary images.
 - generate MasterBootImage
 - generate SecureBinary
 
+.. note:: This tool is deprecated, use :ref:`nxpimage` instead
+
 .. code:: bash
 
     elftosb --help
@@ -103,14 +99,29 @@ The tool for generating TrustZone, MasterBootImage, and SecureBinary images.
 
 The *nxpcertgen* application allows the user to:
 
-- generate the self-signed x.509 certificates with properties given in the JSON configuration file.
-- generate the template of Certificate generation YML configuration file
+- generate the self-signed x.509 certificates with properties given in the YAML configuration file.
+- generate the template of Certificate generation YAML configuration file
 
 The certificates are self-signed and support only BasicConstrains (ca, path_length).
 
 .. code:: bash
 
     nxpcertgen --help
+
+:ref:`nxpcrypto`
+=================
+
+The *nxpcrypto* application allows user to:
+
+- generate RSA/ECC key pairs (private and public) with various key's attributes
+- verify key pairs
+- convert key file format (PEM/DER/RAW)
+- generate/verify x509 certificates
+- generate/verify hash digests
+
+.. code:: bash
+
+    nxpcrypto --help
 
 :ref:`nxpdebugmbox`
 ===================
@@ -124,7 +135,7 @@ The *nxpdebugmbox* application allows user to:
 - erase flash
 - test connection
 - generate debug credential files based on YAML configuration file
-- generate the template of Debug Credentials YML configuration file
+- generate the template of Debug Credentials YAML configuration file
 
 .. code:: bash
 
@@ -148,6 +159,21 @@ The *nxpdevscan* application allows users to list all connected USB and UART NXP
 
     nxpdevscan --help
 
+:ref:`nxpimage`
+===============
+
+The *nxpimage* application allows users to:
+
+- generate/parse AHAB images
+- generate TrustZone images
+- generate MasterBootImage images
+- generate SecureBinary images
+- generate custom binaries
+
+.. code:: bash
+
+    nxpimage --help
+
 :ref:`nxpkeygen`
 ================
 
@@ -155,10 +181,12 @@ The *nxpkeygen* application allows user to:
 
 - generate RSA/ECC key pairs (private and public) with various key's attributes
 
+.. note:: This tool is deprecated, use :ref:`nxpcrypto` instead
 
 .. code:: bash
 
     nxpkeygen --help
+
 
 :ref:`pfr`
 ==========
@@ -224,8 +252,8 @@ The *shadowregs* application is a utility for Shadow Registers controlling.
 
 It allows user to:
 
-- save the current state of shadow registers to the YML file
-- load new state of shadow registers from YML file into the microcontroller
+- save the current state of shadow registers to the YAML file
+- load new state of shadow registers from YAML file into the microcontroller
 - print all shadow registers including their current values
 - print the current value of one shadow register
 - set a value of one shadow register defined by parameter

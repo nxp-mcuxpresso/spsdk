@@ -7,6 +7,7 @@
 
 """Internal implementation for security backend."""
 import importlib
+import math
 from struct import pack, unpack_from
 from typing import Any, Union
 
@@ -18,6 +19,7 @@ from Crypto.PublicKey import ECC, RSA
 from Crypto.Signature import DSS, pkcs1_15
 
 from spsdk import SPSDKError
+from spsdk.crypto import PrivateKey
 
 # Abstract Class Interface
 from .abstract import BackendClass
@@ -312,6 +314,22 @@ class Backend(BackendClass):
             return True
         except ValueError:
             return False
+
+    @staticmethod
+    def sign_size(key: PrivateKey) -> int:
+        """Get size of signature for loaded private key.
+
+        :param key: Private key used to sign data.
+        :return: Size of signature in bytes for the private key.
+        :raises SPSDKError: Invalid key type.
+        """
+        if isinstance(key, ECC.EccKey):
+            return math.ceil(key.key_size / 8) * 2
+
+        if isinstance(key, RSA.RsaKey):
+            return key.key_size // 8
+
+        raise SPSDKError(f"Unsupported private key type to get signature size. {type(key)}")
 
 
 ########################################################################################################################

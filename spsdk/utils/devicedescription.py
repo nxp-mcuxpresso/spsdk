@@ -51,7 +51,7 @@ class UartDeviceDescription(DeviceDescription):
     """
 
     def __init__(self, name: str = None, dev_type: str = None) -> None:
-        """Construtor.
+        """Constructor.
 
         The 'dev_type' can be in general any string identifying the device type.
 
@@ -96,7 +96,7 @@ class USBDeviceDescription(DeviceDescription):
         :param name: Name(s) of NXP devices as defined under spsdk.mboot.interfaces.usb or spsdk.sdp.interfaces.usb
         :param serial: The serial number of device.
 
-        See :py:func:`get_usb_device_name` function to getg the name from
+        See :py:func:`get_usb_device_name` function to get the name from
         VID and PID.
         See :py:func:`convert_usb_path` function to provide a proper path string.
         """

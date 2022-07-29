@@ -1,0 +1,32 @@
+# Path to CMPA binary
+cmpa_path: sample_config_data/cmpa_example.bin
+# Path to CFPA binary
+cfpa_path: sample_config_data/cfpa_example.bin
+# Path to SB file Key Encryption Key
+sb_kek_path: sample_config_data/sb_kek_example.txt
+# Path to USER Key Encryption Key
+user_kek_path: sample_config_data/user_kek_example.txt
+# Production quota
+production_quota: 1_000_000
+
+# Number of OEM certificates to generate
+# If it's set to 0, rest of this section is ignored
+oem_id_count: 0
+
+# Path to key for Audit log signing
+oem_log_prk_path: sample_config_data/oem_log_prk.pem
+
+# Path to device family attestation certificate
+nxp_prod_cert_path: sample_config_data/nxp_prod_devattest_lpc55s6x.der.crt
+
+# Signing key path (PEM or DER encoded P-256 ECC Key)
+oem_id_prk_path: sample_config_data/oem_id_prk.pem
+
+##################################################
+# Temporary stuff until we have manufactured cards
+
+# Path to public key for verifying nxp_prod attestation certificates
+nxp_global_attest_puk_path: sample_config_data/nxp_glob_devattest_puk.pem
+
+# Path to private key used for mutual authentication
+nxp_prod_card_prk_path: sample_config_data/nxp_prod_card_auth_prk.pem

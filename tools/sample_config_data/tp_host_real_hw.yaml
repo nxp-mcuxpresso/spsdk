@@ -1,0 +1,3 @@
+# OEM Provisioning firmware provided by NXP (optional)
+# if omitted, use blhost's receive-sb-file to load prov_fw beforehand
+prov_firmware:

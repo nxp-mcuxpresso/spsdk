@@ -12,9 +12,16 @@ from typing import Optional
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.apps.utils import load_configuration
-from spsdk.image import MasterBootImage, MultipleImageEntry, MultipleImageTable, TrustZone
+from spsdk.apps.utils.utils import load_configuration
+from spsdk.image import (
+    MBIMG_SCH_FILE,
+    MasterBootImage,
+    MultipleImageEntry,
+    MultipleImageTable,
+    TrustZone,
+)
 from spsdk.image.keystore import KeySourceType, KeyStore
+from spsdk.image.mbi_mixin import Mbi_MixinRelocTable
 from spsdk.image.mbimg import (
     Mbi_CrcRamRtxxx,
     Mbi_CrcXip,
@@ -23,9 +30,11 @@ from spsdk.image.mbimg import (
     Mbi_PlainSignedRamRtxxx,
     Mbi_PlainXip,
     Mbi_SignedXip,
+    get_all_mbi_classes,
 )
 from spsdk.utils.crypto import CertBlockV2, Certificate
 from spsdk.utils.misc import load_binary
+from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 #################################################################
 # To create data sets for Master Boot Image (MBI)
@@ -593,6 +602,26 @@ def test_multiple_images_with_relocation_table(data_dir):
     assert _compare_image(mbi, os.path.join(data_dir, "multicore"), "expected_output.bin")
 
 
+def test_loading_relocation_table(data_dir):
+    """Test of relocation table mixin support."""
+
+    class TestAppTable(Mbi_MixinRelocTable):
+        def __init__(self) -> None:
+            self.app = bytes(100)
+            self.app_table = None
+            self.search_paths = None
+
+    test_cls = TestAppTable()
+    cfg = load_configuration(os.path.join(data_dir, "test_app_table.yaml"))
+    # Test validation by JSON SCHEMA
+    schemas = []
+    schema_cfg = ValidationSchemas.get_schema_file(MBIMG_SCH_FILE)
+    schemas.append(schema_cfg["app_table"])
+    check_config(cfg, schemas)
+    # Test Load
+    test_cls.mix_load_from_config(cfg)
+
+
 def test_multiple_image_entry_table_invalid():
     with pytest.raises(SPSDKError, match="Invalid destination address"):
         MultipleImageEntry(img=bytes(), dst_addr=0xFFFFFFFFA)
@@ -666,3 +695,9 @@ def test_invalid_image_base_address(data_dir):
         mbi.load_from_config(
             load_configuration(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))
         )
+
+
+def test_get_mbi_classes():
+    mbi_classes = get_all_mbi_classes()
+    for mbi in mbi_classes:
+        assert issubclass(mbi, MasterBootImage)

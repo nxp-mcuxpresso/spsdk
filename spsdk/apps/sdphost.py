@@ -13,62 +13,26 @@ import logging
 import sys
 
 import click
-from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
-from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import INT, catch_spsdk_error, format_raw_data, get_interface
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroup,
+    isp_interfaces,
+    spsdk_apps_common_options,
+)
+from spsdk.apps.utils.utils import (
+    INT,
+    SPSDKAppError,
+    catch_spsdk_error,
+    format_raw_data,
+    get_interface,
+)
 from spsdk.sdp import SDP
 from spsdk.sdp.commands import ResponseValue
 
 
-@click.group(no_args_is_help=True)
-@optgroup.group("Interface configuration", cls=MutuallyExclusiveOptionGroup)
-@optgroup.option(
-    "-p",
-    "--port",
-    metavar="COM[,speed]",
-    help="Serial port.",
-)
-@optgroup.option(
-    "-u",
-    "--usb",
-    metavar="VID,PID",
-    help="""USB device identifier.
-    Following formats are supported: <vid>, <vid:pid> or <vid,pid>, device/instance path, device name.
-    <vid>: hex or dec string; e.g. 0x0AB12, 43794.
-    <vid/pid>: hex or dec string; e.g. 0x0AB12:0x123, 1:3451.
-    Use 'nxpdevscan' utility to list connected device names.
-""",
-)
-@click.option(
-    "-j",
-    "--json",
-    "use_json",
-    is_flag=True,
-    help="Use JSON output",
-)
-@click.option(
-    "-v",
-    "--verbose",
-    "log_level",
-    flag_value=logging.INFO,
-    help="Displays more verbose output",
-)
-@click.option(
-    "-d",
-    "--debug",
-    "log_level",
-    flag_value=logging.DEBUG,
-    help="Display debugging info",
-)
-@click.option(
-    "-t",
-    "--timeout",
-    metavar="<ms>",
-    help="Set packet timeout in milliseconds",
-    default=5000,
-)
-@click.version_option(spsdk_version, "--version")
+@click.group(name="sdphost", no_args_is_help=True, cls=CommandsTreeGroup)
+@isp_interfaces(uart=True, usb=True)
+@spsdk_apps_common_options
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -80,15 +44,12 @@ def main(
 ) -> int:
     """Utility for communication with ROM on i.MX targets."""
     logging.basicConfig(level=log_level or logging.WARNING)
-    # if --help is provided anywhere on commandline, skip interface lookup and display help message
-    if "--help " in sys.argv:
-        port, usb = None, None  # type: ignore
-    ctx.obj = {
-        "interface": get_interface(module="sdp", port=port, usb=usb, timeout=timeout)
-        if port or usb
-        else None,
-        "use_json": use_json,
-    }
+    # if --help is provided anywhere on command line, skip interface lookup and display help message
+    if "--help" not in sys.argv[1:]:
+        ctx.obj = {
+            "interface": get_interface(module="sdp", port=port, usb=usb, timeout=timeout),
+            "use_json": use_json,
+        }
     return 0
 
 
@@ -176,15 +137,37 @@ def read_register(
     with SDP(ctx.obj["interface"]) as sdp:
         response = sdp.read_safe(address, count, item_length)
     if not response:
-        click.echo(
+        raise SPSDKAppError(
             f"Error: invalid sub-command or arguments 'read-register {address:#8X} {item_length} {count}'"
         )
-        sys.exit(1)
     if file:
         file.write(response)  # type: ignore
     else:
         click.echo(format_raw_data(response, use_hexdump=use_hexdump))
     display_output([], sdp.hab_status, ctx.obj["use_json"])
+
+
+@click.argument("baudrate", type=INT(), required=True)
+@main.command()
+@click.pass_context
+def set_baudrate(ctx: click.Context, baudrate: int) -> None:
+    """Configures UART baudrate.
+
+    The SDP command SET_BAUDRATE is used by the host to configure the UART
+    baudrate on the device side. The default baudrate is 115200.
+    Please note that this command is not supported on all devices.
+
+    \b
+    BAUDRATE - baudrate to be set
+    """
+    with SDP(ctx.obj["interface"]) as sdp:
+        response = sdp.set_baudrate(baudrate)
+    display_output(
+        [response],
+        sdp.hab_status,
+        ctx.obj["use_json"],
+        extra_output=f"Response status = {decode_status_code(response)}.",
+    )
 
 
 def display_output(
@@ -219,9 +202,7 @@ def decode_status_code(status_code: int = None) -> str:
     """Returns a stringified representation of status code.
 
     :param status_code: SDP status code
-    :type status_code: int
     :return: stringified representation
-    :rtype: str
     """
     if not status_code:
         return "UNKNOWN ERROR"

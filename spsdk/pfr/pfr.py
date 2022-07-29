@@ -18,12 +18,12 @@ from spsdk import SPSDKError
 from spsdk import __author__ as spsdk_author
 from spsdk import __release__ as spsdk_release
 from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import load_configuration
 from spsdk.crypto import PublicKey, ec, rsa
 from spsdk.utils.crypto.abstract import BackendClass
 from spsdk.utils.crypto.backend_openssl import openssl_backend
+from spsdk.utils.crypto.rkht import RKHT
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
-from spsdk.utils.misc import change_endianism, value_to_int
+from spsdk.utils.misc import change_endianness, load_configuration, value_to_int
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister
 
@@ -290,7 +290,7 @@ class BaseConfigArea:
         fields: dict = context
         for method in fields.values():
             if hasattr(self, method):
-                method_ref = getattr(self, method, None)
+                method_ref = getattr(self, method)
                 val = method_ref(val)
             else:
                 raise SPSDKPfrError(f"The '{method}' compute function doesn't exists.")
@@ -434,22 +434,13 @@ the latest: '{config.revision}' has been used."
         # detected the right algorithm and mandatory warn user about this selection because
         # it's MUST correspond to settings in eFuses!
         reg_rotkh = self.registers.find_reg("ROTKH")
-        width = reg_rotkh.width
-        if isinstance(keys[0], rsa.RSAPublicKey):
-            algorithm_width = 256
-        else:
-            algorithm_width = keys[0].key_size
+        rkht = RKHT(keys=keys, keys_cnt=4, min_keys_cnt=1)
+        rkht.validate()
 
-        if algorithm_width > width:
+        if rkht.hash_algorithm_size > reg_rotkh.width:
             raise SPSDKPfrError("The ROTKH field is smaller than used algorithm width.")
 
-        key_hashes = [calc_pub_key_hash(key, openssl_backend, algorithm_width) for key in keys]
-        data = [
-            key_hashes[i] if i < len(key_hashes) else bytes(algorithm_width // 8) for i in range(4)
-        ]
-        return openssl_backend.hash(bytearray().join(data), f"sha{algorithm_width}").ljust(
-            width // 8, b"\x00"
-        )
+        return rkht.rotkh().ljust(reg_rotkh.width // 8, b"\x00")
 
     def _get_seal_start_address(self) -> int:
         """Function returns start of seal fields for the device.
@@ -484,7 +475,7 @@ the latest: '{config.revision}' has been used."
         """
         if keys:
             try:
-                # ROTKH may or may not be present, derived class defines its presense
+                # ROTKH may or may not be present, derived class defines its presence
                 rotkh_reg = self.registers.find_reg(self.ROTKH_REGISTER)
                 rotkh_data = self._calc_rotkh(keys)
                 rotkh_reg.set_value(rotkh_data, True)
@@ -514,14 +505,14 @@ the latest: '{config.revision}' has been used."
         for reg in self._get_registers():
             value = bytearray(data[reg.offset : reg.offset + reg.width // 8])
             # don't change endian if register is meant to be used in 'reverse' (array of bytes)
-            reg.set_value(value if reg.reverse else change_endianism(value), raw=True)
+            reg.set_value(value if reg.reverse else change_endianness(value), raw=True)
 
 
 class CMPA(BaseConfigArea):
     """Customer Manufacturing Configuration Area."""
 
     CONFIG_DIR = os.path.join(BaseConfigArea.CONFIG_DIR, "cmpa")
-    DESCRIPTION = "Customer Manufacturing Programable Area"
+    DESCRIPTION = "Customer Manufacturing Programmable Area"
 
 
 class CFPA(BaseConfigArea):

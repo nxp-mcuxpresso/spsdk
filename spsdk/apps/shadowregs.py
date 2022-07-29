@@ -14,8 +14,8 @@ from typing import Dict, List
 import click
 
 from spsdk import SPSDK_DATA_FOLDER
-from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import catch_spsdk_error
+from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
+from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.debuggers.utils import DebugProbeUtils
 from spsdk.exceptions import SPSDKError
 from spsdk.shadowregs import ShadowRegisters, enable_debug
@@ -23,9 +23,6 @@ from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister
 
 logger = logging.getLogger(__name__)
-
-# pylint: disable=protected-access
-LOG_LEVEL_NAMES = [name.lower() for name in logging._nameToLevel]
 
 CONFIG_DIR = os.path.join(SPSDK_DATA_FOLDER, "shadowregs")
 CONFIG_FILE = "database.json"
@@ -71,23 +68,14 @@ def _open_shadow_registers(pass_obj: Dict) -> ShadowRegisters:
     )
 
 
-@click.group(no_args_is_help=True)
+@click.group(name="shadowregs", no_args_is_help=True, cls=CommandsTreeGroup)
 @click.option(
     "-i",
     "--interface",
     help="The interface allow specify to use only one debug probe interface"
     " like: 'PyOCD', 'jlink' or 'pemicro'",
 )
-@click.option(
-    "-d",
-    "--debug",
-    "log_level",
-    metavar="LEVEL",
-    default="error",
-    help=f"Set the level of system logging output. "
-    f'Available options are: {", ".join(LOG_LEVEL_NAMES)}',
-    type=click.Choice(LOG_LEVEL_NAMES),
-)
+@spsdk_apps_common_options
 @click.option(
     "-s",
     "--serial-no",
@@ -110,21 +98,18 @@ def _open_shadow_registers(pass_obj: Dict) -> ShadowRegisters:
     multiple=True,
     help="This option could be used " "multiply to setup non-standard option for debug probe.",
 )
-@click.version_option(spsdk_version, "-v", "--version")
-@click.help_option("--help")
 @click.pass_context
 def main(
     ctx: click.Context,
     interface: str,
-    log_level: str,
+    log_level: int,
     serial_no: str,
     debug_probe_option: List[str],
     device: str,
     revision: str,
 ) -> int:
     """NXP Shadow Registers control Tool."""
-    logging.basicConfig(level=log_level.upper())
-    logger.setLevel(level=log_level.upper())
+    logging.basicConfig(level=log_level or logging.WARNING)
 
     config_filename = os.path.join(CONFIG_DIR, CONFIG_FILE)
 

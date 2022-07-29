@@ -1,0 +1,44 @@
+# Copyright 2020-2022 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+- req_id: "1.1"
+  desc: Never write any non-zero configuration into DCFG_CC_SOCU_NS_PIN and
+    DCFG_CC_SOCU_NS_DFLT (CFPA) before DCFG_CC_SOCU_PIN and DCFG_CC_SOCU_DFLT (CMPA)
+    contains any valid (non-zero) configuration.
+  msg: The CMPA.DCFG_CC_SOCU_PIN[0:9] must be set in case the CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is set.
+  #cond: (CMPA.DCFG_CC_SOCU_PIN & 0x3FF) == 0 and (CFPA.DCFG_CC_SOCU_NS_PIN & 0x2FF) != 0
+  cond: 0 != 0
+
+- req_id: "1.2"
+  desc: Inverse value (upper 16 bits) of DCFG_CC_SOCU_PIN/DFLT must be always
+    valid. Only exception are blank devices where CC_SOCU_xxx contains all
+    zeros.
+  msg: Inverse values are generated automatically based on configuration. Not tested.
+  cond: 0 != 0
+
+- req_id: "1.3"
+  desc: Inverse value (upper 16 bits) of DCFG_CC_SOCU_NS_PIN/DFLT must be always
+    valid. Only exception are blank devices where CC_SOCU_xxx contains all
+    zeros.
+  msg: Inverse values are generated automatically based on configuration. Not tested.
+  cond: 0 != 0
+
+- req_id: "1.4"
+  desc: Do not write invalid PIN/DFLT configuration in CMPA area. Setting PIN bit
+    to 0 and DFLT bit to 1 for given feature is not allowed
+  msg: Invalid bit combination. If CMPA.DCFG_CC_SOCU_PIN[0:9] is 0, CMPA.DCFG_CC_SOCU_DFLT[0:9] can't be set to 1!
+  # cond: (CMPA.DCFG_CC_SOCU_PIN & 0x3FF) == 0 and (CMPA.DCFG_CC_SOCU_DFLT & 0x3FF) != 0
+  cond: 0 != 0
+
+- req_id: "1.5"
+  desc: Do not write invalid PIN/DFLT configuration in CFPA area. Setting PIN bit
+    to 0 and DFLT bit to 1 for given feature is not allowed
+  msg: Invalid bit combination. If CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is 0, CFPA.DCFG_CC_SOCU_NS_DFLT_PIN[0:9] can't be set to 1!
+  cond: (CFPA.DCFG_CC_SOCU_NS_PIN & 0x2FF) == 0 and ((CFPA.DCFG_CC_SOCU_NS_DFLT & 0x2FF) ^ 0) != 0
+
+- req_id: "2.1"
+  desc: This CMPA_PROG_IN_PROGRESS must be always 0x00000000. Only ROM bootloader
+    is allowed to write anything to this field.
+  msg: The CMPA_PROG_IN_PROGRESS must be set to 0!
+  cond: CFPA.CMPA_PROG_IN_PROGRESS != 0

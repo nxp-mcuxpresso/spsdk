@@ -11,16 +11,14 @@ from typing import List, Tuple
 
 import pytest
 
-from spsdk import SPSDKError
 from spsdk.apps.blhost_helper import (
-    SegmentInfo,
-    parse_image_file,
     parse_key_prov_key_type,
     parse_property_tag,
     parse_trust_prov_key_type,
     parse_trust_prov_oem_key_type,
     parse_trust_prov_wrapping_key_type,
 )
+from spsdk.utils.images import BinaryImage
 
 
 @pytest.mark.parametrize(
@@ -60,47 +58,32 @@ def test_parse_key_prov_key_type(input, expected):
 
 
 @pytest.mark.parametrize(
-    "path, error_msg",
-    [
-        ("evkmimxrt595_gpio_led_output.axf", "Elf file is not supported"),
-        ("iled_blinky_ide_1060.elf", "Elf file is not supported"),
-        ("iled_blinky.out", "file is not supported"),
-        ("iled_blinky_ide_1060_60002000.bin", "use write-memory command"),
-    ],
-)
-def test_parse_image_file_invalid(path, error_msg, data_dir):
-    with pytest.raises(SPSDKError, match=error_msg):
-        parse_image_file(os.path.join(data_dir, path))
-
-
-@pytest.mark.parametrize(
     "path, segment_info_list",
     [
         (
             "evkmimxrt685_led_blinky_ext_flash.srec",
-            [SegmentInfo(start=0x08001000, length=0x54EC, data_bin=None)],
+            [(0x08001000, 0x54EC)],
         ),
         (
             "sdk20-app.s19",
             [
-                SegmentInfo(start=0x7F400, length=512, data_bin=None),
-                SegmentInfo(start=0x80000, length=360, data_bin=None),
-                SegmentInfo(start=0x80180, length=58146, data_bin=None),
+                (0x7F400, 512),
+                (0x80000, 360),
+                (0x80180, 58146),
             ],
         ),
         (
             "iled_blinky_ide_1060.hex",
-            [SegmentInfo(start=0x60002000, length=0x32CC, data_bin=None)],
+            [(0x60002000, 0x32CC)],
         ),
     ],
 )
-def test_parse_image_file(path, segment_info_list: List[SegmentInfo], data_dir):
-    result = parse_image_file(os.path.join(data_dir, path))
-    assert len(result) == len(segment_info_list)
-    for current, ref in zip(result, segment_info_list):
-        assert current.start == ref.start
-        assert current.length == ref.length
-        assert len(current.data_bin) == current.length
+def test_parse_image_file(path, segment_info_list: List[Tuple[int, int]], data_dir):
+    result = BinaryImage.load_binary_image(os.path.join(data_dir, path))
+    assert len(result.sub_images) == len(segment_info_list)
+    for current, ref in zip(result.sub_images, segment_info_list):
+        assert current.absolute_address == ref[0]
+        assert len(current) == ref[1]
 
 
 @pytest.mark.parametrize(
@@ -122,11 +105,11 @@ def test_parse_image_file(path, segment_info_list: List[SegmentInfo], data_dir):
     ],
 )
 def test_parse_image_file_aligned_sizes(path, aligned_sizes: List[Tuple[int, int]], data_dir):
-    result = parse_image_file(os.path.join(data_dir, path))
-    assert len(result) == len(aligned_sizes)
-    for segment, expected in zip(result, aligned_sizes):
-        assert segment.aligned_start == expected[0]
-        assert segment.aligned_length == expected[1]
+    result = BinaryImage.load_binary_image(os.path.join(data_dir, path))
+    assert len(result.sub_images) == len(aligned_sizes)
+    for segment, expected in zip(result.sub_images, aligned_sizes):
+        assert segment.aligned_start(1024) == expected[0]
+        assert segment.aligned_length(1024) == expected[1]
 
 
 @pytest.mark.parametrize(

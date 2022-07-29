@@ -15,22 +15,25 @@ import shlex
 import sys
 
 import click
-from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import SPSDKError
-from spsdk import __version__ as spsdk_version
 from spsdk.apps.blhost_helper import (
     OemGenMasterShareHelp,
     OemSetMasterShareHelp,
-    parse_image_file,
     parse_key_prov_key_type,
     parse_property_tag,
     parse_trust_prov_key_type,
     parse_trust_prov_oem_key_type,
     progress_bar,
 )
-from spsdk.apps.utils import (
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroup,
+    isp_interfaces,
+    spsdk_apps_common_options,
+)
+from spsdk.apps.utils.utils import (
     INT,
+    SPSDKAppError,
     catch_spsdk_error,
     format_raw_data,
     get_interface,
@@ -39,87 +42,29 @@ from spsdk.apps.utils import (
 )
 from spsdk.mboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_property_value
 from spsdk.mboot.error_codes import stringify_status_code
+from spsdk.utils.images import BinaryImage
 
 
-@click.group(no_args_is_help=True)
-@optgroup.group("Interface configuration", cls=MutuallyExclusiveOptionGroup)
-@optgroup.option(
-    "-p",
-    "--port",
-    metavar="COM[,speed]",
-    help="""Serial port configuration. Default baud rate is 57600.
-    Use 'nxpdevscan' utility to list devices on serial port.""",
-)
-@optgroup.option(
-    "-u",
-    "--usb",
-    metavar="VID:PID|USB_PATH|DEV_NAME",
-    help="""USB device identifier.
-    Following formats are supported: <vid>, <vid:pid> or <vid,pid>, device/instance path, device name.
-    <vid>: hex or dec string; e.g. 0x0AB12, 43794.
-    <vid/pid>: hex or dec string; e.g. 0x0AB12:0x123, 1:3451.
-    Use 'nxpdevscan' utility to list connected device names.
-""",
-)
-@optgroup.option(
-    "-l",
-    "--lpcusbsio",
-    metavar="[usb,VID:PID|USB_PATH|SER_NUM,]spi|i2c",
-    help="""USB-SIO bridge interface.
-
-    Optional USB device filtering formats:
-    [usb,vid:pid|usb_path|serial_number]
-
-    Following serial interfaces are supported:
-
-    spi[,port,pin,speed_kHz,polarity,phase]
-     - port ... bridge GPIO port used as SPI SSEL(default=0)
-     - pin  ... bridge GPIO pin used as SPI SSEL
-        default SSEL is set to 0.15 which works
-        for the LPCLink2 bridge. The MCULink OB
-        bridge ignores the SSEL value anyway.(default=15)
-     - speed_kHz ... SPI clock in kHz (default 1000)
-     - polarity ... SPI CPOL option (default=1)
-     - phase ... SPI CPHA option (default=1)
-
-    i2c[,address,speed_kHz]
-     - address ... I2C device address (default 0x10)
-     - speed_kHz ... I2C clock in kHz (default 100)
-""",
-)
-@click.option("-j", "--json", "use_json", is_flag=True, help="Prints output in JSON format.")
+@click.group(name="blhost", no_args_is_help=True, cls=CommandsTreeGroup)
+@isp_interfaces(uart=True, usb=True, lpcusbsio=True, buspal=True)
+@spsdk_apps_common_options
 @click.option(
-    "-v",
-    "--verbose",
-    "log_level",
-    flag_value=logging.INFO,
-    help="Prints more detailed information.",
+    "-s",
+    "--silent",
+    is_flag=True,
+    help="Silent mode suppresses progress bar and status response",
 )
-@click.option(
-    "-d",
-    "--debug",
-    "log_level",
-    flag_value=logging.DEBUG,
-    help="Display more debugging info.",
-)
-@click.option(
-    "-t",
-    "--timeout",
-    metavar="<ms>",
-    help="""Sets timeout when waiting on data over a serial line. The default is 5000 milliseconds.""",
-    default=5000,
-)
-@click.version_option(spsdk_version, "--version")
-@click.help_option("--help")
 @click.pass_context
 def main(
     ctx: click.Context,
     port: str,
     usb: str,
+    buspal: str,
     lpcusbsio: str,
     use_json: bool,
     log_level: int,
     timeout: int,
+    silent: bool,
 ) -> int:
     """Utility for communication with the bootloader on target."""
     log_level = log_level or logging.WARNING
@@ -127,7 +72,7 @@ def main(
 
     # print help for get-property if property tag is 0 or 'list-properties'
     if ctx.invoked_subcommand == "get-property":
-        args = click.get_os_args()
+        args = sys.argv[1:]
         # running this via pytest changes the args to a single arg, in that case skip
         if len(args) > 1 and "get-property" in args:
             tag_str = args[args.index("get-property") + 1]
@@ -135,14 +80,20 @@ def main(
                 click.echo(ctx.command.commands["get-property"].help)  # type: ignore
                 ctx.exit(0)
 
-    # if --help is provided anywhere on commandline, skip interface lookup and display help message
-    if "--help" not in click.get_os_args():
+    # if --help is provided anywhere on command line, skip interface lookup and display help message
+    if "--help" not in sys.argv[1:]:
         ctx.obj = {
             "interface": get_interface(
-                module="mboot", port=port, usb=usb, timeout=timeout, lpcusbsio=lpcusbsio
+                module="mboot",
+                port=port,
+                usb=usb,
+                timeout=timeout,
+                buspal=buspal,
+                lpcusbsio=lpcusbsio,
             ),
             "use_json": use_json,
-            "suppress_progress_bar": use_json or log_level < logging.WARNING,
+            "suppress_progress_bar": use_json or silent or log_level < logging.WARNING,
+            "silent": silent,
         }
     return 0
 
@@ -174,6 +125,8 @@ def batch(ctx: click.Context, command_file: str) -> None:
 
             command_name, *command_args = tokes
             ctx.params = {}
+            assert isinstance(ctx.parent, click.Context)
+            assert isinstance(ctx.parent.command, click.Group)
             cmd_obj = ctx.parent.command.commands.get(command_name)
             if not cmd_obj:
                 raise SPSDKError(f"Unknown command: {command_name}")
@@ -194,7 +147,7 @@ def call(ctx: click.Context, address: int, argument: int) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.call(address, argument)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -212,7 +165,7 @@ def configure_memory(ctx: click.Context, address: int, memory_id: int) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.configure_memory(address, memory_id)  # type: ignore
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -247,7 +200,7 @@ def efuse_program_once(
         address = address | (1 << 24)
     with McuBoot(ctx.obj["interface"]) as mboot:
         response = mboot.efuse_program_once(address, data, verify=verify)
-        display_output([response], mboot.status_code, ctx.obj["use_json"])
+        display_output([response], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -265,6 +218,7 @@ def efuse_read_once(ctx: click.Context, address: int) -> None:
             None if response is None else [4, response],
             mboot.status_code,
             ctx.obj["use_json"],
+            ctx.obj["silent"],
         )
 
 
@@ -289,7 +243,7 @@ def execute(ctx: click.Context, address: int, argument: int, stackpointer: int) 
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.execute(address, argument, stackpointer)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -310,7 +264,7 @@ def flash_erase_region(ctx: click.Context, address: int, byte_count: int, memory
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.flash_erase_region(address, byte_count, memory_id)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -327,7 +281,7 @@ def flash_erase_all(ctx: click.Context, memory_id: int) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.flash_erase_all(memory_id)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -336,7 +290,7 @@ def flash_erase_all_unsecure(ctx: click.Context) -> None:
     """Erase complete flash memory and recover flash security section."""
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.flash_erase_all_unsecure()
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -352,6 +306,8 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
     ERASE      - string 'erase' determines if flash is erased before writing
     MEMORY_ID  - id of memory to erase (default: 0)
     """
+    ALIGNMENT = 1024
+
     if not os.path.isfile(image_file_path):
         raise SPSDKError("The image file does not exist")
     mem_id = 0
@@ -364,27 +320,30 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
             ) from e
     if memory_id:
         mem_id = memory_id
-    segments = parse_image_file(image_file_path)
+    bin_image = BinaryImage.load_binary_image(image_file_path)
     with McuBoot(ctx.obj["interface"]) as mboot:
         if erase == "erase":
-            for segment in segments:
+            for segment in bin_image.sub_images:
+
                 mboot.flash_erase_region(
-                    address=segment.aligned_start, length=segment.aligned_length, mem_id=mem_id
+                    address=segment.aligned_start(ALIGNMENT),
+                    length=segment.aligned_length(ALIGNMENT),
+                    mem_id=mem_id,
                 )
                 if mboot.status_code != StatusCode.SUCCESS:
-                    display_output([], mboot.status_code, ctx.obj["use_json"])
-                    sys.exit(1)
-        for i, segment in enumerate(segments, start=1):
+                    display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
+                    raise SPSDKAppError()
+        for i, segment in enumerate(bin_image.sub_images, start=1):
             with progress_bar(
                 suppress=ctx.obj["suppress_progress_bar"], label=f"Writing segment #{i}"
             ) as progress_callback:
                 mboot.write_memory(
-                    address=segment.start,
-                    data=segment.data_bin,
+                    address=segment.absolute_address,
+                    data=segment.export(),
                     mem_id=mem_id,
                     progress_callback=progress_callback,
                 )
-            display_output([], mboot.status_code, ctx.obj["use_json"])
+            display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -392,7 +351,7 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
 @click.argument("byte_count", type=click.Choice(["4", "8"]), required=True)
 @click.argument("data", type=INT(base=16), required=True)
 @click.argument(
-    "endianess",
+    "endianness",
     metavar="[LSB|MSB]",
     type=click.Choice(["LSB", "MSB"]),
     default="LSB",
@@ -400,7 +359,7 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
 )
 @click.pass_context
 def flash_program_once(
-    ctx: click.Context, index: int, byte_count: str, data: int, endianess: str
+    ctx: click.Context, index: int, byte_count: str, data: int, endianness: str
 ) -> None:
     """Writes provided data to a specific program once field.
 
@@ -408,13 +367,13 @@ def flash_program_once(
     INDEX       - fuse word index
     BYTE_COUNT  - width in bits (acceptable only 4 or 8-byte long data)
     DATA        - 4 or 8-byte-hex according to <byte_count>
-    ENDIANESS   - output sequence is specified by LSB (Default) or MSB
+    ENDIANNESS   - output sequence is specified by LSB (Default) or MSB
     """
-    byte_order = "big" if endianess == "MSB" else "little"
-    input_data = data.to_bytes(int(byte_count), byteorder=byte_order)
+    byte_order = "big" if endianness == "MSB" else "little"
+    input_data = data.to_bytes(int(byte_count), byteorder=byte_order)  # type: ignore[arg-type]
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.flash_program_once(index=index, data=input_data)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -434,6 +393,7 @@ def flash_read_once(ctx: click.Context, index: int, byte_count: str) -> None:
             None if response is None else [len(response), int.from_bytes(response, "little")],
             mboot.status_code,
             ctx.obj["use_json"],
+            ctx.obj["silent"],
         )
 
 
@@ -454,7 +414,7 @@ def flash_security_disable(ctx: click.Context, key: str) -> None:
         raise SPSDKError("Key is not a valid hex-string [A-Fa-f0-9]") from e
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.flash_security_disable(backdoor_key=key_bytes)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -496,6 +456,7 @@ def flash_read_resource(
             [len(response) if response else 0],
             mboot.status_code,
             ctx.obj["use_json"],
+            ctx.obj["silent"],
             f"Read {len(response) if response else 0} of {length} bytes.",
         )
 
@@ -526,7 +487,7 @@ def fill_memory(
     del pattern_format  # temporary workaround for not unused parameter
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.fill_memory(address, byte_count, pattern)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -553,7 +514,12 @@ def fuse_program(ctx: click.Context, address: int, data_source: str, memory_id: 
 
     with McuBoot(ctx.obj["interface"]) as mboot:
         response = mboot.fuse_program(address, data, memory_id)
-        display_output([len(data)] if response else None, mboot.status_code, ctx.obj["use_json"])
+        display_output(
+            [len(data)] if response else None,
+            mboot.status_code,
+            ctx.obj["use_json"],
+            ctx.obj["silent"],
+        )
 
 
 @main.command()
@@ -594,6 +560,7 @@ def fuse_read(
         [len(response) if response else 0],
         mboot.status_code,
         ctx.obj["use_json"],
+        ctx.obj["silent"],
         f"Read {len(response) if response else 0} of {byte_count} bytes.",
     )
 
@@ -635,7 +602,7 @@ def load_image(ctx: click.Context, boot_file: click.File) -> None:
             suppress=ctx.obj["suppress_progress_bar"], label="Loading image"
         ) as progress_callback:
             mboot.load_image(data, progress_callback)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -649,7 +616,7 @@ def get_property(ctx: click.Context, property_tag: str, index: int) -> None:
 
     \b
     PROPERTY_TAG - number or name representing the requested property
-    MEMORY_ID    - id/index of the memory (default: 0)
+    INDEX        - id/index of the memory (default: 0)
 
     \b
     Available properties:
@@ -692,7 +659,9 @@ def get_property(ctx: click.Context, property_tag: str, index: int) -> None:
     with McuBoot(ctx.obj["interface"]) as mboot:
         response = mboot.get_property(property_tag_int, index=index)  # type: ignore
         property_text = str(parse_property_value(property_tag_int, response)) if response else None
-        display_output(response, mboot.status_code, ctx.obj["use_json"], property_text)
+        display_output(
+            response, mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"], property_text
+        )
 
 
 @main.command()
@@ -723,7 +692,7 @@ def set_property(ctx: click.Context, property_tag: str, value: int) -> None:
     property_tag_int = parse_property_tag(property_tag)
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.set_property(prop_tag=property_tag_int, value=value)  # type: ignore
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -732,6 +701,13 @@ def set_property(ctx: click.Context, property_tag: str, value: int) -> None:
 @click.argument("out_file", metavar="FILE", type=click.File("wb"), required=False)
 @click.argument("memory_id", type=INT(), default="0", required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
+@click.option(
+    "-f",
+    "--fast-mode",
+    is_flag=True,
+    default=False,
+    help="Fast mode for USB-HID data transfer, not reliable !!!",
+)
 @click.pass_context
 def read_memory(
     ctx: click.Context,
@@ -740,6 +716,7 @@ def read_memory(
     out_file: click.File,
     memory_id: int,
     use_hexdump: bool,
+    fast_mode: bool,
 ) -> None:
     """Reads the memory and writes it to the file or stdout.
 
@@ -748,17 +725,21 @@ def read_memory(
     \b
     ADDRESS     - starting address
     BYTE_COUNT  - number of bytes to read
-    FILE        - store result into this file, if not specified use stdout
+    FILE        - store result into this file, if not specified use stdout.
+                 If needed specify MEMORY_ID argument, use '-' instead name of file
+                 to print to stdout.
     MEMORY_ID   - id of memory to read from (default: 0)
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         with progress_bar(
             suppress=ctx.obj["suppress_progress_bar"], label="Reading memory"
         ) as progress_callback:
-            response = mboot.read_memory(address, byte_count, memory_id, progress_callback)
+            response = mboot.read_memory(
+                address, byte_count, memory_id, progress_callback, fast_mode
+            )
 
     if response:
-        if out_file:
+        if out_file and out_file.name != "<stdout>":
             out_file.write(response)  # type: ignore
         else:
             click.echo(format_raw_data(response, use_hexdump=use_hexdump))
@@ -767,6 +748,7 @@ def read_memory(
         [len(response) if response else 0],
         mboot.status_code,
         ctx.obj["use_json"],
+        ctx.obj["silent"],
         f"Read {len(response) if response else 0} of {byte_count} bytes.",
     )
 
@@ -802,7 +784,7 @@ def receive_sb_file(ctx: click.Context, sb_file: click.File, check_errors: bool)
         ) as progress_callback:
             data = sb_file.read()  # type: ignore
             mboot.receive_sb_file(data, progress_callback, check_errors)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -816,7 +798,7 @@ def reliable_update(ctx: click.Context, address: int) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.reliable_update(address)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -828,7 +810,7 @@ def reset(ctx: click.Context) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.reset(reopen=False)
-    display_output([], mboot.status_code, ctx.obj["use_json"])
+    display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -861,7 +843,12 @@ def write_memory(ctx: click.Context, address: int, data_source: str, memory_id: 
             suppress=ctx.obj["suppress_progress_bar"], label="Writing memory"
         ) as progress_callback:
             response = mboot.write_memory(address, data, memory_id, progress_callback)
-        display_output([len(data)] if response else None, mboot.status_code, ctx.obj["use_json"])
+        display_output(
+            [len(data)] if response else None,
+            mboot.status_code,
+            ctx.obj["use_json"],
+            ctx.obj["silent"],
+        )
 
 
 @main.command()
@@ -902,6 +889,7 @@ def generate_key_blob(
             [mboot.status_code, len(write_response)] if write_response else None,
             mboot.status_code,
             ctx.obj["use_json"],
+            ctx.obj["silent"],
         )
 
 
@@ -917,7 +905,7 @@ def enroll(ctx: click.Context) -> None:
     """Enrolls key provisioning feature. No argument for this operation."""
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.kp_enroll()
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @main.command()
@@ -932,7 +920,7 @@ def program_aeskey(ctx: click.Context, file: click.File) -> None:
     data = file.read()  # type: ignore
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.write_memory(address=0x0, data=data, mem_id=0x200)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @key_provisioning.command(name="set_user_key")
@@ -974,7 +962,7 @@ def set_user_key(ctx: click.Context, key_type: str, file_and_size: str) -> None:
 
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.kp_set_user_key(key_type=key_type_int, key_data=key_data)  # type: ignore
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @key_provisioning.command(name="set_key")
@@ -1006,7 +994,7 @@ def set_key(ctx: click.Context, key_type: str, key_size: int) -> None:
     key_type_int = parse_key_prov_key_type(key_type)
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.kp_set_intrinsic_key(key_type_int, key_size)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @key_provisioning.command(name="write_key_nonvolatile")
@@ -1020,7 +1008,7 @@ def write_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.kp_write_nonvolatile(memory_id)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @key_provisioning.command(name="read_key_nonvolatile")
@@ -1034,7 +1022,7 @@ def read_key_nonvolatile(ctx: click.Context, memory_id: int) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.kp_read_nonvolatile(memory_id)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @key_provisioning.command(name="write_key_store")
@@ -1059,7 +1047,7 @@ def write_key_store(ctx: click.Context, file_and_size: str) -> None:
 
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.kp_write_key_store(key_data)
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @key_provisioning.command(name="read_key_store")
@@ -1081,6 +1069,7 @@ def read_key_store(ctx: click.Context, key_store_file: click.File) -> None:
             [len(response)] if response else None,
             mboot.status_code,
             ctx.obj["use_json"],
+            ctx.obj["silent"],
         )
 
 
@@ -1141,7 +1130,9 @@ def hsm_store_key(
                     f"\tKey Header: {key_header} ({hex(key_header)})\n"
                     f"\tKey Blob size: {key_blob_size} ({hex(key_blob_size)})"
                 )
-        display_output(response, mboot.status_code, ctx.obj["use_json"], extra_output)
+        display_output(
+            response, mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"], extra_output
+        )
 
 
 @trust_provisioning.command(name="hsm_gen_key")
@@ -1199,7 +1190,9 @@ def hsm_gen_key(
                 f"\tKey Blob size: {keyblob_size} ({hex(keyblob_size)})\n"
                 f"\tECDSA Puk size: {ecdsa_puk_size} ({hex(ecdsa_puk_size)})"
             )
-        display_output(response, mboot.status_code, ctx.obj["use_json"], extra_output)
+        display_output(
+            response, mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"], extra_output
+        )
 
 
 @trust_provisioning.command(name="hsm_enc_blk")
@@ -1259,7 +1252,7 @@ def hsm_enc_blk(
             block_data_addr,
             block_data_size,
         )
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @trust_provisioning.command(name="hsm_enc_sign")
@@ -1313,7 +1306,9 @@ def hsm_enc_sign(
             extra_output += (
                 f"\tSignature size: {output_signature_size} ({hex(output_signature_size)})"
             )
-        display_output([response], mboot.status_code, ctx.obj["use_json"], extra_output)
+        display_output(
+            [response], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"], extra_output
+        )
 
 
 @trust_provisioning.command(name="oem_gen_master_share", cls=OemGenMasterShareHelp)
@@ -1340,7 +1335,7 @@ def oem_gen_master_share(
     """Creates shares for initial trust provisioning keys.
 
     \b
-    OEM_SHARE_INPUT_ADDRR            - The input buffer address where the OEM Share(entropy seed) locates at
+    OEM_SHARE_INPUT_ADDR            - The input buffer address where the OEM Share(entropy seed) locates at
     OEM_SHARE_INPUT_SIZE             - The byte count of the OEM Share
     OEM_ENC_SHARE_OUTPUT_ADDR        - The output buffer address where ROM writes the Encrypted OEM Share to
     OEM_ENC_SHARE_OUTPUT_SIZE        - The output buffer size in byte
@@ -1377,7 +1372,9 @@ def oem_gen_master_share(
                 f"\tOEM Master Share size: {oem_enc_master_share_size} ({hex(oem_enc_master_share_size)})\n"
                 f"\tCust Cert Puk size: {oem_cust_cert_puk_size} ({hex(oem_cust_cert_puk_size)})"
             )
-        display_output(response, mboot.status_code, ctx.obj["use_json"], extra_output)
+        display_output(
+            response, mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"], extra_output
+        )
 
 
 @trust_provisioning.command(name="oem_set_master_share", cls=OemSetMasterShareHelp)
@@ -1401,18 +1398,18 @@ def oem_set_master_share(
             oem_enc_master_share_input_addr,
             oem_enc_master_share_input_size,
         )
-        display_output([], mboot.status_code, ctx.obj["use_json"])
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
 @trust_provisioning.command(name="oem_get_cust_cert_dice_puk")
-@click.argument("oem_rkt_input_addr", type=INT(), required=True)
+@click.argument("oem_rkth_input_addr", type=INT(), required=True)
 @click.argument("oem_rkth_input_size", type=INT(), required=True)
 @click.argument("oem_cust_cert_dice_puk_output_addr", type=INT(), required=True)
 @click.argument("oem_cust_cert_dice_puk_output_size", type=INT(), required=True)
 @click.pass_context
 def oem_get_cust_cert_dice_puk(
     ctx: click.Context,
-    oem_rkt_input_addr: int,
+    oem_rkth_input_addr: int,
     oem_rkth_input_size: int,
     oem_cust_cert_dice_puk_output_addr: int,
     oem_cust_cert_dice_puk_output_size: int,
@@ -1420,7 +1417,7 @@ def oem_get_cust_cert_dice_puk(
     """Creates the initial trust provisioning keys.
 
     \b
-    OEM_RKT_INPUT_ADDR                 - The input buffer address where the OEM RKTH locates at
+    OEM_RKTH_INPUT_ADDR                 - The input buffer address where the OEM RKTH locates at
     OEM_RKTH_INPUT_SIZE                - The byte count of the OEM RKTH
     OEM_CUST_CERT_DICE_PUK_OUTPUT_ADDR - The output buffer address where ROM writes the OEM Customer
                                          Certificate Public Key for DICE to
@@ -1428,7 +1425,7 @@ def oem_get_cust_cert_dice_puk(
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         response = mboot.tp_oem_get_cust_cert_dice_puk(
-            oem_rkt_input_addr,
+            oem_rkth_input_addr,
             oem_rkth_input_size,
             oem_cust_cert_dice_puk_output_addr,
             oem_cust_cert_dice_puk_output_size,
@@ -1443,27 +1440,83 @@ def oem_get_cust_cert_dice_puk(
                 "Output buffer(s) is(are) smaller than the minimum requested which is(are):"
             )
         extra_output += f"\tCust Cert Dice Puk size: {output_size} ({hex(output_size)})"
-    display_output([response], mboot.status_code, ctx.obj["use_json"], extra_output)
+    display_output(
+        [response], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"], extra_output
+    )
+
+
+@main.command()
+@click.argument("life-cycle", metavar="LIFE CYCLE", type=int, required=True)
+@click.pass_context
+def update_life_cycle(ctx: click.Context, life_cycle: int) -> None:
+    """Update life cycle of device.
+
+    \b
+    LIFE CYCLE    - Device life cycle to be device move to.
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        mboot.update_life_cycle(life_cycle)
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
+
+
+@trust_provisioning.command(name="prove_genuinity")
+@click.argument("address", type=INT())
+@click.argument("buffer_size", type=INT())
+@click.pass_context
+def prove_genuinity(ctx: click.Context, address: int, buffer_size: int) -> None:
+    """Start the process of proving genuinity.
+
+    \b
+    ADDRESS     - Address where is the prove_genuinity request stored
+    BUFFER_SIZE - Maximal size of the generated prove_genuinity response
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        tp_response_length = mboot.tp_prove_genuinity(address=address, buffer_size=buffer_size)
+        display_output(
+            [tp_response_length],
+            mboot.status_code,
+            use_json=ctx.obj["use_json"],
+            extra_output=f"TP response will be {tp_response_length} bytes long.",
+        )
+
+
+@trust_provisioning.command(name="isp_set_wrap_data")
+@click.argument("address", type=INT())
+@click.argument("control", type=INT(), required=False, default=0x1)
+@click.argument("stage", type=INT(), required=False, default=0x4B)
+@click.pass_context
+def set_wrap_data(ctx: click.Context, address: int, control: int, stage: int) -> None:
+    """Start the process of setting wrapped OEM data.
+
+    \b
+    ADDRESS - Address of the Wrapped data package in target
+    CONTROL - Controls location of the Wrapped data package (1 - by address /default/, 2 - in firmware)
+    STAGE   - Stage of the OEM TrustProvisioning process
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        mboot.tp_set_wrapped_data(address=address, control=control, stage=stage)
+        display_output(None, mboot.status_code, use_json=ctx.obj["use_json"])
 
 
 def display_output(
     response: list = None,
     status_code: int = 0,
     use_json: bool = False,
+    suppress: bool = False,
     extra_output: str = None,
 ) -> None:
     """Displays response and status code.
 
     :param response: Response from the MBoot function
-    :type response: list
     :param status_code: MBoot status code
-    :type status_code: int
     :param use_json: Format the output in JSON format, defaults to False
-    :type use_json: bool, optional
+    :param suppress: Suppress display
     :param extra_output: Extra string to print out, defaults to None
-    :type extra_output: str, optional
+    :raises SPSDKAppError: Command is executed properly, how MBoot status code is non-zero
     """
-    if use_json:
+    if suppress:
+        pass
+    elif use_json:
         data = {
             # get the name of a caller function and replace _ with -
             "command": inspect.stack()[1].function.replace("_", "-"),
@@ -1486,7 +1539,7 @@ def display_output(
     # Force exit to handover the current status code.
     # We could do that because this function is called as last from each subcommand
     if status_code:
-        click.get_current_context().exit(1)
+        raise SPSDKAppError()
 
 
 # For backward compatibility

@@ -22,6 +22,7 @@ from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
+from spsdk.utils.images import BinaryImage, BinaryPattern
 from spsdk.utils.misc import format_value, value_to_bool, value_to_bytes, value_to_int
 
 HTMLDataElement = Mapping[str, Union[str, dict, list]]
@@ -55,7 +56,7 @@ class RegsEnum:
         """Initialization Enum by XML ET element.
 
         :param xml_element: Input XML subelement with enumeration data.
-        :param maxwidth: The maximal width of bitfield for this enum (used for formating).
+        :param maxwidth: The maximal width of bitfield for this enum (used for formatting).
         :return: The instance of this class.
         :raises SPSDKRegsError: Error during enum XML parsing.
         """
@@ -81,7 +82,7 @@ class RegsEnum:
         return self.value
 
     def get_value_str(self) -> str:
-        """Method returns formated value.
+        """Method returns formatted value.
 
         :return: Formatted string with enum value.
         """
@@ -561,18 +562,21 @@ class RegsRegister:
     def get_bytes_value(self) -> bytes:
         """Get the bytes value of register.
 
-        The value endianism is returned by 'reversed' member.
+        The value endianness is returned by 'reversed' member.
         :return: Register value in bytes.
         """
-        endianism = "little" if not self.reverse else "big"
+        endianness = "little" if not self.reverse else "big"
         return value_to_bytes(
-            self.get_value(), align_to_2n=False, byte_cnt=self.width // 8, endianism=endianism
+            self.get_value(),
+            align_to_2n=False,
+            byte_cnt=self.width // 8,
+            endianness=endianness,  # type: ignore[arg-type]
         )
 
     def get_hex_value(self) -> str:
         """Get the value of register in string hex format."""
         use_prefix = not self.config_as_hexstring
-        return format_value(self.get_value(), self.width, delimeter="", use_prefix=use_prefix)
+        return format_value(self.get_value(), self.width, delimiter="", use_prefix=use_prefix)
 
     def get_reset_value(self) -> int:
         """Returns reset value of the register.
@@ -793,6 +797,79 @@ class Registers:
             )
             xml_file.write(no_pretty_data.toprettyxml())
 
+    def image_info(
+        self, size: int = 0, pattern: BinaryPattern = BinaryPattern("zeros")
+    ) -> BinaryImage:
+        """Export Registers into  binary information.
+
+        :param size: Result size of Image, 0 means automatic minimal size.
+        :param pattern: Pattern of gaps, defaults to "zeros"
+        """
+        image = BinaryImage(self.dev_name, size=size, pattern=pattern)
+        for reg in self._registers:
+            image.add_image(
+                BinaryImage(
+                    reg.name,
+                    reg.width // 8,
+                    offset=reg.offset // 8,
+                    description=reg.description,
+                    binary=reg.get_bytes_value(),
+                )
+            )
+
+        return image
+
+    def export(self, size: int = 0, pattern: BinaryPattern = BinaryPattern("zeros")) -> bytes:
+        """Export Registers into binary.
+
+        :param size: Result size of Image, 0 means automatic minimal size.
+        :param pattern: Pattern of gaps, defaults to "zeros"
+        """
+        return self.image_info(size, pattern).export()
+
+    def get_validation_schema(self) -> Dict:
+        """Get the JSON SCHEMA for registers.
+
+        :return: JSON SCHEMA.
+        """
+        properties = {}
+        for reg in self.get_registers():
+            bitfields = reg.get_bitfields()
+            if bitfields:
+                bitfields_schema = {}
+                for bitfield in bitfields:
+                    bitfields_schema[bitfield.name] = {
+                        "type": ["string", "number"],
+                        "title": f"{bitfield.name}",
+                        "description": f"{bitfield.description}",
+                        "template_value": bitfield.get_value(),
+                    }
+                properties[reg.name] = {
+                    "type": "object",
+                    "title": f"{reg.name}",
+                    "description": f"{reg.description}",
+                    "required": ["bitfields"],
+                    "properties": {"bitfields": {"type": "object", "properties": bitfields_schema}},
+                }
+            else:
+                properties[reg.name] = {
+                    "type": "object",
+                    "title": f"{reg.name}",
+                    "description": f"{reg.description}",
+                    "required": ["value"],
+                    "properties": {
+                        "value": {
+                            "type": ["string", "number"],
+                            "title": f"{reg.name}",
+                            "description": f"{reg.description}",
+                            "format": "number",
+                            "template_value": f"{reg.get_hex_value()}",
+                        }
+                    },
+                }
+
+        return {"type": "object", "title": self.dev_name, "properties": properties}
+
     def generate_html(
         self,
         heading1: str,
@@ -835,7 +912,7 @@ class Registers:
         :param xml: Input XML data in string format.
         :param filter_reg: List of register names that should be filtered out.
         :param grouped_regs: List of register prefixes names to be grouped int one.
-        :raises SPSDKRegsError: XML parse problem occuress.
+        :raises SPSDKRegsError: XML parse problem occurs.
         """
 
         def is_reg_in_group(reg: str) -> Union[dict, None]:

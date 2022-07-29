@@ -10,6 +10,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+from spsdk.crypto import PrivateKey
+
 
 ########################################################################################################################
 # Abstract Class for Security Backend
@@ -155,6 +157,15 @@ class BackendClass(ABC):
         :param algorithm: Hash algorithm, if None the hash length is determined from ECC curve size
         :return: True if the signature is valid
         :raises SPSDKError: Signature length is invalid
+        """
+
+    @staticmethod
+    def sign_size(key: PrivateKey) -> int:
+        """Get size of signature for loaded private key.
+
+        :param key: Private key used to sign data.
+        :return: Size of signature in bytes for the private key.
+        :raises SPSDKError: Invalid key type.
         """
 
 

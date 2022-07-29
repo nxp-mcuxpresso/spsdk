@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,14 +15,15 @@ import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import elftosb
+from spsdk.apps.utils.utils import load_configuration
 from spsdk.utils.misc import use_working_directory
 
 
 def process_config_file(
     config_path: str, destination: str, config_member: str
 ) -> Tuple[str, str, str]:
-    with open(config_path) as f:
-        config_data = json.load(f)
+
+    config_data = load_configuration(config_path)
     for key in config_data:
         if isinstance(config_data[key], str):
             config_data[key] = config_data[key].replace("\\", "/")

@@ -8,6 +8,7 @@
 """Module for USB-SIO communication with a target device using MBoot protocol."""
 
 import logging
+import re
 from typing import List, Optional
 
 import libusbsio
@@ -15,6 +16,7 @@ from libusbsio.libusbsio import LIBUSBSIO
 
 from spsdk import SPSDKError, SPSDKValueError
 from spsdk.mboot.exceptions import McuBootConnectionError
+from spsdk.utils.misc import value_to_int
 from spsdk.utils.usbfilter import USBDeviceFilter
 
 from .base import MBootInterface
@@ -31,7 +33,8 @@ def _get_usbsio() -> LIBUSBSIO:
     """
     try:
         # get the global singleton instance of LIBUSBSIO library
-        return libusbsio.usbsio(loglevel=logger.level)
+        libusbsio_logger = logging.getLogger("libusbsio")
+        return libusbsio.usbsio(loglevel=libusbsio_logger.getEffectiveLevel())
     except libusbsio.LIBUSBSIO_Exception as e:
         raise SPSDKError(f"Error in libusbsio interface: {e}") from e
     except Exception as e:
@@ -101,9 +104,20 @@ def scan_usbsio(config: str = None, timeout: int = 5000) -> List["UsbSio"]:
     :raises SPSDKValueError: Invalid configuration detected.
     """
     cfg = config.split(",") if config else []
-    if all(intf in cfg for intf in ["i2c", "spi"]):
+    re_spi = re.compile(r"^spi(?P<index>\d*)")
+    re_i2c = re.compile(r"^i2c(?P<index>\d*)")
+    spi = None
+    i2c = None
+    for cfg_part in cfg:
+        match_i2c = re_i2c.match(cfg_part.lower())
+        if match_i2c:
+            i2c = value_to_int(match_i2c.group("index"), 0)
+        match_spi = re_spi.match(cfg_part.lower())
+        if match_spi:
+            spi = value_to_int(match_spi.group("index"), 0)
+    if i2c is not None and spi is not None:
         raise SPSDKValueError(f"Cannot be specified spi and i2c together in configuration: {cfg}")
-    intf_specified = any(intf in cfg for intf in ["i2c", "spi"])
+    intf_specified = i2c is not None or spi is not None
 
     port_indexes = get_usbsio_devices(config)
     sio = _get_usbsio()
@@ -113,16 +127,16 @@ def scan_usbsio(config: str = None, timeout: int = 5000) -> List["UsbSio"]:
             raise SPSDKError(f"Cannot open libusbsio bridge {port}.")
         i2c_ports = sio.GetNumI2CPorts()
         if i2c_ports:
-            if "i2c" in cfg:
-                devices.append(UsbSioI2C(dev=port, config=config, timeout=timeout))
+            if i2c is not None:
+                devices.append(UsbSioI2C(dev=port, port=i2c, config=config, timeout=timeout))
             elif not intf_specified:
                 devices.extend(
                     [UsbSioI2C(dev=port, port=p, timeout=timeout) for p in range(i2c_ports)]
                 )
         spi_ports = sio.GetNumSPIPorts()
         if spi_ports:
-            if "spi" in cfg:
-                devices.append(UsbSioSPI(dev=port, config=config, timeout=timeout))
+            if spi is not None:
+                devices.append(UsbSioSPI(dev=port, port=spi, config=config, timeout=timeout))
             elif not intf_specified:
                 devices.extend(
                     [UsbSioSPI(dev=port, port=p, timeout=timeout) for p in range(spi_ports)]
@@ -193,7 +207,9 @@ class UsbSio(Uart):
 
     def info(self) -> str:
         """Return string containing information about the interface."""
-        return f"libusbsio interface '{self.config}'"
+        class_name = self.__class__.__name__
+        config = f":'{self.config}'" if self.config else ""
+        return f"libusbsio interface ({class_name}){config}"
 
     @staticmethod
     def get_interface_cfg(config: str, interface: str) -> str:

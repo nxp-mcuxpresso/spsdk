@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+import datetime
+from datetime import datetime, timezone
 
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.sbfile.misc import BcdVersion3, SecBootBlckSize
+from spsdk.sbfile.misc import BcdVersion3, SecBootBlckSize, pack_timestamp, unpack_timestamp
 
 
 def test_size_sbfile1x():
@@ -58,3 +60,13 @@ def test_bcd_invalid():
         BcdVersion3.from_str("")
     with pytest.raises(SPSDKError, match="Invalid text length"):
         BcdVersion3.from_str("bbbbbbbbb.vvvvvvvv.yyyyyyy")
+
+
+def test_pack_timestamp_invalid():
+    with pytest.raises(SPSDKError, match="Incorrect result of conversion"):
+        pack_timestamp(value=datetime(1000, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc))
+
+
+def test_unpack_timestamp_invalid():
+    with pytest.raises(SPSDKError, match="Incorrect result of conversion"):
+        unpack_timestamp(value=99999999999999999999999)

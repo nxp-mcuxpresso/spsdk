@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -81,8 +81,8 @@ def test_unpacking_header2_without_length():
     assert unpacked2 == tested_header2
 
 
-def test_comparision_header_with_length():
-    """Test for comparing header and header 2 (with lenght) for packing and unpacking"""
+def test_comparison_header_with_length():
+    """Test for comparing header and header 2 (with length) for packing and unpacking"""
     tested_header2 = Header2(SegTag.IVT2, length=20)
     tested_header = Header(SegTag.IVT2, length=20)
     packed_header2 = tested_header2.export()
@@ -93,8 +93,8 @@ def test_comparision_header_with_length():
     assert packed_header2 != packed_header
 
 
-def test_comparision_header_without_length():
-    """Test for comparing header and header 2 (without lenght) for packing and unpacking"""
+def test_comparison_header_without_length():
+    """Test for comparing header and header 2 (without length) for packing and unpacking"""
     tested_header2 = Header2(SegTag.IVT2)
     tested_header = Header(SegTag.IVT2)
     packed_header2 = tested_header2.export()

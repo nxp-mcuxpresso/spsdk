@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -197,3 +197,14 @@ class Certificate:
         except SignatureError:
             return False
         return True
+
+    def dump(self, force: bool = False) -> bytes:
+        """Encodes the value using DER.
+
+        :param force:
+            If the encoded contents already exist, clear them and regenerate
+            to ensure they are in DER format instead of BER format
+
+        :return: A byte string of the DER-encoded value
+        """
+        return self._cert.dump(force)

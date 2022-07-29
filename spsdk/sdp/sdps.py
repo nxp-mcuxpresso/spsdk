@@ -12,6 +12,8 @@ import logging
 from struct import pack, unpack
 from typing import Mapping, Tuple
 
+from spsdk.utils.misc import swap32
+
 from .exceptions import SdpConnectionError
 from .interfaces import SDPInterface
 
@@ -22,6 +24,7 @@ ROM_INFO = {
     "MX28": {"no_cmd": False, "hid_ep1": False, "hid_pack_size": 1024},
     "MX815": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
     "MX865": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
+    "MX93": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
 }
 
 BLTC_DOWNLOAD_FW = 2
@@ -73,15 +76,6 @@ class SDPS:
         """
         return self._device.is_opened
 
-    @staticmethod
-    def swap32(x: int) -> int:
-        """Swap 32 bit integer.
-
-        :param x: integer to be swapped
-        :return: swapped value
-        """
-        return unpack("<I", pack(">I", x))[0]
-
     def write_file(self, data: bytes) -> None:
         """Write data to the target.
 
@@ -105,7 +99,7 @@ class SDPS:
                     len(data),
                     CBW_HOST_TO_DEVICE_DIR,
                     BLTC_DOWNLOAD_FW,
-                    self.swap32(len(data)),
+                    swap32(len(data)),
                 )
                 logger.info(
                     f"TX-CMD: WriteCmd(command={BLTC_DOWNLOAD_FW},"

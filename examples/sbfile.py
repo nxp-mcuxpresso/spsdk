@@ -44,7 +44,7 @@ def gen_cert_block() -> CertBlockV2:
 # Boot Section
 ########################################################################################################################
 def gen_boot_section() -> BootSectionV2:
-    """Generate a Boot Section withput encryption."""
+    """Generate a Boot Section without encryption."""
     with open(f"{DATA_DIR}/boot_image.bin", "rb") as boot_image_file:
         boot_data = boot_image_file.read()
 

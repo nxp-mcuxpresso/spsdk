@@ -25,7 +25,7 @@ MIN_PIP_VERSION = "21.2.0"
 
 
 class DependencyInfo(NamedTuple):
-    """Basic infomartion about a python package."""
+    """Basic information about a python package."""
 
     name: str
     license: str

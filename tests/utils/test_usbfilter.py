@@ -108,12 +108,19 @@ common_use_cases_nxp = [
     ("4660", "0x1234", "0x0", b"//", False),  # match in pid (dec form, VID expected one of NXP)
     ("0x1", "0x1234", "0x0", b"//", False),  # no match - vid differs
     ("1", "0x1fc9", "0x0", b"//", False),  # no match - pid differs
-    ("", "0x1fc9", "0x0", b"//", False),  # no match - empty filtering string
+    ("", "0x1fc9", "0x0", b"//", True),  # match - This is NXP device
     ("0x1234,0xabcd", "0x1234", "0xabcd", b"//", True),  # match in vid,pid combination
     ("0x1234:0xabcd", "0x1234", "0xabcd", b"//", True),  # match in vid:pid combination
     ("1,12345", "1", "12345", b"//", True),  # match in vid,pid combination
     ("1:12345", "1", "12345", b"//", True),  # match in vid,pid combination
     (None, "0x1fc9", "0x0001", b"//", True),  # match all devices if usb_id is none
+    (
+        None,
+        "0x1111",
+        "0x0001",
+        b"//",
+        False,
+    ),  # no match - there is no specific usb_id and it is not NXP device
     ("0x1234", "0x1fc9", "0x1234", b"//", True),  # match pid if VID is NXP VID
     (
         "0x1234",

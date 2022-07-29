@@ -336,7 +336,7 @@ def test_mem_enable_cmd_invalid_parse():
 
 
 def test_prog_cmd():
-    cmd = CmdProg()
+    cmd = CmdProg(address=0x1000, mem_id=4, data_word1=0xAABBCCDD, data_word2=0x10000000)
     assert cmd.info()
 
     data = cmd.export()
@@ -440,7 +440,7 @@ def test_invalid_cmd_header():
         CmdHeader(tag=9999999)
 
 
-def test_cmd_header_comparision():
+def test_cmd_header_comparison():
     cmd_header = CmdHeader(tag=1)
     cmd = CmdNop()
     assert cmd_header != cmd

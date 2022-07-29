@@ -163,7 +163,7 @@ class DebugCredential:
 
     @classmethod
     def create_from_yaml_config(cls, version: str, yaml_config: dict) -> "DebugCredential":
-        """Create a debugcredential object out of yaml configuration.
+        """Create a debug credential object out of yaml configuration.
 
         :return: DebugCredential object
         """

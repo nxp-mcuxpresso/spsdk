@@ -23,7 +23,7 @@ from spsdk.utils.crypto.backend_internal import ECC, RSA, internal_backend
 from spsdk.utils.misc import use_working_directory
 
 
-def process_config_file(config_path: str, destination: str):
+def process_config_file(config_path: str, destination: str, family: str = None):
     with open(config_path) as f:
         config_data = json.load(f)
     for key in config_data:
@@ -33,6 +33,8 @@ def process_config_file(config_path: str, destination: str):
     new_binary = f"{destination}/{os.path.basename(ref_binary)}"
     new_config = f"{destination}/new_config.json"
     config_data["masterBootOutputFile"] = new_binary
+    if family and "family" in config_data.keys():
+        config_data["family"] = family
     with open(new_config, "w") as f:
         json.dump(config_data, f, indent=2)
     return ref_binary, new_binary, new_config
@@ -89,7 +91,7 @@ def test_elftosb_mbi_basic(data_dir, tmpdir, config_file, device):
     runner = CliRunner()
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
-        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, device)
 
         cmd = f"--image-conf {new_config}"
         result = runner.invoke(elftosb.main, cmd.split())
@@ -113,7 +115,7 @@ def test_elftosb_mbi_signed(data_dir, tmpdir, config_file, device, sign_digest):
     runner = CliRunner()
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
-        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, device)
 
         cmd = f"--image-conf {new_config}"
         result = runner.invoke(elftosb.main, cmd.split())
@@ -186,7 +188,7 @@ def test_elftosb_mbi_legacy_signed(data_dir, tmpdir, config_file, device, skip_h
     runner = CliRunner()
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
-        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, device)
 
         cmd = f"--image-conf {new_config}"
         result = runner.invoke(elftosb.main, cmd.split())
@@ -251,7 +253,7 @@ def test_elftosb_mbi_invalid_conf(data_dir, tmpdir, config_file, device):
     runner = CliRunner()
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
-        _, _, new_config = process_config_file(config_file, tmpdir)
+        _, _, new_config = process_config_file(config_file, tmpdir, device)
 
         cmd = f"--image-conf {new_config}"
         result = runner.invoke(elftosb.main, cmd.split())
@@ -266,7 +268,7 @@ def test_elftosb_mbi_legacy_encrypted(data_dir, tmpdir, config_file, device, ski
     runner = CliRunner()
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
-        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, device)
 
         cmd = f"--image-conf {new_config}"
         result = runner.invoke(elftosb.main, cmd.split())

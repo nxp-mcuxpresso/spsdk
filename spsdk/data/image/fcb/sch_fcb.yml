@@ -1,0 +1,37 @@
+# Copyright 2022 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+fcb_family_rev:
+  type: object
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      enum:
+        - rt5xx
+      template_value: rt5xx
+
+    revision:
+      type: string
+      title: Chip silicon revision
+      description: If needed this could be used to specify silicon revision of device.
+      template_value: a1
+    type:
+      type: string
+      title: Memory type
+      description: Specify type of memory used by FCB description.
+      # enum: [flexspi_nor] This field will be added in run time
+      template_value: flexspi_nor
+
+fcb:
+  type: object
+  properties:
+    fcb_settings:
+      type: object
+      title: Settings of FCB
+      description: Flash Configuration settings for selected MCU.
+      # properties will be added in runtime
+
+  required: [family, type, fcb_settings]

@@ -14,7 +14,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk import SPSDKError
-from spsdk.apps.utils import load_configuration
 from spsdk.crypto import SignatureProvider
 from spsdk.image import IMG_DATA_FOLDER
 from spsdk.image.keystore import KeySourceType, KeyStore
@@ -23,7 +22,8 @@ from spsdk.utils.crypto import crypto_backend
 from spsdk.utils.crypto.cert_blocks import CertBlockV2, CertBlockV31
 from spsdk.utils.crypto.common import serialize_ecc_signature
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import align_block, load_binary, load_binary_image, value_to_int
+from spsdk.utils.images import BinaryImage
+from spsdk.utils.misc import align_block, find_file, load_binary, load_configuration, value_to_int
 
 SCHEMA_FILE = IMG_DATA_FOLDER + "/sch_mbimg.yml"
 
@@ -96,7 +96,7 @@ class MultipleImageEntry:
         if dst_addr < 0 or dst_addr > 0xFFFFFFFF:
             raise SPSDKError("Invalid destination address")
         if flags != self.LTI_LOAD:
-            raise SPSDKError("for now, other section types (INIT) are not supported")
+            raise SPSDKError("For now, other section types than LTI_LOAD, are not supported")
         self._img = img
         self._src_addr = 0
         self._dst_addr = dst_addr
@@ -218,7 +218,6 @@ class MultipleImageTable:
                 result += entry_img
                 src_addr += len(entry_img)
         result += self.reloc_table(start_addr + len(result))
-        # TODO result += struct.pack("<I", src_addr)  # pointer to relocation table
         return result
 
 
@@ -272,6 +271,7 @@ class Mbi_MixinApp(Mbi_Mixin):
 
     app: Optional[bytes]
     app_ext_memory_align: int
+    search_paths: Optional[List[str]]
 
     def mix_len(self) -> int:
         """Get size of plain input application image.
@@ -295,15 +295,14 @@ class Mbi_MixinApp(Mbi_Mixin):
         :raises SPSDKError: If invalid data file is detected.
         """
         app_align = self.app_ext_memory_align if hasattr(self, "app_ext_memory_align") else 0
-        binfile = load_binary_image(path)
-        if app_align == 0 and binfile.minimum_address != 0:
+        image = BinaryImage.load_binary_image(find_file(path, search_paths=self.search_paths))
+        if app_align == 0 and image.absolute_address != 0:
             raise SPSDKError(f"Invalid input binary file {path}. It MUST begins at 0 address.")
-        if app_align and binfile.minimum_address % app_align != 0:
+        if app_align and image.absolute_address % app_align != 0:
             raise SPSDKError(
                 f"Invalid input binary file {path}. It has to be aligned to {hex(app_align)}."
             )
-
-        self.app = align_block(binfile.as_binary())
+        self.app = align_block(image.export())
 
 
 class Mbi_MixinTrustZone(Mbi_Mixin):
@@ -313,6 +312,7 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
     NEEDED_MEMBERS: List[str] = ["tz"]
 
     tz: TrustZone
+    search_paths: Optional[List[str]]
 
     def mix_len(self) -> int:
         """Get length of TrustZone array.
@@ -322,11 +322,12 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
         return len(self.tz.export())
 
     def _load_preset_file(self, preset_file: str, family: str) -> None:
+        _preset_file = find_file(preset_file, search_paths=self.search_paths)
         try:
-            tz_config = load_configuration(preset_file)
+            tz_config = load_configuration(_preset_file)
             self.tz = TrustZone.from_config(tz_config)
         except SPSDKError:
-            tz_bin = load_binary(preset_file)
+            tz_bin = load_binary(_preset_file)
             self.tz = TrustZone.from_binary(family=family, raw_data=tz_bin)
 
     def mix_load_from_config(self, config: Dict[str, Any]) -> None:
@@ -508,7 +509,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
     ) -> bytes:
         """Update IVT table in application image.
 
-        :param app_data: Application data that should be modificated.
+        :param app_data: Application data that should be modified.
         :param total_len: Total length of bootable image
         :param crc_val_cert_offset: CRC value or Certification block offset
         :return: Updated whole application image
@@ -556,6 +557,7 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
 
     app_table: Optional[MultipleImageTable]
     app: Optional[bytes]
+    search_paths: Optional[List[str]]
 
     def mix_len(self) -> int:
         """Get length of additional binaries block.
@@ -573,7 +575,7 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
         if app_table:
             self.app_table = MultipleImageTable()
             for entry in app_table:
-                image = load_binary(entry.get("binary"))
+                image = load_binary(entry.get("binary"), search_paths=self.search_paths)
                 dst_addr = value_to_int(entry.get("destAddress"))
                 load = entry.get("load")
                 image_entry = MultipleImageEntry(
@@ -658,6 +660,7 @@ class Mbi_MixinCertBlockV2(Mbi_Mixin):
 
     cert_block: Optional[CertBlockV2]
     priv_key_data: Optional[bytes]
+    search_paths: Optional[List[str]]
 
     def mix_len(self) -> int:
         """Get length of Certificate Block V2.
@@ -679,8 +682,10 @@ class Mbi_MixinCertBlockV2(Mbi_Mixin):
 
         :param config: Dictionary with configuration fields.
         """
-        self.cert_block = CertBlockV2.from_config(config)
-        self.priv_key_data = load_binary(config["mainCertPrivateKeyFile"])
+        self.cert_block = CertBlockV2.from_config(config, self.search_paths)
+        self.priv_key_data = load_binary(
+            config["mainCertPrivateKeyFile"], search_paths=self.search_paths
+        )
 
     def mix_validate(self) -> None:
         """Validate the setting of image.
@@ -712,6 +717,7 @@ class Mbi_MixinCertBlockV31(Mbi_Mixin):
 
     cert_block: Optional[CertBlockV31]
     signature_provider: Optional[SignatureProvider]
+    search_paths: Optional[List[str]]
 
     def mix_len(self) -> int:
         """Get length of Certificate Block V3.1.
@@ -734,12 +740,16 @@ class Mbi_MixinCertBlockV31(Mbi_Mixin):
 
         :param config: Dictionary with configuration fields.
         """
-        self.cert_block = CertBlockV31.from_config(config)
+        self.cert_block = CertBlockV31.from_config(config, search_paths=self.search_paths)
         # if ISK is used, we use for signing the ISK certificate instead of root
         if self.cert_block.isk_certificate:
             signing_private_key_path = config.get("signingCertificatePrivateKeyFile")
         else:
             signing_private_key_path = config.get("mainRootCertPrivateKeyFile")
+        assert signing_private_key_path
+        signing_private_key_path = find_file(
+            signing_private_key_path, search_paths=self.search_paths
+        )
         self.signature_provider = SignatureProvider.create(
             f"type=file;file_path={signing_private_key_path}"
         )
@@ -788,6 +798,7 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
 
     key_store: Optional[KeyStore]
     hmac_key: Optional[bytes]
+    search_paths: Optional[List[str]]
 
     def mix_len(self) -> int:
         """Get length of KeyStore block.
@@ -811,7 +822,9 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
 
         if use_key_store and key_source == KeySourceType.KEYSTORE:
             key_store_data = (
-                load_binary(key_store_file) if key_store_file else bytes(KeyStore.KEY_STORE_SIZE)
+                load_binary(key_store_file, search_paths=self.search_paths)
+                if key_store_file
+                else bytes(KeyStore.KEY_STORE_SIZE)
             )
             self.key_store = KeyStore(key_source, key_store_data)  # type: ignore
 
@@ -837,6 +850,7 @@ class Mbi_MixinHmac(Mbi_Mixin):
     _HMAC_KEY_LENGTH = 32
 
     hmac_key: Optional[bytes]
+    search_paths: Optional[List[str]]
 
     def mix_len(self) -> int:
         """Get length of HMAC block.
@@ -852,7 +866,7 @@ class Mbi_MixinHmac(Mbi_Mixin):
         """
         hmac_key_raw = config.get("outputImageEncryptionKeyFile")
         if hmac_key_raw:
-            hmac_key = load_binary(hmac_key_raw)
+            hmac_key = load_binary(hmac_key_raw, search_paths=self.search_paths)
             if len(hmac_key) == (2 * self.HMAC_SIZE):
                 self.hmac_key = bytes.fromhex(hmac_key.decode("utf-8"))
             else:
@@ -1203,7 +1217,9 @@ class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
         assert self.signature_provider
         signature = self.signature_provider.sign(image)
         assert signature
-        return image + serialize_ecc_signature(signature, 32)
+        return image + serialize_ecc_signature(
+            signature, self.signature_provider.signature_length // 2
+        )
 
 
 class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):

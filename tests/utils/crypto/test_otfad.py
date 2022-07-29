@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -61,14 +61,15 @@ def test_otfad_keyblob(data_dir):
     with pytest.raises(SPSDKError):
         KeyBlob(start_addr=0x08001000, end_addr=0x0800F000, key=key, counter_iv=counter)
 
+    # [SPSDK-1464] Support dual image boot, remove test cases for images not withing key blob
     # address of the image is not within key blob
-    key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
-    with pytest.raises(SPSDKError):
-        key_blob.encrypt_image(0x8000000, plain_image, True)
-    with pytest.raises(SPSDKError):
-        key_blob.encrypt_image(0x800F000, plain_image, True)
-    with pytest.raises(SPSDKError, match="Invalid start address"):
-        key_blob.encrypt_image(0x800F001, plain_image, True)
+    # key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
+    # with pytest.raises(SPSDKError):
+    #     key_blob.encrypt_image(0x8000000, plain_image, True)
+    # with pytest.raises(SPSDKError):
+    #     key_blob.encrypt_image(0x800F000, plain_image, True)
+    # with pytest.raises(SPSDKError, match="Invalid start address"):
+    #     key_blob.encrypt_image(0x800F001, plain_image, True)
 
 
 def test_otfad(data_dir):
@@ -83,8 +84,9 @@ def test_otfad(data_dir):
         image = f.read()
 
     # invalid address
-    with pytest.raises(SPSDKError):
-        key_blob.encrypt_image(0x0, image, True)
+    # [SPSDK-1464] Support dual image boot
+    # with pytest.raises(SPSDKError):
+    #     key_blob.encrypt_image(0x0, image, True)
 
     encr_image = otfad.encrypt_image(image, 0x08001000, True)
     otfad.encrypt_image(image, 0x08001000, False)  # TODO finish the test

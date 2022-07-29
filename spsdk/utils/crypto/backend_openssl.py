@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from spsdk import SPSDKError
+from spsdk.crypto import EllipticCurvePrivateKey, PrivateKey, RSAPrivateKey
 
 # Abstract Class Interface
 from .abstract import BackendClass
@@ -267,6 +268,22 @@ class Backend(BackendClass):
             return True
         except InvalidSignature:
             return False
+
+    @staticmethod
+    def sign_size(key: PrivateKey) -> int:
+        """Get size of signature for loaded private key.
+
+        :param key: Private key used to sign data.
+        :return: Size of signature in bytes for the private key.
+        :raises SPSDKError: Invalid key type.
+        """
+        if isinstance(key, EllipticCurvePrivateKey):
+            return math.ceil(key.key_size / 8) * 2
+
+        if isinstance(key, RSAPrivateKey):
+            return key.key_size // 8
+
+        raise SPSDKError(f"Unsupported private key type to get signature size. {type(key)}")
 
 
 ########################################################################################################################

@@ -196,8 +196,8 @@ def get_jira_ids(git_output: str) -> List[str]:
 def ticket_info_param_hasher(args: tuple, kwargs: dict) -> int:
     """Helper function providing hash value of arguments for `get_ticket_info` function.
 
-    To optimize caching persistant cacheing, we need function with consistent return values.
-    As the built-in hash function doesn't compute same values accross multiple runs,
+    To optimize caching persistent caching, we need function with consistent return values.
+    As the built-in hash function doesn't compute same values across multiple runs,
     we use MD5 hashing.
     """
     to_hash: str = kwargs["ticket"] if "ticket" in kwargs else args[0]
@@ -212,7 +212,7 @@ def ticket_info_param_hasher(args: tuple, kwargs: dict) -> int:
 def get_ticket_info(ticket: str, jira: Optional[JIRA]) -> TicketRecord:
     """Extract info for `ticket` from JIRA.
 
-    The `@cachier` decorator produces persistant cache to alleviate load on JIRA server.
+    The `@cachier` decorator produces persistent cache to alleviate load on JIRA server.
     """
     if not jira:
         raise RuntimeError(f"Info for {ticket} is not pre-recorded, can't work in offline mode")

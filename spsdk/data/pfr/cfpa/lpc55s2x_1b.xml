@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd">
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
   <register offset="0" width="32" name="HEADER" description="Header">
     <alias type="CMSIS" value="HEADER"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
@@ -193,8 +193,8 @@
     </bit_field>
   </register>
   <register offset="0x30" width="32" name="PRINCE_REGION0_IV_CODE0" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[0]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -206,8 +206,8 @@
     </bit_field>
   </register>
   <register offset="0x34" width="32" name="PRINCE_REGION0_IV_CODE1" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[1]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -234,8 +234,8 @@
     </bit_field>
   </register>
   <register offset="0x38" width="32" name="PRINCE_REGION0_IV_CODE2" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[2]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -247,8 +247,8 @@
     </bit_field>
   </register>
   <register offset="0x3C" width="32" name="PRINCE_REGION0_IV_CODE3" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[3]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -260,8 +260,8 @@
     </bit_field>
   </register>
   <register offset="0x40" width="32" name="PRINCE_REGION0_IV_CODE4" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[4]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -273,8 +273,8 @@
     </bit_field>
   </register>
   <register offset="0x44" width="32" name="PRINCE_REGION0_IV_CODE5" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[5]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -286,8 +286,8 @@
     </bit_field>
   </register>
   <register offset="0x48" width="32" name="PRINCE_REGION0_IV_CODE6" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[6]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -299,8 +299,8 @@
     </bit_field>
   </register>
   <register offset="0x4C" width="32" name="PRINCE_REGION0_IV_CODE7" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[7]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -312,8 +312,8 @@
     </bit_field>
   </register>
   <register offset="0x50" width="32" name="PRINCE_REGION0_IV_CODE8" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[8]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -325,8 +325,8 @@
     </bit_field>
   </register>
   <register offset="0x54" width="32" name="PRINCE_REGION0_IV_CODE9" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[9]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -338,8 +338,8 @@
     </bit_field>
   </register>
   <register offset="0x58" width="32" name="PRINCE_REGION0_IV_CODE10" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[10]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -351,8 +351,8 @@
     </bit_field>
   </register>
   <register offset="0x5C" width="32" name="PRINCE_REGION0_IV_CODE11" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[11]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -364,8 +364,8 @@
     </bit_field>
   </register>
   <register offset="0x60" width="32" name="PRINCE_REGION0_IV_CODE12" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[12]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -377,15 +377,15 @@
     </bit_field>
   </register>
   <register offset="0x64" width="32" name="PRINCE_REGION0_IV_CODE13" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION0_IV_CODE[13]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION0_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION0_IV_CODE_FIELD(x)"/>
     </bit_field>
   </register>
   <register offset="0x68" width="32" name="PRINCE_REGION1_IV_CODE0" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[0]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -397,8 +397,8 @@
     </bit_field>
   </register>
   <register offset="0x6C" width="32" name="PRINCE_REGION1_IV_CODE1" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[1]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -425,8 +425,8 @@
     </bit_field>
   </register>
   <register offset="0x70" width="32" name="PRINCE_REGION1_IV_CODE2" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[2]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -438,8 +438,8 @@
     </bit_field>
   </register>
   <register offset="0x74" width="32" name="PRINCE_REGION1_IV_CODE3" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[3]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -451,8 +451,8 @@
     </bit_field>
   </register>
   <register offset="0x78" width="32" name="PRINCE_REGION1_IV_CODE4" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[4]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -464,8 +464,8 @@
     </bit_field>
   </register>
   <register offset="0x7C" width="32" name="PRINCE_REGION1_IV_CODE5" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[5]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -477,8 +477,8 @@
     </bit_field>
   </register>
   <register offset="0x80" width="32" name="PRINCE_REGION1_IV_CODE6" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[6]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -490,8 +490,8 @@
     </bit_field>
   </register>
   <register offset="0x84" width="32" name="PRINCE_REGION1_IV_CODE7" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[7]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -503,8 +503,8 @@
     </bit_field>
   </register>
   <register offset="0x88" width="32" name="PRINCE_REGION1_IV_CODE8" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[8]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -516,8 +516,8 @@
     </bit_field>
   </register>
   <register offset="0x8C" width="32" name="PRINCE_REGION1_IV_CODE9" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[9]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -529,8 +529,8 @@
     </bit_field>
   </register>
   <register offset="0x90" width="32" name="PRINCE_REGION1_IV_CODE10" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[10]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -542,8 +542,8 @@
     </bit_field>
   </register>
   <register offset="0x94" width="32" name="PRINCE_REGION1_IV_CODE11" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[11]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -555,8 +555,8 @@
     </bit_field>
   </register>
   <register offset="0x98" width="32" name="PRINCE_REGION1_IV_CODE12" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[12]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -568,15 +568,15 @@
     </bit_field>
   </register>
   <register offset="0x9C" width="32" name="PRINCE_REGION1_IV_CODE13" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION1_IV_CODE[13]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION1_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION1_IV_CODE_FIELD(x)"/>
     </bit_field>
   </register>
   <register offset="0xA0" width="32" name="PRINCE_REGION2_IV_CODE0" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[0]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -588,8 +588,8 @@
     </bit_field>
   </register>
   <register offset="0xA4" width="32" name="PRINCE_REGION2_IV_CODE1" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[1]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -616,8 +616,8 @@
     </bit_field>
   </register>
   <register offset="0xA8" width="32" name="PRINCE_REGION2_IV_CODE2" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[2]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -629,8 +629,8 @@
     </bit_field>
   </register>
   <register offset="0xAC" width="32" name="PRINCE_REGION2_IV_CODE3" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[3]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -642,8 +642,8 @@
     </bit_field>
   </register>
   <register offset="0xB0" width="32" name="PRINCE_REGION2_IV_CODE4" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[4]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -655,8 +655,8 @@
     </bit_field>
   </register>
   <register offset="0xB4" width="32" name="PRINCE_REGION2_IV_CODE5" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[5]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -668,8 +668,8 @@
     </bit_field>
   </register>
   <register offset="0xB8" width="32" name="PRINCE_REGION2_IV_CODE6" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[6]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -681,8 +681,8 @@
     </bit_field>
   </register>
   <register offset="0xBC" width="32" name="PRINCE_REGION2_IV_CODE7" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[7]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -694,8 +694,8 @@
     </bit_field>
   </register>
   <register offset="0xC0" width="32" name="PRINCE_REGION2_IV_CODE8" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[8]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -707,8 +707,8 @@
     </bit_field>
   </register>
   <register offset="0xC4" width="32" name="PRINCE_REGION2_IV_CODE9" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[9]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -720,8 +720,8 @@
     </bit_field>
   </register>
   <register offset="0xC8" width="32" name="PRINCE_REGION2_IV_CODE10" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[10]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -733,8 +733,8 @@
     </bit_field>
   </register>
   <register offset="0xCC" width="32" name="PRINCE_REGION2_IV_CODE11" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[11]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -746,8 +746,8 @@
     </bit_field>
   </register>
   <register offset="0xD0" width="32" name="PRINCE_REGION2_IV_CODE12" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[12]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
@@ -759,8 +759,8 @@
     </bit_field>
   </register>
   <register offset="0xD4" width="32" name="PRINCE_REGION2_IV_CODE13" description="Code.">
-    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <alias type="CMSIS" value="PRINCE_REGION2_IV_CODE[13]"/>
+    <alias type="OVERLAP" value="PRINCE_REGION2_IV_CODEn"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>

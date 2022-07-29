@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -31,8 +31,8 @@ def test_version():
 def test_get_property(caplog):
     # There's a problem with logging under CliRunner
     # https://github.com/pytest-dev/pytest/issues/3344
-    # caplog is set to disable all loging output
-    # Comment the folowing line to see logging info, however there will be an failure
+    # caplog is set to disable all logging output
+    # Comment the following line to see logging info, however there will be an failure
     caplog.set_level(100_000)
     runner = CliRunner()
     cmd = "-p com12 error-status"

@@ -13,8 +13,8 @@ from typing import List
 
 import click
 
-from spsdk import __version__ as version
-from spsdk.apps.utils import catch_spsdk_error, check_destination_dir, check_file_exists
+from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
+from spsdk.apps.utils.utils import catch_spsdk_error, check_destination_dir, check_file_exists
 from spsdk.crypto import (
     ec,
     generate_ecc_private_key,
@@ -28,9 +28,6 @@ from spsdk.crypto import (
 )
 
 logger = logging.getLogger(__name__)
-LOG_LEVEL_NAMES = [
-    name.lower() for name in logging._nameToLevel  # pylint: disable=protected-access
-]
 
 
 def get_list_of_supported_keys() -> List[str]:
@@ -44,17 +41,8 @@ def get_list_of_supported_keys() -> List[str]:
     return ret
 
 
-@click.command(no_args_is_help=True)
-@click.option(
-    "-d",
-    "--debug",
-    "log_level",
-    metavar="LEVEL",
-    default="warning",
-    help=f"Set the level of system logging output. "
-    f'Available options are: {", ".join(LOG_LEVEL_NAMES)}',
-    type=click.Choice(LOG_LEVEL_NAMES),
-)
+@click.command(name="nxpkeygen", no_args_is_help=True)
+@spsdk_apps_common_options
 @click.option(
     "-k",
     "--key-type",
@@ -91,15 +79,14 @@ def get_list_of_supported_keys() -> List[str]:
     default=False,
     help="Force overwriting of an existing file.",
 )
-@click.version_option(version, "--version")
-def main(log_level: str, key_type: str, path: str, password: str, force: bool) -> int:
+def main(log_level: int, key_type: str, path: str, password: str, force: bool) -> int:
     """NXP Key Generator Tool.
 
     \b
     PATH    - output file path, where the key pairs (private and public key) will be stored.
               Each key will be stored in separate file (.pub and .pem).
     """
-    logging.basicConfig(level=log_level.upper())
+    logging.basicConfig(level=log_level or logging.WARNING)
 
     key_param = key_type.lower().strip()
     is_rsa = "rsa" in key_param

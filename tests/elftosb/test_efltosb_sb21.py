@@ -37,6 +37,11 @@ from spsdk.utils.misc import use_working_directory
             ],
         ),
         (
+            "sb_sources/BD_files/real_example3.bd",
+            "sb_sources/SB_files/legacy_real_example3.sb",
+            [],
+        ),
+        (
             "sb_sources/BD_files/simpleExample_no_sha.bd",
             "sb_sources/SB_files/legacy_elftosb_no_sha.bin",
             [],

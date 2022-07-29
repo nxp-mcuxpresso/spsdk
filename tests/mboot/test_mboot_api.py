@@ -10,7 +10,15 @@ import pytest
 from spsdk import SPSDKError
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, McuBootError
-from spsdk.mboot.mcuboot import CmdPacket, CommandTag, KeyProvUserKeyType, PropertyTag, StatusCode
+from spsdk.mboot.mcuboot import (
+    CmdPacket,
+    CommandTag,
+    ExtMemId,
+    KeyProvUserKeyType,
+    McuBoot,
+    PropertyTag,
+    StatusCode,
+)
 from tests.mcu_examples.test_rt5xx import write_shadow_regis
 
 
@@ -150,6 +158,7 @@ def test_cmd_call(mcuboot, target):
 
 def test_cmd_reset_no_reopen(mcuboot, target):
     """Test reset command without reopen"""
+    mcuboot._device.fail_step = None
     mcuboot.reopen = False  # set reopen disabled
     assert mcuboot.reset(reopen=False)
     assert mcuboot.status_code == StatusCode.SUCCESS
@@ -158,6 +167,7 @@ def test_cmd_reset_no_reopen(mcuboot, target):
 
 def test_cmd_reset_reopen(mcuboot, target):
     """Test reset command with reopen"""
+    mcuboot._device.fail_step = None
     mcuboot.reopen = True  # set reopen enabled
     assert mcuboot.reset()
     assert mcuboot.status_code == StatusCode.SUCCESS
@@ -165,6 +175,7 @@ def test_cmd_reset_reopen(mcuboot, target):
 
 def test_cmd_reset_reopen_disabled(mcuboot, target):
     """Test reset command with reopen disabled"""
+    mcuboot._device.fail_step = None
     mcuboot.reopen = False
     with pytest.raises(SPSDKError):
         mcuboot.reset(reopen=True)
@@ -310,6 +321,30 @@ def test_cmd_configure_memory(mcuboot, target):
 def test_load_image(mcuboot, target):
     assert mcuboot.load_image(bytes(1000))
     mcuboot.status_code == StatusCode.SUCCESS
+
+
+def test_tp_prove_genuinity(mcuboot: McuBoot, target):
+    mcuboot._device.fail_step = None
+    response = mcuboot.tp_prove_genuinity(0, 0x10)
+    assert isinstance(response, int)
+
+    mcuboot._device.fail_step = 0
+    response = mcuboot.tp_prove_genuinity(0, 0x10)
+    mcuboot._device.fail_step = None
+    assert response is None
+
+
+def test_tp_prove_genuinity_error(mcuboot: McuBoot, target):
+    with pytest.raises(McuBootError):
+        mcuboot.tp_prove_genuinity(0, 0x1_0000)
+
+
+def test_tp_set_wrapped_data(mcuboot: McuBoot, target):
+    response = mcuboot.tp_set_wrapped_data(0)
+    assert response is True
+
+    response = mcuboot.tp_set_wrapped_data(0x100)
+    assert response is True
 
 
 def test_cmd_flash_read_resource_invalid(mcuboot):

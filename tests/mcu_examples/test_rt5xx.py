@@ -14,7 +14,7 @@ from typing import List, Optional, Tuple
 import pytest
 from bitstring import BitArray
 
-from spsdk.image import KeySourceType, KeyStore, MasterBootImage, TrustZone
+from spsdk.image import KeySourceType, KeyStore, TrustZone
 from spsdk.image.mbimg import (
     Mbi_CrcRamRtxxx,
     Mbi_CrcXipRtxxx,
@@ -127,7 +127,7 @@ def write_shadow_regis(data_dir: str, writes: List[Tuple[int, int]]) -> None:
         return
 
     assert len(writes) <= 12
-    write_shadows_app = load_binary(data_dir, "write_shadows", "write_shadows.bin")
+    write_shadows_app = load_binary(os.path.join(data_dir, "write_shadows", "write_shadows.bin"))
     stack_ptr = int.from_bytes(write_shadows_app[:4], byteorder="little")
     initial_pc = int.from_bytes(write_shadows_app[4:8], byteorder="little")
     # write_shadow is an application, that contains table of 12 writes, for each write 32 bit address and 32-bit value
@@ -361,7 +361,9 @@ def create_cert_block(data_dir: str) -> Tuple[CertBlockV2, bytes]:
     cert_path = os.path.join(data_dir, "keys_certs")
     cert_list = list()
     for cert_index in range(4):
-        cert_bin = load_binary(cert_path, f"root_k{str(cert_index)}_signed_cert0_noca.der.cert")
+        cert_bin = load_binary(
+            os.path.join(cert_path, f"root_k{str(cert_index)}_signed_cert0_noca.der.cert")
+        )
         cert_list.append(Certificate(cert_bin))
     # create certification block
     cert_block = CertBlockV2(build_number=1)
@@ -370,7 +372,7 @@ def create_cert_block(data_dir: str) -> Tuple[CertBlockV2, bytes]:
     for root_key_index, cert in enumerate(cert_list):
         if cert:
             cert_block.set_root_key_hash(root_key_index, cert)
-    # private key that matches selected root cerificate
+    # private key that matches selected root certificate
     priv_key_pem_data = load_binary(os.path.join(cert_path, "k0_cert0_2048.pem"))
     return cert_block, priv_key_pem_data
 
@@ -397,7 +399,7 @@ def test_xip_crc(data_dir: str, image_file_name: str) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = Mbi_CrcXipRtxxx(app=unsigned_image)
+    mbi = Mbi_CrcXipRtxxx(app=unsigned_image, load_addr=0x08001000)
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -523,6 +525,7 @@ def test_xip_signed(data_dir: str, image_file_name: str) -> None:
 
     mbi = Mbi_PlainSignedXipRtxxx(
         app=unsigned_img,
+        load_addr=0x08001000,
         cert_block=cert_block,
         priv_key_data=priv_key_pem_data,
     )
@@ -658,8 +661,8 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
-    fcb_data = load_binary(data_dir, FCB_FILE_NAME)
-    plain_image_data = load_binary(data_dir, subdir, image_name + ".bin")
+    fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
+    plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
 
     # images are aligned for test purposes only, otherwise export will align with random data
     fcb_data = align_block(fcb_data, 16)
@@ -741,8 +744,8 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
-    fcb_data = load_binary(data_dir, FCB_FILE_NAME)
-    plain_image_data = load_binary(data_dir, subdir, image_name + ".bin")
+    fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
+    plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
 
     # images are aligned for test purposes only, otherwise export will align with random data
     fcb_data = align_block(fcb_data, 16)
@@ -821,8 +824,8 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
-    fcb_data = load_binary(data_dir, FCB_FILE_NAME)
-    plain_image_data = load_binary(data_dir, subdir, image_name + ".bin")
+    fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
+    plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
 
     # images are aligned for test purposes only, otherwise export will align with random data
     fcb_data = align_block(fcb_data, 16)
@@ -902,8 +905,8 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
-    fcb_data = load_binary(data_dir, FCB_FILE_NAME)
-    plain_image_data = load_binary(data_dir, subdir, image_name + ".bin")
+    fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
+    plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
 
     # images are aligned for test purposes only, otherwise export will align with random data
     fcb_data = align_block(fcb_data, 16)
@@ -1034,8 +1037,8 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
-    fcb_data = load_binary(data_dir, FCB_FILE_NAME)
-    plain_image_data = load_binary(data_dir, subdir, image_name + ".bin")
+    fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
+    plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
 
     # images are aligned for test purposes only, otherwise export will align with random data
     fcb_data = align_block(fcb_data, 16)

@@ -8,6 +8,61 @@
 Release Notes
 =============
 
+--------------------
+1.7.0 (29-July-2022)
+--------------------
+
+**New features**
+
+* :ref:`nxpimage` application as replacement for elftosb
+* :ref:`nxpcrypto` application for generating and verifying keys, certificates, hash digest, converting key's format
+* trust provisioning applications (:ref:`tphost` and :ref:`tpconfig`)
+* :ref:`blhost`:
+    - support LifeCycleUpdate command for RT1180
+    - add option to specify peripheral index of SPI/I2C for LIBUSBSIO
+    - allow lowercase names in the filter for USB mboot devices
+* :ref:`nxpdebugmbox`:
+    - utility to read/write memory using debug probe
+* :ref:`nxpimage`:
+    - support of Master Boot Images
+    - support AHAB container for RT1180
+    - support of Secure Binary 2.1 / 3.1
+    - support for TrustZone blocks
+    - support for Bootable images for RTxxx devices
+    - support for FCB block parsing and exporting for RTxxx and some RTxxxx devices
+    - simply binary image support, like create, merge, extract and convert (S19,HEX,ELF and BIN format)
+* :ref:`pfr`:
+    - load PFR configuration directly from chip using BLHOST
+* :ref:`sdphost`:
+    - support for SET_BAUDRATE command
+    - support for iMX93
+* drop support for Python 3.6
+* pypemicro dependency update in order to cover latest bug fixes in this package
+* libusbsio update to version 2.1.11
+* unify debug options within applications
+* add API to compute RKTH
+* support LPC553x in elftosb/nxpimage
+* support dual image boot on RT5xx and RT6xx
+* replace click/sys.exit with raising an SPSDKAppError exception
+* encryption of remapped images
+
+**Bugfixes**
+
+* :ref:`blhost`:
+    - efuse_program_once returns failure message when using 'lock' option but still the fuse is burnt
+    - fix in re-scanning LIBUSBSIO devices when target MCU is not connected
+    - scan_usb() should return nxp devices
+    - read memory command doesn't print read data when mem region is defined
+* :ref:`elftosb`:
+    - fix trustzone config template for rt5xx and rt6xx
+    - fix MBI_PLainRamRTxxx image
+    - fix CRC bootable image on RT685 EVK
+    - fix image located in FLASH executed in RAM on RT6xx
+    - fix burning fuses in BD file
+* :ref:`nxpdebugmbox`:
+    - fix in Jlink debugger probe initialization
+    - fix get-crp command
+
 ---------------------
 1.6.3 (1-April-2022)
 ---------------------

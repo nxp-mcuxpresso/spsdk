@@ -9,26 +9,29 @@
 import logging
 import os
 import sys
-from typing import BinaryIO, TextIO
 
 import click
+from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import SPSDK_DATA_FOLDER, SPSDKError
-from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import (
+from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
+from spsdk.apps.utils.utils import (
+    SPSDKAppError,
     catch_spsdk_error,
     check_destination_dir,
     check_file_exists,
-    load_configuration,
 )
 from spsdk.crypto import (
     Encoding,
+    ec,
     generate_certificate,
     load_private_key,
     load_public_key,
     save_crypto_item,
 )
 from spsdk.crypto.certificate_management import generate_name
+from spsdk.crypto.loaders import extract_public_key, load_certificate
+from spsdk.utils.misc import load_configuration
 
 NXPCERTGEN_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpcertgen")
 
@@ -55,40 +58,26 @@ class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
             raise SPSDKError(f"Error found in configuration: {e} not found") from e
 
 
-@click.group(no_args_is_help=True)  # type: ignore
-@click.option(
-    "-v",
-    "--verbose",
-    "log_level",
-    flag_value=logging.INFO,
-    help="Prints more detailed information.",
-)
-@click.option(
-    "-d",
-    "--debug",
-    "log_level",
-    flag_value=logging.DEBUG,
-    help="Display more debugging info.",
-)
-@click.version_option(spsdk_version, "--version")
+@click.group(name="nxpcertgen", no_args_is_help=True, cls=CommandsTreeGroup)  # type: ignore
+@spsdk_apps_common_options
 def main(log_level: int) -> None:
     """Utility for certificate generation."""
     logging.basicConfig(level=log_level or logging.WARNING)
 
 
-@main.command()
+@main.command(name="generate", no_args_is_help=True)
 @click.option(
     "-j",
     "-c",
     "--config",
-    type=click.File("r"),
+    type=click.Path(exists=True, dir_okay=False),
     required=True,
     help="Path to yaml/json configuration file containing the parameters for certificate.",
 )
 @click.option(
     "-o",
     "--output",
-    type=click.File(mode="wb"),
+    type=click.Path(),
     required=True,
     help="Path where certificate will be stored.",
 )
@@ -106,15 +95,15 @@ def main(log_level: int) -> None:
     default=False,
     help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
 )
-def generate(config: TextIO, output: BinaryIO, encoding: str, force: bool) -> None:
+def generate(config: str, output: str, encoding: str, force: bool) -> None:
     """Generate certificate."""
     logger.info("Generating Certificate...")
     logger.info("Loading configuration from yml file...")
 
-    check_destination_dir(output.name, force)
-    check_file_exists(output.name, force)
+    check_destination_dir(output, force)
+    check_file_exists(output, force)
 
-    config_data = load_configuration(config.name)
+    config_data = load_configuration(config)
     cert_config = CertificateParametersConfig(config_data)
 
     priv_key = load_private_key(cert_config.issuer_private_key)
@@ -132,12 +121,12 @@ def generate(config: TextIO, output: BinaryIO, encoding: str, force: bool) -> No
     )
     logger.info("Saving the generated certificate to the specified path...")
     encoding_type = Encoding.PEM if encoding.lower() == "pem" else Encoding.DER
-    save_crypto_item(certificate, output.name, encoding_type=encoding_type)
+    save_crypto_item(certificate, output, encoding_type=encoding_type)
     logger.info("Certificate generated successfully...")
-    click.echo(f"The certificate file has been created: {os.path.abspath(output.name)}")
+    click.echo(f"The certificate file has been created: {os.path.abspath(output)}")
 
 
-@main.command()
+@main.command(name="get-cfg-template", no_args_is_help=True)
 @click.argument("output", metavar="PATH", type=click.Path())
 @click.option(
     "-f",
@@ -146,23 +135,88 @@ def generate(config: TextIO, output: BinaryIO, encoding: str, force: bool) -> No
     default=False,
     help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
 )
-def get_cfg_template(output: click.Path, force: bool) -> None:
+def get_cfg_template(output: str, force: bool) -> None:
     """Generate the template of Certificate generation YML configuration file.
 
     \b
     PATH    - file name path to write template config file
     """
     logger.info("Creating Certificate template...")
-    check_destination_dir(str(output), force)
-    check_file_exists(str(output), force)
+    check_destination_dir(output, force)
+    check_file_exists(output, force)
 
     with open(os.path.join(NXPCERTGEN_DATA_FOLDER, "certgen_config.yml"), "r") as file:
         template = file.read()
 
-    with open(str(output), "w") as file:
+    with open(output, "w") as file:
         file.write(template)
 
-    click.echo(f"The configuration template file has been created: {os.path.abspath(str(output))}")
+    click.echo(f"The configuration template file has been created: {os.path.abspath(output)}")
+
+
+@main.command(name="verify", no_args_is_help=True)
+@click.argument("certificate", metavar="PATH", type=click.Path(exists=True, dir_okay=False))
+@optgroup.group("Type of verification")
+@optgroup.option(
+    "-s",
+    "--sign",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to key to verify certificate signature",
+)
+@optgroup.option(
+    "-p",
+    "--puk",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to key to verify private key in certificate",
+)
+def verify(certificate: str, sign: str, puk: str) -> None:
+    """Verify signature or public key in certificate.
+
+    \b
+    PATH    - path to certificate
+    """
+    logger.info(f"Loading certificate from: {certificate}")
+    cert = load_certificate(certificate)
+    if sign:
+        logger.info("Performing signature verification")
+        sign_algorithm = cert.signature_algorithm_oid._name
+        logger.debug(f"Signature algorithm: {sign_algorithm}")
+        if "ecdsa" not in sign_algorithm:
+            raise SPSDKAppError(
+                f"Unsupported signature algorithm: {sign_algorithm}. "
+                "Only ECDSA signatures are currently supported."
+            )
+        verification_key = extract_public_key(sign)
+        if not isinstance(verification_key, ec.EllipticCurvePublicKey):
+            raise SPSDKError("Currently only ECC keys are supported.")
+        if not cert.signature_hash_algorithm:
+            raise SPSDKError("Certificate doesn't contain info about hashing alg.")
+        try:
+            verification_key.verify(
+                cert.signature,
+                cert.tbs_certificate_bytes,
+                ec.ECDSA(cert.signature_hash_algorithm),
+            )
+            click.echo("Signature is OK")
+        except:
+            raise SPSDKAppError("Invalid signature")
+    if puk:
+        logger.info("Performing public key verification")
+        cert_puk = cert.public_key()
+        if not isinstance(cert_puk, ec.EllipticCurvePublicKey):
+            raise SPSDKError("Only ECC-based certificates are supported.")
+        cert_puk_numbers = cert_puk.public_numbers()
+        other_puk = extract_public_key(puk)
+        if not isinstance(other_puk, ec.EllipticCurvePublicKey):
+            raise SPSDKError("Only ECC public keys are supported")
+        other_puk_numbers = other_puk.public_numbers()
+        logger.debug(f"Certificate public numbers: {cert_puk_numbers}")
+        logger.debug(f"Other public numbers: {other_puk_numbers}")
+
+        if cert_puk_numbers == other_puk_numbers:
+            click.echo("Public key in certificate matches the input")
+        else:
+            raise SPSDKAppError("Public key in certificate differs from the input")
 
 
 @catch_spsdk_error

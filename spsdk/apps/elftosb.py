@@ -13,35 +13,22 @@ from typing import Dict, List
 import click
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
-import spsdk.apps.elftosb_utils.sb_21_helper as elf2sb_helper21
-import spsdk.apps.elftosb_utils.sly_bd_parser as bd_parser
 from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import catch_spsdk_error, load_configuration
-from spsdk.crypto import load_certificate_as_bytes
+from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
 from spsdk.exceptions import SPSDKError
 from spsdk.image import SB3_SCH_FILE, TrustZone, get_mbi_class
-from spsdk.image.mbimg import mbi_generate_config_templates
-from spsdk.sbfile.sb2.images import BootImageV21, BootSectionV2
+from spsdk.image.mbimg import mbi_generate_config_templates, mbi_get_supported_families
+from spsdk.sbfile.sb2.images import generate_SB21
 from spsdk.sbfile.sb31.images import SecureBinary31
-from spsdk.utils.crypto import CertBlockV2, Certificate
-from spsdk.utils.misc import load_binary, write_file
+from spsdk.utils.misc import load_configuration, write_file
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
-SUPPORTED_FAMILIES = [
-    "lpc55xx",
-    "lpc55s0x",
-    "lpc55s1x",
-    "lpc55s2x",
-    "lpc55s6x",
-    "lpc55s3x",
-    "rt5xx",
-    "rt6xx",
-]
+SUPPORTED_FAMILIES = mbi_get_supported_families()
 
 
-def generate_trustzone_binary(tzm_conf: click.File) -> None:
+def generate_trustzone_binary(tzm_conf: str) -> None:
     """Generate TrustZone binary from json configuration file."""
-    config_data = load_configuration(tzm_conf.name)
+    config_data = load_configuration(tzm_conf)
     check_config(config_data, TrustZone.get_validation_schemas_family())
     check_config(config_data, TrustZone.get_validation_schemas(config_data["family"]))
     trustzone = TrustZone.from_config(config_data)
@@ -80,12 +67,12 @@ def generate_config_templates(family: str, output_folder: str) -> None:
             click.echo(f"Skip creating {file_name}, this file already exists.")
 
 
-def generate_master_boot_image(image_conf: click.File) -> None:
+def generate_master_boot_image(image_conf: str) -> None:
     """Generate MasterBootImage from json configuration file.
 
     :param image_conf: master boot image json configuration file.
     """
-    config_data = load_configuration(image_conf.name)
+    config_data = load_configuration(image_conf)
     mbi_cls = get_mbi_class(config_data)
     check_config(config_data, mbi_cls.get_validation_schemas())
     mbi = mbi_cls()
@@ -99,14 +86,14 @@ def generate_master_boot_image(image_conf: click.File) -> None:
 
 
 def generate_secure_binary_21(
-    bd_file_path: click.Path,
-    output_file_path: click.Path,
-    key_file_path: click.Path,
-    private_key_file_path: click.Path,
-    signing_certificate_file_paths: List[click.Path],
-    root_key_certificate_paths: List[click.Path],
-    hoh_out_path: click.Path,
-    external_files: List[click.Path],
+    bd_file_path: str,
+    output_file_path: str,
+    key_file_path: str,
+    private_key_file_path: str,
+    signing_certificate_file_paths: List[str],
+    root_key_certificate_paths: List[str],
+    hoh_out_path: str,
+    external_files: List[str],
 ) -> None:
     """Generate SecureBinary image from BD command file.
 
@@ -124,172 +111,34 @@ def generate_secure_binary_21(
     None, 'hash.bin' is created under working directory.
     :param external_files: external files referenced from BD file.
 
-    :raises SPSDKError: If incorrect bf file is provided
+    :raises SPSDKAppError: If incorrect bf file is provided
     """
-    # Create lexer and parser, load the BD file content and parse it for
-    # further execution - the parsed BD file is a dictionary in JSON format
-    with open(str(bd_file_path)) as bd_file:
-        bd_file_content = bd_file.read()
-
-    parser = bd_parser.BDParser()
-
-    parsed_bd_file = parser.parse(text=bd_file_content, extern=external_files)
-    if parsed_bd_file is None:
-        raise SPSDKError("Invalid bd file, secure binary file generation terminated")
-
-    # The dictionary contains following content:
-    # {
-    #   options: {
-    #       opt1: value,...
-    #   },
-    #   sections: [
-    #       {section_id: value, options: {}, commands: {}},
-    #       {section_id: value, options: {}, commands: {}}
-    #   ]
-    # }
-    # TODO check, that section_ids differ in sections???
-
-    # we need to encrypt and sign the image, let's check, whether we have
-    # everything we need
-    # It appears, that flags option in BD file are irrelevant for 2.1 secure
-    # binary images regarding encryption/signing - SB 2.1 must be encrypted
-    # and signed.
-    # However, bit 15 represents, whether the final SB 2.1 must include a
-    # SHA-256 of the botable section.
-    flags = parsed_bd_file["options"].get(
-        "flags", BootImageV21.FLAGS_SHA_PRESENT_BIT | BootImageV21.FLAGS_ENCRYPTED_SIGNED_BIT
-    )
-    if (
-        private_key_file_path is None
-        or signing_certificate_file_paths is None
-        or root_key_certificate_paths is None
-    ):
-        click.echo(
-            "error: Signed image requires private key with -s option, "
-            "one or more certificate(s) using -S option and one or more root key "
-            "certificates using -R option"
+    if output_file_path is None:
+        raise SPSDKAppError("Error: no output file was specified")
+    try:
+        sb2_data = generate_SB21(
+            bd_file_path=str(bd_file_path),
+            key_file_path=str(key_file_path),
+            private_key_file_path=str(private_key_file_path),
+            signing_certificate_file_paths=[str(x) for x in signing_certificate_file_paths],
+            root_key_certificate_paths=[str(x) for x in root_key_certificate_paths],
+            hoh_out_path=str(hoh_out_path),
+            external_files=[str(x) for x in external_files],
         )
-        sys.exit(1)
-
-    # Versions and build number are up to the user. If he doesn't provide any,
-    # we set these to following values.
-    product_version = parsed_bd_file["options"].get("productVersion", "")
-    component_version = parsed_bd_file["options"].get("componentVersion", "")
-    build_number = parsed_bd_file["options"].get("buildNumber", -1)
-
-    if not product_version:
-        product_version = "1.0.0"
-        click.echo("warning: production version not defined, defaults to '1.0.0'")
-
-    if not component_version:
-        component_version = "1.0.0"
-        click.echo("warning: component version not defined, defaults to '1.0.0'")
-
-    if build_number == -1:
-        build_number = 1
-        click.echo("warning: build number not defined, defaults to '1.0.0'")
-
-    if key_file_path is None:
-        # Legacy elf2sb doesn't report no key provided, but this should
-        # be definitely reported to tell the user, what kind of key is being
-        # used
-        click.echo("warning: no KEK key provided, using a zero KEK key")
-        sb_kek = bytes.fromhex("0" * 64)
+        write_file(sb2_data, str(output_file_path), mode="wb")
+    except SPSDKError as exc:
+        raise SPSDKAppError(f"The SB2.1 file generation failed: ({str(exc)}).") from exc
     else:
-        with open(str(key_file_path)) as kek_key_file:
-            # TODO maybe we should validate the key length and content, to make
-            # sure the key provided in the file is valid??
-            sb_kek = bytes.fromhex(kek_key_file.readline())
-
-    # validate keyblobs and perform appropriate actions
-    keyblobs = parsed_bd_file.get("keyblobs", [])
-
-    # Based on content of parsed BD file, create a BootSectionV2 and assign
-    # commands to them.
-    # The content of section looks like this:
-    # sections: [
-    #   {
-    #       section_id: <number>,
-    #       options: {}, this is left empty for now...
-    #       commands: [
-    #           {<cmd1>: {<param1>: value, ...}},
-    #           {<cmd2>: {<param1>: value, ...}},
-    #           ...
-    #       ]
-    #   },
-    #   {
-    #       section_id: <number>,
-    #       ...
-    #   }
-    # ]
-    sb_sections = []
-    bd_sections = parsed_bd_file["sections"]
-    for bd_section in bd_sections:
-        section_id = bd_section["section_id"]
-        commands = []
-        for cmd in bd_section["commands"]:
-            for key, value in cmd.items():
-                # we use a helper function, based on the key ('load', 'erase'
-                # etc.) to create a command object. The helper function knows
-                # how to handle the parameters of each command.
-                # TODO Only load, fill, erase and enable commands are supported
-                # for now. But there are few more to be supported...
-                cmd_fce = elf2sb_helper21.get_command(key)
-                if key in ("keywrap", "encrypt"):
-                    keyblob = {"keyblobs": keyblobs}
-                    value.update(keyblob)
-                cmd = cmd_fce(value)
-                commands.append(cmd)
-
-        sb_sections.append(BootSectionV2(section_id, *commands))
-
-    # We have a list of sections and their respective commands, lets create
-    # a boot image v2.1 object
-    secure_binary = BootImageV21(
-        sb_kek,
-        *sb_sections,
-        product_version=product_version,
-        component_version=component_version,
-        build_number=build_number,
-        flags=flags,
-    )
-
-    # create certificate block
-    cert_block = CertBlockV2(build_number=build_number)
-    for cert_path in signing_certificate_file_paths:
-        cert_data = load_certificate_as_bytes(str(cert_path))
-        cert_block.add_certificate(cert_data)
-    for cert_idx, cert_path in enumerate(root_key_certificate_paths):
-        cert_data = load_certificate_as_bytes(str(cert_path))
-        cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
-
-    # We have our secure binary, now we attach to it the certificate block and
-    # the private key content
-    # TODO legacy elf2sb doesn't require you to use certificates and private key,
-    # so maybe we should make sure this is not necessary???
-    # The -s/-R/-S are mandatory, 2.0 format not supported!!!
-    secure_binary.cert_block = cert_block
-    secure_binary.private_key_pem_data = load_binary(str(private_key_file_path))
-
-    if hoh_out_path is None:
-        hoh_out_path = os.path.join(os.getcwd(), "hash.bin")
-
-    with open(str(hoh_out_path), "wb") as rkht_file:
-        rkht_file.write(secure_binary.cert_block.rkht)
-
-    with open(str(output_file_path), "wb") as sb_file_output:
-        sb_file_output.write(secure_binary.export())
-
-    click.echo(f"Success. (Secure binary 2.1: {output_file_path} created.)")
+        click.echo(f"Success. (Secure binary 2.1: {output_file_path} created.)")
 
 
-def generate_secure_binary_31(container_conf: click.File) -> None:
-    """Geneate SecureBinary image from json configuration file.
+def generate_secure_binary_31(container_conf: str) -> None:
+    """Generate SecureBinary image from json configuration file.
 
     :param container_conf: configuration file
     :raises SPSDKError: Raised when there is no signing key
     """
-    config_data = load_configuration(container_conf.name)
+    config_data = load_configuration(container_conf)
     schemas = SecureBinary31.get_validation_schemas(include_test_configuration=True)
     schemas.append(ValidationSchemas.get_schema_file(SB3_SCH_FILE)["sb3_output"])
     check_config(config_data, schemas)
@@ -302,30 +151,30 @@ def generate_secure_binary_31(container_conf: click.File) -> None:
     click.echo(f"Success. (Secure binary 3.1: {sb3_output_file_path} created.)")
 
 
-@click.command(no_args_is_help=True)
+@click.command(name="elftosb", no_args_is_help=True)
 @optgroup.group("Output file type generation selection.", cls=RequiredMutuallyExclusiveOptionGroup)
 @optgroup.option(
     "-c",
     "--command",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, file_okay=True),
     help="BD configuration file to produce secure binary v2.x",
 )
 @optgroup.option(
     "-J",
     "--image-conf",
-    type=click.File("r"),
+    type=click.Path(exists=True, file_okay=True),
     help="YAML/JSON image configuration file to produce master boot image",
 )
 @optgroup.option(
     "-j",
     "--container-conf",
-    type=click.File("r"),
+    type=click.Path(exists=True, file_okay=True),
     help="YAML/JSON  container configuration file to produce secure binary v3.x",
 )
 @optgroup.option(
     "-T",
     "--tzm-conf",
-    type=click.File("r"),
+    type=click.Path(exists=True, file_okay=True),
     help="YAML/JSON trust zone configuration file to produce trust zone binary",
 )
 @optgroup.option(
@@ -374,29 +223,31 @@ with -S/--cert arg.",
     help="Path to output hash of hashes of root keys. If argument is not \
 provided, then by default the tool creates hash.bin in the working directory.",
 )
-@click.version_option(spsdk_version, "-v", "--version")
+@click.version_option(spsdk_version, "--version")
 @click.help_option("--help")
 @click.argument("external", type=click.Path(), nargs=-1)
 def main(
     chip_family: str,
-    command: click.Path,
-    output: click.Path,
-    key: click.Path,
-    pkey: click.Path,
-    cert: List[click.Path],
-    root_key_cert: List[click.Path],
-    image_conf: click.File,
-    container_conf: click.File,
-    tzm_conf: click.File,
-    config_template: click.Path,
-    hash_of_hashes: click.Path,
-    external: List[click.Path],
+    command: str,
+    output: str,
+    key: str,
+    pkey: str,
+    cert: List[str],
+    root_key_cert: List[str],
+    image_conf: str,
+    container_conf: str,
+    tzm_conf: str,
+    config_template: str,
+    hash_of_hashes: str,
+    external: List[str],
 ) -> None:
-    """Tool for generating TrustZone, MasterBootImage and SecureBinary images."""
+    """Tool for generating TrustZone, MasterBootImage and SecureBinary images.
+
+    !!! The ELFTOSB tool is deprecated, use new NXPIMAGE tool from SPSDK for new projects !!!
+    """
     if command:
         if output is None:
-            click.echo("Error: no output file was specified")
-            sys.exit(1)
+            raise SPSDKAppError("Error: no output file was specified")
         generate_secure_binary_21(
             bd_file_path=command,
             output_file_path=output,
@@ -418,7 +269,7 @@ def main(
         generate_trustzone_binary(tzm_conf)
 
     if config_template:
-        generate_config_templates(chip_family, str(config_template))
+        generate_config_templates(chip_family, config_template)
 
 
 @catch_spsdk_error

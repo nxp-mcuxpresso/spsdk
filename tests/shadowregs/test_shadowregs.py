@@ -71,9 +71,9 @@ def test_shadowreg_set_get_reg(data_dir):
     shadowregs.set_register("REG_BIG", test_val)
     shadowregs.set_register("REG_BIG_REV", test_val)
 
-    assert shadowregs.get_register("REG1") == 0x12345678 .to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x00004321 .to_bytes(4, "big")
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5 .to_bytes(4, "big")
+    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
+    assert shadowregs.get_register("REG2") == 0x00004321.to_bytes(4, "big")
+    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 
@@ -152,9 +152,9 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs.set_register("REG_BIG", test_val)
     shadowregs.set_register("REG_BIG_REV", test_val)
 
-    assert shadowregs.get_register("REG1") == 0x12345678 .to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x00004321 .to_bytes(4, "big")
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5 .to_bytes(4, "big")
+    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
+    assert shadowregs.get_register("REG2") == 0x00004321.to_bytes(4, "big")
+    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 
@@ -167,9 +167,9 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs_load_raw.load_yml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=True)
     shadowregs_load_raw.sets_all_registers()
 
-    assert shadowregs_load_raw.get_register("REG1") == 0x12345678 .to_bytes(4, "big")
-    assert shadowregs_load_raw.get_register("REG2") == 0x00004321 .to_bytes(4, "big")
-    assert shadowregs_load_raw.get_register("REG_INVERTED_AP") == 0xA5A5A5A5 .to_bytes(4, "big")
+    assert shadowregs_load_raw.get_register("REG1") == 0x12345678.to_bytes(4, "big")
+    assert shadowregs_load_raw.get_register("REG2") == 0x00004321.to_bytes(4, "big")
+    assert shadowregs_load_raw.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
     assert shadowregs_load_raw.get_register("REG_BIG") == test_val
     assert shadowregs_load_raw.get_register("REG_BIG_REV") == test_val
 
@@ -229,9 +229,9 @@ def test_shadowreg_yml_invalid_computed(tmpdir, data_dir):
     shadowregs.set_register("REG_BIG", test_val)
     shadowregs.set_register("REG_BIG_REV", test_val)
 
-    assert shadowregs.get_register("REG1") == 0x12345678 .to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x00004321 .to_bytes(4, "big")
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5 .to_bytes(4, "big")
+    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
+    assert shadowregs.get_register("REG2") == 0x00004321.to_bytes(4, "big")
+    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 

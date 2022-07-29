@@ -13,11 +13,15 @@ import sys
 from typing import Any, BinaryIO, Callable, Dict, List, Tuple
 
 import click
-from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import SPSDKError, SPSDKValueError
 from spsdk import __version__ as version
-from spsdk.apps.utils import catch_spsdk_error, format_raw_data, get_interface, load_configuration
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroup,
+    isp_interfaces,
+    spsdk_apps_common_options,
+)
+from spsdk.apps.utils.utils import catch_spsdk_error, format_raw_data, get_interface
 from spsdk.image import MBIMG_SCH_FILE, SB3_SCH_FILE
 from spsdk.mboot.commands import TrustProvKeyType, TrustProvOemKeyType
 from spsdk.mboot.interfaces import MBootInterface
@@ -26,13 +30,10 @@ from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
 from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
 from spsdk.utils.crypto.cert_blocks import CertificateBlockHeader
 from spsdk.utils.crypto.common import crypto_backend
-from spsdk.utils.misc import value_to_int
+from spsdk.utils.misc import load_configuration, value_to_int
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 logger = logging.getLogger(__name__)
-LOG_LEVEL_NAMES = [
-    name.lower() for name in logging._nameToLevel  # pylint: disable=protected-access
-]
 
 
 class DeviceHsm:
@@ -55,8 +56,8 @@ class DeviceHsm:
     DEVBUFF_HSM_GENKEY_KEYBLOB_PUK_SIZE = 64
     DEVBUFF_USER_PCK_KEY_SIZE = 32
     DEVBUFF_WRAPPED_USER_PCK_KEY_SIZE = 48
-    DEFBUFF_DATA_BLOCK_SIZE = 256
-    DEFBUFF_SB3_SIGNATURE_SIZE = 64
+    DEVBUFF_DATA_BLOCK_SIZE = 256
+    DEVBUFF_SB3_SIGNATURE_SIZE = 64
 
     def __init__(
         self,
@@ -81,6 +82,7 @@ class DeviceHsm:
         self.oem_share_input = oem_share_input
         self.info_print = info_print
         self.workspace = workspace
+        self.container_conf_dir = container_conf
         if self.workspace and not os.path.isdir(self.workspace):
             os.mkdir(self.workspace)
 
@@ -96,8 +98,13 @@ class DeviceHsm:
         self.config_data = None
         if container_conf:
             config_data = load_configuration(container_conf)
-            # validate input configration
-            check_config(config_data, DeviceHsm.get_validation_schemas())
+            # validate input configuration
+            check_config(
+                config_data,
+                DeviceHsm.get_validation_schemas(),
+                search_paths=[os.path.dirname(container_conf)],
+            )
+            self.config_data = config_data
             self.sb3_fw_ver = config_data.get("firmwareVersion") or self.sb3_fw_ver
             self.sb3_descr = config_data.get("description") or self.sb3_descr
             if "timestamp" in config_data:
@@ -117,7 +124,7 @@ class DeviceHsm:
 
         ret: List[Dict[str, Any]] = []
         ret.extend([mbi_sch_cfg["firmware_version"]])
-        ret.extend([sb3_sch_cfg[x] for x in ["sb3", "sb3_commands", "sb3_test"]])
+        ret.extend([sb3_sch_cfg[x] for x in ["sb3_description", "sb3_commands", "sb3_test"]])
         return ret
 
     def create_sb3(self) -> None:
@@ -171,7 +178,10 @@ class DeviceHsm:
                 key_wrap_id=CmdLoadKeyBlob.KeyWraps["NXP_CUST_KEK_EXT_SK"],
             )
         )
-        sb3_data.load_from_config(self.get_cmd_from_config())
+        if self.container_conf_dir:
+            sb3_data.load_from_config(
+                self.get_cmd_from_config(), search_paths=[self.container_conf_dir]
+            )
 
         logger.debug(f" 5.2: Created un-encrypted SB3 data: \n{sb3_data.info()}")
         # 5.3: Get SB3 file data part individual chunks
@@ -199,7 +209,7 @@ class DeviceHsm:
         self.info_print(" 6.3: Updating SB3 header by valid values.")
         sb3_header.block_count = sb3_data.block_count
         sb3_header.image_total_length += (
-            len(sb3_data.final_hash) + cb_header.cert_block_size + self.DEFBUFF_SB3_SIGNATURE_SIZE
+            len(sb3_data.final_hash) + cb_header.cert_block_size + self.DEVBUFF_SB3_SIGNATURE_SIZE
         )
         logger.debug(
             f" 6.3: The SB3 header has been updated by valid values:\n{sb3_header.info()}."
@@ -407,15 +417,15 @@ class DeviceHsm:
             self.DEVBUFF_BASE1,
             len(data_to_sign),
             self.DEVBUFF_BASE2,
-            self.DEFBUFF_SB3_SIGNATURE_SIZE,
+            self.DEVBUFF_SB3_SIGNATURE_SIZE,
         )
 
-        if hsm_gen_key_res != self.DEFBUFF_SB3_SIGNATURE_SIZE:
+        if hsm_gen_key_res != self.DEVBUFF_SB3_SIGNATURE_SIZE:
             raise SPSDKError("HSM signing command failed.")
 
         signature = self.mboot.read_memory(
             self.DEVBUFF_BASE2,
-            self.DEFBUFF_SB3_SIGNATURE_SIZE,
+            self.DEVBUFF_SB3_SIGNATURE_SIZE,
         )
         if not signature:
             raise SPSDKError("Cannot read generated signature from device.")
@@ -449,10 +459,10 @@ class DeviceHsm:
         :raises SPSDKError: Unknown command
         """
         cfg_commands: List[Dict[str, Any]] = []
-        if self.config_data and self.config_data.get["commands"]:
-            cfg_commands = self.config_data.get["commands"]
+        if self.config_data and self.config_data.get("commands"):
+            cfg_commands = self.config_data["commands"]
             for cmd in cfg_commands:
-                cmd_cpy: dict = cmd.copy()
+                cmd_cpy: Dict = cmd.copy()
                 name, args = cmd_cpy.popitem()
                 if name == "loadKeyBlob" and value_to_int(str(args["offset"])) == 0x04:
                     raise SPSDKError(
@@ -493,7 +503,7 @@ class DeviceHsm:
                 len(sb3_header),
                 data_cmd_block_ix,
                 self.DEVBUFF_BASE2,
-                self.DEFBUFF_DATA_BLOCK_SIZE,
+                self.DEVBUFF_DATA_BLOCK_SIZE,
             ):
                 raise SPSDKError(
                     f"Cannot run SB3 data block_{data_cmd_block_ix} HSM Encryption in device."
@@ -501,7 +511,7 @@ class DeviceHsm:
 
             encrypted_block = self.mboot.read_memory(
                 self.DEVBUFF_BASE2,
-                self.DEFBUFF_DATA_BLOCK_SIZE,
+                self.DEVBUFF_DATA_BLOCK_SIZE,
             )
             if not encrypted_block:
                 raise SPSDKError(f"Cannot read SB3 data block_{data_cmd_block_ix} from device.")
@@ -550,66 +560,16 @@ def get_oem_share_input(binary: BinaryIO) -> bytes:
     return oem_share_input
 
 
-@click.group(no_args_is_help=True)
-@click.option(
-    "-d",
-    "--debug",
-    "log_level",
-    metavar="LEVEL",
-    default="warning",
-    help="Set the level of system logging output. "
-    f'Available options are: {", ".join(LOG_LEVEL_NAMES)}',
-    type=click.Choice(LOG_LEVEL_NAMES),
-)
-@click.version_option(version, "--version")
-def main(log_level: str) -> int:
+@click.group(name="nxpdevhsm", no_args_is_help=True, cls=CommandsTreeGroup)
+@spsdk_apps_common_options
+def main(log_level: int) -> int:
     """Nxpdevhsm application is designed to create SB3 provisioning file for initial provisioning of device by OEM."""
-    logging.basicConfig(level=log_level.upper())
+    logging.basicConfig(level=log_level or logging.WARNING)
     return 0
 
 
-@main.command()
-@optgroup.group("Interface configuration", cls=MutuallyExclusiveOptionGroup)
-@optgroup.option(
-    "-p",
-    "--port",
-    metavar="COM[,speed]",
-    help="""Serial port configuration. Default baud rate is 57600.
-    Use 'nxpdevscan' utility to list devices on serial port.""",
-)
-@optgroup.option(
-    "-u",
-    "--usb",
-    metavar="VID,PID",
-    help="""USB device identifier.
-    Following formats are supported: <vid>, <vid:pid> or <vid,pid>, device/instance path, device name.
-    <vid>: hex or dec string; e.g. 0x0AB12, 43794.
-    <vid/pid>: hex or dec string; e.g. 0x0AB12:0x123, 1:3451.
-    Use 'nxpdevscan' utility to list connected device names.
-""",
-)
-@optgroup.option(
-    "-l",
-    "--lpcusbsio",
-    metavar="spi|i2c",
-    help="""USB-SIO bridge interface.
-    Following interfaces are supported:
-
-    spi[,port,pin,speed_kHz,polarity,phase]
-     - port ... bridge GPIO port used as SPI SSEL
-     - pin  ... bridge GPIO pin used as SPI SSEL
-        default SSEL is set to 0.15 which works
-        for the LPCLink2 bridge. The MCULink OB
-        bridge ignores the SSEL value anyway.
-     - speed_kHz ... SPI clock in kHz (default 1000)
-     - polarity ... SPI CPOL option (default=1)
-     - phase ... SPI CPHA option (default=1)
-
-    i2c[,address,speed_kHz]
-     - address ... I2C device address (default 0x10)
-     - speed_kHz ... I2C clock in kHz (default 100)
-""",
-)
+@main.command(no_args_is_help=True)
+@isp_interfaces(uart=True, usb=True, lpcusbsio=True, buspal=True, json_option=False)
 @click.option(
     "-k",
     "--key",
@@ -639,17 +599,11 @@ def main(log_level: str) -> int:
     help="""json container configuration file to produce secure binary v3.x.
     In this configuration file is enough to provide just commands and description section.""",
 )
-@click.option(
-    "-t",
-    "--timeout",
-    metavar="<ms>",
-    help="""Sets timeout when waiting on data over a serial line. The default is 5000 milliseconds.""",
-    default=5000,
-)
 @click.argument("output-path", type=click.File(mode="wb"))
 def generate(
     port: str,
     usb: str,
+    buspal: str,
     lpcusbsio: str,
     oem_share_input: BinaryIO,
     key: BinaryIO,
@@ -664,7 +618,7 @@ def generate(
     PATH    - output file path, where the final provisioned SB file will be stored.
     """
     interface = get_interface(
-        module="mboot", port=port, usb=usb, lpcusbsio=lpcusbsio, timeout=timeout
+        module="mboot", port=port, usb=usb, lpcusbsio=lpcusbsio, timeout=timeout, buspal=buspal
     )
     assert isinstance(interface, MBootInterface)
 
@@ -677,8 +631,8 @@ def generate(
             user_pck=user_pck,
             oem_share_input=oem_share_in,
             info_print=click.echo,
-            container_conf=container_conf,
-            workspace=workspace,
+            container_conf=str(container_conf) if container_conf else None,
+            workspace=str(workspace) if workspace else None,
         )
 
         devhsm.create_sb3()

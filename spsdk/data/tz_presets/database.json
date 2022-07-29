@@ -43,5 +43,11 @@
             "a0": "rt5xx_a0.json"
         },
         "latest": "a0"
+    },
+    "nhs5200": {
+        "revisions": {
+            "a0": "nhs5200.json"
+        },
+        "latest": "a0"
     }
 }

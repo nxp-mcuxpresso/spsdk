@@ -13,6 +13,8 @@ from spsdk.mboot.commands import (
     CommandTag,
     KeyProvOperation,
     ResponseTag,
+    TrustProvisioningResponse,
+    TrustProvOperation,
     parse_cmd_response,
 )
 from spsdk.mboot.error_codes import StatusCode
@@ -91,7 +93,7 @@ def cmd_read_memory(*args, **kwargs):
 
     if fail_step is not None:
         if response_index == 0:
-            return pack_response(ResponseTag.READ_MEMORY, StatusCode.SUCCESS, 0)
+            return pack_response(ResponseTag.READ_MEMORY, StatusCode.SUCCESS, length)
         if response_index == 1:
             caller._response_index += 1
             error = McuBootDataAbortError if fail_step else TimeoutError
@@ -172,6 +174,9 @@ def cmd_receive_sb_file(*args, **kwargs):
 
 def cmd_reset(*args, **kwargs):
     assert len(args) == 0
+    fail_step = kwargs["fail_step"]
+    if fail_step:
+        return pack_response(ResponseTag.GENERIC, StatusCode.FAIL, CommandTag.RESET)
     return pack_response(ResponseTag.GENERIC, StatusCode.SUCCESS, CommandTag.RESET)
 
 
@@ -236,6 +241,35 @@ def cmd_no_command(*args, **kwargs):
     return pack_response(ResponseTag.GENERIC, StatusCode.SUCCESS, CommandTag.NO_COMMAND)
 
 
+########################################
+# Trust Provisioning support functions #
+########################################
+def cmd_trust_prov_prove_genuinity(index, fail_step):
+    error_code = set_error_code(index, fail_step)
+    if error_code == StatusCode.FAIL:
+        return pack_response(ResponseTag.TRUST_PROVISIONING_RESPONSE, error_code, 0)
+
+    tp_response_length = 0x2000
+    return pack_response(
+        ResponseTag.TRUST_PROVISIONING_RESPONSE, StatusCode.SUCCESS, tp_response_length
+    )
+
+
+def cmd_trust_prov_set_wrap_data(index, fail_step):
+    return pack_response(ResponseTag.TRUST_PROVISIONING_RESPONSE, set_error_code(index, fail_step))
+
+
+def cmd_trust_provisioning(*args, index, fail_step, **kwargs):
+    response_functions = {
+        TrustProvOperation.PROVE_GENUINITY: cmd_trust_prov_prove_genuinity,
+        TrustProvOperation.ISP_SET_WRAPPED_DATA: cmd_trust_prov_set_wrap_data,
+    }
+    command_id = args[0] & 0xFF
+    response_function = response_functions[command_id]
+    response = response_function(index, fail_step)
+    return response
+
+
 ########################################################################################################################
 # Virtual Device Class
 ########################################################################################################################
@@ -262,6 +296,7 @@ class VirtualDevice(MBootInterface):
         CommandTag.RELIABLE_UPDATE: None,
         CommandTag.GENERATE_KEY_BLOB: cmd_generate_keyblob,
         CommandTag.KEY_PROVISIONING: cmd_key_provisioning,
+        CommandTag.TRUST_PROVISIONING: cmd_trust_provisioning,
     }
 
     @property

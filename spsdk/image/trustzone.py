@@ -10,13 +10,13 @@ import json
 import logging
 import os
 import struct
+from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 from spsdk import SPSDKError
-from spsdk.apps.utils import load_configuration
 from spsdk.image import TZ_SCH_FILE
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import format_value, value_to_int
+from spsdk.utils.misc import format_value, load_configuration, value_to_int
 from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
 
 logger = logging.getLogger(__name__)
@@ -101,7 +101,6 @@ class TrustZone:
         if self.type == TrustZoneType.DISABLED and customizations:
             raise SPSDKError("TrustZone was disabled, can't add trust_zone_data")
 
-        # TODO: Should empty customs qualifies for CUSTOM TZ type???
         if self.customs is not None:
             self.type = TrustZoneType.CUSTOM
 
@@ -152,10 +151,11 @@ class TrustZone:
         preset_properties = {}
 
         try:
-            real_rev = config_file[family][revision]
+            if not revision or revision == "latest":
+                revision = config_file[family]["latest"]
 
             presets = load_configuration(
-                os.path.join(TrustZone.PRESET_DIR, config_file[family]["revisions"][real_rev])
+                os.path.join(TrustZone.PRESET_DIR, config_file[family]["revisions"][revision])
             )
             for key, value in presets.items():
                 preset_properties[key] = {
@@ -165,28 +165,36 @@ class TrustZone:
                     "format": "number",
                     "template_value": f"{value}",
                 }
-            sch_cfg["tz"]["properties"]["trustZonePreset"].pop("patternProperties")
+            if "patternProperties" in sch_cfg["tz"]["properties"]["trustZonePreset"].keys():
+                sch_cfg["tz"]["properties"]["trustZonePreset"].pop("patternProperties")
             sch_cfg["tz"]["properties"]["trustZonePreset"]["properties"] = preset_properties
 
             return [sch_cfg["tz_family_rev"], sch_cfg["tz"]]
         except (KeyError, SPSDKError) as exc:
-            raise SPSDKError(f"Family {family} or {revision} is not supported") from exc
+            raise SPSDKError(f"Family {family} or revision {revision} is not supported") from exc
 
     @classmethod
-    def generate_config_template(cls, family: str) -> Dict[str, str]:
+    def generate_config_template(cls, family: str, revision: str = "latest") -> Dict[str, str]:
         """Generate configuration for selected family.
 
         :param family: Family description.
+        :param revision: Chip revision specification, as default, latest is used.
+        :raises SPSDKError: Revision is not supported.
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
         ret: Dict[str, str] = {}
-
         if family in cls.get_supported_families():
-            config_file = cls.load_config_file()
-            schemas = cls.get_validation_schemas(family)
+            try:
+                if not revision or revision == "latest":
+                    config_file = cls.load_config_file()
+                    revision = config_file[family]["latest"]
+            except (KeyError, SPSDKError) as exc:
+                raise SPSDKError(f"Revision {revision} is not supported") from exc
+
+            schemas = cls.get_validation_schemas(family, revision)
             override = {}
             override["family"] = family
-            override["revision"] = config_file[family]["latest"]
+            override["revision"] = revision
 
             yaml_data = ConfigTemplate(
                 f"Trust Zone Configuration template for {family}.",
@@ -215,7 +223,7 @@ class TrustZone:
         tz_sch_cfg = ValidationSchemas().get_schema_file(TZ_SCH_FILE)
         tz_families = tz_sch_cfg["tz_family_rev"]
 
-        return tz_families["properties"]["family"]["enum"]
+        return deepcopy(tz_families["properties"]["family"]["enum"])
 
     def get_families(self) -> list:
         """Return list of supported chip families."""
@@ -229,13 +237,15 @@ class TrustZone:
         """Return latest revision for given family."""
         return self.config[family or self.family]["latest"]
 
-    def sanitize_revision(self, family: str, revision: Optional[str]) -> str:
+    def sanitize_revision(self, family: str, revision: str = None) -> str:
         """Sanitize revision.
 
         if the 'revision' is None return the latest revision
         if the 'revision' is provided return it as lower-case
         """
-        return revision.lower() if revision else self.get_latest_revision(family)
+        if not revision or revision.lower() == "latest":
+            return self.get_latest_revision(family)
+        return revision.lower()
 
     def _get_preset_file(self) -> str:
         return os.path.join(

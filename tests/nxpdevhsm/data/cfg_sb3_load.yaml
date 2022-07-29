@@ -1,0 +1,6 @@
+family: lpc55s3x
+description: LPC55S36 SB3
+commands:
+  - load:
+      address: "0x10000000"
+      file: test_bin.bin

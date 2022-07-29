@@ -125,7 +125,7 @@ def check_pytest(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
         shutil.rmtree(output_folder, ignore_errors=True)
 
     args = (
-        f"pytest --cov spsdk --cov-branch --junit-xml {junit_report}"
+        f"pytest tests --cov spsdk --cov-branch --junit-xml {junit_report}"
         f" --cov-report term --cov-report html:{output_folder} --cov-report xml:{output_xml}"
     )
     with open(output_log, "w", encoding="utf-8") as f:
@@ -342,23 +342,24 @@ def main(
     """
     # logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
     logging.basicConfig(level=logging.INFO)
+    output_dir = str(output) if output else OUTPUT_FOLDER
     ret = 1
     try:
         available_checks = TaskList(
             [
-                TaskInfo("PYTEST", check_pytest, output=output),
-                TaskInfo("GITCOV", check_gitcov, output=output, dependencies=["PYTEST"]),
+                TaskInfo("PYTEST", check_pytest, output=output_dir),
+                TaskInfo("GITCOV", check_gitcov, output=output_dir, dependencies=["PYTEST"]),
                 TaskInfo(
                     "PYLINT_ALL",
                     check_pylint,
                     args="spsdk examples tools codecheck.py",
-                    output_log=os.path.join(output, "pylint_all.txt"),
+                    output_log=os.path.join(output_dir, "pylint_all.txt"),
                 ),
                 TaskInfo(
                     "PYLINT",
                     check_pylint_errors,
-                    input_log=os.path.join(output, "pylint_all.txt"),
-                    output_log=os.path.join(output, "pylint.txt"),
+                    input_log=os.path.join(output_dir, "pylint_all.txt"),
+                    output_log=os.path.join(output_dir, "pylint.txt"),
                     dependencies=["PYLINT_ALL"],
                 ),
                 # This is already covered by PYLINT
@@ -372,44 +373,44 @@ def main(
                     "PYLINT_DOCS",
                     check_pylint,
                     args="spsdk --rcfile pylint-doc-rules.ini",
-                    output_log=os.path.join(output, "pylint_docs.txt"),
+                    output_log=os.path.join(output_dir, "pylint_docs.txt"),
                 ),
                 TaskInfo(
                     "MYPY",
                     check_mypy,
                     args=["spsdk", "examples"],
-                    output_log=os.path.join(output, "mypy.txt"),
+                    output_log=os.path.join(output_dir, "mypy.txt"),
                 ),
                 TaskInfo(
                     "MYPY_TOOLS",
                     check_mypy,
                     args=["tools", "codecheck.py"],
-                    output_log=os.path.join(output, "mypy_tools.txt"),
+                    output_log=os.path.join(output_dir, "mypy_tools.txt"),
                 ),
                 TaskInfo("DEPENDENCIES", check_dependencies, output=output),
-                TaskInfo("PYDOCSTYLE", check_pydocstyle, output=output),
+                TaskInfo("PYDOCSTYLE", check_pydocstyle, output=output_dir),
                 TaskInfo(
-                    "RADON_ALL", check_radon, output_log=os.path.join(output, "radon_all.txt")
+                    "RADON_ALL", check_radon, output_log=os.path.join(output_dir, "radon_all.txt")
                 ),
                 TaskInfo(
                     "RADON_C",
                     check_radon_errors,
                     radon_type="C",
-                    input_log=os.path.join(output, "radon_all.txt"),
-                    output_log=os.path.join(output, "radon_c.txt"),
+                    input_log=os.path.join(output_dir, "radon_all.txt"),
+                    output_log=os.path.join(output_dir, "radon_c.txt"),
                     dependencies=["RADON_ALL"],
                 ),
                 TaskInfo(
                     "RADON_D",
                     check_radon_errors,
                     radon_type="D",
-                    input_log=os.path.join(output, "radon_all.txt"),
-                    output_log=os.path.join(output, "radon_d.txt"),
+                    input_log=os.path.join(output_dir, "radon_all.txt"),
+                    output_log=os.path.join(output_dir, "radon_d.txt"),
                     dependencies=["RADON_ALL"],
                 ),
-                TaskInfo("BLACK", check_black, output=output),
-                TaskInfo("ISORT", check_isort, output=output),
-                TaskInfo("COPYRIGHT", check_copyright_year, output=output),
+                TaskInfo("BLACK", check_black, output=output_dir),
+                TaskInfo("ISORT", check_isort, output=output_dir),
+                TaskInfo("COPYRIGHT", check_copyright_year, output=output_dir),
             ]
         )
         checks = TaskList()
@@ -432,13 +433,13 @@ def main(
         info_check.append("RADON_ALL")
         info_check.append("RADON_C")
 
-        if not os.path.isdir(output):
-            os.mkdir(output)
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
 
         runner = PrettyProcessRunner(checks, print_func=print_nothing if silence else click.echo)
         runner.run(job_cnt, True)
 
-        ret = check_results(checks, info_check, output)
+        ret = check_results(checks, info_check, output_dir)
         if silence < 2:
             print_results(checks, info_check)
             click.echo(f"Overall time: {round(runner.process_time, 1)} second(s).")

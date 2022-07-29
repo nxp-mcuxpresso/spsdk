@@ -14,12 +14,12 @@ from typing import IO
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
-from spsdk import __version__ as spsdk_version
-from spsdk.apps.utils import catch_spsdk_error
+from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
+from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.utils import nxpdevscan
 
 
-@click.command()
+@click.command(name="nxpdevscan")
 @click.option(
     "-e",
     "--extend-vids",
@@ -59,22 +59,7 @@ from spsdk.utils import nxpdevscan
     flag_value="lpcusbsio",
     help="Search only for USBSIO devices",
 )
-@optgroup.group("Additional info specification", cls=MutuallyExclusiveOptionGroup)
-@optgroup.option(
-    "-v",
-    "--verbose",
-    "log_level",
-    flag_value=logging.INFO,
-    help="Print more detailed information",
-)
-@optgroup.option(
-    "-vv",
-    "--debug",
-    "log_level",
-    flag_value=logging.DEBUG,
-    help="Display more debugging information.",
-)
-@click.version_option(spsdk_version, "--version")
+@spsdk_apps_common_options
 def main(extend_vids: str, out: IO[str], scope: str, log_level: int) -> None:
     """Utility listing all connected NXP USB and UART devices."""
     logging.basicConfig(level=log_level or logging.WARNING)

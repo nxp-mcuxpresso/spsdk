@@ -33,7 +33,7 @@ VSVersionInfo(
         StringStruct(u'FileDescription', u'MCUXpresso SPSDK Apps'),
         StringStruct(u'FileVersion', u'1.0.0.0'),
         StringStruct(u'InternalName', u'pfrc.exe'),
-        StringStruct(u'LegalCopyright', u'Copyright (C) 2021 NXP Semiconductors'),
+        StringStruct(u'LegalCopyright', u'Copyright (C) 2021-2022 NXP Semiconductors'),
         StringStruct(u'OriginalFileName', u'pfrc.exe'),
         StringStruct(u'ProductName', u'MCUXpresso SPSDK Apps'),
         StringStruct(u'ProductVersion', u'1.0.0.0')])

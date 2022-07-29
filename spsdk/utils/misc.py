@@ -6,11 +6,14 @@
 
 """Miscellaneous functions used throughout the SPSDK."""
 import contextlib
+import logging
+import math
 import os
 import re
 import time
 from math import ceil
-from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Optional, TypeVar, Union
+from struct import pack, unpack
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, TypeVar, Union
 
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
@@ -19,9 +22,7 @@ from spsdk.utils.exceptions import SPSDKTimeoutError
 # for generics
 T = TypeVar("T")  # pylint: disable=invalid-name
 
-if TYPE_CHECKING:
-    # bincopy will be loaded lazily as needed, this is just to satisfy type-hint checkers
-    import bincopy
+logger = logging.getLogger(__name__)
 
 
 def align(number: int, alignment: int = 4) -> int:
@@ -98,103 +99,118 @@ def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optiona
     return next((a for a in iterable if predicate(a)), None)
 
 
-def load_binary_image(*path_segments: str) -> "bincopy.BinFile":
-    r"""Load binary data file.
+def load_binary(path: str, search_paths: List[str] = None) -> bytes:
+    """Loads binary file into bytes.
 
-    :param \*path_segments: list that consists of:
-        - absolute path
-        - optional sub-directory (any number)
-        - file name including file extension
-        All the fields together represents absolute path to the file
-    :raises SPSDKError: The binary file cannot be loaded.
-    :return: Binary data represented in BinFile class.
-    """
-    path = os.path.join(*path_segments)
-    path = path.replace("\\", "/")
-    try:
-        with open(path, "rb") as f:
-            data = f.read(4)
-    except Exception as e:
-        raise SPSDKError(f"Error loading file: {str(e)}") from e
-
-    if data == b"\x7fELF":
-        raise SPSDKError("Elf file is not supported")
-
-    # import bincopy only if needed to save startup time
-    import bincopy  # pylint: disable=import-outside-toplevel
-
-    binfile = bincopy.BinFile()
-    try:
-        binfile.add_file(path)
-    except (UnicodeDecodeError, bincopy.UnsupportedFileFormatError):
-        binfile.add_binary_file(path)
-    except Exception as e:
-        raise SPSDKError(f"Error loading file: {str(e)}") from e
-
-    return binfile
-
-
-def load_binary(*path_segments: str) -> bytes:
-    r"""Loads binary file into bytes.
-
-    :param \*path_segments: list that consists of:
-        - absolute path
-        - optional sub-directory (any number)
-        - file name including file extension
-        All the fields together represents absolute path to the file
+    :param path: Path to the file.
+    :param search_paths: List of paths where to search for the file, defaults to None
     :return: content of the binary file as bytes
     """
-    data = load_file(*path_segments, mode="rb")
+    data = load_file(path, mode="rb", search_paths=search_paths)
     assert isinstance(data, bytes)
     return data
 
 
-def load_text(*path_segments: str) -> str:
-    r"""Loads binary file into bytes.
+def load_text(path: str, search_paths: List[str] = None) -> str:
+    """Loads binary file into bytes.
 
-    :param \*path_segments: list that consists of:
-        - absolute path
-        - optional sub-directory (any number)
-        - file name including file extension
-        All the fields together represents absolute path to the file
+    :param path: Path to the file.
+    :param search_paths: List of paths where to search for the file, defaults to None
     :return: content of the binary file as bytes
     """
-    text = load_file(*path_segments, mode="r")
+    text = load_file(path, mode="r", search_paths=search_paths)
     assert isinstance(text, str)
     return text
 
 
-def load_file(*path_segments: str, mode: str = "r") -> Union[str, bytes]:
-    # pylint: disable=missing-param-doc
-    r"""Loads a file into bytes.
+def load_file(path: str, mode: str = "r", search_paths: List[str] = None) -> Union[str, bytes]:
+    """Loads a file into bytes.
 
-    :param \*path_segments: list that consists of:
-        - absolute path
-        - optional sub-directory (any number)
-        - file name including file extension
-        All the fields together represents absolute path to the file
+    :param path: Path to the file.
     :param mode: mode for reading the file 'r'/'rb'
+    :param search_paths: List of paths where to search for the file, defaults to None
     :return: content of the binary file as bytes or str (based on mode)
     """
-    path = os.path.join(*path_segments)
-    path = path.replace("\\", "/")
+    path = find_file(path, search_paths=search_paths)
+    logger.debug(f"Loading {'binary' if 'b' in mode else 'text'} file from {path} .")
     with open(path, mode) as f:
         return f.read()
 
 
-def write_file(data: Union[str, bytes], *path_segments: str, mode: str = "w") -> int:
+def write_file(data: Union[str, bytes], path: str, mode: str = "w") -> int:
     # pylint: disable=missing-param-doc
     r"""Writes data into a file.
 
     :param data: data to write
-    :param \*path_segments: pieces of path to the file, might be just a single str
+    :param path: Path to the file.
     :param mode: writing mode, 'w' for text, 'wb' for binary data, defaults to 'w'
     :return: number of written elements
     """
-    path = os.path.join(*path_segments)
     path = path.replace("\\", "/")
+    folder = os.path.dirname(path)
+    if folder and not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+
+    logger.debug(f"Storing {'binary' if 'b' in mode else 'text'} file at {path} .")
     with open(path, mode) as f:
         return f.write(data)
+
+
+def get_abs_path(file_path: str, base_dir: Optional[str] = None) -> str:
+    """Return a full path to the file.
+
+    param base_dir: Base directory to create absolute path, if not specified the system CWD is used.
+    return: Absolute file path.
+    """
+    if os.path.isabs(file_path):
+        return file_path.replace("\\", "/")
+
+    return os.path.abspath(os.path.join(base_dir or os.getcwd(), file_path)).replace("\\", "/")
+
+
+def find_file(
+    file_path: str,
+    use_cwd: bool = True,
+    search_paths: List[str] = None,
+    raise_exc: bool = True,
+) -> str:
+    """Return a full path to the file.
+
+    `search_paths` takes precedence over `CWD` if used (default)
+
+    :param file_path: File name, part of file path or full path
+    :param use_cwd: Try current working directory to find the file, defaults to True
+    :param search_paths: List of paths where to search for the file, defaults to None
+    :param raise_exc: Raise exception if file is not found, defaults to True
+    :return: Full path to the file
+    :raises SPSDKError: File not found
+    """
+    file_path = file_path.replace("\\", "/")
+
+    if os.path.isabs(file_path):
+        return file_path
+    if search_paths:
+        for dir_candidate in search_paths:
+            if not dir_candidate:
+                continue
+            dir_candidate = dir_candidate.replace("\\", "/")
+            path_candidate = get_abs_path(file_path, base_dir=dir_candidate)
+            if os.path.isfile(path_candidate):
+                return path_candidate
+    if use_cwd and os.path.isfile(file_path):
+        return get_abs_path(file_path)
+    # list all directories in error message
+    searched_in: List[str] = []
+    if use_cwd:
+        searched_in.append(os.path.abspath(os.curdir))
+    if search_paths:
+        searched_in.extend(filter(None, search_paths))
+    searched_in = [s.replace("\\", "/") for s in searched_in]
+    err_str = f"File '{file_path}' not found, Searched in: {', '.join(searched_in)}"
+    if not raise_exc:
+        logger.debug(err_str)
+        return ""  # TODO Maybe, it will be better return None and solve raised MyPY recommendations
+    raise SPSDKError(err_str)
 
 
 @contextlib.contextmanager
@@ -298,16 +314,16 @@ class DebugInfo:
         return "\n".join(self.lines)
 
 
-def format_value(value: int, size: int, delimeter: str = "_", use_prefix: bool = True) -> str:
+def format_value(value: int, size: int, delimiter: str = "_", use_prefix: bool = True) -> str:
     """Convert the 'value' into either BIN or HEX string, depending on 'size'.
 
     if 'size' is divisible by 8, function returns HEX, BIN otherwise
-    digits in result string are grouped by 4 using 'delimeter' (underscore)
+    digits in result string are grouped by 4 using 'delimiter' (underscore)
     """
     padding = size if size % 8 else (size // 8) * 2
     infix = "b" if size % 8 else "x"
     parts = re.findall(".{1,4}", f"{value:0{padding}{infix}}"[::-1])
-    rev = delimeter.join(parts)[::-1]
+    rev = delimiter.join(parts)[::-1]
     prefix = f"0{infix}" if use_prefix else ""
     return f"{prefix}{rev}"
 
@@ -377,14 +393,14 @@ def value_to_bytes(
     value: Union[bytes, bytearray, int, str],
     align_to_2n: bool = True,
     byte_cnt: int = None,
-    endianism: str = "big",
+    endianness: str = "big",
 ) -> bytes:
     """Function loads value from lot of formats.
 
     :param value: Input value.
     :param align_to_2n: When is set, the function aligns length of return array to 1,2,4,8,12 etc.
     :param byte_cnt: The result count of bytes.
-    :param endianism: The rusult bytes endianism ['big', 'little'].
+    :param endianness: The result bytes endianness ['big', 'little'].
     :return: Value in bytes.
     """
     if isinstance(value, bytes):
@@ -394,7 +410,10 @@ def value_to_bytes(
         return bytes(value)
 
     value = value_to_int(value)
-    return value.to_bytes(get_bytes_cnt_of_int(value, align_to_2n, byte_cnt=byte_cnt), endianism)
+    return value.to_bytes(
+        get_bytes_cnt_of_int(value, align_to_2n, byte_cnt=byte_cnt),
+        endianness,  # type: ignore[arg-type]
+    )
 
 
 def value_to_bool(value: Union[bool, int, str]) -> bool:
@@ -436,11 +455,11 @@ def reverse_bytes_in_longs(arr: bytes) -> bytes:
     return bytes(result)
 
 
-def change_endianism(bin_data: bytes) -> bytes:
+def change_endianness(bin_data: bytes) -> bytes:
     """Convert binary format used in files to binary used in register object.
 
     :param bin_data: input binary array.
-    :return: Converted array (practically little to big endianism).
+    :return: Converted array (practically little to big endianness).
     :raises SPSDKError: Invalid value on input.
     """
     data = bytearray(bin_data)
@@ -454,13 +473,13 @@ def change_endianism(bin_data: bytes) -> bytes:
 
     # The length of 24 bits is not supported yet
     if length == 3:
-        raise SPSDKError("Unsupported length (3) for change endianism.")
+        raise SPSDKError("Unsupported length (3) for change endianness.")
 
     return reverse_bytes_in_longs(data)
 
 
 class Timeout:
-    """Simple timout handle class."""
+    """Simple timeout handle class."""
 
     UNITS = {
         "s": 1000000,
@@ -500,7 +519,7 @@ class Timeout:
         return time_us // self.UNITS[self.units]
 
     def get_consumed_time(self) -> int:
-        """Returns consumed time since start of timeouted operation.
+        """Returns consumed time since start of timeout operation.
 
         :return: Consumed time in units as the class was constructed
         """
@@ -538,6 +557,7 @@ class Timeout:
         """
         if self.enabled and self._get_current_time_us() > self.end_time and raise_exc:
             raise SPSDKTimeoutError("Timeout of operation.")
+
         # pylint: disable=superfluous-parens     # because PEP20: Readability counts
         return ((self.end_time - self._get_current_time_us()) // 1000) if self.enabled else 0
 
@@ -566,6 +586,49 @@ def size_fmt(num: Union[float, int], use_kibibyte: bool = True) -> str:
     return f"{int(num)} {i}" if i == "B" else f"{num:3.1f} {i}"
 
 
+def numberify_version(version: str, separator: str = ".", valid_numbers: int = 3) -> int:
+    """Turn version string into a number.
+
+    Each group is weighted by a multiple of 1000
+
+    1.2.3    -> 1  * 1_000_000 +   2 * 1_000 + 3 * 1 =  1_002_003
+    21.100.9 -> 21 * 1_000_000 + 100 * 1_000 + 9 * 1 = 21_100_009
+
+    :param version: Version string numbers separated by `separator`
+    :param separator: Separator used in the version string, defaults to "."
+    :param valid_numbers: Amount of numbers to sanitize to consider, defaults to 3
+    :return: Number representing the version
+    """
+    sanitized_version = sanitize_version(
+        version=version, separator=separator, valid_numbers=valid_numbers
+    )
+    return int(
+        sum(
+            int(number) * math.pow(10, 3 * order)
+            for order, number in enumerate(reversed(sanitized_version.split(separator)))
+        )
+    )
+
+
+def sanitize_version(version: str, separator: str = ".", valid_numbers: int = 3) -> str:
+    """Sanitize version string.
+
+    Append '.0' in case version string has fewer parts than `valid_numbers`
+    Remove right-most version parts after `valid_numbers` amount of parts
+
+    1.2     -> 1.2.0
+    1.2.3.4 -> 1.2.3
+
+    :param version: Original version string
+    :param separator: Separator used in the version string, defaults to "."
+    :param valid_numbers: Amount of numbers to sanitize, defaults to 3
+    :return: Sanitized version string
+    """
+    version_parts = version.split(separator)
+    version_parts += ["0"] * (valid_numbers - len(version_parts))
+    return separator.join(version_parts[:valid_numbers])
+
+
 def get_key_by_val(value: str, dictionary: Dict[str, List[str]]) -> str:
     """Return key by its value.
 
@@ -579,3 +642,72 @@ def get_key_by_val(value: str, dictionary: Dict[str, List[str]]) -> str:
             return key
 
     raise SPSDKValueError(f"Value {value} is not in {dictionary}.")
+
+
+def swap16(x: int) -> int:
+    """Swap bytes in half word (16bit).
+
+    :param x: Original number
+    :return: Number with swapped bytes
+    :raises SPSDKError: When incorrect number to be swapped is provided
+    """
+    if x < 0 or x > 0xFFFF:
+        raise SPSDKError("Incorrect number to be swapped")
+    return ((x << 8) & 0xFF00) | ((x >> 8) & 0x00FF)
+
+
+def swap32(x: int) -> int:
+    """Swap 32 bit integer.
+
+    :param x: integer to be swapped
+    :return: swapped value
+    :raises SPSDKError: When incorrect number to be swapped is provided
+    """
+    if x < 0 or x > 0xFFFFFFFF:
+        raise SPSDKError("Incorrect number to be swapped")
+    return unpack("<I", pack(">I", x))[0]
+
+
+def check_range(x: int, start: int = 0, end: int = (1 << 32) - 1) -> bool:
+    """Check if the number is in range.
+
+    :param x: Number to check.
+    :param start: Lower border of range, default is 0.
+    :param end: Upper border of range, default is unsigned 32-bit range.
+    :return: True if fits, False otherwise.
+    """
+    if start > x > end:
+        return False
+
+    return True
+
+
+def load_configuration(path: str) -> dict:
+    """Load configuration from yml/json file.
+
+    :param path: Path to configuration file
+    :raises SPSDKError: When unsupported file is provided
+    :return: Content of configuration as dictionary
+    """
+    if not os.path.exists(path):
+        raise SPSDKError(f"File not found'{path}'.")
+
+    # import YAML only if needed to save startup time
+    from ruamel.yaml import YAML, YAMLError  # pylint: disable=import-outside-toplevel
+
+    try:
+        with open(path) as f:
+            return YAML(typ="safe").load(f)
+    except (YAMLError, UnicodeDecodeError):
+        pass
+
+    # import json only if needed to save startup time
+    import commentjson as json  # pylint: disable=import-outside-toplevel
+
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except json.JSONLibraryException:
+        pass
+
+    raise SPSDKError(f"Unable to load '{path}'.")

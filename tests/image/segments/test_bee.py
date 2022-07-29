@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -109,7 +109,7 @@ def test_bee_invalid_validate():
         prdb.validate()
     prdb = BeeProtectRegionBlock()
     prdb.counter = bytes(22)
-    with pytest.raises(SPSDKError, match="Invalid conter"):
+    with pytest.raises(SPSDKError, match="Invalid counter"):
         prdb.validate()
     prdb = BeeProtectRegionBlock()
     prdb.counter = b"\x01\x00\x00\x00" * 4

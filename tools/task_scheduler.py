@@ -114,7 +114,7 @@ class TaskInfo:
         return self.status == TaskState.FAILED
 
     def is_ready(self) -> bool:
-        """Get the state if the task is ready to be runned.
+        """Get the state if the task is ready to be run.
 
         :return: True if task is finished, otherwise False.
         """

@@ -30,6 +30,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+generated
 
 # Installer logs
 pip-log.txt
@@ -77,6 +78,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_prebuild/
 
 # PyBuilder
 target/
@@ -132,3 +134,6 @@ pip-wheel-metadata
 
 # Mac stuff
 .DS_Store
+
+# loggin config
+logging.yaml

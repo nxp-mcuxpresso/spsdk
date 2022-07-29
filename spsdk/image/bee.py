@@ -255,9 +255,9 @@ class BeeProtectRegionBlock(BeeBaseClass):
         if self._start_addr > self._end_addr or self._end_addr > 0xFFFFFFFF:
             raise SPSDKError("Invalid start/end address")
         if self.mode != BeeProtectRegionBlockAesMode.CTR:
-            raise SPSDKError("Only AES/CTR encryption mode supported now")  # TODO
+            raise SPSDKError("Only AES/CTR encryption mode supported now")
         if len(self.counter) != 16:
-            raise SPSDKError("Invalid conter")
+            raise SPSDKError("Invalid counter")
         if self.counter[-4:] != b"\x00\x00\x00\x00":
             raise SPSDKError("last four bytes must be zero")
         if self.fac_count <= 0 or self.fac_count > self.FAC_REGIONS:

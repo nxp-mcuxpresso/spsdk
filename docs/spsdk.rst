@@ -37,8 +37,7 @@ It is delivered in a form of:
 - :ref:`APIs` - functions in form of Python library.
 
 .. figure:: _static/images/spsdk-architecture.png
-    :align: center
-    :scale: 40 %
+    :scale: 50 %
 
 ========
 Delivery
@@ -53,11 +52,9 @@ Delivery
 Organization
 ============
 
-*SPSDK* is organized in following directory structure:
+*SPSDK* is organized into modules:
 
-.. figure:: _static/images/spsdk-structure.png
-    :align: center
-    :scale: 50 %
+.. include:: _prebuild/table_project_structure.inc
 
 =================
 Supported Devices
@@ -80,7 +77,7 @@ Supported OS
 Supported Environment
 =====================
 
-SPSDK is tested on *Python 3.6+* interpreter, old version 2.x is not supported.
+SPSDK is tested on *Python 3.7+* interpreter, old version 2.x is not supported.
 
 ===========
 Versioning

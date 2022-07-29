@@ -1,0 +1,27 @@
+{
+    "family": "rt1180",
+    "revision": "a0",
+    "output": "cntr_ctcm_cm33_img.bin",
+    "image_type": "non_xip",
+    "containers": [
+        {
+            "container": {
+                "srk_set": "none",
+                "fuse_version": 0,
+                "sw_version": 0,
+                "images": [
+                    {
+                        "image_path": ".\\ahab\\ctcm_cm33_img.bin",
+                        "image_offset": "0x2000",
+                        "load_address": "0x1FFE0000",
+                        "entry_point": "0x1FFE0000",
+                        "image_type": "executable",
+                        "core_id": "cortex-m33",
+                        "hash_type": "sha512",
+                        "is_encrypted": false
+                    }
+                ]
+            }
+        }
+    ]
+}

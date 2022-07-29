@@ -8,6 +8,7 @@
 import os
 
 import pytest
+from attr import validate
 
 from spsdk import SPSDKError
 from spsdk.image import TZ_SCH_FILE
@@ -122,19 +123,19 @@ def test_config_template():
                 "type": "bool",
                 "title": "n1_title",
                 "description": "n1_description",
-                "default": "false",
+                "template_value": "false",
             },
             "n2": {
                 "type": "string",
                 "title": "n2_title",
                 "description": "n2_description",
-                "default": "n2_value",
+                "template_value": "n2_value",
             },
             "n3": {
                 "type": "string",
                 "title": "n3_title",
                 "description": "n3_description",
-                "default": "n3_value",
+                "template_value": "n3_value",
             },
         },
         "required": ["n2"],
@@ -151,6 +152,30 @@ def test_config_template():
     assert _is_yaml_comment(my_yml_template, "[Optional]", "n1")
     assert _is_yaml_comment(my_yml_template, "[Required]", "n2")
     assert _is_yaml_comment(my_yml_template, "[Conditionally required]", "n3")
+
+
+def test_validate_oneof():
+    schema = {
+        "type": "array",
+        "items": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": ["object1"],
+                    "properties": {"object1": {"type": "string"}},
+                },
+                {
+                    "type": "object",
+                    "required": ["object2"],
+                    "properties": {"object2": {"type": "number"}},
+                },
+            ]
+        },
+    }
+
+    test_vector = [{"object1": "Hello"}, {"object2": 123}]
+
+    check_config(test_vector, [schema])
 
 
 def test_load_schema_file():

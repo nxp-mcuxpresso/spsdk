@@ -35,7 +35,7 @@ class DebugMailbox:
     ) -> None:
         """Initialize DebugMailbox object.
 
-        :param debug_probe: Debug probe instantion.
+        :param debug_probe: Debug probe instance.
         :param reset: Do reset of debug mailbox during initialization, defaults to True.
         :param moredelay: Time of extra delay after reset sequence, defaults to 1.0.
         :param op_timeout: Atomic operation timeout, defaults to 4000.
@@ -71,7 +71,7 @@ class DebugMailbox:
 
         # Acknowledgement of initiation
 
-        # After performing the initiation, the debugger must readback the CSW register.
+        # After performing the initiation, the debugger must read back the CSW register.
         # The DM will stall the debugger until the ROM code has serviced the resynchronization request.
         # The ROM does this by performing a soft reset of the DM block, thus resetting
         # the request bit/s which were set by the debugger.
