@@ -25,6 +25,79 @@ T = TypeVar("T")  # pylint: disable=invalid-name
 logger = logging.getLogger(__name__)
 
 
+class BinaryPattern:
+    """Binary pattern class.
+
+    Supported patterns:
+        - rand: Random Pattern
+        - zeros: Filled with zeros
+        - ones: Filled with all ones
+        - inc: Filled with repeated numbers incremented by one 0-0xff
+        - any kind of number, that will be repeated to fill up whole image.
+          The format could be decimal, hexadecimal, bytes.
+    """
+
+    SPECIAL_PATTERNS = ["rand", "zeros", "ones", "inc"]
+
+    def __init__(self, pattern: str) -> None:
+        """Constructor of pattern class.
+
+        :param pattern: Supported patterns:
+                        - rand: Random Pattern
+                        - zeros: Filled with zeros
+                        - ones: Filled with all ones
+                        - inc: Filled with repeated numbers incremented by one 0-0xff
+                        - any kind of number, that will be repeated to fill up whole image.
+                        The format could be decimal, hexadecimal, bytes.
+        :raises SPSDKValueError: Unsupported pattern detected.
+        """
+        try:
+            value_to_int(pattern)
+        except SPSDKError:
+            if not pattern in BinaryPattern.SPECIAL_PATTERNS:
+                raise SPSDKValueError(  # pylint: disable=raise-missing-from
+                    f"Unsupported input pattern{pattern}"
+                )
+
+        self._pattern = pattern
+
+    def get_block(self, size: int) -> bytes:
+        """Get block filled with pattern.
+
+        :param size: Size of block to return.
+        :return: Filled up block with specified pattern.
+        """
+        if self._pattern == "zeros":
+            return bytes(size)
+
+        if self._pattern == "ones":
+            return bytes(b"\xff" * size)
+
+        if self._pattern == "rand":
+            # pylint: disable=import-outside-toplevel
+            from spsdk.utils.crypto.common import crypto_backend
+
+            return crypto_backend().random_bytes(size)
+
+        if self._pattern == "inc":
+            return bytes((x & 0xFF for x in range(size)))
+
+        pattern = value_to_bytes(self._pattern)
+        block = bytes(pattern * int((size / len(pattern))))
+        return block[:size]
+
+    @property
+    def pattern(self) -> str:
+        """Get the pattern.
+
+        :return: Pattern in string representation.
+        """
+        try:
+            return hex(value_to_int(self._pattern))
+        except SPSDKError:
+            return self._pattern
+
+
 def align(number: int, alignment: int = 4) -> int:
     """Align number (size or address) size to specified alignment, typically 4, 8 or 16 bytes boundary.
 
@@ -39,12 +112,14 @@ def align(number: int, alignment: int = 4) -> int:
     return (number + (alignment - 1)) // alignment * alignment
 
 
-def align_block(data: Union[bytes, bytearray], alignment: int = 4, padding: int = 0) -> bytes:
+def align_block(
+    data: Union[bytes, bytearray], alignment: int = 4, padding: Union[int, BinaryPattern] = None
+) -> bytes:
     """Align binary data block length to specified boundary by adding padding bytes to the end.
 
     :param data: to be aligned
     :param alignment: boundary alignment (typically 2, 4, 16, 64 or 256 boundary)
-    :param padding: byte to be added, use -1 to fill with random data
+    :param padding: byte to be added or BinaryPattern
     :return: aligned block
     :raises SPSDKError: When there is wrong alignment
     """
@@ -52,23 +127,20 @@ def align_block(data: Union[bytes, bytearray], alignment: int = 4, padding: int 
 
     if alignment < 0:
         raise SPSDKError("Wrong alignment")
-    if padding < -1 or padding > 255:
-        raise SPSDKError("Wrong padding")
     current_size = len(data)
     num_padding = align(current_size, alignment) - current_size
     if not num_padding:
         return bytes(data)
-    if padding == -1:
-        # pylint: disable=import-outside-toplevel
-        from spsdk.utils.crypto.common import crypto_backend
-
-        return bytes(data + crypto_backend().random_bytes(num_padding))
-    return bytes(data + bytes([padding]) * num_padding)
+    if not padding:
+        padding = BinaryPattern("zeros")
+    elif isinstance(padding, int):
+        padding = BinaryPattern(str(padding))
+    return bytes(data + padding.get_block(num_padding))
 
 
 def align_block_fill_random(data: bytes, alignment: int = 4) -> bytes:
     """Same as `align_block`, just parameter `padding` is fixed to `-1` to fill with random data."""
-    return align_block(data, alignment, -1)
+    return align_block(data, alignment, BinaryPattern("rand"))
 
 
 def extend_block(data: bytes, length: int, padding: int = 0) -> bytes:
@@ -137,13 +209,14 @@ def load_file(path: str, mode: str = "r", search_paths: List[str] = None) -> Uni
         return f.read()
 
 
-def write_file(data: Union[str, bytes], path: str, mode: str = "w") -> int:
+def write_file(data: Union[str, bytes], path: str, mode: str = "w", encoding: str = None) -> int:
     # pylint: disable=missing-param-doc
     r"""Writes data into a file.
 
     :param data: data to write
     :param path: Path to the file.
     :param mode: writing mode, 'w' for text, 'wb' for binary data, defaults to 'w'
+    :param encoding: Encoding of written file ('ascii', 'utf-8').
     :return: number of written elements
     """
     path = path.replace("\\", "/")
@@ -152,7 +225,7 @@ def write_file(data: Union[str, bytes], path: str, mode: str = "w") -> int:
         os.makedirs(folder, exist_ok=True)
 
     logger.debug(f"Storing {'binary' if 'b' in mode else 'text'} file at {path} .")
-    with open(path, mode) as f:
+    with open(path, mode, encoding=encoding) as f:
         return f.write(data)
 
 

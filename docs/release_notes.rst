@@ -8,6 +8,28 @@
 Release Notes
 =============
 
+-------------------------
+1.7.1 (16-September-2022)
+-------------------------
+
+**New features**
+
+* :ref:`nxpimage`:
+    - add OTFAD support for RT5xx and RT6xx devices
+* :ref:`pfr`:
+    - read command allows independent binary and yaml exports
+* :ref:`shadowregs`:
+    - new subcommand: fuses-script
+* add OEM cert size check into TPConfig
+
+**Bugfixes**
+
+* :ref:`nxpdebugmbox`:
+    - fix debug authentication for RT595
+* :ref:`nxpimage`:
+    - fix sb21 command line argument in documentation
+* fix the use of pyyaml's load in tests (use safe_load())
+
 --------------------
 1.7.0 (29-July-2022)
 --------------------

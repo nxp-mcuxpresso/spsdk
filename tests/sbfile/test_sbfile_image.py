@@ -127,7 +127,7 @@ def get_boot_sections(
                 key_blob1.export(kek=bytes.fromhex("0123456789ABCDEF0123456789ABCDEF"))
             )
         # encrypted image
-        encr_image = otfad.encrypt_image(plain_image, load_addr, True)
+        encr_image = otfad.encrypt_image(align_block(plain_image, 512), load_addr, True)
     else:
         encr_image = plain_image
 

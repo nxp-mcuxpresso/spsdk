@@ -10,9 +10,9 @@
             "inverted_regs": {
                 "INVERTED_REG": "INVERTED_REG_AP"
             },
-            "computed_registers": [
-                "COMPUTED_REG"
-            ],
+            "computed_registers": {
+                "COMPUTED_REG": ""
+            },
             "computed_fields": {
                 "COMPUTED_REG": {
                     "TEST_FIELD1": "computed_reg_test_field1",

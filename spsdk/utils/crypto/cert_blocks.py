@@ -17,7 +17,6 @@ from spsdk import SPSDKError
 from spsdk.crypto.loaders import load_certificate_as_bytes
 from spsdk.utils import misc
 from spsdk.utils.crypto import CRYPTO_SCH_FILE
-from spsdk.utils.misc import find_file, value_to_int
 from spsdk.utils.schema_validator import ValidationSchemas
 
 from .abstract import BaseClass
@@ -302,7 +301,7 @@ class CertBlockV2(CertBlock):
                 raise SPSDKError("Chain certificate cannot be verified using parent public key")
         else:  # root certificate
             if cert_obj.self_signed == "no":
-                raise SPSDKError("Root certificate must be self-signed")
+                raise SPSDKError(f"Root certificate must be self-signed.\n{cert_obj.info()}")
         self._cert.append(cert_obj)
         self._header.cert_count += 1
         self._header.cert_table_length += cert_obj.raw_size + 4
@@ -423,7 +422,7 @@ class CertBlockV2(CertBlock):
         :return: Instance of CertBlockV2
         :raises SPSDKError: Invalid certificates detected.
         """
-        image_build_number = value_to_int(config.get("imageBuildNumber", 0))
+        image_build_number = misc.value_to_int(config.get("imageBuildNumber", 0))
         root_certificates: List[List[str]] = [[] for _ in range(4)]
         # TODO we need to read the whole chain from the dict for a given
         # selection based on mainCertPrivateKeyFile!!!
@@ -446,7 +445,7 @@ class CertBlockV2(CertBlock):
         # add whole certificate chain used for image signing
         for cert_path in root_certificates[main_cert_chain_id]:
             cert_data = load_certificate_as_bytes(
-                find_file(str(cert_path), search_paths=search_paths)
+                misc.find_file(str(cert_path), search_paths=search_paths)
             )
             cert_block.add_certificate(cert_data)
         # set root key hash of each root certificate
@@ -456,7 +455,7 @@ class CertBlockV2(CertBlock):
                 if empty_rec:
                     raise SPSDKError("There are gaps in rootCertificateXFile definition")
                 cert_data = load_certificate_as_bytes(
-                    find_file(str(cert_path[0]), search_paths=search_paths)
+                    misc.find_file(str(cert_path[0]), search_paths=search_paths)
                 )
                 cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
             else:
@@ -823,7 +822,7 @@ class CertBlockV31(CertBlock):
         main_root_private_key_file = config.get("mainRootCertPrivateKeyFile")
         use_isk = config.get("useIsk", False)
         isk_certificate = config.get("signingCertificateFile")
-        isk_constraint = value_to_int(config.get("signingCertificateConstraint", "0"))
+        isk_constraint = misc.value_to_int(config.get("signingCertificateConstraint", "0"))
         isk_sign_data_path = config.get("signCertData")
 
         root_certs = [

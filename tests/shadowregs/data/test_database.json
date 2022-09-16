@@ -10,8 +10,13 @@
                 "REG1": "REG_INVERTED_AP"
             },
             "computed_fields": {
-                "REG1": {"RSRVD": "comalg_dcfg_cc_socu_rsvd", "CRC8": "comalg_dcfg_cc_socu_crc8"},
-                "REG2": {"RESERVED": "comalg_do_nothing"}
+                "REG1": {
+                    "DEV_TEST_EN": "comalg_dcfg_cc_socu_test_en",
+                    "CRC8": "comalg_dcfg_cc_socu_crc8"
+                },
+                "REG2": {
+                    "RESERVED": "comalg_do_nothing"
+                }
             }
         }
     }

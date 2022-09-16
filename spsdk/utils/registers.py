@@ -23,7 +23,7 @@ from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterNotFound,
 )
 from spsdk.utils.images import BinaryImage, BinaryPattern
-from spsdk.utils.misc import format_value, value_to_bool, value_to_bytes, value_to_int
+from spsdk.utils.misc import format_value, value_to_bool, value_to_bytes, value_to_int, write_file
 
 HTMLDataElement = Mapping[str, Union[str, dict, list]]
 HTMLData = List[HTMLDataElement]
@@ -355,6 +355,8 @@ class RegsRegister:
         reverse: bool = False,
         access: str = None,
         config_as_hexstring: bool = False,
+        otp_index: int = None,
+        reverse_subregs_order: bool = False,
     ) -> None:
         """Constructor of RegsRegister class. Used to store register information.
 
@@ -365,6 +367,8 @@ class RegsRegister:
         :param reverse: Multi  register value is stored in reverse order.
         :param access: Access type of register.
         :param config_as_hexstring: Config is stored as a hex string.
+        :param otp_index: Index of OTP fuse.
+        :param reverse_subregs_order: Reverse order of sub registers.
         """
         self.name = name
         self.offset = offset
@@ -377,6 +381,8 @@ class RegsRegister:
         self._value = 0
         self._reset_value = 0
         self.config_as_hexstring = config_as_hexstring
+        self.otp_index = otp_index
+        self.reverse_subregs_order = reverse_subregs_order
 
         # Grouped register members
         self.sub_regs: List["RegsRegister"] = []
@@ -394,12 +400,30 @@ class RegsRegister:
         offset = value_to_int(xml_element.attrib["offset"]) if "offset" in xml_element.attrib else 0
         width = value_to_int(xml_element.attrib["width"]) if "width" in xml_element.attrib else 0
         descr = xml_element.attrib["description"] if "description" in xml_element.attrib else "N/A"
+        reverse_subregs_order = (
+            xml_element.attrib["reverse_subregs_order"]
+            if "reverse_subregs_order" in xml_element.attrib
+            else "False"
+        ) == "True"
         reverse = (
             xml_element.attrib["reversed"] if "reversed" in xml_element.attrib else "False"
         ) == "True"
         access = xml_element.attrib["access"] if "access" in xml_element.attrib else "N/A"
+        otp_index_raw = xml_element.attrib.get("otp_index")
+        otp_index = None
+        if otp_index_raw:
+            otp_index = value_to_int(otp_index_raw)
+        reg = cls(
+            name,
+            offset,
+            width,
+            descr,
+            reverse,
+            access,
+            otp_index=otp_index,
+            reverse_subregs_order=reverse_subregs_order,
+        )
 
-        reg = cls(name, offset, width, descr, reverse, access)
         if xml_element.text:
             xml_bitfields = xml_element.findall("bit_field")
             xml_bitfields.extend(xml_element.findall("reserved_bit_field"))
@@ -485,6 +509,8 @@ class RegsRegister:
         element.set("name", self.name)
         element.set("reversed", str(self.reverse))
         element.set("description", self.description)
+        if self.otp_index:
+            element.set("otp_index", str(self.otp_index))
         for bitfield in self._bitfields:
             bitfield.add_et_subelement(element)
 
@@ -524,10 +550,11 @@ class RegsRegister:
                 # Update also values in sub registers
                 subreg_width = self.sub_regs[0].width
                 for index, sub_reg in enumerate(self.sub_regs, start=1):
-                    # sub_reg.set_value((value >> (index * subreg_width)) & ((1 << subreg_width) - 1))
-                    sub_reg.set_value(
-                        (value >> (self.width - index * subreg_width)) & ((1 << subreg_width) - 1)
-                    )
+                    if self.reverse_subregs_order:
+                        bit_pos = (index - 1) * subreg_width
+                    else:
+                        bit_pos = self.width - index * subreg_width
+                    sub_reg.set_value((value >> bit_pos) & ((1 << subreg_width) - 1))
 
         except SPSDKError as exc:
             raise SPSDKError(f"Loaded invalid value {str(val)}") from exc
@@ -553,7 +580,11 @@ class RegsRegister:
             subreg_width = self.sub_regs[0].width
             sub_regs_value = 0
             for index, sub_reg in enumerate(self.sub_regs, start=1):
-                sub_regs_value |= sub_reg.get_value() << (self.width - index * subreg_width)
+                if self.reverse_subregs_order:
+                    bit_pos = (index - 1) * subreg_width
+                else:
+                    bit_pos = self.width - index * subreg_width
+                sub_regs_value |= sub_reg.get_value() << (bit_pos)
             if sub_regs_value != self._value:
                 self.set_value(sub_regs_value, raw=True)
 
@@ -562,7 +593,7 @@ class RegsRegister:
     def get_bytes_value(self) -> bytes:
         """Get the bytes value of register.
 
-        The value endianness is returned by 'reversed' member.
+        The value indianness is returned by 'reversed' member.
         :return: Register value in bytes.
         """
         endianness = "little" if not self.reverse else "big"
@@ -648,6 +679,8 @@ class RegsRegister:
         output += f"Width:  {self.width} bits\n"
         output += f"Access:   {self.access}\n"
         output += f"Description: \n {self.description}\n"
+        if self.otp_index:
+            output += f"OTP Word: \n {self.otp_index}\n"
 
         i = 0
         for bitfield in self._bitfields:
@@ -791,11 +824,10 @@ class Registers:
         for reg in self._registers:
             reg.add_et_subelement(xml_root)
 
-        with open(file_name, "w", encoding="utf-8") as xml_file:
-            no_pretty_data = minidom.parseString(
-                ET.tostring(xml_root, encoding="unicode", short_empty_elements=False)
-            )
-            xml_file.write(no_pretty_data.toprettyxml())
+        no_pretty_data = minidom.parseString(
+            ET.tostring(xml_root, encoding="unicode", short_empty_elements=False)
+        )
+        write_file(no_pretty_data.toprettyxml(), file_name, encoding="utf-8")
 
     def image_info(
         self, size: int = 0, pattern: BinaryPattern = BinaryPattern("zeros")
@@ -946,6 +978,7 @@ class Registers:
                         reverse=value_to_bool(group.get("reverse", False)),
                         access=group.get("access", None),
                         config_as_hexstring=group.get("config_as_hexstring", False),
+                        reverse_subregs_order=group.get("reverse_subregs_order", False),
                     )
 
                     self.add_register(group_reg)

@@ -17,3 +17,4 @@ need_revoke_update: true
 cfpa_size: 512
 version_offset: 0x4
 revoke_offset: 0x18
+max_oem_cert_size: 1000

@@ -20,7 +20,7 @@ from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 # from spsdk.utils.misc import use_working_directory
 
 TEST_DEV_NAME = "sh_test_dev"
-TEST_DATABASE = "test_database.json"
+TEST_DATABASE = "test_database.yaml"
 TEST_DATABASE_BAD_COMPUTED_FUNC = "test_database_invalid_computed.json"
 
 
@@ -179,9 +179,9 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs_load.load_yml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
     shadowregs_load.sets_all_registers()
 
-    assert shadowregs_load.get_register("REG1") == b"\x80\x34\x56\x28"
+    assert shadowregs_load.get_register("REG1") == b"\x92\x34\x56\x56"
     assert shadowregs_load.get_register("REG2") == b"\x00\x00\x03!"
-    assert shadowregs_load.get_register("REG_INVERTED_AP") == b"\x7f\xcb\xa9\xd7"
+    assert shadowregs_load.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
     assert shadowregs_load.get_register("REG_BIG") == test_val
     assert shadowregs_load.get_register("REG_BIG_REV") == test_val
 
@@ -191,9 +191,9 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs_load2.load_yml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=False)
     shadowregs_load2.sets_all_registers()
 
-    assert shadowregs_load2.get_register("REG1") == b"\x80\x34\x56\x28"
+    assert shadowregs_load2.get_register("REG1") == b"\x92\x34\x56\x56"
     assert shadowregs_load2.get_register("REG2") == b"\x00\x00\x03!"
-    assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"\x7f\xcb\xa9\xd7"
+    assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
     assert shadowregs_load2.get_register("REG_BIG") == test_val
     assert shadowregs_load2.get_register("REG_BIG_REV") == test_val
 
@@ -264,10 +264,13 @@ def test_shadow_register_crc8():
     assert crc == 0x29
 
 
-def test_shadow_register_crc8_hook():
+def test_shadow_register_crc8_hook(data_dir):
     """Test Shadow Registers - CRC8 algorithm hook test."""
-    assert SR.ShadowRegisters.comalg_dcfg_cc_socu_crc8(0x03020100) == 0x0302011D
-    assert SR.ShadowRegisters.comalg_dcfg_cc_socu_crc8(0x80FFFF00) == 0x80FFFF20
+    config = get_config(os.path.join(data_dir, TEST_DATABASE_BAD_COMPUTED_FUNC))
+
+    shadowregs = SR.ShadowRegisters(None, config, TEST_DEV_NAME)
+    assert shadowregs.comalg_dcfg_cc_socu_crc8(0x03020100) == 0x0302011D
+    assert shadowregs.comalg_dcfg_cc_socu_crc8(0x80FFFF00) == 0x80FFFF20
 
 
 def test_shadow_register_enable_debug_invalid_probe():

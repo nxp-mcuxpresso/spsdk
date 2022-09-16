@@ -22,9 +22,8 @@ from spsdk.mboot import interfaces as MBootInterfaceModule
 from spsdk.mboot.interfaces import MBootInterface
 from spsdk.sdp import interfaces as SDPInterfaceModule
 from spsdk.sdp.interfaces import SDPInterface
-from spsdk.utils.misc import (
-    load_configuration,  # pylint: disable=unused-import #backward-compatibility
-)
+from spsdk.utils.misc import write_file  # pylint: disable=unused-import #backward-compatibility
+from spsdk.utils.misc import load_binary, load_configuration, load_file, value_to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -288,3 +287,53 @@ def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type
         return os.path.isfile(path)
     if os.path.isfile(path) and not force_overwrite:
         raise SPSDKAppError(f"File '{path}' already exists. Use --force to overwrite it.")
+
+
+def get_key(key_source: str, expected_size: int) -> bytes:
+    """Get the key from the command line parameter.
+
+    :param key_source: File path to key file or hexadecimal value. If not specified random value is used.
+    :param expected_size: Expected size of key in bytes.
+    :return: Key in bytes.
+    """
+    assert expected_size > 0, "Invalid expected size of key"
+    if not key_source:
+        logger.debug(
+            f"The key source is not specified, the random value is used in size of {expected_size} B."
+        )
+        # pylint: disable=import-outside-toplevel
+        from spsdk.utils.crypto.common import crypto_backend
+
+        return crypto_backend().random_bytes(expected_size)
+    if os.path.isfile(key_source):
+        try:
+            str_key = load_file(key_source)
+            assert isinstance(str_key, str)
+            if not str_key.startswith(("0x", "0X")):
+                str_key = "0x" + str_key
+            key = value_to_bytes(str_key)
+            if len(key) != expected_size:
+                raise SPSDKError("Invalid Key size.")
+        except SPSDKError:
+            key = load_binary(key_source)
+    else:
+        try:
+            if not key_source.startswith(("0x", "0X")):
+                key_source = "0x" + key_source
+            key = value_to_bytes(key_source)
+        except SPSDKError:
+            pass
+
+    if not key or len(key) != expected_size:
+        SPSDKError(f"Invalid key input: {key_source}")
+    return key
+
+
+def store_key(file_name: str, key: bytes) -> None:
+    """Store the key in text hexadecimal and binary format.
+
+    :param file_name: Base file name for the key file. The name will be enriched by *.txt and *.bin extension.
+    :param key: The key that should be stored.
+    """
+    write_file(key, file_name + ".bin", mode="wb")
+    write_file(key.hex(), file_name + ".txt", mode="w")

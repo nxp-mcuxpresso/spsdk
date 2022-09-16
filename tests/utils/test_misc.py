@@ -18,6 +18,7 @@ from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
+    BinaryPattern,
     Timeout,
     align,
     align_block,
@@ -111,7 +112,7 @@ def test_align_block(test_input: bytes, alignment: int, padding: int, expected: 
 def test_align_block_fill_random(test_input: bytes, alignment: int, expected: Union[int, bytes]):
     """Test misc.align_block_fill_random()"""
     data1 = align_block_fill_random(test_input, alignment)
-    data2 = align_block(test_input, alignment, -1)
+    data2 = align_block(test_input, alignment, BinaryPattern("rand"))
     assert isinstance(data1, bytes)
     if isinstance(expected, int):
         assert len(data1) == expected
@@ -129,10 +130,10 @@ def test_align_block_invalid_input():
         align_block(b"", -1)
     with pytest.raises(SPSDKError, match="Wrong alignment"):
         align_block(b"", 0)
-    with pytest.raises(SPSDKError, match="Wrong padding"):
-        align_block(b"", 1, -2)
-    with pytest.raises(SPSDKError, match="Wrong padding"):
-        align_block(b"", 1, 256)
+    # with pytest.raises(SPSDKError, match="Wrong padding"):
+    #     align_block(b"", 1, -2)
+    # with pytest.raises(SPSDKError, match="Wrong padding"):
+    #     align_block(b"", 1, 256)
 
 
 @pytest.mark.parametrize(

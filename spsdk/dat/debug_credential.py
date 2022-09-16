@@ -15,6 +15,7 @@ from spsdk.crypto import SignatureProvider
 from spsdk.crypto.loaders import extract_public_key
 from spsdk.dat.utils import ecc_key_to_bytes, ecc_public_numbers_to_bytes, rsa_key_to_bytes
 from spsdk.utils.crypto.backend_internal import internal_backend
+from spsdk.utils.misc import find_file
 
 
 class DebugCredential:
@@ -162,13 +163,25 @@ class DebugCredential:
         return _version_mapping[version]
 
     @classmethod
-    def create_from_yaml_config(cls, version: str, yaml_config: dict) -> "DebugCredential":
+    def create_from_yaml_config(
+        cls, version: str, yaml_config: dict, search_paths: List[str] = None
+    ) -> "DebugCredential":
         """Create a debug credential object out of yaml configuration.
+
+        :param version: Debug Authentication protocol version.
+        :param yaml_config: Debug credential file configuration.
+        :param search_paths: List of paths where to search for the file, defaults to None
 
         :return: DebugCredential object
         """
         socc = yaml_config["socc"]
         klass = DebugCredential._get_class(version=version, socc=socc)
+        # Fix the file paths by search paths
+        for i, rot in enumerate(yaml_config["rot_meta"]):
+            yaml_config["rot_meta"][i] = find_file(rot, search_paths=search_paths)
+        if "rotk" in yaml_config.keys():
+            yaml_config["rotk"] = find_file(yaml_config["rotk"], search_paths=search_paths)
+        yaml_config["dck"] = find_file(yaml_config["dck"], search_paths=search_paths)
         dc_obj = klass(
             socc=yaml_config["socc"],
             uuid=bytes.fromhex(yaml_config["uuid"]),

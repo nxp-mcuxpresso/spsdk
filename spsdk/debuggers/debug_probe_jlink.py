@@ -361,7 +361,6 @@ class DebugProbePyLink(DebugProbe):
         """Re-initialize the Jlink connection."""
         if self.pylink:
             self.pylink.coresight_configure()
-            self.coresight_reg_write(access_port=False, addr=4, data=0x50000F00)
 
     def _get_dmbox_ap(self) -> int:
         """Search for Debug Mailbox Access Point.

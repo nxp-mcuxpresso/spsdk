@@ -19,49 +19,52 @@ from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.debuggers.utils import DebugProbeUtils
 from spsdk.exceptions import SPSDKError
 from spsdk.shadowregs import ShadowRegisters, enable_debug
+from spsdk.utils.misc import load_configuration, write_file
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister
 
 logger = logging.getLogger(__name__)
 
 CONFIG_DIR = os.path.join(SPSDK_DATA_FOLDER, "shadowregs")
-CONFIG_FILE = "database.json"
+CONFIG_DATABASE = os.path.join(CONFIG_DIR, "database.yaml")
 
 
-def _open_shadow_registers(pass_obj: Dict) -> ShadowRegisters:
+def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> ShadowRegisters:
     """Method opens ShadowRegisters object based on input arguments.
 
     :param pass_obj: Input dictionary with arguments.
+    :param connect: Create Shadow register object connected to device.
     :return: Active ShadowRegisters object.
     :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
-    config_file = pass_obj["config_file"]
     interface = pass_obj["interface"]
     serial_no = pass_obj["serial_no"]
     debug_probe_params = pass_obj["debug_probe_params"]
     device = pass_obj["device"]
     revision = pass_obj["revision"]
 
-    if device not in RegConfig.devices(config_file):
+    if device not in RegConfig.devices(CONFIG_DATABASE):
         raise SPSDKError(
             "Invalid or none device parameter(-dev). Use 'listdevs' command to get supported devices."
         )
 
-    regs_cfg = RegConfig(config_file)
+    regs_cfg = RegConfig(CONFIG_DATABASE)
 
-    try:
-        debug_probes = DebugProbeUtils.get_connected_probes(
-            interface=interface, hardware_id=serial_no, user_params=debug_probe_params
-        )
-        selected_probe = debug_probes.select_probe()
-        debug_probe = selected_probe.get_probe(debug_probe_params)
-        debug_probe.open()
-        if not enable_debug(debug_probe):
-            raise SPSDKError("Cannot enable debug interface")
+    debug_probe = None
+    if connect:
+        try:
+            debug_probes = DebugProbeUtils.get_connected_probes(
+                interface=interface, hardware_id=serial_no, user_params=debug_probe_params
+            )
+            selected_probe = debug_probes.select_probe()
+            debug_probe = selected_probe.get_probe(debug_probe_params)
+            debug_probe.open()
+            if not enable_debug(debug_probe):
+                raise SPSDKError("Cannot enable debug interface")
 
-        debug_probe.enable_memory_interface()
-    except SPSDKError as exc:
-        raise SPSDKError(f"Error with opening debug probe: ({str(exc)})") from exc
+            debug_probe.enable_memory_interface()
+        except SPSDKError as exc:
+            raise SPSDKError(f"Error with opening debug probe: ({str(exc)})") from exc
 
     return ShadowRegisters(
         debug_probe=debug_probe, config=regs_cfg, device=device, revision=revision
@@ -84,8 +87,8 @@ def _open_shadow_registers(pass_obj: Dict) -> ShadowRegisters:
 @click.option(
     "-dev",
     "--device",
-    type=str,
-    help="The connected device - to list supported devices use 'listdevs' command.",
+    type=click.Choice(RegConfig.devices(CONFIG_DATABASE)),
+    help="The target device family.",
 )
 @click.option(
     "-r",
@@ -96,7 +99,10 @@ def _open_shadow_registers(pass_obj: Dict) -> ShadowRegisters:
     "-o",
     "--debug-probe-option",
     multiple=True,
-    help="This option could be used " "multiply to setup non-standard option for debug probe.",
+    help=(
+        "This option could be used multiply to setup non-standard option for debug probe."
+        " The example of use: -o KEY=VALUE"
+    ),
 )
 @click.pass_context
 def main(
@@ -111,8 +117,6 @@ def main(
     """NXP Shadow Registers control Tool."""
     logging.basicConfig(level=log_level or logging.WARNING)
 
-    config_filename = os.path.join(CONFIG_DIR, CONFIG_FILE)
-
     probe_user_params = {}
     for par in debug_probe_option:
         if par.count("=") != 1:
@@ -121,7 +125,6 @@ def main(
         probe_user_params[par_splitted[0]] = par_splitted[1]
 
     ctx.obj = {
-        "config_file": config_filename,
         "interface": interface,
         "serial_no": serial_no,
         "debug_probe_params": probe_user_params,
@@ -149,13 +152,20 @@ def main(
     help="The stored configuration will include also the computed fields "
     "and anti-pole registers.",
 )
+@click.option(
+    "-d",
+    "--save-diff",
+    is_flag=True,
+    default=False,
+    help="Save differences comparing to defaults",
+)
 @click.pass_obj
-def saveconfig(pass_obj: dict, filename: str = "sr_config.yml", raw: bool = False) -> None:
+def saveconfig(pass_obj: dict, filename: str, raw: bool, save_diff: bool) -> None:
     """Save current state of shadow registers to YML file."""
     try:
         shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
         shadow_regs.reload_registers()
-        shadow_regs.create_yml_config(filename, raw)
+        shadow_regs.create_yml_config(filename, raw, diff=save_diff)
         click.echo(f"The Shadow registers has been saved into {filename} YAML file")
     except SPSDKError as exc:
         raise SPSDKError(f"Save configuration of Shadow registers failed! ({str(exc)})") from exc
@@ -187,6 +197,30 @@ def loadconfig(pass_obj: dict, filename: str = "sr_config.yml", raw: bool = Fals
         click.echo(f"The Shadow registers has been loaded by configuration in {filename} YAML file")
     except SPSDKError as exc:
         raise SPSDKError(f"Load configuration of Shadow registers failed ({str(exc)})!") from exc
+
+
+@main.command(name="get-template", no_args_is_help=True)
+@click.argument("output", metavar="PATH", type=click.Path())
+@click.option(
+    "-r",
+    "--raw",
+    is_flag=True,
+    default=False,
+    help="In loaded configuration will accepted also the computed fields "
+    "and anti-pole registers.",
+)
+@click.pass_obj
+def get_template(pass_obj: dict, output: str, raw: bool) -> None:
+    """Generate the template of Shadow registers YML configuration file.
+
+    \b
+    PATH    - file name path to write template config file
+    """
+    shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj, connect=False)
+    shadow_regs.create_yml_config(output, raw)
+    click.echo(
+        f"The Shadow registers template for {pass_obj['device']} has been saved into {output} YAML file"
+    )
 
 
 @main.command()
@@ -227,7 +261,7 @@ def getreg(pass_obj: dict, reg: str) -> None:
     """The command prints the current value of one shadow register."""
     shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
     try:
-        register: RegsRegister = shadow_regs.regs.find_reg(reg)
+        register: RegsRegister = shadow_regs.regs.find_reg(reg, include_group_regs=True)
         shadow_regs.reload_register(register)
         click.echo(f"Value of {reg} is: {register.get_hex_value()}")
     except SPSDKError as exc:
@@ -253,17 +287,9 @@ def setreg(pass_obj: dict, reg: str, reg_val: str) -> None:
 def reset(pass_obj: dict) -> None:
     """The command resets connected device."""
     shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
+    assert shadow_regs.probe
     shadow_regs.probe.reset()
     click.echo("The target has been reset.")
-
-
-@main.command()
-@click.pass_obj
-def listdevs(pass_obj: dict) -> None:
-    """The command prints a list of supported devices."""
-    config_filename = pass_obj["config_file"]
-    for index, device in enumerate(RegConfig.devices(config_filename)):
-        click.echo(f"{index:03}: {device}")
 
 
 @main.command()
@@ -284,7 +310,7 @@ def listdevs(pass_obj: dict) -> None:
 @click.pass_obj
 def info(pass_obj: dict, output: str, open_result: bool) -> None:
     """The command generate HTML of Shadow registers."""
-    config = RegConfig(pass_obj["config_file"])
+    config = RegConfig(CONFIG_DATABASE)
     device = pass_obj["device"]
     revision = pass_obj["revision"]
     registers = Registers(device)
@@ -294,11 +320,40 @@ def info(pass_obj: dict, output: str, open_result: bool) -> None:
         f"{device} - Shadow Registers",
         f"The table with Shadow registers description for {device}",
     )
-    with open(output, "w", encoding="utf-8") as f:
-        f.write(html_output)
-
+    write_file(html_output, output, encoding="utf-8")
     if open_result:  # pragma: no cover # can't test opening the html document
         click.launch(f"{output}")
+
+
+@main.command(name="fuses-script", no_args_is_help=True)
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(),
+    help="The name of shadow register configuration file used to generate burn fuses BLHOST script.",
+    required=True,
+)
+@click.argument(
+    "output",
+    type=click.Path(),
+    required=True,
+)
+@click.pass_obj
+def fuses_script(pass_obj: dict, config: str, output: str) -> None:
+    """The command generate BLHOST script to burn up fuses in device by configuration.
+
+    The OUTPUT argument specify file name of generate BLHOST burn fuses script.
+    """
+    try:
+        shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj, connect=False)
+        shadow_regs.load_yml_config(config, False)
+        cfg = load_configuration(config)
+        write_file(shadow_regs.create_fuse_blhost_script(list(cfg["registers"].keys())), output)
+        click.echo(f"BLHOST script to burn fuses has been generated: {output}")
+    except SPSDKError as exc:
+        raise SPSDKError(
+            f"Creating BLHOST script from shadow register configuration failed! ({str(exc)})"
+        ) from exc
 
 
 @catch_spsdk_error

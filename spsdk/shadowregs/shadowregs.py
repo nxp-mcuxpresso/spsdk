@@ -7,7 +7,8 @@
 """The shadow registers control DAT support file."""
 import logging
 import math
-from typing import Any
+import os
+from typing import Any, List, Optional
 
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap as CM
@@ -17,9 +18,9 @@ from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.dm_commands import StartDebugSession
 from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.debuggers.utils import test_ahb_access
-from spsdk.utils.misc import change_endianness, reverse_bytes_in_longs, value_to_bytes
+from spsdk.utils.misc import change_endianness, reverse_bytes_in_longs, value_to_bytes, value_to_int
 from spsdk.utils.reg_config import RegConfig
-from spsdk.utils.registers import Registers, RegsRegister
+from spsdk.utils.registers import Registers, RegsRegister, SPSDKRegsErrorRegisterNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class ShadowRegisters:
 
     def __init__(
         self,
-        debug_probe: DebugProbe,
+        debug_probe: Optional[DebugProbe],
         config: RegConfig,
         device: str,
         revision: str = "latest",
@@ -42,13 +43,14 @@ class ShadowRegisters:
         self.probe = debug_probe
         self.config = config
         self.device = device
-        self.offset = int(self.config.get_address(self.device, remove_underscore=True), 16)
+        self.offset = value_to_int(self.config.get_address(self.device))
+        self.fuse_mode = False
 
         self.regs = Registers(self.device)
         rev = revision or "latest"
-        rev = rev if rev != "latest" else config.get_latest_revision(self.device)
+        self.revision = rev if rev != "latest" else config.get_latest_revision(self.device)
         self.regs.load_registers_from_xml(
-            config.get_data_file(self.device, rev),
+            config.get_data_file(self.device, self.revision),
             grouped_regs=config.get_grouped_registers(self.device),
         )
 
@@ -74,6 +76,12 @@ class ShadowRegisters:
         param verify: If True the write is read back and compare, otherwise no check is done
         raises IoVerificationError
         """
+        if not self.probe:
+            raise SPSDKDebugProbeError(
+                "Shadow registers: Cannot use the communication function without defined debug probe."
+            )
+
+        logger.debug(f"Writing shadow register address: {hex(addr)}, data: {hex(data)}")
         self.probe.mem_reg_write(addr, data)
 
         if verify:
@@ -91,14 +99,22 @@ class ShadowRegisters:
     def sets_all_registers(self) -> None:
         """Update all shadow registers in target by local values."""
         for reg in self.regs.get_registers():
-            self.set_register(reg.name, reg.get_value())
+            if reg.has_group_registers():
+                for subreg in reg.sub_regs:
+                    self.set_register(subreg.name, subreg.get_value())
+            else:
+                self.set_register(reg.name, reg.get_value())
 
     def reload_register(self, reg: RegsRegister) -> None:
         """Reload the value in requested register.
 
         :param reg: The register to reload from the HW.
         """
-        reg.set_value(self.get_register(reg.name))
+        if reg.has_group_registers():
+            for subreg in reg.sub_regs:
+                subreg.set_value(self.get_register(subreg.name))
+        else:
+            reg.set_value(self.get_register(reg.name))
 
     def set_register(self, reg_name: str, data: Any) -> None:
         """The function sets the value of the specified register.
@@ -107,11 +123,13 @@ class ShadowRegisters:
         param data: The new data to be stored to shadow register.
         raises SPSDKDebugProbeError: The debug probe is not specified.
         """
-        if self.probe is None:
-            raise SPSDKDebugProbeError("There is no debug probe.")
+        if not self.probe:
+            raise SPSDKDebugProbeError(
+                "Shadow registers: Cannot use the communication function without defined debug probe."
+            )
 
         try:
-            reg = self.regs.find_reg(reg_name)
+            reg = self.regs.find_reg(reg_name, include_group_regs=True)
             value = value_to_bytes(data)
 
             start_address = self.offset + reg.offset
@@ -147,12 +165,14 @@ class ShadowRegisters:
         return: The value of requested register in bytes
         raises SPSDKDebugProbeError: The debug probe is not specified.
         """
-        if self.probe is None:
-            raise SPSDKDebugProbeError("There is no debug probe.")
+        if not self.probe:
+            raise SPSDKDebugProbeError(
+                "Shadow registers: Cannot use the communication function without defined debug probe."
+            )
 
         array = bytearray()
         try:
-            reg = self.regs.find_reg(reg_name)
+            reg = self.regs.find_reg(reg_name, include_group_regs=True)
 
             start_address = self.offset + reg.offset
             width = max(reg.width, 32)
@@ -166,6 +186,9 @@ class ShadowRegisters:
                 for addr in addresses:
                     array.extend(self.probe.mem_reg_read(addr).to_bytes(4, "big"))
 
+            logger.debug(
+                f"Read shadow register at address: {hex(start_address)}, data: {array.hex()}"
+            )
             result = reverse_bytes_in_longs(bytes(array)) if reg.reverse else bytes(array)
 
         except SPSDKError as exc:
@@ -173,11 +196,57 @@ class ShadowRegisters:
 
         return result
 
-    def create_yml_config(self, file_name: str, raw: bool = False) -> None:
+    def create_fuse_blhost_script(self, reg_list: List[str]) -> str:
+        """The function creates the BLHOST script to burn fuses.
+
+        :param reg_list: The list of register to be burned.
+        :raises SPSDKError: Exception in case of not existing register.
+        :return: Content of BLHOST script file.
+        """
+
+        def add_reg(reg: RegsRegister) -> str:
+            otp_index = reg.otp_index
+            assert otp_index
+            otp_value = reg.get_hex_value()
+            burn_fuse = f"# Fuse {reg.name}, index {otp_index} and value: {otp_value}.\n"
+            burn_fuse += f"efuse-program-once {hex(otp_index)} {otp_value}\n"
+            return burn_fuse
+
+        ret = (
+            "# BLHOST fuses programming script\n"
+            f"# Generated by SPSDK {__version__}\n"
+            f"# Chip: {self.device} rev:{self.revision}\n\n\n"
+        )
+        # Update list by antipole opposites registers
+        for ap_reg_src, ap_reg_dst in self.config.get_antipole_regs(self.device).items():
+            if ap_reg_src in reg_list:
+                # reg_list.append(ap_reg_dst)
+                reg_list.insert(reg_list.index(ap_reg_src) + 1, ap_reg_dst)
+        self.fuse_mode = True
+        for reg_name in reg_list:
+            try:
+                reg = self.regs.find_reg(reg_name, True)
+                # do recalculation based on fuse mode sets to ON!
+                reg.set_value(reg.get_value())
+            except SPSDKRegsErrorRegisterNotFound as exc:
+                self.fuse_mode = False
+                raise SPSDKError(f"Register {reg_name} has not found for {self.device} device.")
+
+            if reg.has_group_registers():
+                for sub_reg in reg.sub_regs:
+                    ret += add_reg(sub_reg)
+            else:
+                ret += add_reg(reg)
+
+        self.fuse_mode = False
+        return ret
+
+    def create_yml_config(self, file_name: str, raw: bool = False, diff: bool = False) -> None:
         """The function creates the configuration YML file.
 
         :param file_name: The file_name (without extension) of stored configuration.
         :param raw: Raw output of configuration (including computed fields and anti-pole registers)
+        :param diff: Get only configuration with difference value to reset state.
         """
         antipole_regs = None if raw else list(self.config.get_antipole_regs(self.device).values())
         computed_fields = None if raw else self.config.get_computed_fields(self.device)
@@ -199,8 +268,15 @@ class ShadowRegisters:
 
         data["description"] = description
         data["registers"] = self.regs.create_yml_config(
-            exclude_regs=antipole_regs, exclude_fields=computed_fields, indent=2
+            exclude_regs=antipole_regs,
+            exclude_fields=computed_fields,
+            indent=2,
+            diff=diff,
         )
+
+        if not os.path.exists(os.path.dirname(file_name)):
+            os.makedirs(os.path.dirname(file_name))
+
         with open(file_name, "w", encoding="utf8") as out_file:
             yaml.dump(data, out_file)
 
@@ -300,8 +376,8 @@ class ShadowRegisters:
             return (crc & 0xFF) ^ 0x55
         return crc & 0xFF
 
-    @staticmethod
-    def comalg_dcfg_cc_socu_crc8(val: int) -> int:
+    # @staticmethod
+    def comalg_dcfg_cc_socu_crc8(self, val: int) -> int:
         """Function that creates the crc for DCFG_CC_SOCU.
 
         :param val: Input DCFG_CC_SOCU Value.
@@ -314,18 +390,20 @@ class ShadowRegisters:
         val |= ShadowRegisters.crc_update(in_val)
         return val
 
-    @staticmethod
-    def comalg_dcfg_cc_socu_rsvd(val: int) -> int:
-        """Function fill up the DCFG_CC_SOCU RSVD filed by 0x80 to satisfy MCU needs.
+    # @staticmethod
+    def comalg_dcfg_cc_socu_test_en(self, val: int) -> int:
+        """Function fill up the DCFG_CC_SOCU DEV_TEST_EN set to True to satisfy MCU needs.
 
         :param val: Input DCFG_CC_SOCU Value.
-        :return: Returns the value of DCFG_CC_SOCU with computed CRC8 field.
+        :return: Returns the value of DCFG_CC_SOCU with optionally enabled test mode.
         """
-        new_val = val | 0x80000000
-        return new_val
+        if self.fuse_mode:
+            return val & ~0x80000000
 
-    @staticmethod
-    def comalg_do_nothing(val: int) -> int:
+        return val | 0x80000000
+
+    # @staticmethod
+    def comalg_do_nothing(self, val: int) -> int:
         """Function that do nothing.
 
         :param val: Input Value.

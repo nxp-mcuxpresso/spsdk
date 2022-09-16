@@ -67,7 +67,8 @@
 			<bit_field_value name="OPEN" value="0b1" description="Open property."/>
 		</bit_field>
 		<bit_field offset="0x18" width="1" name="BITFIELD17" access="RW" reset_value="0" description="Bitfield 17."/>
-		<bit_field offset="0x19" width="7" name="RSRVD" access="RW" reset_value="0" description="Reserved"/>
+		<bit_field offset="0x19" width="6" name="RSRVD" access="RW" reset_value="0" description="Reserved"/>
+        <bit_field offset="0x1e" width="1" name="DEV_TEST_EN" access="RW" reset_value="0" description="Reserved"/>
 	</register>
 	<register offset="0x214" width="16" name="REG2" reversed="False" description="Register 2 used for shadow registers testing.">
 		<bit_field offset="0x0" width="4" name="BITFIELD 1" access="RW" reset_value="0" description="BitField 1."/>

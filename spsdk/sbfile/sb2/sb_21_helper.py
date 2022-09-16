@@ -24,7 +24,14 @@ from spsdk.sbfile.sb2.commands import (
     CmdProg,
 )
 from spsdk.utils.crypto import KeyBlob
-from spsdk.utils.misc import get_bytes_cnt_of_int, load_binary, swap32, value_to_bytes, value_to_int
+from spsdk.utils.misc import (
+    align_block,
+    get_bytes_cnt_of_int,
+    load_binary,
+    swap32,
+    value_to_bytes,
+    value_to_int,
+)
 
 
 def get_command(cmd_name: str) -> Callable[[Dict], CmdBaseClass]:
@@ -208,7 +215,9 @@ def _encrypt(cmd_args: dict) -> CmdLoad:
 
     keyblob = KeyBlob(start_addr=start_addr, end_addr=end_addr, key=key, counter_iv=counter)
 
-    encoded_data = keyblob.encrypt_image(base_address=address, data=data, byte_swap=byte_swap)
+    encoded_data = keyblob.encrypt_image(
+        base_address=address, data=align_block(data, 512), byte_swap=byte_swap
+    )
 
     return CmdLoad(address, encoded_data)
 

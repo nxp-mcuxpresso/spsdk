@@ -183,19 +183,35 @@ def extract_public_key_from_data(object_data: bytes, password: Optional[str] = N
         raise SPSDKError(f"Unable to load secret data.") from exc
 
 
-def extract_public_key(file_path: str, password: Optional[str] = None) -> PublicKey:
+def extract_public_key(
+    file_path: str, password: Optional[str] = None, search_paths: List[str] = None
+) -> PublicKey:
     """Extract any kind of public key from a file that contains Certificate, Private Key or Public Key.
 
+    :param file_path: File path to public key file.
+    :param password: Optional password for encrypted Private file source.
+    :param search_paths: List of paths where to search for the file, defaults to None
     :raises SPSDKError: Raised when file can not be loaded
-    :return: private key of any type
+    :return: Public key of any type
     """
     try:
-        object_data = load_binary(file_path)
+        object_data = load_binary(file_path, search_paths=search_paths)
         return extract_public_key_from_data(object_data, password)
     except SPSDKError as exc:
         raise SPSDKError(f"Unable to load secret file '{file_path}'.") from exc
 
 
-def extract_public_keys(secret_files: Iterable[str], password: str = None) -> List[PublicKey]:
-    """Extract any kind of public key from files that contain Certificate, Private Key or Public Key."""
-    return [extract_public_key(file_path=source, password=password) for source in secret_files]
+def extract_public_keys(
+    secret_files: Iterable[str], password: str = None, search_paths: List[str] = None
+) -> List[PublicKey]:
+    """Extract any kind of public key from files that contain Certificate, Private Key or Public Key.
+
+    :param secret_files: List of file paths to public key files.
+    :param password: Optional password for encrypted Private file source.
+    :param search_paths: List of paths where to search for the file, defaults to None
+    :return: List of public keys of any type
+    """
+    return [
+        extract_public_key(file_path=source, password=password, search_paths=search_paths)
+        for source in secret_files
+    ]

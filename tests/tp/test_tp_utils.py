@@ -5,10 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for Trust provisioning utilities."""
+import pytest
+import yaml
+
 import spsdk.tp.adapters as TPA
 import spsdk.tp.utils as TPU
 from spsdk.apps.tp_utils import print_device_table
-from spsdk.tp.tp_intf import TpDevInterface
+from spsdk.tp.tp_intf import SPSDKTpError, TpDevInterface
 
 
 def test_get_devices():
@@ -59,3 +62,22 @@ def test_print_table_empty():
     dev_desc_list_str = print_device_table([])
 
     assert "Nothing to print - empty interface list!" in dev_desc_list_str
+
+
+def test_oem_cert_size_ok(data_dir):
+    config_file = f"{data_dir}/small_oem_cert_config.yaml"
+    with open(config_file) as f:
+        config_data = yaml.safe_load(f)
+
+    cert = TPA.TpDevSmartCard._create_oem_cert_template(
+        config_data=config_data, config_dir=data_dir
+    )
+    assert len(cert) < 1000
+
+
+def test_oem_cert_size_bad(data_dir):
+    config_file = f"{data_dir}/big_oem_cert_config.yaml"
+    with open(config_file) as f:
+        config_data = yaml.safe_load(f)
+    with pytest.raises(SPSDKTpError) as f:
+        TPA.TpDevSmartCard._create_oem_cert_template(config_data=config_data, config_dir=data_dir)

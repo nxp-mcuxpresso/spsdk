@@ -11,6 +11,7 @@ import pytest
 
 from spsdk import SPSDKError
 from spsdk.utils.crypto import KeyBlob, Otfad
+from spsdk.utils.misc import align_block
 
 
 def test_otfad_keyblob(data_dir):
@@ -43,7 +44,7 @@ def test_otfad_keyblob(data_dir):
     # test image encryption
     with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
         plain_image = f.read()
-    encr_image = key_blob.encrypt_image(0x08001000, plain_image, True)
+    encr_image = key_blob.encrypt_image(0x08001000, align_block(plain_image, 512), True)
     with open(os.path.join(data_dir, "otfad_image.bin"), "rb") as f:
         otfad_image = f.read()
     assert encr_image == otfad_image
@@ -57,11 +58,7 @@ def test_otfad_keyblob(data_dir):
     with pytest.raises(SPSDKError):
         KeyBlob(start_addr=0x08001001, end_addr=0x0800F3FF, key=key, counter_iv=counter)
 
-    # end address not aligned
-    with pytest.raises(SPSDKError):
-        KeyBlob(start_addr=0x08001000, end_addr=0x0800F000, key=key, counter_iv=counter)
-
-    # [SPSDK-1464] Support dual image boot, remove test cases for images not withing key blob
+    # Support dual image boot, remove test cases for images not withing key blob
     # address of the image is not within key blob
     # key_blob = KeyBlob(start_addr=0x08001000, end_addr=0x0800F3FF, key=key, counter_iv=counter)
     # with pytest.raises(SPSDKError):
@@ -88,8 +85,8 @@ def test_otfad(data_dir):
     # with pytest.raises(SPSDKError):
     #     key_blob.encrypt_image(0x0, image, True)
 
-    encr_image = otfad.encrypt_image(image, 0x08001000, True)
-    otfad.encrypt_image(image, 0x08001000, False)  # TODO finish the test
+    encr_image = otfad.encrypt_image(align_block(image, 512), 0x08001000, True)
+    otfad.encrypt_image(align_block(image, 512), 0x08001000, False)  # TODO finish the test
     with open(os.path.join(data_dir, "otfad_image.bin"), "rb") as f:
         otfad_image = f.read()
     assert encr_image == otfad_image
@@ -108,7 +105,7 @@ def test_oftad_invalid(data_dir):
     with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
         image = f.read()
     with pytest.raises(SPSDKError):
-        otfad.encrypt_image(image, 0x0800FFF, True)
+        otfad.encrypt_image(align_block(image, 512), 0x0800FFF, True)
 
 
 def test_keyblob_invalid():

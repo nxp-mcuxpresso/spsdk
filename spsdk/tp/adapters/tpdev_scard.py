@@ -7,6 +7,7 @@
 """Trust provisioning - TP Device, Smart Card Adapter."""
 
 import logging
+import os
 from enum import Enum
 from typing import Any, Dict, List, Optional, cast
 
@@ -30,16 +31,18 @@ from spsdk.crypto.certificate_management import (
 )
 from spsdk.crypto.keys_management import generate_ecc_public_key
 from spsdk.crypto.loaders import extract_public_key, load_private_key
-from spsdk.utils.misc import find_file, load_binary, load_text, numberify_version
+from spsdk.utils.database import Database
+from spsdk.utils.misc import find_file, load_binary, load_text, numberify_version, value_to_int
 from spsdk.utils.schema_validator import ValidationSchemas
 
-from .. import TP_SCH_FILE, SPSDKTpError, TpDevInterface
+from .. import TP_DATA_FOLDER, TP_SCH_FILE, SPSDKTpError, TpDevInterface
 from ..tp_intf import TpIntfDescription
 from . import scard_commands
 from .scard_utils import ProvItem, get_applet_infos
 from .utils import sanitize_common_name
 
 logger = logging.getLogger(__name__)
+TP_DATA_FILE = os.path.join(TP_DATA_FOLDER, "database.yaml")
 
 
 class TpSCardDescription(TpIntfDescription):
@@ -484,4 +487,15 @@ class TpDevSmartCard(TpDevInterface):
             serial_number=cert_config.get("serial_number"),
         )
         cert_raw = convert_certificate_into_bytes(cert, Encoding.DER)
+
+        database = Database(TP_DATA_FILE)
+        max_size = value_to_int(
+            database.get_device_value("max_oem_cert_size", config_data["family"])
+        )
+        if len(cert_raw) > max_size:
+            raise SPSDKTpError(
+                f"OEM certificate is too big: {len(cert_raw)}B, max size: {max_size}B! "
+                "Please adjust information in SUBJECT and/or ISSUER portion of the certificate."
+            )
+
         return cert_raw

@@ -12,10 +12,10 @@
       <alias type="CMSIS" value="FLASH_CFPA_CFPA_PAGE_VERSION_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x8" width="32" name="Secure_FW_Version" description="Secure Firmware Version">
-    <alias type="CMSIS" value="CFPA.SECURE_FW_VERSION"/>
+  <register offset="0x8" width="32" name="S_FW_Version" description="Secure Firmware Version">
+    <alias type="CMSIS" value="CFPA.S_FW_VERSION"/>
     <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Secure Firmware Version (Monotonic counter)">
-      <alias type="CMSIS" value="FLASH_CFPA_SECURE_FW_VERSION_FIELD(x)"/>
+      <alias type="CMSIS" value="FLASH_CFPA_S_FW_VERSION_FIELD(x)"/>
     </bit_field>
   </register>
   <register offset="0xC" width="32" name="NS_FW_Version" description="Non-Secure Firmware Version">

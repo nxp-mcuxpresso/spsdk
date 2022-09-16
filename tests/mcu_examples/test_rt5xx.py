@@ -929,7 +929,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     otfad.add_key_blob(
         KeyBlob(0x8FFF000, 0x8FFFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
     )  # zero_fill and crc should be used only for testing !
-    encr_image_data = otfad.encrypt_image(plain_image_data, 0x8001000, False)
+    encr_image_data = otfad.encrypt_image(align_block(plain_image_data, 512), 0x8001000, False)
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "OTFADKek_PUF.txt"), "r") as f:
         otfad_kek = f.readline()
 
@@ -1061,7 +1061,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     otfad.add_key_blob(
         KeyBlob(0x8FFF000, 0x8FFFFFF, key, counter, zero_fill=bytes(4), crc=bytes(4))
     )  # zero_fill and crc should be used only for testing !
-    encr_image_data = otfad.encrypt_image(plain_image_data, 0x8001000, False)
+    encr_image_data = otfad.encrypt_image(align_block(plain_image_data, 512), 0x8001000, False)
 
     # create boot section 0
     boot_section = BootSectionV2(
