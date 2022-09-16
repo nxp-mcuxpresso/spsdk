@@ -1,0 +1,31 @@
+# The template configuration file for TPCONFIG application
+version: 3
+
+# Target family
+family: lpc55s6x
+
+# !!! Unnecessary portions of config file were deleted !!!
+
+# Number of OEM certificates to generate
+# If it's set to 0, rest of this section is ignored
+oem_id_count: 1
+# Signing key path (PEM or DER encoded P-256 ECC Key)
+oem_id_prk_path: oem_id_prk.pem
+# Addresses where to place OEM Certificates
+oem_id_addresses:
+  - 0x1004_0000
+  - 0x1004_1000
+  - 0x1004_2000
+  - 0x1004_3000
+# Configuration of data inside OEM Certificates
+oem_id_config:
+  issuer:
+    COMMON_NAME: Big Tech Company
+    COUNTRY_NAME: CZ
+    LOCALITY_NAME: RpR
+    STREET_ADDRESS: 1. maje, 1009
+    ORGANIZATION_NAME: BL - EP
+    POSTAL_CODE: 756 61
+  subject:
+    COMMON_NAME: Super Tech Device
+  duration: 3650

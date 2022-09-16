@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd">
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
   <register offset="0" width="32" name="BOOT_CFG" description="Boot Configuration">
     <alias type="CMSIS" value="CMPA.BOOT_CFG"/>
     <bit_field offset="0" width="3" name="DEFAULT_BOOT_SOURCE" access="RO" reset_value="0" description="Default Boot Source">

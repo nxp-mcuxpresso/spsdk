@@ -17,6 +17,7 @@ from openpyxl import utils
 from openpyxl.utils import cell as cell_utils
 
 from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
+from spsdk.utils.misc import value_to_int
 
 XLS_COLUMN_NAMES = (
     "Block Name",
@@ -34,11 +35,12 @@ XLS_COLUMN_NAMES = (
 
 @click.group()
 @click.option("-x", "--xls", type=str)
+@click.option("-s", "--sheet", type=str)
 @click.option("-m", "--xml", type=str)
 @click.option("-t", "--xls_type", type=int, default=1)
 @click.help_option("--help")
 @click.pass_context
-def main(ctx: click.Context, xls: str, xml: str, xls_type: int = 1) -> int:
+def main(ctx: click.Context, xls: str, sheet: str, xml: str, xls_type: int = 1) -> int:
     """Main CLI function."""
     if not isinstance(xls, str):
         return -1
@@ -46,7 +48,7 @@ def main(ctx: click.Context, xls: str, xml: str, xls_type: int = 1) -> int:
     if not isinstance(xml, str):
         xml = ""
 
-    ctx.obj = {"xls": xls, "xml": xml, "xls_type": xls_type}
+    ctx.obj = {"xls": xls, "sheet": sheet, "xml": xml, "xls_type": xls_type}
     return 0
 
 
@@ -57,7 +59,9 @@ def convert(pass_obj: dict) -> None:
     click.echo("convert")
     try:
         xls2xml_class = XLS_TYPES[str(pass_obj["xls_type"])]
-        xls2xml = xls2xml_class(pass_obj["xls"], pass_obj["xml"], pass_obj["xls_type"])
+        xls2xml: ShadowRegsXlsToXml = xls2xml_class(
+            pass_obj["xls"], pass_obj["sheet"], pass_obj["xml"], pass_obj["xls_type"]
+        )
         xls2xml.convert()
         xls2xml.registers.write_xml(xls2xml.xml_file_name)
         click.echo(f"Written XML file ({xls2xml.xml_file_name})")
@@ -69,13 +73,16 @@ def convert(pass_obj: dict) -> None:
 class ShadowRegsXlsToXml:
     "Class to convert XLSX to XML with shadow register description"
 
-    def __init__(self, xls_file: str, xml_file: str = "", xls_type: int = 1) -> None:
+    def __init__(
+        self, xls_file: str, sheet_name: str = None, xml_file: str = "", xls_type: int = 1
+    ) -> None:
         self.registers = Registers("Unknown")
         self.xls_type = xls_type
         self.header_cells: Dict[str, str] = {}
         self.xml_file_name = xml_file if xml_file != "" else xls_file.replace(".xlsx", ".xml")
         self.workbook = None
         self.worksheet = None
+        self.sheet_name = sheet_name
         self.merged_cells = None
         click.echo(os.path.dirname(os.path.realpath(__file__)))
         self.workbook = openpyxl.load_workbook(xls_file)
@@ -89,11 +96,12 @@ class ShadowRegsXlsToXml:
         raise NotImplementedError("")
 
     def _get_worksheet(self) -> Any:
-        """Find the valid worksheet with the fuse map.
-
-        :raises NotImplementedError: Derived class has to implement this method
-        """
-        raise NotImplementedError("Derived class has to implement this method.")
+        """Find the valid worksheet with the fuse map."""
+        assert self.workbook
+        if self.sheet_name:
+            return self.workbook[self.sheet_name]
+        else:
+            return self.workbook.active
 
     def _get_header(self) -> None:
         """Returns the dictionary with cells of header.
@@ -127,11 +135,6 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
         self._get_header()
         self._get_registers()
 
-    def _get_worksheet(self) -> Any:
-        """Find the valid worksheet with the fuse map."""
-        assert self.workbook
-        return self.workbook.active
-
     def _get_header(self) -> None:
         """Returns the dictionary with cells of header."""
         for head in XLS_COLUMN_NAMES:
@@ -157,6 +160,7 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
         """Function finds all registers in XLS sheet and store them."""
         assert self.worksheet
         regname_cr = cell_utils.coordinate_from_string(self.header_cells["Register Name"])
+        otp_cr = cell_utils.coordinate_from_string(self.header_cells["OTP Word"])
         sr_access_cr = cell_utils.coordinate_from_string(
             self.header_cells["Access rw = has shadow register"]
         )
@@ -188,9 +192,10 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
                     # Now, normalize the name
                     reg_name, reg_reverse = self._filterout_bitrange(reg_name)
 
-                    reg_offset = int(self.worksheet[offset_cr[0] + str(row)].value, 16)
-                    reg_width = int(self.worksheet[width_cr[0] + str(row)].value)
+                    reg_offset = value_to_int(self.worksheet[offset_cr[0] + str(row)].value, 16)
+                    reg_width = value_to_int(self.worksheet[width_cr[0] + str(row)].value)
                     reg_descr = self.worksheet[desc_cr[0] + str(row)].value or "N/A"
+                    reg_fuse_index = value_to_int(self.worksheet[otp_cr[0] + str(row)].value)
                     reg_name = reg_name.strip()
 
                     cells = self._get_merged_by_first_cell(desc_cr[0] + str(row))
@@ -213,10 +218,16 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
                         if regs_group_cnt > regs_group_max:
                             regs_group_max = 0
                             regs_group_cnt = 0
-
+                    print(f"Reg: {reg_name}")
                     reg_descr = reg_descr.replace("\n", "&#10;")
                     register = RegsRegister(
-                        reg_name, reg_offset, reg_width, reg_descr, reg_reverse, access
+                        reg_name,
+                        reg_offset,
+                        reg_width,
+                        reg_descr,
+                        reg_reverse,
+                        access,
+                        otp_index=reg_fuse_index,
                     )
 
                     self.registers.add_register(register)
@@ -254,22 +265,26 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
         for row in range(excel_row, excel_row + excel_row_cnt):
             cell = bitfieldname_cr[0] + str(row)
             if isinstance(self.worksheet[cell].value, str):
-                bitfield_name = self.worksheet[cell].value
-                bitfield_offset = int(self.worksheet[offset_cr[0] + str(row)].value)
-                bitfield_width = int(self.worksheet[width_cr[0] + str(row)].value)
-                bitfield_descr = self.worksheet[desc_cr[0] + str(row)].value or "N/A"
-                bitfield_rv = self.worksheet[rv_cr[0] + str(row)].value or "N/A"
-                bitfield_descr = bitfield_descr.replace("\n", "&#10;")
-                bitfield = RegsBitField(
-                    reg,
-                    bitfield_name,
-                    bitfield_offset,
-                    bitfield_width,
-                    bitfield_descr,
-                    reset_val=bitfield_rv,
-                )
-                reg.add_bitfield(bitfield)
-
+                try:
+                    bitfield_name = self.worksheet[cell].value
+                    bitfield_offset = value_to_int(self.worksheet[offset_cr[0] + str(row)].value)
+                    bitfield_width = value_to_int(self.worksheet[width_cr[0] + str(row)].value)
+                    bitfield_descr = self.worksheet[desc_cr[0] + str(row)].value or "N/A"
+                    bitfield_rv = self.worksheet[rv_cr[0] + str(row)].value or "N/A"
+                    bitfield_descr = bitfield_descr.replace("\n", "&#10;")
+                    print(f"  Bitfield: {bitfield_name}")
+                    bitfield = RegsBitField(
+                        reg,
+                        bitfield_name,
+                        bitfield_offset,
+                        bitfield_width,
+                        bitfield_descr,
+                        reset_val=bitfield_rv,
+                    )
+                    reg.add_bitfield(bitfield)
+                except Exception as exc:
+                    print(f"Error raised during loading bitfield {bitfield_name}. {exc}")
+                    raise ValueError(str(exc)) from exc
                 cells = self._get_merged_by_first_cell(bitfieldname_cr[0] + str(row))
                 if cells is not None:
                     # find the number of rows of the register description
@@ -296,15 +311,26 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
 
         for row in range(excel_row, excel_row + excel_row_cnt):
             cell = enum_name_cr[0] + str(row)
+
             if isinstance(self.worksheet[cell].value, str):
-                enum_name = self.worksheet[cell].value
-                enum_descr = self.worksheet[desc_cr[0] + str(row)].value or "N/A"
-                enum_value: str = self.worksheet[value_cr[0] + str(row)].value
-                enum_descr = enum_descr.replace("\n", "&#10;")
-                if enum_value is None:
-                    click.echo(f"Warning: The Enum {enum_name} is missing and it will be skipped.")
-                else:
-                    bitfield.add_enum(RegsEnum(enum_name, enum_value, enum_descr, bitfield.width))
+                try:
+                    enum_name = self.worksheet[cell].value
+                    enum_descr = self.worksheet[desc_cr[0] + str(row)].value or "N/A"
+                    enum_value: str = self.worksheet[value_cr[0] + str(row)].value
+                    enum_value = enum_value.replace("b'", "0b")
+                    enum_descr = enum_descr.replace("\n", "&#10;")
+                    print(f"    Enum: {enum_name}")
+                    if enum_value is None:
+                        click.echo(
+                            f"Warning: The Enum {enum_name} is missing and it will be skipped."
+                        )
+                    else:
+                        bitfield.add_enum(
+                            RegsEnum(enum_name, enum_value, enum_descr, bitfield.width)
+                        )
+                except Exception as exc:
+                    print(f"Error raised during loading enum {enum_name}. {exc}")
+                    raise ValueError(str(exc)) from exc
 
     def _get_merged_by_first_cell(self, cell: str) -> str:
         """Function returns the merged range by first cell."""
@@ -346,15 +372,11 @@ class ShadowRegsXlsToXmlType2(ShadowRegsXlsToXml):
 
     def convert(self) -> None:
         assert self.worksheet
+        self.sheet_name = "Fuse Definitions"
         self.worksheet = self._get_worksheet()
         # Get all merged cells
         self._get_header()
         self._get_registers()
-
-    def _get_worksheet(self) -> None:
-        """Find the valid worksheet with the fuse map."""
-        assert self.workbook
-        return self.workbook["Fuse Definitions"]
 
     def _get_header(self) -> None:
         """Returns header of sheet."""

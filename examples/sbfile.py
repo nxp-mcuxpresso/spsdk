@@ -18,6 +18,7 @@ from spsdk import SPSDKError
 from spsdk.sbfile.sb2.commands import CmdErase, CmdLoad, CmdReset
 from spsdk.sbfile.sb2.images import BootImageV20, BootImageV21, BootSectionV2, SBV2xAdvancedParams
 from spsdk.utils.crypto import CertBlockV2, Certificate, KeyBlob, Otfad
+from spsdk.utils.misc import align_block
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, "data")
@@ -80,7 +81,7 @@ def gen_boot_section_otfad() -> BootSectionV2:
             crc=bytes(4),
         )
     )  # zero_fill and crc should be used only for testing !
-    enc_image = otfad.encrypt_image(boot_data, 0x08001000, True)
+    enc_image = otfad.encrypt_image(align_block(boot_data, 512), 0x08001000, True)
     key_blobs = otfad.encrypt_key_blobs(kek=bytes.fromhex("50F66BB4F23B855DCD8FEFC0DA59E963"))
     if len(key_blobs) != 256:
         raise SPSDKError("Length of key blobs is not 256")

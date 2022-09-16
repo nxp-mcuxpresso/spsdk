@@ -31,17 +31,25 @@ class RKHT:
     """Root Key Hash Table class."""
 
     def __init__(
-        self, keys: List = None, keys_cnt: int = 4, min_keys_cnt: int = 4, password: str = None
+        self,
+        keys: List = None,
+        keys_cnt: int = 4,
+        min_keys_cnt: int = 4,
+        password: str = None,
+        search_paths: List[str] = None,
     ) -> None:
         """Initialization of Root Key Hash Table class.
 
         :param keys: List of source of root keys (The public keys could get also from private key
             or certificates), defaults to None
         :param password: Optional password to open secured private keys, defaults to None.
+        :param search_paths: List of paths where to search for the file, defaults to None
         """
         self.keys_cnt = keys_cnt
         self.min_keys_cnt = min_keys_cnt
-        self.rotk = [RKHT.convert_key(x, password) for x in keys] if keys else []
+        self.rotk = (
+            [RKHT.convert_key(x, password, search_paths=search_paths) for x in keys] if keys else []
+        )
 
     @staticmethod
     def _hash_algorithm_output_size(key: PublicKey) -> int:
@@ -158,13 +166,16 @@ class RKHT:
 
     @staticmethod
     def convert_key(
-        key: Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate], password: str = None
+        key: Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate],
+        password: str = None,
+        search_paths: List[str] = None,
     ) -> PublicKey:
         """Convert practically whole input that could hold Public key into public key.
 
         :param key: Public key in Certificate/Private key, Public key as a path to file,
             loaded bytes or supported class.
         :param password: Optional password to open secured private keys, defaults to None.
+        :param search_paths: List of paths where to search for the file, defaults to None
         :raises SPSDKError: Invalid kye type.
         :return: Public Key object.
         """
@@ -180,7 +191,7 @@ class RKHT:
             return public_key
 
         if isinstance(key, str):
-            return extract_public_key(key, password)
+            return extract_public_key(key, password, search_paths=search_paths)
 
         if isinstance(key, (bytes, bytearray)):
             return extract_public_key_from_data(key, password)

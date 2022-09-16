@@ -1,0 +1,41 @@
+# The template configuration file for TPCONFIG application
+version: 3
+
+# Target family
+family: lpc55s6x
+
+# !!! Unnecessary portions of config file were deleted !!!
+
+# Number of OEM certificates to generate
+# If it's set to 0, rest of this section is ignored
+oem_id_count: 1
+# Signing key path (PEM or DER encoded P-256 ECC Key)
+oem_id_prk_path: oem_id_prk.pem
+# Addresses where to place OEM Certificates
+oem_id_addresses:
+  - 0x1004_0000
+  - 0x1004_1000
+  - 0x1004_2000
+  - 0x1004_3000
+# Configuration of data inside OEM Certificates
+oem_id_config:
+  issuer:
+    COMMON_NAME: Big Tech Company
+    COUNTRY_NAME: CZ
+    LOCALITY_NAME: RpR
+    STREET_ADDRESS: 1. maje, 1009
+    ORGANIZATION_NAME: BL - EP
+    POSTAL_CODE: 756 61
+    DOMAIN_COMPONENT:
+      - Let's see how crazy we cen get with this one. It should be at least 800 characters long...
+      - If the imagination is running low, we can always fall back to ye old faithful :D
+      - Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+      - sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+      - Adipiscing elit ut aliquam purus sit amet luctus venenatis. Mattis nunc sed blandit libero volutpat.
+      - A condimentum vitae sapien pellentesque habitant morbi tristique. Nisl rhoncus mattis rhoncus urna neque.
+      - Tempus imperdiet nulla malesuada pellentesque elit eget gravida. Felis eget velit aliquet sagittis.
+      - Aliquet sagittis id consectetur purus ut faucibus pulvinar elementum. Nisi lacus sed viverra tellus in.
+      - Pulvinar sapien et ligula ullamcorper. Lacinia at quis risus sed vulputate odio ut.
+  subject:
+    COMMON_NAME: Super Tech Device
+  duration: 3650

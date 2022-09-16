@@ -29,7 +29,7 @@ from spsdk.apps.utils.utils import MBootInterface, catch_spsdk_error, format_raw
 from spsdk.crypto.loaders import extract_public_keys
 from spsdk.mboot import McuBoot
 from spsdk.pfr.exceptions import SPSDKError, SPSDKPfrConfigError
-from spsdk.utils.misc import find_file, load_configuration, size_fmt
+from spsdk.utils.misc import find_file, load_configuration, size_fmt, write_file
 
 PFRArea = Union[Type[pfr.CMPA], Type[pfr.CFPA]]
 logger = logging.getLogger(__name__)
@@ -142,9 +142,38 @@ def parse_binary(
     show_diff: bool,
 ) -> None:
     """Parse binary and extract configuration."""
-    pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     with open(binary, "rb") as f:
         data = f.read()
+    yaml_data = _parse_binary_data(
+        data=data,
+        device=device,
+        revision=revision,
+        area=area,
+        show_calc=show_calc,
+        show_diff=show_diff,
+    )
+    _store_output(yaml_data, output)
+
+
+def _parse_binary_data(
+    data: bytes,
+    device: str,
+    area: str,
+    revision: str = None,
+    show_calc: bool = False,
+    show_diff: bool = False,
+) -> str:
+    """Parse binary data and extract YAML configuration.
+
+    :param data: Data to parse
+    :param device: Device to use
+    :param revision: Revision to use, defaults to 'latest'
+    :param area: PFR are (CMPA, CFPA)
+    :param show_calc: Also show calculated fields
+    :param show_diff: Show only difference to default
+    :return: PFR YAML configuration as a string
+    """
+    pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     pfr_obj.parse(data)
     parsed = pfr_obj.get_yaml_config(exclude_computed=not show_calc, diff=show_diff)
     yaml = YAML()
@@ -152,7 +181,7 @@ def parse_binary(
     stream = io.StringIO()
     yaml.dump(parsed, stream)
     yaml_data = stream.getvalue()
-    _store_output(yaml_data, output)
+    return yaml_data
 
 
 @main.command(name="generate-binary", no_args_is_help=True)
@@ -300,7 +329,7 @@ def write(
         pfr_logger.setLevel(level=logging.ERROR)
 
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
-    pfr_page_address = int(pfr_obj.config.get_address(device), 0)
+    pfr_page_address = pfr_obj.config.get_address(device)
     pfr_page_length = pfr_obj.BINARY_SIZE
 
     click.echo(f"{pfr_obj.__class__.__name__} page address on {device} is {pfr_page_address:#x}")
@@ -352,9 +381,7 @@ def write(
     help="(applicable for parsing) Show also calculated fields when displaying difference to "
     "defaults (--show-diff)",
 )
-@click.pass_context
 def read(
-    ctx: click.Context,
     port: str,
     usb: str,
     buspal: str,
@@ -375,7 +402,7 @@ def read(
         pfr_logger.setLevel(level=logging.ERROR)
 
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
-    pfr_page_address = int(pfr_obj.config.get_address(device), 0)
+    pfr_page_address = pfr_obj.config.get_address(device)
     pfr_page_length = pfr_obj.BINARY_SIZE
     pfr_page_name = pfr_obj.__class__.__name__
 
@@ -391,22 +418,20 @@ def read(
         raise SPSDKError(f"Unable to read data from address {pfr_page_address:#x}")
 
     if output:
-        with open(output, "wb") as f:
-            f.write(data)
+        write_file(data, output, "wb")
         click.echo(f"{pfr_page_name} data stored to {output}")
-        if yaml_output:
-            ctx.invoke(
-                parse_binary,
-                device=device,
-                revision=revision,
-                area=area,
-                output=yaml_output,
-                binary=output,
-                show_calc=show_calc,
-                show_diff=show_diff,
-            )
-            click.echo(f"Parsed config stored to {yaml_output}")
-    else:
+    if yaml_output:
+        yaml_data = _parse_binary_data(
+            data=data,
+            device=device,
+            revision=revision,
+            area=area,
+            show_calc=show_calc,
+            show_diff=show_diff,
+        )
+        write_file(yaml_data, yaml_output)
+        click.echo(f"Parsed config stored to {yaml_output}")
+    if not output and not yaml_output:
         click.echo(format_raw_data(data=data, use_hexdump=True))
 
 

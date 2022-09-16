@@ -22,9 +22,17 @@ from spsdk.sbfile.sb2.commands import (
     CmdLoad,
     CmdMemEnable,
     CmdProg,
+    CmdVersionCheck,
 )
 from spsdk.utils.crypto import KeyBlob
-from spsdk.utils.misc import get_bytes_cnt_of_int, load_binary, swap32, value_to_bytes, value_to_int
+from spsdk.utils.misc import (
+    align_block,
+    get_bytes_cnt_of_int,
+    load_binary,
+    swap32,
+    value_to_bytes,
+    value_to_int,
+)
 
 
 def get_command(cmd_name: str) -> Callable[[Dict], CmdBaseClass]:
@@ -208,7 +216,9 @@ def _encrypt(cmd_args: dict) -> CmdLoad:
 
     keyblob = KeyBlob(start_addr=start_addr, end_addr=end_addr, key=key, counter_iv=counter)
 
-    encoded_data = keyblob.encrypt_image(base_address=address, data=data, byte_swap=byte_swap)
+    encoded_data = keyblob.encrypt_image(
+        base_address=address, data=align_block(data, 512), byte_swap=byte_swap
+    )
 
     return CmdLoad(address, encoded_data)
 
@@ -290,6 +300,24 @@ def _keystore_from_nv(cmd_args: dict) -> CmdKeyStoreBackup:
     return CmdKeyStoreBackup(address, mem_opt)
 
 
+def _version_check(cmd_args: dict) -> CmdVersionCheck:
+    """Returns a CmdVersionCheck object initialized with version check type and version.
+
+    Validates version of secure or non-secure firmware.
+    The command fails if version is < expected.
+
+    section (0) {
+        version_check sec 0x2;
+        version_check nsec 2;
+
+    :param cmd_args: dictionary holding the version type and fw version.
+    :return: CmdKeyStoreRestore object.
+    """
+    ver_type = cmd_args["ver_type"]
+    fw_version = cmd_args["fw_version"]
+    return CmdVersionCheck(ver_type, fw_version)
+
+
 def _validate_keyblob(keyblobs: List, keyblob_id: Number) -> Optional[Dict]:
     """Checks, whether a keyblob is valid.
 
@@ -328,4 +356,5 @@ cmds = {
     "keywrap": _keywrap,
     "keystore_to_nv": _keystore_to_nv,
     "keystore_from_nv": _keystore_from_nv,
+    "version_check": _version_check,
 }

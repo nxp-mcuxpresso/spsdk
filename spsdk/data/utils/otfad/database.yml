@@ -1,0 +1,21 @@
+# Copyright 2022 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+devices:
+  rt5xx:
+    latest: b0
+
+  rt6xx:
+    latest: b0
+    byte_swap: true
+
+# default values for all devices
+key_blob_rec_size: 64
+key_blob_max_cnt: 4
+key_blob_min_cnt: 4
+otp_master_key_fuses_count: 8
+otp_master_key_fuses_start: 112
+otfad_key_fuses_count: 4
+otfad_key_fuses_start: 108
+byte_swap: false

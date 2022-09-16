@@ -1,0 +1,118 @@
+devices:
+  lpc55s6x:
+    revisions:
+      0a: lpc55s6x_0a.xml
+      1b: lpc55s6x_1b.xml
+    latest: 1b
+    address: 0x9_DE00
+    computed_fields:
+      VENDOR_USAGE:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_PIN:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_DFLT:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+  lpc551x:
+    revisions:
+      a: lpc551x_a.xml
+    latest: a
+    address: 0x3_DE00
+  lpc55s1x:
+    revisions:
+      a: lpc55s1x_a.xml
+    latest: a
+    address: 0x3_DE00
+    computed_fields:
+      VENDOR_USAGE:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_PIN:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_DFLT:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+  lpc550x:
+    revisions:
+      a: lpc550x_a.xml
+    latest: a
+    address: 0x3_DE00
+  lpc55s0x:
+    revisions:
+      a: lpc55s0x_a.xml
+    latest: a
+    address: 0x3_DE00
+    computed_fields:
+      VENDOR_USAGE:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_PIN:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_DFLT:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+  lpc552x:
+    revisions:
+      0a: lpc552x_1b.xml
+      1b: lpc552x_1b.xml
+    latest: 1b
+    address: 0x9_DE00
+  lpc55s2x:
+    revisions:
+      0a: lpc55s2x_1b.xml
+      1b: lpc55s2x_1b.xml
+    latest: 1b
+    address: 0x9_DE00
+    computed_fields:
+      VENDOR_USAGE:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_PIN:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_DFLT:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+  lpc55s3x:
+    revisions:
+      0a: lpc55s3x_0a.xml
+      1a: lpc55s3x_1a.xml
+    latest: 1a
+    address: 0x3_DC00
+    seal_start: CFPA_CRC32
+    seal_count: 1
+    mandatory_computed_regs: 1
+    computed_fields:
+      VENDOR_USAGE:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_PIN:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_DFLT:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+  lpc553x:
+    revisions:
+      0a: lpc553x_0a.xml
+      1a: lpc553x_1a.xml
+    latest: 1a
+    address: 0x3_DC00
+    seal_start: CFPA_CRC32
+    seal_count: 1
+    mandatory_computed_regs: 1
+    computed_fields:
+      DCFG_CC_SOCU_NS_PIN:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_NS_DFLT:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+  nhs52sxx:
+    revisions:
+      a1: nhs52s04.xml
+    latest: a1
+    address: 0xF_E000
+    computed_fields:
+      VENDOR_USAGE:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_PIN:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+      DCFG_CC_SOCU_DFLT:
+        INVERSE_VALUE: pfr_reg_inverse_high_half
+computed_registers:
+  SHA256_DIGEST: ""
+ignored_registers:
+  - PRINCE_REGION0_IV_CODE
+  - PRINCE_REGION1_IV_CODE
+  - PRINCE_REGION2_IV_CODE
+seal_start: SHA256_DIGEST0
+seal_count: 8
+mandatory_computed_regs: 0

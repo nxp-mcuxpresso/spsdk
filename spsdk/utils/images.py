@@ -10,20 +10,20 @@ import logging
 import math
 import os
 import textwrap
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 import colorama
 
 from spsdk import SPSDK_DATA_FOLDER
 from spsdk.exceptions import SPSDKError, SPSDKOverlapError, SPSDKValueError
-from spsdk.utils.crypto.common import crypto_backend
 from spsdk.utils.misc import (
+    BinaryPattern,
+    align,
+    align_block,
     find_file,
     format_value,
     load_binary,
     size_fmt,
-    value_to_bytes,
-    value_to_int,
     write_file,
 )
 from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
@@ -74,85 +74,6 @@ class ColorPicker:
         return ColorPicker.COLORS[self.index]
 
 
-class BinaryPattern:
-    """Binary pattern class.
-
-    Supported patterns:
-        - rand: Random Pattern
-        - zeros: Filled with zeros
-        - ones: Filled with all ones
-        - inc: Filled with repeated numbers incremented by one 0-0xff
-        - any kind of number, that will be repeated to fill up whole image.
-          The format could be decimal, hexadecimal, bytes.
-    """
-
-    SPECIAL_PATTERNS = ["rand", "zeros", "ones", "inc"]
-
-    def __init__(self, pattern: str) -> None:
-        """Constructor of pattern class.
-
-        :param pattern: Supported patterns:
-                        - rand: Random Pattern
-                        - zeros: Filled with zeros
-                        - ones: Filled with all ones
-                        - inc: Filled with repeated numbers incremented by one 0-0xff
-                        - any kind of number, that will be repeated to fill up whole image.
-                        The format could be decimal, hexadecimal, bytes.
-        :raises SPSDKValueError: Unsupported pattern detected.
-        """
-        try:
-            value_to_int(pattern)
-        except SPSDKError:
-            if not pattern in BinaryPattern.SPECIAL_PATTERNS:
-                raise SPSDKValueError(  # pylint: disable=raise-missing-from
-                    f"Unsupported input pattern{pattern}"
-                )
-
-        self._pattern = pattern
-
-    def get_block(self, size: int) -> bytes:
-        """Get block filled with pattern.
-
-        :param size: Size of block to return.
-        :return: Filled up block with specified pattern.
-        """
-        if self._pattern == "zeros":
-            return bytes(size)
-
-        if self._pattern == "ones":
-            return bytes(b"\xff" * size)
-
-        if self._pattern == "rand":
-            return crypto_backend().random_bytes(size)
-
-        if self._pattern == "inc":
-            return bytes((x & 0xFF for x in range(size)))
-
-        pattern = value_to_bytes(self._pattern)
-        block = bytes(pattern * int((size / len(pattern))))
-        return block[:size]
-
-    @property
-    def pattern(self) -> str:
-        """Get the pattern.
-
-        :return: Pattern in string representation.
-        """
-        try:
-            return hex(value_to_int(self._pattern))
-        except SPSDKError:
-            return self._pattern
-
-    @staticmethod
-    def load_from_config(config: str) -> "BinaryPattern":
-        """Load binary pattern from configuration.
-
-        :param config: Configuration block with binary pattern.
-        :return: Binary Pattern object.
-        """
-        return BinaryPattern(config)
-
-
 class BinaryImage:
     """Binary Image class."""
 
@@ -166,6 +87,7 @@ class BinaryImage:
         description: str = None,
         binary: bytes = None,
         pattern: BinaryPattern = None,
+        alignment: int = 1,
         parent: "BinaryImage" = None,
     ) -> None:
         """Binary Image class constructor.
@@ -176,6 +98,7 @@ class BinaryImage:
         :param description: Text description of image, defaults to None
         :param binary: Optional binary content.
         :param pattern: Optional binary pattern.
+        :param alignment: Optional alignment of result image
         :param parent: Handle to parent object, defaults to None
         """
         self.name = name
@@ -184,6 +107,7 @@ class BinaryImage:
         self._size = size
         self.binary = binary
         self.pattern = pattern
+        self.alignment = alignment
         self.parent = parent
         if parent:
             assert isinstance(parent, BinaryImage)
@@ -200,6 +124,12 @@ class BinaryImage:
                 self.sub_images.insert(i, image)
                 return
         self.sub_images.append(image)
+
+    def join_images(self) -> None:
+        """Join all sub images into main binary block."""
+        binary = self.export()
+        self.sub_images.clear()
+        self.binary = binary
 
     @property
     def image_name(self) -> str:
@@ -247,10 +177,11 @@ class BinaryImage:
         """
         size = len(self)
         ret = ""
-        ret += f"Name:   {self.image_name}\n"
-        ret += f"Starts: {hex(self.absolute_address)}\n"
-        ret += f"Ends:   {hex(self.absolute_address+ size-1)}\n"
-        ret += f"Size:   {size_fmt(size, use_kibibyte=False)}\n"
+        ret += f"Name:      {self.image_name}\n"
+        ret += f"Starts:    {hex(self.absolute_address)}\n"
+        ret += f"Ends:      {hex(self.absolute_address+ size-1)}\n"
+        ret += f"Size:      {size_fmt(size, use_kibibyte=False)}\n"
+        ret += f"Alignment: {size_fmt(self.alignment, use_kibibyte=False)}\n"
         if self.pattern:
             ret += f"Pattern:{self.pattern.pattern}\n"
         if self.description:
@@ -307,12 +238,19 @@ class BinaryImage:
                 widths.append(child.get_min_draw_width() + 2)  # +2 means add vertical borders
         return max(widths)
 
-    def draw(self, include_sub_images: bool = True, width: int = 0, color: str = "") -> str:
+    def draw(
+        self,
+        include_sub_images: bool = True,
+        width: int = 0,
+        color: str = "",
+        no_color: bool = False,
+    ) -> str:
         """Draw the image into the ASCII graphics.
 
         :param include_sub_images: Include also sub images into, defaults to True
         :param width: Fixed width of table, 0 means autosize.
         :param color: Color of this block, None means automatic color.
+        :param no_color: Disable adding colors into output.
         :raises SPSDKValueError: In case of invalid width.
         :return: ASCII art representation of image.
         """
@@ -338,21 +276,24 @@ class BinaryImage:
             assert spaces >= 0, "Binary Image Draw: Center line is longer than width"
             padding_l = int(spaces / 2)
             padding_r = int(spaces - padding_l)
-            return color + f"|{' '*padding_l}{text}{' '*padding_r}|" + colorama.Fore.WHITE + "\n"
+            return color + f"|{' '*padding_l}{text}{' '*padding_r}|\n"
 
         def wrap_block(inner: str) -> str:
             wrapped_block = ""
             lines = inner.splitlines(keepends=False)
             for line in lines:
-                wrapped_block += color + "|" + line + color + "|" + colorama.Fore.WHITE + "\n"
+                wrapped_block += color + "|" + line + color + "|\n"
             return wrapped_block
 
-        color_picker = ColorPicker()
-        try:
-            self.validate()
-            color = color or color_picker.get_color()
-        except SPSDKError:
-            color = colorama.Fore.RED
+        if no_color:
+            color = ""
+        else:
+            color_picker = ColorPicker()
+            try:
+                self.validate()
+                color = color or color_picker.get_color()
+            except SPSDKError:
+                color = colorama.Fore.RED
 
         block = "" if self.parent else "\n"
         min_width = self.get_min_draw_width(include_sub_images)
@@ -365,8 +306,8 @@ class BinaryImage:
             )
 
         # - Title line
-        header = f"+--{format_value(self.offset, 32)}--{self.name}--"
-        block += color + f"{header}{'-'*(width-len(header)-1)}+" + colorama.Fore.WHITE + "\n"
+        header = f"+--{format_value(self.absolute_address, 32)}--{self.name}--"
+        block += color + f"{header}{'-'*(width-len(header)-1)}+\n"
         # - Size
         block += _get_centered_line(f"Size: {size_fmt(len(self), False)}")
         # - Description
@@ -389,16 +330,17 @@ class BinaryImage:
                 inner_block = child.draw(
                     include_sub_images=include_sub_images,
                     width=width - 2,
-                    color=color_picker.get_color(color),
+                    color="" if no_color else color_picker.get_color(color),
+                    no_color=no_color,
                 )
                 block += wrap_block(inner_block)
 
         # - Closing line
-        footer = f"+--{format_value(self.offset + len(self) - 1, 32)}--"
-        block += color + f"{footer}{'-'*(width-len(footer)-1)}+" + colorama.Fore.WHITE + "\n"
+        footer = f"+--{format_value(self.absolute_address + len(self) - 1, 32)}--"
+        block += color + f"{footer}{'-'*(width-len(footer)-1)}+\n"
 
         if self.parent is None:
-            block += "\n" + colorama.Fore.RESET
+            block += "\n" + "" if no_color else colorama.Fore.RESET
         return block
 
     def update_offsets(self) -> None:
@@ -424,7 +366,7 @@ class BinaryImage:
         for image in self.sub_images:
             size = image.offset + len(image)
             max_size = max(size, max_size)
-        return max_size
+        return align(max_size, self.alignment)
 
     def export(self) -> bytes:
         """Export represented binary image.
@@ -436,7 +378,7 @@ class BinaryImage:
             ret[: len(self.binary)] = self.binary
         for image in self.sub_images:
             ret[image.offset : image.offset + len(image)] = image.export()[: len(image)]
-        return ret
+        return align_block(ret, self.alignment, self.pattern)
 
     @staticmethod
     def get_validation_schemas() -> List[Dict[str, Any]]:

@@ -270,6 +270,6 @@ def test_generate_template(tmpdir):
         assert result.exit_code == 0
         assert os.path.isfile(template)
         with open(template) as f:
-            data = yaml.load(f)
+            data = yaml.safe_load(f)
         # there should be at least 5 items in the template
         assert len(data) > 5

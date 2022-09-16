@@ -36,8 +36,9 @@ from spsdk.dat.debug_credential import DebugCredential
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.debuggers.debug_probe import DebugProbe
 from spsdk.debuggers.utils import PROBES, DebugProbeUtils, test_ahb_access
+from spsdk.utils.crypto.rkht import RKHT
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import find_file, load_configuration, write_file
+from spsdk.utils.misc import find_file, load_binary, load_configuration, write_file
 
 logger = logging.getLogger(__name__)
 colorama.init()
@@ -168,7 +169,10 @@ def _open_debugmbox(pass_obj: Dict) -> Iterator[DebugMailbox]:
     "-o",
     "--debug-probe-option",
     multiple=True,
-    help="This option could be used " "multiply to setup non-standard option for debug probe.",
+    help=(
+        "This option could be used multiply to setup non-standard option for debug probe."
+        " The example of use: -o KEY=VALUE"
+    ),
 )
 @click.option(
     "--operation-timeout",
@@ -231,8 +235,7 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool)
         logger.info("Starting Debug Authentication")
 
         with _open_debugmbox(pass_obj) as mail_box:
-            with open(certificate, "rb") as f:
-                debug_cred_data = f.read()
+            debug_cred_data = load_binary(certificate)
             debug_cred = DebugCredential.parse(debug_cred_data)
             dac_rsp_len = 30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc == 4 else 26
             dac_data = dm_commands.DebugAuthenticationStart(dm=mail_box, resplen=dac_rsp_len).run()
@@ -663,12 +666,16 @@ def gendc(
     assert "rot_id" in yaml_content, "Config file doesn't contain the 'rot_id' field"
 
     logger.info(f"Creating {'RSA' if is_rsa else 'ECC'} debug credential object...")
-    dc = DebugCredential.create_from_yaml_config(version=protocol, yaml_config=yaml_content)
+    rotkh = RKHT(keys=yaml_content["rot_meta"], search_paths=[os.path.dirname(config)]).rotkh()
+    click.echo(f"RoT Key Hash: {rotkh.hex()}")
+    dc = DebugCredential.create_from_yaml_config(
+        version=protocol, yaml_config=yaml_content, search_paths=[os.path.dirname(config)]
+    )
     dc.sign()
     data = dc.export()
     logger.info("Saving the debug credential to a file...")
-    with open(dc_file_path, "wb") as f:
-        f.write(data)
+    write_file(data, dc_file_path, mode="wb")
+
     print_output(True, "Creating Debug credential file")
 
 
@@ -681,7 +688,7 @@ def gendc(
     default=False,
     help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
 )
-def get_cfg_template(output: click.Path, force: bool) -> None:
+def get_cfg_template(output: str, force: bool) -> None:
     """Generate the template of Debug Credentials YML configuration file.
 
     \b

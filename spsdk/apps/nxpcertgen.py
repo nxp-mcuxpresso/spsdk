@@ -31,7 +31,7 @@ from spsdk.crypto import (
 )
 from spsdk.crypto.certificate_management import generate_name
 from spsdk.crypto.loaders import extract_public_key, load_certificate
-from spsdk.utils.misc import load_configuration
+from spsdk.utils.misc import find_file, load_configuration
 
 NXPCERTGEN_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpcertgen")
 
@@ -105,9 +105,12 @@ def generate(config: str, output: str, encoding: str, force: bool) -> None:
 
     config_data = load_configuration(config)
     cert_config = CertificateParametersConfig(config_data)
+    search_paths = [os.path.dirname(config)]
 
-    priv_key = load_private_key(cert_config.issuer_private_key)
-    pub_key = load_public_key(cert_config.subject_public_key)
+    priv_key = load_private_key(
+        find_file(cert_config.issuer_private_key, search_paths=search_paths)
+    )
+    pub_key = load_public_key(find_file(cert_config.subject_public_key, search_paths=search_paths))
 
     certificate = generate_certificate(
         subject=cert_config.subject_name,

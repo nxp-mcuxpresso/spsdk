@@ -11,22 +11,19 @@ from typing import Any, Dict, List, Optional
 
 from spsdk import SPSDKError
 from spsdk.utils.database import Database
+from spsdk.utils.misc import value_to_int
 
 
 class RegConfig(Database):
     """Class that helps manage the registers configuration."""
 
-    def get_address(self, device: str, remove_underscore: bool = False) -> str:
+    def get_address(self, device: str) -> int:
         """Get the area address in chip memory.
 
         :param device: The device name.
-        :param remove_underscore: Remove underscore from address if set.
         :return: Base address of registers.
         """
-        address = self.config["devices"][device]["address"]
-        if remove_underscore:
-            return address.replace("_", "")
-        return address
+        return value_to_int(self.config["devices"][device]["address"])
 
     def get_data_file(self, device: str, revision: str) -> str:
         """Return the full path to data file (xml).
@@ -59,15 +56,15 @@ class RegConfig(Database):
         assert isinstance(val, dict)
         return dict(val)
 
-    def get_computed_registers(self, device: str = None) -> List[str]:
-        """Return the list of computed registers.
+    def get_computed_registers(self, device: str = None) -> Dict[str, Any]:
+        """Return the dictionary of computed registers.
 
         :param device: The device name, if not specified, the general value is used.
-        :return: The list of computed registers.
+        :return: The dictionary of computed registers.
         """
-        val = self.get_value("computed_registers", device, default=[])
-        assert isinstance(val, list)
-        return list(val)
+        val = self.get_value("computed_registers", device, default={})
+        assert isinstance(val, dict)
+        return val
 
     def get_grouped_registers(self, device: str = None) -> List[dict]:
         """Return the list of grouped registers description.

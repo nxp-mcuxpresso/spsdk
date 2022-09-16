@@ -10,12 +10,18 @@
             "inverted_regs": {
                 "INVERTED_REG": "INVERTED_REG_AP"
             },
-            "computed_registers": [
-                "COMPUTED_REG"
-            ],
+            "computed_registers": {
+                "COMPUTED_REG": ""
+            },
             "computed_fields": {
-                "COMPUTED_REG": {"TEST_FIELD1": "computed_reg_test_field1", "TEST_FIELD2": "computed_reg_test_field2"},
-                "COMPUTED_REG2": {"TEST_FIELD1": "computed_reg2_test_field1", "TEST_FIELD2": "computed_reg2_test_field2"}
+                "COMPUTED_REG": {
+                    "TEST_FIELD1": "computed_reg_test_field1",
+                    "TEST_FIELD2": "computed_reg_test_field2"
+                },
+                "COMPUTED_REG2": {
+                    "TEST_FIELD1": "computed_reg2_test_field1",
+                    "TEST_FIELD2": "computed_reg2_test_field2"
+                }
             },
             "ignored_registers": [
                 "IGNORED_REG"
@@ -24,7 +30,9 @@
                 "FIELD"
             ],
             "grouped_registers": [
-                {"name": "DeviceTest"}
+                {
+                    "name": "DeviceTest"
+                }
             ],
             "seal_start": "COMPUTED_REG",
             "seal_count": 4
@@ -39,17 +47,23 @@
                 "INVERTED_REG": "INVERTED_REG_AP"
             },
             "computed_fields": {
-                "COMPUTED_REG": {"TEST_FIELD1": "computed_reg_test_field1", "TEST_FIELD2": "computed_reg_test_field2"},
-                "COMPUTED_REG2": {"TEST_FIELD1": "computed_reg2_test_field1", "TEST_FIELD2": "computed_reg2_test_field2"}
+                "COMPUTED_REG": {
+                    "TEST_FIELD1": "computed_reg_test_field1",
+                    "TEST_FIELD2": "computed_reg_test_field2"
+                },
+                "COMPUTED_REG2": {
+                    "TEST_FIELD1": "computed_reg2_test_field1",
+                    "TEST_FIELD2": "computed_reg2_test_field2"
+                }
             }
         }
     },
     "inverted_regs": {
-                "INVERTED_REG": "INVERTED_REG_AP"
-            },
-    "computed_registers": [
-        "COMPUTED_REG_GENERAL"
-    ],
+        "INVERTED_REG": "INVERTED_REG_AP"
+    },
+    "computed_registers": {
+        "COMPUTED_REG_GENERAL": "Hello"
+    },
     "ignored_registers": [
         "IGNORED_REG_GENERAL"
     ],
@@ -57,7 +71,9 @@
         "FIELD_GENERAL"
     ],
     "grouped_registers": [
-        {"name": "Test"}
+        {
+            "name": "Test"
+        }
     ],
     "seal_start": "COMPUTED_REG2",
     "seal_count": 8

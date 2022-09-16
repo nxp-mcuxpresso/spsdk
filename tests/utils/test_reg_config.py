@@ -58,10 +58,10 @@ def test_reg_config_get_address(data_dir):
     reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
 
     addr = reg_config.get_address("test_device1")
-    assert addr == "0xA5A5_1234"
+    assert addr == 0xA5A51234
 
-    addr = reg_config.get_address("test_device2", remove_underscore=True)
-    assert addr == "0x40000000"
+    addr = reg_config.get_address("test_device2")
+    assert addr == 0x40000000
 
 
 def test_reg_config_get_data_file(data_dir):

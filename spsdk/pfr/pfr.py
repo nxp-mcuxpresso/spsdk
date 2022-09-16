@@ -220,7 +220,7 @@ class BaseConfigArea:
     """Base for CMPA and CFPA classes."""
 
     CONFIG_DIR = PFR_DATA_FOLDER
-    CONFIG_FILE = "database.json"
+    CONFIG_FILE = "database.yaml"
     BINARY_SIZE = 512
     ROTKH_SIZE = 32
     ROTKH_REGISTER = "ROTKH"
@@ -354,8 +354,8 @@ class BaseConfigArea:
         if not config.revision or config.revision in ("latest", ""):
             config.revision = self.config.get_latest_revision(self.device)
             logger.warning(
-                f"The configuration file doesn't contains silicon revision, \
-the latest: '{config.revision}' has been used."
+                f"The configuration file doesn't contains silicon revision,"
+                f" the latest: '{config.revision}' has been used."
             )
         if config.revision != self.revision:
             raise SPSDKPfrConfigError(
@@ -372,12 +372,12 @@ the latest: '{config.revision}' has been used."
         computed_regs = []
         computed_regs.extend(self.config.get_ignored_registers(self.device))
         if not raw:
-            computed_regs.extend(self.config.get_computed_registers(self.device))
+            computed_regs.extend(list(self.config.get_computed_registers(self.device).keys()))
         computed_fields = None if raw else self.config.get_computed_fields(self.device)
 
         self.registers.load_yml_config(config.settings, computed_regs, computed_fields)
         if not raw:
-            # # Just update only configured registers
+            # Just update only configured registers
             exclude_hooks = []
             if not self.config.get_value("mandatory_computed_regs", self.device):
                 exclude_hooks.extend(
@@ -396,7 +396,9 @@ the latest: '{config.revision}' has been used."
         :return: YAML PFR configuration in commented map(ordered dict).
         """
         computed_regs = (
-            None if not exclude_computed else self.config.get_computed_registers(self.device)
+            None
+            if not exclude_computed
+            else list(self.config.get_computed_registers(self.device).keys())
         )
         computed_fields = (
             None if not exclude_computed else self.config.get_computed_fields(self.device)

@@ -831,8 +831,8 @@ class CmdVersionCheck(CmdBaseClass):
 
     def __str__(self) -> str:
         return (
-            super().__str__()
-            + f" type={VersionCheckType.name(self.type)}, version={str(self.version)}"
+            f"CVER: Type={VersionCheckType.name(self.type)}, Version={str(self.version)}, "
+            f"Flags=0x{self.header.flags:08X}"
         )
 
     @classmethod

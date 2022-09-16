@@ -350,15 +350,16 @@ class ConfigTemplate:
         ret: Optional[Union[CM, CS, str, int, float, List]] = None
         if "oneOf" in block.keys():
             ret = self._create_one_of_block(block)
-        elif schema_type is None:
-            raise SPSDKError("Type not available")
-        elif schema_type == "object":
-            ret = self._create_object_block(block)  # type: ignore
-        elif schema_type == "array":
-            ret = self._create_array_block(block)  # type: ignore
         else:
-            assert "template_value" in block.keys()
-            ret = block.get("template_value")
+            assert schema_type, f"Type not available in block: {block}"
+
+            if schema_type == "object":
+                ret = self._create_object_block(block)  # type: ignore
+            elif schema_type == "array":
+                ret = self._create_array_block(block)  # type: ignore
+            else:
+                assert "template_value" in block.keys()
+                ret = block.get("template_value")
 
         assert isinstance(ret, (CM, CS, str, int, float, list)) or ret is None
 

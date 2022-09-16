@@ -28,6 +28,9 @@ class KeyStore:
         1424  # Size can be device-specific, the current value is valid for RT5xx and RT6xx
     )
 
+    OTP_MASTER_KEY_SIZE = 32  # Size of OTP master key in bytes
+    OTFAD_KEY_SIZE = 16  # Size of OTFAD key in bytes
+
     @property
     def key_source(self) -> KeySourceType:
         """Device key source."""
@@ -112,9 +115,9 @@ class KeyStore:
         :raises SPSDKError: If invalid length of master key
         :raises SPSDKError: If invalid length of input
         """
-        if len(master_key) != 32:
+        if len(master_key) != KeyStore.OTP_MASTER_KEY_SIZE:
             raise SPSDKError("Invalid length of master key")
-        if len(otfad_input) != 16:
+        if len(otfad_input) != KeyStore.OTFAD_KEY_SIZE:
             raise SPSDKError("Invalid length of input")
         aes = AES.new(master_key, AES.MODE_ECB)
         return aes.encrypt(otfad_input)
