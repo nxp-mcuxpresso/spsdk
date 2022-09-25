@@ -101,6 +101,9 @@ class BDLexer(Lexer):
         "keyblob": "KEYBLOB",
         "reset": "RESET",
         "encrypt": "ENCRYPT",
+        "version_check": "VERSION_CHECK",
+        "sec": "SEC",
+        "nsec": "NSEC",
     }
 
     # List of token names. This is always required

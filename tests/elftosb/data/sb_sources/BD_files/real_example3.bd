@@ -9,6 +9,10 @@ sources {
      myImage = "sb_sources/output_images/application_signed.bin";          // Put location of Signed or UnSigned image input
 }
 section (0) {
+    // Check FW version
+    version_check sec 0xafbc;
+    version_check nsec 1;
+
     // FUSES: user_otp_config
     // USER_BANK1_0 = 00000001
     load fuse 1 > 0x01000188;
