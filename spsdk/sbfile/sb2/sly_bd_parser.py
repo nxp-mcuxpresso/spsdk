@@ -674,6 +674,7 @@ class BDParser(Parser):
         "enable_stmt",
         "reset_stmt",
         "keystore_stmt",
+        "version_stmt",
     )
     def basic_stmt(self, token: YaccProduction) -> Dict:  # type: ignore
         """Parser rule.
@@ -1182,6 +1183,48 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         """
         self.error(token, ": empty memory option is not supported.")
+
+    @_("VERSION_CHECK sec_or_nsec fw_version")  # type: ignore
+    def version_stmt(self, token: YaccProduction) -> Dict:  # type: ignore
+        """Parser rule.
+
+        :param token: object holding the content defined in decorator.
+        :return: dictionary holding the content of version check statement.
+        """
+        dictionary: Dict = {token.VERSION_CHECK: {}}
+        dictionary[token.VERSION_CHECK].update(token.sec_or_nsec)
+        dictionary[token.VERSION_CHECK].update(token.fw_version)
+        return dictionary
+
+    @_("SEC")  # type: ignore
+    def sec_or_nsec(self, token: YaccProduction) -> Dict:  # type: ignore
+        """Parser rule.
+
+        :param token: object holding the content defined in decorator.
+        :return: dictionary holding the content of version check type.
+        """
+        dictionary = {"ver_type": 0}
+        return dictionary
+
+    @_("NSEC")  # type: ignore
+    def sec_or_nsec(self, token: YaccProduction) -> Dict:  # type: ignore
+        """Parser rule.
+
+        :param token: object holding the content defined in decorator.
+        :return: dictionary holding the content of version check type.
+        """
+        dictionary = {"ver_type": 1}
+        return dictionary
+
+    @_("int_const_expr")  # type: ignore
+    def fw_version(self, token: YaccProduction) -> Dict:  # type: ignore
+        """Parser rule.
+
+        :param token: object holding the content defined in decorator.
+        :return: dictionary holding the content of fw version.
+        """
+        dictionary = {"fw_version": token.int_const_expr}
+        return dictionary
 
     @_("IF bool_expr LBRACE statement RBRACE else_stmt")  # type: ignore
     def if_stmt(self, token: YaccProduction) -> List:  # type: ignore
