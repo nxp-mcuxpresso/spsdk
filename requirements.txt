@@ -8,7 +8,7 @@ click>=7.1,<8.2
 colorama>=0.4.4,<1
 commentjson>=0.9,<1
 crcmod==1.7
-cryptography>=3.4.4,<37
+cryptography>=3.4.4,<38
 deepmerge==0.3.0
 fastjsonschema >=2.15.1
 hexdump~=3.3

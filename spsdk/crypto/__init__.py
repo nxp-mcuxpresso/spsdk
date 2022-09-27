@@ -48,7 +48,6 @@ from cryptography.exceptions import InvalidSignature
 # Explicit import due to MYPY issue
 from cryptography.hazmat.backends import *
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.backends.interfaces import *
 from cryptography.hazmat.backends.openssl.rsa import *
 
 # Explicit import due to MYPY issue
