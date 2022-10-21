@@ -15,6 +15,7 @@ tz_family_rev:
         - lpc55s1x
         - lpc55s3x
         - lpc55s6x
+        - nhs52sxx
         - rt5xx
         - rt6xx
       template_value: lpc55xx

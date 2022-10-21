@@ -44,10 +44,10 @@
         },
         "latest": "a0"
     },
-    "nhs5200": {
+    "nhs52s04": {
         "revisions": {
-            "a0": "nhs5200.json"
+            "a1": "nhs52s04.json"
         },
-        "latest": "a0"
+        "latest": "a1"
     }
 }

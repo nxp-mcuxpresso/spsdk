@@ -1,0 +1,554 @@
+# NXP lpc55s3x PFR CMPA configuration
+description:  # The PFR CMPA configuration description.
+  device: lpc55s3x  # The NXP device name.
+  revision: 1a # The NXP device revision.
+  type: CMPA # The PFR type (CMPA, CFPA).
+  version: 1.7.1 # The SPSDK tool version.
+  author: NXP # The author of the configuration.
+  release: alpha # The SPSDK release.
+settings: # The PFR CMPA registers configuration.
+  BOOT_CFG:  # Boot Configuration
+    bitfields:  # The register bitfields
+      DEFAULT_BOOT_SOURCE: BOOT_CFG_DEFAULT_BOOT_SOURCE_ISP_PIN  # Width: 3b[0-7], Description: Default Boot Source
+      # - BOOT_CFG_DEFAULT_BOOT_SOURCE_ISP_PIN, (0): ISP pin source
+      # - BOOT_CFG_DEFAULT_BOOT_SOURCE_FLEXSPI_FLASH, (1): FlexSPI flash
+      # - BOOT_CFG_DEFAULT_BOOT_SOURCE_SERIAL_ISP_BOOT, (2): Serial ISP boot
+      # - BOOT_CFG_DEFAULT_BOOT_SOURCE_INTERNAL_FLASH, (3): Internal Flash
+      # - BOOT_CFG_DEFAULT_BOOT_SOURCE_AUTO_BOOT, (4): Auto boot similar to ISP
+      # - BOOT_CFG_DEFAULT_BOOT_SOURCE_RESERVED_0, (5): Reserved.
+      # - BOOT_CFG_DEFAULT_BOOT_SOURCE_RESERVED_1, (6): Reserved.
+      # - BOOT_CFG_DEFAULT_BOOT_SOURCE_RESERVED_2, (7): Reserved.
+      DEFAULT_ISP_MODE: BOOT_CFG_DEFAULT_ISP_MODE_AUTO_ISP # Width: 3b[0-7], Description: Default ISP mode
+      # - BOOT_CFG_DEFAULT_ISP_MODE_AUTO_ISP, (0): Auto ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_USB_HID_MSC, (1): USB HID MSC
+      # - BOOT_CFG_DEFAULT_ISP_MODE_UART_ISP, (2): UART ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_SPI_ISP, (3): SPI Slave ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_I2C_ISP, (4): I2C Slave ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_CAN_ISP, (5): CAN ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_RESERVED, (6): Reserved.
+      # - BOOT_CFG_DEFAULT_ISP_MODE_DISABLE_ISP_FALL_THRU, (7): Disable ISP fall through
+      BOOT_SPEED: BOOT_CFG_BOOT_SPEED_SYS_SPD_CODE # Width: 2b[0-3], Description: Boot Speed Core Clock
+      # - BOOT_CFG_BOOT_SPEED_SYS_SPD_CODE, (0): Defined by NMPA[SYSTEM_SPEED_CODE]
+      # - BOOT_CFG_BOOT_SPEED_HHZ48_FRO, (1): 48MHz FRO
+      # - BOOT_CFG_BOOT_SPEED_MHZ96_FRO, (2): 96MHz FRO
+      # - BOOT_CFG_BOOT_SPEED_MHZ150_PLL, (3): 150MHz PLL
+      ITRC_ZEROIZE: BOOT_CFG_ITRC_ZEROIZE_NO_ACTION # Width: 2b[0-3], Description: ITRC_ZEROIZE
+      # - BOOT_CFG_ITRC_ZEROIZE_NO_ACTION, (0): No action
+      # - BOOT_CFG_ITRC_ZEROIZE_PKC_RAM, (1): Zeroize PKC RAM
+      # - BOOT_CFG_ITRC_ZEROIZE_A0_RAM, (2): Zeroize low power RAM (AO_RAM)
+      # - BOOT_CFG_ITRC_ZEROIZE_BOTH_A0_AND_PKC_RAM, (3): Zeroize both AO_RAM and PKC_RAM
+      ASRT_FATAL: 0 # Width: 1b[0-1], Description: ASRT_FATAL
+      ASRT_RBF: 0 # Width: 1b[0-1], Description: ASRT_RBF
+      ASRT_ISPF: 0 # Width: 1b[0-1], Description: ASRT_ISPF
+      BOOT_FAILURE_PIN: 0 # Width: 8b[0-255], Description: Boot Failure Pin
+  SPI_CAN_CFG: # SPI CAN Configuration
+    bitfields:  # The register bitfields
+      SPI_RECOVERY_BOOT_EN: 0  # Width: 2b[0-3], Description: SPI Recovery Boot Enable
+      SPI_REC_IF: SPI_CAN_CFG_SPI_REC_IF_HSPI # Width: 3b[0-7], Description: SPI Recovery Interface
+      # - SPI_CAN_CFG_SPI_REC_IF_HSPI, (0): HSPI P1_3-MISO, P0_26-MOSI, P1_1-SSEL1, P1_2-SCK
+      # - SPI_CAN_CFG_SPI_REC_IF_FC0, (1): FC0 P0_30-MISO, P0_24-MOSI, P0_31-SSEL0, P0_28-SCK
+      # - SPI_CAN_CFG_SPI_REC_IF_FC3, (2): FC3 P0_2-MISO, P0_3-MOSI, P0_4-SSEL0, P0_6-SCK
+      # - SPI_CAN_CFG_SPI_REC_IF_FC1, (3): FC1 P2_4-MISO, P2_3-MOSI, P2_5-SSEL0, P1_9-SCK
+      # - SPI_CAN_CFG_SPI_REC_IF_RESERVED_0, (4): Reserved.
+      # - SPI_CAN_CFG_SPI_REC_IF_RESERVED_1, (5): Reserved.
+      # - SPI_CAN_CFG_SPI_REC_IF_RESERVED_2, (6): Reserved.
+      # - SPI_CAN_CFG_SPI_REC_IF_RESERVED_3, (7): Reserved.
+      CAN_BAUD_RATE: SPI_CAN_CFG_CAN_BAUD_RATE_AUTO_BAUD_DETECT # Width: 4b[0-15], Description: CAN Baud Rate
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_AUTO_BAUD_DETECT, (0): Auto baud detection (125K, 250K, 500K, 1M). Default.
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_KBPS_10, (1): 10 kbp
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_KBPS_20, (2): 20 kbp
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_KBPS_50, (3): 50 kbps
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_KBPS_125, (4): 125 kbps
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_KBPS_250, (5): 250 kbps
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_KBPS_500, (6): 500 kbps
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_KBPS_800, (7): 800 kbps
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_KBPS_1000, (8): 1,000 kbps
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_RESERVED_0, (9): Reserved.
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_RESERVED_1, (10): Reserved.
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_RESERVED_2, (11): Reserved.
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_RESERVED_3, (12): Reserved.
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_RESERVED_4, (13): Reserved.
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_RESERVED_5, (14): Reserved.
+      # - SPI_CAN_CFG_CAN_BAUD_RATE_RESERVED_6, (15): Reserved.
+  USB_ID: # USB Identifiers
+    bitfields:  # The register bitfields
+      USB_VENDOR_ID: 0  # Width: 16b[0-65535], Description: USB Vendor ID
+      USB_PRODUCT_ID: 0 # Width: 16b[0-65535], Description: USB Product ID
+  BOOT_TIMEOUT: # Boot Timeout
+    bitfields:  # The register bitfields
+      POWERDOWN_TIMEOUT_SECS: 0  # Width: 16b[0-65535], Description: Powerdown Timeout
+      WDOG_TIMEOUT_SECS: 0 # Width: 16b[0-65535], Description: WDOG Timeout
+  DCFG_CC_SOCU_PIN: # Device Configuration Credential Constraints for SoC specific Use Pinned
+    bitfields:  # The register bitfields
+      NIDEN: DCFG_CC_SOCU_PIN_NIDEN_USE_DAP  # Width: 1b[0-1], Description: Non-secure Non-invasive Debug Enable
+      # - DCFG_CC_SOCU_PIN_NIDEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_NIDEN_FIXED_STATE, (1): Fixed state
+      DBGEN: DCFG_CC_SOCU_PIN_DBGEN_USE_DAP # Width: 1b[0-1], Description: Non-secure Debug Enable
+      # - DCFG_CC_SOCU_PIN_DBGEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_DBGEN_FIXED_STATE, (1): Fixed state
+      SPNIDEN: DCFG_CC_SOCU_PIN_SPNIDEN_USE_DAP # Width: 1b[0-1], Description: Secure Non-invasive Debug Enable
+      # - DCFG_CC_SOCU_PIN_SPNIDEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_SPNIDEN_FIXED_STATE, (1): Fixed state
+      SPIDEN: DCFG_CC_SOCU_PIN_SPIDEN_USE_DAP # Width: 1b[0-1], Description: Secure Invasive Debug Enable
+      # - DCFG_CC_SOCU_PIN_SPIDEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_SPIDEN_FIXED_STATE, (1): Fixed state
+      DSP_DBGEN: DCFG_CC_SOCU_PIN_DSP_DBGEN_USE_DAP # Width: 1b[0-1], Description: DSP Debug Enable
+      # - DCFG_CC_SOCU_PIN_DSP_DBGEN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_DSP_DBGEN_FIXED_STATE, (1): Fixed state
+      ISP_CMD_EN: DCFG_CC_SOCU_PIN_ISP_CMD_EN_USE_DAP # Width: 1b[0-1], Description: ISP Boot Command Enable
+      # - DCFG_CC_SOCU_PIN_ISP_CMD_EN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_ISP_CMD_EN_FIXED_STATE, (1): Fixed state
+      FA_CMD_EN: DCFG_CC_SOCU_PIN_FA_CMD_EN_USE_DAP # Width: 1b[0-1], Description: FA Command Enable
+      # - DCFG_CC_SOCU_PIN_FA_CMD_EN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_FA_CMD_EN_FIXED_STATE, (1): Fixed state
+      ME_CMD_EN: DCFG_CC_SOCU_PIN_ME_CMD_EN_USE_DAP # Width: 1b[0-1], Description: Flash Mass Erase Command Enable
+      # - DCFG_CC_SOCU_PIN_ME_CMD_EN_USE_DAP, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_ME_CMD_EN_FIXED_STATE, (1): Fixed state
+      UUID_CHECK: 0 # Width: 1b[0-1], Description: UUID Check
+      INVERSE_VALUE: 0 # Width: 16b[0-65535], Description: Inverse Value
+  DCFG_CC_SOCU_DFLT: # Device Configuration Credential Constraints for SoC specific Use Debug Filter
+    bitfields:  # The register bitfields
+      NIDEN: DCFG_CC_SOCU_DFLT_NIDEN_DISABLED  # Width: 1b[0-1], Description: Non Secure Non-invasive Debug Fixed State
+      # - DCFG_CC_SOCU_DFLT_NIDEN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_NIDEN_ENABLED, (1): Enabled
+      DBGEN: DCFG_CC_SOCU_DFLT_DBGEN_DISABLED # Width: 1b[0-1], Description: Non-secure Debug Fixed State
+      # - DCFG_CC_SOCU_DFLT_DBGEN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_DBGEN_ENABLED, (1): Enabled
+      SPNIDEN: DCFG_CC_SOCU_DFLT_SPNIDEN_DISABLED # Width: 1b[0-1], Description: Secure Non-invasive Debug Fixed State
+      # - DCFG_CC_SOCU_DFLT_SPNIDEN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_SPNIDEN_ENABLED, (1): Enabled
+      SPIDEN: DCFG_CC_SOCU_DFLT_SPIDEN_DISABLED # Width: 1b[0-1], Description: Secure Invasive Debug Fixed State
+      # - DCFG_CC_SOCU_DFLT_SPIDEN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_SPIDEN_ENABLED, (1): Enabled
+      DSP_DBGEN: DCFG_CC_SOCU_DFLT_DSP_DBGEN_DISABLED # Width: 1b[0-1], Description: DSP Debug Fixed State
+      # - DCFG_CC_SOCU_DFLT_DSP_DBGEN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_DSP_DBGEN_ENABLED, (1): Enabled
+      ISP_CMD_EN: DCFG_CC_SOCU_DFLT_ISP_CMD_EN_DISABLED # Width: 1b[0-1], Description: ISP Command Fixed State
+      # - DCFG_CC_SOCU_DFLT_ISP_CMD_EN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_ISP_CMD_EN_ENABLED, (1): Enabled
+      FA_CMD_EN: DCFG_CC_SOCU_DFLT_FA_CMD_EN_DISABLED # Width: 1b[0-1], Description: FA Command Fixed State
+      # - DCFG_CC_SOCU_DFLT_FA_CMD_EN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_FA_CMD_EN_ENABLED, (1): Enabled
+      ME_CMD_EN: DCFG_CC_SOCU_DFLT_ME_CMD_EN_DISABLED # Width: 1b[0-1], Description: Flash Mass Erase Command Fixed State
+      # - DCFG_CC_SOCU_DFLT_ME_CMD_EN_DISABLED, (0): Disabled
+      # - DCFG_CC_SOCU_DFLT_ME_CMD_EN_ENABLED, (1): Enabled
+      INVERSE_VALUE: 0 # Width: 16b[0-65535], Description: Inverse Value
+  VENDOR_USAGE: # Vendor Usage
+    bitfields:  # The register bitfields
+      VENDOR_USAGE: 0  # Width: 16b[0-65535], Description: Vendor Usage [31:16]
+  SECURE_BOOT_CFG: # Secure Boot Configuration
+    bitfields:  # The register bitfields
+      ENF_CNSA: SECURE_BOOT_CFG_ENF_CNSA_ECC_P256  # Width: 2b[0-3], Description: Enforce CNSA
+      # - SECURE_BOOT_CFG_ENF_CNSA_ECC_P256, (0): ECC P-256 keys
+      # - SECURE_BOOT_CFG_ENF_CNSA_ECC_P384_0, (1): ECC P-384 keys, SHA384 and AES256
+      # - SECURE_BOOT_CFG_ENF_CNSA_ECC_P384_1, (2): ECC P-384 keys, SHA384 and AES256
+      # - SECURE_BOOT_CFG_ENF_CNSA_ECC_P384_2, (3): ECC P-384 keys, SHA384 and AES256
+      DICE_INC_NXP_CFG: SECURE_BOOT_CFG_DICE_INC_NXP_CFG_NOT_INCLUDE # Width: 2b[0-3], Description: DICE Include NXP Configuration
+      # - SECURE_BOOT_CFG_DICE_INC_NXP_CFG_NOT_INCLUDE, (0): Not included
+      # - SECURE_BOOT_CFG_DICE_INC_NXP_CFG_INCLUDE_0, (1): Included
+      # - SECURE_BOOT_CFG_DICE_INC_NXP_CFG_INCLUDE_1, (2): Included
+      # - SECURE_BOOT_CFG_DICE_INC_NXP_CFG_INCLUDE_2, (3): Included
+      DICE_CUST_CFG: SECURE_BOOT_CFG_DICE_CUST_CFG_NOT_INCLUDE # Width: 2b[0-3], Description: DICE Customer Configuration
+      # - SECURE_BOOT_CFG_DICE_CUST_CFG_NOT_INCLUDE, (0): Not included
+      # - SECURE_BOOT_CFG_DICE_CUST_CFG_INCLUDE_0, (1): Included
+      # - SECURE_BOOT_CFG_DICE_CUST_CFG_INCLUDE_1, (2): Included
+      # - SECURE_BOOT_CFG_DICE_CUST_CFG_INCLUDE_2, (3): Included
+      SKIP_DICE: SECURE_BOOT_CFG_SKIP_DICE_ENABLE_DICE # Width: 2b[0-3], Description: Skip DICE computation.
+      # - SECURE_BOOT_CFG_SKIP_DICE_ENABLE_DICE, (0): Enable DICE
+      # - SECURE_BOOT_CFG_SKIP_DICE_DISABLE_DICE_0, (1): Disable DICE
+      # - SECURE_BOOT_CFG_SKIP_DICE_DISABLE_DICE_1, (2): Disable DICE
+      # - SECURE_BOOT_CFG_SKIP_DICE_DISABLE_DICE_2, (3): Disable DICE
+      ENF_TZM_PRESET: SECURE_BOOT_CFG_ENF_TZM_PRESET_IGNORE # Width: 2b[0-3], Description: Enforce TrustZone-M Preset
+      # - SECURE_BOOT_CFG_ENF_TZM_PRESET_IGNORE, (0): Ignored
+      # - SECURE_BOOT_CFG_ENF_TZM_PRESET_ENFORCE_0, (1): Enforce preset TZM data in image manifest.
+      # - SECURE_BOOT_CFG_ENF_TZM_PRESET_ENFORCE_1, (2): Enforce preset TZM data in image manifest.
+      # - SECURE_BOOT_CFG_ENF_TZM_PRESET_ENFORCE_2, (3): Enforce preset TZM data in image manifest.
+      BLOCK_SET_KEY: SECURE_BOOT_CFG_BLOCK_SET_KEY_ENABLE # Width: 2b[0-3], Description: Block Set Key
+      # - SECURE_BOOT_CFG_BLOCK_SET_KEY_ENABLE, (0): Enable key code generation
+      # - SECURE_BOOT_CFG_BLOCK_SET_KEY_DISABLE_0, (1): Disable key code generation
+      # - SECURE_BOOT_CFG_BLOCK_SET_KEY_DISABLE_1, (2): Disable key code generation
+      # - SECURE_BOOT_CFG_BLOCK_SET_KEY_DISABLE_2, (3): Disable key code generation
+      BLOCK_ENROLL: SECURE_BOOT_CFG_BLOCK_ENROLL_ENABLE # Width: 2b[0-3], Description: Block Enroll
+      # - SECURE_BOOT_CFG_BLOCK_ENROLL_ENABLE, (0): Enable enrollment mode
+      # - SECURE_BOOT_CFG_BLOCK_ENROLL_DISABLE_0, (1): Disable further enrollment
+      # - SECURE_BOOT_CFG_BLOCK_ENROLL_DISABLE_1, (2): Disable further enrollment
+      # - SECURE_BOOT_CFG_BLOCK_ENROLL_DISABLE_2, (3): Disable further enrollment
+      FIPS_SHA_STEN: SECURE_BOOT_CFG_FIPS_SHA_STEN_NOT_INCLUDE # Width: 2b[0-3], Description: FIPS_SHA_STEN
+      # - SECURE_BOOT_CFG_FIPS_SHA_STEN_NOT_INCLUDE, (0): Not included
+      # - SECURE_BOOT_CFG_FIPS_SHA_STEN_FAILURE_BOOT, (1): On failure continue to boot.
+      # - SECURE_BOOT_CFG_FIPS_SHA_STEN_FAILURE_ISP, (2): On failure enter ISP mode for recovery.
+      # - SECURE_BOOT_CFG_FIPS_SHA_STEN_FAILURE_ENF_POWER_CYC, (3): On failure lock the device to enforce power-cycle.
+      FIPS_AES_STEN: SECURE_BOOT_CFG_FIPS_AES_STEN_NOT_INCLUDE # Width: 2b[0-3], Description: FIPS_AES_STEN
+      # - SECURE_BOOT_CFG_FIPS_AES_STEN_NOT_INCLUDE, (0): Not included
+      # - SECURE_BOOT_CFG_FIPS_AES_STEN_FAILURE_BOOT, (1): On failure continue to boot.
+      # - SECURE_BOOT_CFG_FIPS_AES_STEN_FAILURE_ISP, (2): On failure enter ISP mode for recovery.
+      # - SECURE_BOOT_CFG_FIPS_AES_STEN_FAILURE_ENF_POWER_CYC, (3): On failure lock the device to enforce power-cycle.
+      FIPS_ECDSA_STEN: SECURE_BOOT_CFG_FIPS_ECDSA_STEN_NOT_INCLUDE # Width: 2b[0-3], Description: FIPS_ECDSA_STEN
+      # - SECURE_BOOT_CFG_FIPS_ECDSA_STEN_NOT_INCLUDE, (0): Not included
+      # - SECURE_BOOT_CFG_FIPS_ECDSA_STEN_FAILURE_BOOT, (1): On failure continue to boot.
+      # - SECURE_BOOT_CFG_FIPS_ECDSA_STEN_FAILURE_ISP, (2): On failure enter ISP mode for recovery.
+      # - SECURE_BOOT_CFG_FIPS_ECDSA_STEN_FAILURE_ENF_POWER_CYC, (3): On failure lock the device to enforce power-cycle.
+      FIPS_DRBG_STEN: SECURE_BOOT_CFG_FIPS_DRBG_STEN_NOT_INCLUDE # Width: 2b[0-3], Description: FIPS_DRBG_STEN
+      # - SECURE_BOOT_CFG_FIPS_DRBG_STEN_NOT_INCLUDE, (0): Not included
+      # - SECURE_BOOT_CFG_FIPS_DRBG_STEN_FAILURE_BOOT, (1): On failure continue to boot.
+      # - SECURE_BOOT_CFG_FIPS_DRBG_STEN_FAILURE_ISP, (2): On failure enter ISP mode for recovery.
+      # - SECURE_BOOT_CFG_FIPS_DRBG_STEN_FAILURE_ENF_POWER_CYC, (3): On failure lock the device to enforce power-cycle.
+      FIPS_CMAC_STEN: SECURE_BOOT_CFG_FIPS_CMAC_STEN_NOT_INCLUDE # Width: 2b[0-3], Description: FIPS_CMAC_STEN
+      # - SECURE_BOOT_CFG_FIPS_CMAC_STEN_NOT_INCLUDE, (0): Not included
+      # - SECURE_BOOT_CFG_FIPS_CMAC_STEN_FAILURE_BOOT, (1): On failure continue to boot.
+      # - SECURE_BOOT_CFG_FIPS_CMAC_STEN_FAILURE_ISP, (2): On failure enter ISP mode for recovery.
+      # - SECURE_BOOT_CFG_FIPS_CMAC_STEN_FAILURE_ENF_POWER_CYC, (3): On failure lock the device to enforce power-cycle.
+      FIPS_KDF_STEN: SECURE_BOOT_CFG_FIPS_KDF_STEN_NOT_INCLUDE # Width: 2b[0-3], Description: FIPS_KDF_STEN
+      # - SECURE_BOOT_CFG_FIPS_KDF_STEN_NOT_INCLUDE, (0): Not included
+      # - SECURE_BOOT_CFG_FIPS_KDF_STEN_FAILURE_BOOT, (1): On failure continue to boot.
+      # - SECURE_BOOT_CFG_FIPS_KDF_STEN_FAILURE_ISP, (2): On failure enter ISP mode for recovery.
+      # - SECURE_BOOT_CFG_FIPS_KDF_STEN_FAILURE_ENF_POWER_CYC, (3): On failure lock the device to enforce power-cycle.
+      SEC_BOOT_EN: SECURE_BOOT_CFG_SEC_BOOT_EN_PLAIN_IMAGE # Width: 2b[0-3], Description: Secure Boot Enable
+      # - SECURE_BOOT_CFG_SEC_BOOT_EN_PLAIN_IMAGE, (0): Plain image (internal flash with or without CRC)
+      # - SECURE_BOOT_CFG_SEC_BOOT_EN_CMAC_CHECK_IMAGE, (1): Do CMAC checking of image.
+      # - SECURE_BOOT_CFG_SEC_BOOT_EN_ECDSA_CHECK_IMAGE_0, (2): Do complete ECDSA checking of signed images. (internal flash, ECDSA signed)
+      # - SECURE_BOOT_CFG_SEC_BOOT_EN_ECDSA_CHECK_IMAGE_1, (3): Do complete ECDSA checking of signed images. (internal flash, ECDSA signed)
+  PRINCE_CONFIG: # Prince Configuration
+    bitfields:  # The register bitfields
+      LOCK_REG0: PRINCE_CONFIG_LOCK_REG0_NOT_LOCKED  # Width: 2b[0-3], Description: Lock Region 0
+      # - PRINCE_CONFIG_LOCK_REG0_NOT_LOCKED, (0): Region is not locked.
+      # - PRINCE_CONFIG_LOCK_REG0_LOCKED_0, (1): Region is locked.
+      # - PRINCE_CONFIG_LOCK_REG0_LOCKED_1, (2): Region is locked.
+      # - PRINCE_CONFIG_LOCK_REG0_LOCKED_2, (3): Region is locked.
+      LOCK_REG1: PRINCE_CONFIG_LOCK_REG1_NOT_LOCKED # Width: 2b[0-3], Description: Lock Region 1
+      # - PRINCE_CONFIG_LOCK_REG1_NOT_LOCKED, (0): Region is not locked.
+      # - PRINCE_CONFIG_LOCK_REG1_LOCKED_0, (1): Region is locked.
+      # - PRINCE_CONFIG_LOCK_REG1_LOCKED_1, (2): Region is locked.
+      # - PRINCE_CONFIG_LOCK_REG1_LOCKED_2, (3): Region is locked.
+      LOCK_REG2: PRINCE_CONFIG_LOCK_REG2_NOT_LOCKED # Width: 2b[0-3], Description: Lock Region 2
+      # - PRINCE_CONFIG_LOCK_REG2_NOT_LOCKED, (0): Region is not locked.
+      # - PRINCE_CONFIG_LOCK_REG2_LOCKED_0, (1): Region is locked.
+      # - PRINCE_CONFIG_LOCK_REG2_LOCKED_1, (2): Region is locked.
+      # - PRINCE_CONFIG_LOCK_REG2_LOCKED_2, (3): Region is locked.
+      REG0_ERASE_CHECK_EN: PRINCE_CONFIG_REG0_ERASE_CHECK_EN_DISABLE # Width: 2b[0-3], Description: Region 0 Erase Check Enable
+      # - PRINCE_CONFIG_REG0_ERASE_CHECK_EN_DISABLE, (0): Check is disabled
+      # - PRINCE_CONFIG_REG0_ERASE_CHECK_EN_ENABLE_0, (1): Check is enabled
+      # - PRINCE_CONFIG_REG0_ERASE_CHECK_EN_ENABLE_1, (2): Check is enabled
+      # - PRINCE_CONFIG_REG0_ERASE_CHECK_EN_ENABLE_2, (3): Check is enabled
+      REG1_ERASE_CHECK_EN: PRINCE_CONFIG_REG1_ERASE_CHECK_EN_DISABLE # Width: 2b[0-3], Description: Region 1 Erase Check Enable
+      # - PRINCE_CONFIG_REG1_ERASE_CHECK_EN_DISABLE, (0): Check is disabled
+      # - PRINCE_CONFIG_REG1_ERASE_CHECK_EN_ENABLE_0, (1): Check is enabled
+      # - PRINCE_CONFIG_REG1_ERASE_CHECK_EN_ENABLE_1, (2): Check is enabled
+      # - PRINCE_CONFIG_REG1_ERASE_CHECK_EN_ENABLE_2, (3): Check is enabled
+      REG2_ERASE_CHECK_EN: PRINCE_CONFIG_REG2_ERASE_CHECK_EN_DISABLE # Width: 2b[0-3], Description: Region 2 Erase Check Enable
+      # - PRINCE_CONFIG_REG2_ERASE_CHECK_EN_DISABLE, (0): Check is disabled
+      # - PRINCE_CONFIG_REG2_ERASE_CHECK_EN_ENABLE_0, (1): Check is enabled
+      # - PRINCE_CONFIG_REG2_ERASE_CHECK_EN_ENABLE_1, (2): Check is enabled
+      # - PRINCE_CONFIG_REG2_ERASE_CHECK_EN_ENABLE_2, (3): Check is enabled
+  PRINCE_SR_0: # Region 0, Sub-region Enable
+    value: '0x00000000'  # The value width: 32b
+  PRINCE_SR_1: # Region 1, Sub-region Enable
+    value: '0x00000000'  # The value width: 32b
+  PRINCE_SR_2: # Region 2, Sub-region Enable
+    value: '0x00000000'  # The value width: 32b
+  XTAL_32KHZ_CAPABANK_TRIM: # Xtal 32kHz Capabank Triming
+    bitfields:  # The register bitfields
+      TRIM_VALID: XTAL_32KHZ_CAPABANK_TRIM_TRIM_VALID_NOT_VALID  # Width: 1b[0-1], Description: Trim Valid
+      # - XTAL_32KHZ_CAPABANK_TRIM_TRIM_VALID_NOT_VALID, (0): Capa Bank trimmings not valid. Default trimmings value are used.
+      # - XTAL_32KHZ_CAPABANK_TRIM_TRIM_VALID_VALID, (1): Capa Bank trimmings valid.
+      XTAL_LOAD_CAP_IEC_PF_X100: 0 # Width: 10b[0-1023], Description: XTAL LOAD CAP IEC PF X100
+      PCB_XIN_PARA_CAP_PF_X100: 0 # Width: 10b[0-1023], Description: PCB XIN PARA CAP PF X100
+      PCB_XOUT_PARA_CAP_PF_X100: 0 # Width: 10b[0-1023], Description: PCB XOUT PARA CAP PF X100
+  XTAL_16MHZ_CAPABANK_TRIM: # Xtal 16MHz Capabank Trimming
+    bitfields:  # The register bitfields
+      TRIM_VALID: XTAL_16MHZ_CAPABANK_TRIM_TRIM_VALID_NOT_VALID  # Width: 1b[0-1], Description: Trim Valid
+      # - XTAL_16MHZ_CAPABANK_TRIM_TRIM_VALID_NOT_VALID, (0): Capa Bank trimmings not valid. Default trimmings value are used.
+      # - XTAL_16MHZ_CAPABANK_TRIM_TRIM_VALID_VALID, (1): Capa Bank trimmings valid.
+      XTAL_LOAD_CAP_IEC_PF_X100: 0 # Width: 10b[0-1023], Description: XTAL LOAD CAP IEC PF X100
+      PCB_XIN_PARA_CAP_PF_X100: 0 # Width: 10b[0-1023], Description: PCB XIN PARA CAP PF X100
+      PCB_XOUT_PARA_CAP_PF_X100: 0 # Width: 10b[0-1023], Description: PCB XOUT PARA CAP PF X100
+  FLASH_REMAP_SIZE: # Flash Remap Size
+    value: '0x00000000'  # The value width: 32b
+  FLASH_REMAP_OFFSET: # Flash Remap Offset
+    value: '0x00000000'  # The value width: 32b
+  PRINCE_XOM_0: # Prince eXecute-Only-Memory (XOM) 0
+    value: '0x00000000'  # The value width: 32b
+  PRINCE_XOM_1: # Prince eXecute-Only-Memory (XOM) 1
+    value: '0x00000000'  # The value width: 32b
+  PRINCE_XOM_2: # Prince eXecute-Only-Memory (XOM) 2
+    value: '0x00000000'  # The value width: 32b
+  RoTK_USAGE: # Root of Trust Key Usage
+    bitfields:  # The register bitfields
+      RoTK0_Usage: RoTK_USAGE_RoTK0_Usage_USABLE  # Width: 3b[0-7], Description: RoTK0_Usage
+      # - RoTK_USAGE_RoTK0_Usage_USABLE, (0): Usable as debug CA, image CA, FW CA, image and FW key.
+      # - RoTK_USAGE_RoTK0_Usage_DEBUG, (1): Usable as debug CA only.
+      # - RoTK_USAGE_RoTK0_Usage_IMG_BOOT_AND_FW, (2): Usable as image (boot and FW) CA only.
+      # - RoTK_USAGE_RoTK0_Usage_DEBUG_BOOT_FW_IMG, (3): Usable as debug, boot and FW image CA.
+      # - RoTK_USAGE_RoTK0_Usage_IMG_KEY_AND_FW_UPDATE_KEY, (4): Usable as image key and FW update key only.
+      # - RoTK_USAGE_RoTK0_Usage_BOOT_IMAGE_KEY, (5): Usable as boot image key only.
+      # - RoTK_USAGE_RoTK0_Usage_FW_UPDATE_IMG_KEY, (6): Usable as FW update image key only.
+      # - RoTK_USAGE_RoTK0_Usage_KEY_SLOT_NOT_USED, (7): Key slot is not used.
+      RoTK1_Usage: 0 # Width: 3b[0-7], Description: RoTK1_Usage
+      RoTK2_Usage: 0 # Width: 3b[0-7], Description: RoTK2_Usage
+      RoTK3_Usage: 0 # Width: 3b[0-7], Description: RoTK3_Usage
+  ROTKH: # ROTKH field is compounded by 12 32-bit fields and contains Root key table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four SHA-256 digests computed over four OEM public keys (OEM has four private-public key pairs in case one of its private keys becomes compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit SHA-384 digest.
+    value: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'  # The value width: 384b
+  FLEXSPI_BOOT_CFG0: # FlexSPI Boot Configuration 0
+    bitfields:  # The register bitfields
+      FLEXSPI_AUTO_PROBE_EN: FLEXSPI_BOOT_CFG0_FLEXSPI_AUTO_PROBE_EN_DISABLE  # Width: 1b[0-1], Description: FLEXSPI_AUTO_PROBE_EN
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_AUTO_PROBE_EN_DISABLE, (0): Disable
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_AUTO_PROBE_EN_ENABLE, (1): Enable
+      FLEXSPI_PROBE_TYPE: FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_QUADSPI_NOR # Width: 3b[0-7], Description: FLEXSPI_PROBE_TYPE
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_QUADSPI_NOR, (0): QuadSPI NOR
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_MACRONIX_OCTAL_FLASH, (1): Macronix Octal FLASH
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_MICRON_OCTAL_FLASH, (2): Micron Octal FLASH
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_ADESTO_OCTAL_FLASH, (3): Adesto Octal FLASH
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_RESERVED_0, (4): Reserved.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_RESERVED_1, (5): Reserved.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_RESERVED_2, (6): Reserved.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PROBE_TYPE_RESERVED_3, (7): Reserved.
+      FLEXSPI_FLASH_TYPE: FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_QSPI_ADDR_3B # Width: 3b[0-7], Description: FLEXSPI_FLASH_TYPE
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_QSPI_ADDR_3B, (0): QSPI_ADDR_3B
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_RESERVED_0, (1): Reserved.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_HYPER_1V8, (2): HYPER_1V8
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_HYPER_3V3, (3): HYPER_3V3
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_FlexSPI_DDR_MXIC, (4): FlexSPI_DDR_MXIC
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_FlexSPI_DDR_MICRON, (5): FlexSPI_DDR_MICRON
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_RESERVED_1, (6): Reserved.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FLASH_TYPE_RESERVED_2, (7): Reserved.
+      FLEXSPI_DUMMY_CYCLES: 0 # Width: 4b[0-15], Description: FLEXSPI_DUMMY_CYCLES
+      FLEXSPI_FREQUENCY: FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_50 # Width: 3b[0-7], Description: FLEXSPI_FREQUENCY
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_50, (0): 50 Mhz
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_60, (1): 60 Mhz
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_80, (2): 80 Mhz
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_100, (3): 100 Mhz
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_120, (4): 120 Mhz
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_133, (5): 133 Mhz
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_166, (6): 166 Mhz
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_FREQUENCY_MHZ_200, (7): 200 Mhz
+      FLEXSPI_RESET_ENABLE: FLEXSPI_BOOT_CFG0_FLEXSPI_RESET_ENABLE_NO_RESET # Width: 1b[0-1], Description: FLEXSPI_RESET_ENABLE
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_RESET_ENABLE_NO_RESET, (0): No Reset(O/QSPI device reset pin is not connected or available.)
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_RESET_ENABLE_ENABLE_RESET, (1): Enable Reset(O/QSPI device reset pin is connected to a GPIO (QSPI_RESET_PIN).)
+      FLEXSPI_RESET_GPIO_PORT: 0 # Width: 3b[0-7], Description: FLEXSPI_RESET_ENABLE
+      FLEXSPI_RESET_GPIO_PIN: 0 # Width: 5b[0-31], Description: FLEXSPI_RESET_GPIO_PIN
+      FLEXSPI_HOLD_TIME: FLEXSPI_BOOT_CFG0_FLEXSPI_HOLD_TIME_WAIT_500_MICROSECS # Width: 2b[0-3], Description: FLEXSPI_HOLD TIME
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_HOLD_TIME_WAIT_500_MICROSECS, (0): Wait for 500 micro seconds
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_HOLD_TIME_WAIT_1_MILISECS, (1): Wait for 1 mili seconds
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_HOLD_TIME_WAIT_3_MILISECS, (2): Wait for 3 mili seconds
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_HOLD_TIME_WAIT_10_MILISECS, (3): Wait for 10 mili seconds
+      FLEXSPI_PWR_HOLD_TIME: FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_NO_DELAY # Width: 4b[0-15], Description: FLEXSPI_PWR_HOLD_TIME
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_NO_DELAY, (0): No delay
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_100_MICROSECS, (1): Waits additional 100 micro-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_500_MICROSECS, (2): Waits additional 500 micro-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_1_MILISECS, (3): Waits additional 1 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_10_MILISECS, (4): Waits additional 10 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_20_MILISECS, (5): Waits additional 20 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_40_MILISECS, (6): Waits additional 40 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_60_MILISECS, (7): Waits additional 60 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_80_MILISECS, (8): Waits additional 80 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_100_MILISECS, (9): Waits additional 100 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_120_MILISECS, (10): Waits additional 120 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_140_MILISECS, (11): Waits additional 140 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_160_MILISECS, (12): Waits additional 160 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_180_MILISECS, (13): Waits additional 180 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_200_MILISECS, (14): Waits additional 200 mili-seconds.
+      # - FLEXSPI_BOOT_CFG0_FLEXSPI_PWR_HOLD_TIME_WAIT_220_MILISECS, (15): Waits additional 220 mili-seconds.
+      PIN_SLEW_RATE: FLEXSPI_BOOT_CFG0_PIN_SLEW_RATE_STANDARD # Width: 1b[0-1], Description: Enable faster slew rate
+      # - FLEXSPI_BOOT_CFG0_PIN_SLEW_RATE_STANDARD, (0): Standard slew rate
+      # - FLEXSPI_BOOT_CFG0_PIN_SLEW_RATE_FASTER, (1): Faster slew rate
+  FLEXSPI_BOOT_CFG1: # FlexSPI Boot Configuration 1
+    bitfields:  # The register bitfields
+      FLEXSPI_DELAY_CELL_NUM: 0  # Width: 7b[0-127], Description: FLEXSPI_DELAY_CELL_NUM
+      FLEXSPI_IMAGE_OFFSET: 0 # Width: 10b[0-1023], Description: FLEXSPI_IMAGE_OFFSET
+      FLEXSPI_REMAP_IMAGE_SIZE: FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE # Width: 4b[0-15], Description: FLEXSPI_REMAP_IMAGE_SIZE
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE, (0): SIZE
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_1MB, (1): SIZE_1MB Size of remapped area is 1MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_2MB, (2): SIZE_2MB Size of remapped area is 2MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_3MB, (3): SIZE_3MB Size of remapped area is 3MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_4MB, (4): SIZE_4MB Size of remapped area is 4MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_5MB, (5): SIZE_5MB Size of remapped area is 5MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_6MB, (6): SIZE_6MB Size of remapped area is 6MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_7MB, (7): SIZE_7MB Size of remapped area is 7MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_8MB, (8): SIZE_8MB Size of remapped area is 8MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_9MB, (9): SIZE_9MB Size of remapped area is 9MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_10MB, (10): SIZE_10MB Size of remapped area is 10MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_11MB, (11): SIZE_11MB Size of remapped area is 11MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_12MB, (12): SIZE_12MB Size of remapped area is 12MByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_256KB, (13): SIZE_256KB Size of remapped area is 256KByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_512KB, (14): SIZE_512KB Size of remapped area is 512KByte.
+      # - FLEXSPI_BOOT_CFG1_FLEXSPI_REMAP_IMAGE_SIZE_SIZE_768KB, (15): SIZE_768KB Size of remapped area is 768KByte.
+  IPED0_START: # IPED region 0 Start
+    bitfields:  # The register bitfields
+      ENABLE_REG0: IPED0_START_ENABLE_REG0_DISABLED  # Width: 2b[0-3], Description: ENABLE_REG0
+      # - IPED0_START_ENABLE_REG0_DISABLED, (0): Region is disabled
+      # - IPED0_START_ENABLE_REG0_ENABLED, (1): Region is enabled
+      # - IPED0_START_ENABLE_REG0_ENABLED_AND_LOCKED_0, (2): Region is enabled and locked
+      # - IPED0_START_ENABLE_REG0_ENABLED_AND_LOCKED_1, (3): Region is enabled and locked
+      IPED_REG0_START_ADDR: 0 # Width: 24b[0-16777215], Description: IPED_REG0_START_ADDR
+  IPED0_END: # IPED region 0 End
+    bitfields:  # The register bitfields
+      IPED_REG0_END_ADDR: 0  # Width: 24b[0-16777215], Description: IPED_REG0_END_ADDR
+  IPED1_START: # IPED region 1 Start
+    bitfields:  # The register bitfields
+      ENABLE_REG1: IPED1_START_ENABLE_REG1_DISABLED  # Width: 2b[0-3], Description: ENABLE_REG1
+      # - IPED1_START_ENABLE_REG1_DISABLED, (0): Region is disabled
+      # - IPED1_START_ENABLE_REG1_ENABLED, (1): Region is enabled
+      # - IPED1_START_ENABLE_REG1_ENABLED_AND_LOCKED_0, (2): Region is enabled and locked
+      # - IPED1_START_ENABLE_REG1_ENABLED_AND_LOCKED_1, (3): Region is enabled and locked
+      IPED_REG1_START_ADDR: 0 # Width: 24b[0-16777215], Description: IPED_REG1_START_ADDR
+  IPED1_END: # IPED region 1 End
+    bitfields:  # The register bitfields
+      IPED_REG1_END_ADDR: 0  # Width: 24b[0-16777215], Description: IPED_REG1_END_ADDR
+  IPED2_START: # IPED region 2 Start
+    bitfields:  # The register bitfields
+      ENABLE_REG2: IPED2_START_ENABLE_REG2_DISABLED  # Width: 2b[0-3], Description: ENABLE_REG2
+      # - IPED2_START_ENABLE_REG2_DISABLED, (0): Region is disabled
+      # - IPED2_START_ENABLE_REG2_ENABLED, (1): Region is enabled
+      # - IPED2_START_ENABLE_REG2_ENABLED_AND_LOCKED_0, (2): Region is enabled and locked
+      # - IPED2_START_ENABLE_REG2_ENABLED_AND_LOCKED_1, (3): Region is enabled and locked
+      IPED_REG2_START_ADDR: 0 # Width: 24b[0-16777215], Description: IPED_REG2_START_ADDR
+  IPED2_END: # IPED region 2 End
+    bitfields:  # The register bitfields
+      IPED_REG2_END_ADDR: 0  # Width: 24b[0-16777215], Description: IPED_REG2_END_ADDR
+  IPED3_START: # IPED region 3 Start
+    bitfields:  # The register bitfields
+      ENABLE_REG3: IPED3_START_ENABLE_REG3_DISABLED  # Width: 2b[0-3], Description: ENABLE_REG3
+      # - IPED3_START_ENABLE_REG3_DISABLED, (0): Region is disabled
+      # - IPED3_START_ENABLE_REG3_ENABLED, (1): Region is enabled
+      # - IPED3_START_ENABLE_REG3_ENABLED_AND_LOCKED_0, (2): Region is enabled and locked
+      # - IPED3_START_ENABLE_REG3_ENABLED_AND_LOCKED_1, (3): Region is enabled and locked
+      IPED_REG3_START_ADDR: 0 # Width: 24b[0-16777215], Description: IPED_REG3_START_ADDR
+  IPED3_END: # IPED region 3 End
+    bitfields:  # The register bitfields
+      IPED_REG3_END_ADDR: 0  # Width: 24b[0-16777215], Description: IPED_REG3_END_ADDR
+  QUICK_SET_GPIO_0: # Quick Set to Drive GPIO 0 port pins high
+    value: '0x00000000'  # The value width: 32b
+  QUICK_CLR_GPIO_0: # Quick Clear to Drive GPIO 0 port pins low
+    value: '0x00000000'  # The value width: 32b
+  QUICK_SET_GPIO_1: # Quick Set to Drive GPIO 1 port pins high
+    value: '0x00000000'  # The value width: 32b
+  QUICK_CLR_GPIO_1: # Quick Clear to Drive GPIO 1 port pins low
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED0: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED1: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED2: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED3: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED4: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED5: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED6: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED7: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED8: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED9: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED10: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED11: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED12: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED13: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED14: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED15: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED16: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED17: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED18: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED19: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED20: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED21: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED22: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED23: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED24: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED25: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED26: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED27: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED28: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED29: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED30: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED31: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED32: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED33: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED34: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED35: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED36: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED37: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED38: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED39: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED40: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED41: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED42: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED43: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED44: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED45: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED46: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED47: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED48: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED49: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED50: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED51: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED52: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED53: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED54: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED55: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED56: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED57: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED58: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CUSTOMER_DEFINED59: # Customer Defined (Programable through ROM API)
+    value: '0x00000000'  # The value width: 32b
+  CMPA_CMAC0: # CMPA CMAC 0
+    value: '0x00000000'  # The value width: 32b
+  CMPA_CMAC1: # CMPA CMAC 1
+    value: '0x00000000'  # The value width: 32b
+  CMPA_CMAC2: # CMPA CMAC 2
+    value: '0x00000000'  # The value width: 32b
+  CMPA_CMAC3: # CMPA CMAC 3
+    value: '0x00000000'  # The value width: 32b

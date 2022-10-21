@@ -30,7 +30,7 @@ from .commands import (
     EnumWriteOps,
     parse_command,
 )
-from .header import CorruptedException, Header, Header2, SegTag
+from .header import CorruptedException, Header, Header2, SegTag, UnparsedException
 from .secret import MAC, BaseClass
 
 logger = logging.getLogger(__name__)
@@ -821,7 +821,7 @@ class SegBDT(BaseSegment):
 
     def __repr__(self) -> str:
         return (
-            "BDT <ADDR: 0x{self.app_start:X}, LEN: {self.app_length} Bytes"
+            f"BDT <ADDR: 0x{self.app_start:X}, LEN: {self.app_length} Bytes"
             f", Plugin: {self.plugin}>"
         )
 
@@ -1456,6 +1456,104 @@ class SegCSF(BaseSegment):
 
         obj.update(True)
         return obj
+
+
+class XMCDHeader:
+    """External Memory Configuration Data Header."""
+
+    TAG = 0x0C
+    FORMAT = "<4B"
+    SIZE = calcsize(FORMAT)
+
+    def __init__(
+        self, interface: int = 0, instance: int = 0, block_type: int = 0, block_size: int = 4
+    ) -> None:
+        """Initialize XMCD Header.
+
+        :param interface: Type of the XMCD instance (0 - FlexSPI, 1 - SEMC), defaults to 0
+        :param instance: Number of the interface instance, defaults to 0
+        :param block_type: Type of XMCD data (0 - Simplified, 1 - Full), defaults to 0
+        :param block_size: XMCD data block size, defaults to 4
+        """
+        self.tag = 0x0C
+        self.version = 0
+        self.interface = interface
+        self.instance = instance
+        self.block_type = block_type
+        self.block_size = block_size
+
+    def export(self) -> bytes:
+        """Export segment's header as bytes (serialization)."""
+        return pack(
+            self.FORMAT,
+            self.tag << 4 + self.version,
+            self.interface << 4 + self.instance,
+            self.block_size << 4 + self.block_size >> 8,
+            self.block_size & 0xFF,
+        )
+
+    def info(self) -> str:
+        """String representation of the XMCD Header."""
+        msg = ""
+        msg += f" Interface:   {'FlexSPI' if self.interface == 0 else 'SEMC'}\n"
+        msg += f" Instance:    {self.instance}\n"
+        msg += f" Config type: {'Simplified' if self.block_type == 0 else 'Full'}\n"
+        msg += f" Config size: {self.block_size - self.SIZE} Bytes (without header)\n"
+        return msg
+
+    @property
+    def config_data_size(self) -> int:
+        """Size of XMCD config data blob."""
+        return self.block_size - self.SIZE
+
+    @classmethod
+    def parse(cls, data: bytes) -> "XMCDHeader":
+        """Parse XMCD Header from binary data."""
+        size_low, type_size, interface_instance, tag_ver = unpack_from(cls.FORMAT, data)
+        tag = (tag_ver & 0xF0) >> 4
+        if tag != cls.TAG:
+            raise UnparsedException("Invalid TAG for XMCDHeader. ")
+        version = tag_ver & 0x0F
+        interface = (interface_instance & 0xF0) >> 4
+        instance = interface_instance & 0x0F
+        block_type = (type_size & 0xF0) >> 4
+        block_size = type_size & 0x0F
+        block_size += size_low
+        return XMCDHeader(
+            interface=interface, instance=instance, block_type=block_type, block_size=block_size
+        )
+
+
+class SegXMCD(BaseSegment):
+    """External Memory Configuration Data Segment."""
+
+    TAG = 0xC0
+
+    def __init__(self, header: XMCDHeader, config_data: bytes) -> None:
+        """Initialize XMCD Segment.
+
+        :param header: XMCD Header
+        :param config_data: XMCD configuration data
+        """
+        super().__init__()
+        self.header = header
+        self.config_data = config_data
+        self.header.block_size = self.header.SIZE + len(config_data)
+
+    def export(self) -> bytes:
+        """Export segment as bytes (serialization)."""
+        return self.header.export() + self.config_data
+
+    @classmethod
+    def parse(cls, data: bytes) -> "SegXMCD":
+        """Parse XMCD from binary data."""
+        header = XMCDHeader.parse(data)
+        config_data = data[header.SIZE : header.block_size - header.SIZE]
+        return SegXMCD(header=header, config_data=config_data)
+
+    def info(self) -> str:
+        """String representation of the XMCD Segment."""
+        return self.header.info()
 
 
 ########################################################################################################################

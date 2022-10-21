@@ -44,7 +44,7 @@ from spsdk.image.ahab.ahab_abstract_interfaces import (
     HeaderContainer,
     HeaderContainerInversed,
 )
-from spsdk.utils.crypto.common import crypto_backend
+from spsdk.utils.crypto.common import crypto_backend, get_matching_key_id
 from spsdk.utils.database import Database
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.images import BinaryImage
@@ -599,6 +599,7 @@ class SRKRecord(HeaderContainerInversed):
 
     def __init__(
         self,
+        src_key: PublicKey = None,
         signing_algorithm: str = "rsa",
         hash_type: str = "sha256",
         key_size: int = 0,
@@ -608,6 +609,7 @@ class SRKRecord(HeaderContainerInversed):
     ):
         """Class object initializer.
 
+        :param src_key: Optional source public key used to create the SRKRecord
         :param signing_algorithm: signing algorithm type.
         :param hash_type: hash algorithm type.
         :param key_size: key (curve) size.
@@ -618,6 +620,7 @@ class SRKRecord(HeaderContainerInversed):
         super().__init__(
             tag=self.TAG, length=-1, version=self.VERSION_ALGORITHMS[signing_algorithm]
         )
+        self.src_key = src_key
         self.hash_algorithm = self.HASH_ALGORITHM[hash_type]
         self.key_size = key_size
         self.srk_flags = srk_flags
@@ -751,6 +754,7 @@ class SRKRecord(HeaderContainerInversed):
             par_e: int = public_key.public_numbers().e
             key_size = SRKRecord.RSA_KEY_TYPE[public_key.key_size]
             return SRKRecord(
+                src_key=public_key,
                 signing_algorithm="rsa",
                 hash_type=hash_type,
                 key_size=key_size,
@@ -945,6 +949,18 @@ class SRKTable(HeaderContainerInversed):
         :return: SHA256 computed over SRK records.
         """
         return crypto_backend().hash(data=self.export(), algorithm="sha256")
+
+    def get_source_keys(self) -> Optional[List[PublicKey]]:
+        """Optionally return list of source public keys.
+
+        :return: List of public keys.
+        """
+        ret = []
+        for srk in self._srk_records:
+            if not srk.src_key:
+                return None
+            ret.append(srk.src_key)
+        return ret
 
     def export(self) -> bytes:
         """Serializes container object into bytes in little endian.
@@ -1970,6 +1986,17 @@ class SignatureBlock(HeaderContainer):
             self.blob.validate()
             check_offset("Blob", min_offset, self._blob_offset)
             min_offset = self._blob_offset + len(self.blob)
+
+        if self.parent and self.signature and self.srk_table:
+            public_keys = self.srk_table.get_source_keys()
+            if public_keys:
+                assert self.signature._signing_key
+                srk_pair_id = get_matching_key_id(public_keys, self.signature._signing_key)
+                if srk_pair_id != self.parent.flag_used_srk_id:
+                    raise SPSDKValueError(
+                        f"Signature Block: Configured SRK ID ({self.parent.flag_used_srk_id})"
+                        f" doesn't match detected SRK ID for signing key ({srk_pair_id})."
+                    )
 
     @staticmethod
     def parse(parent: "AHABContainer", binary: bytes, offset: int = 0) -> "SignatureBlock":

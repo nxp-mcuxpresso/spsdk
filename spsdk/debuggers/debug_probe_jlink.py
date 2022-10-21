@@ -168,7 +168,7 @@ class DebugProbePyLink(DebugProbe):
             self.enabled_memory_interface = True
         except JLinkException as exc:
             raise SPSDKDebugProbeError(
-                f"PyLink cannot establish connection with target({str(exc)})."
+                f"The memory interface not found - probably locked device or in ISP mode ({str(exc)})."
             ) from exc
 
     def close(self) -> None:

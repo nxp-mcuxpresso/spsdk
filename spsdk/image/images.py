@@ -51,6 +51,8 @@ from .segments import (
     SegIVT3a,
     SegIVT3b,
     SegTag,
+    SegXMCD,
+    XMCDHeader,
 )
 
 ########################################################################################################################
@@ -154,10 +156,14 @@ class BootImgRT(BootImgBase):
     IVT_OFFSET_NOR_FLASH = 0x1000
     # IVT offset for other memories
     IVT_OFFSET_OTHER = 0x400
+    # IVT offset for other memories
+    IVT_OFFSET_OTHER2 = 0xC00
     # supported IVT offsets
-    IVT_OFFSETS = (0, IVT_OFFSET_OTHER, IVT_OFFSET_NOR_FLASH)
+    IVT_OFFSETS = (0, IVT_OFFSET_OTHER, IVT_OFFSET_OTHER2, IVT_OFFSET_NOR_FLASH)
     # possible FCB offsets
     FCB_OFFSETS = (0, 0x400)
+    # XMCD offset relative to IVT
+    XMCD_IVT_OFFSET = 0x40
     # list of supported versions
     VERSIONS = (0x40, 0x41, 0x42, 0x43)
     # The offset and align value of APP segment (for XIP and non-XIP image)
@@ -204,6 +210,7 @@ class BootImgRT(BootImgBase):
         self._app: SegAPP = SegAPP()
         self._dcd: Optional[SegDCD] = None
         self._csf: Optional[SegCSF] = None
+        self._xmcd: Optional[SegXMCD] = None
 
     @property
     def version(self) -> int:
@@ -334,6 +341,21 @@ class BootImgRT(BootImgBase):
         self.fcb = (
             data if isinstance(data, FlexSPIConfBlockFCB) else FlexSPIConfBlockFCB.parse(data)
         )
+
+    @property
+    def xmcd(self) -> Optional[SegXMCD]:
+        """Return the XMCD block."""
+        return self._xmcd
+
+    @xmcd.setter
+    def xmcd(self, xmcd: SegXMCD) -> None:
+        """Sets the XMCD block."""
+        assert isinstance(xmcd, SegXMCD)
+        self._xmcd = xmcd
+
+    def set_xmcd(self, data: Union[bytes, SegXMCD]) -> None:
+        """Sets the XMCD block."""
+        self.xmcd = data if isinstance(data, SegXMCD) else SegXMCD.parse(data)
 
     @property
     def bee(self) -> SegBEE:
@@ -480,6 +502,12 @@ class BootImgRT(BootImgBase):
             msg += "# DCD (Device Config Data)\n"
             msg += "#" * 60 + "\n\n"
             msg += self.dcd.info()
+        # Print XMCD
+        if self.xmcd:
+            msg += "#" * 60 + "\n"
+            msg += "# XMCD (External Memory Configuration Data)\n"
+            msg += "#" * 60 + "\n\n"
+            msg += self.xmcd.info()
         # Print CSF
         csf = self.enabled_csf
         if csf:
@@ -1004,6 +1032,16 @@ class BootImgRT(BootImgBase):
 
         # Parse IVT
         obj.ivt = SegIVT2.parse(read_raw_segment(stream, SegTag.IVT2))
+
+        # Try to find XMCD segment
+        stream.seek(start_pos + cls.XMCD_IVT_OFFSET)
+        try:
+            xmcd_header = XMCDHeader.parse(read_raw_data(stream, XMCDHeader.SIZE))
+            xmcd_data = read_raw_data(stream, xmcd_header.config_data_size)
+            obj.xmcd = SegXMCD(header=xmcd_header, config_data=xmcd_data)
+        except UnparsedException:
+            # No XMCD found
+            pass
         # Parse BDT
         stream.seek(start_pos + obj.ivt.bdt_address - obj.ivt.ivt_address)
         obj.bdt = SegBDT.parse(read_raw_data(stream, SegBDT.SIZE))

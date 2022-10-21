@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
+  <register offset="178" width="32" name="OTFAD2_KEY3" access="W" reversed="False" description="OTFAD2_KEY[127:96]"/>
+  <register offset="179" width="32" name="OTFAD2_KEY2" access="W" reversed="False" description="OTFAD2_KEY[95:64]"/>
+  <register offset="180" width="32" name="OTFAD2_KEY1" access="W" reversed="False" description="OTFAD2_KEY[63:32]"/>
+  <register offset="181" width="32" name="OTFAD2_KEY0" access="W" reversed="False" description="OTFAD2_KEY[31:0]"/>
+  <register offset="182" width="32" name="OTFAD2_CFG4" access="W" reversed="True" description="OTFAD2 Configuration">
+    <bit_field offset="3" width="1" name="OTFAD_ENABLE" access="W" reset_value="0" description="OTFAD2 enable.">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="4" width="1" name="OTFAD_DISABLE_OVERRIDE" access="W" reset_value="0" description="OTFAD2 disable everride.">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="OTFAD_SCRAMBLE_ENABLE" access="W" reset_value="0" description="OTFAD2 Key Scrambling enable.">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="8" width="8" name="OTFAD_SCRAMBLE_ALIGN" access="W" reset_value="0" description="OTFAD2 Key Scramble align."/>
+  </register>
+  <register offset="183" width="32" name="OTFAD2_KEY_SCRAMBLE" access="W" reversed="True" description="OTFAD2 Key Scramble mask"/>
+
+  <register offset="184" width="32" name="OTFAD1_KEY3" access="W" reversed="False" description="OTFAD1_KEY[127:96]"/>
+  <register offset="185" width="32" name="OTFAD1_KEY2" access="W" reversed="False" description="OTFAD1_KEY[95:64]"/>
+  <register offset="186" width="32" name="OTFAD1_KEY1" access="W" reversed="False" description="OTFAD1_KEY[63:32]"/>
+  <register offset="187" width="32" name="OTFAD1_KEY0" access="W" reversed="False" description="OTFAD1_KEY[31:0]"/>
+  <register offset="188" width="32" name="OTFAD1_CFG4" access="W" reversed="True" description="OTFAD1 Configuration">
+    <bit_field offset="3" width="1" name="OTFAD_ENABLE" access="W" reset_value="0" description="OTFAD1 enable.">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="4" width="1" name="OTFAD_DISABLE_OVERRIDE" access="W" reset_value="0" description="OTFAD1 disable everride.">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="OTFAD_SCRAMBLE_ENABLE" access="W" reset_value="0" description="OTFAD1 Key Scrambling enable.">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="8" width="8" name="OTFAD_SCRAMBLE_ALIGN" access="W" reset_value="0" description="OTFAD1 Key Scramble align."/>
+  </register>
+  <register offset="189" width="32" name="OTFAD1_KEY_SCRAMBLE" access="W" reversed="True" description="OTFAD1 Key Scramble mask"/>
+</regs:peripheral>

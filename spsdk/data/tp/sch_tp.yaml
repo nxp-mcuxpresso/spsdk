@@ -110,10 +110,16 @@ device_scard:
         id:
           type: [string, number]
           format: number
-          title: SmartCard  ID
+          title: SmartCard ID
           description: Unique Identification of SmartCard
           template_value: 1
-      required: [id]
+        reader:
+          type: string
+          title: SmartCard Reader name
+          description: SmartCard Reader name
+      anyOf:
+        - required: [id]
+        - required: [reader]
   required: [tp_device_parameter]
 
 target:
@@ -175,6 +181,11 @@ target_blhost:
           title: BLHOST UART device port
           description: BLHOST UART port definition.
           template_value: COM13
+        blhost_usb:
+          type: string
+          title: BLHOST USB device
+          description: BLHOST USB device definition.
+          template_value: 0x1fc9:0x0021
         blhost_timeout:
           type: [string, number]
           format: number
@@ -187,7 +198,10 @@ target_blhost:
           title: BLHOST UART device port baudrate
           description: BLHOST UART communication speed in bits per seconds.
           template_value: 57600
-      required: [blhost_port, buffer_address]
+      required: [buffer_address]
+      oneOf:
+        - required: [blhost_port]
+        - required: [blhost_usb]
   required: [tp_target_parameter]
 
 cmpa:

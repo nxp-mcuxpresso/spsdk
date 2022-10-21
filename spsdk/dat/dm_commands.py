@@ -75,7 +75,7 @@ class DebugMailboxCommand:
         # solve the case that response is in legacy protocol and there is some
         # unwanted bits in none expected data. In this case return valid read data.
         if not new_protocol and not ret & ~self.STATUS_IS_DATA_MASK:
-            logger.info("The data is returned by legacy protocol.")
+            logger.debug("The data is returned by legacy protocol.")
             return [ret]
 
         resplen = (ret >> 16) & 0x7FFF

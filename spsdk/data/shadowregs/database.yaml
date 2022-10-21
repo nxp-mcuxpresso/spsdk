@@ -1,5 +1,5 @@
 devices:
-  imxrt595:
+  rt5xx:
     revisions:
       b0: imxrt595_b0.xml
     latest: b0
@@ -11,11 +11,10 @@ devices:
         DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
         CRC8: comalg_dcfg_cc_socu_crc8
       DCFG_CC_SOCU_NS:
-        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
         CRC8: comalg_dcfg_cc_socu_crc8
       "SEC_BOOT_CFG[5]":
         RESERVED: comalg_do_nothing
-  imxrt685:
+  rt6xx:
     revisions:
       b0: imxrt685_b0.xml
     latest: b0
@@ -27,7 +26,6 @@ devices:
         DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
         CRC8: comalg_dcfg_cc_socu_crc8
       DCFG_CC_SOCU_NS:
-        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
         CRC8: comalg_dcfg_cc_socu_crc8
       "SEC_BOOT_CFG[5]":
         RESERVED: comalg_do_nothing

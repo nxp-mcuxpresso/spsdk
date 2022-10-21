@@ -36,7 +36,6 @@ Secure Provisioning SDK (SPSDK)
     apps/nxpimage
     apps/nxpkeygen
     apps/pfr
-    apps/pfrc
     apps/sdphost
     apps/sdpshost
     apps/shadowregs
@@ -58,6 +57,13 @@ Secure Provisioning SDK (SPSDK)
     examples/general
     examples/dat
 
+.. toctree::
+    :caption: Jupyter Examples
+    :maxdepth: 1
+
+    examples/jupyter
+    examples/lpc55sxx_secure_boot
+    examples/lpc55sxx_secure_fw_update
 
 Indices and tables
 ==================

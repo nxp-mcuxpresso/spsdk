@@ -237,7 +237,7 @@
 			<bit_field_value name="SDR50" value="0b10" description="SDR50 speeds for SD card."/>
 			<bit_field_value name="SDR104" value="0b11" description="SDR104"/>
 		</bit_field>
-		<bit_field offset="0x5" width="1" name="SDHC_PWR_CYCLE_EN " access="RW" reset_value="0b0" description="Enable SDHC power cycle via USDHC_RST pad.">
+		<bit_field offset="0x5" width="1" name="SDHC_PWR_CYCLE_EN" access="RW" reset_value="0b0" description="Enable SDHC power cycle via USDHC_RST pad.">
 			<bit_field_value name="DISABLE" value="0b0" description="Disabled."/>
 			<bit_field_value name="ENABLE" value="0b1" description="Enabled."/>
 		</bit_field>
@@ -267,7 +267,7 @@
 			<bit_field_value name="3V3" value="0b0" description="Uses 3v3 rail."/>
 			<bit_field_value name="1V8" value="0b1" description="Uses 1v8 rail."/>
 		</bit_field>
-		<bit_field offset="0xd" width="1" name="MMC_RESET_PRE_IDLE_STATE " access="RW" reset_value="0b0" description="Reset the MMC to Pre-Idle state before starting boot mode"/>
+		<bit_field offset="0xd" width="1" name="MMC_RESET_PRE_IDLE_STATE" access="RW" reset_value="0b0" description="Reset the MMC to Pre-Idle state before starting boot mode"/>
 		<bit_field offset="0xe" width="1" name="SDHC_FASTBOOT_MODE" access="RW" reset_value="0b0" description="Specifies if the boot mode is enabled in Extended CSD register of the eMMC device.">
 			<bit_field_value name="NORMAL_MODE" value="0b0" description="eMMC operates in transfer mode after power-up."/>
 			<bit_field_value name="BOOT_MODE" value="0b1" description="eMMC operates in boot mode after power-up."/>
@@ -358,11 +358,7 @@
 			<bit_field_value name="FIXED" value="0b1" description="Enabled."/>
 		</bit_field>
 		<bit_field offset="0x18" width="1" name="FORCE_UUID_MATCH" access="RW" reset_value="0b0" description="When set, debug authentication protocol only accepts &quot;Debug Credential&quot; certificates (DC) with matching UUID."/>
-		<reserved_bit_field offset="0x19" width="6" name="RESERVED" access="RW" reset_value="0b00_0000" description="Reserved"/>
-        <bit_field offset="0x1f" width="1" name="DEV_TEST_EN" access="RW" reset_value="0b0" description="Enable test mode. This bit should be clear in OTP words. But during development to test different DCFG_CC_SOCU settings without programming OTP words, developers can write the values to shadow registers corresponding to OTP words (95 and 104) with this bit set.">
-			<bit_field_value name="DISABLED" value="0b0" description="Disabled."/>
-			<bit_field_value name="ENABLED" value="0b1" description="Enabled."/>
-		</bit_field>
+		<reserved_bit_field offset="0x19" width="7" name="RESERVED" access="RW" reset_value="0b00_0000" description="Reserved"/>
 	</register>
 	<register offset="0x194" width="16" name="SEC_BOOT_CFG[5]" reversed="False" description="Boot configuration word5. &amp;#10;- This word is set in redundant mode. Thus individual bits can be programmed seperately at different lifecycle stages of the device." otp_index="101">
 		<bit_field offset="0x0" width="4" name="REVOKE_ROOTKEY" access="RW" reset_value="0b0000" description="Revoke upto 4 root keys. When a bit is set corresponding root key is revoked."/>

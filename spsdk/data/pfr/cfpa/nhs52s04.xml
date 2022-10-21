@@ -1,36 +1,36 @@
 <?xml version="1.0"?>
 <regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd">
-  <register offset="0" width="32" name="HEADER" description=".">
+  <register offset="0" width="32" name="HEADER" description="CFPA header field">
     <alias type="CMSIS" value="HEADER"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="CFPA header field">
       <alias type="CMSIS" value="FLASH_CFPA_HEADER_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x4" width="32" name="VERSION" description=".">
+  <register offset="0x4" width="32" name="VERSION" description="CFPA version number">
     <alias type="CMSIS" value="VERSION"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="CFPA version number">
       <alias type="CMSIS" value="FLASH_CFPA_VERSION_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x8" width="32" name="S_FW_Version" description="Secure firmware version (Monotonic counter)">
+  <register offset="0x8" width="32" name="S_FW_Version" description="Secure firmware version">
     <alias type="CMSIS" value="S_FW_VERSION"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="">
       <alias type="CMSIS" value="FLASH_CFPA_S_FW_VERSION_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0xC" width="32" name="NS_FW_Version" description="Non-Secure firmware version (Monotonic counter)">
+  <register offset="0xC" width="32" name="NS_FW_Version" description="Non-Secure firmware version">
     <alias type="CMSIS" value="NS_FW_VERSION"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="">
       <alias type="CMSIS" value="FLASH_CFPA_NS_FW_VERSION_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x10" width="32" name="IMAGE_KEY_REVOKE" description="Image key revocation ID (Monotonic counter)">
+  <register offset="0x10" width="32" name="IMAGE_KEY_REVOKE" description="Image key revocation ID">
     <alias type="CMSIS" value="IMAGE_KEY_REVOKE"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description=".">
+    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="">
       <alias type="CMSIS" value="FLASH_CFPA_IMAGE_KEY_REVOKE_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x18" width="32" name="ROTKH_REVOKE" description=".">
+  <register offset="0x18" width="32" name="ROTKH_REVOKE" description="">
     <alias type="CMSIS" value="ROTKH_REVOKE"/>
     <bit_field offset="0" width="2" name="RoTK0_EN" access="RW" reset_value="0" description="RoT Key 0 enable. 00 - Invalid 01 - Enabled 10, 11 - Key revoked">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK0_EN(x)"/>
@@ -46,7 +46,7 @@
     </bit_field>
     <reserved_bit_field offset="8" width="24" reset_value="0"/>
   </register>
-  <register offset="0x1C" width="32" name="VENDOR_USAGE" description=".">
+  <register offset="0x1C" width="32" name="VENDOR_USAGE" description="Debug vendor usage field">
     <alias type="CMSIS" value="VENDOR_USAGE"/>
     <bit_field offset="0" width="16" name="DBG_VENDOR_USAGE" access="RW" reset_value="0" description="DBG_VENDOR_USAGE.">
       <alias type="CMSIS" value="FLASH_CFPA_VENDOR_USAGE_DBG_VENDOR_USAGE(x)"/>
@@ -55,7 +55,7 @@
       <alias type="CMSIS" value="FLASH_CFPA_VENDOR_USAGE_INVERSE_VALUE(x)"/>
     </bit_field>
   </register>
-  <register offset="0x20" width="32" name="DCFG_CC_SOCU_PIN" description="With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only. - In this scenario, or easy of development, Level-I customer releases the part to always allow non-secure debug. - To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used. - ROM will use this word to further restrict the debug access.">
+  <register offset="0x20" width="32" name="DCFG_CC_SOCU_PIN" description="With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only. - In this scenario, or easy of development, level-1 customer releases the part to always allow non-secure debug. - To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used. - ROM will use this word to further restrict the debug access.">
     <alias type="CMSIS" value="DCFG_CC_SOCU_PIN"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_PIN_NIDEN(x)"/>

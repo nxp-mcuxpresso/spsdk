@@ -19,6 +19,7 @@ from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, get_ke
 from spsdk.exceptions import SPSDKError
 from spsdk.image import SB3_SCH_FILE, TrustZone, get_mbi_class
 from spsdk.image.ahab.ahab_container import AHABImage
+from spsdk.image.bee import BeeNxp
 from spsdk.image.bootable_image.bimg import BootableImage, get_bimg_class
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.keystore import KeyStore
@@ -33,7 +34,6 @@ from spsdk.utils.misc import (
     get_abs_path,
     load_binary,
     load_configuration,
-    load_file,
     load_text,
     value_to_int,
     write_file,
@@ -244,6 +244,48 @@ def sb21_parse(binary: str, key: str, parsed_data: str) -> None:
     click.echo(
         "Please note that the exported binary images from load command might contain padding"
     )
+
+
+@sb21.command(name="get-sbkek", no_args_is_help=False)
+@click.option(
+    "-k",
+    "--master-key",
+    type=str,
+    help="AES-256 master key as hexadecimal string or path to file containing key in plain text or in binary",
+)
+@click.option(
+    "-o",
+    "--output-folder",
+    type=click.Path(),
+    help="Output folder where the sbkek.txt and sbkek.bin will be stored",
+)
+def get_sbkek(master_key: str, output_folder: str) -> None:
+    """Compute SBKEK (AES-256) value and optionally store it as plain text and as binary.
+
+    SBKEK is AES-256 symmetric key used for encryption and decryption of SB.
+    Plain text version is used for SB generation.
+    Binary format is to be written to the keystore.
+    The same format is also used for USERKEK.
+
+    For OTP, the SBKEK is derived from OTP master key:
+    SB2_KEK = AES256(OTP_MASTER_KEY,
+    03000000_00000000_00000000_00000000_04000000_00000000_00000000_00000000)
+
+    Master key is not needed when using PUF as key storage
+
+    The computed SBKEK is shown as hexadecimal text on STDOUT,
+    SBKEK is stored in plain text and in binary if the 'output-folder' is specified,
+    """
+    otp_master_key = get_key(master_key, KeyStore.OTP_MASTER_KEY_SIZE)
+    sbkek = KeyStore.derive_sb_kek_key(otp_master_key)
+
+    click.echo(f"SBKEK: {sbkek.hex()}")
+    click.echo(f"(OTP) MASTER KEY: {otp_master_key.hex()}")
+
+    if output_folder:
+        store_key(os.path.join(output_folder, "sbkek"), sbkek, reverse=True)
+        store_key(os.path.join(output_folder, "otp_master_key"), otp_master_key)
+        click.echo(f"Keys have been stored to: {output_folder}")
 
 
 @main.group()
@@ -535,8 +577,17 @@ def otfad() -> None:  # pylint: disable=unused-argument
     type=INT(),
     help="Alignment of key blob data blocks to simplify align data to external memory blocks.",
 )
+@click.option(
+    "-i",
+    "--index",
+    type=INT(),
+    help=(
+        "OTFAD peripheral index - This is needed to generate proper "
+        "indexes of fuses in optional BLHOST script. For example for RT1180."
+    ),
+)
 @click.argument("config", type=click.Path(exists=True, readable=True))
-def otfad_export(alignment: int, config: str) -> None:
+def otfad_export(alignment: int, config: str, index: int = None) -> None:
     """Generate OTFAD Images from YAML/JSON configuration.
 
     CONFIG is path to the YAML/JSON configuration
@@ -545,7 +596,9 @@ def otfad_export(alignment: int, config: str) -> None:
     """
     config_data = load_configuration(config)
     config_dir = os.path.dirname(config)
-    schemas = OtfadNxp.get_validation_schemas()
+    check_config(config_data, OtfadNxp.get_validation_schemas_family(), search_paths=[config_dir])
+    family = config_data["family"]
+    schemas = OtfadNxp.get_validation_schemas(family)
     check_config(config_data, schemas, search_paths=[config_dir])
     otfad = OtfadNxp.load_from_config(config_data, search_paths=[config_dir])
     binary_image = otfad.binary_image(data_alignment=alignment)
@@ -556,54 +609,66 @@ def otfad_export(alignment: int, config: str) -> None:
     otfad_all = os.path.join(output_folder, "otfad_whole_image.bin")
     write_file(binary_image.export(), otfad_all, mode="wb")
     logger.info(f"Created OTFAD Image:\n{otfad_all}")
-
+    sb21_supported = otfad.database.get_device_value("sb_21_supported", otfad.family, default=False)
     memory_map = (
         "In folder is stored two kind of files:\n"
-        "  -  Binary file that contains whole image data including OTFAD table and key blobs data"
-        "  -  Example of BD file to simplify creating the SB2.1 file from the OTFAD source files."
-        " 'otfad_whole_image.bin'.\n"
+        "  -  Binary file that contains whole image data including "
+        "OTFAD table and key blobs data 'otfad_whole_image.bin'.\n"
+    )
+    if sb21_supported:
+        memory_map += "  -  Example of BD file to simplify creating the SB2.1 file from the OTFAD source files.\n"
+        bd_file_sources = "sources {"
+        bd_file_section0 = "section (0) {"
+
+    memory_map += (
         "  -  Set of separated binary files, one with OTFAD table, and one for each used key blob.\n"
         f"\nOTFAD memory map:\n{binary_image.draw(no_color=True)}"
     )
-
-    bd_file_sources = "sources {"
-    bd_file_section0 = "section (0) {"
 
     for i, image in enumerate(binary_image.sub_images):
         image_file = os.path.join(output_folder, f"{image.name}.bin")
         write_file(image.export(), image_file, mode="wb")
         logger.info(f"Created OTFAD Image:\n{image_file}")
         memory_map += f"\n{image_file}:\n{image.info()}"
-        bd_file_sources += f'\n    image{i} = "{image_file}";'
-        bd_file_section0 += f"\n    // Load Image: {image.name}"
-        bd_file_section0 += (
-            f"\n    erase {hex(image.absolute_address)}..{hex(image.absolute_address+len(image))};"
-        )
-        bd_file_section0 += f"\n    load image{i} > {hex(image.absolute_address)}"
+        if sb21_supported:
+            bd_file_sources += f'\n    image{i} = "{image_file}";'
+            bd_file_section0 += f"\n    // Load Image: {image.name}"
+            bd_file_section0 += f"\n    erase {hex(image.absolute_address)}..{hex(image.absolute_address+len(image))};"
+            bd_file_section0 += f"\n    load image{i} > {hex(image.absolute_address)}"
 
-    bd_file_sources += "\n}\n"
-    bd_file_section0 += "\n}\n"
     readme_file = os.path.join(output_folder, "readme.txt")
 
     write_file(memory_map, readme_file)
     logger.info(f"Created OTFAD readme file:\n{readme_file}")
 
-    bd_file_name = os.path.join(output_folder, "sb21_otfad_example.bd")
+    if sb21_supported:
+        bd_file_name = os.path.join(output_folder, "sb21_otfad_example.bd")
+        bd_file_sources += "\n}\n"
+        bd_file_section0 += "\n}\n"
+        bd_file = (
+            "options {\n"
+            "    flags = 0x8; // for sb2.1 use only 0x8 encrypted + signed\n"
+            "    buildNumber = 0x1;\n"
+            '    productVersion = "1.00.00";\n'
+            '    componentVersion = "1.00.00";\n'
+            '    secureBinaryVersion = "2.1";\n'
+            "}\n"
+        )
+        bd_file += bd_file_sources
+        bd_file += bd_file_section0
 
-    bd_file = (
-        "options {\n"
-        "    flags = 0x8; // for sb2.1 use only 0x8 encrypted + signed\n"
-        "    buildNumber = 0x1;\n"
-        '    productVersion = "1.00.00";\n'
-        '    componentVersion = "1.00.00";\n'
-        '    secureBinaryVersion = "2.1";\n'
-        "}\n"
-    )
-    bd_file += bd_file_sources
-    bd_file += bd_file_section0
+        write_file(bd_file, bd_file_name)
+        logger.info(f"Created OTFAD BD file example:\n{bd_file_name}")
 
-    write_file(bd_file, bd_file_name)
-    logger.info(f"Created OTFAD BD file example:\n{bd_file_name}")
+    if otfad.database.get_device_value("has_kek_fuses", otfad.family, default=False) and index:
+        blhost_script = None
+        blhost_script = otfad.get_blhost_script_otp_kek(index)
+        if blhost_script:
+            blhost_script_filename = os.path.join(
+                output_folder, f"otfad{index}_{otfad.family}_blhost.bcf"
+            )
+            write_file(blhost_script, blhost_script_filename)
+            click.echo(f"Created OTFAD BLHOST load fuses script:\n{blhost_script_filename}")
 
     click.echo(f"Success. OTFAD files has been created and stored into: {output_folder}")
 
@@ -626,7 +691,7 @@ def otfad_export(alignment: int, config: str) -> None:
     "--chip-family",
     type=click.Choice(OtfadNxp.get_supported_families()),
     help=(
-        "Optional family, if it specified, the tool generates the BLHOST scripts to load key fuses."
+        "Optional family, if specified, the tool generates the BLHOST scripts to load key fuses."
         " To use this feature, the '-o' options has to be also defined!"
     ),
 )
@@ -655,7 +720,9 @@ def otfad_get_kek(
 
     blhost_script = None
     if chip_family and chip_family in OtfadNxp.get_supported_families():
-        blhost_script = OtfadNxp.get_blhost_script_otp_keys(chip_family, omk, ok)
+        blhost_script = OtfadNxp.get_blhost_script_otp_keys(
+            chip_family, otp_master_key=omk, otfad_key_seed=ok
+        )
         if not output_folder:
             click.echo(f"OTFAD BLHOST load fuses script:\n{blhost_script}")
 
@@ -694,6 +761,78 @@ def otfad_get_template(chip_family: str, overwrite: bool, output: str) -> None:
     if not os.path.isfile(output) or overwrite:
         click.echo(f"Creating {output} template file.")
         write_file(OtfadNxp.generate_config_template(chip_family)[f"{chip_family}_otfad"], output)
+    else:
+        click.echo(f"Skip creating {output}, this file already exists.")
+
+
+@main.group(no_args_is_help=True)
+def bee() -> None:  # pylint: disable=unused-argument
+    """Group of sub-commands related to BEE."""
+
+
+@bee.command(name="export", no_args_is_help=True)
+@click.argument("config", type=click.Path(exists=True, readable=True))
+def bee_export(config: str) -> None:
+    """Generate BEE Images from YAML/JSON configuration.
+
+    CONFIG is path to the YAML/JSON configuration
+
+    The configuration template files could be generated by subcommand 'get-template'.
+    """
+    config_data = load_configuration(config)
+    config_dir = os.path.dirname(config)
+    schemas = BeeNxp.get_validation_schemas()
+    check_config(config_data, schemas, search_paths=[config_dir])
+    bee = BeeNxp.load_from_config(config_data, search_paths=[config_dir])
+
+    output_folder = get_abs_path(config_data["output_folder"], config_dir)
+
+    output_name = config_data.get("output_name")
+    if not output_name:
+        output_name = "encrypted.bin"
+
+    bee_image = os.path.join(output_folder, output_name)
+    write_file(bee.export_image(), bee_image, mode="wb")
+    logger.info(f"Created BEE Image:\n{bee_image}")
+
+    header_name = config_data.get("header_name")
+    if not header_name:
+        header_name = "bee_ehdr.bin"
+
+    for idx, header in enumerate(bee.export_headers()):
+        header_output = os.path.join(output_folder, f"{idx}_" + header_name)
+        write_file(header, header_output, mode="wb")
+        logger.info(f"Created BEE Header:\n{header_output}")
+
+    click.echo(f"Success. BEE files have been created and stored into: {output_folder}")
+
+
+@bee.command(name="get-template", no_args_is_help=True)
+@click.option(
+    "-f",
+    "--chip-family",
+    default="rt1010",
+    type=click.Choice(BeeNxp.get_supported_families(), case_sensitive=False),
+    required=True,
+    help="Select the chip family.",
+)
+@click.option(
+    "-o",
+    "--overwrite",
+    default=False,
+    type=bool,
+    is_flag=True,
+    help="Allow overwriting existing template file.",
+)
+@click.argument("output", type=click.Path())
+def bee_get_template(chip_family: str, overwrite: bool, output: str) -> None:
+    """Create template of configuration in YAML format.
+
+    The template file name is specified as argument of this command.
+    """
+    if not os.path.isfile(output) or overwrite:
+        click.echo(f"Creating {output} template file.")
+        write_file(BeeNxp.generate_config_template(), output)
     else:
         click.echo(f"Skip creating {output}, this file already exists.")
 
@@ -926,7 +1065,7 @@ def bin_image() -> None:  # pylint: disable=unused-argument
 @click.option(
     "-s",
     "--size",
-    type=int,
+    type=INT(),
     required=True,
     help="Size of file to be created.",
 )

@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from typing import Generator, List, NamedTuple, Optional, Tuple, Union
 
 from crcmod.predefined import mkPredefinedCrcFun
-from serial import Serial
+from serial import Serial, SerialTimeoutException
 from serial.tools.list_ports import comports
 
 from spsdk.mboot.commands import CmdPacket, CmdResponse, parse_cmd_response
@@ -155,7 +155,10 @@ class Uart(MBootInterface):
         super().__init__()
         try:
             self.timeout = timeout
-            self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
+            timeout_s = timeout / 1000
+            self.device = Serial(
+                port=port, timeout=timeout_s, write_timeout=timeout_s, baudrate=baudrate
+            )
             if port:
                 self.close()  # TODO: [SPSDK-1212] Is this really necessary here? Please advice somebody.
             self.protocol_version = 0
@@ -174,7 +177,13 @@ class Uart(MBootInterface):
                 self.ping()
                 logger.debug(f"Interface opened after {i + 1} attempts.")
                 return
-            except (McuBootConnectionError, TimeoutError) as e:
+            except TimeoutError as e:
+                self.device.reset_input_buffer()
+                self.device.reset_output_buffer()
+                # Closing may take up 30-40 seconds
+                self.device.close()
+                logger.debug(f"Timeout when pinging the device: {repr(e)}")
+            except McuBootConnectionError as e:
                 self.device.close()
                 logger.debug(f"Opening interface failed with: {repr(e)}")
             except Exception as exc:
@@ -275,6 +284,7 @@ class Uart(MBootInterface):
         """Send data to device.
 
         :param data: Data to send
+        :raises TimeoutError: Time-out
         :raises McuBootConnectionError: When sending the data fails
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
@@ -283,6 +293,8 @@ class Uart(MBootInterface):
             self.device.reset_output_buffer()
             self.device.write(data)
             self.device.flush()
+        except SerialTimeoutException as e:
+            raise TimeoutError(str(e)) from e
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
 
@@ -416,13 +428,18 @@ class Uart(MBootInterface):
         :param timeout: New temporary timeout in milliseconds, defaults to PING_TIMEOUT_MS (500ms)
         :return: Generator[None, None, None]
         """
-        self.device.timeout = min(timeout, self.timeout) / 1000
-        logger.debug(f"Setting timeout to {self.device.timeout * 1000} ms")
+        context_timeout = min(timeout, self.timeout)
+        context_timeout_s = context_timeout / 1000
+        self.device.timeout = context_timeout_s
+        self.device.write_timeout = context_timeout_s
+        logger.debug(f"Setting timeout to {context_timeout} ms")
         # driver needs to be reconfigured after timeout change, wait for a little while
         time.sleep(0.005)
 
         yield
 
-        self.device.timeout = self.timeout / 1000
-        logger.debug(f"Restoring timeout to {self.device.timeout * 1000} ms")
+        restored_timeout_s = self.timeout / 1000
+        self.device.timeout = restored_timeout_s
+        self.device.write_timeout = restored_timeout_s
+        logger.debug(f"Restoring timeout to {self.timeout} ms")
         time.sleep(0.005)

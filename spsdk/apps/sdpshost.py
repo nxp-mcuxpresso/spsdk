@@ -27,12 +27,12 @@ WARNING_MSG = """
 
 
 @click.group(name="sdpshost", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True)
+@isp_interfaces(uart=True, usb=True, is_sdp=True, json_option=False)
 @click.option("-n", "--name", type=click.Choice(list(ROM_INFO.keys())), help="Name of the device")
 @spsdk_apps_common_options
 @click.pass_context
 def main(ctx: click.Context, port: str, usb: str, name: str, log_level: int, timeout: int) -> int:
-    """Utility for communication with ROM on i.MX targets using SDPS protocol."""
+    """Utility for communication with ROM on i.MX targets using SDPS protocol (i.MX8/9)."""
     logging.basicConfig(level=log_level or logging.WARNING)
     click.echo(WARNING_MSG)
     # if --help is provided anywhere on command line, skip interface lookup and display help message

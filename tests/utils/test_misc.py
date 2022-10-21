@@ -31,6 +31,7 @@ from spsdk.utils.misc import (
     get_bytes_cnt_of_int,
     load_binary,
     load_file,
+    reverse_bits_in_bytes,
     reverse_bytes_in_longs,
     size_fmt,
     swap16,
@@ -257,6 +258,19 @@ def test_find_file_invalid(data_dir):
 )
 def test_format_value(value, size, expected):
     assert format_value(value, size) == expected
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (b"\xa5", b"\xa5"),
+        (b"\x00", b"\x00"),
+        (b"\x12\x34", b"\x48\x2c"),
+        (b"", b""),
+    ],
+)
+def test_reverse_bits_in_bytes(value, expected):
+    assert reverse_bits_in_bytes(value) == expected
 
 
 def test_reg_long_reverse():

@@ -229,13 +229,18 @@ class BaseConfigArea:
     IMAGE_PREFILL_PATTERN = 0
 
     def __init__(
-        self, device: str = None, revision: str = None, user_config: PfrConfiguration = None
+        self,
+        device: str = None,
+        revision: str = None,
+        user_config: PfrConfiguration = None,
+        raw: bool = False,
     ) -> None:
         """Initialize an instance.
 
         :param device: device to use, list of supported devices is available via 'devices' method
         :param revision: silicon revision, if not specified, the latest is being used
         :param user_config: PfrConfiguration with user configuration to use with initialization
+        :param raw: When set the computed fields from configuration will be applied
         :raises SPSDKError: When no device is provided
         :raises SPSDKError: When no device is not supported
         :raises SPSDKError: When there is invalid revision
@@ -257,7 +262,7 @@ class BaseConfigArea:
 
         if self.revision not in self.config.get_revisions(self.device):
             raise SPSDKError(f"Invalid revision '{self.revision}' for '{self.device}'")
-        self.registers = Registers(self.device)
+        self.registers = Registers(self.device, base_endianness="little")
         self.registers.load_registers_from_xml(
             xml=self.config.get_data_file(self.device, self.revision),
             filter_reg=self.config.get_ignored_registers(self.device),
@@ -277,7 +282,7 @@ class BaseConfigArea:
         )
 
         if self.user_config.settings:
-            self.set_config(self.user_config, raw=False)
+            self.set_config(self.user_config, raw=raw)
 
     def reg_computed_fields_handler(self, val: bytes, context: Any) -> bytes:
         """Recalculate all fields for given register value.
@@ -448,22 +453,22 @@ class BaseConfigArea:
         """Function returns start of seal fields for the device.
 
         :return: Start of seals fields.
-        :raises SPSDKError: When 'seal_start_address' in database.json can not be found
+        :raises SPSDKError: When 'seal_start_address' in database.yaml can not be found
         """
         start = self.config.get_seal_start_address(self.device)
         if not start:
-            raise SPSDKError("Can't find 'seal_start_address' in database.json")
+            raise SPSDKError("Can't find 'seal_start_address' in database.yaml")
         return self.registers.find_reg(start).offset
 
     def _get_seal_count(self) -> int:
         """Function returns seal count for the device.
 
         :return: Count of seals fields.
-        :raises SPSDKError: When 'seal_count' in database.json can not be found
+        :raises SPSDKError: When 'seal_count' in database.yaml can not be found
         """
         count = self.config.get_seal_count(self.device)
         if not count:
-            raise SPSDKError("Can't find 'seal_count' in database.json")
+            raise SPSDKError("Can't find 'seal_count' in database.yaml")
         return value_to_int(count)
 
     def export(self, add_seal: bool = False, keys: List[PublicKey] = None) -> bytes:
@@ -504,10 +509,9 @@ class BaseConfigArea:
 
         :param data: Input binary data of PFR block.
         """
-        for reg in self._get_registers():
-            value = bytearray(data[reg.offset : reg.offset + reg.width // 8])
-            # don't change endian if register is meant to be used in 'reverse' (array of bytes)
-            reg.set_value(value if reg.reverse else change_endianness(value), raw=True)
+        for reg in self.registers.get_registers(include_group_regs=False):
+            value = data[reg.offset : reg.offset + reg.width // 8]
+            reg.set_bytes_value(value)
 
 
 class CMPA(BaseConfigArea):

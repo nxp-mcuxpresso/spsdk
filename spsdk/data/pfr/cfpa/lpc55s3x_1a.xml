@@ -6,7 +6,7 @@
       <alias type="CMSIS" value="FLASH_CFPA_HEADER_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x4" width="32" name="CFPA_PAGE_VERSION" description="CFPA Page Version">
+  <register offset="0x4" width="32" name="CFPA_PAGE_VERSION" description="CFPA Page Version, value of 0xFFFF_FFFF enable auto increment of the current CFPA page version.">
     <alias type="CMSIS" value="CFPA.CFPA_PAGE_VERSION"/>
     <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CFPA_PAGE_VERSION_FIELD(x)"/>
@@ -211,7 +211,7 @@
       <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <reserved_bit_field offset="9" width="6" reset_value="0"/>
-    <bit_field offset="15" width="1" name="UUID_CHECK" access="RO" reset_value="0" description="UUID Check">
+    <bit_field offset="15" width="1" name="UUID_CHECK" access="RO" reset_value="0" description="Enforce UUID match during debug authentication.">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_UUID_CHECK(x)"/>
       <bit_field_value name="DCFG_CC_SOCU_NS_PIN_UUID_CHECK_DISABLED" value="0b0" description="Disabled"/>
       <bit_field_value name="DCFG_CC_SOCU_NS_PIN_UUID_CHECK_ENABLED" value="0b1" description="Enabled"/>

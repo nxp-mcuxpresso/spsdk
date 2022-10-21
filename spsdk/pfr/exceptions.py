@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,3 +23,7 @@ class SPSDKPfrConfigReadError(SPSDKPfrConfigError):
 
 class SPSDKPfrRotkhIsNotPresent(SPSDKPfrError):
     """The configuration area doesn't provide ROTKH field."""
+
+
+class SPSDKPfrcMissingConfigError(SPSDKPfrError):
+    """The translation of conditions failed."""

@@ -3,49 +3,59 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 - req_id: "1.1"
-  desc: Never write any non-zero configuration into DCFG_CC_SOCU_NS_PIN and
-    DCFG_CC_SOCU_NS_DFLT (CFPA) before DCFG_CC_SOCU_PIN and DCFG_CC_SOCU_DFLT (CMPA)
+  desc: Never write any non-zero configuration into DCFG_CC_SOCU_NS_PIN before DCFG_CC_SOCU_PIN
     contains any valid (non-zero) configuration.
   msg: The CMPA.DCFG_CC_SOCU_PIN[0:9] must be set in case the CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is set.
-  #cond: (CMPA.DCFG_CC_SOCU_PIN & 0x3FF) == 0 and (CFPA.DCFG_CC_SOCU_NS_PIN & 0x2FF) != 0
-  cond: 0 != 0
+  cond: any(True if (((CFPA.DCFG_CC_SOCU_NS_PIN >> index) & 1) and not ((CMPA.DCFG_CC_SOCU_PIN >> index) & 1)) else False for index in range(0, int(10)))
 
 - req_id: "1.2"
-  desc: Inverse value (upper 16 bits) of DCFG_CC_SOCU_PIN/DFLT must be always
-    valid. Only exception are blank devices where CC_SOCU_xxx contains all
-    zeros.
-  msg: Inverse values are generated automatically based on configuration. Not tested.
-  cond: 0 != 0
+  desc: Never write any non-zero configuration into DCFG_CC_SOCU_NS_DFLT before DCFG_CC_SOCU_DFLT
+    contains any valid (non-zero) configuration.
+  msg: The CMPA.DCFG_CC_SOCU_DFLT[0:9] must be set in case the CFPA.DCFG_CC_SOCU_NS_DFLT[0:9] is set.
+  cond: any(True if (((CFPA.DCFG_CC_SOCU_NS_DFLT >> index) & 1) and not ((CMPA.DCFG_CC_SOCU_DFLT >> index) & 1)) else False for index in range(0, int(10)))
 
 - req_id: "1.3"
-  desc: Inverse value (upper 16 bits) of DCFG_CC_SOCU_NS_PIN/DFLT must be always
-    valid. Only exception are blank devices where CC_SOCU_xxx contains all
+  desc: Inverse value (upper 16 bits) of DCFG_CC_SOCU_PIN must be always
+    valid. Only exception are blank devices where CC_SOCU_PIN contains all
     zeros.
-  msg: Inverse values are generated automatically based on configuration. Not tested.
-  cond: 0 != 0
+  msg: Inverse values are generated automatically based on configuration.
+  cond: CMPA.DCFG_CC_SOCU_PIN != 0 and (~(CMPA.DCFG_CC_SOCU_PIN>>int(16)) & 0xFFFF) != (CMPA.DCFG_CC_SOCU_PIN & 0xFFFF)
 
 - req_id: "1.4"
+  desc: Inverse value (upper 16 bits) of DCFG_CC_SOCU_DFLT must be always
+    valid. Only exception are blank devices where CC_SOCU_DFLT contains all
+    zeros.
+  msg: Inverse values are generated automatically based on configuration.
+  cond: CMPA.DCFG_CC_SOCU_DFLT != 0 and (~(CMPA.DCFG_CC_SOCU_DFLT>>int(16)) & 0xFFFF) != (CMPA.DCFG_CC_SOCU_DFLT & 0xFFFF)
+
+- req_id: "1.5"
+  desc: Inverse value (upper 16 bits) of DCFG_CC_SOCU_NS_PIN must be always
+    valid. Only exception are blank devices where CC_SOCU_xxx contains all
+    zeros.
+  msg: Inverse values are generated automatically based on configuration.
+  cond: CFPA.DCFG_CC_SOCU_NS_PIN != 0 and (~(CFPA.DCFG_CC_SOCU_NS_PIN>>int(16)) & 0xFFFF) != (CFPA.DCFG_CC_SOCU_NS_PIN & 0xFFFF)
+
+- req_id: "1.6"
+  desc: Inverse value (upper 16 bits) of DCFG_CC_SOCU_NS_DFLT must be always
+    valid. Only exception are blank devices where CC_SOCU_DFLT contains all
+    zeros.
+  msg: Inverse values are generated automatically based on configuration.
+  cond: CFPA.DCFG_CC_SOCU_NS_DFLT != 0 and (~(CFPA.DCFG_CC_SOCU_NS_DFLT>>int(16)) & 0xFFFF) != (CFPA.DCFG_CC_SOCU_NS_DFLT & 0xFFFF)
+
+- req_id: "1.7"
   desc: Do not write invalid PIN/DFLT configuration in CMPA area. Setting PIN bit
     to 0 and DFLT bit to 1 for given feature is not allowed
   msg: Invalid bit combination. If CMPA.DCFG_CC_SOCU_PIN[0:9] is 0, CMPA.DCFG_CC_SOCU_DFLT[0:9] can't be set to 1!
-  # cond: (CMPA.DCFG_CC_SOCU_PIN & 0x3FF) == 0 and (CMPA.DCFG_CC_SOCU_DFLT & 0x3FF) != 0
-  cond: 0 != 0
+  cond: any(True if (not ((CMPA.DCFG_CC_SOCU_PIN >> index) & 1) and ((CMPA.DCFG_CC_SOCU_DFLT >> index) & 1)) else False for index in range(0, int(10)))
 
-- req_id: "1.5"
+- req_id: "1.8"
   desc: Do not write invalid PIN/DFLT configuration in CFPA area. Setting PIN bit
     to 0 and DFLT bit to 1 for given feature is not allowed
-  msg: Invalid bit combination. If CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is 0, CFPA.DCFG_CC_SOCU_NS_DFLT_PIN[0:9] can't be set to 1!
-  cond: (CFPA.DCFG_CC_SOCU_NS_PIN & 0x2FF) == 0 and ((CFPA.DCFG_CC_SOCU_NS_DFLT & 0x2FF) ^ 0) != 0
+  msg: Invalid bit combination. If CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is 0, CFPA.DCFG_CC_SOCU_NS_DFLT[0:9] can't be set to 1!
+  cond: any(True if (not ((CFPA.DCFG_CC_SOCU_NS_PIN >> index) & 1) and ((CFPA.DCFG_CC_SOCU_NS_DFLT >> index) & 1)) else False for index in range(0, int(10)))
 
 - req_id: "2.1"
   desc: This CMPA_PROG_IN_PROGRESS must be always 0x00000000. Only ROM bootloader
     is allowed to write anything to this field.
   msg: The CMPA_PROG_IN_PROGRESS must be set to 0!
   cond: CFPA.CMPA_PROG_IN_PROGRESS != 0
-
-- req_id: "3.1"
-  desc: Dice feature is enabled by default (SKIP_DICE = 0). This feature becomes
-    active as soon as secure boot is enabled. In case that valid UDS keycode is
-    not present in PFR Key Store Area, secure boot will always fail.
-  msg: Secure boot is enabled (SEC_BOOT_EN) and while DICE is not being skipped. Either skip DICE or make sure a valid UDS key code is set.
-  cond: CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CMPA.SECURE_BOOT_CFG.SKIP_DICE == 0 and UTIL.isUDSKeyCodeValid == False

@@ -110,6 +110,8 @@ class StatusCode(Enum):
     ROMLDR_ROLLBACK_BLOCKED     = (10115, "RomLdrRollbackBlocked", "ROM Loader: Rollback Blocked")
     ROMLDR_INVALID_SECTION_MAC_COUNT    = (10116, "RomLdrInvalidSectionMacCount", "ROM Loader: Invalid Section Mac Count")
     ROMLDR_UNEXPECTED_COMMAND           = (10117,  "RomLdrUnexpectedCommand", "ROM Loader: Unexpected Command")
+    ROMLDR_BAD_SBKEK                    = (10118,  "RomLdrBadSBKEK", "ROM Loader: Bad SBKEK Detected")
+    ROMLDR_PENDING_JUMP_COMMAND         = (10119,  "RomLdrPendingJumpCommand", "ROM Loader: Pending Jump Command")
 
     # Memory interface errors.
     MEMORY_RANGE_INVALID                    = (10200, "MemoryRangeInvalid", "Memory Range Invalid")
@@ -149,7 +151,7 @@ class StatusCode(Enum):
     # Reliable Update statuses.
     RELIABLE_UPDATE_SUCCESS                     = (10600, "ReliableUpdateSuccess", "Reliable Update: Success")
     RELIABLE_UPDATE_FAIL                        = (10601, "ReliableUpdateFail", "Reliable Update: Fail")
-    RELIABLE_UPDATE_INACIVE                     = (10602, "ReliableUpdateInacive", "Reliable Update: Inacive")
+    RELIABLE_UPDATE_INACTIVE                     = (10602, "ReliableUpdateInactive", "Reliable Update: Inactive")
     RELIABLE_UPDATE_BACKUPAPPLICATIONINVALID    = (10603, "ReliableUpdateBackupApplicationInvalid", "Reliable Update: Backup Application Invalid")
     RELIABLE_UPDATE_STILLINMAINAPPLICATION      = (10604, "ReliableUpdateStillInMainApplication", "Reliable Update: Still In Main Application")
     RELIABLE_UPDATE_SWAPSYSTEMNOTREADY          = (10605, "ReliableUpdateSwapSystemNotReady", "Reliable Update: Swap System Not Ready")
@@ -164,6 +166,11 @@ class StatusCode(Enum):
     SERIAL_NOR_EEPROM_TYPE_INVALID      = (10702, "SerialNorEepromTypeInvalid", "SerialNorEeprom: Type Invalid")
     SERIAL_NOR_EEPROM_SIZE_INVALID      = (10703, "SerialNorEepromSizeInvalid", "SerialNorEeprom: Size Invalid")
     SERIAL_NOR_EEPROM_COMMAND_INVALID   = (10704, "SerialNorEepromCommandInvalid", "SerialNorEeprom: Command Invalid")
+
+    # ROM API statuses.
+    ROM_API_NEED_MORE_DATA              = (10800, "RomApiNeedMoreData", "RomApi: Need More Data")
+    ROM_API_BUFFER_SIZE_NOT_ENOUGH      = (10801, "RomApiBufferSizeNotEnough", "RomApi: Buffer Size Not Enough")
+    ROM_API_INVALID_BUFFER              = (10802, "RomApiInvalidBuffer", "RomApi: Invalid Buffer")
 
     # FlexSPI NAND statuses.
     FLEXSPINAND_READ_PAGE_FAIL          = (20000, "FlexSPINANDReadPageFail", "FlexSPINAND: Read Page Fail")

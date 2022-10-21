@@ -33,8 +33,8 @@ sb3_description:
     description:
       type: string
       title: Description
-      description: Description up to 16 characters, longer will be truncated by elftosb, stored in SB3.1 manifest. If not provided, inserted elftosb version automatically.
-      template_value: This is description of my generated SB file.
+      description: Description up to 16 characters, longer will be truncated. Stored in SB3.1 manifest.
+      template_value: This is description of generated SB file.
 
 sb3:
   type: object
@@ -54,13 +54,13 @@ sb3:
     kdkAccessRights:
       type: number
       title: KDK access rights
-      description: Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process, more details can be in CSSv2 manual.  Once will be development finished, one fixed value will be used and probably not required as user input.
+      description: Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process, more details can be found in CSSv2 manual.
       enum: [0, 1, 2, 3]
       template_value: 0
     containerConfigurationWord:
       type: [string, number]
       title: Container configuration word
-      description: Flag value in SB3.1 manifest, not used by silicons with LPC55S3x ROM. Value can be keep 0, or item removed from json file.
+      description: Flag value in SB3.1 manifest, not used by silicons with LPC55S3x ROM. Value can be kept 0, or it can be removed from the configuration file.
       format: number
       template_value: 0x0
 
@@ -71,12 +71,12 @@ sb3_test:
     isEncrypted:
       type: boolean
       title: Enable NXP Container encryption
-      description: If false, generated SB3.1 blocks are not encrypted, only for testing, ROM cannot accept unencrypted SB3.1 file. If option is missing, SB3.1 file is automatically encrypted.
+      description: If false, generated SB3.1 blocks are not encrypted, only for testing, ROM won't accept unencrypted SB3.1 file. If option is missing, SB3.1 file is automatically encrypted.
       template_value: true
     timestamp:
       type: [string, number]
       title: SB3 file force timestamp
-      description: For testing purposes this option can override real timestamp of SB3 file.
+      description: For testing purposes. This option can override real timestamp of SB3 file.
       format: number
       template_value: 1234567890
 
@@ -88,7 +88,7 @@ sb3_commands:
     commands:
       type: array
       title: SB3.1 Commands
-      description: Secure Binary v3.1 commands block, take this list as a full possible example - Modify it regarding your application
+      description: Secure Binary v3.1 commands block, list of all possible options - Modify it according to your application
       items:
         oneOf:
           - type: object
@@ -163,7 +163,7 @@ sb3_commands:
               execute:
                 type: object
                 title: Execute
-                description: The startAddress will be the jump-to address. No further processing of SB after jump, ROM do not expect to return.
+                description: Address is the jump-to address. No further processing of SB after jump, ROM do not expect to return.
                 properties:
                   address:
                     type: [string, number]
@@ -179,7 +179,7 @@ sb3_commands:
               call:
                 type: object
                 title: Call
-                description: The startAddress will be the address to jump, however, the state machine should expect a return to the next statement to continue processing the sb file
+                description: Address is address to jump. However, the state machine should expect a return to the next statement to continue processing the SB file
                 properties:
                   address:
                     type: [string, number]
@@ -195,18 +195,18 @@ sb3_commands:
               programFuses:
                 type: object
                 title: Program Fuses
-                description: The startAddress will be the address of fuse register, length will be number of fuse words to program. The data to write to the fuse registers will immediately follow the header.
+                description: Address is OTP index of fuses to be programmed (Check the reference manual for more information). Values is a comma separated list of 32bit values.
                 properties:
                   address:
                     type: [string, number]
                     title: Address
-                    description: Address of fuses to be burned.
+                    description: OTP Index of fuses to be programmed. Depends on the chip ROM.
                     format: number
                     template_value: 0x0
                   values:
                     type: string
                     title: Binary values
-                    description: Binary values delimited by comma to be burned.
+                    description: 32bit binary values delimited by comma to be programmed.
                     template_value: 0x1234, 0x5678, 0, 12345678
                 required: [address, values]
 

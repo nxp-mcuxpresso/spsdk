@@ -84,7 +84,10 @@ class Uart(SDPInterface):
         """
         super().__init__()
         try:
-            self.device = Serial(port=port, timeout=timeout / 1000, baudrate=baudrate)
+            timeout_s = timeout / 1000
+            self.device = Serial(
+                port=port, timeout=timeout_s, write_timeout=timeout_s, baudrate=baudrate
+            )
             self.expect_status = True
         except Exception as e:
             raise SdpConnectionError(str(e)) from e

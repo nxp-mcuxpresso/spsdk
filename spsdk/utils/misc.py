@@ -13,7 +13,7 @@ import re
 import time
 from math import ceil
 from struct import pack, unpack
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, TypeVar, Union
+from typing import Callable, Dict, Generator, Iterable, Iterator, List, Optional, TypeVar, Union
 
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
@@ -528,6 +528,21 @@ def reverse_bytes_in_longs(arr: bytes) -> bytes:
     return bytes(result)
 
 
+def reverse_bits_in_bytes(arr: bytes) -> bytes:
+    """The function reverse bits order in input bytes.
+
+    :param arr: Input array.
+    :return: New array with reversed bits in bytes.
+    :raises SPSDKError: Raises when invalid value is in input.
+    """
+    result = bytearray()
+
+    for x in arr:
+        result.append(int("{:08b}".format(x)[::-1], 2))
+
+    return bytes(result)
+
+
 def change_endianness(bin_data: bytes) -> bytes:
     """Convert binary format used in files to binary used in register object.
 
@@ -784,3 +799,14 @@ def load_configuration(path: str) -> dict:
         pass
 
     raise SPSDKError(f"Unable to load '{path}'.")
+
+
+def split_data(data: bytearray, size: int) -> Generator[bytes, None, None]:
+    """Split data into chunks of size.
+
+    :param bytearray data: array of bytes to be split
+    :param int size: size of splitted array
+    :return Generator[bytes]: splitted array
+    """
+    for i in range(0, len(data), size):
+        yield data[i : i + size]

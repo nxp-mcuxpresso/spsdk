@@ -156,6 +156,18 @@ class TpTargetBlHost(TpTargetInterface):
             else 0x1000
         )
 
+    @property
+    def uses_uart(self) -> bool:
+        """Check if the adapter is using UART for communication."""
+        assert isinstance(self.descriptor, TpBlHostIntfDescription)
+        return isinstance(self.descriptor.device, Uart)
+
+    @property
+    def uses_usb(self) -> bool:
+        """Check if the adapter is using USB for communication."""
+        assert isinstance(self.descriptor, TpBlHostIntfDescription)
+        return isinstance(self.descriptor.device, RawHid)
+
     def open(self) -> None:
         """Open the provisioned device adapter."""
         self.mboot.open()
@@ -168,10 +180,11 @@ class TpTargetBlHost(TpTargetInterface):
     def reset_device(self) -> None:
         """Reset the connected provisioned device.
 
+        Note: Connection to the target will be closed.
         :raises SPSDKTpTargetError: Cannot reset the target.
         """
         try:
-            if not self.mboot.reset():
+            if not self.mboot.reset(reopen=False):
                 raise SPSDKTpTargetError("Cannot reset connected target.")
         except (SPSDKTpTargetError, ValueError, McuBootError) as exc:
             raise SPSDKTpTargetError(
@@ -236,20 +249,20 @@ class TpTargetBlHost(TpTargetInterface):
 
     @staticmethod
     def get_help() -> str:
-        """Return help for this interface, including settings description.
-
-        :return: String with help.
-        """
-        text = """The BLHOST adapter settings allow better specified the BLHOST target, otherwise the
-        default settings are used - This could lead to find a multiple BLHOST targets connected to system.
-        The BLHOST target adapter settings:
-        - blhost_usb - BLHOST USB device (vid:pid).
-        - blhost_port - BLHOST UART device port.
-        - blhost_baudrate - BLHOST UART device port baudrate.
-        - blhost_timeout - BLHOST device atomic operations timeout.
-        - buffer_address - Address in memory used for communication (buffer exchange)
-        - buffer_size - Size of the communication buffer; 1kB by default"""
-        return text
+        """Return help for this interface, including settings description."""
+        return "\n".join(
+            [
+                "The BLHOST adapter settings allow better specified the BLHOST target, otherwise the",
+                "default settings are used - This could lead to find a multiple BLHOST targets connected to system.",
+                "The BLHOST target adapter settings:",
+                "   - blhost_usb - BLHOST USB device (vid:pid).",
+                "   - blhost_port - BLHOST UART device port.",
+                "   - blhost_baudrate - BLHOST UART device port baudrate.",
+                "   - blhost_timeout - BLHOST device atomic operations timeout.",
+                "   - buffer_address - Address in memory used for communication (buffer exchange)",
+                "   - buffer_size - Size of the communication buffer; 1kB by default)",
+            ]
+        )
 
     @classmethod
     def get_validation_schemas(cls) -> List[Dict[str, Any]]:

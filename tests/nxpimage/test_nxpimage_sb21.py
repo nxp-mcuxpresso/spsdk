@@ -143,3 +143,24 @@ def test_nxpimage_sb21(bd_file, legacy_sb, external, elftosb_data_dir, tmpdir):
 def test_sb_21_invalid_parse():
     with pytest.raises(SPSDKError, match="kek cannot be empty"):
         BootImageV21.parse(data=bytes(232), kek=None)
+
+
+def test_nxpimage_sbkek_cli(tmpdir):
+    runner = CliRunner()
+    cmd = "sb21 get-sbkek"
+    result = runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0
+
+    cmd = f"sb21 get-sbkek -o {tmpdir}"
+    result = runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0
+    assert os.path.isfile(os.path.join(tmpdir, "sbkek.bin"))
+    assert os.path.isfile(os.path.join(tmpdir, "sbkek.txt"))
+
+    test_key = "858A4A83D07C78656165CDDD3B7AF4BB20E534392E7AF99EF7C296F95205E680"
+
+    cmd = f"sb21 get-sbkek -k {test_key} -o {tmpdir}"
+    result = runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0
+    assert os.path.isfile(os.path.join(tmpdir, "sbkek.bin"))
+    assert os.path.isfile(os.path.join(tmpdir, "sbkek.txt"))

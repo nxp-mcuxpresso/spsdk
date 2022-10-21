@@ -11,8 +11,20 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
 
 from spsdk import SPSDKError
+from spsdk.crypto.keys_management import (
+    CurveName,
+    generate_ecc_private_key,
+    generate_ecc_public_key,
+    generate_rsa_private_key,
+    generate_rsa_public_key,
+)
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.crypto import Counter
-from spsdk.utils.crypto.common import EllipticCurvePublicNumbers, ecc_public_numbers_to_bytes
+from spsdk.utils.crypto.common import (
+    EllipticCurvePublicNumbers,
+    ecc_public_numbers_to_bytes,
+    get_matching_key_id,
+)
 
 
 def test_counter():
@@ -58,3 +70,41 @@ def test_ecc_public_numbers_to_bytes():
         ecc_public_numbers_to_bytes(ecc, 8)
         == b"\x12\x34\x56\x78\x90\xab\xcd\xef\xef\xcd\xab\x90\x78\x56\x34\x12"
     )
+
+
+@pytest.mark.parametrize("length", [(2048), (4096)])
+def test_matching_keys_rsa(length):
+
+    prv_keys = []
+    pub_keys = []
+    for i in range(4):
+        prv_keys.append(generate_rsa_private_key(key_size=length))
+        pub_keys.append(generate_rsa_public_key(prv_keys[i]))
+
+    for i in range(4):
+        assert i == get_matching_key_id(public_keys=pub_keys, private_key=prv_keys[i])
+
+
+@pytest.mark.parametrize("curve", [(curve_name) for curve_name in CurveName])
+def test_matching_keys_ecc(curve):
+
+    prv_keys = []
+    pub_keys = []
+    for i in range(4):
+        prv_keys.append(generate_ecc_private_key(curve_name=curve))
+        pub_keys.append(generate_ecc_public_key(prv_keys[i]))
+
+    for i in range(4):
+        assert i == get_matching_key_id(public_keys=pub_keys, private_key=prv_keys[i])
+
+
+def test_matching_keys_unmatch():
+
+    prv_keys = []
+    pub_keys = []
+    for i in range(4):
+        prv_keys.append(generate_rsa_private_key())
+        pub_keys.append(generate_rsa_public_key(prv_keys[i]))
+
+    with pytest.raises(SPSDKValueError):
+        get_matching_key_id(public_keys=pub_keys, private_key=generate_rsa_private_key())

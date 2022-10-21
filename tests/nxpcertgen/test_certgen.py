@@ -266,7 +266,7 @@ def test_generate_template(tmpdir):
     template = "template.yaml"
     with use_working_directory(tmpdir):
         runner = CliRunner()
-        result = runner.invoke(main, f"get-cfg-template {template}")
+        result = runner.invoke(main, f"get-template {template}")
         assert result.exit_code == 0
         assert os.path.isfile(template)
         with open(template) as f:

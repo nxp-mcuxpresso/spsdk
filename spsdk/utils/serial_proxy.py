@@ -37,17 +37,19 @@ class SerialProxy:
         cls.ignore_ack = ignore_ack
         return cls
 
-    def __init__(self, port: str, timeout: int, baudrate: int):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int = None):
         """Basic initialization for serial.Serial class.
 
         __init__ signature must accommodate instantiation of serial.Serial
 
         :param port: Serial port name
         :param timeout: timeout (does nothing)
+        :param write_timeout: does nothing
         :param baudrate: Serial port speed (does nothing)
         """
         self.port = port
         self.timeout = timeout
+        self.write_timeout = write_timeout
         self.baudrate = baudrate
         self.is_open = False
         self.buffer = bytes()
@@ -116,16 +118,17 @@ class SimpleReadSerialProxy(SerialProxy):
         cls.FULL_BUFFER = data
         return cls
 
-    def __init__(self, port: str, timeout: int, baudrate: int):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int = None):
         """Basic initialization for serial.Serial class.
 
         __init__ signature must accommodate instantiation of serial.Serial
 
         :param port: Serial port name
         :param timeout: timeout (does nothing)
+        :param write_timeout: does nothing
         :param baudrate: Serial port speed (does nothing)
         """
-        super().__init__(port=port, timeout=timeout, baudrate=baudrate)
+        super().__init__(port=port, timeout=timeout, baudrate=baudrate, write_timeout=write_timeout)
         self.buffer = self.FULL_BUFFER
 
     def write(self, data: bytes) -> None:

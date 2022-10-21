@@ -6,17 +6,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Main Debug Authentication Tool application."""
 
+import contextlib
 import logging
 import os
 import sys
-from typing import Dict, List
+from typing import Dict, Iterator, List
 
 import click
 
 from spsdk import SPSDK_DATA_FOLDER
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error
-from spsdk.debuggers.utils import DebugProbeUtils
+from spsdk.debuggers.utils import DebugProbe, open_debug_probe
 from spsdk.exceptions import SPSDKError
 from spsdk.shadowregs import ShadowRegisters, enable_debug
 from spsdk.utils.misc import load_configuration, write_file
@@ -29,7 +30,26 @@ CONFIG_DIR = os.path.join(SPSDK_DATA_FOLDER, "shadowregs")
 CONFIG_DATABASE = os.path.join(CONFIG_DIR, "database.yaml")
 
 
-def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> ShadowRegisters:
+@contextlib.contextmanager
+def _open_debug_probe(pass_obj: Dict) -> Iterator[DebugProbe]:
+    """Method opens DebugProbe object based on input arguments.
+
+    :param pass_obj: Input dictionary with arguments.
+    :return: Active DebugProbe object.
+    :raises SPSDKError: Raised with any kind of problems with debug probe.
+    """
+    interface = pass_obj["interface"]
+    serial_no = pass_obj["serial_no"]
+    debug_probe_params = pass_obj["debug_probe_params"]
+
+    with open_debug_probe(
+        interface=interface, serial_no=serial_no, debug_probe_params=debug_probe_params
+    ) as probe:
+        yield probe
+
+
+@contextlib.contextmanager
+def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> Iterator[ShadowRegisters]:
     """Method opens ShadowRegisters object based on input arguments.
 
     :param pass_obj: Input dictionary with arguments.
@@ -37,38 +57,30 @@ def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> ShadowRegist
     :return: Active ShadowRegisters object.
     :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
-    interface = pass_obj["interface"]
-    serial_no = pass_obj["serial_no"]
-    debug_probe_params = pass_obj["debug_probe_params"]
     device = pass_obj["device"]
     revision = pass_obj["revision"]
 
     if device not in RegConfig.devices(CONFIG_DATABASE):
         raise SPSDKError(
-            "Invalid or none device parameter(-dev). Use 'listdevs' command to get supported devices."
+            "Invalid or none device parameter(-dev). Check '--help' to get supported devices."
         )
 
     regs_cfg = RegConfig(CONFIG_DATABASE)
 
-    debug_probe = None
-    if connect:
+    if not connect:
+        yield ShadowRegisters(debug_probe=None, config=regs_cfg, device=device, revision=revision)
+    else:
         try:
-            debug_probes = DebugProbeUtils.get_connected_probes(
-                interface=interface, hardware_id=serial_no, user_params=debug_probe_params
-            )
-            selected_probe = debug_probes.select_probe()
-            debug_probe = selected_probe.get_probe(debug_probe_params)
-            debug_probe.open()
-            if not enable_debug(debug_probe):
-                raise SPSDKError("Cannot enable debug interface")
+            with _open_debug_probe(pass_obj) as debug_probe:
+                if not enable_debug(debug_probe):
+                    raise SPSDKError("Cannot enable debug interface")
 
-            debug_probe.enable_memory_interface()
+                debug_probe.enable_memory_interface()
+                yield ShadowRegisters(
+                    debug_probe=debug_probe, config=regs_cfg, device=device, revision=revision
+                )
         except SPSDKError as exc:
             raise SPSDKError(f"Error with opening debug probe: ({str(exc)})") from exc
-
-    return ShadowRegisters(
-        debug_probe=debug_probe, config=regs_cfg, device=device, revision=revision
-    )
 
 
 @click.group(name="shadowregs", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -163,9 +175,9 @@ def main(
 def saveconfig(pass_obj: dict, filename: str, raw: bool, save_diff: bool) -> None:
     """Save current state of shadow registers to YML file."""
     try:
-        shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
-        shadow_regs.reload_registers()
-        shadow_regs.create_yml_config(filename, raw, diff=save_diff)
+        with _open_shadow_registers(pass_obj) as shadow_regs:
+            shadow_regs.reload_registers()
+            shadow_regs.create_yml_config(filename, raw, diff=save_diff)
         click.echo(f"The Shadow registers has been saved into {filename} YAML file")
     except SPSDKError as exc:
         raise SPSDKError(f"Save configuration of Shadow registers failed! ({str(exc)})") from exc
@@ -191,9 +203,9 @@ def saveconfig(pass_obj: dict, filename: str, raw: bool, save_diff: bool) -> Non
 def loadconfig(pass_obj: dict, filename: str = "sr_config.yml", raw: bool = False) -> None:
     """Load new state of shadow registers from YML file into microcontroller."""
     try:
-        shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
-        shadow_regs.load_yml_config(filename, raw)
-        shadow_regs.sets_all_registers()
+        with _open_shadow_registers(pass_obj) as shadow_regs:
+            shadow_regs.load_yml_config(filename, raw)
+            shadow_regs.sets_all_registers()
         click.echo(f"The Shadow registers has been loaded by configuration in {filename} YAML file")
     except SPSDKError as exc:
         raise SPSDKError(f"Load configuration of Shadow registers failed ({str(exc)})!") from exc
@@ -216,8 +228,8 @@ def get_template(pass_obj: dict, output: str, raw: bool) -> None:
     \b
     PATH    - file name path to write template config file
     """
-    shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj, connect=False)
-    shadow_regs.create_yml_config(output, raw)
+    with _open_shadow_registers(pass_obj, connect=False) as shadow_regs:
+        shadow_regs.create_yml_config(output, raw)
     click.echo(
         f"The Shadow registers template for {pass_obj['device']} has been saved into {output} YAML file"
     )
@@ -238,18 +250,18 @@ def printregs(pass_obj: dict, rich: bool = False) -> None:
     In case of needed more information, there is also provided rich format of print.
     """
     try:
-        shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
-        shadow_regs.reload_registers()
+        with _open_shadow_registers(pass_obj) as shadow_regs:
+            shadow_regs.reload_registers()
 
-        for reg in shadow_regs.regs.get_registers():
-            click.echo(f"Register Name:        {reg.name}")
-            click.echo(f"Register value:       {reg.get_hex_value()}")
-            if rich:
-                click.echo(f"Register description: {reg.description}")
-                address = shadow_regs.offset + reg.offset
-                click.echo(f"Register address:     0x{address:08X}")
-                click.echo(f"Register width:       {reg.width} bits")
-            click.echo()
+            for reg in shadow_regs.regs.get_registers():
+                click.echo(f"Register Name:        {reg.name}")
+                click.echo(f"Register value:       {reg.get_hex_value()}")
+                if rich:
+                    click.echo(f"Register description: {reg.description}")
+                    address = shadow_regs.offset + reg.offset
+                    click.echo(f"Register address:     0x{address:08X}")
+                    click.echo(f"Register width:       {reg.width} bits")
+                click.echo()
     except SPSDKError as exc:
         raise SPSDKError(f"Print of Shadow registers failed! ({str(exc)})") from exc
 
@@ -259,24 +271,24 @@ def printregs(pass_obj: dict, rich: bool = False) -> None:
 @click.pass_obj
 def getreg(pass_obj: dict, reg: str) -> None:
     """The command prints the current value of one shadow register."""
-    shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
     try:
-        register: RegsRegister = shadow_regs.regs.find_reg(reg, include_group_regs=True)
-        shadow_regs.reload_register(register)
-        click.echo(f"Value of {reg} is: {register.get_hex_value()}")
+        with _open_shadow_registers(pass_obj) as shadow_regs:
+            register: RegsRegister = shadow_regs.regs.find_reg(reg, include_group_regs=True)
+            value = shadow_regs.read_register(register)
+            click.echo(f"Value of {reg} is: {value.hex()}")
     except SPSDKError as exc:
         raise SPSDKError(f"Getting Shadow register failed! ({str(exc)})") from exc
 
 
 @main.command()
 @click.option("-r", "--reg", type=str, help="The name of register to be set.")
-@click.option("-v", "--reg_val", type=str, help="The new value of register in hex format.")
+@click.option("-v", "--reg-val", type=str, help="The new value of register in hex format.")
 @click.pass_obj
 def setreg(pass_obj: dict, reg: str, reg_val: str) -> None:
     """The command sets a value of one shadow register defined by parameter."""
-    shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
     try:
-        shadow_regs.set_register(reg, reg_val)
+        with _open_shadow_registers(pass_obj) as shadow_regs:
+            shadow_regs.set_register(reg, reg_val)
         click.echo(f"The Shadow register {reg} has been set to {reg_val} value")
     except SPSDKError as exc:
         raise SPSDKError(f"Setting Shadow register failed! ({str(exc)})") from exc
@@ -286,9 +298,8 @@ def setreg(pass_obj: dict, reg: str, reg_val: str) -> None:
 @click.pass_obj
 def reset(pass_obj: dict) -> None:
     """The command resets connected device."""
-    shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj)
-    assert shadow_regs.probe
-    shadow_regs.probe.reset()
+    with _open_debug_probe(pass_obj) as probe:
+        probe.reset()
     click.echo("The target has been reset.")
 
 
@@ -345,10 +356,10 @@ def fuses_script(pass_obj: dict, config: str, output: str) -> None:
     The OUTPUT argument specify file name of generate BLHOST burn fuses script.
     """
     try:
-        shadow_regs: ShadowRegisters = _open_shadow_registers(pass_obj, connect=False)
-        shadow_regs.load_yml_config(config, False)
-        cfg = load_configuration(config)
-        write_file(shadow_regs.create_fuse_blhost_script(list(cfg["registers"].keys())), output)
+        with _open_shadow_registers(pass_obj, connect=False) as shadow_regs:
+            shadow_regs.load_yml_config(config, False)
+            cfg = load_configuration(config)
+            write_file(shadow_regs.create_fuse_blhost_script(list(cfg["registers"].keys())), output)
         click.echo(f"BLHOST script to burn fuses has been generated: {output}")
     except SPSDKError as exc:
         raise SPSDKError(

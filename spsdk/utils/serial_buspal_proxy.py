@@ -44,7 +44,7 @@ class SerialBuspalProxy(SerialProxy):
             raise AttributeError(f"Target {target} not supported")
         return super().init_proxy(data)
 
-    def __init__(self, port: str, timeout: int, baudrate: int):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int = None):
         """Basic initialization for serial.Serial class.
 
         __init__ signature must accommodate instantiation of serial.Serial
@@ -56,7 +56,7 @@ class SerialBuspalProxy(SerialProxy):
         self._buffer_index = 0
         self.tx_buffer = b""
         self.rx_buffer = b""
-        super().__init__(port, timeout, baudrate)
+        super().__init__(port, timeout, baudrate, write_timeout=write_timeout)
 
     def write(self, data: bytes) -> None:
         """Simulates a BUSPAL write, pick up response from responses, store if command frame.

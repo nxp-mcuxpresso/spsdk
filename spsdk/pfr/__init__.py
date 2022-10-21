@@ -14,6 +14,7 @@ from spsdk import SPSDK_DATA_FOLDER
 PFR_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "pfr")
 
 from .exceptions import (
+    SPSDKPfrcMissingConfigError,
     SPSDKPfrConfigError,
     SPSDKPfrConfigReadError,
     SPSDKPfrError,

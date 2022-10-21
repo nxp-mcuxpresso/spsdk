@@ -9,6 +9,11 @@ import logging
 from os import path
 
 import pytest
+from cryptography.hazmat.backends.openssl import backend
+
+# Disable RSA key blinding to speed up unit tests in cryptography 37+
+# https://github.com/pyca/cryptography/issues/7236
+backend._rsa_skip_check_key = True
 
 # Skip test collection of TP tests if smartcard package cannot be imported
 try:

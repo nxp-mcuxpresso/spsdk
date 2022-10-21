@@ -31,7 +31,7 @@ from spsdk.sdp.commands import ResponseValue
 
 
 @click.group(name="sdphost", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True)
+@isp_interfaces(uart=True, usb=True, is_sdp=True)
 @spsdk_apps_common_options
 @click.pass_context
 def main(
@@ -42,7 +42,7 @@ def main(
     log_level: int,
     timeout: int,
 ) -> int:
-    """Utility for communication with ROM on i.MX targets."""
+    """Utility for communication with ROM on i.MX targets using SDP protocol (i.MX RT1xxx)."""
     logging.basicConfig(level=log_level or logging.WARNING)
     # if --help is provided anywhere on command line, skip interface lookup and display help message
     if "--help" not in sys.argv[1:]:
@@ -109,8 +109,8 @@ def write_file(ctx: click.Context, address: int, bin_file: click.File, count: in
 
 @main.command()
 @click.argument("address", type=INT(), required=True)
-@click.argument("item_length", type=int, required=False, default=32, metavar="[FORMAT]")
-@click.argument("count", type=int, required=False, default=None)
+@click.argument("item_length", type=INT(), required=False, default=32, metavar="[FORMAT]")
+@click.argument("count", type=INT(), required=False, default=None)
 @click.argument("file", type=click.File("wb"), required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_context

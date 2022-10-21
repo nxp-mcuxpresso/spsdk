@@ -31,11 +31,11 @@ Once the device is connected we should see the device ID and the applet version 
 
 
 If the device has successfully connected we can proceed to the next step - generate configuration template. Template configuration is done using the
-*get-cfg-template* subcommand.
+*get-template* subcommand.
 
 .. code:: bash
 
-    tpconfig get-cfg-template -o <config_path.yaml>
+    tpconfig get-template -o <config_path.yaml>
 
 
 Configuration template can look like this
@@ -122,11 +122,11 @@ Target provisioning
 --------------------
 
 To provision the target we will use the tphost application. Configuration for the tphost application is also provided as a YAML file.
-First we can generate template configuration. Template configuration is created using the *get-cfg-template* subcommand.
+First we can generate template configuration. Template configuration is created using the *get-template* subcommand.
 
 .. code:: bash
 
-    tphost get-cfg-template -o <config_path.yaml>
+    tphost get-template -o <config_path.yaml>
 
 Configuration template can look like this
 

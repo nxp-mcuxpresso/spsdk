@@ -63,7 +63,6 @@ setup(
         "console_scripts": [
             "elftosb=spsdk.apps.elftosb:safe_main",
             "pfr=spsdk.apps.pfr:safe_main",
-            "pfrc=spsdk.apps.pfrc:safe_main",
             "blhost=spsdk.apps.blhost:safe_main",
             "sdphost=spsdk.apps.sdphost:safe_main",
             "sdpshost=spsdk.apps.sdpshost:safe_main",

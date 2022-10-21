@@ -24,13 +24,27 @@ from spsdk.apps.tp_utils import (
     tp_device_options,
     tp_target_options,
 )
-from spsdk.apps.utils import CommandsTreeGroup, catch_spsdk_error, spsdk_apps_common_options
-from spsdk.crypto import Encoding
+from spsdk.apps.utils import (
+    INT,
+    CommandsTreeGroupAliasedGetCfgTemplate,
+    catch_spsdk_error,
+    spsdk_apps_common_options,
+)
+from spsdk.apps.utils.utils import SPSDKAppError
+from spsdk.crypto import Encoding, ec
+from spsdk.crypto.loaders import extract_public_key, load_certificate
 from spsdk.tp import TP_DATA_FOLDER, TpDevInterface, TpTargetInterface, TrustProvisioningHost
-from spsdk.tp.utils import get_supported_devices, scan_tp_devices, scan_tp_targets
+from spsdk.tp.data_container import Container
+from spsdk.tp.data_container.payload_types import PayloadType
+from spsdk.tp.utils import (
+    get_supported_devices,
+    reconstruct_cryptography_key,
+    scan_tp_devices,
+    scan_tp_targets,
+)
 
 
-@click.group(name="tphost", cls=CommandsTreeGroup)
+@click.group(name="tphost", cls=CommandsTreeGroupAliasedGetCfgTemplate)
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Application to secure Trust provisioning process of loading application in Un-trusted environment."""
@@ -142,7 +156,7 @@ def load(
     )
 
 
-@main.command(name="get-cfg-template", no_args_is_help=True)
+@main.command(name="get-template", no_args_is_help=True)
 @click.option(
     "-f",
     "--family",
@@ -157,7 +171,7 @@ def load(
     required=True,
     help="The output YAML template configuration file name",
 )
-def get_cfg_template(
+def get_template(
     family: str,
     output: str,
 ) -> None:
@@ -228,7 +242,7 @@ def get_cfg_template(
 @click.option(
     "-j",
     "--processes",
-    type=int,
+    type=INT(),
     help=f"How many processes to use; if not specified use cpu_count: {os.cpu_count()}",
 )
 @click.option(
@@ -320,7 +334,102 @@ def check_log_owner(
         tptarget=None,  # type: ignore  # target is not used, we set it to None on purpose
         info_print=click.echo,
     )
-    tp_worker.check_audit_log_owner(tp_config.audit_log)
+    tp_worker.check_audit_log_owner(tp_config.audit_log, timeout=tp_config.timeout)
+
+
+@main.command(name="check-cot", no_args_is_help=True)
+@click.option(
+    "-r",
+    "--root-cert",
+    help="NXP Glob Root Certificate authority certificate.",  # type: ignore  # not sure what is mypy on about
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+@click.option(
+    "-i",
+    "--intermediate-cert",
+    help="NXP Product Intermediate certificate.",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+@click.option(
+    "-t",
+    "--tp-response",
+    help="TP Response from MCU.",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+)
+def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
+    """Check Chain-of-Trust in Trust Provisioning.
+
+    \b
+    Root and intermediate certificates are provided from NXP.
+    TP_RESPONSE can be obtained from `tphost load` using `--save-debug-data` flag.
+    Default file name for TP_RESPONSE is `x_tp_response.bin`
+    """
+    overall_result = True
+    nxp_glob_puk = extract_public_key(root_cert)
+    nxp_prod_cert = load_certificate(intermediate_cert)
+
+    assert isinstance(nxp_glob_puk, ec.EllipticCurvePublicKey)
+    message = "validating NXP_PROD_CERT signature..."
+    try:
+        assert nxp_prod_cert.signature_hash_algorithm
+        nxp_glob_puk.verify(
+            nxp_prod_cert.signature,
+            nxp_prod_cert.tbs_certificate_bytes,
+            ec.ECDSA(nxp_prod_cert.signature_hash_algorithm),
+        )
+        message += "OK"
+    except:
+        message += "FAILED!"
+        overall_result = False
+    click.echo(message)
+
+    message = "Parsing TP_RESPONSE data container..."
+    try:
+        with open(tp_response, "rb") as f:
+            tp_data = f.read()
+        tp_response_container = Container.parse(tp_data)
+        message += "OK"
+    except:
+        message += "FAILED!"
+        overall_result = False
+    click.echo(message)
+
+    message = "Extracting NXP_DIE_ID_Devattest_CERT..."
+    try:
+        nxp_die_cert_data = tp_response_container.get_entry(
+            PayloadType.NXP_DIE_ID_AUTH_CERT
+        ).payload
+        nxp_die_cert = Container.parse(nxp_die_cert_data)
+        message += "OK"
+    except:
+        message += "FAILED!"
+        overall_result = False
+    click.echo(message)
+
+    assert nxp_die_cert
+    message = "Validating NXP_DIE_ID_Devattest_CERT signature..."
+    nxp_prod_puk = nxp_prod_cert.public_key()
+    if nxp_die_cert.validate(nxp_prod_puk):  # type: ignore
+        message += "OK"
+    else:
+        message += "FAILED!"
+        overall_result = False
+    click.echo(message)
+
+    message = "Validating TP_RESPONSE signature..."
+    nxp_die_puk_data = nxp_die_cert.get_entry(PayloadType.NXP_DIE_ID_AUTH_PUK).payload
+    nxp_die_puk = reconstruct_cryptography_key(nxp_die_puk_data)
+    if tp_response_container.validate(nxp_die_puk):  # type: ignore
+        message += "OK"
+    else:
+        message += "FAILED!"
+        overall_result = False
+    click.echo(message)
+    if overall_result is False:
+        raise SPSDKAppError()
 
 
 main.add_command(device_help)

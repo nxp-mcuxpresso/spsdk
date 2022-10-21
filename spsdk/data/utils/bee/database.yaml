@@ -1,0 +1,12 @@
+# Copyright 2022 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+devices:
+  rt1010:
+  rt1015:
+  rt1020:
+  rt1024:
+  rt1050:
+  rt1060:
+  rt1064:

@@ -22,34 +22,35 @@ from spsdk.utils.easy_enum import Enum
 class SegTag(Enum):
     """Segments Tag."""
 
-    DCD = (0xD2, "Device Configuration Data")
-    CSF = (0xD4, "Command Sequence File Data")
+    XMCD = (0xC0, "XMCD", "External Memory Configuration Data")
+    DCD = (0xD2, "DCD", "Device Configuration Data")
+    CSF = (0xD4, "CSF", "Command Sequence File Data")
     # i.MX6, i.MX7, i.MX8M
-    IVT2 = (0xD1, "Image Vector Table (Version 2)")
-    CRT = (0xD7, "Certificate")
-    SIG = (0xD8, "Signature")
-    EVT = (0xDB, "Event")
-    RVT = (0xDD, "ROM Vector Table")
-    WRP = (0x81, "Wrapped Key")
-    MAC = (0xAC, "Message Authentication Code")
+    IVT2 = (0xD1, "IVT2", "Image Vector Table (Version 2)")
+    CRT = (0xD7, "CRT", "Certificate")
+    SIG = (0xD8, "SIG", "Signature")
+    EVT = (0xDB, "EVT", "Event")
+    RVT = (0xDD, "RVT", "ROM Vector Table")
+    WRP = (0x81, "WRP", "Wrapped Key")
+    MAC = (0xAC, "MAC", "Message Authentication Code")
     # i.MX8QXP_A0, i.MX8QM_A0
-    IVT3 = (0xDE, "Image Vector Table (Version 3)")
+    IVT3 = (0xDE, "IVT3", "Image Vector Table (Version 3)")
     # i.MX8QXP_B0, i.MX8QM_B0
-    BIC1 = (0x87, "Boot Images Container")
-    SIGB = (0x90, "Signature block")
+    BIC1 = (0x87, "BIC1", "Boot Images Container")
+    SIGB = (0x90, "SIGB", "Signature block")
 
 
 class CmdTag(Enum):
     """CSF/DCD Command Tag."""
 
-    SET = (0xB1, "Set")
-    INS_KEY = (0xBE, "Install Key")
-    AUT_DAT = (0xCA, "Authenticate Data")
-    WRT_DAT = (0xCC, "Write Data")
-    CHK_DAT = (0xCF, "Check Data")
-    NOP = (0xC0, "No Operation (NOP)")
-    INIT = (0xB4, "Initialize")
-    UNLK = (0xB2, "Unlock")
+    SET = (0xB1, "SET", "Set")
+    INS_KEY = (0xBE, "INS_KEY", "Install Key")
+    AUT_DAT = (0xCA, "AUT_DAT", "Authenticate Data")
+    WRT_DAT = (0xCC, "WRT_DAT", "Write Data")
+    CHK_DAT = (0xCF, "CHK_DAT", "Check Data")
+    NOP = (0xC0, "NOP", "No Operation (NOP)")
+    INIT = (0xB4, "INIT", "Initialize")
+    UNLK = (0xB2, "UNLK", "Unlock")
 
 
 ########################################################################################################################
@@ -100,11 +101,19 @@ class Header:
         """:return: section tag: command tag or segment tag, ..."""
         return self._tag
 
+    @property
+    def tag_name(self) -> str:
+        """Returns the header's tag name."""
+        return SegTag.name(self.tag)
+
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.tag}, {self.param}, {self.length})"
+        return f"{self.__class__.__name__}({self.tag_name}, {self.param}, {self.length})"
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__} <TAG:0x{self.tag:02X}, PARAM:0x{self.param:02X}, LEN:{self.length}B>"
+        return (
+            f"{self.__class__.__name__} <TAG:{self.tag_name} 0x{self.tag:02X}, "
+            f"PARAM:0x{self.param:02X}, LEN:{self.length}B>"
+        )
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, self.__class__) and vars(other) == vars(self)

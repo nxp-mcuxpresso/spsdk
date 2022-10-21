@@ -29,7 +29,6 @@ from .nxpdevscan import main as nxpdevscan_main
 from .nxpimage import main as nxpimage_main
 from .nxpkeygen import main as nxpkeygen_main
 from .pfr import main as pfr_main
-from .pfrc import main as pfrc_main
 from .sdphost import main as sdphost_main
 from .sdpshost import main as sdpshost_main
 from .shadowregs import main as shadowregs_main
@@ -60,7 +59,6 @@ main.add_command(nxpdevhsm_main, name="nxpdevhsm")
 main.add_command(nxpkeygen_main, name="nxpkeygen")
 main.add_command(nxpimage_main, name="nxpimage")
 main.add_command(pfr_main, name="pfr")
-main.add_command(pfrc_main, name="pfrc")
 main.add_command(sdphost_main, name="sdphost")
 main.add_command(sdpshost_main, name="sdpshost")
 main.add_command(shadowregs_main, name="shadowregs")

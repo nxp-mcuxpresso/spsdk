@@ -24,6 +24,8 @@ from spsdk.utils.database import Database
 from spsdk.utils.misc import Timeout, value_to_int, write_file
 
 from . import TP_DATA_FOLDER, SPSDKTpError, TpDevInterface, TpTargetInterface
+from .adapters.tptarget_blhost import TpTargetBlHost
+from .adapters.utils import detect_new_usb_path, get_current_usb_paths, update_usb_path
 from .data_container import AuditLogCounter, AuditLogRecord, Container
 
 logger = logging.getLogger(__name__)
@@ -59,9 +61,18 @@ class TrustProvisioningHost:
         :raises SPSDKTpError: The Provisioning firmware doesn't boot
         """
         try:
+            if self.tptarget.uses_usb:
+                initial_usb_set = get_current_usb_paths()
+
             self.tptarget.load_sb_file(prov_fw, timeout)
             # Need to reset the connection due to re-init on the MCU side
             self.tptarget.close()
+
+            if self.tptarget.uses_usb:
+                assert isinstance(self.tptarget, TpTargetBlHost)
+                new_usb_path = detect_new_usb_path(initial_set=initial_usb_set)
+                update_usb_path(self.tptarget, new_usb_path=new_usb_path)
+
             logger.info(f"Waiting for {REOPEN_WAIT_TIME} seconds for the ProvFW to boot up.")
             time.sleep(REOPEN_WAIT_TIME)
             self.tptarget.open()
@@ -210,6 +221,9 @@ class TrustProvisioningHost:
 
             if product_fw:
                 self.info_print("8.Step - Loading customer application.")
+                logger.info(f"Waiting for {REOPEN_WAIT_TIME} seconds for the ROM to boot up.")
+                time.sleep(REOPEN_WAIT_TIME)
+                self.tptarget.open()
                 self.tptarget.load_sb_file(product_fw, timeout=loc_timeout.get_rest_time_ms(True))
 
             self.info_print(

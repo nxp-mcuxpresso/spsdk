@@ -1,0 +1,128 @@
+# Copyright 2022 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+bee_output:
+  type: object
+  title: Basic Settings
+  properties:
+    output_folder:
+      type: string
+      title: BEE output folder
+      description: Folder name to store generated BEE output
+      template_value: bee_output
+
+    input_binary:
+      type: string
+      title: Input binary file
+      description: Path to input binary file
+      template_value: "input_bin.bin"
+
+    output_name:
+      type: string
+      title: Output binary file name
+      description: File name of the encrypted file, output_folder/output_name
+      template_value: "encrypted.bin"
+
+    header_name:
+      type: string
+      title: File name of the exported BEE region headers
+      description: output_folder/header_name + index will be prepended
+      template_value: "bee_ehdr.bin"
+
+  required: [output_folder, input_binary]
+
+bee:
+  type: object
+  title: BEE Settings
+  required: [engine_selection, engine_key_selection, bee_engine, base_address]
+  properties:
+    engine_selection:
+      type: string
+      title: Engine selection
+      description: BEE Engine Selection, engine0, engine1 or both engines
+      enum: ["engine0", "engine1", "both"]
+      template_value: "engine0"
+
+    engine_key_selection:
+      type: string
+      title: Engine Key selection
+      description: Random Key or Zero key
+      enum: ["random", "zero"]
+      template_value: "random"
+
+    base_address:
+      type: [string, number]
+      title: Base address of the image
+      description: Base address of the image
+      format: number
+      template_value: "0x60001000"
+
+    bee_engine:
+      title: Bee engines
+      description: Configuration of BEE engines
+      type: array
+      minItems: 1
+      maxItems: 2
+      items:
+        oneOf:
+          - type: object
+            required: [user_key, aes_mode]
+            properties:
+              user_key:
+                type: [string, number]
+                title: User AES-128 key
+                description: AES key for encryption
+                format: number
+                template_value: "0x0123456789abcdeffedcba9876543210"
+
+              aes_mode:
+                type: string
+                title: AES mode
+                description: AES mode - counter or ECB
+                enum: ["CTR", "ECB"]
+                template_value: "CTR"
+
+              protected_region:
+                title: Protected region
+                description: List of protected regions, up to four regions
+                type: array
+                items:
+                  type: object
+                  required: [start_address, length, protected_level]
+                  properties:
+                    start_address:
+                      type: [string, number]
+                      title: Start address of protected region
+                      description: Start address of protected region, it should be aligned to 1 KB (1024 B)
+                      format: number
+                      template_value: "0x60001000"
+
+                    length:
+                      type: [string, number]
+                      title: Length of protected region
+                      description: Length of protected region, it should be aligned to 1 KB (1024 B)
+                      format: number
+                      template_value: "0x4400"
+
+                    protected_level:
+                      type: number
+                      title: Protected level
+                      description: Protected level (0/1/2/3), 0 is default
+                      format: number
+                      template_value: 0
+          - type: object
+            required: [header_path, user_key]
+            properties:
+              header_path:
+                type: string
+                title: BEE header path
+                description: Path to the existing BEE header in binary form
+                template_value: bee_ehdr0.bin
+
+              user_key:
+                type: [string, number]
+                title: User AES-128 key
+                description: AES key that was used for header encryption
+                format: number
+                template_value: "0x0123456789abcdeffedcba9876543210"

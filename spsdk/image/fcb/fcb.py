@@ -45,7 +45,7 @@ class FCB:
             raise SPSDKValueError(
                 f"FCB: Unsupported memory type:{mem_type} not in {self.mem_types.keys()}"
             )
-        self.regs = Registers(family)
+        self.regs = Registers(family, base_endianness="little")
         self.regs.load_registers_from_xml(os.path.join(FCB_DATA_FOLDER, self.mem_types[mem_type]))
 
     def export(self) -> bytes:

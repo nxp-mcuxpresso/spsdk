@@ -103,7 +103,7 @@ class RawHid(MBootInterface):
         self.product_name = ""
         self.interface_number = 0
         self.timeout = 2000
-        self.path = ""
+        self.path = b""
         self.device = None
 
     @staticmethod
@@ -138,7 +138,7 @@ class RawHid(MBootInterface):
 
     def info(self) -> str:
         """Return information about the USB interface."""
-        return f"{self.product_name:s} (0x{self.vid:04X}, 0x{self.pid:04X})"
+        return f"{self.product_name:s} (0x{self.vid:04X}, 0x{self.pid:04X}) path={self.path!r}"
 
     def open(self) -> None:
         """Open the interface.
@@ -154,7 +154,7 @@ class RawHid(MBootInterface):
             self._opened = True
         except Exception as error:
             raise McuBootConnectionError(
-                f"Unable to open device '{self.path}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
+                f"Unable to open device '{self.path!r}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
             ) from error
 
     def close(self) -> None:
@@ -171,7 +171,7 @@ class RawHid(MBootInterface):
             self._opened = False
         except Exception as error:
             raise McuBootConnectionError(
-                f"Unable to close device '{self.path}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
+                f"Unable to close device '{self.path!r}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
             ) from error
 
     def write(self, packet: Union[CmdPacket, bytes]) -> None:

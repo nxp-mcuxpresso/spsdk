@@ -12,7 +12,6 @@ After installing SPSDK, several applications are present directly on PATH as exe
 - [nxpcrypto](nxpcrypto.py) - utility for generating/verifying RSA/ECC key pairs, and converting key file format (PEM/DER/RAW).
 - [nxpimage](nxpimage.py) - utility for generating TrustZone, MasterBootImage and SecureBinary images.
 - [pfr](pfr.py) - simple utility for creation and analysis of protected regions - CMPA and CFPA.
-- [pfrc](pfrc.py) - simple utility for search of brick-conditions in PFR settings.
 - [sdphost](sdphost.py) - console script for SDP module.
 - [sdpshost](sdpshost.py) - console script for SDPS module.
 - [shadowregs](shadowregs.py) -  utility for Shadow Registers controlling.

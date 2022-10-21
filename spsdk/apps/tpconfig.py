@@ -22,12 +22,16 @@ from spsdk.apps.tp_utils import (
     process_tp_inputs,
     tp_device_options,
 )
-from spsdk.apps.utils import CommandsTreeGroup, catch_spsdk_error, spsdk_apps_common_options
+from spsdk.apps.utils import (
+    CommandsTreeGroupAliasedGetCfgTemplate,
+    catch_spsdk_error,
+    spsdk_apps_common_options,
+)
 from spsdk.tp import TP_DATA_FOLDER, SPSDKTpError, TpDevInterface, TrustProvisioningConfig
 from spsdk.tp.utils import get_supported_devices, scan_tp_devices
 
 
-@click.group(name="tpconfig", cls=CommandsTreeGroup)
+@click.group(name="tpconfig", cls=CommandsTreeGroupAliasedGetCfgTemplate)
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Application for configuration of trusted device."""
@@ -95,9 +99,9 @@ def load(
             "The option --include-manufacturing is no longer supported. "
             "Please use officially pre-personalized cards."
         )
-    tp_worker.upload(tp_config.config_data, tp_config.config_dir)
+    tp_worker.upload(tp_config.config_data, tp_config.config_dir, timeout=tp_config.timeout)
     if seal:
-        tp_worker.seal()
+        tp_worker.seal(timeout=tp_config.timeout)
 
 
 @main.command(name="seal", no_args_is_help=True)
@@ -129,9 +133,11 @@ def seal(
         tp_config = TPConfigConfig(config, tp_device, tp_device_parameter, timeout)
         device = tp_config.tp_device
         params = tp_config.tp_device_parameter
+        timeout_value = tp_config.timeout
     else:
         device = tp_device
         params = multiple_tp_dict(tp_device_parameter)
+        timeout_value = timeout
 
     if not device:
         raise SPSDKTpError("TP Device's type is not specified ")
@@ -149,10 +155,10 @@ def seal(
     assert isinstance(tp_dev, TpDevInterface)
 
     tp_worker = TrustProvisioningConfig(tp_dev, click.echo)
-    tp_worker.seal()
+    tp_worker.seal(timeout=timeout_value)
 
 
-@main.command(name="get-cfg-template", no_args_is_help=True)
+@main.command(name="get-template", no_args_is_help=True)
 @click.option(
     "-f",
     "--family",
@@ -167,7 +173,7 @@ def seal(
     required=True,
     help="The output YAML template configuration file name",
 )
-def get_cfg_template(family: str, output: str) -> None:
+def get_template(family: str, output: str) -> None:
     """Command to generate tphost template of configuration YML file."""
     with open(os.path.join(TP_DATA_FOLDER, "tpconfig_cfg_template.yml"), "r") as file:
         template = file.read()

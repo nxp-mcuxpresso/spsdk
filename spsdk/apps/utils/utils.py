@@ -23,7 +23,7 @@ from spsdk.mboot.interfaces import MBootInterface
 from spsdk.sdp import interfaces as SDPInterfaceModule
 from spsdk.sdp.interfaces import SDPInterface
 from spsdk.utils.misc import write_file  # pylint: disable=unused-import #backward-compatibility
-from spsdk.utils.misc import load_binary, load_configuration, load_file, value_to_bytes
+from spsdk.utils.misc import load_binary, load_file, value_to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +211,16 @@ def catch_spsdk_error(function: Callable) -> Callable:
             click.echo(f"ERROR:{spsdk_exc}", err=True)
             logger.debug(str(spsdk_exc), exc_info=True)
             sys.exit(2)
+        except UnicodeEncodeError as encode_exc:
+            logger.warning(
+                (
+                    "Your terminal (Jupyter notebook) doesn't render UTF-8 symbols correctly.\n"
+                    "Please add the following environment variable and restart any opened shells.\n"
+                    "PYTHONIOENCODING=utf8"
+                )
+            )
+            logger.debug(str(encode_exc), exc_info=True)
+            sys.exit(2)
         except (Exception, KeyboardInterrupt) as base_exc:  # pylint: disable=broad-except
             click.echo(f"GENERAL ERROR: {type(base_exc).__name__}: {base_exc}", err=True)
             logger.debug(str(base_exc), exc_info=True)
@@ -242,10 +252,10 @@ def parse_hex_data(hex_data: str) -> bytes:
     :return: data parsed from input
     """
     hex_data = hex_data.replace(" ", "")
-    if not hex_data.startswith("{{") or not hex_data.endswith("}}"):
+    if not hex_data.startswith(("{{", "[[")) or not hex_data.endswith(("}}", "]]")):
         raise SPSDKError("Incorrectly formatted hex-data: Need to start with {{ and end with }}")
 
-    hex_data = hex_data.replace("{{", "").replace("}}", "")
+    hex_data = hex_data.replace("{{", "").replace("}}", "").replace("[[", "").replace("]]", "")
     if not re.fullmatch(r"[0-9a-fA-F]*", hex_data):
         raise SPSDKError("Incorrect hex-data: Need to have valid hex string")
 
@@ -314,7 +324,7 @@ def get_key(key_source: str, expected_size: int) -> bytes:
             key = value_to_bytes(str_key)
             if len(key) != expected_size:
                 raise SPSDKError("Invalid Key size.")
-        except SPSDKError:
+        except (SPSDKError, UnicodeDecodeError):
             key = load_binary(key_source)
     else:
         try:
@@ -329,11 +339,16 @@ def get_key(key_source: str, expected_size: int) -> bytes:
     return key
 
 
-def store_key(file_name: str, key: bytes) -> None:
+def store_key(file_name: str, key: bytes, reverse: bool = False) -> None:
     """Store the key in text hexadecimal and binary format.
 
     :param file_name: Base file name for the key file. The name will be enriched by *.txt and *.bin extension.
     :param key: The key that should be stored.
+    :param reverse: Reverse bytes in binary file
     """
-    write_file(key, file_name + ".bin", mode="wb")
     write_file(key.hex(), file_name + ".txt", mode="w")
+    if reverse:  # reverse binary order
+        key = bytearray(key)
+        key.reverse()
+        key = bytes(key)
+    write_file(key, file_name + ".bin", mode="wb")

@@ -7,6 +7,7 @@
 
 """Common cryptographic functions."""
 import math
+from typing import List
 
 from cryptography.hazmat.primitives.asymmetric import utils
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers
@@ -14,8 +15,10 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.x509 import Certificate
 
 from spsdk import SPSDKError
+from spsdk.crypto import PrivateKey, PublicKey
 from spsdk.sbfile.misc import SecBootBlckSize
 
+from ...exceptions import SPSDKValueError
 from .abstract import BackendClass
 from .backend_openssl import openssl_backend
 
@@ -115,3 +118,19 @@ def ecc_public_numbers_to_bytes(
     x_bytes = x.to_bytes(length, "big")
     y_bytes = y.to_bytes(length, "big")
     return x_bytes + y_bytes
+
+
+def get_matching_key_id(public_keys: List[PublicKey], private_key: PrivateKey) -> int:
+    """Get index of public key that match to given private key.
+
+    :param public_keys: List of public key used to find the match for the private key.
+    :param private_key: Private key used to try to match public key index.
+    :raises SPSDKValueError: No match found.
+    :return: Index of public key.
+    """
+    public_key_to_compare = private_key.public_key()
+    for i, public_key in enumerate(public_keys):
+        if public_key.public_numbers() == public_key_to_compare.public_numbers():
+            return i
+
+    raise SPSDKValueError("There is no match of private key in given list.")

@@ -66,14 +66,14 @@ class ShadowRegisters:
             src.add_setvalue_hook(self.reg_antipolize_src_handler, dst)
             dst.add_setvalue_hook(self.reg_antipolize_dst_handler, src)
 
-    def _write_shadow_reg(self, addr: int, data: int, verify: int = True) -> None:
+    def _write_shadow_reg(self, addr: int, data: int, verify_mask: int = 0) -> None:
         """The function write a shadow register.
 
         The function writes shadow register in to MCU and verify the write if requested.
 
         param addr: Shadow register address.
         param data: Shadow register data to write.
-        param verify: If True the write is read back and compare, otherwise no check is done
+        param verify_mask: Verify bit mask for read back and compare, if 0 verify is disable
         raises IoVerificationError
         """
         if not self.probe:
@@ -84,9 +84,9 @@ class ShadowRegisters:
         logger.debug(f"Writing shadow register address: {hex(addr)}, data: {hex(data)}")
         self.probe.mem_reg_write(addr, data)
 
-        if verify:
-            readback = self.probe.mem_reg_read(addr)
-            if readback != data:
+        if verify_mask:
+            read_back = self.probe.mem_reg_read(addr)
+            if read_back & verify_mask != data & verify_mask:
                 raise IoVerificationError(
                     f"The written data 0x{data:08X} to 0x{addr:08X} address are invalid."
                 )
@@ -110,11 +110,14 @@ class ShadowRegisters:
 
         :param reg: The register to reload from the HW.
         """
-        if reg.has_group_registers():
-            for subreg in reg.sub_regs:
-                subreg.set_value(self.get_register(subreg.name))
-        else:
-            reg.set_value(self.get_register(reg.name))
+        reg.set_value(self.get_register(reg.name), raw=True)
+
+    def read_register(self, reg: RegsRegister) -> bytes:
+        """Read the value in requested register.
+
+        :param reg: The register to read from the HW.
+        """
+        return bytes(self.get_register(reg.name))
 
     def set_register(self, reg_name: str, data: Any) -> None:
         """The function sets the value of the specified register.
@@ -123,40 +126,45 @@ class ShadowRegisters:
         param data: The new data to be stored to shadow register.
         raises SPSDKDebugProbeError: The debug probe is not specified.
         """
-        if not self.probe:
-            raise SPSDKDebugProbeError(
-                "Shadow registers: Cannot use the communication function without defined debug probe."
+
+        def write_reg(base_address: int, reg: RegsRegister) -> None:
+            if not self.probe:
+                raise SPSDKDebugProbeError(
+                    "Shadow registers: Cannot use the communication function without defined debug probe."
+                )
+
+            if reg.width > 32:
+                raise SPSDKError(
+                    f"Invalid width ({reg.width}b) of shadow register ({reg.name}) to write to device."
+                )
+            # Create value
+            value = reg.get_value()
+            if reg.reverse:
+                value = int.from_bytes(change_endianness(value_to_bytes(value)), "big")
+            # Create verify mask
+            bitfields = reg.get_bitfields()
+            verify_mask = 0
+            if bitfields:
+                for bitfield in bitfields:
+                    verify_mask = verify_mask | (((1 << bitfield.width) - 1) << bitfield.offset)
+            else:
+                verify_mask = (1 << reg.width) - 1
+
+            self._write_shadow_reg(
+                addr=base_address + reg.offset, data=value, verify_mask=verify_mask
             )
 
         try:
             reg = self.regs.find_reg(reg_name, include_group_regs=True)
-            value = value_to_bytes(data)
-
-            start_address = self.offset + reg.offset
-            width = reg.width
-
-            if width < len(value) * 8:
-                raise SPSDKError("Invalid length of data for shadow register write.")
-
-            width = max(width, 32)
-
-            data_aligned = bytearray(math.ceil(width / 8))
-            data_aligned[len(data_aligned) - len(value) : len(data_aligned)] = value
-
-            end_address = start_address + math.ceil(width / 8)
-            addresses = range(start_address, end_address, 4)
-
-            for i, addr in enumerate(addresses):
-                val = data_aligned[i * 4 : i * 4 + 4]
-                self._write_shadow_reg(
-                    addr,
-                    int.from_bytes(change_endianness(val) if reg.reverse else val, "big"),
-                )
-
-            reg.set_value(value, raw=True)
+            reg.set_value(data, raw=True)
+            if reg.has_group_registers():
+                for sub_reg in reg.sub_regs:
+                    write_reg(self.offset, sub_reg)
+            else:
+                write_reg(self.offset, reg=reg)
 
         except SPSDKError as exc:
-            raise SPSDKError(f"The get shadow register failed({str(exc)}).") from exc
+            raise SPSDKError(f"The set shadow register failed({str(exc)}).") from exc
 
     def get_register(self, reg_name: str) -> bytes:
         """The function returns value of the requested register.
@@ -165,36 +173,35 @@ class ShadowRegisters:
         return: The value of requested register in bytes
         raises SPSDKDebugProbeError: The debug probe is not specified.
         """
-        if not self.probe:
-            raise SPSDKDebugProbeError(
-                "Shadow registers: Cannot use the communication function without defined debug probe."
-            )
 
-        array = bytearray()
+        def read_reg(base_address: int, reg: RegsRegister) -> bytes:
+            if not self.probe:
+                raise SPSDKDebugProbeError(
+                    "Shadow registers: Cannot use the communication function without defined debug probe."
+                )
+            if reg.width > 32:
+                raise SPSDKError(
+                    f"Invalid width ({reg.width}b) of shadow register ({reg.name}) to read from device."
+                )
+            read_value = self.probe.mem_reg_read(base_address + reg.offset).to_bytes(4, "big")
+            if reg.reverse:
+                read_value = change_endianness(read_value)
+            return read_value
+
         try:
             reg = self.regs.find_reg(reg_name, include_group_regs=True)
 
-            start_address = self.offset + reg.offset
-            width = max(reg.width, 32)
+            ret = bytearray()
+            if reg.has_group_registers():
 
-            if width == 32:
-                array.extend(self.probe.mem_reg_read(start_address).to_bytes(4, "big"))
+                for sub_reg in reg.sub_regs:
+                    ret.extend(read_reg(self.offset, sub_reg))
             else:
-                end_address = start_address + math.ceil(width / 8)
-                addresses = range(start_address, end_address, 4)
-
-                for addr in addresses:
-                    array.extend(self.probe.mem_reg_read(addr).to_bytes(4, "big"))
-
-            logger.debug(
-                f"Read shadow register at address: {hex(start_address)}, data: {array.hex()}"
-            )
-            result = reverse_bytes_in_longs(bytes(array)) if reg.reverse else bytes(array)
+                ret.extend(read_reg(self.offset, reg=reg))
+            return ret
 
         except SPSDKError as exc:
             raise SPSDKError(f"The get shadow register failed({str(exc)}).") from exc
-
-        return result
 
     def create_fuse_blhost_script(self, reg_list: List[str]) -> str:
         """The function creates the BLHOST script to burn fuses.
@@ -207,7 +214,7 @@ class ShadowRegisters:
         def add_reg(reg: RegsRegister) -> str:
             otp_index = reg.otp_index
             assert otp_index
-            otp_value = reg.get_hex_value()
+            otp_value = "0x" + reg.get_bytes_value().hex()
             burn_fuse = f"# Fuse {reg.name}, index {otp_index} and value: {otp_value}.\n"
             burn_fuse += f"efuse-program-once {hex(otp_index)} {otp_value}\n"
             return burn_fuse
@@ -220,7 +227,6 @@ class ShadowRegisters:
         # Update list by antipole opposites registers
         for ap_reg_src, ap_reg_dst in self.config.get_antipole_regs(self.device).items():
             if ap_reg_src in reg_list:
-                # reg_list.append(ap_reg_dst)
                 reg_list.insert(reg_list.index(ap_reg_src) + 1, ap_reg_dst)
         self.fuse_mode = True
         for reg_name in reg_list:

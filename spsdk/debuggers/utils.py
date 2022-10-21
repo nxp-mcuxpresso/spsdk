@@ -6,8 +6,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Debug probes support."""
 
+import contextlib
 import logging
-from typing import Dict, Type
+from typing import Dict, Iterator, Type
 
 import colorama
 import prettytable
@@ -209,3 +210,31 @@ def test_ahb_access(probe: DebugProbe, ap_mem: int = 0) -> bool:
         logger.debug("Chip has NOT enabled AHB access.")
 
     return ahb_enabled
+
+
+@contextlib.contextmanager
+def open_debug_probe(
+    interface: str = None, serial_no: str = None, debug_probe_params: Dict = None
+) -> Iterator[DebugProbe]:
+    """Method opens DebugProbe object based on input arguments.
+
+    :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
+    :param serial_no: None to list all probes, otherwise the the only probe with matching
+    :param debug_probe_params: The dictionary with optional user parameters
+        hardware id is listed.
+    :return: Active DebugProbe object.
+    :raises SPSDKError: Raised with any kind of problems with debug probe.
+    """
+    debug_probes = DebugProbeUtils.get_connected_probes(
+        interface=interface, hardware_id=serial_no, user_params=debug_probe_params
+    )
+    selected_probe = debug_probes.select_probe()
+    debug_probe = selected_probe.get_probe(debug_probe_params)
+    debug_probe.open()
+
+    try:
+        yield debug_probe
+    except SPSDKError as exc:
+        raise SPSDKError(f"Failed Debug Probe operation:({str(exc)}).") from exc
+    finally:
+        debug_probe.close()

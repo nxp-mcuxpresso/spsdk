@@ -1071,7 +1071,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         )
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:  # pragma: no cover
-            # command is not supported in any device (N4 family, RTxxx, RTxxxx) thus we can't measure coverage
+            # command is not supported in any device (LPC55xx family, RTxxx, RTxxxx) thus we can't measure coverage
             return self._send_data(CommandTag.FUSE_PROGRAM, data_chunks)
         return False
 
@@ -1088,7 +1088,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         cmd_packet = CmdPacket(CommandTag.FUSE_READ, CommandFlag.NONE, address, length, mem_id)
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:  # pragma: no cover
-            # command is not supported in any device (N4 family, RTxxx, RTxxxx) thus we can't measure coverage
+            # command is not supported in any device (LPC55xx family, RTxxx, RTxxxx) thus we can't measure coverage
             assert isinstance(cmd_response, ReadMemoryResponse)
             return self._read_data(CommandTag.FUSE_READ, cmd_response.length)
         return None

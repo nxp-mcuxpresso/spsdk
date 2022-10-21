@@ -127,7 +127,7 @@ class DebugProbePyOCD(DebugProbe):
         self.dbgmlbx_ap = self._get_dmbox_ap()
         self.mem_ap = self._get_mem_ap()
         if self.mem_ap is None:
-            logger.warning("The memory interface not found - probably locked device")
+            logger.warning("The memory interface not found - probably locked device or in ISP mode")
         if self.dbgmlbx_ap is None:
             raise SPSDKDebugMailBoxAPNotFoundError("No debug mail box access point available!")
 

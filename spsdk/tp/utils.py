@@ -10,6 +10,8 @@ from typing import List, Type
 
 from ruamel.yaml import YAML
 
+from spsdk.crypto import ec
+
 from . import TP_DATA_FOLDER, TpDevInterface, TpIntfDescription, TpTargetInterface
 from .adapters import TP_DEVICES, TP_TARGETS
 
@@ -148,3 +150,14 @@ def get_tp_target_class(name: str) -> Type[TpTargetInterface]:
     :return: TP target interface.
     """
     return TP_TARGETS[name]
+
+
+def reconstruct_cryptography_key(key_material: bytes) -> ec.EllipticCurvePublicKey:
+    """Reconstruct cryptography's ECC Public Key from coordinates."""
+    coordinate_length = len(key_material) // 2
+    curve = {32: ec.SECP256R1(), 48: ec.SECP384R1()}[coordinate_length]
+    point_x = int.from_bytes(key_material[:coordinate_length], byteorder="big")
+    point_y = int.from_bytes(key_material[coordinate_length:], byteorder="big")
+    pub_numbers = ec.EllipticCurvePublicNumbers(x=point_x, y=point_y, curve=curve)
+    key = pub_numbers.public_key()
+    return key

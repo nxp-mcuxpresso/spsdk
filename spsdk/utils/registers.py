@@ -7,14 +7,18 @@
 """Module to handle registers descriptions with support for XML files."""
 
 import logging
+import re
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 from typing import Any, Callable, Dict, List, Mapping, Union
 from xml.dom import minidom
+from xmlrpc.client import Boolean
 
 from jinja2 import Environment, FileSystemLoader
 from ruamel.yaml.comments import CommentedMap as CM
 
 from spsdk import SPSDK_YML_INDENT, SPSDKError, utils
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.exceptions import (
     SPSDKRegsError,
     SPSDKRegsErrorBitfieldNotFound,
@@ -357,6 +361,7 @@ class RegsRegister:
         config_as_hexstring: bool = False,
         otp_index: int = None,
         reverse_subregs_order: bool = False,
+        base_endianness: str = "big",
     ) -> None:
         """Constructor of RegsRegister class. Used to store register information.
 
@@ -364,11 +369,12 @@ class RegsRegister:
         :param offset: Byte offset of register.
         :param width: Bit width of register.
         :param description: Text description of register.
-        :param reverse: Multi  register value is stored in reverse order.
+        :param reverse: Multi byte register value could be printed in reverse order.
         :param access: Access type of register.
         :param config_as_hexstring: Config is stored as a hex string.
         :param otp_index: Index of OTP fuse.
         :param reverse_subregs_order: Reverse order of sub registers.
+        :param base_endianness: Base endianness for bytes import/export of value.
         """
         self.name = name
         self.offset = offset
@@ -383,6 +389,7 @@ class RegsRegister:
         self.config_as_hexstring = config_as_hexstring
         self.otp_index = otp_index
         self.reverse_subregs_order = reverse_subregs_order
+        self.base_endianness = base_endianness
 
         # Grouped register members
         self.sub_regs: List["RegsRegister"] = []
@@ -462,8 +469,6 @@ class RegsRegister:
             else:
                 self._sub_regs_width_init = True
                 self._sub_regs_width = reg.width
-            if reg.reverse:
-                self.reverse = True
             if self.access == "RW":
                 self.access = reg.access
         else:
@@ -492,10 +497,7 @@ class RegsRegister:
                 raise SPSDKRegsErrorRegisterGroupMishmash(
                     f"The register {reg.name} has different access type."
                 )
-
-        if self.reverse:
-            reg.reverse = True
-
+        reg.base_endianness = self.base_endianness
         self.sub_regs.append(reg)
 
     def add_et_subelement(self, parent: ET.Element) -> None:
@@ -540,6 +542,8 @@ class RegsRegister:
         """
         try:
             value = value_to_int(val)
+            if value >= 1 << self.width:
+                raise SPSDKError("Input value doesn't into register.")
             if not raw and len(self._set_value_hooks) > 0:
                 for hook in self._set_value_hooks:
                     value = hook[0](value, hook[1])
@@ -554,7 +558,7 @@ class RegsRegister:
                         bit_pos = (index - 1) * subreg_width
                     else:
                         bit_pos = self.width - index * subreg_width
-                    sub_reg.set_value((value >> bit_pos) & ((1 << subreg_width) - 1))
+                    sub_reg.set_value((value >> bit_pos) & ((1 << subreg_width) - 1), raw=raw)
 
         except SPSDKError as exc:
             raise SPSDKError(f"Loaded invalid value {str(val)}") from exc
@@ -590,13 +594,15 @@ class RegsRegister:
 
         return self._value
 
-    def get_bytes_value(self) -> bytes:
+    def get_bytes_value(self, reverse_off: bool = False) -> bytes:
         """Get the bytes value of register.
 
-        The value indianness is returned by 'reversed' member.
+        :param reverse_off: The value indianness is returned by 'reversed' member if True,
+            the reverse member is ignored otherwise.
         :return: Register value in bytes.
         """
-        endianness = "little" if not self.reverse else "big"
+        rev_endianness = "little" if self.base_endianness == "big" else "big"
+        endianness = self.base_endianness if (not self.reverse or reverse_off) else rev_endianness
         return value_to_bytes(
             self.get_value(),
             align_to_2n=False,
@@ -604,10 +610,31 @@ class RegsRegister:
             endianness=endianness,  # type: ignore[arg-type]
         )
 
+    def set_bytes_value(self, value: bytes, reverse_off: bool = False) -> None:
+        """Set register value from the bytes value.
+
+        :param value: The input value in raw bytes.
+        :param reverse_off: The value indianness is loaded by 'reversed' member if True,
+            the reverse member is ignored otherwise.
+        :raises SPSDKValueError: Invalid input value.
+        """
+        if len(value) < self.width // 8:
+            raise SPSDKValueError(f"Invalid length of inputs bytes to set {self.name} register.")
+        rev_endianness = "little" if self.base_endianness == "big" else "big"
+        endianness = self.base_endianness if (not self.reverse or reverse_off) else rev_endianness
+        self.set_value(
+            int.from_bytes(value[: self.width // 8], byteorder=endianness),  # type: ignore[arg-type]
+            raw=True,
+        )
+
     def get_hex_value(self) -> str:
-        """Get the value of register in string hex format."""
-        use_prefix = not self.config_as_hexstring
-        return format_value(self.get_value(), self.width, delimiter="", use_prefix=use_prefix)
+        """Get the value of register in string hex format.
+
+        :return: Hexadecimal value of register.
+        """
+        fmt = f"0{self.width // 4}x"
+        val = f"{'' if self.config_as_hexstring else '0x'}{format(self.get_value(), fmt)}"
+        return val
 
     def get_reset_value(self) -> int:
         """Returns reset value of the register.
@@ -693,10 +720,12 @@ class RegsRegister:
 class Registers:
     """SPSDK Class for registers handling."""
 
-    def __init__(self, device_name: str) -> None:
+    def __init__(self, device_name: str, base_endianness: str = "big") -> None:
         """Initialization of Registers class."""
+        assert base_endianness in ["little", "big"]
         self._registers: List[RegsRegister] = []
         self.dev_name = device_name
+        self.base_endianness = base_endianness
 
     def find_reg(self, name: str, include_group_regs: bool = False) -> RegsRegister:
         """Returns the instance of the register by its name.
@@ -731,6 +760,8 @@ class Registers:
         if reg.name in self.get_reg_names():
             raise SPSDKRegsError(f"Cannot add register with same name: {reg.name}.")
 
+        # update base endianness for all registers in group
+        reg.base_endianness = self.base_endianness
         self._registers.append(reg)
 
     def remove_register(self, reg: RegsRegister) -> None:
@@ -943,7 +974,7 @@ class Registers:
 
         :param xml: Input XML data in string format.
         :param filter_reg: List of register names that should be filtered out.
-        :param grouped_regs: List of register prefixes names to be grouped int one.
+        :param grouped_regs: List of register prefixes names to be grouped into one.
         :raises SPSDKRegsError: XML parse problem occurs.
         """
 
@@ -951,7 +982,7 @@ class Registers:
             """Help function to recognize if the register should be part of group."""
             if grouped_regs:
                 for group in grouped_regs:
-                    if reg.startswith(group["name"]):
+                    if re.fullmatch(f"{group['name']}\d+", reg) is not None:
                         return group
             return None
 
@@ -975,7 +1006,7 @@ class Registers:
                         description=group.get(
                             "description", f"Group of {group['name']} registers."
                         ),
-                        reverse=value_to_bool(group.get("reverse", False)),
+                        reverse=value_to_bool(group.get("reversed", False)),
                         access=group.get("access", None),
                         config_as_hexstring=group.get("config_as_hexstring", False),
                         reverse_subregs_order=group.get("reverse_subregs_order", False),
@@ -1005,7 +1036,11 @@ class Registers:
             register = self.find_reg(reg_name, include_group_regs=True)
             if "value" in reg_dict.keys():
                 raw_val = reg_dict["value"]
-                val = int(raw_val, 16) if register.config_as_hexstring else value_to_int(raw_val)
+                val = (
+                    int(raw_val, 16)
+                    if register.config_as_hexstring and isinstance(raw_val, str)
+                    else value_to_int(raw_val)
+                )
                 register.set_value(val, True)
             elif "bitfields" in reg_dict.keys():
                 for bitfield_name in reg_dict["bitfields"]:

@@ -8,9 +8,9 @@ import pytest
 
 from spsdk import SPSDKError
 from spsdk.apps.utils import utils
-from spsdk.apps.utils.utils import catch_spsdk_error, load_configuration
+from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.mboot.exceptions import McuBootConnectionError
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.misc import load_configuration, use_working_directory
 
 
 def test_split_string():
@@ -43,6 +43,8 @@ def test_file_size_composite(input_param, exp_path, exp_size):
         ("{{11 22 33 44}}", b"\x11\x22\x33\x44"),
         (" { { 11    22 33 44}}", b"\x11\x22\x33\x44"),
         ("{{bcd}}", b"\xbc\x0d"),
+        ("[[bcd]]", b"\xbc\x0d"),
+        ("[[ 01 02 ]]", b"\x01\x02"),
     ],
 )
 def test_parse_hex_data(input_hex_data, output_bytes):

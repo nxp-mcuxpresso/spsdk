@@ -9,6 +9,36 @@ Release Notes
 =============
 
 -------------------------
+1.8.0 (21-October-2022)
+-------------------------
+
+**New features**
+
+* :ref:`nxpimage`:
+    - add support for BEE
+    - enable OTFAD on RT1180
+* :ref:`pfr`:
+    - move the functionality of pfrc tool into PFR tool
+* :ref:`tphost`/:ref:`tpconfig`:
+    - implement USB re-enumeration in TPHost after OEM ProvFW is started
+    - create command for checking the Chain of Trust used in TP
+    - investigate TP performance loss during device reset after TP is completed
+    - add possibility to select TP SmartCard via card reader's name
+* unify option for getting template across tools
+* add API for parsing XMCD
+* support cryptography >= 37.0.0
+* support bincopy 17.14
+
+**Bugfixes**
+
+* :ref:`nxpdevscan`:
+    - fix hanging up for serial communication
+* :ref:`tphost`/:ref:`tpconfig`:
+    - blhost_port should not be mandatory in TP target settings
+    - fix disabling timeout in TP is ignored
+* fix documentation regarding SB31 programFuses
+
+-------------------------
 1.7.1 (16-September-2022)
 -------------------------
 
@@ -219,7 +249,7 @@ Release Notes
 
   * fix problem in registers class with another size of register than 32 bits
 
-* :ref:`pfrc`:
+* pfrc:
 
   * displays false brick conditions
   * wrong validation of CMPA.CC_SOCU_PIN bits
@@ -384,7 +414,7 @@ Release Notes
 
 * support for LPC55S3x devices
 * extend support for LPC55S1x, LPC55S0x
-* :ref:`pfrc` - console script for searching for brick conditions in pfr settings
+* pfrc - console script for searching for brick conditions in pfr settings
 * custom HSM support
 * sdpshost CLI utility using sdpshost communication protocol
 * remote signing for Debug Credential

@@ -686,7 +686,7 @@ def test_basic_grouped_register_reversed_value(data_dir):
     """Test basic functionality of register grouping functionality with reversed value"""
     regs = Registers(TEST_DEVICE_NAME)
 
-    group = [{"name": "TestRegA", "reverse": "True"}]
+    group = [{"name": "TestRegA", "reversed": "True"}]
 
     regs.load_registers_from_xml(data_dir + "/grp_regs.xml", grouped_regs=group)
 
@@ -699,12 +699,20 @@ def test_basic_grouped_register_reversed_value(data_dir):
     assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
     assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
     assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x31323334"
-    assert regs.find_reg("TestRegA0", include_group_regs=True).reverse == True
-    assert regs.find_reg("TestRegA1", include_group_regs=True).reverse == True
-    assert regs.find_reg("TestRegA2", include_group_regs=True).reverse == True
-    assert regs.find_reg("TestRegA3", include_group_regs=True).reverse == True
+    assert regs.find_reg("TestRegA", include_group_regs=True).reverse == True
+    assert regs.find_reg("TestRegA0", include_group_regs=True).reverse == False
+    assert regs.find_reg("TestRegA1", include_group_regs=True).reverse == False
+    assert regs.find_reg("TestRegA2", include_group_regs=True).reverse == False
+    assert regs.find_reg("TestRegA3", include_group_regs=True).reverse == False
 
     assert reg.get_hex_value() == "0x01020304111213142122232431323334"
+    assert (
+        reg.get_bytes_value(reverse_off=True)
+        == b"\x01\x02\x03\x04\x11\x12\x13\x14\x21\x22\x23\x24\x31\x32\x33\x34"
+    )
+    assert (
+        reg.get_bytes_value() == b"\x34\x33\x32\x31\x24\x23\x22\x21\x14\x13\x12\x11\x04\x03\x02\x01"
+    )
 
 
 @pytest.mark.parametrize(

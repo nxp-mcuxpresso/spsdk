@@ -10,9 +10,7 @@ otfad_family:
       type: string
       title: MCU family
       description: MCU family name.
-      enum:
-        - rt5xx
-        - rt6xx
+      enum: [place_holder]
       template_value: rt5xx
   required: [family]
 
@@ -56,14 +54,14 @@ otfad:
         required: [aes_key, aes_ctr, start_address, end_address]
         properties:
           aes_key:
-            type: [string, number]
+            type: [number, string]
             title: AES key
             description: AES key for the key blob
             format: number
             template_value: "0xB1A0C56AF31E98CD6936A79D9E6F829D"
 
           aes_ctr:
-            type: [string, number]
+            type: [number, string]
             title: AES Counter value
             description: AES counter value for the key blob
             format: number
@@ -97,6 +95,13 @@ otfad:
             template_value: True
             default: True
 
+          read_only:
+            type: boolean
+            title: Read Only flag
+            description: This field signals if the context is Read only or not
+            template_value: True
+            default: True
+
           data_blobs:
             type: array
             title: Data blobs list
@@ -119,4 +124,26 @@ otfad:
                   format: number
                   template_value: "0x08001000"
 
+
+otfad_scramble:
+  type: object
+  title: OTFAD Key Scrambling Settings
+  properties:
+    key_scramble:
+      type: object
+      description: If Key scrambling is not required, this section must be commented out
+      required: [key_scramble_mask, key_scramble_align]
+      properties:
+        key_scramble_mask:
+          type: [number, string]
+          title: Key Scramble
+          description: OTFAD Key Scramble mask (4 bytes size)
+          format: number
+          template_value: "0x12345678"
+        key_scramble_align:
+          type: [number, string]
+          title: Key Scramble Align
+          description: OTFAD Key scramble mask align (1 byte size)
+          format: number
+          template_value: "0x72"
 

@@ -28,7 +28,7 @@ properties:
       - type: string
         title: Predefined patterns
         description: The pattern that will be used to fill up gaps between defined regions.
-        enum: [rand, zeros, ones]
+        enum: [rand, zeros, ones, inc]
         template_value: rand
   regions:
     type: array
@@ -99,7 +99,7 @@ properties:
                     - type: string
                       title: Predefined patterns
                       description: The pattern that will be used to fill up gaps between defined regions.
-                      enum: [rand, zeros, ones]
+                      enum: [rand, zeros, ones, inc]
                       template_value: rand
 
 required: [pattern]

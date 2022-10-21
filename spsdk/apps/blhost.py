@@ -503,6 +503,7 @@ def fuse_program(ctx: click.Context, address: int, data_source: str, memory_id: 
     FILE        - write the content of this file
     BYTE_COUNT  - if specified, load only first BYTE_COUNT number of bytes from file
     HEX-DATA    - string of hex values: {{112233}}, {{11 22 33}}
+                - when using Jupyter notebook, use [[ ]] instead of {{ }}: eg. [[11 22 33]]
     MEMORY_ID   - id of memory to read from (default: 0)
     """
     try:
@@ -829,6 +830,7 @@ def write_memory(ctx: click.Context, address: int, data_source: str, memory_id: 
     FILE        - write the content of this file
     BYTE_COUNT  - if specified, load only first BYTE_COUNT number of bytes from file
     HEX-DATA    - string of hex values: {{112233}}, {{11 22 33}}
+                - when using Jupyter notebook, use [[ ]] instead of {{ }}: eg. [[11 22 33]]
     MEMORY_ID   - id of memory to read from (default: 0)
     """
     try:
@@ -1446,7 +1448,7 @@ def oem_get_cust_cert_dice_puk(
 
 
 @main.command()
-@click.argument("life-cycle", metavar="LIFE CYCLE", type=int, required=True)
+@click.argument("life-cycle", metavar="LIFE CYCLE", type=INT(), required=True)
 @click.pass_context
 def update_life_cycle(ctx: click.Context, life_cycle: int) -> None:
     """Update life cycle of device.

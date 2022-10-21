@@ -28,6 +28,8 @@ class KeyStore:
         1424  # Size can be device-specific, the current value is valid for RT5xx and RT6xx
     )
 
+    SBKEK_SIZE = 32  # Size of Secure Binary KEK in bytes
+
     OTP_MASTER_KEY_SIZE = 32  # Size of OTP master key in bytes
     OTFAD_KEY_SIZE = 16  # Size of OTFAD key in bytes
 

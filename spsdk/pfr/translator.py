@@ -9,6 +9,7 @@
 
 import logging
 
+from .exceptions import SPSDKPfrcMissingConfigError
 from .pfr import CFPA, CMPA, PfrConfiguration
 
 logger = logging.getLogger(__name__)
@@ -17,16 +18,25 @@ logger = logging.getLogger(__name__)
 class Translator:
     """Translates single strings (register/key names) into values."""
 
-    def __init__(self, cmpa: PfrConfiguration, cfpa: PfrConfiguration) -> None:
+    def __init__(
+        self, cmpa: PfrConfiguration = None, cfpa: PfrConfiguration = None, raw: bool = False
+    ) -> None:
         """Initialize CMPA and CFPA data.
 
         :param cmpa: configuration data loaded from CMPA config file
         :param cfpa: configuration data loaded from CFPA config file
+        :param raw: When set the computed fields from configuration will be applied
         """
-        self.cmpa_cfg = cmpa
-        self.cmpa_obj = CMPA(device=cmpa.device, revision=cmpa.revision, user_config=cmpa)
-        self.cfpa_cfg = cfpa
-        self.cfpa_obj = CFPA(device=cfpa.device, revision=cfpa.revision, user_config=cfpa)
+        self.cmpa_obj = (
+            CMPA(device=cmpa.device, revision=cmpa.revision, user_config=cmpa, raw=raw)
+            if cmpa
+            else None
+        )
+        self.cfpa_obj = (
+            CFPA(device=cfpa.device, revision=cfpa.revision, user_config=cfpa, raw=raw)
+            if cfpa
+            else None
+        )
         self.handlers = {
             "CMPA": self._cmpa_translate,
             "CFPA": self._cfpa_translate,
@@ -38,6 +48,7 @@ class Translator:
 
         :param key: Register's (key's) stringified name
         :return: Register's (key's) value
+        :raises SPSDKPfrcTranslationError: Raises when the configuration for given key is not defined
         """
         area, value = key.split(".", maxsplit=1)
         logger.debug(f"Area designator: {area}")
@@ -46,6 +57,8 @@ class Translator:
 
     def _cmpa_translate(self, key: str) -> int:
         """Handler for CMPA data."""
+        if not self.cmpa_obj:
+            raise SPSDKPfrcMissingConfigError(f"Cannot translate {key}. CMPA config not defined")
         logger.debug(f"Extracting value from {key}")
         splitted = key.split(".", maxsplit=1)
         register = self.cmpa_obj.registers.find_reg(splitted[0])
@@ -59,6 +72,8 @@ class Translator:
 
     def _cfpa_translate(self, key: str) -> int:
         """Handler for CFPA data."""
+        if not self.cfpa_obj:
+            raise SPSDKPfrcMissingConfigError(f"Cannot translate {key}. CFPA config not defined")
         logger.debug(f"Extracting value from {key}")
         splitted = key.split(".", maxsplit=1)
         register = self.cfpa_obj.registers.find_reg(splitted[0])

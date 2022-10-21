@@ -14,7 +14,10 @@ import click
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import SPSDK_DATA_FOLDER, SPSDKError
-from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroupAliasedGetCfgTemplate,
+    spsdk_apps_common_options,
+)
 from spsdk.apps.utils.utils import (
     SPSDKAppError,
     catch_spsdk_error,
@@ -58,7 +61,7 @@ class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
             raise SPSDKError(f"Error found in configuration: {e} not found") from e
 
 
-@click.group(name="nxpcertgen", no_args_is_help=True, cls=CommandsTreeGroup)  # type: ignore
+@click.group(name="nxpcertgen", no_args_is_help=True, cls=CommandsTreeGroupAliasedGetCfgTemplate)  # type: ignore
 @spsdk_apps_common_options
 def main(log_level: int) -> None:
     """Utility for certificate generation."""
@@ -129,7 +132,7 @@ def generate(config: str, output: str, encoding: str, force: bool) -> None:
     click.echo(f"The certificate file has been created: {os.path.abspath(output)}")
 
 
-@main.command(name="get-cfg-template", no_args_is_help=True)
+@main.command(name="get-template", no_args_is_help=True)
 @click.argument("output", metavar="PATH", type=click.Path())
 @click.option(
     "-f",
@@ -138,7 +141,7 @@ def generate(config: str, output: str, encoding: str, force: bool) -> None:
     default=False,
     help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
 )
-def get_cfg_template(output: str, force: bool) -> None:
+def get_template(output: str, force: bool) -> None:
     """Generate the template of Certificate generation YML configuration file.
 
     \b

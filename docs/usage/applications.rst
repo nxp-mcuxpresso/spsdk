@@ -37,9 +37,6 @@ Application Overview
 SPSDK applications are used for various functions and not all applications are valid for all NXP MCU device portfolios. The table mapping particular applications to a specific device is below.
 
 .. figure:: ../_static/images/spsdk-applications.png
-    :scale: 50 %
-
-.. note:: Please note that elftosb features marked with light green are supported but not tested and should be used with caution.
 
 
 :ref:`blhost`
@@ -205,21 +202,10 @@ It allows user to:
 
     pfr --help
 
-:ref:`pfrc`
-===========
-
-The *pfrc* application is a utility for searching for brick-conditions in PFR settings.
-
-.. warning:: THIS IS AN EXPERIMENTAL UTILITY! USE WITH CAUTION !!!
-
-.. code:: bash
-
-    pfrc --help
-
 :ref:`sdphost`
 ==============
 
-The *sdphost* application is a utility for communication with ROM on i.MX targets.
+The *sdphost* application is a utility for communication with ROM on i.MX targets using SDP protocol (i.MX RT1xxx).
 
 It allows user to:
 
@@ -235,7 +221,7 @@ It allows user to:
 :ref:`sdpshost`
 ===============
 
-The *sdpshost* application is a utility for communication with ROM on i.MX targets.
+The *sdpshost* application is a utility for communication with ROM on i.MX targets using SDPS protocol (i.MX8/9).
 
 It allows the user to write boot image data from the provided binary file.
 

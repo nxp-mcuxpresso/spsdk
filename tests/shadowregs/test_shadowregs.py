@@ -21,7 +21,7 @@ from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
 TEST_DEV_NAME = "sh_test_dev"
 TEST_DATABASE = "test_database.yaml"
-TEST_DATABASE_BAD_COMPUTED_FUNC = "test_database_invalid_computed.json"
+TEST_DATABASE_BAD_COMPUTED_FUNC = "test_database_invalid_computed.yaml"
 
 
 def get_probe():
@@ -108,10 +108,10 @@ def test_shadowreg_invalid_probe(data_dir):
 
     shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
 
-    with pytest.raises(DP.SPSDKDebugProbeError):
+    with pytest.raises(SPSDKError):
         shadowregs.set_register("REG1", 0x12345678)
 
-    with pytest.raises(DP.SPSDKDebugProbeError):
+    with pytest.raises(SPSDKError):
         shadowregs.get_register("REG1")
 
 
@@ -123,14 +123,14 @@ def test_shadowreg_verify_write(data_dir):
 
     shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
 
-    shadowregs._write_shadow_reg(1, 0x12345678, verify=True)
-    shadowregs._write_shadow_reg(1, 0x87654321, verify=False)
+    shadowregs._write_shadow_reg(1, 0x12345678, verify_mask=0xFFFFFFFF)
+    shadowregs._write_shadow_reg(1, 0x87654321, verify_mask=0)
 
     assert probe.mem_reg_read(1) == 0x87654321
 
     probe.set_virtual_memory_substitute_data({1: [0x12345678, 0x5555AAAA]})
     with pytest.raises(SR.IoVerificationError):
-        shadowregs._write_shadow_reg(1, 0x87654321, verify=True)
+        shadowregs._write_shadow_reg(1, 0x87654321, verify_mask=0xFFFFFFFF)
 
     assert probe.mem_reg_read(1) == 0x5555AAAA
 

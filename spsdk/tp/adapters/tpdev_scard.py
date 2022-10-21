@@ -194,12 +194,14 @@ class TpDevSmartCard(TpDevInterface):
     @staticmethod
     def get_help() -> str:
         """Return help for this interface, including settings description."""
-        ret = """
-        The adapter for SMARTCARD readers and cards support.
-        There is one option:
-        'id': Serial number of the Smart Card.
-        """
-        return ret
+        return "\n".join(
+            [
+                "The adapter for SMARTCARD readers and cards support.",
+                "There are two identification options (at least one is required)",
+                "   - id - Serial number of the Smart Card.",
+                "   - reader - Name of the Smart Card reader.",
+            ]
+        )
 
     @classmethod
     def get_validation_schemas(cls) -> List[Dict[str, Any]]:
@@ -425,9 +427,9 @@ class TpDevSmartCard(TpDevInterface):
     def _serialize_cert_data(cert_data: bytes, destination: int = 0) -> bytes:
         cert = load_der_x509_certificate(cert_data)
 
-        scn = bytes(
-            cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value, encoding="ascii"
-        )
+        scn_raw = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+        scn = bytes(scn_raw, encoding="ascii") if isinstance(scn_raw, str) else scn_raw
+
         # 16B UUID, hyphen, 1B certificate ID
         scn_length = 32 + 1 + 2
         scn_offset = cert_data.index(scn) + len(scn) - scn_length

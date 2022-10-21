@@ -100,7 +100,7 @@ def test_parse(data_dir, tmpdir):
 
 def test_user_config(tmpdir):
     """Test PFR CLI - Generation CMPA user config."""
-    cmd = f"get-cfg-template --device lpc55s6x --type cmpa --output {tmpdir}/cmpa.yml"
+    cmd = f"get-template --device lpc55s6x --type cmpa --output {tmpdir}/cmpa.yml"
     logging.debug(cmd)
     runner = CliRunner()
     result = runner.invoke(cli.main, cmd.split())

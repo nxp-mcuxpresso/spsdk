@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2022 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -62,13 +62,13 @@ class Processor:
         """Process individual condition from rules.
 
         :param condition: condition to quantify
-        :return: Boolean result and values for translated keys
+        :return: Tuple with boolean result and string with translated keys
         """
         self.logger.debug(f"Transforming condition: {condition}")
         org_node = ast.parse(condition, mode="eval")
         new_node = self.transformer.visit(org_node)
-        self.logger.debug(f"Transformed condition: {new_node}")
-        node_str = astunparse.unparse(new_node)
+        node_str = astunparse.unparse(new_node).rstrip()
+        self.logger.debug(f"Transformed condition: {node_str}")
         node_str = self._replace_int_as_hex(node_str)
         # pylint: disable=eval-used
         result = eval(compile(new_node, filename="", mode="eval"))

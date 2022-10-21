@@ -21,14 +21,15 @@ from spsdk import SPSDK_YML_INDENT, pfr
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
 from spsdk.apps.utils.common_cli_options import (
     FC,
-    CommandsTreeGroup,
+    CommandsTreeGroupAliasedGetCfgTemplate,
     isp_interfaces,
     spsdk_apps_common_options,
 )
 from spsdk.apps.utils.utils import MBootInterface, catch_spsdk_error, format_raw_data, get_interface
 from spsdk.crypto.loaders import extract_public_keys
 from spsdk.mboot import McuBoot
-from spsdk.pfr.exceptions import SPSDKError, SPSDKPfrConfigError
+from spsdk.pfr.exceptions import SPSDKError, SPSDKPfrConfigError, SPSDKPfrError
+from spsdk.pfr.pfrc import Pfrc
 from spsdk.utils.misc import find_file, load_configuration, size_fmt, write_file
 
 PFRArea = Union[Type[pfr.CMPA], Type[pfr.CFPA]]
@@ -40,8 +41,7 @@ def _store_output(data: Union[str, bytes], path: Optional[str], mode: str = "w")
     if path is None:
         click.echo(data)
     else:
-        with open(path, mode) as f:
-            f.write(data)
+        write_file(data, path=path, mode=mode)
 
 
 def _get_pfr_class(area_name: str) -> PFRArea:
@@ -74,7 +74,7 @@ def pfr_device_type_options(options: FC) -> FC:
     return options
 
 
-@click.group(name="pfr", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="pfr", no_args_is_help=True, cls=CommandsTreeGroupAliasedGetCfgTemplate)
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Utility for generating and parsing Protected Flash Region data (CMPA, CFPA)."""
@@ -82,7 +82,7 @@ def main(log_level: int) -> int:
     return 0
 
 
-@main.command(name="get-cfg-template", no_args_is_help=True)
+@main.command(name="get-template", no_args_is_help=True)
 @pfr_device_type_options
 @click.option(
     "-o",
@@ -92,7 +92,7 @@ def main(log_level: int) -> int:
     help="Save the output into a file instead of console",
 )
 @click.option("-f", "--full", is_flag=True, help="Show full config, including computed values")
-def get_cfg_template(device: str, revision: str, area: str, output: str, full: bool) -> None:
+def get_template(device: str, revision: str, area: str, output: str, full: bool) -> None:
     """Generate user configuration template file."""
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     yaml = YAML(pure=True)
@@ -226,6 +226,13 @@ def _parse_binary_data(
     "--password",
     help="Password when using Encrypted private keys as --secret-file",
 )
+@click.option(
+    "-x",
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Force to generate binary even the config validation fails.",
+)
 def generate_binary(
     output: str,
     user_config_file: str,
@@ -234,6 +241,7 @@ def generate_binary(
     elf2sb_config: str,
     secret_file: Tuple[str],
     password: str,
+    force: bool,
 ) -> None:
     """Generate binary data."""
     pfr_config = pfr.PfrConfiguration(user_config_file)
@@ -243,6 +251,24 @@ def generate_binary(
             f"The configuration file is not valid. The reason is: {invalid_reason}"
         )
     assert pfr_config.type
+    if pfr_config.device in Pfrc.get_supported_families():
+        try:
+            pfrc = Pfrc(
+                cmpa=pfr_config if pfr_config.type.upper() == "CMPA" else None,
+                cfpa=pfr_config if pfr_config.type.upper() == "CFPA" else None,
+            )
+            rules = pfrc.validate_brick_conditions()
+        except (SPSDKPfrConfigError, SPSDKPfrError) as e:
+            logger.debug(f"PFRC unexpectedly failed: {e}")
+        else:
+            log_text = f"PFRC results: passed: {len(rules[0])}, failed: {len(rules[1])}, ignored: {len(rules[2])}"
+            if rules[1]:
+                if force:
+                    logger.warning(log_text)
+                else:
+                    raise SPSDKError(log_text)
+            else:
+                logger.debug(log_text)
     root_of_trust = None
     keys = None
     if elf2sb_config:

@@ -20,7 +20,10 @@ import colorama
 from spsdk import SPSDK_DATA_FOLDER, SPSDKError, SPSDKValueError
 from spsdk.apps.blhost_helper import progress_bar
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
-from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroupAliasedGetCfgTemplate,
+    spsdk_apps_common_options,
+)
 from spsdk.apps.utils.utils import (
     INT,
     SPSDKAppError,
@@ -35,7 +38,7 @@ from spsdk.dat import DebugAuthenticateResponse, DebugAuthenticationChallenge, d
 from spsdk.dat.debug_credential import DebugCredential
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.debuggers.debug_probe import DebugProbe
-from spsdk.debuggers.utils import PROBES, DebugProbeUtils, test_ahb_access
+from spsdk.debuggers.utils import PROBES, open_debug_probe, test_ahb_access
 from spsdk.utils.crypto.rkht import RKHT
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import find_file, load_binary, load_configuration, write_file
@@ -86,19 +89,10 @@ def _open_debug_probe(pass_obj: Dict) -> Iterator[DebugProbe]:
     serial_no = pass_obj["serial_no"]
     debug_probe_params = pass_obj["debug_probe_params"]
 
-    debug_probes = DebugProbeUtils.get_connected_probes(
-        interface=interface, hardware_id=serial_no, user_params=debug_probe_params
-    )
-    selected_probe = debug_probes.select_probe()
-    debug_probe = selected_probe.get_probe(debug_probe_params)
-    debug_probe.open()
-
-    try:
-        yield debug_probe
-    except SPSDKError as exc:
-        raise SPSDKError(f"Failed Debug Probe operation:({str(exc)}).") from exc
-    finally:
-        debug_probe.close()
+    with open_debug_probe(
+        interface=interface, serial_no=serial_no, debug_probe_params=debug_probe_params
+    ) as probe:
+        yield probe
 
 
 @contextlib.contextmanager
@@ -125,7 +119,7 @@ def _open_debugmbox(pass_obj: Dict) -> Iterator[DebugMailbox]:
             dm.close()
 
 
-@click.group(name="nxpdebugmbox", no_args_is_help=True, cls=CommandsTreeGroup)
+@click.group(name="nxpdebugmbox", no_args_is_help=True, cls=CommandsTreeGroupAliasedGetCfgTemplate)
 @click.option(
     "-i",
     "--interface",
@@ -176,8 +170,8 @@ def _open_debugmbox(pass_obj: Dict) -> Iterator[DebugMailbox]:
 )
 @click.option(
     "--operation-timeout",
-    type=int,
-    default=4000,
+    type=INT(),
+    default="4000",
     help="Special option to change the standard operation timeout used"
     " for communication with debug mailbox. Default value is 4000ms.",
 )
@@ -219,7 +213,7 @@ def main(
 
 
 @main.command(name="auth", no_args_is_help=True)
-@click.option("-b", "--beacon", type=int, help="Authentication beacon")
+@click.option("-b", "--beacon", type=INT(), help="Authentication beacon")
 @click.option("-c", "--certificate", help="Path to Debug Credentials.")
 @click.option("-k", "--key", help="Path to DCK private key.")
 @click.option(
@@ -242,7 +236,7 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool)
             # convert List[int] to bytes
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
-            logger.debug(f"DAC: \n{dac.info()}")
+            logger.info(f"DAC: \n{dac.info()}")
             dar = DebugAuthenticateResponse.create(
                 version=pass_obj["protocol"],
                 socc=dac.socc,
@@ -251,14 +245,14 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool)
                 dac=dac,
                 dck=key,
             )
-            logger.debug(f"DAR:\n{dar.info()}")
+            logger.info(f"DAR:\n{dar.info()}")
             dar_data = dar.export()
             # convert bytes to List[int]
             dar_data_words = list(struct.unpack(f"<{len(dar_data) // 4}I", dar_data))
             dar_response = dm_commands.DebugAuthenticationResponse(
                 dm=mail_box, paramlen=len(dar_data_words)
             ).run(dar_data_words)
-            logger.debug(f"DAR response: {dar_response}")
+            logger.info(f"DAR response: {dar_response}")
             if not no_exit:
                 exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
                 logger.debug(f"Exit response: {exit_response}")
@@ -283,6 +277,20 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool)
     except SPSDKError as e:
         logger.error(f"Start Debug Mailbox failed!\n{e}")
         raise SPSDKAppError() from e
+
+
+@main.command(name="reset")
+@click.pass_obj
+def reset(pass_obj: dict) -> None:
+    """Reset MCU by DebugMailBox."""
+    result = False
+    pass_obj["reset"] = True
+    try:
+        with _open_debugmbox(pass_obj) as mail_box:
+            pass
+        result = True
+    finally:
+        print_output(result, "Reset MCU by Debug Mailbox.")
 
 
 @main.command(name="start")
@@ -338,7 +346,7 @@ def famode(pass_obj: dict) -> None:
 
 
 @main.command(name="ispmode", no_args_is_help=True)
-@click.option("-m", "--mode", type=int, required=True)
+@click.option("-m", "--mode", type=INT(), required=True)
 @click.pass_obj
 def ispmode(pass_obj: dict, mode: int) -> None:
     """Enter ISP Mode."""
@@ -520,6 +528,7 @@ def write_memory(pass_obj: dict, address: int, data_source: str) -> None:
     FILE        - write the content of this file
     BYTE_COUNT  - if specified, load only first BYTE_COUNT number of bytes from file
     HEX-DATA    - string of hex values: {{112233}}, {{11 22 33}}
+                - when using Jupyter notebook, use [[ ]] instead of {{ }}: eg. [[11 22 33]]
     """
     try:
         data = parse_hex_data(data_source)
@@ -679,7 +688,7 @@ def gendc(
     print_output(True, "Creating Debug credential file")
 
 
-@main.command(name="get-cfg-template", no_args_is_help=True)
+@main.command(name="get-template", no_args_is_help=True)
 @click.argument("output", metavar="PATH", type=click.Path())
 @click.option(
     "-f",
@@ -688,7 +697,7 @@ def gendc(
     default=False,
     help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
 )
-def get_cfg_template(output: str, force: bool) -> None:
+def get_template(output: str, force: bool) -> None:
     """Generate the template of Debug Credentials YML configuration file.
 
     \b

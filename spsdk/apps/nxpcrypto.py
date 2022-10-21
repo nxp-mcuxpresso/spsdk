@@ -20,7 +20,11 @@ from Crypto.PublicKey import ECC, RSA
 from spsdk import SPSDKError
 from spsdk.apps.nxpcertgen import main as cert_gen_main
 from spsdk.apps.nxpkeygen import main as key_gen_main
-from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroup,
+    GroupAliasedGetCfgTemplate,
+    spsdk_apps_common_options,
+)
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
 from spsdk.utils.misc import load_binary
 
@@ -80,14 +84,14 @@ def digest(hash_name: str, infile: str, compare: str) -> None:
             raise SPSDKAppError("Digests differ!")
 
 
-@main.group(name="cert", no_args_is_help=True)
+@main.group(name="cert", no_args_is_help=True, cls=GroupAliasedGetCfgTemplate)
 def cert() -> None:
     """Group of command for working with x509 certificates."""
     pass
 
 
 cert.add_command(cert_gen_main.commands["generate"], name="generate")
-cert.add_command(cert_gen_main.commands["get-cfg-template"], name="get-cfg-template")
+cert.add_command(cert_gen_main.commands["get-template"], name="get-template")
 cert.add_command(cert_gen_main.commands["verify"], name="verify")
 
 

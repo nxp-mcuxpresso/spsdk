@@ -122,6 +122,8 @@
     <reserved_bit_field offset="10" width="5" reset_value="0"/>
     <bit_field offset="15" width="1" name="UUID_CHECK" access="RW" reset_value="0" description="Enforce UUID match during Debug authentication.">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_UUID_CHECK(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_UUID_CHECK_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_UUID_CHECK_ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_INVERSE_VALUE(x)"/>

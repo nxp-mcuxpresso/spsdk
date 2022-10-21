@@ -8,20 +8,37 @@
 
 
 import logging
+import os
 from struct import calcsize, pack, unpack_from
-from typing import Any, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from Crypto.Cipher import AES
 
 from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKOverlapError
+from spsdk.utils import UTILS_DATA_FOLDER
 from spsdk.utils.crypto import Counter, crypto_backend
+from spsdk.utils.database import Database
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo, extend_block
+from spsdk.utils.misc import (
+    DebugInfo,
+    align_block_fill_random,
+    extend_block,
+    load_binary,
+    split_data,
+    value_to_bytes,
+    value_to_int,
+)
+from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
 
-_LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-# size of minimal encrypted block in bytes
+BEE_DATA_FOLDER: str = os.path.join(UTILS_DATA_FOLDER, "bee")
+BEE_SCH_FILE: str = os.path.join(BEE_DATA_FOLDER, "sch_bee.yml")
+BEE_DATABASE_FILE: str = os.path.join(BEE_DATA_FOLDER, "database.yaml")
+
+# maximal size of encrypted block in bytes
 BEE_ENCR_BLOCK_SIZE = 0x400
 # mask of the bits in the address, that must be zero
 _ENCR_BLOCK_ADDR_MASK = BEE_ENCR_BLOCK_SIZE - 1  # 0x3FF
@@ -327,6 +344,13 @@ class BeeProtectRegionBlock(BeeBaseClass):
         result.validate()
         return result
 
+    def is_inside_region(self, start_addr: int) -> bool:
+        """Returns true if the start address lies within any FAC region.
+
+        :param start_addr: start address of the data
+        """
+        return self._start_addr <= start_addr < self._end_addr
+
     def encrypt_block(self, key: bytes, start_addr: int, data: bytes) -> bytes:
         """Encrypt block located in any FAC region.
 
@@ -339,9 +363,9 @@ class BeeProtectRegionBlock(BeeBaseClass):
         :raises SPSDKError: When invalid length of key
         :raises SPSDKError: When invalid range of region
         """
-        if len(data) != BEE_ENCR_BLOCK_SIZE:
+        if len(data) > BEE_ENCR_BLOCK_SIZE:
             raise SPSDKError("Incorrect length of binary block to be encrypted")
-        if self._start_addr <= start_addr < self._end_addr:
+        if self.is_inside_region(start_addr):
             if self.mode != BeeProtectRegionBlockAesMode.CTR:
                 raise SPSDKError("only AES/CTR encryption mode supported now")
             if len(key) != 16:
@@ -355,6 +379,11 @@ class BeeProtectRegionBlock(BeeBaseClass):
                         ctr_value=start_addr >> 4,
                         ctr_byteorder_encoding="big",
                     )
+                    logger.debug(
+                        f"Encrypting data, start={hex(start_addr)},"
+                        f"end={hex(start_addr + len(data))} with {self.info()} using fac {fac.info()}"
+                    )
+                    data = align_block_fill_random(data, 16)  # align data to 16 bytes
                     return crypto_backend().aes_ctr_encrypt(key, data, cntr_key.value)
         return data
 
@@ -421,7 +450,7 @@ class BeeRegionHeader(BeeBaseClass):
     # offset of the Protected Region Block in the header
     PRDB_OFFSET = 0x80
     # total size including padding
-    SIZE = 0x400
+    SIZE = 0x200
 
     @classmethod
     def _struct_format(cls) -> str:
@@ -543,6 +572,13 @@ class BeeRegionHeader(BeeBaseClass):
         result.validate()
         return result
 
+    def is_inside_region(self, start_addr: int) -> bool:
+        """Returns true if the start address lies within any FAC region.
+
+        :param start_addr: start address of the data
+        """
+        return self._prdb.is_inside_region(start_addr)
+
     def encrypt_block(self, start_addr: int, data: bytes) -> bytes:
         """Encrypt block located in any FAC region.
 
@@ -551,3 +587,150 @@ class BeeRegionHeader(BeeBaseClass):
         :return: encrypted block if it is inside any FAC region; untouched block if it is not in any FAC region
         """
         return self._prdb.encrypt_block(self._sw_key, start_addr, data)
+
+
+class BeeNxp:
+    """BeeNxp class."""
+
+    def __init__(
+        self,
+        headers: List[BeeRegionHeader],
+        input_image: bytes,
+        base_address: int,
+    ):
+        """Constructor.
+
+        :param headers: list of BEE Region Headers
+        :param input_image: Input image to be encrypted
+        :param base_address: Base address of the image
+        """
+        self.headers = headers
+        self.input_image = input_image
+        self.base_address = base_address
+
+    def export_image(self) -> bytes:
+        """Export encrypted binary image.
+
+        :return: encrypted image
+        """
+        encrypted_data = bytearray()
+        image_data = bytearray(self.input_image)
+        base_address = self.base_address
+
+        for block in split_data(image_data, BEE_ENCR_BLOCK_SIZE):
+            logger.debug(f"Reading {hex(base_address)}, size={hex(len(block))}")
+            for header in self.headers:
+                block = header.encrypt_block(base_address, block)
+            encrypted_data.extend(block)
+            base_address += len(block)
+
+        return bytes(encrypted_data)
+
+    def export_headers(self) -> List[bytes]:
+        """Export BEE headers.
+
+        :return: BEE region headers
+        """
+        headers = []
+        for header in self.headers:
+            headers.append(header.export())
+
+        return headers
+
+    @staticmethod
+    def get_supported_families() -> List[str]:
+        """Get all supported families for BEE.
+
+        :return: List of supported families.
+        """
+        database = Database(BEE_DATABASE_FILE)
+        return database.get_devices()
+
+    @staticmethod
+    def get_validation_schemas() -> List[Dict[str, Any]]:
+        """Get list of validation schemas.
+
+        :return: Validation list of schemas.
+        """
+        schemas = ValidationSchemas.get_schema_file(BEE_SCH_FILE)
+        return [schemas["bee_output"], schemas["bee"]]
+
+    @staticmethod
+    def generate_config_template() -> str:
+        """Generate BEE configuration template.
+
+        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        """
+        val_schemas = BeeNxp.get_validation_schemas()
+
+        yaml_data = ConfigTemplate(
+            "BEE configuration template",
+            val_schemas,
+        ).export_to_yaml()
+
+        return yaml_data
+
+    @staticmethod
+    def check_overlaps(bee_headers: List[BeeRegionHeader], start_addr: int) -> None:
+        """Check for overlaps in regions.
+
+        :param bee_headers: List of BeeRegionHeader
+        :param start_addr: start address of a region to be checked
+        :raises SPSDKOverlapError: if the address is inside any region
+        """
+        for header in bee_headers:
+            for region in header.fac_regions:
+                if region.start_addr <= start_addr < region.end_addr:
+                    raise SPSDKOverlapError(
+                        f"Region start address {hex(start_addr)} is overlapping with {region.info()}"
+                    )
+
+    @staticmethod
+    def load_from_config(config: Dict[str, Any], search_paths: List[str] = None) -> "BeeNxp":
+        """Converts the configuration into an BEE image object.
+
+        "config" contains dictionary of configurations.
+
+        :raises SPSDKError: if the count of BEE engines is invalid.
+        :param config: Configuration dictionary.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: initialized BeeNxp object.
+        """
+        input_binary = load_binary(config["input_binary"], search_paths)
+
+        engine_selection = config["engine_selection"]
+        bee_engines: List[Dict[str, Any]] = config["bee_engine"]
+        base_address = value_to_int(config["base_address"])
+
+        prdb = BeeProtectRegionBlock()
+        kib = BeeKIB()
+
+        bee_headers: List[BeeRegionHeader] = []
+
+        engine_selections = {"engine0": [0], "engine1": [1], "both": [0, 1]}
+
+        try:
+            for engine_idx in engine_selections[engine_selection]:
+                key = value_to_bytes(bee_engines[engine_idx]["user_key"], byte_cnt=16)
+                if bee_engines[engine_idx].get("header_path"):
+                    bin_ehdr = load_binary(bee_engines[engine_idx]["header_path"], search_paths)
+                    ehdr = BeeRegionHeader.parse(bin_ehdr, sw_key=key)
+                else:
+                    ehdr = BeeRegionHeader(prdb, key, kib)
+                bee_headers.append(ehdr)
+        except IndexError as exc:
+            raise SPSDKError("The count of BEE engines is invalid") from exc
+
+        for engine_idx, bee_engine in enumerate(bee_engines):
+            for protected_region in bee_engine.get("protected_region", []):
+                fac = BeeFacRegion(
+                    value_to_int(protected_region["start_address"]),
+                    value_to_int(protected_region["length"]),
+                    value_to_int(protected_region["protected_level"]),
+                )
+                BeeNxp.check_overlaps(bee_headers, fac.start_addr)
+                bee_headers[engine_idx].add_fac(fac)
+
+        bee = BeeNxp(bee_headers, input_binary, base_address)
+
+        return bee

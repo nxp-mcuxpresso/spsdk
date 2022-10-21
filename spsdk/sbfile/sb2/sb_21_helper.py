@@ -11,7 +11,6 @@ from numbers import Number
 from typing import Callable, Dict, List, Optional, Union
 
 from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKValueError
 from spsdk.mboot.memories import MemId
 from spsdk.sbfile.sb2.commands import (
     CmdBaseClass,
@@ -216,9 +215,13 @@ def _encrypt(cmd_args: dict) -> CmdLoad:
 
     keyblob = KeyBlob(start_addr=start_addr, end_addr=end_addr, key=key, counter_iv=counter)
 
-    encoded_data = keyblob.encrypt_image(
-        base_address=address, data=align_block(data, 512), byte_swap=byte_swap
-    )
+    # Encrypt only if the ADE and VLD flags are set
+    if bool(end_addr & keyblob.KEY_FLAG_ADE) and bool(end_addr & keyblob.KEY_FLAG_VLD):
+        encoded_data = keyblob.encrypt_image(
+            base_address=address, data=align_block(data, 512), byte_swap=byte_swap
+        )
+    else:
+        encoded_data = data
 
     return CmdLoad(address, encoded_data)
 

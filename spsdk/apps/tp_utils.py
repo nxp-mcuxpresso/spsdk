@@ -144,7 +144,7 @@ class TPHostConfig(TPBaseConfig):
 
         super().__init__(config_data=config_data, config_dir=config_dir)
 
-        if timeout:
+        if timeout is not None:
             self.config_data["timeout"] = timeout
         if tp_device:
             self.config_data["tp_device"] = tp_device
@@ -265,7 +265,7 @@ class TPConfigConfig(TPBaseConfig):
 
         super().__init__(config_data=config_data, config_dir=config_dir)
 
-        if timeout:
+        if timeout is not None:
             self.config_data["timeout"] = timeout
         if tp_device:
             self.config_data["tp_device"] = tp_device

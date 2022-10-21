@@ -18,7 +18,8 @@
         "Public Domain",
         "Public domain",
         "The MIT License: http://www.opensource.org/licenses/mit-license.php",
-        "The MIT http://www.opensource.org/licenses/mit-license.php"
+        "The MIT http://www.opensource.org/licenses/mit-license.php",
+        "BSD-3-Clause OR Apache-2.0"
     ],
     "packages": [
         {
@@ -386,6 +387,12 @@
             "license": "MIT",
             "home_page": "https://github.com/jaraco/zipp",
             "is_manual": true
+        },
+        {
+            "name": "click-command-tree",
+            "license": "MIT",
+            "home_page": "https://github.com/whwright/click-command-tree",
+            "is_manual": false
         }
     ]
 }

@@ -14,8 +14,7 @@ import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
-from spsdk.apps.utils.utils import load_configuration
-from spsdk.utils.misc import load_binary, use_working_directory
+from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 
 
 def test_nxpimage_binary_template(tmpdir):

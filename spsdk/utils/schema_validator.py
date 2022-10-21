@@ -23,8 +23,7 @@ from ruamel.yaml.comments import CommentedMap as CM
 from ruamel.yaml.comments import CommentedSeq as CS
 
 from spsdk import SPSDK_YML_INDENT, SPSDKError
-from spsdk.apps.utils import load_configuration
-from spsdk.utils.misc import find_file, value_to_int
+from spsdk.utils.misc import find_file, load_configuration, value_to_int
 
 ENABLE_DEBUG = False
 
@@ -90,6 +89,10 @@ def _print_validation_fail_reason(
     elif exc.rule == "format":
         if exc.rule_definition == "file":
             message += f"; Non-existing file: {exc.value}"
+    elif exc.rule == "anyOf":
+        message += f"\nYou need to define at least one of the following sets:"
+        for rule_def in exc.rule_definition:
+            message += f" {rule_def['required']}"
     elif exc.rule == "oneOf":
         # re-run just the part where the rule failed and get the exact mistake to print
         for rule_def_ix, rule_def in enumerate(exc.rule_definition):
@@ -101,6 +104,11 @@ def _print_validation_fail_reason(
                     f"\nReason of fail for OneOf rule#{rule_def_ix}: "
                     f"\n {_print_validation_fail_reason(oneof_exc, extra_formaters)}\n"
                 )
+        # check if the error is caused by "required oneOf" condition
+        if all(rule_def.get("required") for rule_def in exc.rule_definition):
+            message += f"\nYou need to define exactly one of the following sets:"
+            for rule_def in exc.rule_definition:
+                message += f" {rule_def['required']}"
     return message
 
 
@@ -166,18 +174,24 @@ class ConfigTemplate:
     """Class for generating commented config templates."""
 
     def __init__(
-        self, main_title: str, schemas: List[Dict[str, Any]], override_values: Dict[str, Any] = None
+        self,
+        main_title: str,
+        schemas: List[Dict[str, Any]],
+        override_values: Dict[str, Any] = None,
+        note: str = None,
     ):
         """Constructor for Config templates.
 
         :param main_title: Main title of final template.
         :param schemas: Main description of final template.
         :param override_values: Additional overriding default values.
+        :param note: Additional Note after title test.
         """
         self.main_title = main_title
         self.schemas = schemas
         self.override_values = override_values
         self.indent = 0
+        self.note = note
 
     @staticmethod
     def _get_title_block(title: str, description: str = None) -> str:
@@ -432,7 +446,10 @@ class ConfigTemplate:
             cfg = self._create_object_block(merged, order_list)
             assert isinstance(cfg, CM)
             # 5. Add main title of configuration
-            cfg.yaml_set_start_comment(f"===========  {self.main_title}  ===========\n")
+            title = f"===========  {self.main_title}  ===========\n"
+            if self.note:
+                title += f"\n {'-'*50} Note {'-'*50}\n{self.note}\n\n"
+            cfg.yaml_set_start_comment(title)
             for title, info in block_list.items():
                 description = info["description"]
                 assert isinstance(description, str) or description is None

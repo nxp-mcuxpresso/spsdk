@@ -11,5 +11,9 @@ jsonschema2md
 pytablewriter
 Pillow
 docutils==0.17
-# pyscard package is requirements for TP
+# pyscard package is a requirement for TP
 pyscard
+# jupyter notebook requirements
+nbsphinx
+ipykernel
+nbsphinx-link

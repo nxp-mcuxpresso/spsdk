@@ -1,0 +1,22 @@
+devices:
+  sh_test_dev:
+    revisions:
+      x0: sh_test_dev_x0.xml
+    latest: x0
+    address: 0x4000_0000
+    inverted_regs:
+      REG1: REG_INVERTED_AP
+    computed_fields:
+      REG1:
+        CMP1: comalg_dcfg_cc_socu_invalid
+        CRC8: comalg_dcfg_cc_socu_crc8
+      REG2:
+        RESERVED: comalg_do_nothing
+grouped_registers:
+  - name: REG_BIG
+    width: 256
+    description: Just Big register
+  - name: REG_BIG_REV
+    width: 256
+    reversed: 1
+    description: Just Big register in reversed order

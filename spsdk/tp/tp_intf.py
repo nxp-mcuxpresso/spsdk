@@ -187,6 +187,16 @@ class TpTargetInterface(TpInterface):
         """
         super().__init__(descriptor=descriptor)
 
+    @property
+    def uses_uart(self) -> bool:
+        """Check if the adapter is using UART for communication."""
+        return False
+
+    @property
+    def uses_usb(self) -> bool:
+        """Check if the adapter is using USB for communication."""
+        return False
+
     def reset_device(self) -> None:
         """Reset the connected provisioned device.
 

@@ -82,7 +82,7 @@ class DeviceHsm:
         self.oem_share_input = oem_share_input
         self.info_print = info_print
         self.workspace = workspace
-        self.container_conf_dir = container_conf
+        self.container_conf_dir = os.path.dirname(container_conf) if container_conf else None
         if self.workspace and not os.path.isdir(self.workspace):
             os.mkdir(self.workspace)
 
@@ -608,8 +608,8 @@ def generate(
     oem_share_input: BinaryIO,
     key: BinaryIO,
     output_path: BinaryIO,
-    workspace: click.Path,
-    container_conf: click.Path,
+    workspace: str,
+    container_conf: str,
     timeout: int,
 ) -> None:
     """Generate provisioning SB3.1 file.
@@ -631,8 +631,8 @@ def generate(
             user_pck=user_pck,
             oem_share_input=oem_share_in,
             info_print=click.echo,
-            container_conf=str(container_conf) if container_conf else None,
-            workspace=str(workspace) if workspace else None,
+            container_conf=container_conf,
+            workspace=workspace,
         )
 
         devhsm.create_sb3()

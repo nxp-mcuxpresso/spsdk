@@ -79,6 +79,7 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/_prebuild/
+docs/examples/img/**
 
 # PyBuilder
 target/
@@ -137,3 +138,8 @@ pip-wheel-metadata
 
 # loggin config
 logging.yaml
+
+# jupyter examples
+examples/jupyter_examples/**/workspace
+examples/jupyter_examples/**/.ipynb_checkpoints
+examples/jupyter_examples/**/.ipynb_checkpoints/*

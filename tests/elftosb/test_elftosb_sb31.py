@@ -15,8 +15,7 @@ import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import elftosb
-from spsdk.apps.utils.utils import load_configuration
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.misc import load_configuration, use_working_directory
 
 
 def process_config_file(

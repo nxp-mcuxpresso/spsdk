@@ -12,7 +12,6 @@ from typing import Optional
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.apps.utils.utils import load_configuration
 from spsdk.image import (
     MBIMG_SCH_FILE,
     MasterBootImage,
@@ -33,7 +32,7 @@ from spsdk.image.mbimg import (
     get_all_mbi_classes,
 )
 from spsdk.utils.crypto import CertBlockV2, Certificate
-from spsdk.utils.misc import load_binary
+from spsdk.utils.misc import load_binary, load_configuration
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 #################################################################

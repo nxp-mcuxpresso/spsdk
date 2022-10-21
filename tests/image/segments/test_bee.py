@@ -121,7 +121,7 @@ def test_bee_invalid_validate():
         prdb.validate()
     prdb = BeeProtectRegionBlock()
     with pytest.raises(SPSDKError, match="Incorrect length of binary block to be encrypted"):
-        prdb.encrypt_block(key=bytes(16), start_addr=0x0, data=bytes(16))
+        prdb.encrypt_block(key=bytes(16), start_addr=0x0, data=bytes(0x401))
     prdb = BeeProtectRegionBlock()
     with pytest.raises(SPSDKError, match="Invalid length of key"):
         prdb.encrypt_block(key=bytes(15), start_addr=0xAA, data=bytes(1024))

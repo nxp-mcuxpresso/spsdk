@@ -7,29 +7,36 @@ configure the device, prepare, download and upload data, including security oper
 delivered in the form of a python library and command-line applications.
 
 
-Version: 1.7.1
+Version: 1.8.0
 
 ==============
-Date: 16-September-2022
+Date: 21-October-2022
 
 New features
 
 - nxpimage:
-    - add OTFAD support for RT5xx and RT6xx devices
+    - add support for BEE
+    - enable OTFAD on RT1180
 - pfr:
-    - read command allows independent binary and yaml exports
-- shadowregs:
-    - new subcommand: fuses-script
-- add OEM cert size check into TPConfig
-
+    - move the functionality of pfrc tool into PFR tool
+- tphost/tpconfig:
+    - implement USB re-enumeration in TPHost after OEM ProvFW is started
+    - create command for checking the Chain of Trust used in TP
+    - investigate TP performance loss during device reset after TP is completed
+    - add possibility to select TP SmartCard via card reader's name
+- unify option for getting template across tools
+- add API for parsing XMCD
+- support cryptography >= 37.0.0
+- support bincopy 17.14
 
 Bugfixes
 
-- nxpdebugmbox:
-    - fix debug authentication for RT595
-- nxpimage:
-    - fix sb21 command line argument in documentation
-- fix the use of pyyaml's load in tests (use safe_load())
+- nxpdevscan:
+    - fix hanging up for serial communication
+- tphost/tpconfig:
+    - blhost_port should not be mandatory in TP target settings
+    - fix disabling timeout in TP is ignored
+- fix documentation regarding SB31 programFuses
 
 
 Supported devices
@@ -57,6 +64,19 @@ Python 3.7+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+1.7.1
+- nxpdebugmbox:
+    - fix debug authentication for RT595
+- nxpimage:
+    - add OTFAD support for RT5xx and RT6xx devices
+    - fix sb21 command line argument in documentation
+- pfr:
+    - read command allows independent binary and yaml exports
+- shadowregs:
+    - new subcommand: fuses-script
+- fix the use of pyyaml's load in tests (use safe_load())
+- add OEM cert size check into TPConfig
+
 1.7.0
 - nxpimage application as replacement for elftosb
 - nxpcrypto application for generating and verifying keys, certificates, hash digest, converting key's format

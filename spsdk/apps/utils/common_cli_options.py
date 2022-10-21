@@ -26,6 +26,14 @@ _uart_option = click.option(
     Use 'nxpdevscan' utility to list devices on serial port.""",
 )
 
+_sdp_uart_option = click.option(
+    "-p",
+    "--port",
+    metavar="COM[,speed]",
+    help="""Serial port configuration. Default baud rate is 115200.
+    Use 'nxpdevscan' utility to list devices on serial port.""",
+)
+
 _usb_option = click.option(
     "-u",
     "--usb",
@@ -128,6 +136,7 @@ def isp_interfaces(
     buspal: bool = False,
     json_option: bool = True,
     timeout_option: bool = True,
+    is_sdp: bool = False,
 ) -> Callable:
     """Interfaces Click CLI options.
 
@@ -137,6 +146,7 @@ def isp_interfaces(
     :param buspal: BUSPAL interface, defaults to False
     :param json_option: add -j option, defaults to True
     :param timeout_option: add timeout option, defaults to True
+    :param is_sdp: Specifies whether the ISP interface is meant for SDP(S) protocol
     :return: click decorator
     """
 
@@ -144,7 +154,7 @@ def isp_interfaces(
         options = []
 
         if uart:
-            options.append(_uart_option)
+            options.append(_sdp_uart_option if is_sdp else _uart_option)
         if usb:
             options.append(_usb_option)
         if lpcusbsio:
@@ -184,6 +194,39 @@ class CommandsTreeGroup(click.Group):
         with formatter.section(gettext("Commands")):
             formatter.width = 160
             formatter.write_dl(rows, col_max=80)
+
+
+class GroupAliasedGetCfgTemplate(click.Group):
+    """Alias for get-cfg-template click group extension.
+
+    Temporary class to handle deprecated 'get-cfg-template' command to provide
+    better user experience.
+    """
+
+    def get_command(self, ctx: click.Context, cmd_name: str) -> Optional[click.Command]:
+        """Override original click get_command function to implement alias for get-cfg-template obsolete command.
+
+        :param ctx: click Context
+        :param cmd_name: Requested command name
+        :return: Suitable command representation.
+        """
+        rv = click.Group.get_command(self, ctx, cmd_name)
+        if rv is not None:
+            return rv
+        if cmd_name == "get-cfg-template":
+            click.secho(
+                "The 'get-cfg-template' is deprecated command, use 'get-template' instead of.",
+                fg="yellow",
+                bold=True,
+                err=True,
+            )
+            return click.Group.get_command(self, ctx, "get-template")
+
+        ctx.fail(f"Not supported command: '{cmd_name}'")
+
+
+class CommandsTreeGroupAliasedGetCfgTemplate(CommandsTreeGroup, GroupAliasedGetCfgTemplate):
+    """Mix of Command Tree and get-cfg-template alias."""
 
 
 def _get_tree(
