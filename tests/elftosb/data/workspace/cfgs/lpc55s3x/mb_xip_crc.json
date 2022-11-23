@@ -2,7 +2,7 @@
 	"family": "lpc55s3x",
 	"inputImageFile": ".\\workspace\\input_images\\normal_boot.bin",
 	"outputImageExecutionTarget": "xip",
-	"outputImageExecutionAddress": "0x08001000",
+	"outputImageExecutionAddress": "0",
 	"outputImageAuthenticationType": "crc",
 	"trustZonePresetFile": ".\\workspace\\trustzone\\tztest.bin",
 	"masterBootOutputFile": ".\\workspace\\output_images\\lpc55s3x\\mb_xip_crc.bin"

@@ -9,6 +9,22 @@ Release Notes
 =============
 
 -------------------------
+1.7.2 (23-November-2022)
+-------------------------
+
+**Bugfixes**
+
+* :ref:`nxpimage`:
+    - fix LPC55S3x MBI image XiP in external memory
+
+**Known issues**
+
+* :ref:`shadowregs`:
+    - segmentation fault on linux when using getreg, setreg, printregs, reset commands
+* :ref:`nxpdebugmbox`:
+    - read operation failure
+
+-------------------------
 1.7.1 (16-September-2022)
 -------------------------
 

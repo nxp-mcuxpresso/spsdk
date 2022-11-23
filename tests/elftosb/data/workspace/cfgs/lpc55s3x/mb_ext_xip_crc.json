@@ -3,6 +3,7 @@
     "inputImageFile": ".\\workspace\\input_images\\normal_boot.bin",
     "outputImageExecutionTarget": "External flash (XIP)",
     "outputImageAuthenticationType": "CRC",
+    "outputImageExecutionAddress": "0x08001000",
     "trustZonePresetFile": ".\\workspace\\trustzone\\tztest.bin",
-    "masterBootOutputFile": ".\\workspace\\output_images\\lpc55s3x\\mb_xip_crc.bin"
+    "masterBootOutputFile": ".\\workspace\\output_images\\lpc55s3x\\mb_xip_ext_crc.bin"
 }

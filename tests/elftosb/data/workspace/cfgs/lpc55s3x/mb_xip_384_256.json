@@ -2,7 +2,7 @@
     "family": "lpc55s3x",
     "inputImageFile": ".\\workspace\\input_images\\normal_boot.bin",
     "outputImageExecutionTarget": "xip",
-    "outputImageExecutionAddress": "0x08001000",
+    "outputImageExecutionAddress": "0x0",
     "outputImageAuthenticationType": "signed",
     "trustZonePresetFile": "",
     "firmwareVersion": "0x1",

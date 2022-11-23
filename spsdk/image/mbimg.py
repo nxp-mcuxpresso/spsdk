@@ -842,6 +842,7 @@ class Mbi_PlainRamLpc55s3x(
         :param firmware_version: Firmware version of image, defaults to 0
         """
         self.app = align_block(app) if app else None
+        self.app_ext_memory_align = 0x1000
         self.tz = trust_zone or TrustZone.enabled()
         self.firmware_version = firmware_version
         self.load_address = load_addr
@@ -877,6 +878,7 @@ class Mbi_CrcRamLpc55s3x(
         :param firmware_version: Firmware version of image, defaults to 0
         """
         self.app = align_block(app) if app else None
+        self.app_ext_memory_align = 0x1000
         self.tz = trust_zone or TrustZone.enabled()
         self.load_address = load_addr
         self.firmware_version = firmware_version
@@ -889,6 +891,7 @@ class Mbi_PlainXipSignedLpc55s3x(
     Mbi_MixinIvt,
     Mbi_MixinCertBlockV31,
     Mbi_MixinManifest,
+    Mbi_MixinLoadAddress,
     Mbi_MixinFwVersion,
     Mbi_ExportMixinAppCertBlockManifest,
     Mbi_ExportMixinEccSign,
@@ -901,6 +904,7 @@ class Mbi_PlainXipSignedLpc55s3x(
         self,
         app: bytes = None,
         firmware_version: int = 0,
+        load_addr: int = 0,
         cert_block: CertBlockV31 = None,
         manifest: MasterBootImageManifest = None,
         signature_provider: SignatureProvider = None,
@@ -909,44 +913,7 @@ class Mbi_PlainXipSignedLpc55s3x(
 
         :param app: Application image data, defaults to None
         :param firmware_version: Firmware version of image, defaults to 0
-        :param cert_block: Certification block of image, defaults to None
-        :param manifest: Manifest of image, defaults to None
-        :param signature_provider: Signature provider to sign final image, defaults to None
-        """
-        self.app = align_block(app) if app else None
-        self.firmware_version = firmware_version
-        self.cert_block = cert_block
-        self.manifest = manifest
-        self.signature_provider = signature_provider
-        super().__init__()
-
-
-class Mbi_PlainExtXipSignedLpc55s3x(
-    MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinCertBlockV31,
-    Mbi_MixinManifest,
-    Mbi_MixinFwVersion,
-    Mbi_ExportMixinAppCertBlockManifest,
-    Mbi_ExportMixinEccSign,
-):
-    """Master Boot Signed XIP Image stored in external memory for LPC55s3x family."""
-
-    IMAGE_TYPE = SIGNED_XIP_IMAGE
-
-    def __init__(
-        self,
-        app: bytes = None,
-        firmware_version: int = 0,
-        cert_block: CertBlockV31 = None,
-        manifest: MasterBootImageManifest = None,
-        signature_provider: SignatureProvider = None,
-    ) -> None:
-        """Constructor for Master Boot Signed XIP Image for LPC55s3x family.
-
-        :param app: Application image data, defaults to None
-        :param firmware_version: Firmware version of image, defaults to 0
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
         :param cert_block: Certification block of image, defaults to None
         :param manifest: Manifest of image, defaults to None
         :param signature_provider: Signature provider to sign final image, defaults to None
@@ -954,6 +921,7 @@ class Mbi_PlainExtXipSignedLpc55s3x(
         self.app = align_block(app) if app else None
         self.app_ext_memory_align = 0x1000
         self.firmware_version = firmware_version
+        self.load_address = load_addr
         self.cert_block = cert_block
         self.manifest = manifest
         self.signature_provider = signature_provider
@@ -965,6 +933,7 @@ class Mbi_CrcXipLpc55s3x(
     Mbi_MixinApp,
     Mbi_MixinIvt,
     Mbi_MixinTrustZoneMandatory,
+    Mbi_MixinLoadAddress,
     Mbi_MixinFwVersion,
     Mbi_ExportMixinAppTrustZone,
     Mbi_ExportMixinCrcSign,
@@ -974,44 +943,22 @@ class Mbi_CrcXipLpc55s3x(
     IMAGE_TYPE = CRC_XIP_IMAGE
 
     def __init__(
-        self, app: bytes = None, trust_zone: TrustZone = None, firmware_version: int = 0
+        self,
+        app: bytes = None,
+        trust_zone: TrustZone = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
     ) -> None:
-        """Constructor for Master Boot CRC XiP Image for LPC55s3x family.
+        """Constructor for Master Boot Signed RAM Image for LPC55s3x family.
 
         :param app: Application image data, defaults to None
         :param trust_zone: TrustZone object, defaults to None
-        :param firmware_version: Firmware version of image, defaults to 0
-        """
-        self.app = align_block(app) if app else None
-        self.tz = trust_zone or TrustZone.enabled()
-        self.firmware_version = firmware_version
-        super().__init__()
-
-
-class Mbi_CrcExtXipLpc55s3x(
-    MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZoneMandatory,
-    Mbi_MixinFwVersion,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinCrcSign,
-):
-    """Master Boot CRC XiP Image for LPC55s3x family."""
-
-    IMAGE_TYPE = CRC_XIP_IMAGE
-
-    def __init__(
-        self, app: bytes = None, trust_zone: TrustZone = None, firmware_version: int = 0
-    ) -> None:
-        """Constructor for Master Boot CRC XiP Image stored in external memory for LPC55s3x family.
-
-        :param app: Application image data, defaults to None
-        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
         :param firmware_version: Firmware version of image, defaults to 0
         """
         self.app = align_block(app) if app else None
         self.app_ext_memory_align = 0x1000
         self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
         self.firmware_version = firmware_version
         super().__init__()

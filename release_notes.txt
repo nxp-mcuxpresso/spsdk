@@ -7,30 +7,22 @@ configure the device, prepare, download and upload data, including security oper
 delivered in the form of a python library and command-line applications.
 
 
-Version: 1.7.1
 
+Version 1.7.2
 ==============
-Date: 16-September-2022
-
-New features
-
-- nxpimage:
-    - add OTFAD support for RT5xx and RT6xx devices
-- pfr:
-    - read command allows independent binary and yaml exports
-- shadowregs:
-    - new subcommand: fuses-script
-- add OEM cert size check into TPConfig
-
+Date: 23-November-2022
 
 Bugfixes
 
-- nxpdebugmbox:
-    - fix debug authentication for RT595
 - nxpimage:
-    - fix sb21 command line argument in documentation
-- fix the use of pyyaml's load in tests (use safe_load())
+    - fix LPC55S3x MBI image XiP in external memory
 
+Known issues
+
+- shadowregs:
+    - segmentation fault on linux when using getreg, setreg, printregs, reset commands
+- nxpdebugmbox:
+    - read operation failure
 
 Supported devices
 =================
@@ -57,6 +49,19 @@ Python 3.7+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+1.7.1
+- nxpimage
+    - add OTFAD support for RT5xx and RT6xx devices
+    - fix sb21 command line argument in documentation
+- pfr:
+    - read command allows independent binary and yaml exports
+- shadowregs:
+    - new subcommand: fuses-script
+- add OEM cert size check into TPConfig
+- nxpdebugmbox:
+    - fix debug authentication for RT595
+- fix the use of pyyaml's load in tests (use safe_load())
+
 1.7.0
 - nxpimage application as replacement for elftosb
 - nxpcrypto application for generating and verifying keys, certificates, hash digest, converting key's format
