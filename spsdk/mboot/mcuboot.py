@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -85,6 +85,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self._device = device
         self.reopen = False
         self.enable_data_abort = False
+        self._pause_point: Optional[int] = None
 
     def __enter__(self) -> "McuBoot":
         self.reopen = True
@@ -93,9 +94,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
     def __exit__(
         self,
-        exception_type: Type[BaseException] = None,
-        exception_value: BaseException = None,
-        traceback: TracebackType = None,
+        exception_type: Optional[Type[BaseException]] = None,
+        exception_value: Optional[BaseException] = None,
+        traceback: Optional[TracebackType] = None,
     ) -> None:
         self.close()
 
@@ -131,7 +132,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return response
 
     def _read_data(
-        self, cmd_tag: int, length: int, progress_callback: Callable[[int, int], None] = None
+        self,
+        cmd_tag: int,
+        length: int,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> bytes:
         """Read data from device.
 
@@ -145,17 +149,18 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         data = b""
 
         if not self._device.is_opened:
-            logger.info("RX: Device not opened")
+            logger.error("RX: Device not opened")
             raise McuBootConnectionError("Device not opened")
         while True:
             try:
                 response = self._device.read()
             except McuBootDataAbortError as e:
-                logger.info(f"RX: {e}")
+                logger.error(f"RX: {e}")
+                logger.info("Try increasing the timeout value")
                 response = self._device.read()
             except TimeoutError:
                 self._status_code = StatusCode.NO_RESPONSE
-                logger.debug("RX: No Response, Timeout Error !")
+                logger.error("RX: No Response, Timeout Error !")
                 response = NoResponse(cmd_tag=cmd_tag)
                 break
 
@@ -182,7 +187,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         return data[:length] if len(data) > length else data
 
     def _send_data(
-        self, cmd_tag: int, data: List[bytes], progress_callback: Callable[[int, int], None] = None
+        self,
+        cmd_tag: int,
+        data: List[bytes],
+        progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> bool:
         """Send Data part of specific command.
 
@@ -208,15 +216,18 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                 total_sent += len(data_chunk)
                 if progress_callback:
                     progress_callback(total_sent, total_to_send)
+                if self._pause_point and total_sent > self._pause_point:
+                    time.sleep(0.1)
+                    self._pause_point = None
 
             if expect_response:
                 response = self._device.read()
         except TimeoutError as e:
             self._status_code = StatusCode.NO_RESPONSE
-            logger.debug("RX: No Response, Timeout Error !")
+            logger.error("RX: No Response, Timeout Error !")
             raise McuBootConnectionError("No Response from Device") from e
         except SPSDKError as e:
-            logger.info(f"RX: {e}")
+            logger.error(f"RX: {e}")
             if expect_response:
                 response = self._device.read()
 
@@ -487,7 +498,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         address: int,
         length: int,
         mem_id: int = 0,
-        progress_callback: Callable[[int, int], None] = None,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
         fast_mode: bool = False,
     ) -> Optional[bytes]:
         """Read data from MCU memory.
@@ -550,7 +561,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         address: int,
         data: bytes,
         mem_id: int = 0,
-        progress_callback: Callable[[int, int], None] = None,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> bool:
         """Write data into MCU memory.
 
@@ -617,8 +628,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if cmd_response.status == StatusCode.SUCCESS:
             if isinstance(cmd_response, GetPropertyResponse):
                 return cmd_response.values
-            else:
-                raise McuBootError(f"Received invalid get-property response: {str(cmd_response)}")
+            raise McuBootError(f"Received invalid get-property response: {str(cmd_response)}")
         return None
 
     def set_property(self, prop_tag: PropertyTag, value: int) -> bool:
@@ -636,7 +646,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     def receive_sb_file(
         self,
         data: bytes,
-        progress_callback: Callable[[int, int], None] = None,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
         check_errors: bool = False,
     ) -> bool:
         """Receive SB file.
@@ -655,6 +665,23 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             self.enable_data_abort = check_errors
+            if isinstance(self._device, RawHid):
+                try:
+                    # pylint: disable=import-outside-toplevel   # import only if needed to save time
+                    from spsdk.sbfile.sb2.images import ImageHeaderV2
+
+                    sb2_header = ImageHeaderV2.parse(data=data)
+                    self._pause_point = sb2_header.first_boot_tag_block * 16
+                except SPSDKError:
+                    pass
+                try:
+                    # pylint: disable=import-outside-toplevel   # import only if needed to save time
+                    from spsdk.sbfile.sb31.images import SecureBinary31Header
+
+                    sb3_header = SecureBinary31Header.parse(data=data)
+                    self._pause_point = sb3_header.image_total_length
+                except SPSDKError:
+                    pass
             result = self._send_data(CommandTag.RECEIVE_SB_FILE, data_chunks, progress_callback)
             self.enable_data_abort = False
             return result
@@ -763,8 +790,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             # In such case we substitute the original SUCCESS code with custom-made OTP_VERIFY_FAIL
             self._status_code = StatusCode.OTP_VERIFY_FAIL
             return False
-        else:
-            return cmd_response.status == StatusCode.SUCCESS
+        return cmd_response.status == StatusCode.SUCCESS
 
     def flash_read_once(self, index: int, count: int = 4) -> Optional[bytes]:
         """Read from MCU flash program once region (max 8 bytes).
@@ -992,7 +1018,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return self._read_data(CommandTag.KEY_PROVISIONING, cmd_response.length)
         return None
 
-    def load_image(self, data: bytes, progress_callback: Callable[[int, int], None] = None) -> bool:
+    def load_image(
+        self, data: bytes, progress_callback: Optional[Callable[[int, int], None]] = None
+    ) -> bool:
         """Load a boot image to the device.
 
         :param data: boot image
@@ -1018,7 +1046,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             f"buffer_size={buffer_size})"
         )
         if buffer_size > 0xFFFF:
-            raise McuBootError(f"buffer_size must be less than 0xFFFF")
+            raise McuBootError("buffer_size must be less than 0xFFFF")
         address_msb = (address >> 32) & 0xFFFF_FFFF
         address_lsb = address & 0xFFFF_FFFF
         sentinel_cmd = _tp_sentinel_frame(
@@ -1374,7 +1402,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
 def _tp_sentinel_frame(command: int, args: List[int], tag: int = 0x17, version: int = 0) -> bytes:
     """Prepare frame used by sentinel."""
-    data = struct.pack(f"<4B", command, len(args), version, tag)
+    data = struct.pack("<4B", command, len(args), version, tag)
     for item in args:
         data += struct.pack("<I", item)
     return data

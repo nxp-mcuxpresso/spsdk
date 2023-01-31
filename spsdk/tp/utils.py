@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust Provisioning utilities."""
 import os
-from typing import List, Type
+from typing import List, Optional, Type
 
 from ruamel.yaml import YAML
 
@@ -41,7 +41,9 @@ def get_tp_device_types() -> List[str]:
     return list(TP_DEVICES.keys())
 
 
-def scan_tp_devices(tpdev: str = None, settings: dict = None) -> List[TpIntfDescription]:
+def scan_tp_devices(
+    tpdev: Optional[str] = None, settings: Optional[dict] = None
+) -> List[TpIntfDescription]:
     """The function scans the TP devices on system.
 
     :param tpdev: Selection of one type of TP device, defaults to None (scan all supported).
@@ -61,7 +63,9 @@ def scan_tp_devices(tpdev: str = None, settings: dict = None) -> List[TpIntfDesc
     return active_devices
 
 
-def get_tp_devices(tpdev: str = None, settings: dict = None) -> List[TpDevInterface]:
+def get_tp_devices(
+    tpdev: Optional[str] = None, settings: Optional[dict] = None
+) -> List[TpDevInterface]:
     """Return a list of active TP Devices fulfilling criteria in 'settings'.
 
     This functions attempts to open/close the device, please mind possible side-effects.
@@ -90,7 +94,9 @@ def get_tp_target_types() -> List[str]:
     return list(TP_TARGETS.keys())
 
 
-def scan_tp_targets(tptarget: str = None, settings: dict = None) -> List[TpIntfDescription]:
+def scan_tp_targets(
+    tptarget: Optional[str] = None, settings: Optional[dict] = None
+) -> List[TpIntfDescription]:
     """The function scans the TP targets on system.
 
     :param tptarget: Selection of one type of TP target, defaults to None (scan all supported).
@@ -110,7 +116,9 @@ def scan_tp_targets(tptarget: str = None, settings: dict = None) -> List[TpIntfD
     return active_targets
 
 
-def get_tp_targets(tptarget: str = None, settings: dict = None) -> List[TpTargetInterface]:
+def get_tp_targets(
+    tptarget: Optional[str] = None, settings: Optional[dict] = None
+) -> List[TpTargetInterface]:
     """Return a list of active TP Targets fulfilling criteria in 'settings'.
 
     This functions attempts to open/close the device, please mind possible side-effects.

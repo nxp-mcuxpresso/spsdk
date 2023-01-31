@@ -12,7 +12,7 @@
 	"dualBootImageVersionDescription": "dualBootImageVersion replaced by firmwareVersion",
 	"dualBootImageVersion": "0x1",
 	"enableTrustZone": true,
-	"trustZonePresetFile": ".\\workspace\\trustzone\\tztest.bin",
+	"trustZonePresetFile": ".\\workspace\\trustzone\\lpc55s3x\\tztest_a1.bin",
 	"firmwareVersion": "0x1",
 	"masterBootOutputFile": ".\\workspace\\output_images\\lpc55s3x\\mb_ram_plain_tz.bin"
 }

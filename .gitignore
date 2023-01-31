@@ -143,3 +143,6 @@ logging.yaml
 examples/jupyter_examples/**/workspace
 examples/jupyter_examples/**/.ipynb_checkpoints
 examples/jupyter_examples/**/.ipynb_checkpoints/*
+
+# Git merge-conflict files
+*.orig

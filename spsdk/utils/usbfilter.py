@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,6 +9,8 @@
 import platform
 import re
 from typing import Any, Dict, Optional, Tuple
+
+from .misc import get_hash
 
 
 class USBDeviceFilter:
@@ -73,7 +75,7 @@ class USBDeviceFilter:
 
     def __init__(
         self,
-        usb_id: str = None,
+        usb_id: Optional[str] = None,
         search_by_pid: bool = False,
     ):
         """Initialize the USB Device Filtering.
@@ -106,30 +108,9 @@ class USBDeviceFilter:
         usb_path_raw = usb_device_object.get("path")
 
         if usb_path_raw:
-            usb_path = (
-                usb_path_raw.decode("utf-8")
-                if isinstance(usb_path_raw, (bytes, bytearray))
-                else usb_path_raw
-            )
-            if platform.system() == "Windows":
-                # On WIN, the user has an instance ID (+ the tool expects following format):
-                # 'HID\\VID_1FC9&PID_0130\\6&3B9928A5&0&0000'
-                # However, the path has following format:
-                # '\\\\?\\hid#vid_1fc9&pid_0130#6&1625c75b&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}'
-                # There is a pattern, which matches, so we take the path and modify it
-                # to match the instance ID format. We convert the path to upper case and
-                # replace the hash sign with backslash
-                # usb_path = usb_path.upper()
-                usb_path = usb_path.replace("#", "\\")
-
-            if platform.system() == "Linux":
-                # The user input is expected in form of <dec_num>#<dec_num>. So we
-                # convert the path returned by Libusbsio/HID_API into this form so we can
-                # compare it. Alternatively, the input is the real device path,
-                # like '/dev/hidraw0' - in this case, just leave it as it is.
-                nums = usb_path.split(":")
-                if len(nums) >= 2:
-                    usb_path = str.format("{}#{}", int(nums[0], 16), int(nums[1], 16))
+            if self.usb_id == get_hash(usb_path_raw):
+                return True
+            usb_path = self.convert_usb_path(usb_path_raw)
             if self._is_path(usb_path=usb_path):
                 return True
 
@@ -203,6 +184,47 @@ class USBDeviceFilter:
 
         return False
 
+    @staticmethod
+    def convert_usb_path(hid_api_usb_path: bytes) -> str:
+        """Converts the Libusbsio/HID_API path into string, which can be observed from OS.
+
+        DESIGN REMARK: this function is not part of the USBLogicalDevice, as the
+        class intention is to be just a simple container. But to help the class
+        to get the required inputs, this helper method has been provided. Additionally,
+        this method relies on the fact that the provided path comes from the Libusbsio/HID_API.
+        This method will most probably fail or provide improper results in case
+        path from different USB API is provided.
+
+        :param hid_api_usb_path: USB device path from Libusbsio/HID_API
+        :return: Libusbsio/HID_API path converted for given platform
+        """
+        if platform.system() == "Windows":
+            device_manager_path = hid_api_usb_path.decode("utf-8").upper()
+            device_manager_path = device_manager_path.replace("#", "\\")
+            result = re.search(r"\\\\\?\\(.+?)\\{", device_manager_path)
+            if result:
+                device_manager_path = result.group(1)
+
+            return device_manager_path
+
+        if platform.system() == "Linux":
+            # we expect the path in form of <bus>#<device>, Libusbsio/HID_API returns
+            # <bus>:<device>:<interface>
+            linux_path = hid_api_usb_path.decode("utf-8")
+            linux_path_parts = linux_path.split(":")
+
+            if len(linux_path_parts) > 1:
+                linux_path = str.format(
+                    "{}#{}", int(linux_path_parts[0], 16), int(linux_path_parts[1], 16)
+                )
+
+            return linux_path
+
+        if platform.system() == "Darwin":
+            return hid_api_usb_path.decode("utf-8")
+
+        return ""
+
 
 class NXPUSBDeviceFilter(USBDeviceFilter):
     """NXP Device Filtering class.
@@ -218,8 +240,8 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
 
     def __init__(
         self,
-        usb_id: str = None,
-        nxp_device_names: Dict[str, Tuple[int, int]] = None,
+        usb_id: Optional[str] = None,
+        nxp_device_names: Optional[Dict[str, Tuple[int, int]]] = None,
     ):
         """Initialize the USB Device Filtering.
 

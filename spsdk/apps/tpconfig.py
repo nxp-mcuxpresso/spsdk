@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -55,15 +55,9 @@ def main(log_level: int) -> int:
     required=True,
 )
 @click.option(
-    "-m",
-    "--include-manufacturing",
-    is_flag=True,
-    default=False,
-    help="Include manufacturing data (no longer supported!)",
-)
-@click.option(
     "-s",
     "--seal",
+    "seal_flag",
     is_flag=True,
     default=False,
     help="""
@@ -75,12 +69,9 @@ def load(
     tp_device_parameter: List[str],
     timeout: int,
     config: str,
-    include_manufacturing: bool,
-    seal: bool,
+    seal_flag: bool,
 ) -> None:
     """Command to load configuration to the TP device."""
-    if include_manufacturing:
-        TPConfigConfig.SCHEMA_MEMBERS.append("tp_config_manufacturing")
     tp_config = TPConfigConfig(config, tp_device, tp_device_parameter, timeout)
 
     tp_interface = process_tp_inputs(
@@ -94,13 +85,8 @@ def load(
     assert isinstance(tp_dev, TpDevInterface)
 
     tp_worker = TrustProvisioningConfig(tp_dev, click.echo)
-    if include_manufacturing:
-        raise SPSDKTpError(
-            "The option --include-manufacturing is no longer supported. "
-            "Please use officially pre-personalized cards."
-        )
     tp_worker.upload(tp_config.config_data, tp_config.config_dir, timeout=tp_config.timeout)
-    if seal:
+    if seal_flag:
         tp_worker.seal(timeout=tp_config.timeout)
 
 
@@ -140,7 +126,7 @@ def seal(
         timeout_value = timeout
 
     if not device:
-        raise SPSDKTpError("TP Device's type is not specified ")
+        raise SPSDKTpError("TP Device's type is not specified")
     if "id" not in params or not params["id"]:
         raise SPSDKTpError("TP Device's ID is not specified")
 
@@ -171,8 +157,9 @@ def seal(
     "--output",
     type=click.Path(dir_okay=False),
     required=True,
-    help="The output YAML template configuration file name",
+    help="The output YAML template configuration file name.",
 )
+# pylint: disable=unused-argument   # preparation for the future
 def get_template(family: str, output: str) -> None:
     """Command to generate tphost template of configuration YML file."""
     with open(os.path.join(TP_DATA_FOLDER, "tpconfig_cfg_template.yml"), "r") as file:

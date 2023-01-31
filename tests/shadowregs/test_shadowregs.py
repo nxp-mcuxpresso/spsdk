@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for shadow registers support API."""
@@ -28,7 +28,6 @@ def get_probe():
     """Help function to get Probe - used in tests."""
     probe = DebugProbeVirtual(DebugProbeVirtual.UNIQUE_SERIAL)
     probe.open()
-    probe.enable_memory_interface()
     return probe
 
 
@@ -285,8 +284,7 @@ def test_shadow_register_enable_debug_device_cannot_enable():
     probe = get_probe()
     # invalid run
     # Setup the simulated data for reading of AP registers
-    access_port = {12: ["Exception", "Exception"]}
-    probe.set_coresight_ap_substitute_data(access_port)
+    probe.mem_read_cause_exception(2)
     assert not SR.enable_debug(probe)
 
 
@@ -314,5 +312,7 @@ def test_shadow_register_enable_debug_probe_exceptions():
     """Test Shadow Registers - Enable debug algorithm check with probe exception."""
     probe = get_probe()
     with pytest.raises(SPSDKError):
-        probe.dp_write_cause_exception()
+        assert isinstance(probe, DebugProbeVirtual)
+        probe.mem_read_cause_exception()  # To fail test connection function
+        probe.ap_write_cause_exception()  # To fail write to debug mailbox
         assert not SR.enable_debug(probe)

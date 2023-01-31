@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,6 +24,7 @@ from spsdk.utils.misc import use_working_directory
         ("rt105x", "flexspi_nor"),
         ("rt106x", "flexspi_nor"),
         ("rt117x", "flexspi_nor"),
+        ("lpc55s3x", "flexspi_nor"),
     ],
 )
 def test_nxpimage_bimg_export(tmpdir, data_dir, family, mem_type):
@@ -50,6 +51,7 @@ def test_nxpimage_bimg_export(tmpdir, data_dir, family, mem_type):
         ("rt105x", "flexspi_nor", "fcb.bin"),
         ("rt106x", "flexspi_nor", "fcb.bin"),
         ("rt117x", "flexspi_nor", "fcb.bin"),
+        ("lpc55s3x", "flexspi_nor", "fcb.bin"),
     ],
 )
 def test_nxpimage_fcb_parse_cli(tmpdir, data_dir, family, mem_type, binary):
@@ -71,6 +73,7 @@ def test_nxpimage_fcb_parse_cli(tmpdir, data_dir, family, mem_type, binary):
         ("rt105x", ["flexspi_nor"]),
         ("rt106x", ["flexspi_nor"]),
         ("rt117x", ["flexspi_nor"]),
+        ("lpc55s3x", ["flexspi_nor"]),
     ],
 )
 def test_nxpimage_fcb_template_cli(tmpdir, family, mem_types):

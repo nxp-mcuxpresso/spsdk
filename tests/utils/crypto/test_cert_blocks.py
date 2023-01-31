@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +10,13 @@ import os
 import pytest
 
 from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.crypto import CertBlockV2, Certificate
-from spsdk.utils.crypto.cert_blocks import CertBlockHeader, CertificateBlockHeader
+from spsdk.utils.crypto.cert_blocks import (
+    CertBlockHeader,
+    CertificateBlockHeader,
+    get_main_cert_index,
+)
 
 
 def test_cert_block_header():
@@ -157,3 +162,27 @@ def test_cert_block_invalid():
         cb.set_root_key_hash(5, bytes(32))
     with pytest.raises(SPSDKError, match="Invalid length of key hash"):
         cb.set_root_key_hash(3, bytes(5))
+
+
+@pytest.mark.parametrize(
+    "config,default,passed,expected_result",
+    [
+        ({}, None, False, SPSDKError),
+        ({}, 0, True, 0),
+        ({"mainRootCertId": 1}, 0, True, 1),
+        ({"mainCertChainId": 1}, 0, True, 1),
+        ({"mainRootCertId": "2"}, 0, True, 2),
+        ({"mainCertChainId": "2"}, 0, True, 2),
+        ({"mainRootCertId": "1abc"}, 0, False, SPSDKValueError),
+        ({"mainRootCertId": "1abc"}, 0, False, SPSDKValueError),
+        ({"mainRootCertId": 1, "mainCertChainId": 1}, 0, True, 1),
+        ({"mainRootCertId": 1, "mainCertChainId": 2}, 0, False, SPSDKError),
+    ],
+)
+def test_get_main_cert_index(config, default, passed, expected_result):
+    if passed:
+        result = get_main_cert_index(config, default)
+        assert result == expected_result
+    else:
+        with pytest.raises(expected_result):
+            get_main_cert_index(config, default)

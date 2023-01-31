@@ -6,7 +6,7 @@
       <alias type="CMSIS" value="FLASH_CFPA_HEADER_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x4" width="32" name="CFPA_PAGE_VERSION" description="CFPA Page Version, value of 0xFFFF_FFFF enable auto increment of the current CFPA page version.">
+  <register offset="0x4" width="32" name="CFPA_PAGE_VERSION" description="CFPA Page Version. Use value of 0xFFFF_FFFF to auto increment current CFPA page version value (by ROM).">
     <alias type="CMSIS" value="CFPA.CFPA_PAGE_VERSION"/>
     <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CFPA_PAGE_VERSION_FIELD(x)"/>

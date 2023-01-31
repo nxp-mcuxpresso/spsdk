@@ -75,4 +75,4 @@ settings: # The PFR CMPA registers configuration.
       # - SECURE_BOOT_CFG_SEC_BOOT_EN_ENABLE_2, (2): Boot signed images. (internal flash, RSA signed)
       # - SECURE_BOOT_CFG_SEC_BOOT_EN_ENABLE_3, (3): Boot signed images. (internal flash, RSA signed)
   ROTKH: # ROTKH field is compounded by 8 32-bit fields and contains Root key table hash
-    value: "04355cea4777d09d7674ad2c8e47dd38a05c434e5662fc47b83a0b2b50d22a3c" # The value width: 256b
+    value: "04355CEA4777D09D7674AD2C8E47DD38A05C434E5662FC47B83A0B2B50D22A3C" # The value width: 256b

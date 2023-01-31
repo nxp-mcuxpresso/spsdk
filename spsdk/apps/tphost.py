@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -65,13 +65,13 @@ def main(log_level: int) -> int:
     "-fw",
     "--firmware",
     type=click.Path(exists=True, dir_okay=False),
-    help="The application firmware SB file.",
+    help="The application firmware SB file. If not specified, TP flow ends after loading OEM assets and reset.",
 )
 @click.option(
     "-pfw",
     "--prov-firmware",
     type=click.Path(exists=True, dir_okay=False),
-    help="OEM Provisioning Firmware SB file.",
+    help="OEM Provisioning Firmware SB file. If not specified, the TP flow starts immediately.",
 )
 @click.option(
     "-to",
@@ -89,14 +89,14 @@ def main(log_level: int) -> int:
     "-l",
     "--audit-log",
     type=click.Path(exists=False, dir_okay=False),
-    help="Path TP audit log yaml file",
+    help="Path TP audit log yaml file.",
 )
 @click.option(
     "-s",
     "--save-debug-data",
     is_flag=True,
     default=False,
-    help="Save the data being transferred (for debugging purposes)",
+    help="Save the data being transferred (for debugging purposes).",
 )
 def load(
     tp_device: str,
@@ -156,6 +156,85 @@ def load(
     )
 
 
+@main.command(name="load-tpfw", no_args_is_help=True)
+@tp_target_options
+@click.option(
+    "-f",
+    "--family",
+    type=click.Choice(get_supported_devices(), case_sensitive=False),
+    help="The target device name.",
+)
+@click.option(
+    "-pfw",
+    "--prov-firmware",
+    type=click.Path(exists=True, dir_okay=False),
+    help="OEM Provisioning Firmware SB file.",
+)
+@click.option(
+    "-to",
+    "--timeout",
+    type=click.IntRange(0, 600, clamp=True),
+    help="The target provisioning timeout in seconds.",
+)
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to TPHost config file.",
+)
+@click.option(
+    "-s",
+    "--skip-test",
+    is_flag=True,
+    help="Skip test whether Provisioning FW boot-ed up.",
+)
+def load_tpfw(
+    tp_target: str,
+    tp_target_parameter: List[str],
+    family: str,
+    prov_firmware: str,
+    timeout: int,
+    config: str,
+    skip_test: bool,
+) -> None:
+    """Command to load Provisioning Firmware to the target MCU."""
+    TPHostConfig.SCHEMA_MEMBERS = ["family", "provisioning_firmware", "tp_timeout", "target"]
+    tp_config = TPHostConfig(
+        tp_target=tp_target,
+        tp_target_parameter=tp_target_parameter,
+        family=family,
+        prov_firmware=prov_firmware,
+        timeout=timeout,
+        config=config,
+    )
+
+    if not tp_config.prov_firmware_data:
+        raise SPSDKAppError("Provisioning Firmware to load is not defined.")
+
+    tp_interface = process_tp_inputs(
+        tp_type=tp_config.tp_target,
+        tp_parameters=tp_config.tp_target_parameter,
+        header="target",
+        scan_func=scan_tp_targets,
+        print_func=click.echo,
+    )
+    tp_target_instance = tp_interface.create_interface()
+    assert isinstance(tp_target_instance, TpTargetInterface)
+
+    tp_worker = TrustProvisioningHost(
+        tpdev=None,  # type: ignore  # we don't need TPDevice in this case
+        tptarget=tp_target_instance,
+        info_print=click.echo,
+    )
+    tp_worker.load_provisioning_fw(
+        family=tp_config.family,
+        prov_fw=tp_config.prov_firmware_data,
+        timeout=tp_config.timeout,
+        skip_test=skip_test,
+        keep_target_open=False,
+    )
+
+
 @main.command(name="get-template", no_args_is_help=True)
 @click.option(
     "-f",
@@ -169,8 +248,9 @@ def load(
     "--output",
     type=click.Path(dir_okay=False),
     required=True,
-    help="The output YAML template configuration file name",
+    help="The output YAML template configuration file name.",
 )
+# pylint: disable=unused-argument   # preparation for the future
 def get_template(
     family: str,
     output: str,
@@ -191,20 +271,20 @@ def get_template(
     "--audit-log",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
-    help="Path TP audit log yaml file",
+    help="Path TP audit log yaml file.",
 )
 @click.option(
     "-k",
     "--audit-log-key",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
-    help="Path to private/public key to verify the TP audit log yaml file",
+    help="Path to private/public key to verify the TP audit log yaml file.",
 )
 @click.option(
     "-d",
     "--destination",
     type=click.Path(file_okay=False),
-    help="Destination directory for certificate extraction(non-existent or empty)",
+    help="Destination directory for certificate extraction(non-existent or empty).",
 )
 @click.option(
     "-e",
@@ -219,14 +299,14 @@ def get_template(
     "--skip-nxp",
     is_flag=True,
     default=False,
-    help="Skip extracting the NXP Devattest certificates",
+    help="Skip extracting the NXP Devattest certificates.",
 )
 @click.option(
     "-o",
     "--skip-oem",
     is_flag=True,
     default=False,
-    help="Skip extracting the OEM x509 Devattest certificates",
+    help="Skip extracting the OEM x509 Devattest certificates.",
 )
 @click.option(
     "-i",
@@ -236,7 +316,7 @@ def get_template(
     metavar="[0-3]",
     help="""
     Index of an individual OEM certificate to extract.
-    If not specified, all available OEM certificates will be extracted
+    If not specified, all available OEM certificates will be extracted.
     """,
 )
 @click.option(
@@ -249,7 +329,7 @@ def get_template(
     "--force-rewrite",
     is_flag=True,
     default=False,
-    help="Rewrite certificates in 'destination' directory",
+    help="Rewrite certificates in 'destination' directory.",
 )
 def verify(
     audit_log: str,
@@ -300,7 +380,7 @@ def verify(
     "--audit-log",
     type=click.Path(exists=True, dir_okay=False),
     required=False,
-    help="Path TP audit log yaml file",
+    help="Path TP audit log yaml file.",
 )
 def check_log_owner(
     tp_device: str,
@@ -337,6 +417,74 @@ def check_log_owner(
     tp_worker.check_audit_log_owner(tp_config.audit_log, timeout=tp_config.timeout)
 
 
+@main.command(name="get-tp-response", no_args_is_help=True)
+@tp_target_options
+@click.option(
+    "-f",
+    "--family",
+    type=click.Choice(get_supported_devices(), case_sensitive=False),
+    help="The target device name.",
+)
+@click.option(
+    "-to",
+    "--timeout",
+    type=click.IntRange(0, 600, clamp=True),
+    help="The target provisioning timeout in seconds.",
+)
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to TPHost configuration file (parameters on CLI take precedence).",
+    required=False,
+)
+@click.option(
+    "-r",
+    "--response-file",
+    type=click.Path(dir_okay=False),
+    help="Path where to store the TP_RESPONSE",
+    required=True,
+)
+def get_tp_response(
+    tp_target: str,
+    tp_target_parameter: List[str],
+    family: str,
+    timeout: int,
+    config: str,
+    response_file: str,
+) -> None:
+    """Retrieve TP_RESPONSE from the target."""
+    TPHostConfig.SCHEMA_MEMBERS = ["family", "tp_timeout", "target"]
+
+    tp_config = TPHostConfig(
+        tp_target=tp_target,
+        tp_target_parameter=tp_target_parameter,
+        family=family,
+        timeout=timeout,
+        config=config,
+    )
+
+    tp_interface = process_tp_inputs(
+        tp_type=tp_config.tp_target,
+        tp_parameters=tp_config.tp_target_parameter,
+        header="target",
+        scan_func=scan_tp_targets,
+        print_func=click.echo,
+    )
+    tp_target_instance = tp_interface.create_interface()
+    assert isinstance(tp_target_instance, TpTargetInterface)
+
+    tp_worker = TrustProvisioningHost(
+        tpdev=None,  # type: ignore  # device is not used, we set it to None on purpose
+        tptarget=tp_target_instance,
+        info_print=click.echo,
+    )
+    tp_worker.get_tp_response(
+        response_file=response_file,
+        timeout=tp_config.timeout,
+    )
+
+
 @main.command(name="check-cot", no_args_is_help=True)
 @click.option(
     "-r",
@@ -359,13 +507,14 @@ def check_log_owner(
     type=click.Path(exists=True, dir_okay=False),
     required=True,
 )
+# pylint: disable=broad-except  # true source of potential error is not known in advance
 def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
     """Check Chain-of-Trust in Trust Provisioning.
 
     \b
     Root and intermediate certificates are provided from NXP.
     TP_RESPONSE can be obtained from `tphost load` using `--save-debug-data` flag.
-    Default file name for TP_RESPONSE is `x_tp_response.bin`
+    Default file name for TP_RESPONSE is `x_tp_response.bin`.
     """
     overall_result = True
     nxp_glob_puk = extract_public_key(root_cert)
@@ -381,7 +530,7 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
             ec.ECDSA(nxp_prod_cert.signature_hash_algorithm),
         )
         message += "OK"
-    except:
+    except Exception:
         message += "FAILED!"
         overall_result = False
     click.echo(message)
@@ -392,7 +541,7 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
             tp_data = f.read()
         tp_response_container = Container.parse(tp_data)
         message += "OK"
-    except:
+    except Exception:
         message += "FAILED!"
         overall_result = False
     click.echo(message)
@@ -404,7 +553,7 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
         ).payload
         nxp_die_cert = Container.parse(nxp_die_cert_data)
         message += "OK"
-    except:
+    except Exception:
         message += "FAILED!"
         overall_result = False
     click.echo(message)

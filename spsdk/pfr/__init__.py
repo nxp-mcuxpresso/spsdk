@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,6 +20,6 @@ from .exceptions import (
     SPSDKPfrError,
     SPSDKPfrRotkhIsNotPresent,
 )
-from .pfr import CFPA, CMPA, PfrConfiguration
+from .pfr import CFPA, CMPA, ROMCFG, PfrConfiguration
 from .processor import Processor
 from .translator import Translator

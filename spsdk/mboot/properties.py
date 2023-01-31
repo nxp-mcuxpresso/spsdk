@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,6 +10,7 @@
 
 
 import ctypes
+from copy import deepcopy
 from typing import List, Optional, Tuple, Type, Union
 
 from spsdk.mboot.exceptions import McuBootError
@@ -174,7 +175,16 @@ class PropertyTag(Enum):
     IRQ_NOTIFIER_PIN           = (0x1C, "IrqNotifierPin", "Irq Notifier Pin")
     PFR_KEYSTORE_UPDATE_OPT    = (0x1D, "PfrKeystoreUpdateOpt", "PFR Keystore Update Opt")
     BYTE_WRITE_TIMEOUT_MS      = (0x1E, "ByteWriteTimeoutMs", "Byte Write Timeout in ms")
+    FUSE_LOCKED_STATUS         = (0x1F, "FuseLockedStatus", "Fuse Locked Status")
 
+
+class PropertyTagKw45xx(Enum):
+    """McuBoot Properties."""
+
+    VERIFY_ERASE               = (0x0A, "VerifyErase", "Verify Erase")
+    BOOT_STATUS_REGISTER       = (0x14, "BootStatusRegister", "Boot Status Register",)
+    FIRMWARE_VERSION           = (0x15, "FirmwareVersion", "Firmware Version",)
+    FUSE_PROGRAM_VOLTAGE       = (0x16, "FuseProgramVoltage", "Fuse Program Voltage")
 
 class PeripheryTag(Enum):
     """Tags representing peripherals."""
@@ -186,6 +196,7 @@ class PeripheryTag(Enum):
     USB_HID   = (0x10, "USB-HID", "USB HID-Class Interface")
     USB_CDC   = (0x20, "USB-CDC", "USB CDC-Class Interface")
     USB_DFU   = (0x40, "USB-DFU", "USB DFU-Class Interface")
+    LIN       = (0x80, "LIN", "LIN Interface")
 
 
 class FlashReadMargin(Enum):
@@ -213,7 +224,7 @@ class PropertyValueBase:
 
     __slots__ = ("tag", "name", "desc")
 
-    def __init__(self, tag: int, name: str = None, desc: str = None) -> None:
+    def __init__(self, tag: int, name: Optional[str] = None, desc: Optional[str] = None) -> None:
         """Initialize the base of property.
 
         :param tag: Property tag, see: `PropertyTag`
@@ -575,6 +586,64 @@ class ExternalMemoryAttributesValue(PropertyValueBase):
         return ", ".join(str_values)
 
 
+class FuseLockRegister:
+    """RAM memory regions."""
+
+    def __init__(self, value: int, index: int, start: int = 0) -> None:
+        """Initialize object representing the OTP Controller Program Locked Status.
+
+        :param value: value of the register
+        :param index: index of the fuse
+        :param start: shift to the start of the register
+
+        """
+        self.value = value
+        self.index = index
+        self.msg = ""
+
+        shift = 0
+        for _ in range(start, 32):
+            bit = (value >> shift) & 1
+            status = "LOCKED" if bit else "UNLOCKED"
+            self.msg += f"  FUSE{(index + shift):03d}: {status}\r\n"
+            shift += 1
+
+    def __str__(self) -> str:
+        """Get stringified property representation."""
+        return f"\r\n{self.msg}"
+
+
+class FuseLockedStatus(PropertyValueBase):
+    """Reserver Regions property."""
+
+    __slots__ = ("fuses",)
+
+    def __init__(self, tag: int, raw_values: List[int]) -> None:
+        """Initialize the FuseLockedStatus property object.
+
+        :param tag: Property tag, see: `PropertyTag`
+        :param raw_values: List of integers representing the property
+        """
+        super().__init__(tag)
+        self.fuses: List[FuseLockRegister] = []
+        idx = 0
+        for count, val in enumerate(raw_values):
+            start = 0
+            if count == 0:
+                start = 16
+            self.fuses.append(FuseLockRegister(val, idx, start))
+            idx += 32
+            if count == 0:
+                idx -= 16
+
+    def to_str(self) -> str:
+        """Get stringified property representation."""
+        msg = "\r\n"
+        for count, register in enumerate(self.fuses):
+            msg += f"OTP Controller Program Locked Status {count} Register: {register}"
+        return msg
+
+
 ########################################################################################################################
 # McuBoot property response parser
 ########################################################################################################################
@@ -669,28 +738,68 @@ PROPERTIES = {
         "class": IntValue,
         "kwargs": {"str_format": "dec"},
     },
+    PropertyTag.FUSE_LOCKED_STATUS: {
+        "class": FuseLockedStatus,
+        "kwargs": {},
+    },
 }
+
+PROPERTIES_KW45XX = {
+    PropertyTagKw45xx.VERIFY_ERASE: {
+        "class": BoolValue,
+        "kwargs": {"true_string": "ENABLE", "false_string": "DISABLE"},
+    },
+    PropertyTagKw45xx.BOOT_STATUS_REGISTER: {
+        "class": IntValue,
+        "kwargs": {"str_format": "int32"},
+    },
+    PropertyTagKw45xx.FIRMWARE_VERSION: {
+        "class": IntValue,
+        "kwargs": {"str_format": "int32"},
+    },
+    PropertyTagKw45xx.FUSE_PROGRAM_VOLTAGE: {
+        "class": BoolValue,
+        "kwargs": {
+            "true_string": "Over Drive Voltage (2.5 V)",
+            "false_string": "Normal Voltage (1.8 V)",
+        },
+    },
+}
+
+PROPERTIES_OVERRIDE = {"kw45xx": PROPERTIES_KW45XX}
+PROPERTIES_OVERRIDE = {"k32w1xx": PROPERTIES_KW45XX}
+
+PROPERTY_TAG_OVERRIDE = {"kw45xx": PropertyTagKw45xx}
+PROPERTY_TAG_OVERRIDE = {"k32w1xx": PropertyTagKw45xx}
 
 
 def parse_property_value(
-    property_tag: int, raw_values: List[int], ext_mem_id: int = None
+    property_tag: int,
+    raw_values: List[int],
+    ext_mem_id: Optional[int] = None,
+    family: Optional[str] = None,
 ) -> Optional[PropertyValueBase]:
     """Parse the property value received from the device.
 
     :param property_tag: Tag representing the property
     :param raw_values: Data received from the device
     :param ext_mem_id: ID of the external memory used to read the property, defaults to None
+    :param family: supported family
     :return: Object representing the property
     """
     assert isinstance(property_tag, int)
     assert isinstance(raw_values, list)
-
-    if property_tag not in PROPERTIES.keys():
+    properties_dict = deepcopy(PROPERTIES)
+    if family:
+        properties_dict.update(PROPERTIES_OVERRIDE[family])  # type: ignore
+    if property_tag not in properties_dict.keys():
         return None
-
-    cls = PROPERTIES[property_tag]["class"]  # type: ignore
-    kwargs: dict = PROPERTIES[property_tag]["kwargs"]  # type: ignore
+    cls = properties_dict[property_tag]["class"]  # type: ignore
+    kwargs: dict = properties_dict[property_tag]["kwargs"]  # type: ignore
     if "mem_id" in kwargs:
         kwargs["mem_id"] = ext_mem_id  # type: ignore
-
-    return cls(property_tag, raw_values, **kwargs)  # type: ignore
+    obj = cls(property_tag, raw_values, **kwargs)  # type: ignore
+    if family:
+        obj.name = PROPERTY_TAG_OVERRIDE[family].name(property_tag)
+        obj.desc = PROPERTY_TAG_OVERRIDE[family].desc(property_tag)
+    return obj  # type: ignore

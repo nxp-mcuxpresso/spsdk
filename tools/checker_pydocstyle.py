@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Checker for pydocstyle."""
@@ -11,7 +11,8 @@ import subprocess
 import sys
 
 import click
-from git_operations import get_changed_files, get_number_of_commits
+
+from .git_operations import get_changed_files, get_number_of_commits
 
 
 @click.command()

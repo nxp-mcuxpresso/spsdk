@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for Debug Probe interface."""
@@ -30,23 +30,11 @@ def test_probe_not_implemented():
     with pytest.raises(NotImplementedError):
         probe.get_connected_probes()
 
-    assert probe.debug_mailbox_access_port == -1
     probe.debug_mailbox_access_port = 10
     assert probe.debug_mailbox_access_port == 10
 
     with pytest.raises(NotImplementedError):
         probe.open()
-
-    probe.enable_memory_interface()
-
-    with pytest.raises(NotImplementedError):
-        probe.close()
-
-    with pytest.raises(NotImplementedError):
-        probe.dbgmlbx_reg_read()
-
-    with pytest.raises(NotImplementedError):
-        probe.dbgmlbx_reg_write()
 
     with pytest.raises(NotImplementedError):
         probe.mem_reg_read()

@@ -1,63 +1,68 @@
 devices:
   rt5xx:
     revisions:
-      b0: imxrt595_b0.xml
+      b0:
+        data_file: imxrt595_b0.xml
     latest: b0
-    address: 0x4013_0000
-    inverted_regs:
-      DCFG_CC_SOCU: DCFG_CC_SOCU_AP
-    computed_fields:
-      DCFG_CC_SOCU:
-        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
-        CRC8: comalg_dcfg_cc_socu_crc8
-      DCFG_CC_SOCU_NS:
-        CRC8: comalg_dcfg_cc_socu_crc8
-      "SEC_BOOT_CFG[5]":
-        RESERVED: comalg_do_nothing
+    attributes:
+      address: 0x4013_0000
+      inverted_regs:
+        DCFG_CC_SOCU: DCFG_CC_SOCU_AP
+      computed_fields:
+        DCFG_CC_SOCU:
+          DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
+          CRC8: comalg_dcfg_cc_socu_crc8
+        DCFG_CC_SOCU_NS:
+          CRC8: comalg_dcfg_cc_socu_crc8
+        "SEC_BOOT_CFG[5]":
+          RESERVED: comalg_do_nothing
   rt6xx:
     revisions:
-      b0: imxrt685_b0.xml
+      b0:
+        data_file: imxrt685_b0.xml
     latest: b0
-    address: 0x4013_0000
-    inverted_regs:
-      DCFG_CC_SOCU: DCFG_CC_SOCU_AP
-    computed_fields:
-      DCFG_CC_SOCU:
-        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
-        CRC8: comalg_dcfg_cc_socu_crc8
-      DCFG_CC_SOCU_NS:
-        CRC8: comalg_dcfg_cc_socu_crc8
-      "SEC_BOOT_CFG[5]":
-        RESERVED: comalg_do_nothing
-grouped_registers:
-  - name: OTFAD_KEK_SEED
-    width: 128
-    reverse: 1
-    config_as_hexstring: True
-    description: When OTP key store is used (USE_PUF = 0), this 128-bit user
-      programmed value is used to derive OTFAD_KEK.&#10;&#10;OTFAD_KEK[127:0] =
-      AES_ENCRYPT (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0]);
-  - name: OTP_MASTER_KEY
-    width: 256
-    reverse_subregs_order: True
-    config_as_hexstring: True
-    description: Master Key used to derive different usage keys (HMAC_KEY,
-      ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). &#10;&#10;- ENC_BOOT_HMAC_KEY[127:0] =
-      AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000);&#10;-
-      ENC_BOOT_AES_KEY[256:0] = AES_ENCRYPT (OTP_MASTER_KEK,
-      0x00000000000000000000000000000001) ||  AES_ENCRYPT (OTP_MASTER_KEK,
-      0x00000000000000000000000000000002);&#10;- SB_KEK[256:0] = AES_ENCRYPT
-      (OTP_MASTER_KEK, 0x00000000000000000000000000000003) ||  AES_ENCRYPT
-      (OTP_MASTER_KEK, 0x00000000000000000000000000000004); &#10;OR&#10; if
-      SBKEK_SEED != 0 then&#10;     SB_KEK[255:0] = AES_ENCRYPT (OTP_MASTER_KEK,
-      SBKEK_SEED[255:0]);&#10;&#10;- OTFAD_KEK[127:0] = AES_ENCRYPT
-      (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0]);
-  - name: RKTH
-    width: 256
-    reverse: 1
-    config_as_hexstring: True
-    description: "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||
-      exponent).&#10;For i in 0..3:&#10;  Let M[i] = BE(Modulus i)&#10;  Let
-      E[i] = BE(Exponent i)&#10;  Let RKH[i] = SHA256( M[i] || E[i] )&#10;  Let
-      RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&#10;Note:
-      Documentation update needed when using blhost due to endianness issue."
+    attributes:
+      address: 0x4013_0000
+      inverted_regs:
+        DCFG_CC_SOCU: DCFG_CC_SOCU_AP
+      computed_fields:
+        DCFG_CC_SOCU:
+          DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
+          CRC8: comalg_dcfg_cc_socu_crc8
+        DCFG_CC_SOCU_NS:
+          CRC8: comalg_dcfg_cc_socu_crc8
+        "SEC_BOOT_CFG[5]":
+          RESERVED: comalg_do_nothing
+attributes:
+  grouped_registers:
+    - name: OTFAD_KEK_SEED
+      width: 128
+      reverse: 1
+      config_as_hexstring: True
+      description: When OTP key store is used (USE_PUF = 0), this 128-bit user
+        programmed value is used to derive OTFAD_KEK.&#10;&#10;OTFAD_KEK[127:0] =
+        AES_ENCRYPT (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0]);
+    - name: OTP_MASTER_KEY
+      width: 256
+      reverse_subregs_order: True
+      config_as_hexstring: True
+      description: Master Key used to derive different usage keys (HMAC_KEY,
+        ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). &#10;&#10;- ENC_BOOT_HMAC_KEY[127:0] =
+        AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000);&#10;-
+        ENC_BOOT_AES_KEY[256:0] = AES_ENCRYPT (OTP_MASTER_KEK,
+        0x00000000000000000000000000000001) ||  AES_ENCRYPT (OTP_MASTER_KEK,
+        0x00000000000000000000000000000002);&#10;- SB_KEK[256:0] = AES_ENCRYPT
+        (OTP_MASTER_KEK, 0x00000000000000000000000000000003) ||  AES_ENCRYPT
+        (OTP_MASTER_KEK, 0x00000000000000000000000000000004); &#10;OR&#10; if
+        SBKEK_SEED != 0 then&#10;     SB_KEK[255:0] = AES_ENCRYPT (OTP_MASTER_KEK,
+        SBKEK_SEED[255:0]);&#10;&#10;- OTFAD_KEK[127:0] = AES_ENCRYPT
+        (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0]);
+    - name: RKTH
+      width: 256
+      reverse: 1
+      config_as_hexstring: True
+      description: "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||
+        exponent).&#10;For i in 0..3:&#10;  Let M[i] = BE(Modulus i)&#10;  Let
+        E[i] = BE(Exponent i)&#10;  Let RKH[i] = SHA256( M[i] || E[i] )&#10;  Let
+        RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&#10;Note:
+        Documentation update needed when using blhost due to endianness issue."

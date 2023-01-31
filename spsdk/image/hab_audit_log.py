@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -186,7 +186,7 @@ class HabEngine(Enum):
     HAB_ENG_SW = (0xFF, "Software engine")
 
 
-def check_reserved_regions(log_addr: int, reserved_regions: list = None) -> bool:
+def check_reserved_regions(log_addr: int, reserved_regions: Optional[list] = None) -> bool:
     """Checks if the address of the log is not in conflict with CPU reserved regions.
 
     :param log_addr: address of the RAM, where we want to store hab log

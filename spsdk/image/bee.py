@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Contains support for BEE encryption for RT10xx devices."""
@@ -67,7 +67,7 @@ class BeeBaseClass:
     @property
     def size(self) -> int:
         """:return: size of the exported binary data in bytes."""
-        return self.__class__._size()
+        return self._size()
 
     def info(self) -> str:
         """Info method.
@@ -644,7 +644,7 @@ class BeeNxp:
         :return: List of supported families.
         """
         database = Database(BEE_DATABASE_FILE)
-        return database.get_devices()
+        return database.devices.device_names
 
     @staticmethod
     def get_validation_schemas() -> List[Dict[str, Any]]:
@@ -686,7 +686,9 @@ class BeeNxp:
                     )
 
     @staticmethod
-    def load_from_config(config: Dict[str, Any], search_paths: List[str] = None) -> "BeeNxp":
+    def load_from_config(
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "BeeNxp":
         """Converts the configuration into an BEE image object.
 
         "config" contains dictionary of configurations.

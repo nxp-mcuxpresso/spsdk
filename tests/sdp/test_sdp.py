@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -34,6 +34,9 @@ class VirtualDevice(SDPInterface):
         return self.respond_sequence.pop(0)
 
     def write(self, packet):
+        pass
+
+    def conf(self, config: dict) -> None:
         pass
 
     def info(self):

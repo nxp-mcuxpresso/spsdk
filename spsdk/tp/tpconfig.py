@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust Provisioning HOST application support."""
 
 import logging
-from typing import Callable
+from typing import Callable, Optional
 
 from spsdk.utils.misc import Timeout
 
@@ -32,7 +32,9 @@ class TrustProvisioningConfig:
         self.tpdev = tpdev
         self.info_print = info_print
 
-    def upload(self, user_config: dict, user_config_dir: str = None, timeout: int = 60) -> None:
+    def upload(
+        self, user_config: dict, user_config_dir: Optional[str] = None, timeout: int = 60
+    ) -> None:
         """Upload the user data into the provisioning device."""
         try:
             loc_timeout = Timeout(timeout=timeout, units="s")
@@ -48,30 +50,6 @@ class TrustProvisioningConfig:
         except:
             self.info_print(
                 f"TP device personalization FAILED in {loc_timeout.get_consumed_time_ms()} ms."
-            )
-            raise
-        finally:
-            logger.debug("Closing TP device")
-            self.tpdev.close()
-
-    def upload_manufacturing(
-        self, user_config: dict, user_config_dir: str = None, timeout: int = 60
-    ) -> None:
-        """Upload the manufacturing data into the provisioning device."""
-        try:
-            loc_timeout = Timeout(timeout=timeout, units="s")
-            logger.debug("Opening TP device")
-            self.tpdev.open()
-
-            self.info_print("Upload manufacturing data to TP target")
-            self.tpdev.upload_manufacturing(config_data=user_config, config_dir=user_config_dir)
-
-            self.info_print(
-                f"TP device pre-personalization ended correctly in {loc_timeout.get_consumed_time_ms()} ms."
-            )
-        except:
-            self.info_print(
-                f"TP device pre-personalization FAILED in {loc_timeout.get_consumed_time_ms()} ms."
             )
             raise
         finally:

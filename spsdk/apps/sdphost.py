@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,6 +11,7 @@ import inspect
 import json
 import logging
 import sys
+from typing import Optional
 
 import click
 
@@ -31,7 +32,7 @@ from spsdk.sdp.commands import ResponseValue
 
 
 @click.group(name="sdphost", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True, is_sdp=True)
+@isp_interfaces(uart=True, usb=True, is_sdp=True, default_timeout=10000)
 @spsdk_apps_common_options
 @click.pass_context
 def main(
@@ -171,7 +172,7 @@ def set_baudrate(ctx: click.Context, baudrate: int) -> None:
 
 
 def display_output(
-    response: list, status_code: int, use_json: bool = False, extra_output: str = None
+    response: list, status_code: int, use_json: bool = False, extra_output: Optional[str] = None
 ) -> None:
     """Printout the response.
 
@@ -198,7 +199,7 @@ def display_output(
             print(extra_output)
 
 
-def decode_status_code(status_code: int = None) -> str:
+def decode_status_code(status_code: Optional[int] = None) -> str:
     """Returns a stringified representation of status code.
 
     :param status_code: SDP status code

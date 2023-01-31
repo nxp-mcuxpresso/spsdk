@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Implementation of raw AHAB container support.
@@ -10,17 +10,19 @@ This module represents a generic AHAB container implementation. You can set the
 containers values at will. From this perspective, consult with your reference
 manual of your device for allowed values.
 """
+# pylint: disable=too-many-lines
 import datetime
 import logging
 import math
 import os
 from struct import calcsize, pack, unpack
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ruamel.yaml import CommentedMap as CM
 from ruamel.yaml import CommentedSeq as CS
 
 from spsdk import version as spsdk_version
+from spsdk.apps.utils.utils import get_key
 from spsdk.crypto import (
     EllipticCurvePublicKey,
     Encoding,
@@ -50,6 +52,7 @@ from spsdk.utils.easy_enum import Enum
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     align,
+    align_block,
     check_range,
     extend_block,
     find_file,
@@ -57,6 +60,7 @@ from spsdk.utils.misc import (
     reverse_bytes_in_longs,
     value_to_bytes,
     value_to_int,
+    write_file,
 )
 from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
 
@@ -69,6 +73,12 @@ UINT32 = "L"
 UINT64 = "Q"
 RESERVED = 0
 CONTAINER_ALIGNMENT = 8
+START_IMAGE_ADDRESS = 0x2000
+
+
+IMAGE_TYPE_XIP = "xip"
+IMAGE_TYPE_NON_XIP = "non_xip"
+IMAGE_TYPE_SERIAL_DOWNLOADER = "serial_downloader"
 
 
 class AHABTags(Enum):
@@ -169,14 +179,15 @@ class ImageArrayEntry(Container):
     def __init__(
         self,
         parent: "AHABContainer",
-        image: bytes = None,
+        image: Optional[bytes] = None,
         image_offset: int = 0,
         load_address: int = 0,
         entry_point: int = 0,
         flags: int = 0,
         image_meta_data: int = 0,
-        image_hash: bytes = None,
-        image_iv: bytes = None,
+        image_hash: Optional[bytes] = None,
+        image_iv: Optional[bytes] = None,
+        already_encrypted_image: bool = False,
     ) -> None:
         """Class object initializer.
 
@@ -191,18 +202,26 @@ class ImageArrayEntry(Container):
         :param image_hash: SHA of image (512 bits) in big endian. Left
             aligned and padded with zeroes for hash sizes below 512 bits.
         :param image_iv: SHA256 of plain text image (256 bits) in big endian.
+        :param already_encrypted_image: The input image is already encrypted.
             Used only for encrypted images.
         """
         self.parent = parent
-        self.image = image or b""
+        self.flags = flags
+        input_image = align_block(data=image or b"", alignment=16, padding=RESERVED)
+        self.plain_image = input_image if not already_encrypted_image else b""
+        self.encrypted_image = input_image if already_encrypted_image else b""
+        self.already_encrypted_image = already_encrypted_image
         self.image_offset = image_offset
-        self.image_size = len(self.image) if image else 0
+        self.image_size = len(input_image) if image else 0
         self.load_address = load_address
         self.entry_point = entry_point
-        self.flags = flags
         self.image_meta_data = image_meta_data
         self.image_hash = image_hash
-        self.image_iv = image_iv or bytes(self.IV_LEN)
+        self.image_iv = (
+            image_iv or crypto_backend().hash(self.plain_image, algorithm="sha256")
+            if self.flags_is_encrypted
+            else bytes(self.IV_LEN)
+        )
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, ImageArrayEntry):
@@ -220,6 +239,23 @@ class ImageArrayEntry(Container):
                 return True
 
         return False
+
+    @property
+    def image(self) -> bytes:
+        """Image data for this Image array entry.
+
+        The class decide by flags if encrypted of plain data has been returned.
+
+        :raises SPSDKError: Invalid Image - Image is not encrypted yet.
+        :return: Image bytes.
+        """
+        if self.flags_is_encrypted and not self.already_encrypted_image:
+            raise SPSDKError("Image is NOT encrypted, yet.")
+
+        if self.flags_is_encrypted:
+            return self.encrypted_image
+        else:
+            return self.plain_image
 
     # We need to extend the format, as the base provides only endianness.
     @classmethod
@@ -245,6 +281,8 @@ class ImageArrayEntry(Container):
             self.HASH_LEN,
             padding=0,
         )
+        if not self.image_iv and self.flags_is_encrypted:
+            self.image_iv = crypto_backend().hash(self.plain_image, algorithm="sha256")
 
     @staticmethod
     def create_meta(start_cpu_id: int = 0, mu_cpu_id: int = 0, start_partition_id: int = 0) -> int:
@@ -384,11 +422,10 @@ class ImageArrayEntry(Container):
         # In case the hash is shorter, the pack() (in little endian mode) should grant, that the
         # hash is left aligned and padded with zeros due to the '64s' formatter.
         # iv: fixed at 256 bits.
-        image_offset = self.image_offset
 
         data = pack(
             self._format(),
-            image_offset,
+            self.image_offset,
             self.image_size,
             self.load_address,
             self.entry_point,
@@ -405,7 +442,6 @@ class ImageArrayEntry(Container):
 
         :raises SPSDKValueError: Invalid any value of Image Array entry
         """
-        super().validate()
         if self.image is None or len(self.image) != self.image_size:
             raise SPSDKValueError("Image Entry: Invalid Image binary.")
         if self.image_offset is None or not check_range(self.image_offset, end=(1 << 32) - 1):
@@ -427,14 +463,6 @@ class ImageArrayEntry(Container):
         ):
             raise SPSDKValueError("Image Entry: Invalid Image Hash.")
 
-    def get_image_data(self) -> bytes:
-        """Get the image data block.
-
-        Those are image data that is described by Image Array Entry.
-        :return: Image data in bytes.
-        """
-        return self.image
-
     @staticmethod
     def parse(parent: "AHABContainer", binary: bytes, offset: int = 0) -> "ImageArrayEntry":
         """Parse input binary chunk to the container object.
@@ -448,7 +476,11 @@ class ImageArrayEntry(Container):
         """
         binary_size = len(binary)
         # Just updates offsets from AHAB Image start As is feature of none xip containers
-        container_offset = parent.container_offset if parent.parent.image_type == "non_xip" else 0
+        container_offset = (
+            parent.container_offset
+            if parent.parent.image_type in (IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER)
+            else 0
+        )
 
         ImageArrayEntry._check_fixed_input_length(binary[offset:])
         (
@@ -491,6 +523,10 @@ class ImageArrayEntry(Container):
             image_meta_data=image_meta_data,
             image_hash=image_hash,
             image_iv=image_iv,
+            already_encrypted_image=bool(
+                (flags >> ImageArrayEntry.FLAGS_IS_ENCRYPTED_OFFSET)
+                & ((1 << ImageArrayEntry.FLAGS_IS_ENCRYPTED_SIZE) - 1)
+            ),
         )
 
     @staticmethod
@@ -504,7 +540,7 @@ class ImageArrayEntry(Container):
         :return: Container Header Image Array Entry object.
         """
         image_path = config.get("image_path")
-        search_paths = parent.parent.search_paths
+        search_paths = parent.search_paths
         assert isinstance(image_path, str)
         is_encrypted = config.get("is_encrypted", False)
         meta_data = ImageArrayEntry.create_meta(
@@ -513,11 +549,6 @@ class ImageArrayEntry(Container):
             value_to_int(config.get("meta_data_start_partition_id", 0)),
         )
         image_data = load_binary(image_path, search_paths=search_paths)
-        iv_data = None
-        # if is_encrypted:
-        #     iv_path = config.get("iv_path")
-        #     assert isinstance(iv_path, str)
-        #     iv_data = value_to_bytes("0x" + load_text(iv_path, search_paths=search_paths))
         flags = ImageArrayEntry.create_flags(
             image_type=config.get("image_type", "executable"),
             core_id=config.get("core_id", "cortex-m33"),
@@ -533,7 +564,7 @@ class ImageArrayEntry(Container):
             entry_point=value_to_int(config.get("entry_point", 0)),
             flags=flags,
             image_meta_data=meta_data,
-            image_iv=iv_data,  # TODO check if iv _data are in proper format
+            image_iv=None,  # IV data are updated by UpdateFields function
         )
 
     def create_config(self, index: int, image_index: int, data_path: str) -> CM:
@@ -545,9 +576,18 @@ class ImageArrayEntry(Container):
         :return: Configuration dictionary.
         """
         ret_cfg = CM()
-        image_name = f"container{index}_image{image_index}_{self.flags_image_type}.bin"
-        with open(os.path.join(data_path, image_name), "wb") as f:
-            f.write(self.get_image_data())
+        image_name = "N/A"
+        if self.plain_image:
+            image_name = f"container{index}_image{image_index}_{self.flags_image_type}.bin"
+            write_file(self.plain_image, os.path.join(data_path, image_name), "wb")
+        if self.encrypted_image:
+            image_name_encrypted = (
+                f"container{index}_image{image_index}_{self.flags_image_type}_encrypted.bin"
+            )
+            write_file(self.encrypted_image, os.path.join(data_path, image_name_encrypted), "wb")
+            if image_name == "N/A":
+                image_name = image_name_encrypted
+
         ret_cfg["image_path"] = image_name
         ret_cfg["image_offset"] = hex(self.image_offset)
         ret_cfg["load_address"] = hex(self.load_address)
@@ -595,11 +635,11 @@ class SRKRecord(HeaderContainerInversed):
     HASH_ALGORITHM = {"sha256": 0x0, "sha384": 0x1, "sha512": 0x2}
     ECC_KEY_TYPE = {"secp521r1": 0x3, "secp384r1": 0x2, "secp256r1": 0x1, "prime256v1": 0x1}
     RSA_KEY_TYPE = {2048: 0x5, 4096: 0x7}
-    KEY_SIZES = {0x1: (32, 32), 0x2: (48, 48), 0x3: (64, 64), 0x5: (128, 128), 0x7: (256, 256)}
+    KEY_SIZES = {0x1: (32, 32), 0x2: (48, 48), 0x3: (66, 66), 0x5: (128, 128), 0x7: (256, 256)}
 
     def __init__(
         self,
-        src_key: PublicKey = None,
+        src_key: Optional[PublicKey] = None,
         signing_algorithm: str = "rsa",
         hash_type: str = "sha256",
         key_size: int = 0,
@@ -690,7 +730,7 @@ class SRKRecord(HeaderContainerInversed):
 
         :raises SPSDKValueError: Invalid any value of Image Array entry
         """
-        super().validate()
+        self.validate_header()
         if self.hash_algorithm is None or not check_range(self.hash_algorithm, end=2):
             raise SPSDKValueError(f"SRK record: Invalid Hash algorithm: {self.hash_algorithm}")
 
@@ -740,14 +780,12 @@ class SRKRecord(HeaderContainerInversed):
             )
 
     @staticmethod
-    def create_from_key(
-        public_key: PublicKey, hash_type: str = "sha256", srk_flags: int = 0
-    ) -> "SRKRecord":
+    def create_from_key(public_key: PublicKey, srk_flags: int = 0) -> "SRKRecord":
         """Create instance from key data.
 
         :param public_key: Loaded public key.
-        :param hash_type: HASH type for the key, defaults to "sha256"
         :param srk_flags: SRK flags for key.
+        :raises SPSDKValueError: Unsupported keys size is detected.
         """
         if isinstance(public_key, RSAPublicKey):
             par_n: int = public_key.public_numbers().n
@@ -756,7 +794,7 @@ class SRKRecord(HeaderContainerInversed):
             return SRKRecord(
                 src_key=public_key,
                 signing_algorithm="rsa",
-                hash_type=hash_type,
+                hash_type="sha256",
                 key_size=key_size,
                 srk_flags=srk_flags,
                 crypto_param1=par_n.to_bytes(
@@ -771,6 +809,10 @@ class SRKRecord(HeaderContainerInversed):
         par_x: int = public_key.public_numbers().x
         par_y: int = public_key.public_numbers().y
         key_size = SRKRecord.ECC_KEY_TYPE[public_key.curve.name]
+
+        if not public_key.key_size in [256, 384, 521]:
+            raise SPSDKValueError(f"Unsupported ECC key for AHAB container: {public_key.key_size}")
+        hash_type = {256: "sha256", 384: "sha384", 521: "sha512"}[public_key.key_size]
 
         return SRKRecord(
             signing_algorithm="ecdsa",
@@ -893,15 +935,12 @@ class SRKTable(HeaderContainerInversed):
     VERSION = 0x42
     SRK_RECORDS_CNT = 4
 
-    def __init__(self, parent: "SignatureBlock", srk_records: List[SRKRecord] = None) -> None:
+    def __init__(self, srk_records: Optional[List[SRKRecord]] = None) -> None:
         """Class object initializer.
 
-        :param parent: AHAB Signature Block parent object.
         :param srk_records: list of SRKRecord objects.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
-        self.parent = parent
-        assert self.parent
         self._srk_records: List[SRKRecord] = srk_records or []
         self.length = len(self)
 
@@ -910,13 +949,12 @@ class SRKTable(HeaderContainerInversed):
         self._srk_records.clear()
         self.length = -1
 
-    def add_record(self, public_key: PublicKey, hash_type: str = "sha256") -> None:
+    def add_record(self, public_key: PublicKey) -> None:
         """Add SRK table record.
 
         :param public_key: Loaded public key.
-        :param hash_type: HASH type for the key, defaults to "sha256"
         """
-        self._srk_records.append(SRKRecord.create_from_key(public_key, hash_type))
+        self._srk_records.append(SRKRecord.create_from_key(public_key))
         self.length = len(self)
 
     def __eq__(self, other: object) -> bool:
@@ -974,12 +1012,13 @@ class SRKTable(HeaderContainerInversed):
 
         return data
 
-    def validate(self) -> None:
+    def validate(self, data: Dict[str, Any]) -> None:
         """Validate object data.
 
+        :param data: Additional validation data.
         :raises SPSDKValueError: Invalid any value of Image Array entry
         """
-        super().validate()
+        self.validate_header()
         if self._srk_records is None or len(self._srk_records) != self.SRK_RECORDS_CNT:
             raise SPSDKValueError(f"SRK table: Invalid SRK records: {self._srk_records}")
 
@@ -992,30 +1031,23 @@ class SRKTable(HeaderContainerInversed):
             (x.version, x.hash_algorithm, x.key_size, x.length) for x in self._srk_records
         ]
 
-        if not all(srk_records_info[0][0] != x[0] for x in srk_records_info):
-            raise SPSDKValueError(
-                f"SRK table: SRK records haven't same Signing algorithm: {[x[0] for x in srk_records_info]}"
-            )
-        if not all(srk_records_info[0][1] != x[1] for x in srk_records_info):
-            raise SPSDKValueError(
-                f"SRK table: SRK records haven't same Hash algorithm: {[x[1] for x in srk_records_info]}"
-            )
-        if not all(srk_records_info[0][2] != x[2] for x in srk_records_info):
-            raise SPSDKValueError(
-                f"SRK table: SRK records haven't same Key Size: {[x[2] for x in srk_records_info]}"
-            )
-        if not all(srk_records_info[0][3] != x[3] for x in srk_records_info):
-            raise SPSDKValueError(
-                f"SRK table: SRK records haven't same Length: {[x[3] for x in srk_records_info]}"
-            )
+        messages = ["Signing algorithm", "Hash algorithm", "Key Size", "Length"]
+        for i in range(4):
+            if not all(srk_records_info[0][i] == x[i] for x in srk_records_info):
+                raise SPSDKValueError(
+                    f"SRK table: SRK records haven't same {messages[i]}: {[x[i] for x in srk_records_info]}"
+                )
 
-        assert self.parent.parent
-        if self._srk_records[0].hash_algorithm not in self.parent.parent.parent.srkh_sha_supports:
-            raise SPSDKValueError(
-                "SRK table: SRK records haven't supported hash algorithm:"
-                f" Used:{self._srk_records[0].hash_algorithm} is not member of"
-                f" {self.parent.parent.parent.srkh_sha_supports}"
-            )
+        if "srkh_sha_supports" in data.keys():
+            if (
+                get_key_by_val(SRKRecord.HASH_ALGORITHM, self._srk_records[0].hash_algorithm)
+                not in data["srkh_sha_supports"]
+            ):
+                raise SPSDKValueError(
+                    "SRK table: SRK records haven't supported hash algorithm:"
+                    f" Used:{self._srk_records[0].hash_algorithm} is not member of"
+                    f" {data['srkh_sha_supports']}"
+                )
         # Check container length
         if self.length != len(self):
             raise SPSDKValueError(
@@ -1023,10 +1055,9 @@ class SRKTable(HeaderContainerInversed):
             )
 
     @staticmethod
-    def parse(parent: "SignatureBlock", binary: bytes, offset: int = 0) -> "SRKTable":
+    def parse(binary: bytes, offset: int = 0) -> "SRKTable":
         """Parse input binary chunk to the container object.
 
-        :param parent: AHAB Signature Block parent object.
         :param binary: Binary data with SRK table block to parse.
         :param offset: Offset to SRK table block data, default is 0.
         :raises SPSDKLengthError: Invalid length of SRK table data block.
@@ -1048,7 +1079,7 @@ class SRKTable(HeaderContainerInversed):
             srk_rec_offset += srk_rec_size
             srk_records.append(srk_record)
 
-        return SRKTable(parent=parent, srk_records=srk_records)
+        return SRKTable(srk_records=srk_records)
 
     def create_config(self, index: int, data_path: str) -> CM:
         """Create configuration of the AHAB Image SRK Table.
@@ -1060,9 +1091,6 @@ class SRKTable(HeaderContainerInversed):
         ret_cfg = CM()
         cfg_srks = CS()
 
-        ret_cfg["hash_type"] = get_key_by_val(
-            SRKRecord.HASH_ALGORITHM, self._srk_records[0].hash_algorithm
-        )
         for ix_srk, srk in enumerate(self._srk_records):
             filename = f"container{index}_srk_public_key{ix_srk}_{srk.get_key_name()}.PEM"
             srk.store_public_key(os.path.join(data_path, filename))
@@ -1072,26 +1100,24 @@ class SRKTable(HeaderContainerInversed):
         return ret_cfg
 
     @staticmethod
-    def load_from_config(parent: "SignatureBlock", config: Dict[str, Any]) -> "SRKTable":
+    def load_from_config(
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "SRKTable":
         """Converts the configuration option into an AHAB image object.
 
         "config" content of container configurations.
 
-        :param parent: AHAB Signature Block parent object.
         :param config: array of AHAB containers configuration dictionaries.
+        :param search_paths: List of paths where to search for the file, defaults to None
         :return: SRK Table object.
         """
-        srk_table = SRKTable(parent=parent)
-        srk_hash = config.get("hash_type")
+        srk_table = SRKTable()
         srk_list = config.get("srk_array")
         assert isinstance(srk_list, list)
         for srk_key in srk_list:
             assert isinstance(srk_key, str)
-            assert isinstance(srk_hash, str)
-            assert parent.parent
-            search_paths = parent.parent.parent.search_paths
             srk_key_path = find_file(srk_key, search_paths=search_paths)
-            srk_table.add_record(extract_public_key(srk_key_path), srk_hash)
+            srk_table.add_record(extract_public_key(srk_key_path))
         return srk_table
 
 
@@ -1115,7 +1141,9 @@ class ContainerSignature(HeaderContainer):
     TAG = AHABTags.SIGNATURE
     VERSION = 0x00
 
-    def __init__(self, signature_data: bytes = None, signing_key: PrivateKey = None) -> None:
+    def __init__(
+        self, signature_data: Optional[bytes] = None, signing_key: Optional[PrivateKey] = None
+    ) -> None:
         """Class object initializer.
 
         :param signature_data: signature.
@@ -1209,7 +1237,7 @@ class ContainerSignature(HeaderContainer):
 
         :raises SPSDKValueError: Invalid any value of Image Array entry
         """
-        super().validate()
+        self.validate_header()
         if self._signature_data is None or len(self._signature_data) < 20:
             raise SPSDKValueError(
                 f"Signature: Invalid Signature data: 0x{self.signature_data.hex()}"
@@ -1239,7 +1267,7 @@ class ContainerSignature(HeaderContainer):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], search_paths: List[str] = None
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "ContainerSignature":
         """Converts the configuration option into an AHAB image object.
 
@@ -1473,7 +1501,7 @@ class Certificate(HeaderContainer):
 
         :raises SPSDKValueError: Invalid any value of Image Array entry
         """
-        super().validate()
+        self.validate_header()
         if self._permissions is None or not check_range(self._permissions, end=0xFF):
             raise SPSDKValueError(f"Certificate: Invalid Permission data: {self._permissions}")
         if self.public_key is None:
@@ -1568,15 +1596,14 @@ class Certificate(HeaderContainer):
         filename = f"container{index}_certificate_public_key_{self.public_key.get_key_name()}.PEM"
         self.public_key.store_public_key(os.path.join(data_path, filename))
         ret_cfg["public_key"] = filename
-        ret_cfg["hash_type"] = get_key_by_val(
-            self.public_key.HASH_ALGORITHM, self.public_key.hash_algorithm
-        )
         ret_cfg["signing_key"] = "N/A"
 
         return ret_cfg
 
     @staticmethod
-    def load_from_config(config: Dict[str, Any], search_paths: List[str] = None) -> "Certificate":
+    def load_from_config(
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "Certificate":
         """Converts the configuration option into an AHAB image signature block certificate object.
 
         "config" content of container configurations.
@@ -1594,9 +1621,8 @@ class Certificate(HeaderContainer):
         assert isinstance(cert_signing_key_path, str)
         cert_public_key_path = find_file(cert_public_key_path, search_paths=search_paths)
         cert_public_key = extract_public_key(cert_public_key_path)
-        cert_hash_algorithm = config.get("hash_type", "sha256")
         cert_signing_key = load_binary(cert_signing_key_path, search_paths=search_paths)
-        cert_srk_rec = SRKRecord.create_from_key(cert_public_key, cert_hash_algorithm)
+        cert_srk_rec = SRKRecord.create_from_key(cert_public_key)
         return Certificate(
             permissions=Certificate.create_permissions(cert_permissions_list),
             uuid=cert_uuid,
@@ -1624,41 +1650,57 @@ class Blob(HeaderContainer):
 
     TAG = AHABTags.BLOB
     VERSION = 0x00
-    MODE = 0x66  # CBC-MAC
-    ALGORITHM = 0x55  # AES
     FLAGS = 0x80  # KEK key flag
+    SUPPORTED_KEY_SIZES = [128, 192, 256]
 
     def __init__(
         self,
-        flags: int = 0,
+        flags: int = 0x80,
         size: int = 0,
-        wrapped_key: bytes = None,
+        dek: Optional[bytes] = None,
+        mode: Optional[int] = None,
+        algorithm: Optional[int] = None,
+        dek_keyblob: Optional[bytes] = None,
     ) -> None:
         """Class object initializer.
 
-        :param size: key size ID.
-        :param wrapped_key: wrapped key.
+        :param flags: Keyblob flags
+        :param size: key size [128,192,256]
+        :param dek: DEK key
+        :param mode: DEK BLOB mode
+        :param algorithm: Encryption algorithm
+        :param dek_keyblob: DEK keyblob
         """
         super().__init__(tag=self.TAG, length=56 + size // 8, version=self.VERSION)
-        self._mode = self.MODE
-        self._algorithm = self.ALGORITHM
+        self.mode = mode
+        self.algorithm = algorithm
         self._size = size
         self.flags = flags
-        self._wrapped_key = wrapped_key or b""
+        self.dek = dek
+        self.dek_keyblob = dek_keyblob or b""
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Blob):
             if (
                 super().__eq__(other)  # pylint: disable=too-many-boolean-expressions
-                and self._mode == other._mode
-                and self._algorithm == other._algorithm
+                and self.mode == other.mode
+                and self.algorithm == other.algorithm
                 and self._size == other._size
                 and self.flags == other.flags
-                and self._wrapped_key == other._wrapped_key
+                and self.dek_keyblob == other.dek_keyblob
             ):
                 return True
 
         return False
+
+    @staticmethod
+    def compute_keyblob_size(key_size: int) -> int:
+        """Compute Keyblob size.
+
+        :param key_size: Input RSA key size in bits
+        :return: Keyblob size in bytes.
+        """
+        return (key_size // 8) + 48
 
     @classmethod
     def _format(cls) -> str:
@@ -1671,7 +1713,7 @@ class Blob(HeaderContainer):
         )
 
     def __len__(self) -> int:
-        # return super()._total_length() + len(self._wrapped_key)
+        # return super()._total_length() + len(self.dek_keyblob)
         return self.length
 
     def export(self) -> bytes:
@@ -1679,19 +1721,18 @@ class Blob(HeaderContainer):
 
         :return: bytes representing Signature Block Blob.
         """
-        # TODO the order of parameters in pack may change, not yet specified in RM
         blob = (
             pack(
                 self._format(),
-                self.tag,
-                self.length,
                 self.version,
-                self._mode,
-                self._algorithm,
-                self._size,
+                self.length,
+                self.tag,
                 self.flags,
+                self._size // 8,
+                self.algorithm,
+                self.mode,
             )
-            + self._wrapped_key
+            + self.dek_keyblob
         )
 
         return blob
@@ -1701,10 +1742,20 @@ class Blob(HeaderContainer):
 
         :raises SPSDKValueError: Invalid any value of AHAB Blob
         """
-        super().validate()
-        if self._wrapped_key is None or len(self._wrapped_key) == 0:
+        self.validate_header()
+
+        if self._size not in self.SUPPORTED_KEY_SIZES:
+            raise SPSDKValueError("AHAB Blob: Invalid key size.")
+        if self.mode is None:
+            raise SPSDKValueError("AHAB Blob: Invalid mode.")
+        if self.algorithm is None:
+            raise SPSDKValueError("AHAB Blob: Invalid algorithm.")
+        if self.dek and len(self.dek) != self._size // 8:
+            raise SPSDKValueError("AHAB Blob: Invalid DEK key size.")
+        if self.dek_keyblob is None or len(self.dek_keyblob) != self.compute_keyblob_size(
+            self._size
+        ):
             raise SPSDKValueError("AHAB Blob: Invalid Wrapped key.")
-        # TODO finish the Encryption system in AHAB :-)
 
     @staticmethod
     def parse(binary: bytes, offset: int = 0) -> "Blob":
@@ -1715,23 +1766,20 @@ class Blob(HeaderContainer):
         :return: Object recreated from the binary data.
         """
         Blob._check_container_head(binary[offset:])
-        # TODO the order of parameters may change, as this is not yet defined in RM
         (
-            _,  # tag
-            container_length,
             _,  # version
-            _,  # mode
-            _,  # algorithm
-            size,
+            container_length,
+            _,  # tag
             flags,
+            size,
+            algorithm,  # algorithm
+            mode,  # mode
         ) = unpack(Blob._format(), binary[offset : offset + Blob.fixed_length()])
 
-        wrapped_key = binary[offset + Blob.fixed_length() : offset + container_length]
+        dek_keyblob = binary[offset + Blob.fixed_length() : offset + container_length]
 
         return Blob(
-            size=size,
-            flags=flags,
-            wrapped_key=wrapped_key,
+            size=size * 8, flags=flags, dek_keyblob=dek_keyblob, mode=mode, algorithm=algorithm
         )
 
     def create_config(self, index: int, data_path: str) -> CM:
@@ -1742,25 +1790,70 @@ class Blob(HeaderContainer):
         :return: Configuration dictionary.
         """
         ret_cfg = CM()
-        assert self._wrapped_key
-        filename = f"container{index}_blob_wrapped_key.bin"
-        with open(os.path.join(data_path, filename), "w") as f:
-            f.write(self._wrapped_key.hex())
-        ret_cfg["wrapped_key_path"] = filename
+        assert self.dek_keyblob
+        filename = f"container{index}_dek_keyblob.bin"
+        write_file(self.export(), os.path.join(data_path, filename), "wb")
+        ret_cfg["dek_key_size"] = self._size
+        ret_cfg["dek_key"] = "N/A"
+        ret_cfg["dek_keyblob"] = filename
 
         return ret_cfg
 
     @staticmethod
-    def load_from_config(config: Dict[str, Any]) -> "Blob":
+    def load_from_config(
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "Blob":
         """Converts the configuration option into an AHAB image signature block blob object.
 
         "config" content of container configurations.
 
-        :param config: Blob configuration.
+        :param config: Blob configuration
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :raises SPSDKError: Invalid configuration - Invalid DEK Keyblob
         :return: Blob object.
         """
-        raise NotImplementedError
-        # return Blob()
+        dek_size = value_to_int(config.get("dek_key_size", 128))
+        dek_input = config.get("dek_key")
+        dek_keyblob_input = config.get("dek_keyblob")
+        assert dek_input, "Missing DEK value"
+        assert dek_keyblob_input, "Missing DEK KEYBLOB value"
+
+        dek = get_key(dek_input, dek_size // 8, search_paths)
+        dek_keyblob_value = get_key(
+            dek_keyblob_input, Blob.compute_keyblob_size(dek_size) + 8, search_paths
+        )
+        if not dek_keyblob_value:
+            raise SPSDKValueError("Invalid DEK Keyblob.")
+
+        keyblob = Blob.parse(dek_keyblob_value)
+        keyblob.dek = dek
+        return keyblob
+
+    def encrypt_data(self, iv: bytes, data: bytes) -> bytes:
+        """Encrypt data.
+
+        :param iv: Initial vector 128 bits length
+        :param data: Data to encrypt
+        :raises SPSDKError: Missing DEK
+        :return: Encrypted data
+        """
+        if not self.dek:
+            raise SPSDKError("The AHAB keyblob hasn't defined DEK to encrypt data")
+
+        return crypto_backend().aes_cbc_encrypt(self.dek, data, iv)
+
+    def decrypt_data(self, iv: bytes, encrypted_data: bytes) -> bytes:
+        """Encrypt data.
+
+        :param iv: Initial vector 128 bits length
+        :param encrypted_data: Data to decrypt
+        :raises SPSDKError: Missing DEK
+        :return: Plain data
+        """
+        if not self.dek:
+            raise SPSDKError("The AHAB keyblob hasn't defined DEK to encrypt data")
+
+        return crypto_backend().aes_cbc_decrypt(self.dek, encrypted_data, iv)
 
 
 class SignatureBlock(HeaderContainer):
@@ -1801,7 +1894,6 @@ class SignatureBlock(HeaderContainer):
 
     def __init__(
         self,
-        parent: "AHABContainer" = None,
         srk_table: Optional["SRKTable"] = None,
         container_signature: Optional["ContainerSignature"] = None,
         certificate: Optional["Certificate"] = None,
@@ -1809,14 +1901,12 @@ class SignatureBlock(HeaderContainer):
     ):
         """Class object initializer.
 
-        :param parent: AHAB Container parent object.
         :param srk_table: SRK table.
         :param container_signature: container signature.
         :param certificate: container certificate.
         :param blob: container blob.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
-        self.parent = parent
         self._srk_table_offset = 0
         self._certificate_offset = 0
         self._blob_offset = 0
@@ -1939,9 +2029,10 @@ class SignatureBlock(HeaderContainer):
 
         return signature_block
 
-    def validate(self) -> None:
+    def validate(self, data: Dict[str, Any]) -> None:
         """Validate object data.
 
+        :param data: Additional validation data.
         :raises SPSDKValueError: Invalid any value of Image Array entry
         """
 
@@ -1955,7 +2046,7 @@ class SignatureBlock(HeaderContainer):
                     f"Signature Block: Invalid {name} offset alignment: {offset} is not aligned to 64 bits!"
                 )
 
-        super().validate()
+        self.validate_header()
         if self.length != len(self):
             raise SPSDKValueError(
                 f"Signature Block: Invalid block length: {self.length} != {len(self)}"
@@ -1971,7 +2062,7 @@ class SignatureBlock(HeaderContainer):
 
         min_offset = self.fixed_length()
         if self.srk_table:
-            self.srk_table.validate()
+            self.srk_table.validate(data)
             check_offset("SRK table", min_offset, self._srk_table_offset)
             min_offset = self._srk_table_offset + len(self.srk_table)
         if self.signature:
@@ -1987,22 +2078,21 @@ class SignatureBlock(HeaderContainer):
             check_offset("Blob", min_offset, self._blob_offset)
             min_offset = self._blob_offset + len(self.blob)
 
-        if self.parent and self.signature and self.srk_table:
+        if "flag_used_srk_id" in data.keys() and self.signature and self.srk_table:
             public_keys = self.srk_table.get_source_keys()
             if public_keys:
                 assert self.signature._signing_key
                 srk_pair_id = get_matching_key_id(public_keys, self.signature._signing_key)
-                if srk_pair_id != self.parent.flag_used_srk_id:
+                if srk_pair_id != data["flag_used_srk_id"]:
                     raise SPSDKValueError(
-                        f"Signature Block: Configured SRK ID ({self.parent.flag_used_srk_id})"
+                        f"Signature Block: Configured SRK ID ({data['flag_used_srk_id']})"
                         f" doesn't match detected SRK ID for signing key ({srk_pair_id})."
                     )
 
     @staticmethod
-    def parse(parent: "AHABContainer", binary: bytes, offset: int = 0) -> "SignatureBlock":
+    def parse(binary: bytes, offset: int = 0) -> "SignatureBlock":
         """Parse input binary chunk to the container object.
 
-        :param parent: AHAB Container parent object.
         :param binary: Binary data with Signature block to parse.
         :param offset: Offset to Signature block data, default is 0.
         :return: Object recreated from the binary data.
@@ -2021,11 +2111,9 @@ class SignatureBlock(HeaderContainer):
             SignatureBlock._format(), binary[offset : offset + SignatureBlock.fixed_length()]
         )
 
-        signature_block = SignatureBlock(parent=parent)
+        signature_block = SignatureBlock()
         signature_block.srk_table = (
-            SRKTable.parse(signature_block, binary, offset + srk_table_offset)
-            if srk_table_offset
-            else None
+            SRKTable.parse(binary, offset + srk_table_offset) if srk_table_offset else None
         )
         signature_block.certificate = (
             Certificate.parse(binary, offset + certificate_offset) if certificate_offset else None
@@ -2040,46 +2128,44 @@ class SignatureBlock(HeaderContainer):
         return signature_block
 
     @staticmethod
-    def load_from_config(parent: "AHABContainer", config: Dict[str, Any]) -> "SignatureBlock":
+    def load_from_config(
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "SignatureBlock":
         """Converts the configuration option into an AHAB Signature block object.
 
         "config" content of container configurations.
 
-        :param parent: AHABContainer object.
         :param config: array of AHAB signature block configuration dictionaries.
+        :param search_paths: List of paths where to search for the file, defaults to None
         :return: AHAB Signature block object.
         """
-        signature_block = SignatureBlock(parent)
+        signature_block = SignatureBlock()
         # SRK Table
         srk_table_cfg = config.get("srk_table")
         signature_block.srk_table = (
-            SRKTable.load_from_config(signature_block, srk_table_cfg) if srk_table_cfg else None
+            SRKTable.load_from_config(srk_table_cfg, search_paths) if srk_table_cfg else None
         )
 
         # Container Signature
         signing_key_cfg = config.get("signing_key")
         signature_block.signature = (
-            ContainerSignature.load_from_config(config, parent.parent.search_paths)
-            if signing_key_cfg
-            else None
+            ContainerSignature.load_from_config(config, search_paths) if signing_key_cfg else None
         )
 
         # Certificate Block
         certificate_cfg = config.get("certificate")
         signature_block.certificate = (
-            Certificate.load_from_config(certificate_cfg, parent.parent.search_paths)
-            if certificate_cfg
-            else None
+            Certificate.load_from_config(certificate_cfg, search_paths) if certificate_cfg else None
         )
         # DEK blob
         blob_cfg = config.get("blob")
-        signature_block.blob = Blob.load_from_config(blob_cfg) if blob_cfg else None
+        signature_block.blob = Blob.load_from_config(blob_cfg, search_paths) if blob_cfg else None
 
         return signature_block
 
 
-class AHABContainer(HeaderContainer):
-    """Class representing AHAB container.
+class AHABContainerBase(HeaderContainer):
+    """Class representing AHAB container base class (common for Signed messages and AHAB Image).
 
     Container header::
 
@@ -2093,34 +2179,15 @@ class AHABContainer(HeaderContainer):
         |  # of images  |  Fuse version  |             SW version          |
         +---------------+----------------+---------------------------------+
         |              Reserved          |       Signature Block Offset    |
-        +----+---------------------------+---------------------------------+
-        | I  |image0: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
-        + m  |-------------------------------------------------------------+
-        | g  |image1: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
-        + .  |-------------------------------------------------------------+
-        | A  |...                                                          |
-        | r  |...                                                          |
-        | r  |                                                             |
-        + a  |-------------------------------------------------------------+
-        | y  |imageN: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
-        +----+-------------------------------------------------------------+
+        +--------------------------------+---------------------------------+
+        |             Payload (Signed Message or Image Array)              |
+        +------------------------------------------------------------------+
         |                      Signature block                             |
-        +------------------------------------------------------------------+
-        |                                                                  |
-        |                                                                  |
-        |                                                                  |
-        +------------------------------------------------------------------+
-        |                      Data block_0                                |
-        +------------------------------------------------------------------+
-        |                                                                  |
-        |                                                                  |
-        +------------------------------------------------------------------+
-        |                      Data block_n                                |
         +------------------------------------------------------------------+
 
     """
 
-    TAG = AHABTags.CONTAINER_HEADER
+    TAG = 0x00  # Need to be updated by child class
     VERSION = 0x00
     FLAGS_SRK_SET_OFFSET = 0
     FLAGS_SRK_SET_SIZE = 2
@@ -2132,43 +2199,34 @@ class AHABContainer(HeaderContainer):
 
     def __init__(
         self,
-        parent: "AHABImage",
         flags: int = 0,
         fuse_version: int = 0,
         sw_version: int = 0,
-        image_array: List["ImageArrayEntry"] = None,
-        signature_block: "SignatureBlock" = None,
-        container_offset: int = 0,
+        signature_block: Optional["SignatureBlock"] = None,
     ):
         """Class object initializer.
 
-        :parent: Parent AHABImage object.
         :param flags: flags.
         :param fuse_version: value must be equal to or greater than the version
             stored in the fuses to allow loading this container.
         :param sw_version: used by PHBC (Privileged Host Boot Companion) to select
             between multiple images with same fuse version field.
-        :param image_array: array of image entries, must be `number of images` long.
         :param signature_block: signature block.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
-        self.parent = parent
-        assert self.parent is not None
         self.flags = flags
         self.fuse_version = fuse_version
         self.sw_version = sw_version
-        self.image_array = image_array or []
         self.signature_block = signature_block or SignatureBlock()
-        self.container_offset = container_offset
+        self.search_paths: List[str] = []
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, AHABContainer):
+        if isinstance(other, AHABContainerBase):
             if (
                 super().__eq__(other)
                 and self.flags == other.flags
                 and self.fuse_version == other.fuse_version
                 and self.sw_version == other.sw_version
-                and self.image_array == other.image_array
             ):
                 return True
 
@@ -2226,7 +2284,338 @@ class AHABContainer(HeaderContainer):
         """
         # Constant size of Container header + Image array Entry table
         return align(
-            super().__len__() + len(self.image_array) * ImageArrayEntry.fixed_length(),
+            super().__len__(),
+            CONTAINER_ALIGNMENT,
+        )
+
+    @property
+    def image_array_len(self) -> int:
+        """Get image array length if available.
+
+        :return: Length of image array.
+        """
+        return 0
+
+    def __len__(self) -> int:
+        """Get total length of AHAB container.
+
+        :return: Size in bytes of AHAB Container.
+        """
+        # If there are no images just return length of header
+        return self.header_length()
+
+    def header_length(self) -> int:
+        """Length of AHAB Container header.
+
+        :return: Length in bytes of AHAB Container header.
+        """
+        return super().__len__() + len(  # This returns the fixed length of the container header
+            self.signature_block
+        )
+
+    # We need to extend the format, as the parent provides only endianness,
+    # and length.
+    @classmethod
+    def _format(cls) -> str:
+        return (
+            super()._format()
+            + UINT32  # Flags
+            + UINT16  # SW version
+            + UINT8  # Fuse version
+            + UINT8  # Number of Images
+            + UINT16  # Signature Block Offset
+            + UINT16  # Reserved
+        )
+
+    def update_fields(self) -> None:
+        """Updates all volatile information in whole container structure.
+
+        :raises SPSDKError: When inconsistent image array length is detected.
+        """
+        # Update the signature block to get overall size of it
+        self.signature_block.update_fields()
+        # Update the Container header length
+        self.length = self.header_length()
+        # Sign the image header
+        if self.flag_srk_set != "none":
+            assert self.signature_block.signature
+            self.signature_block.signature.sign(self.get_signature_data())
+
+    def get_signature_data(self) -> bytes:
+        """Returns binary data to be signed.
+
+        The container must be properly initialized, so the data are valid for
+        signing, i.e. the offsets, lengths etc. must be set prior invoking this
+        method, otherwise improper data will be signed.
+
+        The whole container gets serialized first. Afterwards the binary data
+        is sliced so only data for signing get's returned. The signature data
+        length is evaluated based on offsets, namely the signature block offset,
+        the container signature offset and the container signature fixed data length.
+
+        Signature data structure::
+
+            +---------------------------------------------------+----------------+
+            |                  Container header                 |                |
+            +---+---+-----------+---------+--------+------------+     Data       |
+            | S |   |    tag    | length  | length | version    |                |
+            | i |   +-----------+---------+--------+------------+                |
+            | g |   |                  flags                    |      to        |
+            | n |   +---------------------+---------------------+                |
+            | a |   |  srk table offset   | certificate offset  |                |
+            | t |   +---------------------+---------------------+     Sign       |
+            | u |   |     blob offset     | signature offset    |                |
+            | r |   +---------------------+---------------------+                |
+            | e |   |                   SRK Table               |                |
+            |   +---+-----------+---------+--------+------------+----------------+
+            | B | S |   tag     | length  | length | version    | Signature data |
+            | l | i +-----------+---------+--------+------------+ fixed length   |
+            | o | g |               Reserved                    |                |
+            | c | n +-------------------------------------------+----------------+
+            | k | a |               Signature data              |
+            |   | t |                                           |
+            |   | u |                                           |
+            |   | r |                                           |
+            |   | e |                                           |
+            +---+---+-------------------------------------------+
+
+        :raises SPSDKValueError: if Signature Block or SRK Table is missing.
+        :return: bytes representing data to be signed.
+        """
+        if not self.signature_block.signature or not self.signature_block.srk_table:
+            raise SPSDKValueError(
+                "Can't retrieve data block to sign. Signature or SRK table is missing!"
+            )
+
+        signature_offset = self._signature_block_offset + self.signature_block.signature_offset
+        return self._export()[:signature_offset]
+
+    def _export(self) -> bytes:
+        """Export container header into bytes.
+
+        :return: bytes representing container header content including the signature block.
+        """
+        return pack(
+            self._format(),
+            self.version,
+            self.length,
+            self.tag,
+            self.flags,
+            self.sw_version,
+            self.fuse_version,
+            self.image_array_len,
+            self._signature_block_offset,
+            RESERVED,  # Reserved field
+        )
+
+    def export(self) -> bytes:
+        """Export the binary images into one chunk on respective offsets.
+
+        The fist image starts at offset 0. To append the serialized images to
+        the serialized container header, the container header must be padded with
+        extra zeros to have the images at proper offset.
+
+        If the container has no images, the serializer returns empty binary.
+
+        :raises SPSDKValueError: if the number of images doesn't correspond the the number of
+            entries in image array info.
+        :return: images exported into single binary
+        """
+        return self._export()
+
+    def validate(self, data: Dict[str, Any]) -> None:
+        """Validate object data.
+
+        :param data: Additional validation data.
+        :raises SPSDKValueError: Invalid any value of Image Array entry
+        """
+        self.validate_header()
+
+        if self.flags is None or not check_range(self.flags, end=(1 << 32) - 1):
+            raise SPSDKValueError(f"Container Header: Invalid flags: {hex(self.flags)}")
+        if self.sw_version is None or not check_range(self.sw_version, end=(1 << 16) - 1):
+            raise SPSDKValueError(f"Container Header: Invalid SW version: {hex(self.sw_version)}")
+        if self.fuse_version is None or not check_range(self.fuse_version, end=(1 << 8) - 1):
+            raise SPSDKValueError(
+                f"Container Header: Invalid Fuse version: {hex(self.fuse_version)}"
+            )
+        self.signature_block.validate(data)
+
+    @staticmethod
+    def _parse(binary: bytes, offset: int = 0) -> Tuple[int, int, int, int, int]:
+        """Parse input binary chunk to the container object.
+
+        :param parent: AHABImage object.
+        :param binary: Binary data with Container block to parse.
+        :param offset: Offset to Container block data, default is 0.
+        :return: Object recreated from the binary data.
+        """
+        AHABContainer._check_container_head(binary[offset:])
+        image_format = AHABContainer._format()
+        (
+            _,  # version
+            _,  # container_length
+            _,  # tag
+            flags,
+            sw_version,
+            fuse_version,
+            number_of_images,
+            signature_block_offset,
+            _,  # reserved
+        ) = unpack(image_format, binary[offset : offset + AHABContainer.fixed_length()])
+
+        return (flags, sw_version, fuse_version, number_of_images, signature_block_offset)
+
+    def _create_config(self, index: int, data_path: str) -> CM:
+        """Create configuration of the AHAB Image.
+
+        :param index: Container index.
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration dictionary.
+        """
+        cfg = CM()
+
+        cfg["srk_set"] = self.flag_srk_set
+        cfg["used_srk_id"] = self.flag_used_srk_id
+        cfg["srk_revoke_mask"] = self.flag_srk_revoke_mask
+        cfg["fuse_version"] = self.fuse_version
+        cfg["sw_version"] = self.sw_version
+        cfg["signing_key"] = "N/A"
+
+        if self.signature_block.srk_table:
+            cfg["srk_table"] = self.signature_block.srk_table.create_config(index, data_path)
+
+        if self.signature_block.certificate:
+            cfg["certificate"] = self.signature_block.certificate.create_config(
+                index, data_path, self.flag_srk_set
+            )
+
+        if self.signature_block.blob:
+            cfg["blob"] = self.signature_block.blob.create_config(index, data_path)
+
+        return cfg
+
+    def load_from_config_generic(self, config: Dict[str, Any]) -> None:
+        """Converts the configuration option into an AHAB image object.
+
+        "config" content of container configurations.
+
+        :param config: array of AHAB containers configuration dictionaries.
+        """
+        self.set_flags(
+            srk_set=config.get("srk_set", "none"),
+            used_srk_id=value_to_int(config.get("used_srk_id", 0)),
+            srk_revoke_mask=value_to_int(config.get("srk_revoke_mask", 0)),
+        )
+        self.fuse_version = value_to_int(config.get("fuse_version", 0))
+        self.sw_version = value_to_int(config.get("sw_version", 0))
+
+        self.signature_block = SignatureBlock.load_from_config(
+            config, search_paths=self.search_paths
+        )
+
+
+class AHABContainer(AHABContainerBase):
+    """Class representing AHAB container.
+
+    Container header::
+
+        +---------------+----------------+----------------+----------------+
+        |    Byte 3     |     Byte 2     |      Byte 1    |     Byte 0     |
+        +---------------+----------------+----------------+----------------+
+        |      Tag      |              Length             |    Version     |
+        +---------------+---------------------------------+----------------+
+        |                              Flags                               |
+        +---------------+----------------+---------------------------------+
+        |  # of images  |  Fuse version  |             SW version          |
+        +---------------+----------------+---------------------------------+
+        |              Reserved          |       Signature Block Offset    |
+        +----+---------------------------+---------------------------------+
+        | I  |image0: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
+        + m  |-------------------------------------------------------------+
+        | g  |image1: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
+        + .  |-------------------------------------------------------------+
+        | A  |...                                                          |
+        | r  |...                                                          |
+        | r  |                                                             |
+        + a  |-------------------------------------------------------------+
+        | y  |imageN: Offset, Size, LoadAddr, EntryPoint, Flags, Hash, IV  |
+        +----+-------------------------------------------------------------+
+        |                      Signature block                             |
+        +------------------------------------------------------------------+
+        |                                                                  |
+        |                                                                  |
+        |                                                                  |
+        +------------------------------------------------------------------+
+        |                      Data block_0                                |
+        +------------------------------------------------------------------+
+        |                                                                  |
+        |                                                                  |
+        +------------------------------------------------------------------+
+        |                      Data block_n                                |
+        +------------------------------------------------------------------+
+
+    """
+
+    TAG = AHABTags.CONTAINER_HEADER
+
+    def __init__(
+        self,
+        parent: "AHABImage",
+        flags: int = 0,
+        fuse_version: int = 0,
+        sw_version: int = 0,
+        image_array: Optional[List["ImageArrayEntry"]] = None,
+        signature_block: Optional["SignatureBlock"] = None,
+        container_offset: int = 0,
+    ):
+        """Class object initializer.
+
+        :parent: Parent AHABImage object.
+        :param flags: flags.
+        :param fuse_version: value must be equal to or greater than the version
+            stored in the fuses to allow loading this container.
+        :param sw_version: used by PHBC (Privileged Host Boot Companion) to select
+            between multiple images with same fuse version field.
+        :param image_array: array of image entries, must be `number of images` long.
+        :param signature_block: signature block.
+        """
+        super().__init__(
+            flags=flags,
+            fuse_version=fuse_version,
+            sw_version=sw_version,
+            signature_block=signature_block,
+        )
+        self.parent = parent
+        assert self.parent is not None
+        self.image_array = image_array or []
+        self.container_offset = container_offset
+        self.search_paths: List[str] = []
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, AHABContainer):
+            if super().__eq__(other) and self.image_array == other.image_array:
+                return True
+
+        return False
+
+    @property
+    def image_array_len(self) -> int:
+        """Get image array length if available.
+
+        :return: Length of image array.
+        """
+        return len(self.image_array)
+
+    @property
+    def _signature_block_offset(self) -> int:
+        """Returns current signature block offset.
+
+        :return: Offset in bytes of Signature block.
+        """
+        # Constant size of Container header + Image array Entry table
+        return align(
+            super().fixed_length() + len(self.image_array) * ImageArrayEntry.fixed_length(),
             CONTAINER_ALIGNMENT,
         )
 
@@ -2250,26 +2639,12 @@ class AHABContainer(HeaderContainer):
         :return: Length in bytes of AHAB Container header.
         """
         return (
-            super().__len__()  # This returns the fixed length of the container header
+            super().fixed_length()  # This returns the fixed length of the container header
             # This returns the total length of all image array entries
             + len(self.image_array) * ImageArrayEntry.fixed_length()
             # This returns the length of signature block (including SRK table,
             # blob etc. if present)
             + len(self.signature_block)
-        )
-
-    # We need to extend the format, as the parent provides only endianness,
-    # and length.
-    @classmethod
-    def _format(cls) -> str:
-        return (
-            super()._format()
-            + UINT32  # Flags
-            + UINT16  # SW version
-            + UINT8  # Fuse version
-            + UINT8  # Number of Images
-            + UINT16  # Signature Block Offset
-            + UINT16  # Reserved
         )
 
     def update_fields(self) -> None:
@@ -2278,7 +2653,17 @@ class AHABContainer(HeaderContainer):
         :raises SPSDKError: When inconsistent image array length is detected.
         """
         # 1. Encrypt all images if applicable
-        # TODO :-)
+        for image_entry in self.image_array:
+            if (
+                image_entry.flags_is_encrypted
+                and not image_entry.already_encrypted_image
+                and self.signature_block.blob
+            ):
+                image_entry.encrypted_image = self.signature_block.blob.encrypt_data(
+                    image_entry.image_iv[16:], image_entry.plain_image
+                )
+                image_entry.already_encrypted_image = True
+
         # 2. Update the signature block to get overall size of it
         self.signature_block.update_fields()
         # 3. Updates Image Entries
@@ -2291,77 +2676,35 @@ class AHABContainer(HeaderContainer):
             assert self.signature_block.signature
             self.signature_block.signature.sign(self.get_signature_data())
 
-    def get_signature_data(self) -> bytes:
-        """Returns binary data to be signed.
+    def decrypt_data(self) -> None:
+        """Decrypt all images if possible."""
+        for ix, image_entry in enumerate(self.image_array):
+            if image_entry.flags_is_encrypted and self.signature_block.blob:
 
-        The container must be properly initialized, so the data are valid for
-        signing, i.e. the offsets, lengths etc. must be set prior invoking this
-        method, otherwise improper data will be signed.
+                decrypted_data = self.signature_block.blob.decrypt_data(
+                    image_entry.image_iv[16:], image_entry.encrypted_image
+                )
+                if image_entry.image_iv == crypto_backend().hash(
+                    decrypted_data, algorithm="sha256"
+                ):
+                    image_entry.plain_image = decrypted_data
+                    logger.info(
+                        f" Image{ix} from AHAB container at offset {hex(self.container_offset)} has been decrypted."
+                    )
+                else:
+                    logger.warning(
+                        f" Image{ix} from AHAB container at offset {hex(self.container_offset)} decryption failed."
+                    )
 
-        The whole container gets serialized first. Afterwards the binary data
-        is sliced so only data for signing get's returned. The signature data
-        length is evaluated based on offsets, namely the signature block offset,
-        the container signature offset and the container signature fixed data length.
+        # TODO Add validation of decrypted data
 
-        Signature data structure::
-
-            +---------------------------------------------------+
-            |                  Container header                 |
-            +---+---+-----------+---------+--------+------------+
-            | S |   |    tag    | length  | length | version    |
-            | i |   +-----------+---------+--------+------------+
-            | g |   |                  flags                    |
-            | n |   +---------------------+---------------------+
-            | a |   |  srk table offset   | certificate offset  |
-            | t |   +---------------------+---------------------+
-            | u |   |     blob offset     | signature offset    |
-            | r |   +---------------------+---------------------+
-            | e |   |                   SRK Table               |
-            |   +---+-----------+---------+--------+------------+----------------+
-            | B | S |   tag     | length  | length | version    | Signature data |
-            | l | i +-----------+---------+--------+------------+ fixed length   |
-            | o | g |               Reserved                    |                |
-            | c | n +-------------------------------------------+----------------+
-            | k | a |               Signature data              |
-            |   | t |                                           |
-            |   | u |                                           |
-            |   | r |                                           |
-            |   | e |                                           |
-            +---+---+-------------------------------------------+
-
-        :raises SPSDKValueError: if Signature Block or SRK Table is missing.
-        :return: bytes representing data to be signed.
-        """
-        if not self.signature_block.signature or not self.signature_block.srk_table:
-            raise SPSDKValueError(
-                "Can't retrieve data block to sign. Signature or SRK table is missing!"
-            )
-
-        signature_offset = (
-            self._signature_block_offset
-            + self.signature_block.signature_offset
-            + self.signature_block.signature.fixed_length()
-        )
-        return self.header_export()[:signature_offset]
-
-    def header_export(self) -> bytes:
+    def _export(self) -> bytes:
         """Export container header into bytes.
 
         :return: bytes representing container header content including the signature block.
         """
         container_header = bytearray(align(self.header_length(), CONTAINER_ALIGNMENT))
-        container_header_only = pack(
-            self._format(),
-            self.version,
-            self.length,
-            self.tag,
-            self.flags,
-            self.sw_version,
-            self.fuse_version,
-            len(self.image_array),
-            self._signature_block_offset,
-            RESERVED,  # Reserved field
-        )
+        container_header_only = super()._export()
 
         for image_array_entry in self.image_array:
             container_header_only += image_array_entry.export()
@@ -2389,34 +2732,31 @@ class AHABContainer(HeaderContainer):
         :return: images exported into single binary
         """
         ahab_container = bytearray(len(self))
-        ahab_container[: self.header_length()] = self.header_export()
+        ahab_container[: self.header_length()] = self._export()
         for image_entry in self.image_array:
             ahab_container[
                 image_entry.image_offset : align(
                     image_entry.image_offset + image_entry.image_size, CONTAINER_ALIGNMENT
                 )
-            ] = image_entry.get_image_data()
+            ] = image_entry.image
 
         return ahab_container
 
-    def validate(self) -> None:
+    def validate(self, data: Dict[str, Any]) -> None:
         """Validate object data.
 
+        :param data: Additional validation data.
         :raises SPSDKValueError: Invalid any value of Image Array entry
         """
-        super().validate()
+        data["flag_used_srk_id"] = self.flag_used_srk_id
+        self.validate_header()
         if self.length != self.header_length():
             raise SPSDKValueError(
                 f"Container Header: Invalid block length: {self.length} != {self.header_length()}"
             )
-        if self.flags is None or not check_range(self.flags, end=(1 << 32) - 1):
-            raise SPSDKValueError(f"Container Header: Invalid flags: {hex(self.flags)}")
-        if self.sw_version is None or not check_range(self.sw_version, end=(1 << 16) - 1):
-            raise SPSDKValueError(f"Container Header: Invalid SW version: {hex(self.sw_version)}")
-        if self.fuse_version is None or not check_range(self.fuse_version, end=(1 << 8) - 1):
-            raise SPSDKValueError(
-                f"Container Header: Invalid Fuse version: {hex(self.fuse_version)}"
-            )
+
+        super().validate(data)
+
         if self.image_array is None or len(self.image_array) == 0:
             raise SPSDKValueError(f"Container Header: Invalid Image Array: {self.image_array}")
 
@@ -2437,19 +2777,13 @@ class AHABContainer(HeaderContainer):
         :param offset: Offset to Container block data, default is 0.
         :return: Object recreated from the binary data.
         """
-        AHABContainer._check_container_head(binary[offset:])
-        image_format = AHABContainer._format()
         (
-            _,  # version
-            _,  # container_length
-            _,  # tag
             flags,
             sw_version,
             fuse_version,
             number_of_images,
             signature_block_offset,
-            _,  # reserved
-        ) = unpack(image_format, binary[offset : offset + AHABContainer.fixed_length()])
+        ) = AHABContainerBase._parse(binary, offset)
 
         parsed_container = AHABContainer(
             parent=parent,
@@ -2459,7 +2793,7 @@ class AHABContainer(HeaderContainer):
             container_offset=offset,
         )
         parsed_container.signature_block = SignatureBlock.parse(
-            parsed_container, binary, offset + signature_block_offset
+            binary, offset + signature_block_offset
         )
 
         for i in range(number_of_images):
@@ -2480,30 +2814,12 @@ class AHABContainer(HeaderContainer):
         :return: Configuration dictionary.
         """
         ret_cfg = CM()
-        cfg = CM()
+        cfg = self._create_config(index, data_path)
         images_cfg = CS()
-
-        cfg["srk_set"] = self.flag_srk_set
-        cfg["used_srk_id"] = self.flag_used_srk_id
-        cfg["srk_revoke_mask"] = self.flag_srk_revoke_mask
-        cfg["fuse_version"] = self.fuse_version
-        cfg["sw_version"] = self.sw_version
-        cfg["signing_key"] = "N/A"
 
         for img_ix, image in enumerate(self.image_array):
             images_cfg.append(image.create_config(index, img_ix, data_path))
         cfg["images"] = images_cfg
-
-        if self.signature_block.srk_table:
-            cfg["srk_table"] = self.signature_block.srk_table.create_config(index, data_path)
-
-        if self.signature_block.certificate:
-            cfg["certificate"] = self.signature_block.certificate.create_config(
-                index, data_path, self.flag_srk_set
-            )
-
-        if self.signature_block.blob:
-            cfg["blob"] = self.signature_block.blob.create_config(index, data_path)
 
         ret_cfg["container"] = cfg
         return ret_cfg
@@ -2519,14 +2835,8 @@ class AHABContainer(HeaderContainer):
         :return: AHAB Container object.
         """
         ahab_container = AHABContainer(parent)
-        ahab_container.set_flags(
-            srk_set=config.get("srk_set", "none"),
-            used_srk_id=value_to_int(config.get("used_srk_id", 0)),
-            srk_revoke_mask=value_to_int(config.get("srk_revoke_mask", 0)),
-        )
-        ahab_container.fuse_version = value_to_int(config.get("fuse_version", 0))
-        ahab_container.sw_version = value_to_int(config.get("sw_version", 0))
-
+        ahab_container.search_paths = parent.search_paths or []
+        ahab_container.load_from_config_generic(config)
         images = config.get("images")
         assert isinstance(images, list)
         for image in images:
@@ -2534,7 +2844,9 @@ class AHABContainer(HeaderContainer):
                 ImageArrayEntry.load_from_config(ahab_container, image)
             )
 
-        ahab_container.signature_block = SignatureBlock.load_from_config(ahab_container, config)
+        ahab_container.signature_block = SignatureBlock.load_from_config(
+            config, parent.search_paths
+        )
 
         return ahab_container
 
@@ -2559,15 +2871,15 @@ class AHABImage:
     The image consists of multiple AHAB containers.
     """
 
-    IMAGE_TYPES = ["xip", "non_xip", "serial_downloader"]
+    IMAGE_TYPES = [IMAGE_TYPE_XIP, IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER]
 
     def __init__(
         self,
         family: str,
         revision: str = "latest",
-        image_type: str = "xip",
-        ahab_containers: List[AHABContainer] = None,
-        search_paths: List[str] = None,
+        image_type: str = IMAGE_TYPE_XIP,
+        ahab_containers: Optional[List[AHABContainer]] = None,
+        search_paths: Optional[List[str]] = None,
     ) -> None:
         """AHAB Image constructor.
 
@@ -2587,7 +2899,7 @@ class AHABImage:
         self.family = family
         self.search_paths = search_paths
         self._database = Database(AHAB_DATABASE_FILE)
-        self.revision = self._database.get_revision(family, revision)
+        self.revision = self._database.devices.get_by_name(family).revisions.get(revision).name
         self.ahab_address_map: List[int] = self._database.get_device_value(
             "ahab_map", self.family, self.revision
         )
@@ -2629,13 +2941,13 @@ class AHABImage:
         for ahab_container in self.ahab_containers:
             ahab_container.update_fields()
 
-        if self.image_type == "serial_downloader":
+        if self.image_type == IMAGE_TYPE_SERIAL_DOWNLOADER:
             # Update the Image offsets to be without gaps
-            offset = self.get_containers_size()
+            offset = START_IMAGE_ADDRESS
             for ahab_container in self.ahab_containers:
                 for image in ahab_container.image_array:
-                    image.image_offset = offset
-                    offset += image.image_size
+                    image.image_offset = offset - ahab_container.container_offset
+                    offset += align(image.image_size, CONTAINER_ALIGNMENT)
 
                 ahab_container.update_fields()
 
@@ -2647,7 +2959,7 @@ class AHABImage:
         lengths = [0]
         for container in self.ahab_containers:
             length = len(container)
-            if self.image_type == "non_xip":
+            if self.image_type in (IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER):
                 # Just updates offsets from AHAB Image start As is feature of none xip containers
                 length += container.container_offset
             lengths.append(length)
@@ -2707,12 +3019,12 @@ class AHABImage:
             # Add also all data images
             for img_ix, image_entry in enumerate(container.image_array):
                 offset = image_entry.image_offset
-                if self.image_type == "non_xip":
+                if self.image_type in (IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER):
                     # Just updates offsets from AHAB Image start As is feature of none xip containers
                     offset += container.container_offset
                 data_image = BinaryImage(
                     name=f"Container {cnt_ix} AHAB Data Image {img_ix}",
-                    binary=image_entry.get_image_data(),
+                    binary=image_entry.image,
                     size=image_entry.image_size,
                     offset=offset,
                     description=(
@@ -2739,14 +3051,18 @@ class AHABImage:
                 "AHAB Image: Too much AHAB containers in image."
                 f" {len(self.ahab_containers)} > {self.containers_max_cnt}"
             )
+        # prepare additional validation data
+        data = {}
+        data["srkh_sha_supports"] = self.srkh_sha_supports
+
         for cnt_ix, container in enumerate(self.ahab_containers):
-            container.validate()
+            container.validate(data)
             if len(container.image_array) > self.images_max_cnt:
                 raise SPSDKValueError(
                     f"AHAB Image: Too much binary images in AHAB Container [{cnt_ix}]."
                     f" {len(container.image_array)} > {self.images_max_cnt}"
                 )
-            if self.image_type != "serial_downloader":
+            if self.image_type != IMAGE_TYPE_SERIAL_DOWNLOADER:
                 for img_ix, image_entry in enumerate(container.image_array):
                     if image_entry.image_offset < self.data_images_start:
                         raise SPSDKValueError(
@@ -2762,7 +3078,9 @@ class AHABImage:
             raise exc
 
     @staticmethod
-    def load_from_config(config: Dict[str, Any], search_paths: List[str] = None) -> "AHABImage":
+    def load_from_config(
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "AHABImage":
         """Converts the configuration option into an AHAB image object.
 
         "config" content array of containers configurations.
@@ -2818,7 +3136,7 @@ class AHABImage:
         :return: List of supported families.
         """
         database = Database(AHAB_DATABASE_FILE)
-        return database.get_devices()
+        return database.devices.device_names
 
     @staticmethod
     def get_validation_schemas() -> List[Dict[str, Any]]:

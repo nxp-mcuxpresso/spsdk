@@ -1,21 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for NXP device description classes."""
 
-import platform
-import re
+
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 from libusbsio.libusbsio import LIBUSBSIO
 
 from spsdk.mboot.interfaces.usb import USB_DEVICES as MB_USB_DEVICES
 from spsdk.sdp.interfaces.usb import USB_DEVICES as SDP_USB_DEVICES
+from spsdk.utils.misc import get_hash
+
+# for backward-compatibility
+from spsdk.utils.usbfilter import NXPUSBDeviceFilter
+
+convert_usb_path = NXPUSBDeviceFilter.convert_usb_path
 
 
 class DeviceDescription(ABC):
@@ -50,7 +55,7 @@ class UartDeviceDescription(DeviceDescription):
     implementations.
     """
 
-    def __init__(self, name: str = None, dev_type: str = None) -> None:
+    def __init__(self, name: Optional[str] = None, dev_type: Optional[str] = None) -> None:
         """Constructor.
 
         The 'dev_type' can be in general any string identifying the device type.
@@ -86,6 +91,7 @@ class USBDeviceDescription(DeviceDescription):
         manufacturer_string: str,
         name: str,
         serial: str,
+        original_path: Optional[Union[str, bytes]] = None,
     ) -> None:
         """Constructor.
 
@@ -107,6 +113,7 @@ class USBDeviceDescription(DeviceDescription):
         self.manufacturer_string = manufacturer_string
         self.name = name
         self.serial = serial
+        self.path_hash = get_hash(original_path) if original_path else "N/A"
 
     def info(self) -> str:
         """Returns a formatted device description string.
@@ -118,6 +125,7 @@ class USBDeviceDescription(DeviceDescription):
             f"Vendor ID: 0x{self.vid:04x}\n"
             f"Product ID: 0x{self.pid:04x}\n"
             f"Path: {self.path}\n"
+            f"Path Hash: {self.path_hash}\n"
             f"Name: {self.name}\n"
             f"Serial number: {self.serial}"
         )
@@ -143,6 +151,7 @@ class SIODeviceDescription(DeviceDescription):
         self.serial_number = self._info.serial_number
         self.interface_number = self._info.interface_number
         self.release_number = self._info.release_number
+        self.path_hash = get_hash(self._info.path)
 
     def info(self) -> str:
         """Returns a formatted device description string.
@@ -154,6 +163,7 @@ class SIODeviceDescription(DeviceDescription):
             f"Vendor ID: 0x{self.vid:04x}\n"
             f"Product ID: 0x{self.pid:04x}\n"
             f"Path: {self.path}\n"
+            f"Path Hash: {self.path_hash or 'N/A'}\n"
             f"Serial number: {self.serial_number}\n"
             f"Interface number: {self.interface_number}\n"
             f"Release number: {self.release_number}"
@@ -161,7 +171,7 @@ class SIODeviceDescription(DeviceDescription):
 
 
 def get_usb_device_name(
-    vid: int, pid: int, device_names: Dict[str, Tuple[int, int]] = None
+    vid: int, pid: int, device_names: Optional[Dict[str, Tuple[int, int]]] = None
 ) -> List[str]:
     """Returns 'name' device identifier based on VID/PID, from dicts.
 
@@ -194,44 +204,3 @@ def get_usb_device_name(
                 nxp_device_names.append(dname)
 
     return nxp_device_names
-
-
-def convert_usb_path(hid_api_usb_path: bytes) -> str:
-    """Converts the Libusbsio/HID_API path into string, which can be observed from OS.
-
-    DESIGN REMARK: this function is not part of the USBLogicalDevice, as the
-    class intention is to be just a simple container. But to help the class
-    to get the required inputs, this helper method has been provided. Additionally,
-    this method relies on the fact that the provided path comes from the Libusbsio/HID_API.
-    This method will most probably fail or provide improper results in case
-    path from different USB API is provided.
-
-    :param hid_api_usb_path: USB device path from Libusbsio/HID_API
-    :return: Libusbsio/HID_API path converted for given platform
-    """
-    if platform.system() == "Windows":
-        device_manager_path = hid_api_usb_path.decode("utf-8").upper()
-        device_manager_path = device_manager_path.replace("#", "\\")
-        result = re.search(r"\\\\\?\\(.+?)\\{", device_manager_path)
-        if result:
-            device_manager_path = result.group(1)
-
-        return device_manager_path
-
-    if platform.system() == "Linux":
-        # we expect the path in form of <bus>#<device>, Libusbsio/HID_API returns
-        # <bus>:<device>:<interface>
-        linux_path = hid_api_usb_path.decode("utf-8")
-        linux_path_parts = linux_path.split(":")
-
-        if len(linux_path_parts) > 1:
-            linux_path = str.format(
-                "{}#{}", int(linux_path_parts[0], 16), int(linux_path_parts[1], 16)
-            )
-
-        return linux_path
-
-    if platform.system() == "Darwin":
-        return hid_api_usb_path.decode("utf-8")
-
-    return ""

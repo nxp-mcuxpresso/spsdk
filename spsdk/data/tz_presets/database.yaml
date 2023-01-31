@@ -1,0 +1,59 @@
+devices:
+  lpc55xx:
+    revisions:
+      a0:
+        data_file: lpc55xx_a0.yaml
+      a1:
+        data_file: lpc55xx_a1.yaml
+    latest: a1
+  lpc55s0x:
+    revisions:
+      a1:
+        data_file: lpc55s0x.yaml
+    latest: a1
+  lpc55s6x:
+    revisions:
+      a0:
+        data_file: lpc55xx_a0.yaml
+      a1:
+        data_file: lpc55xx_a1.yaml
+    latest: a1
+  lpc55s1x:
+    revisions:
+      a1:
+        data_file: lpc55s1x.yaml
+    latest: a1
+  lpc55s3x:
+    revisions:
+      a0:
+        data_file: lpc55s3x_a0.yaml
+      a1:
+        data_file: lpc55s3x_a1.yaml
+    latest: a1
+  rt6xx:
+    revisions:
+      a0:
+        data_file: rt6xx_a0.yaml
+      b0:
+        data_file: rt6xx_b0.yaml
+    latest: b0
+  rt5xx:
+    revisions:
+      a0:
+        data_file: rt5xx_a0.yaml
+    latest: a0
+  nhs52s04:
+    revisions:
+      a1:
+        data_file: nhs52s04.yaml
+    latest: a1
+  kw45xx:
+    revisions:
+      a1:
+        data_file: kw45xx_a0.yaml
+    latest: a1
+  k32w1xx:
+    revisions:
+      a1:
+        data_file: kw45xx_a0.yaml
+    latest: a1

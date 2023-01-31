@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -9,7 +9,7 @@
 """Module implementing the SDPS communication protocol."""
 
 import logging
-from struct import pack, unpack
+from struct import pack
 from typing import Mapping, Tuple
 
 from spsdk.utils.misc import swap32

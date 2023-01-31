@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Main Debug Authentication Tool application."""
@@ -15,6 +15,7 @@ from typing import Dict, Iterator, List
 import click
 
 from spsdk import SPSDK_DATA_FOLDER
+from spsdk.apps.nxpdebugmbox import get_debug_probe_options_help
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.debuggers.utils import DebugProbe, open_debug_probe
@@ -60,7 +61,7 @@ def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> Iterator[Sha
     device = pass_obj["device"]
     revision = pass_obj["revision"]
 
-    if device not in RegConfig.devices(CONFIG_DATABASE):
+    if device not in RegConfig(CONFIG_DATABASE).devices.device_names:
         raise SPSDKError(
             "Invalid or none device parameter(-dev). Check '--help' to get supported devices."
         )
@@ -75,7 +76,6 @@ def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> Iterator[Sha
                 if not enable_debug(debug_probe):
                     raise SPSDKError("Cannot enable debug interface")
 
-                debug_probe.enable_memory_interface()
                 yield ShadowRegisters(
                     debug_probe=debug_probe, config=regs_cfg, device=device, revision=revision
                 )
@@ -99,7 +99,7 @@ def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> Iterator[Sha
 @click.option(
     "-dev",
     "--device",
-    type=click.Choice(RegConfig.devices(CONFIG_DATABASE)),
+    type=click.Choice(RegConfig.get_devices(CONFIG_DATABASE).device_names),
     help="The target device family.",
 )
 @click.option(
@@ -111,10 +111,7 @@ def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> Iterator[Sha
     "-o",
     "--debug-probe-option",
     multiple=True,
-    help=(
-        "This option could be used multiply to setup non-standard option for debug probe."
-        " The example of use: -o KEY=VALUE"
-    ),
+    help=get_debug_probe_options_help(),
 )
 @click.pass_context
 def main(
@@ -325,7 +322,11 @@ def info(pass_obj: dict, output: str, open_result: bool) -> None:
     device = pass_obj["device"]
     revision = pass_obj["revision"]
     registers = Registers(device)
-    rev = revision if revision != "latest" else config.get_latest_revision(device)
+    rev = (
+        revision
+        if revision != "latest"
+        else config.devices.get_by_name(device).revisions.get_latest().name
+    )
     registers.load_registers_from_xml(config.get_data_file(device, rev))
     html_output = registers.generate_html(
         f"{device} - Shadow Registers",

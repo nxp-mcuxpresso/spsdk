@@ -1,21 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """SerialBuspalProxy serves as patch replacement for serial.Serial class."""
 
 import logging
-from typing import Dict, Type  # pylint: disable=unused-import  # Type is necessary for Mypy
+from typing import (  # pylint: disable=unused-import  # Type is necessary for Mypy
+    Dict,
+    Optional,
+    Type,
+)
 
 from spsdk.mboot.interfaces.buspal_i2c import I2cModeCommand
 from spsdk.mboot.interfaces.buspal_spi import SpiModeCommand
 
 from .serial_proxy import SerialProxy
 
-logger = logging.getLogger("SerialBuspalProxy")
+logger = logging.getLogger(__name__)
 
 
 class SerialBuspalProxy(SerialProxy):
@@ -44,7 +48,7 @@ class SerialBuspalProxy(SerialProxy):
             raise AttributeError(f"Target {target} not supported")
         return super().init_proxy(data)
 
-    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int = None):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: Optional[int] = None):
         """Basic initialization for serial.Serial class.
 
         __init__ signature must accommodate instantiation of serial.Serial

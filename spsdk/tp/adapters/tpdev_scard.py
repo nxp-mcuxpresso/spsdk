@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning - TP Device, Smart Card Adapter."""
@@ -16,14 +16,6 @@ from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509 import NameOID, load_der_x509_certificate
 
 from spsdk import SPSDKError
-
-try:
-    from smartcard.CardConnectionDecorator import CardConnection
-except ImportError:
-    raise SPSDKError(
-        "pyscard package is missing, please install it with pip install 'spsdk[tp]' in order to use TP"
-    )
-
 from spsdk.crypto.certificate_management import (
     convert_certificate_into_bytes,
     generate_certificate,
@@ -32,8 +24,23 @@ from spsdk.crypto.certificate_management import (
 from spsdk.crypto.keys_management import generate_ecc_public_key
 from spsdk.crypto.loaders import extract_public_key, load_private_key
 from spsdk.utils.database import Database
-from spsdk.utils.misc import find_file, load_binary, load_text, numberify_version, value_to_int
+from spsdk.utils.misc import (
+    find_file,
+    get_hash,
+    load_binary,
+    load_text,
+    numberify_version,
+    value_to_int,
+)
 from spsdk.utils.schema_validator import ValidationSchemas
+
+try:
+    from smartcard.CardConnectionDecorator import CardConnection
+except ImportError as e:
+    raise SPSDKError(
+        "pyscard package is missing, please install it with pip install 'spsdk[tp]' in order to use TP"
+    ) from e
+
 
 from .. import TP_DATA_FOLDER, TP_SCH_FILE, SPSDKTpError, TpDevInterface
 from ..tp_intf import TpIntfDescription
@@ -53,8 +60,8 @@ class TpSCardDescription(TpIntfDescription):
         name: str,
         version: str,
         serial_number: int,
-        settings: Dict = None,
-        card_connection: CardConnection = None,
+        settings: Optional[Dict] = None,
+        card_connection: Optional[CardConnection] = None,
     ) -> None:
         """Smart Card interface description."""
         super().__init__(name, TpDevSmartCard, "TP HSM Applet", settings, version)
@@ -65,11 +72,16 @@ class TpSCardDescription(TpIntfDescription):
         """Returns the ID of the interface (smart card serial number)."""
         return self.serial_number
 
+    def get_id_hash(self) -> str:
+        """Return the ID hash of the interface. (hash of the reader's name)."""
+        return get_hash(self.name)
+
     def as_dict(self) -> Dict[str, Any]:
         """Returns whole record as dictionary suitable for printing."""
         data = super().as_dict()
         # don't display card_connection object in list
         data.pop("card_connection")
+        data["name_hash"] = self.get_id_hash()
         return data
 
 
@@ -88,7 +100,7 @@ class TpDevSmartCard(TpDevInterface):
         READER = "reader"
 
     @classmethod
-    def get_connected_devices(cls, settings: Dict = None) -> List[TpIntfDescription]:
+    def get_connected_devices(cls, settings: Optional[Dict] = None) -> List[TpIntfDescription]:
         """Get all connected TP devices of this adapter.
 
         :param settings: Possible settings to determine the way to find connected device, defaults to None.
@@ -158,7 +170,7 @@ class TpDevSmartCard(TpDevInterface):
         if self.card_connection:
             self.card_connection.disconnect()
 
-    def get_challenge(self, timeout: int = None) -> bytes:
+    def get_challenge(self, timeout: Optional[int] = None) -> bytes:
         """Request challenge from the TP device.
 
         :param timeout: Timeout of operation in milliseconds.
@@ -174,7 +186,7 @@ class TpDevSmartCard(TpDevInterface):
         logger.debug("Getting challenge complete")
         return challenge
 
-    def authenticate_response(self, tp_data: bytes, timeout: int = None) -> bytes:
+    def authenticate_response(self, tp_data: bytes, timeout: Optional[int] = None) -> bytes:
         """Request TP device for TP authentication of connected MCU.
 
         :param tp_data: TP response of connected MCU.
@@ -244,7 +256,7 @@ class TpDevSmartCard(TpDevInterface):
         logger.debug(f"Applet version: {applet_version}")
         return applet_version
 
-    def upload(self, config_data: dict, config_dir: str = None) -> None:
+    def upload(self, config_data: dict, config_dir: Optional[str] = None) -> None:
         """Upload Provisioning data."""
         logger.info("Sending CMPA")
         file_path = config_data["cmpa_path"]
@@ -338,14 +350,6 @@ class TpDevSmartCard(TpDevInterface):
                 )
                 cmd.transmit(self.card_connection)
 
-    def upload_manufacturing(self, config_data: dict, config_dir: str = None) -> None:
-        """Upload Manufacturing data NXP_PROD_CARD_PRK."""
-        logger.info("Sending nxp_prod_card_prk")
-        file_path = config_data["nxp_prod_card_prk_path"]
-        prk_data = self._serialize_private_key(file_path, [config_dir] if config_dir else None)
-        cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.JC_ID_PRK, data=prk_data)
-        cmd.transmit(self.card_connection)
-
     def setup(self) -> None:
         """Setup the provisioning device."""
         logger.info("Setting up a Smart Card")
@@ -406,7 +410,9 @@ class TpDevSmartCard(TpDevInterface):
         return counter
 
     @staticmethod
-    def _serialize_private_key(prk_file_path: str, search_dirs: List[str] = None) -> bytes:
+    def _serialize_private_key(
+        prk_file_path: str, search_dirs: Optional[List[str]] = None
+    ) -> bytes:
         prk_file = find_file(prk_file_path, search_paths=search_dirs)
         prk = load_private_key(prk_file)
         assert isinstance(prk, ec.EllipticCurvePrivateKeyWithSerialization)
@@ -416,7 +422,7 @@ class TpDevSmartCard(TpDevInterface):
 
     @staticmethod
     def _serialize_cert(
-        cert_file_path: str, search_dirs: List[str] = None, destination: int = 0
+        cert_file_path: str, search_dirs: Optional[List[str]] = None, destination: int = 0
     ) -> bytes:
         cert_file = find_file(cert_file_path, search_paths=search_dirs)
         with open(cert_file, "rb") as f:
@@ -466,7 +472,7 @@ class TpDevSmartCard(TpDevInterface):
         )
 
     @staticmethod
-    def _create_oem_cert_template(config_data: dict, config_dir: str = None) -> bytes:
+    def _create_oem_cert_template(config_data: dict, config_dir: Optional[str] = None) -> bytes:
         logger.info("Creating OEM ID template")
         cert_config: dict = config_data["oem_id_config"]
         sanitize_common_name(cert_config["subject"])

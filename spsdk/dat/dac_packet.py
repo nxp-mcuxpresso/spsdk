@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module with Debug Authentication Challenge (DAC) Packet."""
 
 from struct import calcsize, pack, unpack_from
+
+from spsdk.dat.debug_credential import DebugCredential
+from spsdk.exceptions import SPSDKValueError
 
 
 class DebugAuthenticationChallenge:
@@ -50,7 +53,7 @@ class DebugAuthenticationChallenge:
     def info(self) -> str:
         """String representation of DebugCredential."""
         msg = f"Version                : {self.version}\n"
-        msg += f"SOCC                   : {self.socc}\n"
+        msg += f"SOCC                   : {DebugCredential.get_socc_description(self.version, self.socc)}\n"
         msg += f"UUID                   : {self.uuid.hex().upper()}\n"
         msg += f"CC_VU                  : {self.cc_vu}\n"
         msg += f"ROTID_rkh_revocation   : {format(self.rotid_rkh_revocation, '08X')}\n"
@@ -59,6 +62,33 @@ class DebugAuthenticationChallenge:
         msg += f"CC_soc_default         : {format(self.cc_soc_default, '08X')}\n"
         msg += f"Challenge              : {self.challenge.hex()}\n"
         return msg
+
+    def validate_against_dc(self, dc: DebugCredential) -> None:
+        """Validate against Debug Credential file.
+
+        :param dc: Debug Credential class to be validate by DAC
+        :raises SPSDKValueError: In case of invalid configuration detected.
+        """
+        if self.version != dc.VERSION and self.socc not in [0x5254049C]:
+            raise SPSDKValueError(
+                f"DAC Verification failed: Invalid protocol version.\nDAC: {self.version}\nDC:  {dc.VERSION}"
+            )
+        if self.socc != dc.socc:
+            raise SPSDKValueError(
+                f"DAC Verification failed: Invalid SOCC.\nDAC: {self.socc}\nDC:  {dc.socc}"
+            )
+        if self.uuid != dc.uuid and dc.uuid != bytes(len(dc.uuid)):
+            raise SPSDKValueError(
+                f"DAC Verification failed: Invalid UUID.\nDAC: {self.uuid.hex()}\nDC:  {dc.uuid.hex()}"
+            )
+
+        dc_rotkh = dc.get_rotkh()
+        if not all(
+            self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
+        ):
+            raise SPSDKValueError(
+                f"DAC Verification failed: Invalid RoT Hash. \nDAC: {self.rotid_rkth_hash.hex()}\nDC:  {dc_rotkh.hex()}"
+            )
 
     def export(self) -> bytes:
         """Exports the DebugAuthenticationChallenge into bytes."""
@@ -85,7 +115,9 @@ class DebugAuthenticationChallenge:
         version_major, version_minor, socc, uuid, rotid_rkh_revocation = unpack_from(
             format_head, data, offset
         )
+        # Note: EdgeLock is always 256b SRKH - if P384 these are the first 256b of SHA384(SRKT)
         hash_length = 48 if (socc == 4 and version_minor == 1 and version_major == 2) else 32
+
         format_tail = f"<{hash_length}s3L32s"
         (
             rotid_rkth_hash,

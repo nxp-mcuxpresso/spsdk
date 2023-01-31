@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,7 @@ import os
 import re
 import sys
 from functools import wraps
-from typing import Any, Callable, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 import click
 import hexdump
@@ -22,8 +22,13 @@ from spsdk.mboot import interfaces as MBootInterfaceModule
 from spsdk.mboot.interfaces import MBootInterface
 from spsdk.sdp import interfaces as SDPInterfaceModule
 from spsdk.sdp.interfaces import SDPInterface
-from spsdk.utils.misc import write_file  # pylint: disable=unused-import #backward-compatibility
-from spsdk.utils.misc import load_binary, load_file, value_to_bytes
+from spsdk.utils.misc import (  # pylint: disable=unused-import #backward-compatibility
+    find_file,
+    load_binary,
+    load_file,
+    value_to_bytes,
+    write_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +38,7 @@ class SPSDKAppError(SPSDKError):
 
     fmt = "{description}"
 
-    def __init__(self, desc: str = None, error_code: int = 1) -> None:
+    def __init__(self, desc: Optional[str] = None, error_code: int = 1) -> None:
         """Initialize the AppError.
 
         :param desc: Description to print out on command line, defaults to None
@@ -58,7 +63,12 @@ class INT(click.ParamType):
         self.base = base
 
     # pylint: disable=inconsistent-return-statements
-    def convert(self, value: str, param: click.Parameter = None, ctx: click.Context = None) -> int:  # type: ignore
+    def convert(
+        self,
+        value: str,
+        param: Optional[click.Parameter] = None,
+        ctx: Optional[click.Context] = None,
+    ) -> int:
         """Perform the conversion str -> int.
 
         :param value: value to convert
@@ -83,11 +93,11 @@ class INT(click.ParamType):
 
 def get_interface(
     module: str,
-    port: str = None,
-    usb: str = None,
+    port: Optional[str] = None,
+    usb: Optional[str] = None,
     timeout: int = 5000,
-    buspal: str = None,
-    lpcusbsio: str = None,
+    buspal: Optional[str] = None,
+    lpcusbsio: Optional[str] = None,
 ) -> Union[MBootInterface, SDPInterface]:
     """Get appropriate interface.
 
@@ -267,23 +277,6 @@ def parse_hex_data(hex_data: str) -> bytes:
     return bytes(byte_pieces)
 
 
-def check_destination_dir(path: str, create_folder: bool = False) -> None:
-    """Checks path's destination dir, optionally create the destination folder.
-
-    :param path: Path to file to create/consider
-    :param create_folder: Create destination folder
-    :raises SPSDKError: Could not create destination folder
-    """
-    dest_dir = os.path.dirname(path)
-    if not dest_dir:
-        return
-    if create_folder:
-        os.makedirs(dest_dir, exist_ok=True)
-        return
-    if not os.path.isdir(dest_dir):
-        raise SPSDKError(f"Can't create '{path}', folder '{dest_dir}' doesn't exit.")
-
-
 # pylint: disable=inconsistent-return-statements
 def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type: ignore
     """Check if file exists, exits if file exists and overwriting is disabled.
@@ -299,13 +292,16 @@ def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type
         raise SPSDKAppError(f"File '{path}' already exists. Use --force to overwrite it.")
 
 
-def get_key(key_source: str, expected_size: int) -> bytes:
+def get_key(key_source: str, expected_size: int, search_paths: Optional[List[str]] = None) -> bytes:
     """Get the key from the command line parameter.
 
     :param key_source: File path to key file or hexadecimal value. If not specified random value is used.
     :param expected_size: Expected size of key in bytes.
+    :param search_paths: List of paths where to search for the file, defaults to None
+    :raises SPSDKError: Invalid key
     :return: Key in bytes.
     """
+    key = None
     assert expected_size > 0, "Invalid expected size of key"
     if not key_source:
         logger.debug(
@@ -315,27 +311,29 @@ def get_key(key_source: str, expected_size: int) -> bytes:
         from spsdk.utils.crypto.common import crypto_backend
 
         return crypto_backend().random_bytes(expected_size)
-    if os.path.isfile(key_source):
+    try:
+        file_path = find_file(key_source, search_paths=search_paths)
         try:
-            str_key = load_file(key_source)
+            str_key = load_file(file_path)
             assert isinstance(str_key, str)
             if not str_key.startswith(("0x", "0X")):
                 str_key = "0x" + str_key
-            key = value_to_bytes(str_key)
+            key = value_to_bytes(str_key, byte_cnt=expected_size)
             if len(key) != expected_size:
                 raise SPSDKError("Invalid Key size.")
         except (SPSDKError, UnicodeDecodeError):
-            key = load_binary(key_source)
-    else:
+            key = load_binary(file_path)
+    except:
         try:
             if not key_source.startswith(("0x", "0X")):
                 key_source = "0x" + key_source
-            key = value_to_bytes(key_source)
+            key = value_to_bytes(key_source, byte_cnt=expected_size)
         except SPSDKError:
             pass
 
-    if not key or len(key) != expected_size:
-        SPSDKError(f"Invalid key input: {key_source}")
+    if key is None or len(key) != expected_size:
+        raise SPSDKError(f"Invalid key input: {key_source}")
+
     return key
 
 

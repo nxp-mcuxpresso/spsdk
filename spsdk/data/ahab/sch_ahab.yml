@@ -30,8 +30,8 @@ properties:
     template_value: xip
   output:
     type: string
-    title: Output AHAB file name
-    description: Revision of silicon
+    title: Output file name
+    description: Output AHAB file name
     format: file_name
     template_value: generated_ahab.bin
   containers:
@@ -135,7 +135,6 @@ properties:
                       - image_type
                       - core_id
                       - is_encrypted
-                    # TODO add conditional required iv_path and hash_type
                     properties:
                       image_path:
                         type: string
@@ -226,34 +225,14 @@ properties:
                           - sha256
                           - sha384
                           - sha512
-                        template_value: sha256
-                      # iv_path:
-                      #   type: string
-                      #   title: IV file path
-                      #   description:
-                      #     "Used only for encrypted images (zero otherwise): SHA256 of the plain
-                      #     text image. Fixed size at 256 bits. The lower 128-bit part of the SHA256 value
-                      #     will be retained as IV in the encryption/decryption process. The HEX format is accepted."
-                      #   format: file
-                      #   template_value: my_IV.txt
+                        template_value: sha512
                 srk_table:
                   type: object
                   title: SRK Table
                   template_title: Configuration of AHAB SRK table
                   description: "SRK (Super Root key) table definition."
-                  required: [hash_type, srk_array]
+                  required: [srk_array]
                   properties:
-                    hash_type:
-                      type: string
-                      title: SRK HASH type
-                      description:
-                        HASH type of image. All images in the container must have the same
-                        HASH type.
-                      enum:
-                        - sha256
-                        - sha384
-                        - sha512
-                      template_value: sha256
                     srk_array:
                       type: array
                       title: Super Root Key (SRK) table
@@ -270,16 +249,16 @@ properties:
                         description: Path to SRK Key file.
                         format: file
                         template_value:
-                          - my_srk_public_key0.pem
-                          - my_srk_public_key1.pem
-                          - my_srk_public_key2.pem
-                          - my_srk_public_key3.pem
+                          - my_srk_public_key0.pub
+                          - my_srk_public_key1.pub
+                          - my_srk_public_key2.pub
+                          - my_srk_public_key3.pub
                 certificate:
                   type: object
                   title: Certificate container
                   description: Optional certificate container definition."
                   template_title: Optional configuration of AHAB Container Certificate (if not used, erase the section)
-                  required: [public_key, hash_type, signing_key]
+                  required: [public_key, signing_key]
                   properties:
                     permissions:
                       type: array
@@ -319,15 +298,6 @@ properties:
                       description: Path to Public key file (RSA and ECDSA).
                       format: file
                       template_value: my_cert_public_key.pem
-                    hash_type:
-                      type: string
-                      title: Certificate HASH type
-                      description: HASH type of public key. The hash type should correspond to SRK keys.
-                      enum:
-                        - sha256
-                        - sha384
-                        - sha512
-                      template_value: sha256
                     signing_key:
                       type: string
                       title: Certificate container signing key
@@ -339,11 +309,22 @@ properties:
                   title: Encryption blob
                   description: Encryption blob container definition
                   template_title: Optional configuration of AHAB Container Encryption blob (if not used, erase the section)
-                  required: [wrapped_key_path]
+                  required: [dek_key_size, dek_key, dek_keyblob]
                   properties:
-                    wrapped_key_path:
+                    dek_key_size:
+                      type: [number, string]
+                      title: DEK key size
+                      description: Data Encryption key size. Used for AES CBC-MAC (128/192/256 size)
+                      enum: [128,192,256]
+                      format: number
+                      template_value: 128
+                    dek_key:
                       type: string
-                      title: KEK blob wrapped key
-                      description: Wrapped Data Encryption key. Used for AES CBC-MAC (128/192/256 size). The HEX format is accepted.
-                      format: file
+                      title: DEK key
+                      description: Data Encryption key. Used for AES CBC-MAC (128/192/256 size). The HEX format is accepted
+                      template_value: my_dek_key.txt
+                    dek_keyblob:
+                      type: string
+                      title: DEK keyblob
+                      description: Wrapped Data Encryption key. Used for AES CBC-MAC (128/192/256 size). The HEX format is accepted
                       template_value: my_wrapped_key.txt

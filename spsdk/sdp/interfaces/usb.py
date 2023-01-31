@@ -2,16 +2,17 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for USB communication with a target using SDP protocol."""
 
 import logging
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import libusbsio
 
+from spsdk.utils.misc import get_hash
 from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
 from ..commands import CmdPacket, CmdResponse
@@ -58,7 +59,7 @@ USB_DEVICES = {
 }
 
 
-def scan_usb(device_id: str = None) -> List["RawHid"]:
+def scan_usb(device_id: Optional[str] = None) -> List["RawHid"]:
     """Scan connected USB devices. Return a list of all devices found.
 
     :param device_id: see USBDeviceFilter classes constructor for usb_id specification
@@ -76,10 +77,7 @@ class RawHid(SDPInterface):
 
     @property
     def name(self) -> str:
-        """Get the name of the device.
-
-        :return: Name of the device.
-        """
+        """Get the name of the device."""
         for name, value in USB_DEVICES.items():
             if value[0] == self.vid and value[1] == self.pid:
                 return name
@@ -87,11 +85,18 @@ class RawHid(SDPInterface):
 
     @property
     def is_opened(self) -> bool:
-        """Indicates whether device is open.
-
-        :return: True if device is open, False otherwise.
-        """
+        """Return True if device is open."""
         return self.device is not None and self._opened
+
+    @property
+    def path_str(self) -> str:
+        """BLHost-friendly string representation of USB path."""
+        return NXPUSBDeviceFilter.convert_usb_path(self.path)
+
+    @property
+    def path_hash(self) -> str:
+        """BLHost-friendly hash of the USB path."""
+        return get_hash(self.path)
 
     def __init__(self) -> None:
         """Initialize the USB interface object."""
@@ -103,8 +108,8 @@ class RawHid(SDPInterface):
         self.product_name = ""
         self.interface_number = 0
         self.timeout = 2000
-        self.path = ""
-        self.device = None
+        self.path = b""
+        self.device: libusbsio.LIBUSBSIO.HID_DEVICE = None
 
     @staticmethod
     def _encode_report(
@@ -162,7 +167,7 @@ class RawHid(SDPInterface):
             self._opened = True
         except Exception as error:
             raise SdpConnectionError(
-                f"Unable to open device '{self.path}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
+                f"Unable to open device '{self.path!r}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
             ) from error
 
     def close(self) -> None:
@@ -179,7 +184,7 @@ class RawHid(SDPInterface):
             self._opened = False
         except OSError as error:
             raise SdpConnectionError(
-                f"Unable to close device '{self.path}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
+                f"Unable to close device '{self.path!r}' VID={self.vid} PID={self.pid} SN='{self.serial_number}'"
             ) from error
 
     def write(self, packet: Union[CmdPacket, bytes]) -> None:
@@ -213,7 +218,7 @@ class RawHid(SDPInterface):
             except Exception as e:
                 raise SdpConnectionError(str(e)) from e
 
-    def read(self, length: int = None) -> CmdResponse:  # pylint: disable=unused-argument
+    def read(self, length: Optional[int] = None) -> CmdResponse:  # pylint: disable=unused-argument
         """Read data on the IN endpoint associated to the HID interface.
 
         :return: Return CmdResponse object.

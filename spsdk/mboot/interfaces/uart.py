@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -28,7 +28,9 @@ from .base import MBootInterface
 logger = logging.getLogger(__name__)
 
 
-def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List["Uart"]:
+def scan_uart(
+    port: Optional[str] = None, baudrate: Optional[int] = None, timeout: Optional[int] = None
+) -> List["Uart"]:
     """Scan connected serial ports.
 
     Returns list of serial ports with devices that respond to PING command.
@@ -144,7 +146,9 @@ class Uart(MBootInterface):
         """Return True if device is open, False otherwise."""
         return self.device.is_open
 
-    def __init__(self, port: str = None, baudrate: int = 57600, timeout: int = 5000) -> None:
+    def __init__(
+        self, port: Optional[str] = None, baudrate: int = 57600, timeout: int = 5000
+    ) -> None:
         """Initialize the UART interface.
 
         :param port: name of the serial port, defaults to None
@@ -294,7 +298,9 @@ class Uart(MBootInterface):
             self.device.write(data)
             self.device.flush()
         except SerialTimeoutException as e:
-            raise TimeoutError(str(e)) from e
+            raise TimeoutError(
+                f"Write timeout error. The timeout is set to {self.device.write_timeout} s. Consider increasing it."
+            ) from e
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
 
@@ -312,7 +318,7 @@ class Uart(MBootInterface):
         if wait_for_ack:
             self._read_frame_header(FPType.ACK)
 
-    def _read_frame_header(self, expected_frame_type: int = None) -> Tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: Optional[int] = None) -> Tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected
@@ -327,16 +333,22 @@ class Uart(MBootInterface):
             header = to_int(self._read_default(1))
             if header != self.FRAME_START_BYTE_NOT_READY:
                 break
-
-        if header != self.FRAME_START_BYTE:
+        # This is workaround addressing SPI ISP issue on RT5/6xx when sometimes
+        # ACK frames and START BYTE frames are swapped, see SPSDK-1824 for more details
+        if header not in [self.FRAME_START_BYTE, FPType.ACK]:
             raise McuBootConnectionError(
                 f"Received invalid frame header '{header:#X}' expected '{self.FRAME_START_BYTE:#X}'"
                 + "\nTry increasing the timeout, some operations might take longer"
             )
-        frame_type = to_int(self._read(1))
+        if header == FPType.ACK:
+            frame_type = header
+        else:
+            frame_type = to_int(self._read(1))
         if frame_type == FPType.ABORT:
             raise McuBootDataAbortError()
         if expected_frame_type:
+            if frame_type == self.FRAME_START_BYTE:
+                frame_type = header
             if frame_type != expected_frame_type:
                 raise McuBootConnectionError(
                     f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type:#X}'"

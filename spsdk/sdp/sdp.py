@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -208,7 +208,7 @@ class SDP:
 
         except Exception as exc:
             logger.info("RX-CMD: Timeout Error")
-            raise SdpConnectionError("Timeout Error") from exc
+            raise SdpConnectionError(str(exc)) from exc
 
         if not ret_val and self._cmd_exception:
             raise SdpCommandError("SendData", self.status_code)
@@ -230,7 +230,11 @@ class SDP:
         return None
 
     def read_safe(
-        self, address: int, length: int = None, data_format: int = 32, align_count: bool = False
+        self,
+        address: int,
+        length: Optional[int] = None,
+        data_format: int = 32,
+        align_count: bool = False,
     ) -> Optional[bytes]:
         """Read value from reg/mem at specified address.
 

@@ -7,37 +7,59 @@ configure the device, prepare, download and upload data, including security oper
 delivered in the form of a python library and command-line applications.
 
 
-Version: 1.8.0
+Version: 1.9.0
 
 ==============
-Date: 21-October-2022
+Date: 30-January-2023
 
 New features
 
+- nxpdebugmbox:
+    - add check of root of trust hash in dat authentication
+    - enable debug authentication protocol on RT1180
+- nxpdevhsm:
+    - reset target before and after DevHSM SB3 file creation
 - nxpimage:
-    - add support for BEE
-    - enable OTFAD on RT1180
-- pfr:
-    - move the functionality of pfrc tool into PFR tool
+    - XMCD support
+    - signed messages support for RT1180
+    - add bootable image for RT10xx, RT1180, RT1170, LPC55S3x
+    - implement IEE encryption
+    - support Memory ID for erase in sb21
+    - support Memory ID for enable and load in sb21
+    - implement JUMP and JUMP_SP commands in BD file for SB2.1
+    - enable encryption in AHAB container
 - tphost/tpconfig:
-    - implement USB re-enumeration in TPHost after OEM ProvFW is started
-    - create command for checking the Chain of Trust used in TP
-    - investigate TP performance loss during device reset after TP is completed
-    - add possibility to select TP SmartCard via card reader's name
-- unify option for getting template across tools
-- add API for parsing XMCD
-- support cryptography >= 37.0.0
-- support bincopy 17.14
+    - create command for loading ProvFW
+    - add command for retrieving TP_RESPONSE without models or smart card
+    - smart card reader name hash identification
+- debug authentication improvements
+- unify memory access cross all debuggers
+- replace json file with yml file for TZ
+- support for k32w1xx, kw45xx
+- improve format of debugging logger
 
 Bugfixes
 
-- nxpdevscan:
-    - fix hanging up for serial communication
+- nxpdebugmbox:
+    - remove duplicated option --protocol for gendc command
+- nxpdevhsm:
+    - fix skipping commands from config file
+- nxpimage:
+    - fix non working 384/521 ECC keys for signature in AHAB container
+    - fix CRC mode in external flash for lpc55s3x
+    - failure on start due to boot_image hook definition
+- pfr:
+    - command line parameter '-t' is duplicated
 - tphost/tpconfig:
-    - blhost_port should not be mandatory in TP target settings
-    - fix disabling timeout in TP is ignored
-- fix documentation regarding SB31 programFuses
+    - TPhost load-tpfw requires TP device definition
+    - OEM ProvFW boot-check incorrectly fails with non-verbose flavor
 
+Known issues
+
+- nxpdebugmbox:
+    - we do not support CMSIS-DAP version 2 (bulk pipes, https://arm-software.github.io/CMSIS_5/DAP/html/group__DAP__ConfigUSB__gr.html)
+      This means sw debuggers such as MCU-Link v3 will not work (nxpdebugmbox will not detect the debugger probe)
+      This issue will be resolved in next version of SPSDK
 
 Supported devices
 =================
@@ -64,6 +86,27 @@ Python 3.7+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+1.8.0
+- nxpdevscan:
+    - fix hanging up for serial communication
+- nxpimage:
+    - add support for BEE
+    - enable OTFAD on RT1180
+- pfr:
+    - move the functionality of pfrc tool into PFR tool
+- tphost/tpconfig:
+    - implement USB re-enumeration in TPHost after OEM ProvFW is started
+    - create command for checking the Chain of Trust used in TP
+    - investigate TP performance loss during device reset after TP is completed
+    - add possibility to select TP SmartCard via card reader's name
+    - blhost_port should not be mandatory in TP target settings
+    - fix disabling timeout in TP is ignored
+- unify option for getting template across tools
+- add API for parsing XMCD
+- support cryptography >= 37.0.0
+- support bincopy 17.14
+- fix documentation regarding SB31 programFuses
+
 1.7.1
 - nxpdebugmbox:
     - fix debug authentication for RT595

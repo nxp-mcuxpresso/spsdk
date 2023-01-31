@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -134,6 +134,8 @@ def generate_secure_binary_21(
 
 def generate_secure_binary_31(container_conf: str) -> None:
     """Generate SecureBinary image from json configuration file.
+
+    RoTKTH/SB3KDK is printed out in verbose mode
 
     :param container_conf: configuration file
     :raises SPSDKError: Raised when there is no signing key

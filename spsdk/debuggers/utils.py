@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Debug probes support."""
 
 import contextlib
 import logging
-from typing import Dict, Iterator, Type
+from typing import Dict, Iterator, Optional, Type
 
 import colorama
 import prettytable
@@ -21,15 +21,13 @@ from spsdk.debuggers.debug_probe_pemicro import DebugProbePemicro
 # Import all supported debug probe classes
 from spsdk.debuggers.debug_probe_pyocd import DebugProbePyOCD
 
-PROBES = {
+PROBES: Dict[str, Type[DebugProbe]] = {
     "pyocd": DebugProbePyOCD,
     "jlink": DebugProbePyLink,
     "pemicro": DebugProbePemicro,
 }
 
 logger = logging.getLogger(__name__)
-
-colorama.init()
 
 
 class ProbeDescription:
@@ -54,13 +52,13 @@ class ProbeDescription:
         self.description = description
         self.probe = probe
 
-    def get_probe(self, user_params: Dict = None) -> DebugProbe:
+    def get_probe(self, options: Optional[Dict] = None) -> DebugProbe:
         """Get instance of probe.
 
-        :param user_params: The dictionary with optional user parameters
+        :param options: The dictionary with options
         :return: Instance of described probe.
         """
-        return self.probe(hardware_id=self.hardware_id, user_params=user_params)
+        return self.probe(hardware_id=self.hardware_id, options=options)
 
 
 class DebugProbes(list):
@@ -97,9 +95,7 @@ class DebugProbes(list):
         :raises SPSDKProbeNotFoundError: No probe has been founded
         """
         if len(self) == 0:
-            if not silent:
-                print("There is no any debug probe connected in system!")
-            raise SPSDKProbeNotFoundError("There is no any debug probe connected in system!")
+            raise SPSDKProbeNotFoundError("There is no debug probe connected in system!")
 
         if not silent or len(self) > 1:  # pragma: no cover
             self.print()
@@ -111,7 +107,6 @@ class DebugProbes(list):
             print("Please choose the debug probe: ", end="")
             i_selected = int(input())
             if i_selected > len(self) - 1:
-                print("The chosen probe index is out of range")
                 raise SPSDKProbeNotFoundError("The chosen probe index is out of range")
 
         return self[i_selected]
@@ -136,8 +131,7 @@ class DebugProbes(list):
                 ]
             )
             i += 1
-        print(table)
-        print(colorama.Style.RESET_ALL, end="")
+        print(table.get_string() + colorama.Style.RESET_ALL)
 
 
 class DebugProbeUtils:
@@ -149,7 +143,9 @@ class DebugProbeUtils:
 
     @staticmethod
     def get_connected_probes(
-        interface: str = None, hardware_id: str = None, user_params: Dict = None
+        interface: Optional[str] = None,
+        hardware_id: Optional[str] = None,
+        options: Optional[Dict] = None,
     ) -> DebugProbes:
         """Functions returns the list of all connected probes in system.
 
@@ -157,7 +153,7 @@ class DebugProbeUtils:
 
         :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
         :param hardware_id: None to list all probes, otherwise the the only probe with matching
-        :param user_params: The dictionary with optional user parameters
+        :param options: The dictionary with optional options
             hardware id is listed.
         :return: list of probe_description's
         """
@@ -165,68 +161,62 @@ class DebugProbeUtils:
         for key, probe in PROBES.items():
             if (interface is None) or (interface.lower() == key):
                 try:
-                    probes.extend(probe.get_connected_probes(hardware_id, user_params))
+                    probes.extend(probe.get_connected_probes(hardware_id, options))
                 except SPSDKDebugProbeError as exc:
                     logger.warning(f"The {key} debug probe support is not ready({str(exc)}).")
 
         return probes
 
 
-def test_ahb_access(probe: DebugProbe, ap_mem: int = 0) -> bool:
+def test_ahb_access(probe: DebugProbe, ap_mem: Optional[int] = None, invasive: bool = True) -> bool:
     """The function safely test the access of debug probe to AHB in target.
 
     :param probe: Probe object to use for test.
-    :param ap_mem: Index of memory access port., defaults to 0
+    :param ap_mem: Index of memory access port, defaults to 0
+    :param invasive: Invasive type of test (temporary changed destination RAM value)
     :return: True is access to AHB is granted, False otherwise.
     """
     ahb_enabled = False
-    logger.debug("step T.1: Activate the correct AP")
-    probe.coresight_reg_write(access_port=False, addr=2 * 4, data=ap_mem)
-
+    bck_mem_ap = probe.mem_ap_ix
+    probe.mem_ap_ix = ap_mem or probe.mem_ap_ix
     try:
-        logger.debug("step T.2: Set the AP access size and address mode")
-        probe.coresight_reg_write(
-            access_port=True,
-            addr=probe.get_coresight_ap_address(ap_mem, 0 * 4),
-            data=0x22000012,
+        test_value = probe.mem_reg_read(probe.TEST_MEM_AP_ADDRESS)
+        logger.debug(
+            f"Test Connection: Read value at {hex(probe.TEST_MEM_AP_ADDRESS)} is {test_value:08X}"
         )
-
-        logger.debug("step T.3: Set the initial AHB address to access")
-        probe.coresight_reg_write(
-            access_port=True,
-            addr=probe.get_coresight_ap_address(ap_mem, 1 * 4),
-            data=0x20000000,
-        )
-
-        logger.debug("step T.4: Access the memory system at that address")
-
-        value = probe.coresight_reg_read(
-            access_port=True, addr=probe.get_coresight_ap_address(ap_mem, 3 * 4)
-        )
-        logger.debug(f"Read value at 0x2000_0000 is {value:08X}")
+        if invasive:
+            probe.mem_reg_write(addr=probe.TEST_MEM_AP_ADDRESS, data=test_value ^ 0xAAAAAAAA)
+            test_read = probe.mem_reg_read(probe.TEST_MEM_AP_ADDRESS)
+            probe.mem_reg_write(addr=probe.TEST_MEM_AP_ADDRESS, data=test_value)
+            if test_read != test_value ^ 0xAAAAAAAA:
+                raise SPSDKError("Test connection verification failed")
         ahb_enabled = True
 
-    except SPSDKDebugProbeError:
-        logger.debug("Chip has NOT enabled AHB access.")
+    except SPSDKError as exc:
+        logger.debug(f"Test Connection: Chip has NOT enabled AHB access. {str(exc)}")
+    finally:
+        probe.mem_ap_ix = bck_mem_ap
 
     return ahb_enabled
 
 
 @contextlib.contextmanager
 def open_debug_probe(
-    interface: str = None, serial_no: str = None, debug_probe_params: Dict = None
+    interface: Optional[str] = None,
+    serial_no: Optional[str] = None,
+    debug_probe_params: Optional[Dict] = None,
 ) -> Iterator[DebugProbe]:
     """Method opens DebugProbe object based on input arguments.
 
     :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
     :param serial_no: None to list all probes, otherwise the the only probe with matching
-    :param debug_probe_params: The dictionary with optional user parameters
+    :param debug_probe_params: The dictionary with optional options
         hardware id is listed.
     :return: Active DebugProbe object.
     :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
     debug_probes = DebugProbeUtils.get_connected_probes(
-        interface=interface, hardware_id=serial_no, user_params=debug_probe_params
+        interface=interface, hardware_id=serial_no, options=debug_probe_params
     )
     selected_probe = debug_probes.select_probe()
     debug_probe = selected_probe.get_probe(debug_probe_params)
@@ -235,6 +225,6 @@ def open_debug_probe(
     try:
         yield debug_probe
     except SPSDKError as exc:
-        raise SPSDKError(f"Failed Debug Probe operation:({str(exc)}).") from exc
+        raise exc
     finally:
         debug_probe.close()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -71,7 +71,7 @@ class BDParser(Parser):
         self._lexer.cleanup()
 
     def parse(
-        self, text: str, extern: List = None
+        self, text: str, extern: Optional[List] = None
     ) -> Optional[Dict]:  # pylint: disable=arguments-differ
         """Parse the `input_text` and returns a dictionary of the file content.
 
@@ -842,23 +842,37 @@ class BDParser(Parser):
         self.error(token, ": empty load target is not supported right now.")
         return token.empty
 
-    @_("ERASE address_or_range")  # type: ignore
+    @_("ERASE mem_opt address_or_range")  # type: ignore
     def erase_stmt(self, token: YaccProduction) -> Dict:  # type: ignore
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of erase statement.
         """
-        return {"erase": token.address_or_range}
+        dictionary: Dict = {token.ERASE: {}}
+        dictionary[token.ERASE].update(token.address_or_range)
+        dictionary[token.ERASE].update(token.mem_opt)
+        return dictionary
 
-    @_("ERASE ALL")  # type: ignore
+    @_("ERASE mem_opt ALL")  # type: ignore
     def erase_stmt(self, token: YaccProduction) -> Dict:  # type: ignore
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of erase statement.
         """
-        return {"erase": {"address": 0x00, "flags": 0x01}}
+        dictionary: Dict = {token.ERASE: {"address": 0x00, "flags": 0x01}}
+        dictionary[token.ERASE].update(token.mem_opt)
+        return dictionary
+
+    @_("ERASE UNSECURE ALL")  # type: ignore
+    def erase_stmt(self, token: YaccProduction) -> Dict:  # type: ignore
+        """Parser rule.
+
+        :param token: object holding the content defined in decorator.
+        :return: dictionary holding the content of erase statement.
+        """
+        return {"erase": {"address": 0x00, "flags": 0x02}}
 
     @_("ENABLE mem_opt int_const_expr")  # type: ignore
     def enable_stmt(self, token: YaccProduction) -> Dict:  # type: ignore
@@ -1162,7 +1176,7 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         """
         # search in variables for token.IDENT variable and get it's value
-        self.error(token, ": identifier as memory option is not supported.")
+        return {"mem_opt": token.IDENT}
 
     @_("'@' int_const_expr")  # type: ignore
     def mem_opt(self, token: YaccProduction) -> Dict:  # type: ignore
@@ -1182,7 +1196,7 @@ class BDParser(Parser):
 
         :param token: object holding the content defined in decorator.
         """
-        self.error(token, ": empty memory option is not supported.")
+        return token.empty
 
     @_("VERSION_CHECK sec_or_nsec fw_version")  # type: ignore
     def version_stmt(self, token: YaccProduction) -> Dict:  # type: ignore

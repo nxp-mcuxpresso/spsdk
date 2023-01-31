@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -698,7 +698,7 @@ def test_load_data(input_text, throws_exception):
                 keystore_to_nv id1 0x08000800;
             }
             """,
-            True,
+            False,
         ),
         (
             r"""
@@ -709,7 +709,7 @@ def test_load_data(input_text, throws_exception):
                 keystore_to_nv 0x08000800;
             }
             """,
-            True,
+            False,
         ),
     ],
 )

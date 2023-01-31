@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for crypto operations (certificate and key management).
@@ -109,6 +109,7 @@ PrivateKey = Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
 _PublicKeyTuple = (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)
 _PrivateKeyTuple = (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey)
 
+# pylint: disable=wrong-import-position # TODO: this whole module needs refactoring
 from .certificate_management import *
 from .keys_management import *
 

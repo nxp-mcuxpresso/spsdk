@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ from typing import List
 import click
 
 from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
-from spsdk.apps.utils.utils import catch_spsdk_error, check_destination_dir, check_file_exists
+from spsdk.apps.utils.utils import catch_spsdk_error, check_file_exists
 from spsdk.crypto import (
     ec,
     generate_ecc_private_key,
@@ -91,7 +91,6 @@ def main(log_level: int, key_type: str, path: str, password: str, force: bool) -
     key_param = key_type.lower().strip()
     is_rsa = "rsa" in key_param
 
-    check_destination_dir(path, force)
     check_file_exists(path, force)
     pub_key_path = os.path.splitext(path)[0] + ".pub"
     check_file_exists(pub_key_path, force)

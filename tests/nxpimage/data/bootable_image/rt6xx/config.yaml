@@ -12,4 +12,4 @@ keyblob: ./bootable_image/rt5xx/keyblob.bin # [Optional], Key Blob block path, K
 fcb: ./bootable_image/rt5xx/fcb.bin # [Optional], FCB block path, Flash Configuration block path
 image_version: 0x1258 # [Optional], FCB block path, Flash Configuration block path
 keystore: ./bootable_image/rt5xx/keystore.bin # [Optional], Key Store block path, Key store block path
-application: ./bootable_image/rt5xx/app.bin # [Optional], Application, Application image path
+application: ./bootable_image/rt5xx/application.bin # [Optional], Application, Application image path

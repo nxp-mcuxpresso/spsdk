@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -364,6 +364,15 @@ class BootImgRT(BootImgBase):
         By default, BEE segment is empty. PRDB regions may be specified only for XIP images.
         """
         return self._bee
+
+    @bee.setter
+    def bee(self, bee: SegBEE) -> None:
+        """Setter.
+
+        :param bee: BEE instance to be set
+        """
+        assert isinstance(bee, SegBEE)
+        self._bee = bee
 
     @property
     def app_offset(self) -> int:
@@ -844,12 +853,11 @@ class BootImgRT(BootImgBase):
         #
         self.csf = csf
 
-    def _export_fcb_bee(self, dbg_info: DebugInfo) -> bytes:
-        """Export FCB and BEE segments.
+    def export_fcb(self, dbg_info: DebugInfo) -> bytes:
+        """Export FCB segment.
 
         :param dbg_info: optional instance to provide info about exported data
-        :return: binary FCB segment and BEE regions
-        :raises ValueError: if any BEE region is configured for images not located in the FLASH
+        :return: binary FCB segment
         :raises SPSDKError: If invalid length of data
         """
         if not self.fcb.enabled:
@@ -857,11 +865,54 @@ class BootImgRT(BootImgBase):
         data = self.fcb.export(dbg_info=dbg_info)
         if len(data) != self.fcb.space:
             raise SPSDKError("Invalid length of data")
+        return data
+
+    def export_bee(self, dbg_info: DebugInfo) -> bytes:
+        """Export BEE segment.
+
+        :param dbg_info: optional instance to provide info about exported data
+        :return: binary BEE segment
+        :raises SPSDKError: if any BEE region is configured for images not located in the FLASH
+        """
+        data = b""
         if self.ivt_offset == self.IVT_OFFSET_NOR_FLASH:
-            data += self.bee.export(dbg_info=dbg_info)
+            data = self.bee.export(dbg_info=dbg_info)
         elif self.bee.space > 0:
             raise SPSDKError("BEE can be configured only for XIP images located in FLASH")
         return data
+
+    def export_dcd(self, dbg_info: DebugInfo) -> bytes:
+        """Export DCD segment.
+
+        :param dbg_info: optional instance to provide info about exported data
+        :return: binary DCD segment
+        :raises SPSDKError: If DCD padding is not set
+        """
+        dcd_data = b""
+        if (self.dcd is not None) and self.dcd.enabled:
+            if self.dcd.padding_len != 0:
+                raise SPSDKError("Padding can not be present")
+            dcd_data = self.dcd.export()
+            dbg_info.append_binary_section("DCD", dcd_data)
+        return dcd_data
+
+    def export_csf(
+        self, dbg_info: DebugInfo, data: bytes, zulu: datetime = datetime.now(timezone.utc)
+    ) -> bytes:
+        """Export CSF segment.
+
+        :param dbg_info: optional instance to provide info about exported data
+        :param data: generated binary data used for creating of signature
+        :param zulu: current UTC datetime
+        :return: binary CFD segment
+        """
+        csf_data = b""
+        if self.enabled_csf:
+            dbg_info.append_section("CSF")
+            base_data_addr = self.address if self.fcb.enabled else self.address + self.ivt_offset
+            self.enabled_csf.update_signatures(zulu, data, base_data_addr)
+            csf_data = self.enabled_csf.export(dbg_info=dbg_info)
+        return csf_data
 
     def _bee_encrypt_img_data(self, data: bytes) -> bytes:
         """Encrypt data located in BEE regions.
@@ -906,9 +957,11 @@ class BootImgRT(BootImgBase):
 
         self._update()
         dbg_info.append_section("RT10xxBootableImage")
-        # FCB + BEE
-        data = self._export_fcb_bee(dbg_info)
-
+        # FCB
+        data = self.export_fcb(dbg_info)
+        # BEE
+        bee_data = self.export_bee(dbg_info)
+        data += bee_data
         # IVT
         ivt_data = self.ivt.export()
         data += ivt_data
@@ -918,12 +971,8 @@ class BootImgRT(BootImgBase):
         data += bdt_data
         dbg_info.append_binary_section("BDT", bdt_data)
         # DCD
-        if (self.dcd is not None) and self.dcd.enabled:
-            if self.dcd.padding_len != 0:
-                raise SPSDKError("Padding can not be present")
-            dcd_data = self.dcd.export()
-            data += dcd_data
-            dbg_info.append_binary_section("DCD", dcd_data)
+        dcd_data = self.export_dcd(dbg_info)
+        data += dcd_data
         # padding before APP
         app_alignment = self.app_offset if self.fcb.enabled else self.app_offset - self.ivt_offset
         if not app_alignment >= len(data):
@@ -934,13 +983,8 @@ class BootImgRT(BootImgBase):
         data += app_data
         dbg_info.append_binary_section("APP", app_data)
         # CSF
-        if csf:
-            if dbg_info:
-                dbg_info.append_section("CSF")
-            base_data_addr = self.address if self.fcb.enabled else self.address + self.ivt_offset
-            csf.update_signatures(zulu, data, base_data_addr)
-            data += csf.export(dbg_info=dbg_info)
-
+        csf_data = self.export_csf(dbg_info, data=data, zulu=zulu)
+        data += csf_data
         return self._bee_encrypt_img_data(data)
 
     @classmethod
@@ -1285,7 +1329,7 @@ class BootImg2(BootImgBase):
         cls,
         stream: Union[bytes, bytearray, BufferedReader, BytesIO],
         step: int = 0x100,
-        size: int = None,
+        size: Optional[int] = None,
     ) -> "BootImg2":
         """Parse image from stream buffer or bytes array.
 
@@ -1571,7 +1615,7 @@ class BootImg8m(BootImgBase):
         cls,
         stream: Union[bytes, bytearray, BufferedReader, BytesIO],
         step: int = 0x100,
-        size: int = None,
+        size: Optional[int] = None,
     ) -> BootImgBase:
         """Parse image from stream buffer or bytes array.
 
@@ -1953,7 +1997,7 @@ class BootImg3a(BootImgBase):
         cls,
         stream: Union[bytes, bytearray, BufferedReader, BytesIO],
         step: int = 0x100,
-        size: int = None,
+        size: Optional[int] = None,
     ) -> BootImgBase:
         """Parse image from stream buffer or bytes array.
 
@@ -2362,7 +2406,7 @@ class BootImg3b(BootImgBase):
         cls,
         stream: Union[bytes, bytearray, BufferedReader, BytesIO],
         step: int = 0x100,
-        size: int = None,
+        size: Optional[int] = None,
     ) -> BootImgBase:
         """Parse image from stream buffer or bytes array.
 
@@ -2498,7 +2542,7 @@ class BootImg4(BootImgBase):
         cls,
         stream: Union[bytes, bytearray, BufferedReader, BytesIO],
         step: int = 0x100,
-        size: int = None,
+        size: Optional[int] = None,
     ) -> BootImgBase:
         """Parse image from stream buffer or bytes array.
 
@@ -2597,7 +2641,7 @@ class KernelImg:
         self,
         address: int = 0,
         app: Optional[bytes] = None,
-        csf: Union[SegCSF, Any] = None,
+        csf: Optional[Union[SegCSF, Any]] = None,
         version: int = 0x41,
     ) -> None:
         """Initialize the IMX Kernel Image."""
@@ -2642,7 +2686,7 @@ class KernelImg:
 def parse(
     stream: Union[bytes, bytearray, BufferedReader, BytesIO],
     step: int = 0x100,
-    size: int = None,
+    size: Optional[int] = None,
 ) -> BootImgBase:
     """Common parser for all versions of i.MX boot images.
 

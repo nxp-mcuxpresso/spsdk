@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@
 
 
 import logging
-from typing import List
+from typing import List, Optional
 
 from libusbsio import LIBUSBSIO_Exception, usbsio
 from serial.tools.list_ports import comports
@@ -36,7 +36,7 @@ NXP_USB_DEVICE_VIDS = [
 logger = logging.getLogger(__name__)
 
 
-def search_nxp_usb_devices(extend_vid_list: list = None) -> List[USBDeviceDescription]:
+def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> List[USBDeviceDescription]:
     """Searches all NXP USB devices based on their Vendor ID.
 
     :extend_vid_list: list of VIDs, to extend the default NXP VID list (int)
@@ -64,7 +64,14 @@ def search_nxp_usb_devices(extend_vid_list: list = None) -> List[USBDeviceDescri
                 name = ", ".join(get_usb_device_name(vid, pid, None))
                 serial = usb_device["serial_number"]
                 usb_dev = USBDeviceDescription(
-                    vid, pid, path, product_string, manufacturer_string, name, serial
+                    vid,
+                    pid,
+                    path,
+                    product_string,
+                    manufacturer_string,
+                    name,
+                    serial,
+                    usb_device["path"],
                 )
 
                 nxp_usb_devices.append(usb_dev)

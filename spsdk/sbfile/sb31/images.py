@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module used for generation SecureBinary V3.1."""
+import logging
 from datetime import datetime
-from struct import calcsize, pack
+from struct import calcsize, pack, unpack_from
 from typing import Any, Dict, List, Optional
 
 from spsdk import SPSDKError
@@ -20,6 +21,8 @@ from spsdk.utils.crypto.backend_internal import internal_backend
 from spsdk.utils.crypto.cert_blocks import CertBlockV31
 from spsdk.utils.misc import align_block, load_binary, load_text, value_to_int
 from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
+
+logger = logging.getLogger(__name__)
 
 
 ########################################################################################################################
@@ -38,8 +41,8 @@ class SecureBinary31Header(BaseClass):
         self,
         firmware_version: int,
         curve_name: str,
-        description: str = None,
-        timestamp: int = None,
+        description: Optional[str] = None,
+        timestamp: Optional[int] = None,
         is_nxp_container: bool = False,
         flags: int = 0,
     ) -> None:
@@ -63,7 +66,7 @@ class SecureBinary31Header(BaseClass):
         self.cert_block_offset = self.calculate_cert_block_offset()
         self.description = self._adjust_description(description)
 
-    def _adjust_description(self, description: str = None) -> bytes:
+    def _adjust_description(self, description: Optional[str] = None) -> bytes:
         """Format the description."""
         if not description:
             return bytes(self.DESCRIPTION_LENGTH)
@@ -101,7 +104,7 @@ class SecureBinary31Header(BaseClass):
         info += f" Firmware version:            {self.firmware_version}\n"
         info += f" Image type:                  {self.image_type}\n"
         info += f" Timestamp:                   {self.timestamp}\n"
-        info += f" Total length of image:       {self.image_total_length}\n"
+        info += f" Total length of Block#0:     {self.image_total_length}\n"
         info += f" Certificate block offset:    {self.cert_block_offset}\n"
         info += f" Description:                 {self.description.decode('ascii')}\n"
         return info
@@ -141,9 +144,43 @@ class SecureBinary31Header(BaseClass):
     def parse(cls, data: bytes, offset: int = 0) -> "SecureBinary31Header":
         """Parse binary data into SecureBinary31Header.
 
-        :raises NotImplementedError: Not yet implemented
+        :raises SPSDKError: Unable to parse SB31 Header.
         """
-        raise NotImplementedError("Not yet implemented.")
+        (
+            magic,
+            minor_version,
+            major_version,
+            flags,
+            block_count,
+            block_size,
+            timestamp,
+            firmware_version,
+            image_total_length,
+            image_type,
+            cert_block_offset,
+            description,
+        ) = unpack_from(cls.HEADER_FORMAT, data, offset=offset)
+        if magic != cls.MAGIC:
+            raise SPSDKError("Magic doesn't match")
+        if major_version != 3 and minor_version != 1:
+            raise SPSDKError(f"Unable to parse SB version {major_version}.{minor_version}")
+        if block_size not in [292, 308]:
+            raise SPSDKError(f"Unable to determine curve name from block size: {block_size}")
+
+        curve_name = "secp256r1" if block_size == 292 else "secp384r1"
+        obj = SecureBinary31Header(
+            firmware_version=firmware_version,
+            curve_name=curve_name,
+            description=description.decode("utf-8"),
+            timestamp=timestamp,
+            is_nxp_container=image_type == 7,
+            flags=flags,
+        )
+        obj.block_count = block_count
+        obj.block_size = block_size
+        obj.cert_block_offset = cert_block_offset
+        obj.image_total_length = image_total_length
+        return obj
 
     def validate(self) -> None:
         """Validate the settings of class members.
@@ -179,11 +216,12 @@ class SecureBinary31Commands(BaseClass):
 
     def __init__(
         self,
+        family: str,
         curve_name: str,
         is_encrypted: bool = True,
-        pck: bytes = None,
-        timestamp: int = None,
-        kdk_access_rights: int = None,
+        pck: Optional[bytes] = None,
+        timestamp: Optional[int] = None,
+        kdk_access_rights: Optional[int] = None,
     ) -> None:
         """Initialize container for SB3.1 commands.
 
@@ -195,6 +233,7 @@ class SecureBinary31Commands(BaseClass):
         :raises SPSDKError: Key derivation arguments are not provided if `is_encrypted` is True
         """
         super().__init__()
+        self.family = family
         self.curve_name = curve_name
         self.hash_type = self._get_hash_type(curve_name)
         self.is_encrypted = is_encrypted
@@ -228,12 +267,19 @@ class SecureBinary31Commands(BaseClass):
         """Add SB3.1 command."""
         self.commands.append(command)
 
+    def insert_command(self, index: int, command: MainCmd) -> None:
+        """Insert SB3.1 command."""
+        if index == -1:
+            self.commands.append(command)
+        else:
+            self.commands.insert(index, command)
+
     def set_commands(self, commands: List[MainCmd]) -> None:
         """Set all SB3.1 commands at once."""
         self.commands = commands.copy()
 
     def load_from_config(
-        self, config: List[Dict[str, Any]], search_paths: List[str] = None
+        self, config: List[Dict[str, Any]], search_paths: Optional[List[str]] = None
     ) -> None:
         """Load configuration from dictionary.
 
@@ -243,6 +289,7 @@ class SecureBinary31Commands(BaseClass):
         for cfg_cmd in config:
             cfg_cmd_key = list(cfg_cmd.keys())[0]
             cfg_cmd_value = cfg_cmd[cfg_cmd_key]
+            cfg_cmd_value["family"] = self.family
             self.add_command(
                 CFG_NAME_TO_CLASS[cfg_cmd_key].load_from_config(
                     cfg_cmd_value, search_paths=search_paths
@@ -330,16 +377,17 @@ class SecureBinary31(BaseClass):
 
     def __init__(
         self,
+        family: str,
         curve_name: str,
         cert_block: CertBlockV31,
         firmware_version: int,
         signing_key: bytes,
-        pck: bytes = None,
-        kdk_access_rights: int = None,
-        description: str = None,
+        pck: Optional[bytes] = None,
+        kdk_access_rights: Optional[int] = None,
+        description: Optional[str] = None,
         is_nxp_container: bool = False,
         flags: int = 0,
-        timestamp: int = None,
+        timestamp: Optional[int] = None,
         is_encrypted: bool = True,
     ) -> None:
         """Constructor for Secure Binary v3.1 data container.
@@ -357,6 +405,7 @@ class SecureBinary31(BaseClass):
         :param is_encrypted: Indicate whether commands should be encrypted or not, defaults to True
         """
         # in our case, timestamp is the number of seconds since "Jan 1, 2000"
+        self.family = family
         self.timestamp = timestamp or int((datetime.now() - datetime(2000, 1, 1)).total_seconds())
         self.pck = pck
         self.cert_block: CertBlockV31 = cert_block
@@ -378,12 +427,15 @@ class SecureBinary31(BaseClass):
             flags=self.flags,
         )
         self.sb_commands = SecureBinary31Commands(
+            family=self.family,
             curve_name=curve_name,
             is_encrypted=self.is_encrypted,
             pck=pck,
             timestamp=self.timestamp,
             kdk_access_rights=self.kdk_access_rights,
         )
+        if self.pck:
+            logger.info(f"SB3KDK: {self.pck.hex()}")
 
     @staticmethod
     def _get_prv_key_length(curve_name: str) -> int:
@@ -427,7 +479,7 @@ class SecureBinary31(BaseClass):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "SecureBinary31":
         """Creates an instance of SecureBinary31 from configuration.
 
@@ -435,6 +487,7 @@ class SecureBinary31(BaseClass):
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: Instance of Secure Binary V3.1 class
         """
+        family = config["family"]
         container_keyblob_enc_key_path = config.get("containerKeyBlobEncryptionKey")
         is_nxp_container = config.get("isNxpContainer", False)
         description = config.get("description")
@@ -477,6 +530,7 @@ class SecureBinary31(BaseClass):
 
         # Create SB3 object
         sb3 = SecureBinary31(
+            family=family,
             pck=pck,
             cert_block=cert_block,
             curve_name=curve_name,

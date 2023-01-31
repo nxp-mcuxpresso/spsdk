@@ -12,6 +12,8 @@ sb3_family:
       description: MCU family name.
       enum:
         - lpc55s3x
+        - kw45xx
+        - k32w1xx
       template_value: lpc55s3x
   required: [family]
 

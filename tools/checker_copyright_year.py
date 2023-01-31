@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,7 @@ import datetime
 import os
 import re
 import sys
-from typing import Sequence
+from typing import Optional, Sequence
 
 EXTENSIONS = [".py"]
 COPYRIGHT_REGEX_STR = r"Copyright.*(?P<till>\d{4}) (?P<holder>.*)"
@@ -52,7 +52,7 @@ def check_files(files: Sequence[str]) -> int:
     return ret_val
 
 
-def main(argv: Sequence[str] = None) -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
     """Main function."""
     parser = argparse.ArgumentParser(
         description="""Check whether "files" have the current year in Copyright."""

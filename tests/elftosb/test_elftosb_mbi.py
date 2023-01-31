@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,7 +18,8 @@ from spsdk import SPSDKError
 from spsdk.apps import elftosb
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeyStore
-from spsdk.image.mbimg import Mbi_MixinHmac, Mbi_PlainRamLpc55s3x, Mbi_PlainXipSignedLpc55s3x
+from spsdk.image.mbi_mixin import Mbi_MixinHmac
+from spsdk.image.mbimg import Mbi_PlainRamLpc55s3x, Mbi_PlainXipSignedLpc55s3x
 from spsdk.utils.crypto.backend_internal import ECC, RSA, internal_backend
 from spsdk.utils.misc import use_working_directory
 
@@ -84,6 +85,12 @@ def get_signing_key(config_file) -> ECC.EccKey:
         ("mb_ram_crc_version.json", "lpc55s3x"),
         ("mb_xip_crc.json", "lpc55s3x"),
         ("mb_ext_xip_crc.json", "lpc55s3x"),
+        ("mb_xip_crc_nbu.json", "kw45xx"),
+        ("mb_xip_crc_version.json", "kw45xx"),
+        ("mb_xip_384_384_no_signature.json", "kw45xx"),
+        ("mb_xip_crc_nbu.json", "k32w1xx"),
+        ("mb_xip_crc_version.json", "k32w1xx"),
+        ("mb_xip_384_384_no_signature.json", "k32w1xx"),
         ("mb_ext_xip_crc_s19.json", "lpc55s3x"),
     ],
 )
@@ -109,6 +116,18 @@ def test_elftosb_mbi_basic(data_dir, tmpdir, config_file, device):
         ("mb_xip_384_256.json", "lpc55s3x", None),
         ("mb_xip_384_384.json", "lpc55s3x", None),
         ("mb_ext_xip_signed.json", "lpc55s3x", None),
+        ("mb_xip_256_none.json", "k32w1xx", None),
+        ("mb_xip_384_256.json", "k32w1xx", None),
+        ("mb_xip_384_384.json", "k32w1xx", None),
+        ("mb_xip_256_none_sd.json", "k32w1xx", "sha256"),
+        ("mb_xip_384_256_sd.json", "k32w1xx", "sha256"),
+        ("mb_xip_384_384_sd.json", "k32w1xx", "sha384"),
+        ("mb_xip_256_none.json", "kw45xx", None),
+        ("mb_xip_384_256.json", "kw45xx", None),
+        ("mb_xip_384_384.json", "kw45xx", None),
+        ("mb_xip_256_none_sd.json", "kw45xx", "sha256"),
+        ("mb_xip_384_256_sd.json", "kw45xx", "sha256"),
+        ("mb_xip_384_384_sd.json", "kw45xx", "sha384"),
     ],
 )
 def test_elftosb_mbi_signed(data_dir, tmpdir, config_file, device, sign_digest):

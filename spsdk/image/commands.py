@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -275,7 +275,7 @@ class CmdWriteData(CmdBase):
         self,
         numbytes: int = 4,
         ops: int = EnumWriteOps.WRITE_VALUE,
-        data: Iterable[Tuple[int, int]] = None,
+        data: Optional[Iterable[Tuple[int, int]]] = None,
     ) -> None:
         """Initialize Write Data command.
 
@@ -626,7 +626,7 @@ class CmdInitialize(CmdBase):
             raise SPSDKError("Incorrect value of engine")
         self._header.param = value
 
-    def __init__(self, engine: int = EnumEngine.ANY, data: List[int] = None) -> None:
+    def __init__(self, engine: int = EnumEngine.ANY, data: Optional[List[int]] = None) -> None:
         """Initialize the initialize command."""
         if engine not in EnumEngine:
             raise SPSDKError("Incorrect value of engine")
@@ -1123,7 +1123,7 @@ class CmdInstallKey(CmdBase):
             return False
         return True
 
-    @property
+    @property  # type: ignore
     def cmd_data_reference(self) -> Optional[Union[CertificateImg, SrkTable]]:
         """Reference to an additional data (such as certificate, signature, etc).
 
@@ -1326,7 +1326,7 @@ class CmdAuthData(CmdBase):
         """
         self.location = value
 
-    @property
+    @property  # type: ignore
     def cmd_data_reference(self) -> Optional[SignatureOrMAC]:
         """Reference to an additional data (such as certificate, signature, etc).
 

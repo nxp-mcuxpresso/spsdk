@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,7 +27,6 @@ from spsdk.utils.misc import (
     find_file,
     load_binary,
     reverse_bits_in_bytes,
-    reverse_bytes_in_longs,
     value_to_bytes,
     value_to_int,
 )
@@ -100,7 +99,6 @@ class KeyBlob:
         key: Optional[bytes] = None,
         counter_iv: Optional[bytes] = None,
         key_flags: int = KEY_FLAG_VLD | KEY_FLAG_ADE,
-        binaries: BinaryImage = None,
         # for testing
         zero_fill: Optional[bytes] = None,
         crc: Optional[bytes] = None,
@@ -141,7 +139,6 @@ class KeyBlob:
         self.start_addr = start_addr
         self.end_addr = end_addr
         self.key_flags = key_flags
-        self._binaries = binaries
         self.zero_fill = zero_fill
         self.crc_fill = crc
 
@@ -336,45 +333,6 @@ class KeyBlob:
             == (self.KEY_FLAG_ADE | self.KEY_FLAG_VLD)
         )
 
-    def binary_image(
-        self,
-        plain_data: bool = False,
-        swap_bytes: bool = False,
-        join_sub_images: bool = True,
-        table_address: int = 0,
-    ) -> Optional[BinaryImage]:
-        """Get the OTFAD Key Blob Binary Image representation.
-
-        :param plain_data: Binary representation in plain data format, defaults to False
-        :param swap_bytes: For some platforms the swap bytes is needed in encrypted format, defaults to False.
-        :param join_sub_images: If it's True, all the binary sub-images are joined into one, defaults to True.
-        :param table_address: Absolute address of OTFAD table.
-        :return: OTFAD key blob data in BinaryImage.
-        """
-        if self._binaries is None:
-            return None
-        binaries: BinaryImage = deepcopy(self._binaries)
-        for binary in binaries.sub_images:
-            assert binary.binary
-            binary.binary = align_block(binary.binary, self._ENCRYPTION_BLOCK_SIZE)
-
-        binaries.validate()
-
-        if not plain_data and self.is_encrypted:
-            for binary in binaries.sub_images:
-                assert binary.binary
-                binary.binary = self.encrypt_image(
-                    table_address + binary.absolute_address, binary.binary, swap_bytes
-                )
-                binary.name += "_encrypted"
-            binaries.name += "_encrypted"
-
-        if join_sub_images:
-            binaries.join_images()
-            binaries.validate()
-
-        return binaries
-
 
 class Otfad:
     """OTFAD: On-the-Fly AES Decryption Module."""
@@ -405,14 +363,17 @@ class Otfad:
         :param byte_swap: this probably depends on the flash device, how bytes are organized there
                 True should be used for FLASH on EVK RT6xx; False for FLASH on EVK RT5xx
         :return: encrypted image
-        :raises SPSDKError: If address range does not match to any key blob
         """
         image_end = base_addr + len(image) - 1
         for key_blob in self._key_blobs:
-            if key_blob.matches_range(base_addr, image_end):
+            if key_blob.matches_range(base_addr, image_end) and key_blob.is_encrypted:
                 return key_blob.encrypt_image(base_addr, image, byte_swap)
 
-        raise SPSDKError("The image address range does not match to key blob")
+        logger.debug(
+            f"The image address range {hex(base_addr)}:{hex(image_end)}"
+            "does not match to valid key blob, skipping encryption"
+        )
+        return image
 
     def get_key_blobs(self) -> bytes:
         """Get key blobs.
@@ -429,8 +390,8 @@ class Otfad:
     def encrypt_key_blobs(
         self,
         kek: Union[bytes, str],
-        key_scramble_mask: int = None,
-        key_scramble_align: int = None,
+        key_scramble_mask: Optional[int] = None,
+        key_scramble_align: Optional[int] = None,
         byte_swap_cnt: int = 0,
     ) -> bytes:
         """Encrypt key blobs with specified key.
@@ -495,9 +456,10 @@ class OtfadNxp(Otfad):
         family: str,
         kek: Union[bytes, str],
         table_address: int = 0,
-        key_blobs: List[KeyBlob] = None,
-        key_scramble_mask: int = None,
-        key_scramble_align: int = None,
+        key_blobs: Optional[List[KeyBlob]] = None,
+        key_scramble_mask: Optional[int] = None,
+        key_scramble_align: Optional[int] = None,
+        binaries: Optional[BinaryImage] = None,
     ) -> None:
         """Constructor.
 
@@ -511,7 +473,7 @@ class OtfadNxp(Otfad):
             ('key_scramble_mask' must be defined also)
         :raises SPSDKValueError: Unsupported family
         """
-        self._key_blobs: List[KeyBlob] = []
+        super().__init__()
 
         if family not in self.get_supported_families():
             raise SPSDKValueError(f"Unsupported family{family} by OTFAD")
@@ -535,6 +497,7 @@ class OtfadNxp(Otfad):
             "keyblob_byte_swap_cnt", device=family
         )
         assert self.keyblob_byte_swap_cnt in [0, 2, 4, 8, 16]
+        self.binaries = binaries
 
         if key_blobs:
             for key_blob in key_blobs:
@@ -575,8 +538,8 @@ class OtfadNxp(Otfad):
         fuses = Registers(family, base_endianness="little")
         grouped_regs = database.get_device_value("grouped_registers", device=family, default=None)
         fuses.load_registers_from_xml(xml_fuses, grouped_regs=grouped_regs)
-        reg_omk = fuses.find_reg(f"OTP_MASTER_KEY")
-        reg_oks = fuses.find_reg(f"OTFAD_KEK_SEED")
+        reg_omk = fuses.find_reg("OTP_MASTER_KEY")
+        reg_oks = fuses.find_reg("OTFAD_KEK_SEED")
         reg_omk.set_value(otp_master_key)
         reg_oks.set_value(otfad_key_seed)
         ret = (
@@ -664,6 +627,54 @@ class OtfadNxp(Otfad):
 
         return ret
 
+    def export_image(
+        self,
+        plain_data: bool = False,
+        swap_bytes: bool = False,
+        join_sub_images: bool = True,
+        table_address: int = 0,
+    ) -> Optional[BinaryImage]:
+        """Get the OTFAD Key Blob Binary Image representation.
+
+        :param plain_data: Binary representation in plain data format, defaults to False
+        :param swap_bytes: For some platforms the swap bytes is needed in encrypted format, defaults to False.
+        :param join_sub_images: If it's True, all the binary sub-images are joined into one, defaults to True.
+        :param table_address: Absolute address of OTFAD table.
+        :return: OTFAD key blob data in BinaryImage.
+        """
+        if self.binaries is None:
+            return None
+        binaries: BinaryImage = deepcopy(self.binaries)
+        for binary in binaries.sub_images:
+            if binary.binary:
+                binary.binary = align_block(binary.binary, KeyBlob._ENCRYPTION_BLOCK_SIZE)
+            for segment in binary.sub_images:
+                if segment.binary:
+                    segment.binary = align_block(segment.binary, KeyBlob._ENCRYPTION_BLOCK_SIZE)
+
+        binaries.validate()
+
+        if not plain_data:
+            for binary in binaries.sub_images:
+                if binary.binary:
+                    binary.binary = self.encrypt_image(
+                        binary.binary, table_address + binary.absolute_address, swap_bytes
+                    )
+                for segment in binary.sub_images:
+                    if segment.binary:
+                        segment.absolute_address
+                        segment.binary = self.encrypt_image(
+                            segment.binary,
+                            segment.absolute_address + table_address,
+                            swap_bytes,
+                        )
+
+        if join_sub_images:
+            binaries.join_images()
+            binaries.validate()
+
+        return binaries
+
     def binary_image(self, plain_data: bool = False, data_alignment: int = 16) -> BinaryImage:
         """Get the OTFAD Binary Image representation.
 
@@ -693,15 +704,12 @@ class OtfadNxp(Otfad):
                 alignment=256,
             )
         )
-        for key_blob in self._key_blobs:
-            binaries = key_blob.binary_image(
-                plain_data=plain_data, swap_bytes=self.byte_swap, table_address=self.table_address
-            )
-            if binaries:
-                binaries.alignment = data_alignment
-                binaries.validate()
-                otfad.add_image(binaries)
+        binaries = self.export_image(table_address=self.table_address)
 
+        if binaries:
+            binaries.alignment = data_alignment
+            binaries.validate()
+            otfad.add_image(binaries)
         return otfad
 
     @staticmethod
@@ -711,7 +719,7 @@ class OtfadNxp(Otfad):
         :return: List of supported families.
         """
         database = Database(OTFAD_DATABASE_FILE)
-        return database.get_devices()
+        return database.devices.device_names
 
     @staticmethod
     def get_validation_schemas(family: str) -> List[Dict[str, Any]]:
@@ -767,13 +775,14 @@ class OtfadNxp(Otfad):
         return {}
 
     @staticmethod
-    def load_from_config(config: Dict[str, Any], search_paths: List[str] = None) -> "OtfadNxp":
+    def load_from_config(
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "OtfadNxp":
         """Converts the configuration option into an OTFAD image object.
 
         "config" content array of containers configurations.
 
-        :raises SPSDKValueError: if the count of AHAB containers is invalid.
-        :param config: array of AHAB containers configuration dictionaries.
+        :param config: array of OTFAD configuration dictionaries.
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: initialized OTFAD object.
         """
@@ -783,6 +792,7 @@ class OtfadNxp(Otfad):
         kek = get_key(find_file(config["kek"], search_paths=search_paths), 16)
         logger.debug(f"Loaded KEK: {kek.hex()}")
         table_address = value_to_int(config["otfad_table_address"])
+        start_address = min([value_to_int(addr["start_address"]) for addr in otfad_config])
 
         key_scramble_mask = None
         key_scramble_align = None
@@ -792,12 +802,34 @@ class OtfadNxp(Otfad):
                 key_scramble_mask = value_to_int(key_scramble["key_scramble_mask"])
                 key_scramble_align = value_to_int(key_scramble["key_scramble_align"])
 
+        data_blobs: Optional[List[Dict]] = config.get("data_blobs")
+        binaries = None
+        if data_blobs:
+            start_address = min(
+                min([value_to_int(addr["address"]) for addr in data_blobs]), start_address
+            )
+            binaries = BinaryImage(
+                config.get("encrypted_name", "encrypted_blobs"),
+                offset=start_address - table_address,
+            )
+            for data_blob in data_blobs:
+                data = load_binary(data_blob["data"], search_paths=search_paths)
+                address = value_to_int(data_blob["address"])
+
+                binary = BinaryImage(
+                    os.path.basename(data_blob["data"]),
+                    offset=address - table_address - binaries.offset,
+                    binary=data,
+                )
+                binaries.add_image(binary)
+
         otfad = OtfadNxp(
             family=family,
             kek=kek,
             table_address=table_address,
             key_scramble_align=key_scramble_align,
             key_scramble_mask=key_scramble_mask,
+            binaries=binaries,
         )
 
         for i, key_blob_cfg in enumerate(otfad_config):
@@ -816,27 +848,12 @@ class OtfadNxp(Otfad):
             if read_only:
                 flags |= KeyBlob.KEY_FLAG_READ_ONLY
 
-            data_blobs: Optional[List[Dict]] = key_blob_cfg.get("data_blobs")
-            binaries = None
-            if data_blobs:
-                binaries = BinaryImage(f"KeyBlob{i}_data", offset=start_addr - table_address)
-                for j, data_blob in enumerate(data_blobs):
-                    data = load_binary(data_blob["data"], search_paths=search_paths)
-                    address = value_to_int(data_blob.get("address", start_addr))
-                    binary = BinaryImage(
-                        f"KeyBlob{i}_data{j}",
-                        offset=address - table_address - binaries.offset,
-                        binary=data,
-                    )
-                    binaries.add_image(binary)
-
             otfad[i] = KeyBlob(
                 start_addr=start_addr,
                 end_addr=end_addr,
                 key=aes_key,
                 counter_iv=aes_ctr,
                 key_flags=flags,
-                binaries=binaries,
                 zero_fill=bytes([0] * 4),
             )
 

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Segments within image module."""
@@ -14,6 +14,7 @@ from struct import calcsize, pack, unpack_from
 from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.misc import DebugInfo, align, align_block, extend_block, size_fmt
 
 from .bee import BEE_ENCR_BLOCK_SIZE, BeeRegionHeader
@@ -128,7 +129,7 @@ class AbstractFCB(BaseSegment):
 
     @property
     def enabled(self) -> bool:
-        """Whether FCB is enabled. Note: it is not generated to output is disabled."""
+        """Whether FCB is enabled. Note: it is not generated to output if disabled."""
         return self._enabled
 
     @enabled.setter
@@ -620,7 +621,9 @@ class SegBEE(BaseSegment):
         return result
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, decrypt_keys: List[bytes] = None) -> "SegBEE":
+    def parse(
+        cls, data: bytes, offset: int = 0, decrypt_keys: Optional[List[bytes]] = None
+    ) -> "SegBEE":
         """De-serialization.
 
         :param data: binary data to be parsed
@@ -999,7 +1002,7 @@ class SegDCD(BaseSegment):
         self._commands.clear()
         self._header.length = self._header.size
 
-    def export_txt(self, txt_data: str = None) -> str:
+    def export_txt(self, txt_data: Optional[str] = None) -> str:
         """Export txt of Device configuration data (DCD) segment."""
         write_ops = ("WriteValue", "WriteClearBits", "ClearBitMask", "SetBitMask")
         check_ops = ("CheckAllClear", "CheckAllSet", "CheckAnyClear", "CheckAnySet")
@@ -1486,10 +1489,10 @@ class XMCDHeader:
         """Export segment's header as bytes (serialization)."""
         return pack(
             self.FORMAT,
-            self.tag << 4 + self.version,
-            self.interface << 4 + self.instance,
-            self.block_size << 4 + self.block_size >> 8,
             self.block_size & 0xFF,
+            self.block_type << 4 + self.block_size >> 8,
+            self.interface << 4 + self.instance,
+            self.tag << 4 + self.version,
         )
 
     def info(self) -> str:
@@ -1512,8 +1515,10 @@ class XMCDHeader:
         size_low, type_size, interface_instance, tag_ver = unpack_from(cls.FORMAT, data)
         tag = (tag_ver & 0xF0) >> 4
         if tag != cls.TAG:
-            raise UnparsedException("Invalid TAG for XMCDHeader. ")
+            raise UnparsedException(f"Invalid TAG for XMCDHeader {tag}. Expected: {cls.TAG}")
         version = tag_ver & 0x0F
+        if version != 0:
+            raise UnparsedException(f"Invalid version {version}. Expected: 0")
         interface = (interface_instance & 0xF0) >> 4
         instance = interface_instance & 0x0F
         block_type = (type_size & 0xF0) >> 4
@@ -1548,7 +1553,11 @@ class SegXMCD(BaseSegment):
     def parse(cls, data: bytes) -> "SegXMCD":
         """Parse XMCD from binary data."""
         header = XMCDHeader.parse(data)
-        config_data = data[header.SIZE : header.block_size - header.SIZE]
+        if header.block_size != len(data):
+            raise SPSDKValueError(
+                f"Invalid length of data {len(data)}. Length must be equal to header value {header.block_size}"
+            )
+        config_data = data[header.SIZE : header.block_size]
         return SegXMCD(header=header, config_data=config_data)
 
     def info(self) -> str:

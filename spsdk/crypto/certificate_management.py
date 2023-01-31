@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for certificate management (generating certificate, validating certificate, chains)."""
 
 from datetime import datetime, timedelta
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from spsdk import SPSDKError
 from spsdk.crypto import (
@@ -25,6 +25,7 @@ from spsdk.crypto import (
     rsa,
     x509,
 )
+from spsdk.utils.misc import write_file
 
 
 def generate_certificate(
@@ -32,7 +33,7 @@ def generate_certificate(
     issuer: x509.Name,
     subject_public_key: PublicKey,
     issuer_private_key: PrivateKey,
-    serial_number: int = None,
+    serial_number: Optional[int] = None,
     if_ca: bool = True,
     duration: int = 3650,
     path_length: int = 2,
@@ -77,8 +78,7 @@ def save_crypto_item(
     :param file_path: path to the file where item will be stored
     :param encoding_type: encoding type (PEM or DER)
     """
-    with open(file_path, "wb") as f:
-        f.write(item.public_bytes(encoding_type))
+    write_file(item.public_bytes(encoding_type), file_path, mode="wb")
 
 
 def validate_certificate_chain(chain_list: list) -> list:

@@ -1,31 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import json
 import os
 
 import pytest
 
 from spsdk import SPSDKError
 from spsdk.image import TrustZone, TrustZoneType
+from spsdk.utils.database import Database
+from spsdk.utils.misc import load_binary, load_configuration
 
 
 @pytest.fixture(scope="module")
 def sample_tz_data(data_dir):
-    with open(os.path.join(data_dir, "lpc55xxA1.json")) as f:
-        return json.load(f)["trustZonePreset"]
+    preset_file = os.path.join(data_dir, "lpc55xxA1.json")
+    return load_configuration(preset_file)["trustZonePreset"]
 
 
 def test_integrity():
-    tz = TrustZone()
-    for family in tz.get_families():
-        for revision in tz.get_revisions(family):
-            file_name = tz.config[family]["revisions"][revision]
-            assert os.path.isfile(os.path.join(tz.PRESET_DIR, file_name))
+    database = Database(TrustZone.CONFIG_FILE)
+    for device in database.devices:
+        for revision in device.revisions:
+            assert os.path.isfile(os.path.join(TrustZone.PRESET_DIR, revision.data_file))
 
 
 def test_tz_types(sample_tz_data):
@@ -99,12 +99,8 @@ def test_export_invalid(sample_tz_data):
     "family,json_config,binary", [("lpc55xx", "lpc55xxA1.json", "lpc55xxA1_tzFile.bin")]
 )
 def test_binary(data_dir, family, json_config, binary):
-    with open(os.path.join(data_dir, json_config)) as json_config_file:
-        json_config_data = json.load(json_config_file)
-
-    with open(os.path.join(data_dir, binary), "rb") as binary_file:
-        binary_data = binary_file.read()
-
+    json_config_data = load_configuration(os.path.join(data_dir, json_config))
+    binary_data = load_binary(os.path.join(data_dir, binary))
     my_data = TrustZone(family=family, customizations=json_config_data["trustZonePreset"]).export()
     assert my_data == binary_data
 
@@ -119,7 +115,7 @@ def test_tz_incorrect_data(sample_tz_data):
         )
 
 
-def test_tz_incorrect_config(sample_tz_data):
+def test_tz_incorrect_config():
     with pytest.raises(SPSDKError):
         TrustZone.from_config(config_data=bytes(4))
 

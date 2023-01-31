@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for generating, processing and verifying TP Audit Log."""
 import contextlib
 import os
 import sqlite3
-from typing import Iterator, List, NamedTuple, Tuple, Union
+from typing import Iterator, List, NamedTuple, Optional, Tuple, Union
 
 from spsdk.utils.crypto.backend_openssl import ec, openssl_backend
 
@@ -263,7 +263,7 @@ class AuditLog(List[AuditLogRecord]):
 
     @staticmethod
     def records(
-        file_path: str, id_slice: Tuple[int, int] = None
+        file_path: str, id_slice: Optional[Tuple[int, int]] = None
     ) -> Iterator[Tuple[int, AuditLogRecord]]:
         """Read records from database file.
 

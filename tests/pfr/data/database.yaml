@@ -1,24 +1,28 @@
 devices:
   lpc55s6x:
     revisions:
-      0a: lpc55s6x_1b.xml
-      1b: lpc55s6x_1b.xml
+      0a:
+        data_file: lpc55s6x_1b.xml
+      1b:
+        data_file: lpc55s6x_1b.xml
     latest: 1b
-    address: 0x9_E400
-computed_registers:
-  SHA256_DIGEST: ""
-grouped_registers:
-  - name: ROTKH
-    width: 256
-    reverse: 1
-    description: ROTKH field is compounded by 8 32-bit fields and contains Root key
-      table hash
-computed_fields:
-  CC_SOCU_PIN:
-    INVERSE_VALUE: pfr_reg_inverse_high_half
-  CC_SOCU_DFLT:
-    INVERSE_VALUE: pfr_reg_inverse_high_half
-ignored_fields:
-  - FIELD
-seal_start: SHA256_DIGEST0
-seal_count: 8
+    attributes:
+      address: 0x9_E400
+attributes:
+  computed_registers:
+    SHA256_DIGEST: ""
+  grouped_registers:
+    - name: ROTKH
+      width: 256
+      reverse: 1
+      description: ROTKH field is compounded by 8 32-bit fields and contains Root key
+        table hash
+  computed_fields:
+    CC_SOCU_PIN:
+      INVERSE_VALUE: pfr_reg_inverse_high_half
+    CC_SOCU_DFLT:
+      INVERSE_VALUE: pfr_reg_inverse_high_half
+  ignored_fields:
+    - FIELD
+  seal_start: SHA256_DIGEST0
+  seal_count: 8

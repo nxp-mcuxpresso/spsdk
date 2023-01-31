@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust Provisioning HOST application support."""
@@ -11,15 +11,16 @@ import logging
 import math
 import multiprocessing
 import os
+import secrets
 import struct
 import time
 from functools import partial
-from typing import Callable, Sequence
+from typing import Callable, Optional, Sequence
 
 from spsdk import SPSDKError
 from spsdk.crypto import EllipticCurvePublicKey, serialization
 from spsdk.crypto.loaders import Encoding, extract_public_key, load_pem_public_key
-from spsdk.tp.data_container.audit_log import AuditLog
+from spsdk.tp.data_container import AuditLog, DataEntry, PayloadType
 from spsdk.utils.database import Database
 from spsdk.utils.misc import Timeout, value_to_int, write_file
 
@@ -53,13 +54,42 @@ class TrustProvisioningHost:
         self.tptarget = tptarget
         self.info_print = info_print
 
-    def load_provisioning_fw(self, prov_fw: bytes, timeout: int = 60) -> None:
+    def load_provisioning_fw(
+        self,
+        prov_fw: bytes,
+        family: str,
+        timeout: int = 60,
+        database: Optional[Database] = None,
+        skip_test: bool = True,
+        keep_target_open: bool = True,
+    ) -> None:
         """Method loads the provisioning firmware into device.
 
-        :param prov_fw: This arg allow use own fw to load, defaults to None (use own one by device)
+        :param prov_fw: Provisioning Firmware data
+        :param family: Chip family
         :param timeout: Timeout for loading provisioning firmware operation in seconds.
+        :param database: Database of all supported devices (automatic lookup if not specified)
+        :param skip_test: Skip test for checking that OEM Provisioning Firmware booted-up
+        :param keep_target_open: Keep target device open
         :raises SPSDKTpError: The Provisioning firmware doesn't boot
         """
+        if database is None:
+            logger.debug("Looking up device in database")
+            database = Database(os.path.join(TP_DATA_FOLDER, "database.yaml"))
+        if family not in database.devices.device_names:
+            raise SPSDKTpError(f"Database info missing for '{family}'")
+        try:
+            if not self.tptarget.is_open:
+                self.tptarget.open()
+            self.info_print("1.1.Step - Updating CFPA page")
+            self.update_cfpa_page(family=family, database=database)
+            self.info_print("1.2.Step - Erase memory for provisioning firmware")
+            self.erase_memory(family=family, database=database)
+            self.info_print("1.3.Step - Loading OEM provisioning firmware")
+        except SPSDKError as e:
+            self.tptarget.close()
+            raise SPSDKTpError(f"Unable to prepare the MCU: {e}") from e
+
         try:
             if self.tptarget.uses_usb:
                 initial_usb_set = get_current_usb_paths()
@@ -75,8 +105,18 @@ class TrustProvisioningHost:
 
             logger.info(f"Waiting for {REOPEN_WAIT_TIME} seconds for the ProvFW to boot up.")
             time.sleep(REOPEN_WAIT_TIME)
-            self.tptarget.open()
+
+            if not skip_test:
+                self.info_print("1.4.Step - Checking whether provisioning firmware booted.")
+                self.tptarget.open()
+                if not self.tptarget.check_provisioning_firmware():
+                    raise SPSDKError()
+
+            if keep_target_open and not self.tptarget.is_open:
+                self.tptarget.open()
+
         except SPSDKError as e:
+            self.tptarget.close()
             raise SPSDKTpError(
                 "Can't load/connect to the TrustProvisioning Firmware. "
                 "Please make sure your device supports TrustProvisioning."
@@ -100,7 +140,7 @@ class TrustProvisioningHost:
         if database.get_device_value("need_revoke_update", family):
             cfpa_revoke: int = struct.unpack_from("<L", cfpa_data, offset=cfpa_revoke_offset)[0]
             if cfpa_revoke & 0x55 == 0x55:
-                logger.info(f"RKTH_REVOKE is already set, no need to update CFPA")
+                logger.info("RKTH_REVOKE is already set, no need to update CFPA")
                 return
             # just set required bits (in case user already set other bits)
             cfpa_revoke |= 0x55
@@ -132,8 +172,8 @@ class TrustProvisioningHost:
         self,
         family: str,
         audit_log: str,
-        prov_fw: bytes = None,
-        product_fw: bytes = None,
+        prov_fw: Optional[bytes] = None,
+        product_fw: Optional[bytes] = None,
         timeout: int = 60,
         save_debug_data: bool = False,
     ) -> None:
@@ -153,7 +193,7 @@ class TrustProvisioningHost:
 
             logger.debug("Looking up device in database")
             database = Database(os.path.join(TP_DATA_FOLDER, "database.yaml"))
-            if family not in database.get_devices():
+            if family not in database.devices.device_names:
                 raise SPSDKTpError(f"Database info missing for '{family}'")
 
             logger.debug("Opening TP DEVICE interface")
@@ -173,13 +213,13 @@ class TrustProvisioningHost:
 
             self.info_print("1.Step - Provide to target provisioning firmware if needed.")
             if prov_fw:
-                self.info_print(" - Updating CFPA page")
-                self.update_cfpa_page(family=family, database=database)
-                self.info_print(" - Erase memory for provisioning firmware")
-                self.erase_memory(family=family, database=database)
-                self.info_print(" - Loading OEM provisioning firmware")
                 self.load_provisioning_fw(
-                    prov_fw=prov_fw, timeout=loc_timeout.get_rest_time_ms(True)
+                    prov_fw=prov_fw,
+                    family=family,
+                    timeout=loc_timeout.get_rest_time_ms(True),
+                    database=database,
+                    skip_test=True,
+                    keep_target_open=True,
                 )
 
             self.info_print("2.Step - Get the initial challenge from TP device.")
@@ -248,12 +288,12 @@ class TrustProvisioningHost:
     def verify_extract_log(
         audit_log: str,
         audit_log_key: str,
-        destination: str = None,
+        destination: Optional[str] = None,
         skip_nxp: bool = False,
         skip_oem: bool = False,
-        cert_index: int = None,
+        cert_index: Optional[int] = None,
         encoding: Encoding = Encoding.PEM,
-        max_processes: int = None,
+        max_processes: Optional[int] = None,
         info_print: Callable[[str], None] = lambda x: None,
         force_rewrite: bool = False,
     ) -> AuditLogCounter:
@@ -284,10 +324,6 @@ class TrustProvisioningHost:
             assert isinstance(log_key, EllipticCurvePublicKey)
 
             if destination:
-                if os.path.exists(destination) and os.listdir(destination) and not force_rewrite:
-                    raise SPSDKTpError(
-                        f"Directory {destination} exists and has content. Use non-existing or empty directory."
-                    )
                 os.makedirs(destination, exist_ok=True)
 
             # create partial method to save typing later, because readability counts
@@ -298,9 +334,10 @@ class TrustProvisioningHost:
                 skip_oem=skip_oem,
                 cert_index=cert_index,
                 encoding=encoding,
+                force_rewrite=force_rewrite,
             )
 
-            logger.info("Star loading audit log")
+            logger.info("Start loading audit log")
             log_record_count = AuditLog.record_count(audit_log)
             info_print(f"Found {log_record_count} record(s) in the audit log.")
             _, first_record = next(AuditLog.records(audit_log))
@@ -401,6 +438,60 @@ class TrustProvisioningHost:
             logger.debug("Closing TP device")
             self.tpdev.close()
 
+    def get_tp_response(
+        self,
+        response_file: str,
+        timeout: int = 60,
+        challenge: Optional[bytes] = None,
+        oem_id_key_count: int = 0,
+    ) -> None:
+        """Retrieve TP_RESPONSE from the target.
+
+        :param response_file: Path where to store TP_RESPONSE
+        :param timeout: The timeout of operation is seconds, defaults to 60
+        :param challenge: Challenge for the response, defaults to None
+        :param oem_id_key_count: Number of OEM keys to include in the response, defaults to 0
+        :raises SPSDKTpError: Failure to retrieve the response
+        """
+        try:
+            loc_timeout = Timeout(timeout=timeout, units="s")
+            logger.debug("Opening TP target")
+            self.tptarget.open()
+
+            challenge = challenge or secrets.token_bytes(16)
+            if len(challenge) != 16:
+                raise SPSDKTpError(f"Challenge has to be 16B long")
+
+            challenge_container = Container()
+            challenge_container.add_entry(
+                DataEntry(
+                    payload=challenge,
+                    payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND,
+                    extra=oem_id_key_count << 2,
+                )
+            )
+            logger.info(f"TP Challenge:\n{challenge_container}")
+
+            tp_response = self.tptarget.prove_genuinity_challenge(
+                challenge=challenge_container.export(),
+                timeout=loc_timeout.get_rest_time_ms(raise_exc=True),
+            )
+            logger.info(f"TP Response:\n{Container.parse(tp_response)}")
+
+            write_file(data=tp_response, path=response_file, mode="wb")
+            self.info_print(f"TP_RESPONSE stored to {response_file}.")
+            self.info_print(
+                f"Retrieving TP_RESPONSE ends correctly in {loc_timeout.get_consumed_time_ms()} ms."
+            )
+        except:
+            self.info_print(
+                f"Retrieving TP_RESPONSE failed in {loc_timeout.get_consumed_time_ms()} ms."
+            )
+            raise
+        finally:
+            logger.debug("Closing TP target")
+            self.tptarget.close()
+
 
 def _get_log_slices(log_length: int, process_count: int) -> Sequence[slice]:
     """Create list of slices for slicing the audit log depending on process count."""
@@ -453,11 +544,12 @@ def _verify_extract_chain(
 
 def _extract_certificates(
     log_record: AuditLogRecord,
-    destination_dir: str = None,
+    destination_dir: Optional[str] = None,
     skip_nxp: bool = False,
     skip_oem: bool = False,
-    cert_index: int = None,
+    cert_index: Optional[int] = None,
     encoding: Encoding = Encoding.PEM,
+    force_rewrite: bool = False,
 ) -> AuditLogCounter:
     """Extract certificates from the audit log into destination_dir.
 
@@ -477,8 +569,7 @@ def _extract_certificates(
         raise SPSDKTpError(f"Directory {destination_dir} doesn't exist.")
     if not skip_nxp:
         nxp_id_name = f"device_{log_record.prod_counter_int:06}_identity_cert.bin"
-        logger.debug(f"Writing {nxp_id_name}")
-        write_file(log_record.nxp_id_cert, os.path.join(destination_dir, nxp_id_name), mode="wb")
+        _write_cert_data(log_record.nxp_id_cert, nxp_id_name, destination_dir, force_rewrite)
         counter.nxp_count += 1
     if not skip_oem:
         for idx, oem_cert in enumerate(log_record.oem_id_certs):
@@ -487,11 +578,28 @@ def _extract_certificates(
             if not oem_cert:
                 continue
             oem_id_name = f"device_{log_record.prod_counter_int:06}_device_cert_{idx}.cer"
-            logger.debug(f"Writing {oem_id_name}")
             cert_data = _encode_cert_data(cert_data=oem_cert, encoding=encoding)
-            write_file(cert_data, os.path.join(destination_dir, oem_id_name), mode="wb")
+            _write_cert_data(cert_data, oem_id_name, destination_dir, force_rewrite)
             counter.oem_count += 1
     return counter
+
+
+def _write_cert_data(cert_data: bytes, name: str, path: str, force_rewrite: bool) -> None:
+    """Write certificate data into a file.
+
+    :param cert_data: Certificate data
+    :param name: Name of the certificate file
+    :param path: Destination directory
+    :param force_rewrite: Rewrite existing certificates
+    :raises SPSDKTpError: Certificate already exists and force_rewrite is disabled
+    """
+    logger.debug(f"Writing {name}")
+    destination = os.path.join(path, name)
+    if os.path.exists(destination) and not force_rewrite:
+        raise SPSDKTpError(
+            f"{destination} already exists! To rewrite existing files use --force-rewrite flag."
+        )
+    write_file(cert_data, destination, mode="wb")
 
 
 def _encode_cert_data(cert_data: bytes, encoding: Encoding = Encoding.PEM) -> bytes:

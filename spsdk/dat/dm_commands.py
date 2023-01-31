@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -40,7 +40,7 @@ class DebugMailboxCommand:
         self.name = name
         self.delay = delay
 
-    def run(self, params: List[int] = None) -> List[Any]:
+    def run(self, params: Optional[List[int]] = None) -> List[Any]:
         """Run DebugMailboxCommand."""
         paramslen = len(params) if params else 0
         if paramslen != self.paramlen:
@@ -72,10 +72,10 @@ class DebugMailboxCommand:
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
 
         new_protocol = bool(ret >> 31)
+        error_indication = bool(ret >> 20) and not bool(self.resplen)
         # solve the case that response is in legacy protocol and there is some
         # unwanted bits in none expected data. In this case return valid read data.
-        if not new_protocol and not ret & ~self.STATUS_IS_DATA_MASK:
-            logger.debug("The data is returned by legacy protocol.")
+        if not self.resplen and not error_indication:
             return [ret]
 
         resplen = (ret >> 16) & 0x7FFF
@@ -171,9 +171,9 @@ class EnterBlankDebugAuthentication(DebugMailboxCommand):
 class SetFaultAnalysisMode(DebugMailboxCommand):
     """Class for SetFaultAnalysisMode."""
 
-    def __init__(self, dm: DebugMailbox) -> None:
+    def __init__(self, dm: DebugMailbox, paramlen: int = 0) -> None:
         """Initialize."""
-        super().__init__(dm, id=6, name="SET_FA_MODE")
+        super().__init__(dm, id=6, name="SET_FA_MODE", paramlen=paramlen)
 
 
 class StartDebugSession(DebugMailboxCommand):

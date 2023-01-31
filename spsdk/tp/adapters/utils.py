@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Utilities used by adapters."""
 
 import logging
-from typing import List, Set
+from typing import List, Optional, Set
 
 from spsdk.crypto.certificate_management import X509NameConfig
 from spsdk.mboot.interfaces.usb import RawHid, scan_usb
@@ -57,7 +57,7 @@ def get_current_usb_paths() -> Set[bytes]:
     return {device.path for device in scan_usb()}
 
 
-def detect_new_usb_path(initial_set: Set[bytes] = None) -> bytes:
+def detect_new_usb_path(initial_set: Optional[Set[bytes]] = None) -> bytes:
     """Return USB path to newly found NXP USB device.
 
     :param initial_set: Initial set of USB device paths, defaults to None

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Common cryptographic functions."""
 import math
-from typing import List
+from typing import List, Optional
 
 from cryptography.hazmat.primitives.asymmetric import utils
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers
@@ -39,12 +39,12 @@ class Counter:
     def __init__(
         self,
         nonce: bytes,
-        ctr_value: int = None,
+        ctr_value: Optional[int] = None,
         ctr_byteorder_encoding: str = "little",
     ):
         """Constructor.
 
-        :param nonce: last for bytes are used as initial value for counter
+        :param nonce: last four bytes are used as initial value for counter
         :param ctr_value: counter initial value; it is added to counter value retrieved from nonce
         :param ctr_byteorder_encoding: way how the counter is encoded into output value: either 'little' or 'big'
         :raises SPSDKError: When invalid byteorder is provided
@@ -104,7 +104,7 @@ def serialize_ecc_signature(signature: bytes, coordinate_length: int) -> bytes:
 
 
 def ecc_public_numbers_to_bytes(
-    public_numbers: EllipticCurvePublicNumbers, length: int = None
+    public_numbers: EllipticCurvePublicNumbers, length: Optional[int] = None
 ) -> bytes:
     """Converts public numbers from ECC key into bytes.
 

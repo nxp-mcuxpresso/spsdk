@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,15 +13,14 @@ import re
 import shutil
 import subprocess
 import sys
-from io import StringIO
-from typing import Any, Dict, List
+from typing import List, Optional
 
 import click
 import colorama
 import prettytable
 
-from tools import checker_dependencies, gitcov
-from tools.task_scheduler import PrettyProcessRunner, TaskInfo, TaskList
+from tools import gitcov
+from tools.task_scheduler import PrettyProcessRunner, TaskInfo, TaskList, TaskResult
 
 OUTPUT_FOLDER = "reports"
 CPU_CNT = os.cpu_count() or 1
@@ -47,7 +46,7 @@ log = logging.getLogger(__name__)
 colorama.init()
 
 
-def print_results(tasks: List[TaskInfo], info_checks: List[str] = None) -> None:
+def print_results(tasks: List[TaskInfo], info_checks: Optional[List[str]] = None) -> None:
     """Print Code Check results in table."""
     table = prettytable.PrettyTable(["#", "Test", "Result", "Exec Time", "Error count", "Log"])
     table.align = "l"
@@ -64,7 +63,8 @@ def print_results(tasks: List[TaskInfo], info_checks: List[str] = None) -> None:
 
     for i, task in enumerate(tasks, start=1):
         result_text = "FAILED"
-        if task.result["err_cnt"] == 0:
+        assert task.result
+        if task.result.error_count == 0:
             result_text = "PASS"
         if info_checks and task.name in info_checks:
             result_text = "INFO"
@@ -75,8 +75,8 @@ def print_results(tasks: List[TaskInfo], info_checks: List[str] = None) -> None:
                 colorama.Fore.WHITE + task.name,
                 result_colors[result_text] + result_text,
                 colorama.Fore.WHITE + task.get_exec_time(),
-                colorama.Fore.CYAN + str(task.result["err_cnt"]),
-                colorama.Fore.BLUE + task.result["output_log"],
+                colorama.Fore.CYAN + str(task.result.error_count),
+                colorama.Fore.BLUE + task.result.output_log,
             ]
         )
     click.echo(table)
@@ -89,7 +89,7 @@ def check_results(tasks: List[TaskInfo], info_check: List[str], output: str = "r
 
     for task in tasks:
 
-        err_cnt = task.result["err_cnt"] if task.result else -1
+        err_cnt = task.result.error_count if task.result else -1
         output_log: List[str] = []
         if task.exception:
             sanity_name = task.name.replace(" ", "_").replace("'", "_")
@@ -103,18 +103,16 @@ def check_results(tasks: List[TaskInfo], info_check: List[str], output: str = "r
                 ret = 1
 
         if task.result:
-            res_log = task.result["output_log"]
+            res_log = task.result.output_log
             output_log.append(res_log)
-            task.result["output_log"] = " , ".join(output_log)
+            task.result.output_log = " , ".join(output_log)
         else:
-            task.result = {}
-            task.result["err_cnt"] = -1
-            task.result["output_log"] = " , ".join(output_log)
+            task.result = TaskResult(error_count=1, output_log=" , ".join(output_log))
 
     return ret
 
 
-def check_pytest(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
+def check_pytest(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Get the code coverage."""
     output_folder = os.path.join(output, "htmlcov")
     output_xml = os.path.join(output, "coverage.xml")
@@ -125,16 +123,16 @@ def check_pytest(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
         shutil.rmtree(output_folder, ignore_errors=True)
 
     args = (
-        f"pytest tests --cov spsdk --cov-branch --junit-xml {junit_report}"
+        f"pytest -n {CPU_CNT//2 or 1} tests --cov spsdk --cov-branch --junit-xml {junit_report}"
         f" --cov-report term --cov-report html:{output_folder} --cov-report xml:{output_xml}"
     )
     with open(output_log, "w", encoding="utf-8") as f:
         res = subprocess.call(args.split(), stdout=f, stderr=f)
 
-    return {"err_cnt": res, "output_log": output_log}
+    return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_gitcov(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
+def check_gitcov(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Get the code coverage."""
     output_log = os.path.join(output, "gitcov.txt")
     with open(output_log, "w", encoding="utf-8") as f:
@@ -144,29 +142,20 @@ def check_gitcov(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
             stderr=f,
         )
 
-    return {"err_cnt": res, "output_log": output_log}
+    return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_dependencies(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
+def check_dependencies(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Check the dependencies and their licenses."""
     output_log = os.path.join(output, "dependencies.txt")
-    original_stdout = sys.stdout
-    original_argv = sys.argv
-    sys.stdout = stdout = StringIO()
-    sys.argv = [
-        os.path.join(os.getcwd(), "tools/checker_dependencies.py").replace("\\", "/"),
-        "check",
-    ]
-    res = checker_dependencies.main()
-    sys.stdout = original_stdout
-    sys.argv = original_argv
     with open(output_log, "w", encoding="utf-8") as f:
-        f.write(stdout.getvalue())
-    # res = len(stdout.getvalue().splitlines())
-    return {"err_cnt": res, "output_log": output_log}
+        res = subprocess.call(
+            "python tools/checker_dependencies.py check", stdout=f, stderr=f, shell=True
+        )
+    return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_pydocstyle(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
+def check_pydocstyle(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Check the dependencies and their licenses."""
     output_log = os.path.join(output, "pydocstyle.txt")
 
@@ -178,10 +167,10 @@ def check_pydocstyle(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
         if err_cnt:
             res = len(err_cnt)
 
-    return {"err_cnt": res, "output_log": output_log}
+    return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_mypy(args: List[str], output_log: str) -> Dict[str, Any]:
+def check_mypy(args: List[str], output_log: str) -> TaskResult:
     """Check the project against mypy tool."""
     res = 0
     with open(output_log, "w", encoding="utf-8") as f:
@@ -192,10 +181,10 @@ def check_mypy(args: List[str], output_log: str) -> Dict[str, Any]:
         if err_cnt:
             res = int(err_cnt[0].replace("Found ", "").replace(" error", ""))
 
-    return {"err_cnt": res, "output_log": output_log}
+    return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_pylint(args: str, output_log: str) -> Dict[str, Any]:
+def check_pylint(args: str, output_log: str) -> TaskResult:
     """Call pylint with given configuration and output log."""
     cmd = f"pylint {args} -j {CPU_CNT//2 or 1}"
     with open(output_log, "w", encoding="utf-8") as f:
@@ -204,38 +193,38 @@ def check_pylint(args: str, output_log: str) -> Dict[str, Any]:
     with open(output_log, "r", encoding="utf-8") as f:
         err_cnt = re.findall(r": [IRCWEF]\d{4}:", f.read())
 
-    return {"err_cnt": len(err_cnt), "output_log": output_log}
+    return TaskResult(error_count=len(err_cnt), output_log=output_log)
 
 
-def check_pylint_errors(input_log: str, output_log: str) -> Dict[str, Any]:
+def check_pylint_errors(input_log: str, output_log: str) -> TaskResult:
     """Check Pylint log for errors."""
     with open(input_log, "r", encoding="utf-8") as f:
         errors = re.findall(r".*: [EF]\d{4}:.*", f.read())
     with open(output_log, "w", encoding="utf-8") as f:
         f.write("\n".join(errors))
 
-    return {"err_cnt": len(errors), "output_log": output_log}
+    return TaskResult(error_count=len(errors), output_log=output_log)
 
 
-def check_radon(output_log: str) -> Dict[str, Any]:
+def check_radon(output_log: str) -> TaskResult:
     """Check the project against radon rules."""
     with open(output_log, "w", encoding="utf-8") as f:
         res = subprocess.call("radon cc --show-complexity spsdk".split(), stdout=f, stderr=f)
 
-    return {"err_cnt": res, "output_log": output_log}
+    return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_radon_errors(input_log: str, radon_type: str, output_log: str) -> Dict[str, Any]:
+def check_radon_errors(input_log: str, radon_type: str, output_log: str) -> TaskResult:
     """Check radon log for records with given radon_type."""
     with open(input_log, "r", encoding="utf-8") as f:
         errors = re.findall(rf".* - {radon_type} .*", f.read())
     with open(output_log, "w", encoding="utf-8") as f:
         f.write("\n".join(errors))
 
-    return {"err_cnt": len(errors), "output_log": output_log}
+    return TaskResult(error_count=len(errors), output_log=output_log)
 
 
-def check_black(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
+def check_black(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Check the project against black formatter rules."""
     output_log = os.path.join(output, "black.txt")
     res = 0
@@ -244,10 +233,10 @@ def check_black(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
             "black --check --diff spsdk examples tests".split(), stdout=f, stderr=f
         )
 
-    return {"err_cnt": res, "output_log": output_log}
+    return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_isort(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
+def check_isort(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Check the project against isort imports formatter rules."""
     output_log = os.path.join(output, "isort.txt")
     res = 0
@@ -258,10 +247,10 @@ def check_isort(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
         with open(output_log, "r", encoding="utf-8") as f:
             res = len(f.read().splitlines())
 
-    return {"err_cnt": res, "output_log": output_log}
+    return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_copyright_year(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
+def check_copyright_year(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Check the project against copy right year rules."""
     output_log = os.path.join(output, "copyright_year.txt")
     res = 0
@@ -277,11 +266,7 @@ def check_copyright_year(output: str = OUTPUT_FOLDER) -> Dict[str, Any]:
         with open(output_log, "r", encoding="utf-8") as f:
             res = len(f.read().splitlines())
 
-    return {"err_cnt": res, "output_log": output_log}
-
-
-def print_nothing(*args: Any) -> None:
-    """Just dummy print function."""
+    return TaskResult(error_count=res, output_log=output_log)
 
 
 @click.command(no_args_is_help=False)
@@ -332,13 +317,16 @@ def main(
     job_cnt: int,
     silence: int,
     output: click.Path,
-) -> int:
+) -> None:
     """Simple tool to check the SPSDK development rules.
 
+    Overall result is passed to OS.
+
     :param check: List of tests to run.
+    :param info_check: List of tests to run which don't affect the overall result.
+    :param silence: Level of silence 0: full print; 1: print only summary; 2: print nothing.
     :param job_cnt: Select count of concurrent tests.
     :param output: Output folder for reports.
-    :return: Exit code.
     """
     # logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
     logging.basicConfig(level=logging.INFO)
@@ -436,7 +424,7 @@ def main(
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
 
-        runner = PrettyProcessRunner(checks, print_func=print_nothing if silence else click.echo)
+        runner = PrettyProcessRunner(checks, print_func=(lambda x: None) if silence else click.echo)
         runner.run(job_cnt, True)
 
         ret = check_results(checks, info_check, output_dir)

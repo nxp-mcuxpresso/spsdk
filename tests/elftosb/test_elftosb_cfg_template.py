@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,6 +24,8 @@ from spsdk.apps import elftosb
         ("lpc55s3x"),
         ("rt5xx"),
         ("rt6xx"),
+        ("kw45xx"),
+        ("k32w1xx"),
     ],
 )
 def test_elftosb_cfgtmp_create(tmpdir, device):

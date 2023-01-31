@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,11 +13,13 @@ import logging
 import os
 import shlex
 import sys
+from typing import Optional
 
 import click
 
 from spsdk import SPSDKError
 from spsdk.apps.blhost_helper import (
+    PROPERTIES_OVERRIDE,
     OemGenMasterShareHelp,
     OemSetMasterShareHelp,
     parse_key_prov_key_type,
@@ -609,8 +611,19 @@ def load_image(ctx: click.Context, boot_file: click.File) -> None:
 @main.command()
 @click.argument("property_tag", type=str, required=True)
 @click.argument("index", type=INT(), default="0")
+@click.option(
+    "-f",
+    "--family",
+    type=click.Choice(list(PROPERTIES_OVERRIDE.keys())),
+    help="Provide family. So far supported 'kw45xx' and 'k32w1xx'",
+)
 @click.pass_context
-def get_property(ctx: click.Context, property_tag: str, index: int) -> None:
+def get_property(
+    ctx: click.Context,
+    property_tag: str,
+    index: int,
+    family: str,
+) -> None:
     """Queries various bootloader properties and settings.
 
     Each supported property has a unique <PROPERTY_TAG>.
@@ -652,14 +665,24 @@ def get_property(ctx: click.Context, property_tag: str, index: int) -> None:
     28 or 'irq-notify-pin'              Interrupt notifier pin
     29 or 'pfr-keystore_update-opt'     PFR key store update option
     30 or 'byte-write-timeout-ms'       Byte write timeout in ms
+    31 or 'fuse-locked-status'          Fuse Locked Status
+    for kw45xx/k32w1xx devices:
+    10 or 'verify-erases'               Verify Erases flag
+    20 or 'boot status'                 Value of Boot Status Register
+    21 or 'loadable-fw-version'         LoadableFWVersion
+    22 or 'fuse-program-voltage'        Fuse Program Voltage
 
     \b
     Note: Not all the properties are available for all devices.
     """
-    property_tag_int = parse_property_tag(property_tag)
+    property_tag_int = parse_property_tag(property_tag, family)
     with McuBoot(ctx.obj["interface"]) as mboot:
         response = mboot.get_property(property_tag_int, index=index)  # type: ignore
-        property_text = str(parse_property_value(property_tag_int, response)) if response else None
+        property_text = (
+            str(parse_property_value(property_tag_int, response, None, family))
+            if response
+            else None
+        )
         display_output(
             response, mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"], property_text
         )
@@ -668,8 +691,19 @@ def get_property(ctx: click.Context, property_tag: str, index: int) -> None:
 @main.command()
 @click.argument("property_tag", type=str, required=True)
 @click.argument("value", type=INT(), required=True)
+@click.option(
+    "-f",
+    "--family",
+    type=click.Choice(list(PROPERTIES_OVERRIDE.keys())),
+    help="Provide family. So far supported 'kw45xx' and 'k32w1xx'",
+)
 @click.pass_context
-def set_property(ctx: click.Context, property_tag: str, value: int) -> None:
+def set_property(
+    ctx: click.Context,
+    property_tag: str,
+    value: int,
+    family: str,
+) -> None:
     """Changes properties and options in the bootloader.
 
     Accepts the same <PROPERTY_TAG> used with the get-property sub-command;
@@ -686,11 +720,14 @@ def set_property(ctx: click.Context, property_tag: str, value: int) -> None:
     28 or 'irq-notify-pin'              Interrupt notifier pin
     29 or 'pfr-keystore_update-opt'     PFR key store update option
     30 or 'byte-write-timeout-ms'       Byte write timeout in ms
+    for kw45xx/k32w1xx devices:
+    10 or 'verify-erases'               Verify Erases flag
+    22 or 'fuse-program-voltage'        Fuse Program Voltage
 
     \b
     Note: Not all properties can be set on all devices.
     """
-    property_tag_int = parse_property_tag(property_tag)
+    property_tag_int = parse_property_tag(property_tag, family)
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.set_property(prop_tag=property_tag_int, value=value)  # type: ignore
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
@@ -1501,11 +1538,11 @@ def set_wrap_data(ctx: click.Context, address: int, control: int, stage: int) ->
 
 
 def display_output(
-    response: list = None,
+    response: Optional[list] = None,
     status_code: int = 0,
     use_json: bool = False,
     suppress: bool = False,
-    extra_output: str = None,
+    extra_output: Optional[str] = None,
 ) -> None:
     """Displays response and status code.
 

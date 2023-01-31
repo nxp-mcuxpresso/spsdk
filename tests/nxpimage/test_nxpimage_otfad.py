@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -35,9 +35,7 @@ def test_nxpimage_otfad_export(tmpdir, data_dir, config):
         cmd = f"otfad export {config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
-        assert os.path.isfile(os.path.join(out_dir, "KeyBlob0_data_encrypted.bin"))
-        assert os.path.isfile(os.path.join(out_dir, "KeyBlob1_data.bin"))
-        assert os.path.isfile(os.path.join(out_dir, "KeyBlob2_data.bin"))
+        assert os.path.isfile(os.path.join(out_dir, "encrypted_blobs.bin"))
         assert os.path.isfile(os.path.join(out_dir, "OTFAD_Table.bin"))
         assert os.path.isfile(os.path.join(out_dir, "otfad_whole_image.bin"))
         assert os.path.isfile(os.path.join(out_dir, "readme.txt"))
@@ -88,7 +86,7 @@ def test_nxpimage_otfad_export_rt1180(tmpdir, data_dir, config, per_ix, blhost_b
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(out_dir, f"otfad{per_ix}_rt1180_blhost.bcf"))
-        assert os.path.isfile(os.path.join(out_dir, "KeyBlob0_data_encrypted.bin"))
+        assert os.path.isfile(os.path.join(out_dir, "encrypted_blobs.bin"))
         assert os.path.isfile(os.path.join(out_dir, "OTFAD_Table.bin"))
         assert os.path.isfile(os.path.join(out_dir, "otfad_whole_image.bin"))
         assert os.path.isfile(os.path.join(out_dir, "readme.txt"))

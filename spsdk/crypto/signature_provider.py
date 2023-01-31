@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,6 +16,7 @@ import abc
 from typing import Dict, List, Optional
 
 from spsdk import crypto
+from spsdk.exceptions import SPSDKError
 
 
 class SignatureProvider(abc.ABC):
@@ -74,7 +75,7 @@ class PlainFileSP(SignatureProvider):
         file_path: str,
         password: str = "",  # pylint: disable=unused-argument
         encoding: str = "PEM",  # pylint: disable=unused-argument
-        hash_alg: str = None,
+        hash_alg: Optional[str] = None,
     ) -> None:
         """Initialize the plain file signature provider.
 
@@ -82,13 +83,31 @@ class PlainFileSP(SignatureProvider):
         :param password: Password in case of encrypted private file, defaults to ''
         :param encoding: Private file encoding, defaults to 'PEM'
         :param hash_alg: Hash for the signature, defaults to 'sha256'
+        :raises SPSDKError: Invalid Private Key
         """
         self.file_path = file_path
         self.private_key = crypto.load_private_key(file_path)
-        hash_size = self.private_key.key_size
-        if isinstance(self.private_key, crypto.RSAPrivateKeyWithSerialization):
-            hash_size = 256  # hash_size //= 8
-        hash_alg_name = hash_alg or f"sha{hash_size}"
+        if hash_alg:
+            hash_alg_name = hash_alg
+        else:
+            if isinstance(self.private_key, crypto.RSAPrivateKey):
+                hash_alg_name = "sha256"
+
+            elif isinstance(self.private_key, crypto.EllipticCurvePrivateKey):
+                # key_size <= 256       =>  SHA256
+                # 256 < key_size <= 384 =>  SHA384
+                # 384 < key_size        =>  SHA512
+                if self.private_key.key_size <= 256:
+                    hash_size = 256
+                elif 256 < self.private_key.key_size <= 384:
+                    hash_size = 384
+                else:
+                    hash_size = 512
+                hash_alg_name = f"sha{hash_size}"
+            else:
+                raise SPSDKError(
+                    f"Unsupported private key by signature provider: {str(self.private_key)}"
+                )
         self.hash_alg = getattr(crypto.hashes, hash_alg_name.upper())()
 
     @property

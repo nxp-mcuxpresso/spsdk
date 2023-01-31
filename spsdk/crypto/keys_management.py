@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for key generation and saving keys to file (RSA and ECC)."""
 
 from enum import Enum
+from typing import Optional, Union
 
 from spsdk.crypto import (
     EllipticCurvePrivateKeyWithSerialization,
@@ -21,6 +22,7 @@ from spsdk.crypto import (
     serialization,
 )
 from spsdk.exceptions import SPSDKValueError
+from spsdk.utils.misc import write_file
 
 
 class CurveName(str, Enum):
@@ -93,7 +95,7 @@ def generate_rsa_public_key(
 def save_rsa_private_key(
     private_key: RSAPrivateKeyWithSerialization,
     file_path: str,
-    password: str = None,
+    password: Optional[str] = None,
     encoding: Encoding = Encoding.PEM,
 ) -> None:
     """Save the RSA private key to the given file.
@@ -114,8 +116,7 @@ def save_rsa_private_key(
         else serialization.NoEncryption()
     )
     pem_data = private_key.private_bytes(encoding, serialization.PrivateFormat.PKCS8, enc)
-    with open(file_path, "wb") as f:
-        f.write(pem_data)
+    write_file(pem_data, file_path, mode="wb")
 
 
 def save_rsa_public_key(
@@ -128,10 +129,10 @@ def save_rsa_public_key(
     :param encoding: encoding type, default is PEM
     """
     pem_data = public_key.public_bytes(encoding, serialization.PublicFormat.PKCS1)
-    with open(file_path, "wb") as f:
-        f.write(pem_data)
+    write_file(pem_data, file_path, mode="wb")
 
 
+# pylint: disable=invalid-name  # e,n are commonly used symbols for exponent and modulus
 def recreate_rsa_public_key(e: int, n: int) -> RSAPublicKey:
     """Recreate RSA public key from Exponent and modulus.
 
@@ -167,7 +168,7 @@ def generate_ecc_public_key(
 def save_ecc_private_key(
     ec_private_key: EllipticCurvePrivateKeyWithSerialization,
     file_path: str,
-    password: str = None,
+    password: Optional[str] = None,
     encoding: Encoding = Encoding.PEM,
 ) -> None:
     """Save the ECC private key to the given file.
@@ -184,8 +185,7 @@ def save_ecc_private_key(
         if password
         else serialization.NoEncryption(),
     )
-    with open(file_path, "wb") as f:
-        f.write(serialized_private)
+    write_file(serialized_private, file_path, mode="wb")
 
 
 def save_ecc_public_key(
@@ -202,8 +202,7 @@ def save_ecc_public_key(
     pem_data = ec_public_key.public_bytes(
         encoding=encoding, format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
-    with open(file_path, "wb") as f:
-        f.write(pem_data)
+    write_file(pem_data, file_path, mode="wb")
 
 
 def recreate_ecc_public_key(coor_x: int, coor_y: int, curve: str) -> EllipticCurvePublicKey:

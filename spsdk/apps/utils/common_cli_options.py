@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -94,13 +94,23 @@ _json_option = click.option(
     help="Use JSON output",
 )
 
-_timeout_option = click.option(
-    "-t",
-    "--timeout",
-    metavar="<ms>",
-    help="""Sets timeout when waiting on data over a serial line. The default is 5000 milliseconds.""",
-    default=5000,
-)
+
+def _timeout_option(use_long_option: bool, timeout: int) -> Callable[[FC], FC]:
+    """Get the timeout option.
+
+    :param use_long_option: Use long version only
+    :param timeout: Default timeout in miliseconds
+
+    :return: click decorator
+    """
+    options = [] if use_long_option else ["-t"]
+    options.append("--timeout")
+    return click.option(
+        *options,
+        metavar="<ms>",
+        help=f"""Sets timeout when waiting on data over a serial line. The default is {timeout} milliseconds.""",
+        default=timeout,
+    )
 
 
 def spsdk_apps_common_options(options: FC) -> FC:
@@ -137,6 +147,8 @@ def isp_interfaces(
     json_option: bool = True,
     timeout_option: bool = True,
     is_sdp: bool = False,
+    use_long_timeout_option: bool = False,
+    default_timeout: int = 5000,
 ) -> Callable:
     """Interfaces Click CLI options.
 
@@ -147,6 +159,8 @@ def isp_interfaces(
     :param json_option: add -j option, defaults to True
     :param timeout_option: add timeout option, defaults to True
     :param is_sdp: Specifies whether the ISP interface is meant for SDP(S) protocol
+    :param use_long_timeout_option: Use only the long form for timeout (--timeout)
+    :param default_timeout: Default timeout to be set when getting the timeout_option
     :return: click decorator
     """
 
@@ -164,8 +178,8 @@ def isp_interfaces(
         if json_option:
             options.append(_json_option)
         if timeout_option:
-            options.append(_timeout_option)
-
+            option = _timeout_option(use_long_timeout_option, default_timeout)
+            options.append(option)
         for option in reversed(options):
             func = option(func)
 
@@ -203,6 +217,7 @@ class GroupAliasedGetCfgTemplate(click.Group):
     better user experience.
     """
 
+    # pylint: disable=inconsistent-return-statements    # ctx.fail at the end terminates the command call
     def get_command(self, ctx: click.Context, cmd_name: str) -> Optional[click.Command]:
         """Override original click get_command function to implement alias for get-cfg-template obsolete command.
 
@@ -210,9 +225,9 @@ class GroupAliasedGetCfgTemplate(click.Group):
         :param cmd_name: Requested command name
         :return: Suitable command representation.
         """
-        rv = click.Group.get_command(self, ctx, cmd_name)
-        if rv is not None:
-            return rv
+        command = click.Group.get_command(self, ctx, cmd_name)
+        if command is not None:
+            return command
         if cmd_name == "get-cfg-template":
             click.secho(
                 "The 'get-cfg-template' is deprecated command, use 'get-template' instead of.",

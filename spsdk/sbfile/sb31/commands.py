@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for creation commands."""
 
 from abc import abstractmethod
+from enum import Enum as BuiltinEnum
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Mapping, Tuple, Type, Union
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from spsdk import SPSDKError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
@@ -55,7 +56,9 @@ class MainCmd:
         raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "MainCmd":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "MainCmd":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
@@ -222,7 +225,9 @@ class CmdLoadBase(BaseCmd):
 
     # pylint: disable=redundant-returns-doc
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> MainCmd:
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> MainCmd:
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
@@ -273,7 +278,9 @@ class CmdErase(BaseCmd):
         return cls(address=address, length=length, memory_id=memory_id)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CmdErase":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "CmdErase":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
@@ -300,7 +307,7 @@ class CmdLoad(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> Union["CmdLoad", "CmdLoadHashLocking", "CmdLoadCmac"]:
         """Load configuration from dictionary.
 
@@ -361,7 +368,7 @@ class CmdExecute(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdExecute":
         """Load configuration from dictionary.
 
@@ -399,7 +406,9 @@ class CmdCall(BaseCmd):
         return cls(address=address)
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CmdCall":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "CmdCall":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
@@ -453,7 +462,7 @@ class CmdProgFuses(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdProgFuses":
         """Load configuration from dictionary.
 
@@ -493,7 +502,7 @@ class CmdProgIfr(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdProgIfr":
         """Load configuration from dictionary.
 
@@ -525,7 +534,7 @@ class CmdLoadCmac(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdLoadCmac":
         """Load configuration from dictionary.
 
@@ -603,7 +612,9 @@ class CmdCopy(BaseCmd):
         )
 
     @classmethod
-    def load_from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CmdCopy":
+    def load_from_config(
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "CmdCopy":
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
@@ -649,7 +660,7 @@ class CmdLoadHashLocking(CmdLoadBase):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdLoadHashLocking":
         """Load configuration from dictionary.
 
@@ -670,11 +681,28 @@ class CmdLoadKeyBlob(BaseCmd):
 
     FORMAT = "<L2H2L"
 
-    class KeyWraps(Enum):
+    class _KeyWraps(BuiltinEnum):
         """KeyWrap IDs used by the CmdLoadKeyBlob command."""
 
-        NXP_CUST_KEK_INT_SK = (16, "NXP_CUST_KEK_INT_SK")
-        NXP_CUST_KEK_EXT_SK = (17, "NXP_CUST_KEK_EXT_SK")
+        NXP_CUST_KEK_INT_SK = 16
+        NXP_CUST_KEK_EXT_SK = 17
+
+    class KeyTypes(BuiltinEnum):
+        """KeyTypes for NXP_CUST_KEK_INT_SK, NXP_CUST_KEK_EXT_SK."""
+
+        NXP_CUST_KEK_INT_SK = 1
+        NXP_CUST_KEK_EXT_SK = 2
+
+    @classmethod
+    def get_key_id(cls, family: str, key_name: KeyTypes) -> int:
+        """Get key ID based on family and key name.
+
+        :param family: chip family
+        :param key_name: NXP_CUST_KEK_INT_SK or NXP_CUST_KEK_EXT_SK
+        :return: integer value representing key
+        """
+        key_wraps = cls._KeyWraps
+        return key_wraps[key_name.name].value
 
     def __init__(self, offset: int, data: bytes, key_wrap_id: int) -> None:
         """Constructor for command.
@@ -722,7 +750,7 @@ class CmdLoadKeyBlob(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdLoadKeyBlob":
         """Load configuration from dictionary.
 
@@ -733,7 +761,9 @@ class CmdLoadKeyBlob(BaseCmd):
         data = load_binary(config["file"], search_paths=search_paths)
         offset = value_to_int(config["offset"], 0)
         key_wrap_name = config["wrappingKeyId"]
-        key_wrap_id = CmdLoadKeyBlob.KeyWraps[key_wrap_name]
+        family = config["family"]
+
+        key_wrap_id = cls.get_key_id(family, cls.KeyTypes[key_wrap_name])
         return CmdLoadKeyBlob(offset=offset, data=data, key_wrap_id=key_wrap_id)
 
 
@@ -772,7 +802,7 @@ class CmdConfigureMemory(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdConfigureMemory":
         """Load configuration from dictionary.
 
@@ -826,7 +856,7 @@ class CmdFillMemory(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdFillMemory":
         """Load configuration from dictionary.
 
@@ -886,7 +916,7 @@ class CmdFwVersionCheck(BaseCmd):
 
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdFwVersionCheck":
         """Load configuration from dictionary.
 
@@ -943,7 +973,7 @@ class CmdSectionHeader(MainCmd):
     # pylint: disable=redundant-returns-doc
     @classmethod
     def load_from_config(
-        cls, config: Dict[str, Any], search_paths: List[str] = None
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
     ) -> "CmdSectionHeader":
         """Load configuration from dictionary.
 

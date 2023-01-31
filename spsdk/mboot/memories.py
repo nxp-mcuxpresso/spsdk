@@ -2,13 +2,13 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Various types of memory identifiers used in the MBoot module."""
 
-from typing import Any, List, Optional, Union
+from typing import List, Optional, Union
 
 from spsdk.utils.easy_enum import Enum, EnumKeyType
 from spsdk.utils.misc import size_fmt

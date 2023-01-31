@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning - TP Target, ISP mode over BLHOST."""
@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence
 
 from spsdk.mboot import interfaces
-from spsdk.mboot.exceptions import McuBootError
+from spsdk.mboot.exceptions import McuBootError, StatusCode
 from spsdk.mboot.interfaces.base import MBootInterface
 from spsdk.mboot.interfaces.uart import Uart
 from spsdk.mboot.interfaces.usb import RawHid
@@ -47,6 +47,7 @@ class TpBlHostIntfDescription(TpIntfDescription):
         ret["description"] = self.description
         # For USB device
         if isinstance(self.device, RawHid):
+            ret["path_hash"] = self.device.path_hash
             ret["pid_vid"] = f"{self.device.vid:#06x}:{self.device.pid:#06x}"
         if isinstance(self.device, Uart):
             ret["port"] = self.device.device.port
@@ -60,6 +61,14 @@ class TpBlHostIntfDescription(TpIntfDescription):
             return self.device.device.port
         if isinstance(self.device, RawHid):
             return f"{self.device.vid:#06x}:{self.device.pid:#06x}"
+        raise SPSDKTpTargetError(f"Unknown target device type: {type(self.device)}")
+
+    def get_id_hash(self) -> str:
+        """Return the ID hash of the interface. (COM port or hash of USB path)."""
+        if isinstance(self.device, Uart):
+            return self.device.device.port
+        if isinstance(self.device, RawHid):
+            return self.device.path_hash
         raise SPSDKTpTargetError(f"Unknown target device type: {type(self.device)}")
 
 
@@ -77,7 +86,7 @@ class TpTargetBlHost(TpTargetInterface):
         BAUDRATE = "blhost_baudrate"
 
     @staticmethod
-    def _get_settings(settings: Dict = None) -> Dict:
+    def _get_settings(settings: Optional[Dict] = None) -> Dict:
         """The function gets the important parameters for BLHOST from general settings.
 
         :param settings: General TPHOST target settings, defaults to None
@@ -91,7 +100,7 @@ class TpTargetBlHost(TpTargetInterface):
         return ret
 
     @classmethod
-    def get_connected_targets(cls, settings: Dict = None) -> List[TpIntfDescription]:
+    def get_connected_targets(cls, settings: Optional[Dict] = None) -> List[TpIntfDescription]:
         """Get all connected TP targets of this adapter.
 
         :param settings: Possible settings to determine the way to find connected device, defaults to None.
@@ -173,6 +182,11 @@ class TpTargetBlHost(TpTargetInterface):
         self.mboot.open()
         self.mboot.reopen = True
 
+    @property
+    def is_open(self) -> bool:
+        """Check if provisioned device adapter is open."""
+        return self.mboot._device.is_opened
+
     def close(self) -> None:
         """Close the provisioned device adapter."""
         self.mboot.close()
@@ -191,7 +205,7 @@ class TpTargetBlHost(TpTargetInterface):
                 f"Cannot reset connected target. Error code: {self.mboot.status_string}"
             ) from exc
 
-    def load_sb_file(self, sb_file: bytes, timeout: int = None) -> None:
+    def load_sb_file(self, sb_file: bytes, timeout: Optional[int] = None) -> None:
         """Load SB file into provisioned device.
 
         :param sb_file: SB file data to be loaded into provisioned device.
@@ -203,7 +217,7 @@ class TpTargetBlHost(TpTargetInterface):
                 f"The loading of SB file to target failed. Error code: {self.mboot.status_string}"
             )
 
-    def prove_genuinity_challenge(self, challenge: bytes, timeout: int = None) -> bytes:
+    def prove_genuinity_challenge(self, challenge: bytes, timeout: Optional[int] = None) -> bytes:
         """Prove genuinity and get back the TP response to continue process of TP.
 
         :param challenge: Challenge data to start TP process.
@@ -230,7 +244,7 @@ class TpTargetBlHost(TpTargetInterface):
 
         return ret
 
-    def set_wrapped_data(self, wrapped_data: bytes, timeout: int = None) -> None:
+    def set_wrapped_data(self, wrapped_data: bytes, timeout: Optional[int] = None) -> None:
         """Provide wrapped data to provisioned device.
 
         :param wrapped_data: Wrapped data to finish TP process.
@@ -316,3 +330,25 @@ class TpTargetBlHost(TpTargetInterface):
             raise SPSDKTpTargetError(
                 f"Unable to erase memory (address=0x{address:08x}, length=0x{length:08x}"
             )
+
+    def check_provisioning_firmware(self) -> bool:
+        """Check whether the Provisioning Firmware booted properly.
+
+        :raises SPSDKTpTargetError: In case of a MBoot failure
+        :return: True if ProvFW booted up
+        """
+        try:
+            # we expect this command to fail
+            # TP_CONTAINERINVALID or FAIL errors mean ProvFW is running
+            # UNKNOWN_COMMAND indicates ROM in running
+            # any other error code should be re-raised
+            self.prove_genuinity_challenge(bytes(self.mboot.DEFAULT_MAX_PACKET_SIZE))
+        except SPSDKTpTargetError:
+            if self.mboot.status_code in [StatusCode.TP_CONTAINERINVALID, StatusCode.FAIL]:
+                return True
+            if self.mboot.status_code == StatusCode.UNKNOWN_COMMAND:
+                return False
+            raise
+        else:
+            # this should never happen
+            raise SPSDKTpTargetError("Check for ProvFW boot-up malfunctioned!")

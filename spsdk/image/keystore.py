@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module provides support for KeyStore used in MasterBootImage."""
+
+from typing import Optional
 
 from Crypto.Cipher import AES
 
@@ -38,7 +40,7 @@ class KeyStore:
         """Device key source."""
         return self._key_source
 
-    def __init__(self, key_source: KeySourceType, key_store: bytes = None) -> None:
+    def __init__(self, key_source: KeySourceType, key_store: Optional[bytes] = None) -> None:
         """Initialize Keystore.
 
         :param key_source: device key source

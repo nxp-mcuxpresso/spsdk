@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -48,12 +48,6 @@ class Container(ABC):
         The base returns only endianness (LITTLE_ENDIAN).
         """
         return LITTLE_ENDIAN
-
-    def validate(self) -> None:
-        """Validates the container properties...
-
-        i.e. tag e <0; 255>, otherwise an exception is raised.
-        """
 
     def export(self) -> bytes:
         """Exports container to final bytes array.
@@ -120,7 +114,7 @@ class HeaderContainer(Container):
     def _format(cls) -> str:
         return super()._format() + UINT8 + UINT16 + UINT8
 
-    def validate(self) -> None:
+    def validate_header(self) -> None:
         """Validates the header of container properties...
 
         i.e. tag e <0; 255>, otherwise an exception is raised.

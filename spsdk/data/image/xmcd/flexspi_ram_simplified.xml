@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<regs>
+	<register offset="0x00" width="32" name="configBlock" reversed="False" description="XMCD Configuration Block">
+		<bit_field offset="0x00" width="8" name="sizeInMB" reset_value="0x00" description="Size in MB. 0 - Auto detection, Others - Size in MB"/>
+		<bit_field offset="0x08" width="4" name="maximumFrequency" reset_value="0x0" description="Maximum frequency. SoC specific definitions"/>
+		<bit_field offset="0x0c" width="4" name="misc" reset_value="0x0" description="Misc. For HyperRAM 0 - 1.8V, 1 - 3V">
+			<bit_field_value name="XMCD_FLEXSPI_RAM_MISC_1_8_V" value="0b0" description="Simplified configuration type"/>
+			<bit_field_value name="XMCD_FLEXSPI_RAM_MISC_3_0_V" value="0b1" description="Full configuration type"/>
+		</bit_field>
+		<bit_field offset="0x10" width="4" name="reserved" reset_value="0x0" description="Reserved for future use"/>
+		<bit_field offset="0x14" width="4" name="deviceType" reset_value="0x0" description="Device type 0 - Hyper RAM, 1 - APMemory">
+			<bit_field_value name="XMCD_FLEXSPI_RAM_DEVICE_TYPE_HYPER_RAM" value="0b0" description="Hyper RAM"/>
+			<bit_field_value name="XMCD_FLEXSPI_RAM_DEVICE_TYPE_AP_MEMORY" value="0b1" description="AP Memory"/>
+		</bit_field>
+		<bit_field offset="0x18" width="4" name="optionSize" reset_value="0x0" description="Option Size"/>
+		<bit_field offset="0x1c" width="4" name="tag" reset_value="0xc" description="Tag, fixed value 0xc"/>
+	</register>
+</regs>

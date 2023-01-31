@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for base abstract classes."""
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 from spsdk.crypto import PrivateKey
 
@@ -87,24 +87,47 @@ class BackendClass(ABC):
         :param nonce: Nonce data with counter value
         """
 
-    # @abstractmethod
-    # def aes_cbc_encrypt(self, key: bytes, plain_data: bytes, iv_data: bytes) -> bytes:
-    #     """Encrypt plain data with AES in CBC mode.
-    #
-    #     :param key: The key for data encryption
-    #     :param plain_data: Input data
-    #     :param iv_data: Initialization vector data
-    #     """
-    #
-    # @abstractmethod
-    # def aes_cbc_decrypt(self, key: bytes, encrypted_data: bytes, iv_data: bytes) -> bytes:
-    #     """Decrypt encrypted data with AES in CBC mode.
-    #
-    #     :param key: The key for data decryption
-    #     :param encrypted_data: Input data
-    #     :param iv_data: Initialization vector data
-    #     """
+    @abstractmethod
+    def aes_xts_encrypt(self, key: bytes, plain_data: bytes, tweak: bytes) -> bytes:
+        """Encrypt plain data with AES in XTS mode.
 
+        :param key: The key for data encryption
+        :param plain_data: Input data
+        :param tweak: The tweak is a 16 byte value
+        """
+
+    @abstractmethod
+    def aes_xts_decrypt(self, key: bytes, encrypted_data: bytes, tweak: bytes) -> bytes:
+        """Decrypt encrypted data with AES in XTS mode.
+
+        :param key: The key for data decryption
+        :param encrypted_data: Input data
+        :param tweak: The tweak is a 16 byte value
+        """
+
+    @abstractmethod
+    def aes_cbc_encrypt(
+        self, key: bytes, plain_data: bytes, iv_data: Optional[bytes] = None
+    ) -> bytes:
+        """Encrypt plain data with AES in CBC mode.
+
+        :param key: The key for data encryption
+        :param plain_data: Input data
+        :param iv_data: Initialization vector data
+        """
+
+    @abstractmethod
+    def aes_cbc_decrypt(
+        self, key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] = None
+    ) -> bytes:
+        """Decrypt encrypted data with AES in CBC mode.
+
+        :param key: The key for data decryption
+        :param encrypted_data: Input data
+        :param iv_data: Initialization vector data
+        """
+
+    @abstractmethod
     def rsa_sign(self, private_key: bytes, data: bytes, algorithm: str = "sha256") -> bytes:
         """Sign input data.
 
@@ -113,6 +136,7 @@ class BackendClass(ABC):
         :param algorithm: Used algorithm
         """
 
+    @abstractmethod
     def rsa_verify(
         self,
         pub_key_mod: int,
@@ -130,6 +154,7 @@ class BackendClass(ABC):
         :param algorithm: Used algorithm
         """
 
+    @abstractmethod
     def rsa_public_key(self, modulus: int, exponent: int) -> Any:
         """Create RSA public key object from modulus and exponent.
 
@@ -137,7 +162,8 @@ class BackendClass(ABC):
         :param exponent: The RSA public key exponent
         """
 
-    def ecc_sign(self, private_key: bytes, data: bytes, algorithm: str = None) -> bytes:
+    @abstractmethod
+    def ecc_sign(self, private_key: bytes, data: bytes, algorithm: Optional[str] = None) -> bytes:
         """Sign data using (EC)DSA.
 
         :param private_key: ECC private key
@@ -146,8 +172,9 @@ class BackendClass(ABC):
         :return: Signature, r and s coordinates as bytes
         """
 
+    @abstractmethod
     def ecc_verify(
-        self, public_key: bytes, signature: bytes, data: bytes, algorithm: str = None
+        self, public_key: bytes, signature: bytes, data: bytes, algorithm: Optional[str] = None
     ) -> bool:
         """Verify (EC)DSA signature.
 
@@ -160,6 +187,7 @@ class BackendClass(ABC):
         """
 
     @staticmethod
+    @abstractmethod
     def sign_size(key: PrivateKey) -> int:
         """Get size of signature for loaded private key.
 

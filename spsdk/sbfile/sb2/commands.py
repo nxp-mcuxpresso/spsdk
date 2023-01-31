@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,6 +20,14 @@ from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo, swap16
 
+########################################################################################################################
+# Constants
+########################################################################################################################
+
+DEVICE_ID_MASK = 0xFF
+DEVICE_ID_SHIFT = 0
+GROUP_ID_MASK = 0xF00
+GROUP_ID_SHIFT = 8
 
 ########################################################################################################################
 # Enums
@@ -130,6 +138,15 @@ class CmdHeader:
 class CmdBaseClass(BaseClass):
     """Base class for all commands."""
 
+    # bit mask for device ID inside flags
+    ROM_MEM_DEVICE_ID_MASK = 0xFF00
+    # shift for device ID inside flags
+    ROM_MEM_DEVICE_ID_SHIFT = 8
+    # bit mask for group ID inside flags
+    ROM_MEM_GROUP_ID_MASK = 0xF0
+    # shift for group ID inside flags
+    ROM_MEM_GROUP_ID_SHIFT = 4
+
     def __init__(self, tag: int) -> None:
         """Initialize CmdBase."""
         self._header = CmdHeader(tag)
@@ -149,7 +166,7 @@ class CmdBaseClass(BaseClass):
 
     def info(self) -> str:
         """Return text info about the instance."""
-        return self.__str__() + "\n"  # default implementation is same as __str__
+        return str(self) + "\n"  # default implementation is same as __str__
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Return object serialized into bytes."""
@@ -233,17 +250,14 @@ class CmdLoad(CmdBaseClass):
         self._header.address = value
 
     @property
-    def mem_id(self) -> int:
-        """Return memory to be used."""
-        return swap16(self._header.flags)
+    def flags(self) -> int:
+        """Return command's flag."""
+        return self._header.flags
 
-    @mem_id.setter
-    def mem_id(self, value: int) -> None:
-        """Setter.
-
-        :param value: memory to be used
-        """
-        self._header.flags = swap16(value)
+    @flags.setter
+    def flags(self, value: int) -> None:
+        """Set command's flag."""
+        self._header.flags = value
 
     @property
     def raw_size(self) -> int:
@@ -261,8 +275,22 @@ class CmdLoad(CmdBaseClass):
         self.data = bytes(data)
         self.mem_id = mem_id
 
+        device_id = get_device_id(mem_id)
+        group_id = get_group_id(mem_id)
+
+        self.flags |= (self.flags & ~self.ROM_MEM_DEVICE_ID_MASK) | (
+            (device_id << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK
+        )
+
+        self.flags |= (self.flags & ~self.ROM_MEM_GROUP_ID_MASK) | (
+            (group_id << self.ROM_MEM_GROUP_ID_SHIFT) & self.ROM_MEM_GROUP_ID_MASK
+        )
+
     def __str__(self) -> str:
-        return f"LOAD: Address=0x{self.address:08X}, DataLen={len(self.data)}, MemId=0x{self.mem_id:08X}"
+        return (
+            f"LOAD: Address=0x{self.address:08X}, DataLen={len(self.data)}, "
+            f"Flags=0x{self.flags:08X}, MemId=0x{self.mem_id:08X}"
+        )
 
     def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
         """Export command as binary."""
@@ -299,7 +327,9 @@ class CmdLoad(CmdBaseClass):
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         if header.data != crc32_function(cmd_data, 0xFFFFFFFF):
             raise SPSDKError("Invalid CRC in the command header")
-        mem_id = swap16(header.flags)
+        device_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
+        group_id = (header.flags & cls.ROM_MEM_GROUP_ID_MASK) >> cls.ROM_MEM_GROUP_ID_SHIFT
+        mem_id = get_memory_id(device_id, group_id)
         obj = CmdLoad(header.address, cmd_data, mem_id)
         obj.header.data = header.data
         obj.header.flags = header.flags
@@ -426,8 +456,6 @@ class CmdJump(CmdBaseClass):
     @argument.setter
     def argument(self, value: int) -> None:
         """Set command's argument."""
-        if value < 0x00 or value > 0xFF:
-            raise SPSDKError("Incorrect argument")
         self._header.data = value
 
     @property
@@ -564,16 +592,29 @@ class CmdErase(CmdBaseClass):
         """Set command's flag."""
         self._header.flags = value
 
-    def __init__(self, address: int = 0, length: int = 0, flags: int = 0) -> None:
+    def __init__(self, address: int = 0, length: int = 0, flags: int = 0, mem_id: int = 0) -> None:
         """Initialize Command Erase."""
         super().__init__(EnumCmdTag.ERASE)
         self.address = address
         self.length = length
         self.flags = flags
+        self.mem_id = mem_id
+
+        device_id = get_device_id(mem_id)
+        group_id = get_group_id(mem_id)
+
+        self.flags |= (self.flags & ~self.ROM_MEM_DEVICE_ID_MASK) | (
+            (device_id << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK
+        )
+
+        self.flags |= (self.flags & ~self.ROM_MEM_GROUP_ID_MASK) | (
+            (group_id << self.ROM_MEM_GROUP_ID_SHIFT) & self.ROM_MEM_GROUP_ID_MASK
+        )
 
     def __str__(self) -> str:
         return (
-            f"ERASE: Address=0x{self.address:08X}, Length={self.length}, Flags=0x{self.flags:08X}"
+            f"ERASE: Address=0x{self.address:08X}, Length={self.length}, Flags=0x{self.flags:08X}, "
+            f"MemId=0x{self.mem_id:08X}"
         )
 
     @classmethod
@@ -588,7 +629,10 @@ class CmdErase(CmdBaseClass):
         header = CmdHeader.parse(data, offset)
         if header.tag != EnumCmdTag.ERASE:
             raise SPSDKError("Invalid header tag")
-        return cls(header.address, header.count, header.flags)
+        device_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
+        group_id = (header.flags & cls.ROM_MEM_GROUP_ID_MASK) >> cls.ROM_MEM_GROUP_ID_SHIFT
+        mem_id = get_memory_id(device_id, group_id)
+        return cls(header.address, header.count, header.flags, mem_id)
 
 
 class CmdReset(CmdBaseClass):
@@ -637,32 +681,43 @@ class CmdMemEnable(CmdBaseClass):
         self._header.count = value
 
     @property
-    def mem_type(self) -> MemId:
-        """Return memory to be enabled."""
-        return MemId.from_int(swap16(self._header.flags))
+    def flags(self) -> int:
+        """Return command's flag."""
+        return self._header.flags
 
-    @mem_type.setter
-    def mem_type(self, value: MemId) -> None:
-        """Setter.
+    @flags.setter
+    def flags(self, value: int) -> None:
+        """Set command's flag."""
+        self._header.flags = value
 
-        :param value: memory to be enabled
-        """
-        self._header.flags = swap16(value)
-
-    def __init__(self, address: int, size: int, mem_type: MemId):
+    def __init__(self, address: int, size: int, mem_id: int):
         """Initialize CmdMemEnable.
 
         :param address: source address with configuration data for memory initialization
         :param size: size of configuration data used for memory initialization
-        :param mem_type: identification of external memory type, see enum for details
+        :param mem_id: identification of memory
         """
         super().__init__(EnumCmdTag.MEM_ENABLE)
         self.address = address
-        self.mem_type = mem_type
+        self.mem_id = mem_id
         self.size = size
 
+        device_id = get_device_id(mem_id)
+        group_id = get_group_id(mem_id)
+
+        self.flags |= (self.flags & ~self.ROM_MEM_DEVICE_ID_MASK) | (
+            (device_id << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK
+        )
+
+        self.flags |= (self.flags & ~self.ROM_MEM_GROUP_ID_MASK) | (
+            (group_id << self.ROM_MEM_GROUP_ID_SHIFT) & self.ROM_MEM_GROUP_ID_MASK
+        )
+
     def __str__(self) -> str:
-        return f"MEM-ENABLE: Address=0x{self.address:08X}, Size={self.size}, MemType=0x{self.mem_type:08X}"
+        return (
+            f"MEM-ENABLE: Address=0x{self.address:08X}, Size={self.size}, "
+            f"Flags=0x{self.flags:08X}, MemId=0x{self.mem_id:08X}"
+        )
 
     @classmethod
     def parse(cls, data: bytes, offset: int = 0) -> "CmdMemEnable":
@@ -676,16 +731,14 @@ class CmdMemEnable(CmdBaseClass):
         header = CmdHeader.parse(data, offset)
         if header.tag != EnumCmdTag.MEM_ENABLE:
             raise SPSDKError("Invalid header tag")
-        return cls(header.address, header.count, MemId.from_int(swap16(header.flags)))
+        device_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
+        group_id = (header.flags & cls.ROM_MEM_GROUP_ID_MASK) >> cls.ROM_MEM_GROUP_ID_SHIFT
+        mem_id = get_memory_id(device_id, group_id)
+        return cls(header.address, header.count, mem_id)
 
 
 class CmdProg(CmdBaseClass):
     """Command Program class."""
-
-    # bit mask for memory ID inside flags
-    ROM_MEM_DEVICE_ID_MASK = 0xFF00
-    # shift for memory ID inside flags
-    ROM_MEM_DEVICE_ID_SHIFT = 8
 
     @property
     def address(self) -> int:
@@ -967,3 +1020,33 @@ def parse_command(data: bytes, offset: int = 0) -> CmdBaseClass:
     if header_tag not in _CMD_CLASS:
         raise SPSDKError(f"Unsupported command: {str(header_tag)}")
     return _CMD_CLASS[header_tag].parse(data, offset)
+
+
+def get_device_id(mem_id: int) -> int:
+    """Get device ID from memory ID.
+
+    :param mem_id: memory ID
+    :return: device ID
+    """
+    return ((mem_id) & DEVICE_ID_MASK) >> DEVICE_ID_SHIFT
+
+
+def get_group_id(mem_id: int) -> int:
+    """Get group ID from memory ID.
+
+    :param mem_id: memory ID
+    :return: group ID
+    """
+    return ((mem_id) & GROUP_ID_MASK) >> GROUP_ID_SHIFT
+
+
+def get_memory_id(device_id: int, group_id: int) -> int:
+    """Get memory ID from device ID and group ID.
+
+    :param device_id: device ID
+    :param group_id: group ID
+    :return: memory ID
+    """
+    return (((group_id) << GROUP_ID_SHIFT) & GROUP_ID_MASK) | (
+        ((device_id) << DEVICE_ID_SHIFT) & DEVICE_ID_MASK
+    )

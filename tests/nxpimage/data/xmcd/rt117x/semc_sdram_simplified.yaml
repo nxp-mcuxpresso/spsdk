@@ -1,0 +1,32 @@
+# XMCD configuration for rt117x.
+# Created: 22/11/2022 21:40:07.
+# NXP SPSDK version: 1.8.1
+family: rt117x
+revision: latest
+mem_type: semc_sdram
+config_type: simplified
+xmcd_settings:
+  header:  # XMCD Header
+    bitfields:  # The register bitfields
+      configurationBlockSize: 13  # Width: 12b[0-4095], Description: Configuration block size including XMCD header itself
+      configurationBlockType: XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED # Width: 4b[0-15], Description: Configuration block type - 0 - Simplified, 1 - Full
+    # - XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED, (0): Simplified configuration type
+    # - XMCD_CONFIG_BLOCK_TYPE_FULL, (1): Full configuration type
+      instance: 0 # Width: 4b[0-15], Description: SoC defined instances
+      memoryInterface: XMCD_MEMORY_INTERFACE_SEMC # Width: 4b[0-15], Description: Memory interface 0 - FlexSPI, 1 - SEMC
+    # - XMCD_MEMORY_INTERFACE_FLEXSPI, (0): FlexSPI memory interface
+    # - XMCD_MEMORY_INTERFACE_SEMC, (1): SEMC memory interface
+      version: 0 # Width: 4b[0-15], Description: Version, fixed value 0x0
+      tag: 12 # Width: 4b[0-15], Description: Tag, fixed value 0xc
+  magicNumber: # Fixed to 0xA1
+    value: '0xa1'  # The value width: 8b
+  version: # Set to 1 for this implementation
+    value: '0x01'  # The value width: 8b
+  configOption: # Simplified - 0x00, Full - 0xFF - Must be 0x00 in this case
+    value: '0x00'  # The value width: 8b
+  clkMhz: # Set the working frequency in the unit of MHz
+    value: '0xc6'  # The value width: 8b
+  sdramSizeKb: # Set the memory size of SDRAM CS0 in the unit of kilobytes.Range: 4~4*1024*1024
+    value: '0x00010000'  # The value width: 32b
+  portSize: # Port size of SDRAM.
+    value: '0x02'  # The value width: 8b

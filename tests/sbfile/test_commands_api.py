@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -228,8 +228,6 @@ def test_jump_cmd_invalid():
     cmd = CmdJump(address=100, argument=10, spreg=None)
     with pytest.raises(SPSDKError, match="Incorrect address"):
         cmd.address = 0xFFFFFFFFA
-    with pytest.raises(SPSDKError, match="Incorrect argument"):
-        cmd.argument = 0xFFF
 
 
 def test_jump_cmd_invalid_parse():
@@ -314,10 +312,10 @@ def test_reset_cmd_invalid_parse():
 
 
 def test_mem_enable_cmd():
-    cmd = CmdMemEnable(address=100, size=10, mem_type=ExtMemId.MMC_CARD)
+    cmd = CmdMemEnable(address=100, size=10, mem_id=ExtMemId.MMC_CARD)
     assert cmd.address == 100
     assert cmd.size == 10
-    assert cmd.mem_type == ExtMemId.MMC_CARD
+    assert cmd.mem_id == ExtMemId.MMC_CARD
     assert cmd.info()
 
     data = cmd.export()

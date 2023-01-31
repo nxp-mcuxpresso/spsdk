@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,16 +10,18 @@
 import logging
 import struct
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .base import Interface
 from .buspal import BBConstants, Buspal, BuspalMode
 
-logger = logging.getLogger("MBOOT:BUSPAL_I2C")
+logger = logging.getLogger(__name__)
 
 
 def scan_buspal_i2c(
-    port: str = None, timeout: int = Buspal.DEFAULT_TIMEOUT, props: List[str] = None
+    port: Optional[str] = None,
+    timeout: int = Buspal.DEFAULT_TIMEOUT,
+    props: Optional[List[str]] = None,
 ) -> List[Interface]:
     """Scan connected serial ports and set BUSPAL properties.
 
@@ -35,6 +37,7 @@ def scan_buspal_i2c(
     return BuspalI2C.scan_buspal(port, timeout, props)
 
 
+# pylint: disable=invalid-name  # changing names is fairly dangerous
 class I2cModeCommand(Enum):
     """I2c mode commands."""
 

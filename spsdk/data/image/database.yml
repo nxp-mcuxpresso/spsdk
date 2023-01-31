@@ -137,11 +137,25 @@ devices:
         signed: Mbi_PlainXipSignedLpc55s3x
       ext_xip:
         plain: Mbi_PlainRamLpc55s3x
-        crc: Mbi_CrcExtXipLpc55s3x
-        signed: Mbi_PlainExtXipSignedLpc55s3x
+        crc: Mbi_CrcXipLpc55s3x
+        signed: Mbi_PlainXipSignedLpc55s3x
       ram:
         plain: Mbi_PlainRamLpc55s3x
         crc: Mbi_CrcRamLpc55s3x
+
+  kw45xx:
+    images:
+      int_xip:
+        plain: Mbi_PlainXipKw45xx
+        crc: Mbi_CrcXipKw45xx
+        signed: Mbi_PlainXipSignedKw45xx
+
+  k32w1xx:
+    images:
+      int_xip:
+        plain: Mbi_PlainXipKw45xx
+        crc: Mbi_CrcXipKw45xx
+        signed: Mbi_PlainXipSignedKw45xx
 
   lpc553x:
     images:
@@ -151,8 +165,8 @@ devices:
         signed: Mbi_PlainXipSignedLpc55s3x
       ext_xip:
         plain: Mbi_PlainRamLpc55s3x
-        crc: Mbi_CrcExtXipLpc55s3x
-        signed: Mbi_PlainExtXipSignedLpc55s3x
+        crc: Mbi_CrcXipLpc55s3x
+        signed: Mbi_PlainXipSignedLpc55s3x
       ram:
         plain: Mbi_PlainRamLpc55s3x
         crc: Mbi_CrcRamLpc55s3x

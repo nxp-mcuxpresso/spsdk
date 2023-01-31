@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<regs>
+	<register offset="0x0" width="8" name="magicNumber" reversed="False" description="Fixed to 0xA1" value="0xA1"/>
+	<register offset="0x08" width="8" name="version" reversed="False" description="Set to 1 for this implementation" value="0x1"/>
+	<register offset="0x10" width="8" name="configOption" reversed="False" description="Simplified - 0x00, Full - 0xFF - Must be 0xFF in this case" value="0xFF"/>
+	<register offset="0x18" width="8" name="clkMhz" reversed="False" description="Set the working frequency in the unit of MHz"/>
+	<register offset="0x20" width="32" name="sdramSizeKb" reversed="False" description="Set the memory size of SDRAM CS0 in the unit of kilobytes.Range: 4~4*1024*1024"/>
+	<register offset="0x40" width="8" name="portSize" reversed="False" description="Port size of SDRAM. 0 - 8bit, 1 - 16bit, 2 - 32bit"/>
+	<register offset="0x48" width="8" name="pinConfigPull" reversed="False" description="Pull config of the SDRAM GPIO pin. 0 - Forbidden, 1 - Pull up, 2 - Pull down"/>
+	<register offset="0x50" width="8" name="pinConfigDriveStrength" reversed="False" description="Driver config of SDRAM GPIO pin. 0 - High driver, 1 - Normal driver, Others- Invalid"/>
+	<register offset="0x58" width="8" name="muxRdy" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
+	<register offset="0x60" width="8" name="muxCsx0" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
+	<register offset="0x68" width="8" name="muxCsx1" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
+	<register offset="0x70" width="8" name="muxCsx2" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
+	<register offset="0x78" width="8" name="muxCsx3" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
+	<register offset="0x80" width="8" name="bank" reversed="False" description="Bank numbers of SDRAM device. 0 - 4 banks, 1 - 2 banks, Others- Invalid"/>
+	<register offset="0x88" width="8" name="burstLen" reversed="False" description="Burst length.0 - 1, 1 - 2, 2 - 4, 3 - 8, Others- Invalid"/>
+	<register offset="0x90" width="8" name="columnAddrBitNum" reversed="False" description="Column address bit number.0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9 bit, 4 - 8 bit, Others- Invalid"/>
+	<register offset="0x98" width="8" name="casLatency" reversed="False" description="CAS Latency, 1 - 1, 2 - 2, 3 - 3, Others- Invalid"/>
+	<register offset="0xA0" width="8" name="writeRecoveryNs" reversed="False" description="Write recovery time in unit of nanosecond. This could help to meet tWR timing requirement by the SDRAM device."/>
+	<register offset="0xA8" width="8" name="refreshRecoveryNs" reversed="False" description="Refresh recovery time in unit of nanosecond. This could help to meet tRFC timing requirement by the SDRAM device."/>
+	<register offset="0xB0" width="8" name="act2readwriteNs" reversed="False" description="Act to read/write wait time in unit of nanosecond. This could help to meet tRCD timing requirement by the SDRAM device."/>
+	<register offset="0xB8" width="8" name="precharge2actNs" reversed="False" description="Precharge to active wait time in unit of nanosecond. This could help to meet tRP timing requirement by SDRAM device."/>
+	<register offset="0xC0" width="8" name="act2actBanksNs" reversed="False" description="Active to active wait time between two different banks in unit of nanosecond. This could help to meet tRRD timing requirement by the SDRAM device."/>
+	<register offset="0xC8" width="8" name="refresh2refreshNs" reversed="False" description="Auto refresh to auto refresh wait time in unit of nanosecond. This could help to meet tRFC timing requirement by the SDRAM device."/>
+	<register offset="0xD0" width="8" name="selfrefRecoveryNs" reversed="False" description="Self refresh recovery time in unit of nanosecond. This could help to meet tXSR timing requirement by the SDRAM device."/>
+	<register offset="0xD8" width="8" name="act2prechargeMinNs" reversed="False" description="ACT to Precharge minimum time in unit of nanosecond. This could help to meet tRAS(max) timing requirement by the SDRAM device."/>
+	<register offset="0xE0" width="32" name="act2prechargeMaxNs" reversed="False" description="ACT to Precharge maximum time in unit of nanosecond. This could help to meet tRAS(max) timing requirement by the SDRAM device."/>
+	<register offset="0x100" width="32" name="refreshperiodPerrowNs" reversed="False" description="Refresh timer period in unit of nanosecond. Set to (tREF(ms) * 1000000/rows) value."/>
+	<register offset="0x120" width="32" name="modeRegister" reversed="False" description="Define the specific mode of operation of SDRAM. Set to the value required by SDRAM device."/>
+	<register offset="0x140" width="32" name="sdram0Base" reversed="False" description="Base address of SDRAM CS0. Range: 0x80000000~0xDFFFFFFF."/>
+	<register offset="0x160" width="32" name="sdram1Base" reversed="False" description="Base address of SDRAM CS1. Range: 0x80000000~0xDFFFFFFF. If CS1 is not being used, set the address to 0."/>
+	<register offset="0x180" width="32" name="sdram2Base" reversed="False" description="Base address of SDRAM CS2. Range: 0x80000000~0xDFFFFFFF. If CS2 is not being used, set the address to 0."/>
+	<register offset="0x1A0" width="32" name="sdram3Base" reversed="False" description="Base address of SDRAM CS3. Range: 0x80000000~0xDFFFFFFF. If CS3 is not being used, set the address to 0."/>
+	<register offset="0x1C0" width="32" name="sdram1SizeKb" reversed="False" description="Set the memory size of SDRAM CS1 in unit of kbytes. Range: 4~4*1024*1024"/>
+	<register offset="0x1E0" width="32" name="sdram2SizeKb" reversed="False" description="Set the memory size of SDRAM CS2 in unit of kbytes. Range: 4~4*1024*1024"/>
+	<register offset="0x200" width="32" name="sdram3SizeKb" reversed="False" description="Set the memory size of SDRAM CS3 in unit of kbytes. Range: 4~4*1024*1024"/>
+</regs>

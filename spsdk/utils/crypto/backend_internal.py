@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@
 import importlib
 import math
 from struct import pack, unpack_from
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 # Used security modules
 from Crypto import Hash, Random
@@ -161,13 +161,14 @@ class Backend(BackendClass):
             raise SPSDKError(f"Integrity Check Failed: {a:016X} (expected {iv:016X})")
         return b"".join(r[1:])
 
-    @staticmethod
-    def aes_cbc_encrypt(key: bytes, plain_data: bytes, iv: bytes = None) -> bytes:
+    def aes_cbc_encrypt(
+        self, key: bytes, plain_data: bytes, iv_data: Optional[bytes] = None
+    ) -> bytes:
         """Encrypt plain data with AES in CBC mode.
 
         :param key: Key for encryption
         :param plain_data: Data to encrypt
-        :param iv: Initial vector for encryption, defaults to None
+        :param iv_data: Initial vector for encryption, defaults to None
         :return: Encrypted data
         :raises SPSDKError: Incorrect key or initialization vector size
         """
@@ -175,11 +176,32 @@ class Backend(BackendClass):
             raise SPSDKError(
                 f"The key must be a valid AES key length: {', '.join([str(k) for k in AES.key_size])}"
             )
-        init_vector = iv or bytes(AES.block_size)
+        init_vector = iv_data or bytes(AES.block_size)
         if len(init_vector) != AES.block_size:
             raise SPSDKError(f"The initial vector length must be {AES.block_size}")
         cipher = AES.new(key, mode=AES.MODE_CBC, iv=init_vector)
         return cipher.encrypt(plain_data)
+
+    def aes_cbc_decrypt(
+        self, key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] = None
+    ) -> bytes:
+        """Decrypt encrypted data with AES in CBC mode.
+
+        :param key: The key for data decryption
+        :param encrypted_data: Input data
+        :param iv_data: Initialization vector data
+        :raises SPSDKError: Invalid Key or IV
+        :return: Decrypted image
+        """
+        if len(key) not in AES.key_size:
+            raise SPSDKError(
+                f"The key must be a valid AES key length: {', '.join([str(k) for k in AES.key_size])}"
+            )
+        init_vector = iv_data or bytes(AES.block_size)
+        if len(init_vector) != AES.block_size:
+            raise SPSDKError(f"The initial vector length must be {AES.block_size}")
+        cipher = AES.new(key, mode=AES.MODE_CBC, iv=init_vector)
+        return cipher.decrypt(encrypted_data)
 
     def aes_ctr_encrypt(self, key: bytes, plain_data: bytes, nonce: bytes) -> bytes:
         """Encrypt plain data with AES in CTR mode.
@@ -211,6 +233,28 @@ class Backend(BackendClass):
         :return: Decrypted data
         """
         return self.aes_ctr_encrypt(key, encrypted_data, nonce)
+
+    def aes_xts_encrypt(self, key: bytes, plain_data: bytes, tweak: bytes) -> bytes:
+        """Encrypt plain data with AES in XTS mode.
+
+        :param key: The key for data encryption
+        :param plain_data: Input data
+        :param tweak: The tweak is a 16 byte value
+        :return: Encrypted data
+        :raises NotImplementedError: This backend doesn't support AES-XTS
+        """
+        raise NotImplementedError("This backend doesn't support AES-XTS")
+
+    def aes_xts_decrypt(self, key: bytes, encrypted_data: bytes, tweak: bytes) -> bytes:
+        """Decrypt encrypted data with AES in XTS mode.
+
+        :param key: The key for data decryption
+        :param encrypted_data: Input data
+        :param tweak: The tweak is a 16 byte value
+        :return: Decrypted data
+        :raises NotImplementedError: This backend doesn't support AES-XTS
+        """
+        raise NotImplementedError("This backend doesn't support AES-XTS")
 
     def rsa_sign(
         self,
@@ -270,7 +314,7 @@ class Backend(BackendClass):
         return RSA.construct((modulus, exponent))
 
     def ecc_sign(
-        self, private_key: Union[ECC.EccKey, bytes], data: bytes, algorithm: str = None
+        self, private_key: Union[ECC.EccKey, bytes], data: bytes, algorithm: Optional[str] = None
     ) -> bytes:
         """Sign data using (EC)DSA.
 
@@ -290,7 +334,7 @@ class Backend(BackendClass):
         key: Union[ECC.EccKey, bytes],  # TODO  - could we renamed abstract class to "key" only?
         signature: bytes,
         data: bytes,
-        algorithm: str = None,
+        algorithm: Optional[str] = None,
     ) -> bool:
         """Verify (EC)DSA signature.
 

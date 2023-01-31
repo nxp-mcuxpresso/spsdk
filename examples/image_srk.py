@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -30,8 +30,8 @@ def main() -> None:
     srk_table = SrkTable(version=0x40)
 
     for cert_file in cert_files:
-        with open(f"{DATA_DIR}/{cert_file}", "rb") as fh:
-            certificate = x509.load_pem_x509_certificate(fh.read(), default_backend())
+        with open(f"{DATA_DIR}/{cert_file}", "rb") as cert_f:
+            certificate = x509.load_pem_x509_certificate(cert_f.read(), default_backend())
             srk_item = SrkItem.from_certificate(certificate)
             srk_table.append(srk_item)
 

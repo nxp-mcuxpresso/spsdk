@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,7 +18,8 @@ from spsdk import SPSDKError
 from spsdk.apps import nxpimage
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeyStore
-from spsdk.image.mbimg import Mbi_MixinHmac, Mbi_PlainRamLpc55s3x, Mbi_PlainXipSignedLpc55s3x
+from spsdk.image.mbi_mixin import Mbi_MixinHmac
+from spsdk.image.mbimg import Mbi_PlainRamLpc55s3x, Mbi_PlainXipSignedLpc55s3x
 from spsdk.utils.crypto.backend_internal import ECC, RSA, internal_backend
 from spsdk.utils.misc import use_working_directory
 

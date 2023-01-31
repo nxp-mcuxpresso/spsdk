@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to keep additional utilities for binary images."""
@@ -10,7 +10,7 @@ import logging
 import math
 import os
 import textwrap
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import colorama
 
@@ -60,7 +60,7 @@ class ColorPicker:
         """Constructor of ColorPicker."""
         self.index = len(self.COLORS)
 
-    def get_color(self, unwanted_color: str = None) -> str:
+    def get_color(self, unwanted_color: Optional[str] = None) -> str:
         """Get new color from list.
 
         :param unwanted_color: Color that should be omitted.
@@ -84,11 +84,11 @@ class BinaryImage:
         name: str,
         size: int = 0,
         offset: int = 0,
-        description: str = None,
-        binary: bytes = None,
-        pattern: BinaryPattern = None,
+        description: Optional[str] = None,
+        binary: Optional[bytes] = None,
+        pattern: Optional[BinaryPattern] = None,
         alignment: int = 1,
-        parent: "BinaryImage" = None,
+        parent: Optional["BinaryImage"] = None,
     ) -> None:
         """Binary Image class constructor.
 
@@ -104,11 +104,12 @@ class BinaryImage:
         self.name = name
         self.description = description
         self.offset = offset
-        self._size = size
+        self._size = align(size, alignment)
         self.binary = binary
         self.pattern = pattern
         self.alignment = alignment
         self.parent = parent
+
         if parent:
             assert isinstance(parent, BinaryImage)
         self.sub_images: List["BinaryImage"] = []
@@ -389,7 +390,9 @@ class BinaryImage:
         return [ValidationSchemas.get_schema_file(BINARY_SCH_FILE)]
 
     @staticmethod
-    def load_from_config(config: Dict[str, Any], search_paths: List[str] = None) -> "BinaryImage":
+    def load_from_config(
+        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "BinaryImage":
         """Converts the configuration option into an Binary Image object.
 
         :param config: Description of binary image.
@@ -481,12 +484,13 @@ class BinaryImage:
     @staticmethod
     def load_binary_image(
         path: str,
-        name: str = None,
+        name: Optional[str] = None,
         size: int = 0,
         offset: int = 0,
-        description: str = None,
-        pattern: BinaryPattern = None,
-        search_paths: List[str] = None,
+        description: Optional[str] = None,
+        pattern: Optional[BinaryPattern] = None,
+        search_paths: Optional[List[str]] = None,
+        alignment: int = 1,
     ) -> "BinaryImage":
         # pylint: disable=missing-param-doc
         r"""Load binary data file.
@@ -498,6 +502,7 @@ class BinaryImage:
         :param description: Text description of image, defaults to None
         :param pattern: Optional binary pattern.
         :param search_paths: List of paths where to search for the file, defaults to None
+        :param alignment: Optional alignment of result image
         :raises SPSDKError: The binary file cannot be loaded.
         :return: Binary data represented in BinaryImage class.
         """
@@ -533,6 +538,7 @@ class BinaryImage:
             offset=offset,
             description=img_descr,
             pattern=pattern,
+            alignment=alignment,
         )
         if len(bin_file.segments) == 0:
             raise SPSDKError(f"Load of {path} failed, can't be decoded.")
@@ -546,6 +552,7 @@ class BinaryImage:
                     pattern=pattern,
                     binary=segment.data,
                     parent=bin_image,
+                    alignment=alignment,
                 )
             )
         # Optimize offsets in image

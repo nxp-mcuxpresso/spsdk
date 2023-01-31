@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for NXP SPSDK DebugMailbox support."""
 
+import functools
 import logging
 from time import sleep
-from typing import Any, Dict
+from typing import Any, Dict, no_type_check
 
 from spsdk import SPSDKError
 from spsdk.debuggers.debug_probe import DebugProbe
@@ -31,7 +32,7 @@ class DebugMailbox:
         debug_probe: DebugProbe,
         reset: bool = True,
         moredelay: float = 1.0,
-        op_timeout: int = 4000,
+        op_timeout: int = 1000,
     ) -> None:
         """Initialize DebugMailbox object.
 
@@ -44,6 +45,7 @@ class DebugMailbox:
         # setup debug port / access point
 
         self.debug_probe = debug_probe
+        self.dbgmlbx_ap_ix = -1
         self.reset = reset
         self.moredelay = moredelay
         # setup registers and register bitfields
@@ -63,7 +65,7 @@ class DebugMailbox:
 
         logger.debug(f"Reset mode: {self.reset!r}")
         if self.reset:
-            self.debug_probe.dbgmlbx_reg_write(
+            self.dbgmlbx_reg_write(
                 addr=self.registers["CSW"]["address"],
                 data=self.registers["CSW"]["bits"]["RESYNCH_REQ"]
                 | self.registers["CSW"]["bits"]["CHIP_RESET_REQ"],
@@ -83,9 +85,10 @@ class DebugMailbox:
 
         ret = None
         retries = 20
+
         while ret is None or (ret & self.registers["CSW"]["bits"]["REQ_PENDING"]):
             try:
-                ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                ret = self.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
             except SPSDKError:
                 pass
             retries -= 1
@@ -93,12 +96,24 @@ class DebugMailbox:
                 raise SPSDKIOError("TransferTimeoutError limit exceeded!")
             sleep(0.05)
 
+    def read_idr(self) -> int:
+        """Read IDR of debug mailbox.
+
+        :return: IDR value of debug mailbox AP.
+        """
+        idr = self.dbgmlbx_reg_read(addr=REGISTERS["IDR"]["address"])
+        if idr != REGISTERS["IDR"]["expected"]:
+            logger.warning(
+                f"The read IDR value({hex(idr)}) doesn't match the expected value: {hex(REGISTERS['IDR']['expected'])}"
+            )
+        return idr
+
     def close(self) -> None:
         """Close session."""
         self.debug_probe.close()
 
     def spin_read(self, reg: int) -> int:
-        """Do atomic read operation to debugmailbox.
+        """Do atomic read operation to debug mailbox.
 
         :param reg: Register address.
         :return: Read value.
@@ -108,20 +123,20 @@ class DebugMailbox:
         timeout = Timeout(self.op_timeout, units="ms")
         while ret is None:
             try:
-                ret = self.debug_probe.dbgmlbx_reg_read(addr=reg)
+                ret = self.dbgmlbx_reg_read(addr=reg)
             except SPSDKError as e:
-                logger.error(str(e))
-                logger.error(f"read exception  {reg:#08X}")
+                logger.debug(str(e))
+                logger.debug(f"read exception  {reg:#08X}")
                 if timeout.overflow():
                     raise SPSDKTimeoutError(
                         f"The Debug Mailbox read operation ends on timeout. ({str(e)})"
                     ) from e
-                sleep(0.01)
+                sleep(0.1)
 
         return ret
 
     def spin_write(self, reg: int, value: int) -> None:
-        """Do atomic write operation to debugmailbox.
+        """Do atomic write operation to debug mailbox.
 
         :param reg: Register address.
         :param value: Value to write.
@@ -130,10 +145,10 @@ class DebugMailbox:
         timeout = Timeout(self.op_timeout, units="ms")
         while True:
             try:
-                self.debug_probe.dbgmlbx_reg_write(addr=reg, data=value)
+                self.dbgmlbx_reg_write(addr=reg, data=value)
                 # wait for rom code to read the data
                 while True:
-                    ret = self.debug_probe.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
+                    ret = self.dbgmlbx_reg_read(addr=self.registers["CSW"]["address"])
                     if (ret & self.registers["CSW"]["bits"]["REQ_PENDING"]) == 0:
                         break
                     if timeout.overflow():
@@ -141,13 +156,83 @@ class DebugMailbox:
 
                 return
             except SPSDKError as e:
-                logger.error(str(e))
-                logger.error(f"write exception addr={reg:#08X}, val={value:#08X}")
+                logger.debug(str(e))
+                logger.debug(f"write exception addr={reg:#08X}, val={value:#08X}")
                 if timeout.overflow():
                     raise SPSDKTimeoutError(
                         f"The Debug Mailbox write operation ends on timeout. ({str(e)})"
                     ) from e
-                sleep(0.01)
+                sleep(0.1)
+
+    @no_type_check
+    # pylint: disable=no-self-argument
+    def get_dbgmlbx_ap(func: Any):
+        """Decorator function that secure the getting right DEBUG MAILBOX AP ix for first use.
+
+        :param func: Decorated function.
+        """
+        POSSIBLE_DBGMLBX_AP_IX = [0, 2]
+
+        @functools.wraps(func)
+        def wrapper(self: "DebugMailbox", *args, **kwargs):
+            if self.dbgmlbx_ap_ix < 0:
+                # Try to find DEBUG MAILBOX AP
+                for i in POSSIBLE_DBGMLBX_AP_IX:
+                    try:
+                        idr = self.debug_probe.coresight_reg_read(
+                            access_port=True,
+                            addr=self.debug_probe.get_coresight_ap_address(
+                                access_port=i, address=REGISTERS["IDR"]["address"]
+                            ),
+                        )
+                        if idr == REGISTERS["IDR"]["expected"]:
+                            self.dbgmlbx_ap_ix = i
+                            logger.debug(
+                                f"Found debug mailbox access port at AP{i}, IDR: 0x{idr:08X}"
+                            )
+                            break
+                    except SPSDKError:
+                        pass
+
+                if self.dbgmlbx_ap_ix < 0:
+                    raise SPSDKError("The debug mailbox access port is not found!")
+
+            return func(self, *args, **kwargs)  # pylint: disable=not-callable
+
+        return wrapper
+
+    @get_dbgmlbx_ap
+    def dbgmlbx_reg_read(self, addr: int = 0) -> int:
+        """Read debug mailbox access port register.
+
+        This is read debug mailbox register function for SPSDK library to support various DEBUG PROBES.
+
+        :param addr: the register address
+        :return: The read value of addressed register (4 bytes)
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        return self.debug_probe.coresight_reg_read(
+            addr=self.debug_probe.get_coresight_ap_address(
+                access_port=self.dbgmlbx_ap_ix, address=addr
+            )
+        )
+
+    @get_dbgmlbx_ap
+    def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
+        """Write debug mailbox access port register.
+
+        This is write debug mailbox register function for SPSDK library to support various DEBUG PROBES.
+
+        :param addr: the register address
+        :param data: the data to be written into register
+        :raises NotImplementedError: Derived class has to implement this method
+        """
+        self.debug_probe.coresight_reg_write(
+            addr=self.debug_probe.get_coresight_ap_address(
+                access_port=self.dbgmlbx_ap_ix, address=addr
+            ),
+            data=data,
+        )
 
 
 REGISTERS: Dict[str, Any] = {

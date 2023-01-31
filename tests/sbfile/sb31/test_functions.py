@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
@@ -187,16 +187,16 @@ def test_header_validate():
 def test_commands_validate():
     """Test of validation function for Secure Binary commands class."""
     with pytest.raises(KeyError):
-        SecureBinary31Commands(curve_name=None)
+        SecureBinary31Commands(family="lpc55s3x", curve_name=None)
     with pytest.raises(KeyError):
-        SecureBinary31Commands(curve_name="Invalid")
+        SecureBinary31Commands(family="lpc55s3x", curve_name="Invalid")
     with pytest.raises(SPSDKError):
-        SecureBinary31Commands(curve_name="secp256r1")
+        SecureBinary31Commands(family="lpc55s3x", curve_name="secp256r1")
 
-    SecureBinary31Commands(curve_name="secp256r1", is_encrypted=False).validate()
+    SecureBinary31Commands(family="lpc55s3x", curve_name="secp256r1", is_encrypted=False).validate()
 
     sb3c = SecureBinary31Commands(
-        curve_name="secp256r1", pck=bytes(32), kdk_access_rights=1, timestamp=1
+        family="lpc55s3x", curve_name="secp256r1", pck=bytes(32), kdk_access_rights=1, timestamp=1
     )
     sb3c.key_derivator = None  # something broke key derivator
     with pytest.raises(SPSDKError):
@@ -210,6 +210,7 @@ def test_secure_binary3_validate(data_dir):
     cert_blk = CertBlockV31(root_certs=rot, ca_flag=1)
 
     sb3 = SecureBinary31(
+        family="lpc55s3x",
         curve_name="secp256r1",
         cert_block=cert_blk,
         firmware_version=1,
@@ -247,6 +248,7 @@ def test_secure_binary3_info(data_dir):
     cert_blk = CertBlockV31(root_certs=rot, ca_flag=1)
 
     sb3 = SecureBinary31(
+        family="lpc55s3x",
         curve_name="secp256r1",
         cert_block=cert_blk,
         firmware_version=1,

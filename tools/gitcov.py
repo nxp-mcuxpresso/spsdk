@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ import subprocess
 import sys
 from configparser import ConfigParser
 from os import path
-from typing import Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 from xml.etree import ElementTree as et
 
 logger = logging.getLogger()
@@ -31,7 +31,7 @@ class MyFormatter(
     """Class customizing behavior for argparse."""
 
 
-def parse_input(input_args: Sequence[str] = None) -> argparse.Namespace:
+def parse_input(input_args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """Parse default configuration file and process user inputs."""
     # read the gitcov-defaults.ini use values to set defaults to argparse
     config = ConfigParser()
@@ -156,7 +156,7 @@ def parse_input(input_args: Sequence[str] = None) -> argparse.Namespace:
 
 
 def get_changed_files(
-    repo_path: str, include_merges: bool, parent_branch: str = None
+    repo_path: str, include_merges: bool, parent_branch: Optional[str] = None
 ) -> Sequence[str]:
     """Get a list of changed files.
 
@@ -244,7 +244,7 @@ def _cov_branch_category(line: et.Element) -> str:
 
 
 def extract_coverage(
-    cov_report: et.ElementTree, file_path: str, line_numbers: Sequence[int] = None
+    cov_report: et.ElementTree, file_path: str, line_numbers: Optional[Sequence[int]] = None
 ) -> dict:
     """Extract coverage data for a given file.
 
@@ -402,7 +402,7 @@ def get_parent_commit() -> str:
     return current_sha
 
 
-def main(argv: Sequence[str] = None) -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
     """Main function."""
     args = parse_input(argv)
 

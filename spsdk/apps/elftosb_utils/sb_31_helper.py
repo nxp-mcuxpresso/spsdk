@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for parsing original elf2sb configuration files."""
@@ -11,13 +11,14 @@ from typing import List, Optional
 from spsdk import SPSDKError
 from spsdk.image import MBIMG_SCH_FILE
 from spsdk.utils.crypto import CRYPTO_SCH_FILE
+from spsdk.utils.crypto.cert_blocks import get_main_cert_index
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 
 class RootOfTrustInfo:  # pylint: disable=too-few-public-methods
     """Filters out Root Of Trust information given to elf2sb application."""
 
-    def __init__(self, data: dict, search_paths: List[str] = None) -> None:
+    def __init__(self, data: dict, search_paths: Optional[List[str]] = None) -> None:
         """Create object out of data loaded from elf2sb configuration file.
 
         :param data: Configuration data.
@@ -49,12 +50,7 @@ class RootOfTrustInfo:  # pylint: disable=too-few-public-methods
         for org, filtered in zip(public_keys, self.public_keys):
             if org != filtered:
                 raise SPSDKError("There are gaps in rootCertificateXFile definition")
-        # look for keyID; can't use "or" because 0 is a valid number although it's a "falsy" value
-        data_main_cert_index = data.get("mainCertChainId")
-        if data_main_cert_index is None:
-            data_main_cert_index = data.get("mainRootCertId")
-        if data_main_cert_index is None:
-            raise SPSDKError("Main Cert ID not specified (mainCertChainId or mainRootCertId)")
+        data_main_cert_index = get_main_cert_index(data)
         root_cert_file = data.get(f"rootCertificate{data_main_cert_index}File")
         if not root_cert_file:
             raise SPSDKError(f"rootCertificate{data_main_cert_index}File doesn't exist")

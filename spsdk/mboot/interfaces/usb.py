@@ -2,17 +2,18 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for serial communication with a target device using MBoot protocol."""
 
 import logging
 from struct import pack, unpack_from
-from typing import List, Union
+from typing import List, Optional, Union
 
 import libusbsio
 
+from spsdk.utils.misc import get_hash
 from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
 from ..commands import CmdPacket, CmdResponse, parse_cmd_response
@@ -57,7 +58,7 @@ USB_DEVICES = {
 }
 
 
-def scan_usb(device_id: str = None) -> List["RawHid"]:
+def scan_usb(device_id: Optional[str] = None) -> List["RawHid"]:
     """Scan connected USB devices.
 
     :param device_id: see USBDeviceFilter classes constructor for usb_id specification
@@ -75,10 +76,7 @@ class RawHid(MBootInterface):
 
     @property
     def name(self) -> str:
-        """Get the name of the device.
-
-        :return: Name of the device.
-        """
+        """Get the name of the device."""
         for name, value in USB_DEVICES.items():
             if value[0] == self.vid and value[1] == self.pid:
                 return name
@@ -86,11 +84,18 @@ class RawHid(MBootInterface):
 
     @property
     def is_opened(self) -> bool:
-        """Indicates whether device is open.
-
-        :return: True if device is open, False othervise.
-        """
+        """Return True if device is open."""
         return self.device is not None and self._opened
+
+    @property
+    def path_str(self) -> str:
+        """BLHost-friendly string representation of USB path."""
+        return NXPUSBDeviceFilter.convert_usb_path(self.path)
+
+    @property
+    def path_hash(self) -> str:
+        """BLHost-friendly hash of the USB path."""
+        return get_hash(self.path)
 
     def __init__(self) -> None:
         """Initialize the USB interface object."""
@@ -104,7 +109,7 @@ class RawHid(MBootInterface):
         self.interface_number = 0
         self.timeout = 2000
         self.path = b""
-        self.device = None
+        self.device: libusbsio.LIBUSBSIO.HID_DEVICE = None
 
     @staticmethod
     def _encode_report(report_id: int, data: bytes) -> bytes:

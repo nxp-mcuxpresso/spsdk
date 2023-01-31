@@ -28,6 +28,7 @@ Secure Provisioning SDK (SPSDK)
 
     apps/blhost
     apps/elftosb
+    apps/ifr
     apps/nxpcertgen
     apps/nxpcrypto
     apps/nxpdebugmbox
@@ -47,7 +48,16 @@ Secure Provisioning SDK (SPSDK)
     :caption: API Development Guide
     :maxdepth: 1
 
-    api/api
+    api/crypto
+    api/dat
+    api/debuggers
+    api/image
+    api/mboot
+    api/pfr
+    api/sbfile
+    api/sdp
+    api/shadowregs
+    api/utils
 
 .. toctree::
     :caption: Examples
@@ -64,6 +74,7 @@ Secure Provisioning SDK (SPSDK)
     examples/jupyter
     examples/lpc55sxx_secure_boot
     examples/lpc55sxx_secure_fw_update
+    examples/kw45xx
 
 Indices and tables
 ==================

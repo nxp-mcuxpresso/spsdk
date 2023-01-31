@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Virtual Debug probes support used for product testing."""
@@ -14,7 +14,6 @@ from typing import Any, Dict
 from spsdk.debuggers.debug_probe import (
     DebugProbe,
     SPSDKDebugProbeError,
-    SPSDKDebugProbeMemoryInterfaceNotEnabled,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
 )
@@ -38,51 +37,57 @@ class DebugProbeVirtual(DebugProbe):
 
     UNIQUE_SERIAL = "Virtual_DebugProbe_SPSDK"
 
-    def __init__(self, hardware_id: str, user_params: Dict = None) -> None:
+    def __init__(self, hardware_id: str, options: Dict = None) -> None:
         """The Virtual class initialization.
 
         The Virtual initialization function for SPSDK library to support various DEBUG PROBES.
         """
-        super().__init__(hardware_id, user_params)
+        super().__init__(hardware_id, options)
 
         set_logger(logging.root.level)
 
         self.opened = False
-        self.enabled_memory_interface = False
         self.virtual_memory: Dict[Any, Any] = {}
         self.virtual_memory_substituted: Dict[Any, Any] = {}
         self.coresight_ap: Dict[Any, Any] = {}
         self.coresight_ap_substituted: Dict[Any, Any] = {}
         self.coresight_dp: Dict[Any, Any] = {}
-        self.coresight_dp_write_exception = False
+        self.coresight_ap_write_exception = 0
+        self.coresight_dp_write_exception = 0
+        self.coresight_mem_read_exception = 0
         self.coresight_dp_substituted: Dict[Any, Any] = {}
 
-        if user_params is not None:
-            if "exc" in user_params.keys():
+        if options is not None:
+            if "exc" in options.keys():
                 raise SPSDKDebugProbeError("Forced exception from constructor.")
-            if "subs_ap" in user_params.keys():
+            if "subs_ap" in options.keys():
                 self.set_coresight_ap_substitute_data(
-                    self._load_subs_from_param(user_params["subs_ap"])
+                    self._load_subs_from_param(options["subs_ap"])
                 )
-            if "subs_dp" in user_params.keys():
+            if "subs_dp" in options.keys():
                 self.set_coresight_dp_substitute_data(
-                    self._load_subs_from_param(user_params["subs_dp"])
+                    self._load_subs_from_param(options["subs_dp"])
                 )
-            if "subs_mem" in user_params.keys():
+            if "subs_mem" in options.keys():
                 self.set_virtual_memory_substitute_data(
-                    self._load_subs_from_param(user_params["subs_mem"])
+                    self._load_subs_from_param(options["subs_mem"])
                 )
+            if "mem_read_exp" in options.keys():
+                self.mem_read_cause_exception(self._load_subs_from_param(options["mem_read_exp"]))
+
+        # setup IDR register of standard AP:
+        self.coresight_ap[DebugProbe.get_coresight_ap_address(2, 0xFC)] = 0x002A0000
 
         logger.debug(f"The SPSDK Virtual Interface has been initialized")
 
     @classmethod
-    def get_connected_probes(cls, hardware_id: str = None, user_params: Dict = None) -> list:
+    def get_connected_probes(cls, hardware_id: str = None, options: Dict = None) -> list:
         """Get all connected probes over Virtual.
 
         This functions returns the list of all connected probes in system by Virtual package.
         :param hardware_id: None to list all probes, otherwise the the only probe with matching
             hardware id is listed.
-        :param user_params: The user params dictionary
+        :param options: The options dictionary
         :return: probe_description
         :raises SPSDKDebugProbeError: In case of invoked test Exception.
         """
@@ -91,7 +96,7 @@ class DebugProbeVirtual(DebugProbe):
 
         probes = DebugProbes()
 
-        if user_params is not None and "exc" in user_params.keys():
+        if options is not None and "exc" in options.keys():
             raise SPSDKDebugProbeError("Forced exception from discovery function.")
 
         # Find this 'probe' just in case of direct request (user must know the hardware id :-) )
@@ -113,17 +118,7 @@ class DebugProbeVirtual(DebugProbe):
         The function is used to initialize the connection to target and enable using debug probe
         for DAT purposes.
         """
-        self.dbgmlbx_ap_ix = 2
         self.opened = True
-
-    def enable_memory_interface(self) -> None:
-        """Debug probe enabling memory interface.
-
-        General memory interface enabling method (it should be called after open method) for SPSDK library
-        to support various DEBUG PROBES. The function is used to initialize the target memory interface
-        and enable using memory access of target over debug probe.
-        """
-        self.enabled_memory_interface = True
 
     def close(self) -> None:
         """Close Virtual interface.
@@ -131,7 +126,6 @@ class DebugProbeVirtual(DebugProbe):
         The Virtual closing function for SPSDK library to support various DEBUG PROBES.
         """
         self.opened = False
-        self.enabled_memory_interface = False
 
     def _get_requested_value(self, values: Dict, subs_values: Dict, addr: Any) -> int:
         """Method to return back the requested value.
@@ -152,34 +146,6 @@ class DebugProbeVirtual(DebugProbe):
 
         return int(values[addr]) if addr in values.keys() else 0
 
-    def dbgmlbx_reg_read(self, addr: int = 0) -> int:
-        """Read debug mailbox access port register.
-
-        This is read debug mailbox register function for SPSDK library to support various DEBUG PROBES.
-        :param addr: the register address
-        :return: The read value of addressed register (4 bytes)
-        :raises SPSDKDebugProbeNotOpenError: The virtual probe is not open
-        """
-        if not self.opened:
-            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
-
-        # Add ap selection to 2 as a standard index of debug mailbox
-        return self.coresight_reg_read(access_port=True, addr=addr | 2 << self.APSEL_SHIFT)
-
-    def dbgmlbx_reg_write(self, addr: int = 0, data: int = 0) -> None:
-        """Write debug mailbox access port register.
-
-        This is write debug mailbox register function for SPSDK library to support various DEBUG PROBES.
-        :param addr: the register address
-        :param data: the data to be written into register
-        :raises SPSDKDebugProbeNotOpenError: The virtual probe is not open
-        """
-        if not self.opened:
-            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
-
-        # Add ap selection to 2 as a standard index of debug mailbox
-        self.coresight_reg_write(access_port=True, addr=addr | 2 << self.APSEL_SHIFT, data=data)
-
     def mem_reg_read(self, addr: int = 0) -> int:
         """Read 32-bit register in memory space of MCU.
 
@@ -188,16 +154,14 @@ class DebugProbeVirtual(DebugProbe):
         :param addr: the register address
         :return: The read value of addressed register (4 bytes)
         :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
-        :raises SPSDKDebugProbeMemoryInterfaceNotEnabled: The Virtual is using just CoreSight access.
         :raises SPSDKDebugProbeError: General virtual probe error.
         """
         if not self.opened:
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
-        if not self.enabled_memory_interface:
-            raise SPSDKDebugProbeMemoryInterfaceNotEnabled(
-                "Memory interface is not enabled over Virtual."
-            )
+        if self.coresight_mem_read_exception > 0:
+            self.coresight_mem_read_exception -= 1
+            raise SPSDKDebugProbeTransferError(f"The Coresight memory read operation failed.")
 
         return self._get_requested_value(self.virtual_memory, self.virtual_memory_substituted, addr)
 
@@ -209,15 +173,9 @@ class DebugProbeVirtual(DebugProbe):
         :param addr: the register address
         :param data: the data to be written into register
         :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
-        :raises SPSDKDebugProbeMemoryInterfaceNotEnabled: The Virtual is using just CoreSight access.
         """
         if not self.opened:
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
-
-        if not self.enabled_memory_interface:
-            raise SPSDKDebugProbeMemoryInterfaceNotEnabled(
-                "Memory interface is not enabled over Virtual."
-            )
 
         self.virtual_memory[addr] = data
 
@@ -255,10 +213,13 @@ class DebugProbeVirtual(DebugProbe):
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         if access_port:
+            if self.coresight_ap_write_exception > 0:
+                self.coresight_ap_write_exception -= 1
+                raise SPSDKDebugProbeTransferError(f"The Coresight write operation failed.")
             self.coresight_ap[addr] = data
         else:
-            if self.coresight_dp_write_exception:
-                self.coresight_dp_write_exception = False
+            if self.coresight_dp_write_exception > 0:
+                self.coresight_dp_write_exception -= 1
                 raise SPSDKDebugProbeTransferError(f"The Coresight write operation failed.")
             self.coresight_dp[addr] = data
 
@@ -284,7 +245,9 @@ class DebugProbeVirtual(DebugProbe):
             self.virtual_memory.clear()
 
         self.coresight_dp_substituted.clear()
-        self.coresight_dp_write_exception = False
+        self.coresight_ap_write_exception = 0
+        self.coresight_dp_write_exception = 0
+        self.coresight_mem_read_exception = 0
         self.coresight_ap_substituted.clear()
         self.virtual_memory_substituted.clear()
 
@@ -316,9 +279,26 @@ class DebugProbeVirtual(DebugProbe):
 
         self.coresight_ap_substituted = substitute_data
 
-    def dp_write_cause_exception(self) -> None:
-        """Attempt to write to DP register cause exception."""
-        self.coresight_dp_write_exception = True
+    def dp_write_cause_exception(self, count: int = 1) -> None:
+        """Attempt to write to DP register cause exception.
+
+        :param count: number of exception in row.
+        """
+        self.coresight_dp_write_exception = count
+
+    def ap_write_cause_exception(self, count: int = 1) -> None:
+        """Attempt to write to AP register cause exception.
+
+        :param count: number of exception in row.
+        """
+        self.coresight_ap_write_exception = count
+
+    def mem_read_cause_exception(self, count: int = 1) -> None:
+        """Attempt to memory read cause exception.
+
+        :param count: number of exception in row.
+        """
+        self.coresight_mem_read_exception = count
 
     def _load_subs_from_param(self, arg: str) -> Dict:
         """Get the substituted values from input arguments.

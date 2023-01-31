@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for general utilities used by TP applications."""
 import itertools
 import os
-import sys
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import click
@@ -17,8 +16,8 @@ import prettytable
 import yaml
 from typing_extensions import Literal
 
+from spsdk import SPSDKError
 from spsdk.apps.utils import FC
-from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.tp import TP_DATA_FOLDER, TP_SCH_FILE, SPSDKTpError
 from spsdk.tp.tp_intf import TpDevInterface
 from spsdk.tp.tphost import TrustProvisioningHost
@@ -36,8 +35,6 @@ from spsdk.tp.utils import (
 from spsdk.utils.misc import find_file
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
-colorama.init()
-
 
 class TPBaseConfig:
     """Base class for TP app configs."""
@@ -45,7 +42,7 @@ class TPBaseConfig:
     SCHEMA_FILE_DIR = TP_DATA_FOLDER
     SCHEMA_MEMBERS: List[str] = []
 
-    def __init__(self, config_data: dict, config_dir: str = None) -> None:
+    def __init__(self, config_data: dict, config_dir: Optional[str] = None) -> None:
         """Initialize the basic configuration.
 
         :param config_data: Initial configuration data
@@ -68,9 +65,12 @@ class TPBaseConfig:
         )
 
         # Add device schemas
-        sch_list.extend(get_tp_device_class(self.config_data["tp_device"]).get_validation_schemas())
+        if "device" in self.SCHEMA_MEMBERS:
+            sch_list.extend(
+                get_tp_device_class(self.config_data["tp_device"]).get_validation_schemas()
+            )
         # Optionally add also target schemas
-        if self.config_data.get("tp_target"):
+        if "target" in self.SCHEMA_MEMBERS:
             sch_list.extend(
                 get_tp_target_class(self.config_data["tp_target"]).get_validation_schemas()
             )
@@ -81,7 +81,8 @@ class TPBaseConfig:
             search_paths=[self.config_dir] if self.config_dir else None,
         )
 
-    def _get_config_data(self, config_file_path: str = None) -> Dict[str, Any]:
+    @staticmethod
+    def _get_config_data(config_file_path: Optional[str] = None) -> Dict[str, Any]:
         """Setup initial configuration data."""
         if config_file_path:
             with open(config_file_path) as f:
@@ -126,17 +127,17 @@ class TPHostConfig(TPBaseConfig):
 
     def __init__(
         self,
-        tp_device: str = None,
-        tp_device_parameter: List[str] = None,
-        tp_target: str = None,
-        tp_target_parameter: List[str] = None,
-        family: str = None,
-        firmware: str = None,
-        prov_firmware: str = None,
-        audit_log: str = None,
-        audit_log_key: str = None,
-        timeout: int = None,
-        config: str = None,
+        tp_device: Optional[str] = None,
+        tp_device_parameter: Optional[List[str]] = None,
+        tp_target: Optional[str] = None,
+        tp_target_parameter: Optional[List[str]] = None,
+        family: Optional[str] = None,
+        firmware: Optional[str] = None,
+        prov_firmware: Optional[str] = None,
+        audit_log: Optional[str] = None,
+        audit_log_key: Optional[str] = None,
+        timeout: Optional[int] = None,
+        config: Optional[str] = None,
     ) -> None:
         """Initialize the TPHost configuration."""
         config_data = self._get_config_data(config)
@@ -170,12 +171,15 @@ class TPHostConfig(TPBaseConfig):
 
         self._validate()
 
+        if "audit_log" not in self.config_data:
+            return
+
         try:
             self.config_data["audit_log"] = find_file(
                 self.config_data["audit_log"],
                 search_paths=[self.config_dir] if self.config_dir else None,
             )
-        except:
+        except SPSDKError:
             # file doesn't exist yet
             # if config file is defined make the audit_log path relative to it
             if self.config_dir and "audit_log" in self.SCHEMA_MEMBERS:
@@ -255,9 +259,9 @@ class TPConfigConfig(TPBaseConfig):
     def __init__(
         self,
         config_file_path: str,
-        tp_device: str = None,
-        tp_device_parameter: List[str] = None,
-        timeout: int = None,
+        tp_device: Optional[str] = None,
+        tp_device_parameter: Optional[List[str]] = None,
+        timeout: Optional[int] = None,
     ) -> None:
         """Initialize the TPConfig configuration."""
         config_dir = os.path.dirname(config_file_path)
@@ -285,7 +289,7 @@ def multiple_tp_dict(multi: Optional[List[str]]) -> Dict[str, str]:
     """
     try:
         if multi is None:
-            return dict()
+            return {}
         return dict(item.split("=") for item in multi if isinstance(item, str))
     except Exception as e:
         raise SPSDKTpError(f"Unable to process input {multi}") from e
@@ -417,7 +421,11 @@ def tp_device_options(options: FC) -> FC:
         "--tp-device-parameter",
         type=str,
         multiple=True,
-        help="The Trusted Device parameter, should be used multiply to setup TP device (example of usage 'key=value').",
+        help="""
+The Trusted Device parameters, may be used multiple times to setup TP device interface.
+To see available parameters for given TP device, run `tphost/tpconfig device-help`.
+Example: -dp id=123456
+""",
     )(options)
     options = click.option(
         "-d",
@@ -437,8 +445,9 @@ def tp_target_options(options: FC) -> FC:
         type=str,
         multiple=True,
         help="""
-The Trusted Target parameter,
-should be used multiply to setup TP target interface (example of usage 'key=value').
+The Trusted Target parameter, may be used multiple times to setup TP target interface.
+To see available parameters for given TP device, run `tphost/tpconfig target-help`.
+Example: -tp blhost_baudrate=115200
 """,
     )(options)
     options = click.option(
@@ -457,7 +466,7 @@ should be used multiply to setup TP target interface (example of usage 'key=valu
     "--tp-device",
     help="Device name to print help, if not used, all devices help will be printed.",
 )
-def device_help(tp_device: str = None) -> None:
+def device_help(tp_device: Optional[str] = None) -> None:
     """Command prints help for all devices or optionally only for specified."""
     dev_list = [tp_device] if tp_device else get_tp_device_types()
 
@@ -473,7 +482,7 @@ def device_help(tp_device: str = None) -> None:
     "--tp-target",
     help="Target name to print help, if not used, all targets help will be printed.",
 )
-def target_help(tp_target: str = None) -> None:
+def target_help(tp_target: Optional[str] = None) -> None:
     """Command prints help for all targets or optionally only for specified."""
     target_list = [tp_target] if tp_target else get_tp_target_types()
 

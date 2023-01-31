@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to covert FCB Register description from C header file structure."""
@@ -29,7 +29,7 @@ def get_struct(text: str, name: str) -> str:
     :param name: name of structure
     :return: Subset of lines with structure content.
     """
-
+    # pylint: disable=anomalous-backslash-in-string  # \s is a part of the regular expression
     struct_end_re = re.findall(f"}}\s*{name}\s*;", text)
     if not struct_end_re:
         raise SPSDKError(f"Invalid structure name to find: {name}")
@@ -198,7 +198,7 @@ def main(header: str, fcb: str, xml: str, log_level: int) -> int:
 
     print(regs.image_info().info())
     if len(regs.image_info()) != 512:
-        logger.error(f"Invalid length of result loaded structure!")
+        logger.error("Invalid length of result loaded structure!")
         raise SPSDKError(f"Invalid length of result loaded structure! {len(regs.image_info())}B")
 
     regs.write_xml(xml)

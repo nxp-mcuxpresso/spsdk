@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Miscellaneous functions used throughout the SPSDK."""
 import contextlib
+import hashlib
 import logging
 import math
 import os
@@ -56,7 +57,7 @@ class BinaryPattern:
         except SPSDKError:
             if not pattern in BinaryPattern.SPECIAL_PATTERNS:
                 raise SPSDKValueError(  # pylint: disable=raise-missing-from
-                    f"Unsupported input pattern{pattern}"
+                    f"Unsupported input pattern {pattern}"
                 )
 
         self._pattern = pattern
@@ -82,8 +83,8 @@ class BinaryPattern:
         if self._pattern == "inc":
             return bytes((x & 0xFF for x in range(size)))
 
-        pattern = value_to_bytes(self._pattern)
-        block = bytes(pattern * int((size / len(pattern))))
+        pattern = value_to_bytes(self._pattern, align_to_2n=False)
+        block = bytes(pattern * (int((size / len(pattern))) + 1))
         return block[:size]
 
     @property
@@ -113,7 +114,9 @@ def align(number: int, alignment: int = 4) -> int:
 
 
 def align_block(
-    data: Union[bytes, bytearray], alignment: int = 4, padding: Union[int, BinaryPattern] = None
+    data: Union[bytes, bytearray],
+    alignment: int = 4,
+    padding: Optional[Union[int, BinaryPattern]] = None,
 ) -> bytes:
     """Align binary data block length to specified boundary by adding padding bytes to the end.
 
@@ -133,7 +136,7 @@ def align_block(
         return bytes(data)
     if not padding:
         padding = BinaryPattern("zeros")
-    elif isinstance(padding, int):
+    elif not isinstance(padding, BinaryPattern):
         padding = BinaryPattern(str(padding))
     return bytes(data + padding.get_block(num_padding))
 
@@ -171,7 +174,7 @@ def find_first(iterable: Iterable[T], predicate: Callable[[T], bool]) -> Optiona
     return next((a for a in iterable if predicate(a)), None)
 
 
-def load_binary(path: str, search_paths: List[str] = None) -> bytes:
+def load_binary(path: str, search_paths: Optional[List[str]] = None) -> bytes:
     """Loads binary file into bytes.
 
     :param path: Path to the file.
@@ -183,7 +186,7 @@ def load_binary(path: str, search_paths: List[str] = None) -> bytes:
     return data
 
 
-def load_text(path: str, search_paths: List[str] = None) -> str:
+def load_text(path: str, search_paths: Optional[List[str]] = None) -> str:
     """Loads binary file into bytes.
 
     :param path: Path to the file.
@@ -195,7 +198,9 @@ def load_text(path: str, search_paths: List[str] = None) -> str:
     return text
 
 
-def load_file(path: str, mode: str = "r", search_paths: List[str] = None) -> Union[str, bytes]:
+def load_file(
+    path: str, mode: str = "r", search_paths: Optional[List[str]] = None
+) -> Union[str, bytes]:
     """Loads a file into bytes.
 
     :param path: Path to the file.
@@ -204,14 +209,15 @@ def load_file(path: str, mode: str = "r", search_paths: List[str] = None) -> Uni
     :return: content of the binary file as bytes or str (based on mode)
     """
     path = find_file(path, search_paths=search_paths)
-    logger.debug(f"Loading {'binary' if 'b' in mode else 'text'} file from {path} .")
+    logger.debug(f"Loading {'binary' if 'b' in mode else 'text'} file from {path}")
     with open(path, mode) as f:
         return f.read()
 
 
-def write_file(data: Union[str, bytes], path: str, mode: str = "w", encoding: str = None) -> int:
-    # pylint: disable=missing-param-doc
-    r"""Writes data into a file.
+def write_file(
+    data: Union[str, bytes], path: str, mode: str = "w", encoding: Optional[str] = None
+) -> int:
+    """Writes data into a file.
 
     :param data: data to write
     :param path: Path to the file.
@@ -224,7 +230,7 @@ def write_file(data: Union[str, bytes], path: str, mode: str = "w", encoding: st
     if folder and not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
 
-    logger.debug(f"Storing {'binary' if 'b' in mode else 'text'} file at {path} .")
+    logger.debug(f"Storing {'binary' if 'b' in mode else 'text'} file at {path}")
     with open(path, mode, encoding=encoding) as f:
         return f.write(data)
 
@@ -244,7 +250,7 @@ def get_abs_path(file_path: str, base_dir: Optional[str] = None) -> str:
 def find_file(
     file_path: str,
     use_cwd: bool = True,
-    search_paths: List[str] = None,
+    search_paths: Optional[List[str]] = None,
     raise_exc: bool = True,
 ) -> str:
     """Return a full path to the file.
@@ -401,7 +407,9 @@ def format_value(value: int, size: int, delimiter: str = "_", use_prefix: bool =
     return f"{prefix}{rev}"
 
 
-def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True, byte_cnt: int = None) -> int:
+def get_bytes_cnt_of_int(
+    value: int, align_to_2n: bool = True, byte_cnt: Optional[int] = None
+) -> int:
     """Returns count of bytes needed to store handled integer.
 
     :param value: Input integer value.
@@ -423,7 +431,7 @@ def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True, byte_cnt: int = N
 
     if byte_cnt and cnt > byte_cnt:
         raise SPSDKValueError(
-            f"Value takes more bytes than required byte count{byte_cnt} after align."
+            f"Value takes more bytes than required byte count {byte_cnt} after align."
         )
 
     cnt = byte_cnt or cnt
@@ -431,7 +439,7 @@ def get_bytes_cnt_of_int(value: int, align_to_2n: bool = True, byte_cnt: int = N
     return cnt
 
 
-def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) -> int:
+def value_to_int(value: Union[bytes, bytearray, int, str], default: Optional[int] = None) -> int:
     """Function loads value from lot of formats to integer.
 
     :param value: Input value.
@@ -465,7 +473,7 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: int = None) 
 def value_to_bytes(
     value: Union[bytes, bytearray, int, str],
     align_to_2n: bool = True,
-    byte_cnt: int = None,
+    byte_cnt: Optional[int] = None,
     endianness: str = "big",
 ) -> bytes:
     """Function loads value from lot of formats.
@@ -538,7 +546,7 @@ def reverse_bits_in_bytes(arr: bytes) -> bytes:
     result = bytearray()
 
     for x in arr:
-        result.append(int("{:08b}".format(x)[::-1], 2))
+        result.append(int(f"{x:08b}"[::-1], 2))
 
     return bytes(result)
 
@@ -810,3 +818,10 @@ def split_data(data: bytearray, size: int) -> Generator[bytes, None, None]:
     """
     for i in range(0, len(data), size):
         yield data[i : i + size]
+
+
+def get_hash(text: Union[str, bytes]) -> str:
+    """Returns hash of given text."""
+    if isinstance(text, str):
+        text = text.encode("utf-8")
+    return hashlib.sha1(text).digest().hex()[:8]

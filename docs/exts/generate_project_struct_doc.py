@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # Script for generation of project structure table
 import importlib
-import os.path, pkgutil
+import os.path
+import pkgutil
 from typing import List
 
 from pytablewriter import RstGridTableWriter

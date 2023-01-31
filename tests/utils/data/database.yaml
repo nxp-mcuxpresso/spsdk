@@ -1,0 +1,20 @@
+devices:
+  lpc55s6x:
+    revisions:
+      0a:
+        data_file: lpc55s6x_0a.xml
+        attributes:
+          attr_1: revision_value
+      1b:
+        data_file: lpc55s6x_1b.xml
+    latest: 1b
+    attributes:
+      attr_1: device_value
+  lpc551x:
+    revisions:
+      a:
+        data_file: lpc551x_a.xml
+    latest: a
+attributes:
+  attr_1: global_value
+

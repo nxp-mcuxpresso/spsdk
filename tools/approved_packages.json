@@ -19,7 +19,8 @@
         "Public domain",
         "The MIT License: http://www.opensource.org/licenses/mit-license.php",
         "The MIT http://www.opensource.org/licenses/mit-license.php",
-        "BSD-3-Clause OR Apache-2.0"
+        "BSD-3-Clause OR Apache-2.0",
+        "(Apache-2.0 OR BSD-3-Clause) AND PSF-2.0"
     ],
     "packages": [
         {

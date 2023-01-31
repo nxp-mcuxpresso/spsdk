@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,6 +27,7 @@ def test_usb_device_description():
         "Vendor ID: 0x000a\n"
         "Product ID: 0x0014\n"
         "Path: some_path\n"
+        "Path Hash: N/A\n"
         "Name: mboot device\n"
         "Serial number: 12345678"
     )

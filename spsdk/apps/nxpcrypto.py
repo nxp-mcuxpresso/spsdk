@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -63,8 +63,8 @@ def digest(hash_name: str, infile: str, compare: str) -> None:
     data = load_binary(infile)
     hasher = hashlib.new(hash_name.lower())
     hasher.update(data)
-    digest = hasher.hexdigest()
-    click.echo(f"{hash_name.upper()}({infile})= {digest}")
+    hexdigest = hasher.hexdigest()
+    click.echo(f"{hash_name.upper()}({infile})= {hexdigest}")
     if compare:
         # assume comparing to a file
         if os.path.isfile(compare):
@@ -78,7 +78,7 @@ def digest(hash_name: str, infile: str, compare: str) -> None:
                     ref = compare_data
         else:
             ref = compare
-        if ref.lower() == digest.lower():
+        if ref.lower() == hexdigest.lower():
             click.echo("Digests are the same.")
         else:
             raise SPSDKAppError("Digests differ!")
@@ -87,7 +87,6 @@ def digest(hash_name: str, infile: str, compare: str) -> None:
 @main.group(name="cert", no_args_is_help=True, cls=GroupAliasedGetCfgTemplate)
 def cert() -> None:
     """Group of command for working with x509 certificates."""
-    pass
 
 
 cert.add_command(cert_gen_main.commands["generate"], name="generate")
@@ -96,17 +95,16 @@ cert.add_command(cert_gen_main.commands["verify"], name="verify")
 
 
 @main.group(name="key", no_args_is_help=True)
-def key() -> None:
+def key_group() -> None:
     """Group of commands for working with asymmetric keys."""
-    pass
 
 
 key_gen_copy = copy.deepcopy(key_gen_main)
 key_gen_copy.name = "generate"
-key.add_command(key_gen_copy)
+key_group.add_command(key_gen_copy)
 
 
-@key.command(name="convert", no_args_is_help=True)
+@key_group.command(name="convert", no_args_is_help=True)
 @click.option(
     "-f",
     "--output-format",
@@ -172,7 +170,7 @@ def convert(output_format: str, infile: str, outfile: str, puk: bool, use_pkcs8:
         f.write(out_data)
 
 
-@key.command(name="verify", no_args_is_help=True)
+@key_group.command(name="verify", no_args_is_help=True)
 @click.argument("key1", type=click.Path(exists=True, dir_okay=False))
 @click.argument("key2", type=click.Path(exists=True, dir_okay=False))
 def check_keys(key1: str, key2: str) -> None:
@@ -218,6 +216,7 @@ def reconstruct_key(key_data: bytes) -> Union[ECC.EccKey, RSA.RsaKey]:
     curve = get_curve_name(key_length)
     # everything under 49 bytes is a private key
     if key_length <= 48:
+        # pylint: disable=invalid-name   # 'd' is regular name for private key number
         d = int.from_bytes(key_data, byteorder="big")
         return ECC.construct(curve=curve, d=d)
     # public keys in binary form have exact sizes

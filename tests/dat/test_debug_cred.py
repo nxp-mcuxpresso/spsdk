@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,7 @@ import pytest
 import yaml
 
 from spsdk import SPSDKError
-from spsdk.apps.nxpdebugmbox import determine_protocol_version
+from spsdk.apps.nxpdebugmbox import DatProtocol
 from spsdk.crypto import InvalidSignature, ec, hashes
 from spsdk.crypto.loaders import load_private_key
 from spsdk.dat import utils
@@ -38,10 +38,10 @@ def test_determine_protocol_version(protocol_version, rsa_detected, invalid):
     """Test for checking all available protocol versions."""
     if invalid:
         with pytest.raises(SPSDKValueError):
-            determine_protocol_version(protocol_version)
+            protocol = DatProtocol(protocol_version)
     else:
-        is_rsa = determine_protocol_version(protocol_version)
-        assert is_rsa is rsa_detected
+        protocol = DatProtocol(protocol_version)
+        assert protocol.is_rsa() is rsa_detected
 
 
 def test_debugcredential_rsa_compare_with_reference(data_dir):
@@ -78,8 +78,8 @@ def test_verify_ecc_signature(data_dir):
         dc.sign()
         data = dc.export()
         priv_key = load_private_key(yaml_config["rotk"])
-    data_without_signature = data[:-132]
-    signature_bytes = data[-132:]
+    data_without_signature = data[:-64]
+    signature_bytes = data[-64:]
     signature = utils.reconstruct_signature(signature_bytes)
     pub_key = priv_key.public_key()
     try:
@@ -139,12 +139,12 @@ def test_debugcredential_ecc_compare_with_reference(data_dir):
             dc.sign()
             data = dc.export()
             pub_key = load_private_key(yaml_config["rotk"]).public_key()
-        data_without_signature = data[:-132]
-        signature_bytes = data[-132:]
+        data_without_signature = data[:-64]
+        signature_bytes = data[-64:]
         with open("new_dck_secp256r1.cert", "rb") as f:
             data_loaded = f.read()
-        ref_data_without_signature = data_loaded[:-132]
-        ref_signature_bytes = data_loaded[-132:]
+        ref_data_without_signature = data_loaded[:-64]
+        ref_signature_bytes = data_loaded[-64:]
         assert (
             data_without_signature == ref_data_without_signature
         ), "The generated dc binary and the referenced one are not the same."
@@ -194,7 +194,7 @@ def test_lpc55s3x_export_parse_invalid(data_dir):
     [
         ("new_dck_rsa2048.cert", "DebugCredentialRSA2048"),
         ("new_dck_secp256r1.cert", "DebugCredentialECC256"),
-        ("lpc55s3x_dck_secp384r1.cert", "DebugCredentialECC384Lpc55s3x"),
+        ("lpc55s3x_dck_secp384r1.cert", "DebugCredentialECC384"),
     ],
 )
 def test_parse(data_dir, dc_file_name, class_name):
@@ -274,3 +274,12 @@ def test_debugcredential_rot_meta_as_cert(data_dir):
         assert dc.cc_vu == 22136
         assert dc.socc == 1
         assert dc.uuid == b"\xe0\x04\t\x0ek\xdd!U\xbb\xce\x9e\x06e\x80[\xe3"
+
+
+@pytest.mark.parametrize("dc_file_name", ["rt1180_256.dc"])
+def test_debugcredential_parse_export(data_dir, dc_file_name):
+    """Verifies parse/export functions."""
+    with use_working_directory(data_dir):
+        dc_binary = load_binary(dc_file_name)
+        dc = DebugCredential.parse(dc_binary)
+        assert dc_binary == dc.export()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -855,7 +855,7 @@ class BootImageV21(BaseClass):
         return obj
 
 
-def generate_SB21(
+def generate_SB21(  # pylint: disable=invalid-name
     bd_file_path: str,
     key_file_path: str,
     private_key_file_path: str,

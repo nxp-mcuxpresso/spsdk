@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to handle registers configuration."""
@@ -10,6 +10,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.database import Database
 from spsdk.utils.misc import value_to_int
 
@@ -23,20 +24,25 @@ class RegConfig(Database):
         :param device: The device name.
         :return: Base address of registers.
         """
-        return value_to_int(self.config["devices"][device]["address"])
+        return value_to_int(self.devices.get_by_name(device).attributes["address"])
 
     def get_data_file(self, device: str, revision: str) -> str:
         """Return the full path to data file (xml).
 
         :param device: The device name.
         :param revision: The chip revision.
+        :raises SPSDKValueError: When datafile is not defined in the database
         :return: The path to data file.
         """
-        file_name = self.config["devices"][device]["revisions"][revision]
+        file_name = self.devices.get_by_name(device).revisions.get(revision).data_file
+        if not file_name:
+            raise SPSDKValueError(
+                f"Datafile is not defined in database: {self.path} for device {device} and revision {revision}"
+            )
         dir_path = os.path.dirname(os.path.abspath(self.path))
         return os.path.join(dir_path, file_name)
 
-    def get_antipole_regs(self, device: str = None) -> Dict[str, str]:
+    def get_antipole_regs(self, device: Optional[str] = None) -> Dict[str, str]:
         """Return the list of inverted registers.
 
         :param device: The device name.
@@ -46,7 +52,7 @@ class RegConfig(Database):
         assert isinstance(val, dict)
         return dict(val)
 
-    def get_computed_fields(self, device: str = None) -> Dict[str, Dict[str, str]]:
+    def get_computed_fields(self, device: Optional[str] = None) -> Dict[str, Dict[str, str]]:
         """Return the list of computed fields (not used in config YML files).
 
         :param device: The device name, if not specified, the general value is used.
@@ -56,7 +62,7 @@ class RegConfig(Database):
         assert isinstance(val, dict)
         return dict(val)
 
-    def get_computed_registers(self, device: str = None) -> Dict[str, Any]:
+    def get_computed_registers(self, device: Optional[str] = None) -> Dict[str, Any]:
         """Return the dictionary of computed registers.
 
         :param device: The device name, if not specified, the general value is used.
@@ -66,7 +72,7 @@ class RegConfig(Database):
         assert isinstance(val, dict)
         return val
 
-    def get_grouped_registers(self, device: str = None) -> List[dict]:
+    def get_grouped_registers(self, device: Optional[str] = None) -> List[dict]:
         """Return the list of grouped registers description.
 
         :param device: The device name, if not specified, the general value is used.
@@ -76,7 +82,7 @@ class RegConfig(Database):
         assert isinstance(val, list)
         return list(val)
 
-    def get_ignored_registers(self, device: str = None) -> List[str]:
+    def get_ignored_registers(self, device: Optional[str] = None) -> List[str]:
         """Return the list of ignored registers.
 
         :param device: The device name, if not specified, the general value is used.
@@ -86,7 +92,7 @@ class RegConfig(Database):
         assert isinstance(val, list)
         return list(val)
 
-    def get_ignored_fields(self, device: str = None) -> List[str]:
+    def get_ignored_fields(self, device: Optional[str] = None) -> List[str]:
         """Return the list of ignored fields.
 
         :param device: The device name, if not specified, the general value is used.
@@ -96,7 +102,7 @@ class RegConfig(Database):
         assert isinstance(val, list)
         return val
 
-    def get_seal_start_address(self, device: str = None) -> Optional[str]:
+    def get_seal_start_address(self, device: Optional[str] = None) -> Optional[str]:
         """Return the seal start address.
 
         :param device: The device name, if not specified, the general value is used.
@@ -108,7 +114,7 @@ class RegConfig(Database):
             raise SPSDKError("Invalid seal start address name")
         return val
 
-    def get_seal_count(self, device: str = None) -> Optional[int]:
+    def get_seal_count(self, device: Optional[str] = None) -> Optional[int]:
         """Return the seal count.
 
         :param device: The device name, if not specified, the general value is used.
@@ -120,7 +126,9 @@ class RegConfig(Database):
             raise SPSDKError("Invalid seal count")
         return val
 
-    def get_value(self, key: str, device: str = None, default: Any = None) -> Any:
+    def get_value(
+        self, key: str, device: Optional[str] = None, default: Optional[Any] = None
+    ) -> Any:
         """Return any parameter by key.
 
         :param key: The Key of the parameter to be returned.

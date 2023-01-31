@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -52,6 +52,10 @@ class TpIntfDescription:
         """Returns the ID of the interface."""
         raise NotImplementedError()
 
+    def get_id_hash(self) -> str:
+        """Return the ID hash of the interface."""
+        raise NotImplementedError()
+
     def create_interface(self) -> Union["TpDevInterface", "TpTargetInterface"]:
         """Return TP Device or Target associated with this descriptor."""
         assert self.intf
@@ -64,7 +68,7 @@ class TpInterface:
     NAME = "Interface"
 
     @classmethod
-    def get_connected_interfaces(cls, settings: Dict = None) -> List[TpIntfDescription]:
+    def get_connected_interfaces(cls, settings: Optional[Dict] = None) -> List[TpIntfDescription]:
         """Get all connected TP devices of this adapter.
 
         :param settings: Possible settings to determine the way to find connected device, defaults to None.
@@ -88,6 +92,11 @@ class TpInterface:
         raises NotImplementedError: The function is not implemented.
         """
         raise NotImplementedError()
+
+    @property
+    def is_open(self) -> bool:
+        """Check if the TP interface is open."""
+        return True
 
     def close(self) -> None:
         """Close the TP interface adapter.
@@ -122,7 +131,7 @@ class TpDevInterface(TpInterface):
         """Initialization of TP device."""
         super().__init__(descriptor=descriptor)
 
-    def get_challenge(self, timeout: int = None) -> bytes:
+    def get_challenge(self, timeout: Optional[int] = None) -> bytes:
         """Request challenge from the TP device.
 
         :param timeout: Timeout of operation in milliseconds.
@@ -130,7 +139,7 @@ class TpDevInterface(TpInterface):
         """
         raise NotImplementedError()
 
-    def authenticate_response(self, tp_data: bytes, timeout: int = None) -> bytes:
+    def authenticate_response(self, tp_data: bytes, timeout: Optional[int] = None) -> bytes:
         """Request TP device for TP authentication of connected MCU.
 
         :param tp_data: TP response of connected MCU.
@@ -140,11 +149,7 @@ class TpDevInterface(TpInterface):
         """
         raise NotImplementedError()
 
-    def upload(self, config_data: dict, config_dir: str = None) -> None:
-        """Upload the user data into the provisioning device."""
-        raise NotImplementedError()
-
-    def upload_manufacturing(self, config_data: dict, config_dir: str = None) -> None:
+    def upload(self, config_data: dict, config_dir: Optional[str] = None) -> None:
         """Upload the user data into the provisioning device."""
         raise NotImplementedError()
 
@@ -204,7 +209,7 @@ class TpTargetInterface(TpInterface):
         """
         raise NotImplementedError()
 
-    def load_sb_file(self, sb_file: bytes, timeout: int = None) -> None:
+    def load_sb_file(self, sb_file: bytes, timeout: Optional[int] = None) -> None:
         """Load SB file into provisioned device.
 
         :param sb_file: SB file data to be loaded into provisioned device.
@@ -213,7 +218,7 @@ class TpTargetInterface(TpInterface):
         """
         raise NotImplementedError()
 
-    def prove_genuinity_challenge(self, challenge: bytes, timeout: int = None) -> bytes:
+    def prove_genuinity_challenge(self, challenge: bytes, timeout: Optional[int] = None) -> bytes:
         """Prove genuinity and get back the TP response to continue process of TP.
 
         :param challenge: Challenge data to start TP process.
@@ -223,7 +228,7 @@ class TpTargetInterface(TpInterface):
         """
         raise NotImplementedError()
 
-    def set_wrapped_data(self, wrapped_data: bytes, timeout: int = None) -> None:
+    def set_wrapped_data(self, wrapped_data: bytes, timeout: Optional[int] = None) -> None:
         """Provide wrapped data to provisioned device.
 
         :param wrapped_data: Wrapped data to finish TP process.
@@ -262,3 +267,8 @@ class TpTargetInterface(TpInterface):
         :raises NotImplementedError: This function is not implemented
         """
         raise NotImplementedError()
+
+    # pylint: disable=no-self-use    # inherited classes may use self
+    def check_provisioning_firmware(self) -> bool:
+        """Check whether the Provisioning Firmware booted properly."""
+        return True

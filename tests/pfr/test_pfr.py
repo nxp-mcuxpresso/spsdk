@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """The test file for PFR API."""
@@ -360,7 +360,7 @@ def test_invalid_computed_field_handler():
 def test_get_bitfields_ignore():
     """Test invalid case for computed filed handler."""
     cmpa = CMPA(device="lpc55s6x")
-    cmpa.config.config.pop("ignored_fields", None)
+    cmpa.config.attributes.pop("ignored_fields", None)
     assert cmpa.generate_config()
 
 

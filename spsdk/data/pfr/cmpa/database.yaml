@@ -1,99 +1,125 @@
 devices:
   lpc55s6x:
     revisions:
-      0a: lpc55s6x_1b.xml
-      1b: lpc55s6x_1b.xml
+      0a:
+        data_file: lpc55s6x_1b.xml
+      1b:
+        data_file: lpc55s6x_1b.xml
     latest: 1b
-    address: 0x9_E400
+    attributes:
+      address: 0x9_E400
   lpc551x:
     revisions:
-      a: lpc551x_a.xml
+      a:
+        data_file: lpc551x_a.xml
     latest: a
-    address: 0x3_E400
+    attributes:
+      address: 0x3_E400
   lpc55s1x:
     revisions:
-      a: lpc55s1x_a.xml
+      a:
+        data_file: lpc55s1x_a.xml
     latest: a
-    address: 0x3_E400
+    attributes:
+      address: 0x3_E400
   lpc550x:
     revisions:
-      a: lpc550x_a.xml
+      a:
+        data_file: lpc550x_a.xml
     latest: a
-    address: 0x3_E400
+    attributes:
+      address: 0x3_E400
   lpc55s0x:
     revisions:
-      a: lpc55s0x_a.xml
+      a:
+        data_file: lpc55s0x_a.xml
     latest: a
-    address: 0x3_E400
+    attributes:
+      address: 0x3_E400
   lpc55s2x:
     revisions:
-      1a: lpc55s2x_1b.xml
-      1b: lpc55s2x_1b.xml
+      1a:
+        data_file: lpc55s2x_1b.xml
+      1b:
+        data_file: lpc55s2x_1b.xml
     latest: 1b
-    address: 0x9_E400
+    attributes:
+      address: 0x9_E400
   lpc552x:
     revisions:
-      1a: lpc552x_1b.xml
-      1b: lpc552x_1b.xml
+      1a:
+        data_file: lpc552x_1b.xml
+      1b:
+        data_file: lpc552x_1b.xml
     latest: 1b
-    address: 0x9_E400
+    attributes:
+      address: 0x9_E400
   lpc55s3x:
     revisions:
-      0a: lpc55s3x_0a.xml
-      1a: lpc55s3x_1a.xml
+      0a:
+        data_file: lpc55s3x_0a.xml
+      1a:
+        data_file: lpc55s3x_1a.xml
     latest: 1a
-    address: 0x3_E200
-    seal_start: CMPA_CMAC0
-    seal_count: 4
-    mandatory_computed_regs: 1
-    grouped_registers:
-      - name: ROTKH
-        width: 384
-        config_as_hexstring: true
-        reversed: true
-        description:
-          ROTKH field is compounded by 12 32-bit fields and contains Root key
-          table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four
-          SHA-256 digests computed over four OEM public keys (OEM has four
-          private-public key pairs in case one of its private keys becomes
-          compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit
-          SHA-384 digest.
+    attributes:
+      address: 0x3_E200
+      seal_start: CMPA_CMAC0
+      seal_count: 4
+      mandatory_computed_regs: 1
+      grouped_registers:
+        - name: ROTKH
+          width: 384
+          config_as_hexstring: true
+          reversed: true
+          description:
+            ROTKH field is compounded by 12 32-bit fields and contains Root key
+            table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four
+            SHA-256 digests computed over four OEM public keys (OEM has four
+            private-public key pairs in case one of its private keys becomes
+            compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit
+            SHA-384 digest.
   lpc553x:
     revisions:
-      0a: lpc553x_0a.xml
-      1a: lpc553x_1a.xml
+      0a:
+        data_file: lpc553x_0a.xml
+      1a:
+        data_file: lpc553x_1a.xml
     latest: 1a
-    address: 0x3_E200
-    seal_start: CMPA_CRC32
-    seal_count: 1
-    mandatory_computed_regs: 1
+    attributes:
+      address: 0x3_E200
+      seal_start: CMPA_CRC32
+      seal_count: 1
+      mandatory_computed_regs: 1
   nhs52sxx:
     revisions:
-      a1: nhs52s04.xml
+      a1:
+        data_file: nhs52s04.xml
     latest: a1
-    address: 0x10_4000
-    computed_fields:
-      CC_SOCU_PIN:
-        INVERSE_VALUE: pfr_reg_inverse_high_half
-      CC_SOCU_DFLT:
-        INVERSE_VALUE: pfr_reg_inverse_high_half
-computed_registers:
-  SHA256_DIGEST: ""
-grouped_registers:
-  - name: ROTKH
-    width: 256
-    config_as_hexstring: true
-    reversed: true
-    description:
-      ROTKH field is compounded by 8 32-bit fields and contains Root key
-      table hash
-computed_fields:
-  DCFG_CC_SOCU_PIN:
-    INVERSE_VALUE: pfr_reg_inverse_high_half
-  DCFG_CC_SOCU_DFLT:
-    INVERSE_VALUE: pfr_reg_inverse_high_half
-ignored_fields:
-  - FIELD
-seal_start: SHA256_DIGEST0
-seal_count: 8
-mandatory_computed_regs: 0
+    attributes:
+      address: 0x10_4000
+      computed_fields:
+        CC_SOCU_PIN:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
+        CC_SOCU_DFLT:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
+attributes:
+  computed_registers:
+    SHA256_DIGEST: ""
+  grouped_registers:
+    - name: ROTKH
+      width: 256
+      config_as_hexstring: true
+      reversed: true
+      description:
+        ROTKH field is compounded by 8 32-bit fields and contains Root key
+        table hash
+  computed_fields:
+    DCFG_CC_SOCU_PIN:
+      INVERSE_VALUE: pfr_reg_inverse_high_half
+    DCFG_CC_SOCU_DFLT:
+      INVERSE_VALUE: pfr_reg_inverse_high_half
+  ignored_fields:
+    - FIELD
+  seal_start: SHA256_DIGEST0
+  seal_count: 8
+  mandatory_computed_regs: 0

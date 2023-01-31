@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
+    <register offset="0x67" width="32" name="USER_KEY17" access="W" reversed="False" description="USER_KEY1[255:224]"/>
+    <register offset="0x66" width="32" name="USER_KEY16" access="W" reversed="False" description="USER_KEY1[223:192]"/>
+    <register offset="0x65" width="32" name="USER_KEY15" access="W" reversed="False" description="USER_KEY1[191:160]"/>
+    <register offset="0x64" width="32" name="USER_KEY14" access="W" reversed="False" description="USER_KEY1[159:128]"/>
+    <register offset="0x63" width="32" name="USER_KEY13" access="W" reversed="False" description="USER_KEY1[127:96]"/>
+    <register offset="0x62" width="32" name="USER_KEY12" access="W" reversed="False" description="USER_KEY1[95:64]"/>
+    <register offset="0x61" width="32" name="USER_KEY11" access="W" reversed="False" description="USER_KEY1[63:32]"/>
+    <register offset="0x60" width="32" name="USER_KEY10" access="W" reversed="False" description="USER_KEY1[31:0]"/>
+
+    <register offset="0x6f" width="32" name="USER_KEY27" access="W" reversed="False" description="USER_KEY2[255:224]"/>
+    <register offset="0x6e" width="32" name="USER_KEY26" access="W" reversed="False" description="USER_KEY2[223:192]"/>
+    <register offset="0x6d" width="32" name="USER_KEY25" access="W" reversed="False" description="USER_KEY2[191:160]"/>
+    <register offset="0x6c" width="32" name="USER_KEY24" access="W" reversed="False" description="USER_KEY2[159:128]"/>
+    <register offset="0x6b" width="32" name="USER_KEY23" access="W" reversed="False" description="USER_KEY2[127:96]"/>
+    <register offset="0x6a" width="32" name="USER_KEY22" access="W" reversed="False" description="USER_KEY2[95:64]"/>
+    <register offset="0x69" width="32" name="USER_KEY21" access="W" reversed="False" description="USER_KEY2[63:32]"/>
+    <register offset="0x68" width="32" name="USER_KEY20" access="W" reversed="False" description="USER_KEY2[31:0]"/>
+
+    <register offset="0x09" width="32" name="USER_KEY_RLOCK" access="W" reversed="True" description="Read Lock for USER KEY">
+        <bit_field offset="2" width="1" name="USER_KEY1_RLOCK" access="W" reset_value="0" description="Read lock for USER_KEY1">
+            <bit_field_value name="UNLOCK" value="0b0" description="Unlock (read enabled)"/>
+            <bit_field_value name="LOCK" value="0b1" description="Lock (read disabled)"/>
+        </bit_field>
+        <bit_field offset="3" width="1" name="USER_KEY2_RLOCK" access="W" reset_value="0" description="Read lock for USER_KEY2">
+            <bit_field_value name="UNLOCK" value="0b0" description="Unlock (read enabled)"/>
+            <bit_field_value name="LOCK" value="0b1" description="Lock (read disabled)"/>
+        </bit_field>
+    </register>
+
+    <register offset="0x0E" width="32" name="LOAD_IEE_KEY" access="W" reversed="True" description="Load the keys from the fuses into the IEE">
+        <bit_field offset="8" width="1" name="LOAD_IEE_KEY_BITFIELD" access="W" reset_value="0" description="Load the keys from the fuses into the IEE">
+            <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+            <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+        </bit_field>
+    </register>
+
+    <register offset="0x17" width="32" name="ENCRYPT_XIP_ENGINE" access="W" reversed="True" description="Configure the encrypted XiP engine">
+        <bit_field offset="12" width="1" name="ENCRYPT_XIP_ENGINE_BITFIELD" access="W" reset_value="0" description="Configure the encrypted XiP engine">
+            <bit_field_value name="OTFAD" value="0b0" description="OTFAD (128-bit AES-CTR)"/>
+            <bit_field_value name="IEE" value="0b1" description="IEE (128/256-bit AES-CTR, 256/512-bit AES-XTS)"/>
+        </bit_field>
+    </register>
+
+    <register offset="0x14" width="32" name="BOOT_CFG" access="W" reversed="True" description="Enable the encrypted XiP in the fuses">
+        <bit_field offset="1" width="1" name="ENCRYPT_XIP_EN_BITFIELD" access="W" reset_value="0" description="Read lock for USER_KEY2">
+            <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+            <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+        </bit_field>
+    </register>
+
+</regs:peripheral>

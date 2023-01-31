@@ -18,6 +18,8 @@ tz_family_rev:
         - nhs52sxx
         - rt5xx
         - rt6xx
+        - kw45xx
+        - k32w1xx
       template_value: lpc55xx
 
     revision:

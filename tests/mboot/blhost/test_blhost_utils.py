@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -36,6 +36,22 @@ from spsdk.utils.images import BinaryImage
 )
 def test_parse_property_tag(input, expected):
     actual = parse_property_tag(input)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "input,family,expected",
+    [
+        ("verify-erase", "kw45xx", 10),
+        ("verify-erase", "k32w1xx", 10),
+        ("verify-erase", None, 0xFF),
+        ("current-version", None, 1),
+        ("current-version", "kw45xx", 1),
+        ("current-version", "k32w1xx", 1),
+    ],
+)
+def test_parse_property_tag_override(input, family, expected):
+    actual = parse_property_tag(input, family)
     assert actual == expected
 
 

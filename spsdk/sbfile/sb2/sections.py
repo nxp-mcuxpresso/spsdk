@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -90,7 +90,7 @@ class BootSectionV2(BaseClass):
         self.uid = uid
 
     def __str__(self) -> str:
-        pass
+        return f"BootSectionV2: {len(self)} commands."
 
     def __len__(self) -> int:
         return len(self._commands)

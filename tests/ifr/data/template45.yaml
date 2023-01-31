@@ -1,0 +1,134 @@
+# NXP kw45xx PFR ROMCFG configuration
+description:  # The ROMCFG configuration description.
+  device: kw45xx  # The NXP device name.
+  revision: a1 # The NXP device revision.
+  type: ROMCFG # The PFR type (CMPA, CFPA) or IFR type.
+  version: 1.8.1 # The SPSDK tool version.
+settings: # The ROMCFG registers configuration.
+  FLW_Configuration:  # FLW Configuration
+    bitfields:  # The register bitfields
+      RESTORE_FLW_FLAG: UNINITIALIZED  # Width: 1b[0-1], Description: FLW Configuration
+      # - UNINITIALIZED, (1): Dual Image Boot is uninitialized
+      # - NORMAL, (0): Normal, use specified mapping
+  FLW_REGION_DEFINITION: # FLW region definition
+    value: '0xffffffffffffffff'  # The value width: 64b
+  CONFIGURE_NPX_FOR_NORMAL_BOOT: # NPX configuration
+    bitfields:  # The register bitfields
+      USE_PRINCE: NOT_CONFIGURE_NPX  # Width: 1b[0-1], Description: Configure NPX to use PRINCE
+      # - NOT_CONFIGURE_NPX, (1): Not configure NPX
+      # - CONFIGURE_NPX, (0): Configure NPX
+      GLOBAL_CLOCK: GLOBAL_CLOCK_DISABLE # Width: 1b[0-1], Description: Global clock
+      # - GLOBAL_CLOCK_ENABLE, (0): Global clock enable
+      # - GLOBAL_CLOCK_DISABLE, (1): Global clock disable
+      SYSTEM_CLOCK: SYSTEM_CLOCK_DISABLE # Width: 1b[0-1], Description: System clock
+      # - SYSTEM_CLOCK_ENABLE, (0): System clock enable
+      # - SYSTEM_CLOCK_DISABLE, (1): System clock disable
+      GLOBAL_DECRYPTION: GLOBAL_DECRYPTION_DISABLE # Width: 1b[0-1], Description: Global decryption
+      # - GLOBAL_DECRYPTION_ENABLE, (0): Global decryption enable
+      # - GLOBAL_DECRYPTION_DISABLE, (1): Global decryption disable
+      GLOBAL_ENCRYPTION: GLOBAL_ENCRYPTION_DISABLE # Width: 1b[0-1], Description: Global encryption
+      # - GLOBAL_ENCRYPTION_ENABLE, (0): Global encryption enable
+      # - GLOBAL_ENCRYPTION_DISABLE, (1): Global encryption disable
+  STICKY: # NPX configuration
+    bitfields:  # The register bitfields
+      CONFIGURE_NPX_REQUIRED: CONFIGURE_NPX_REQUIRED_NOT_REQUIRED  # Width: 1b[0-1], Description: Configure NPX required
+      # - CONFIGURE_NPX_REQUIRED_NOT_REQUIRED, (1): Not required, ROM follows Low-power wakeup path
+      # - CONFIGURE_NPX_REQUIRED_REQUIRED, (0): NPX config. required; ROM follows normal boot path
+  NPX_REGIONS: # NPX regions
+    value: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'  # The value width: 448b
+  BOOT_CONFIGURATION: # Boot configuration
+    bitfields:  # The register bitfields
+      ENABLE_ISP_OR_NOT: BOOT_CFG_PIN_ENABLED  # Width: 1b[0-1], Description: Enable ISP
+      # - BOOT_CFG_PIN_ENABLED, (1): Boot config pin enabled
+      # - BOOT_CFG_PIN_DISABLED, (0): Boot config pin disabled
+      BOOT_SPEED: NORMAL_BOOT_DEFAULT_2 # Width: 2b[0-3], Description: Boot speed
+      # - NORMAL_BOOT_32_MHZ, (0): Normal Boot (32MHz)
+      # - FAST_BOOT_96_MHZ, (2): Fast Boot (96 MHz)
+      # - NORMAL_BOOT_DEFAULT_1, (1): Normal Boot (default)
+      # - NORMAL_BOOT_DEFAULT_2, (3): Normal Boot (default)
+  SECURE_BOOT_OPTIONS: # Secure Boot options
+    bitfields:  # The register bitfields
+      SECURE_BOOT_MODE: SERIAL_DOWNLOAD  # Width: 1b[0-1], Description: Secure Boot failure mode
+      # - INFINITE_SLEEP, (0): Infinite sleep
+      # - SERIAL_DOWNLOAD, (1): Serial download
+      SECURE_BOOT_FAILURE_ALERT_PIN: SECURE_BOOT_FAILURE_ALERT_PIN_ENABLED # Width: 1b[0-1], Description: Secure Boot failure alert pin
+      # - SECURE_BOOT_FAILURE_ALERT_PIN_DISABLED, (0): Secure Boot failure alert pin is disabled
+      # - SECURE_BOOT_FAILURE_ALERT_PIN_ENABLED, (1): Secure Boot failure alert pin is enabled
+  SECURE_BOOT_FAILURE_ALERT_PIN_SELECTION: # Secure Boot Failure Alert Pin Selection
+    bitfields:  # The register bitfields
+      PIN_SELECTION: PIN_31  # Width: 5b[0-31], Description: Pin selection
+      # - PIN_0, (0): Pin 0
+      # - PIN_1, (1): Pin 1
+      # - PIN_2, (2): Pin 2
+      # - PIN_3, (3): Pin 3
+      # - PIN_4, (4): Pin 4
+      # - PIN_5, (5): Pin 5
+      # - PIN_6, (6): Pin 6
+      # - PIN_7, (7): Pin 7
+      # - PIN_8, (8): Pin 8
+      # - PIN_9, (9): Pin 9
+      # - PIN_10, (10): Pin 10
+      # - PIN_11, (11): Pin 11
+      # - PIN_12, (12): Pin 12
+      # - PIN_13, (13): Pin 13
+      # - PIN_14, (14): Pin 14
+      # - PIN_15, (15): Pin 15
+      # - PIN_16, (16): Pin 16
+      # - PIN_17, (17): Pin 17
+      # - PIN_18, (18): Pin 18
+      # - PIN_19, (19): Pin 19
+      # - PIN_20, (20): Pin 20
+      # - PIN_21, (21): Pin 21
+      # - PIN_22, (22): Pin 22
+      # - PIN_23, (23): Pin 23
+      # - PIN_24, (24): Pin 24
+      # - PIN_25, (25): Pin 25
+      # - PIN_26, (26): Pin 26
+      # - PIN_27, (27): Pin 27
+      # - PIN_28, (28): Pin 28
+      # - PIN_29, (29): Pin 29
+      # - PIN_30, (30): Pin 30
+      # - PIN_31, (31): Pin 31
+      PORT_SELECTION: RESERVED_7 # Width: 3b[0-7], Description: Port Selection
+      # - PORTA, (0): Port A
+      # - PORTB, (1): Port B
+      # - PORTC, (2): Port C
+      # - PORTD, (3): Port D
+      # - PORTE, (4): Port E
+      # - RESERVED_5, (5): RESERVED
+      # - RESERVED_6, (6): RESERVED
+      # - RESERVED_7, (7): RESERVED
+  BOOT_IMAGE_BASE_ADDRESS: # Boot Image Base Address
+    bitfields:  # The register bitfields
+      BOOT_IMAGE_BASE_ADDRESS_4: 4294967295  # Width: 32b[0-4294967295], Description: Boot Image Base Address 4
+      BOOT_IMAGE_BASE_ADDRESS_3: 4294967295 # Width: 32b[0-4294967295], Description: Boot Image Base Address 3
+      BOOT_IMAGE_BASE_ADDRESS_2: 4294967295 # Width: 32b[0-4294967295], Description: Boot Image Base Address 2
+      BOOT_IMAGE_BASE_ADDRESS_1: 4294967295 # Width: 32b[0-4294967295], Description: Boot Image Base Address 1
+  PERIPHERALS_ENABLE: # Peripherals Enable
+    bitfields:  # The register bitfields
+      LPUART1_PERIPHERAL_FOR_ISP: LUPART1_ENABLED  # Width: 1b[0-1], Description: LPUART1 peripheral for ISP
+      # - LPUART1_DISABLED, (0): LPUART1 disabled
+      # - LUPART1_ENABLED, (1): LUPART1 enabled
+      LPI2C1_PERIPHERAL_FOR_ISP: LPI2C1_ENABLED # Width: 1b[0-1], Description: LPI2C1 peripheral for ISP
+      # - LPI2C1_DISABLED, (0): LPI2C1 disabled
+      # - LPI2C1_ENABLED, (1): LPI2C1 enabled
+      LPSPI1_PERIPHERAL_FOR_ISP: LPSPI1_ENABLED # Width: 1b[0-1], Description: LPSPI1 peripheral for ISP
+      # - LPSPI1_DISABLED, (0): LPSPI1 disabled
+      # - LPSPI1_ENABLED, (1): LPSPI1 enabled
+      CAN_PERIPHERAL_FOR_ISP: CAN_ENABLED # Width: 1b[0-1], Description: CAN peripheral for ISP
+      # - CAN_DISABLED, (0): CAN disabled
+      # - CAN_ENABLED, (1): CAN enabled
+  I2C_SLAVE_ADDRESS: # I2C Slave Address
+    value: '0xff'  # The value width: 8b
+  CAN_CONFIG_1: # CAN config 1
+    value: '0xff'  # The value width: 8b
+  CAN_CONFIG_2: # CAN config 2
+    value: '0xffff'  # The value width: 16b
+  CANTxID: # CANTxID
+    value: '0xffff'  # The value width: 16b
+  CANRxID: # CANRxID
+    value: '0xffff'  # The value width: 16b
+  SSS_LOADABLE_FW_ENTRY_ADDRESS: # SSS_Loadable_FW_Entry_Address
+    value: '0xffffffff'  # The value width: 32b
+  SECURE_HASH_BASED_IMAGE_VERIFICATION: # Secure Hash based image verification feature
+    value: '0xffffffff'  # The value width: 32b

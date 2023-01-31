@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Base for SPSDK exceptions."""
+from typing import Optional
 
 #######################################################################
 # # Secure Provisioning SDK Exceptions
@@ -17,7 +18,7 @@ class SPSDKError(Exception):
 
     fmt = "SPSDK: {description}"
 
-    def __init__(self, desc: str = None) -> None:
+    def __init__(self, desc: Optional[str] = None) -> None:
         """Initialize the base SPSDK Exception."""
         super().__init__()
         self.description = desc
@@ -26,8 +27,16 @@ class SPSDKError(Exception):
         return self.fmt.format(description=self.description or "Unknown Error")
 
 
+class SPSDKKeyError(SPSDKError, KeyError):
+    """SPSDK standard key error."""
+
+
 class SPSDKValueError(SPSDKError, ValueError):
     """SPSDK standard value error."""
+
+
+class SPSDKTypeError(SPSDKError, TypeError):
+    """SPSDK standard type error."""
 
 
 class SPSDKIOError(SPSDKError, IOError):

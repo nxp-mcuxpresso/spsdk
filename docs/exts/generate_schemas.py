@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # Script for the automated generation of schemas documentation for elftosb
@@ -9,11 +9,10 @@ import os
 from typing import Any, Dict, List, Sequence
 
 import jsonschema2md
-from deepmerge import Merger
 
 from spsdk.image.mbimg import get_all_mbi_classes
 from spsdk.sbfile.sb31.images import SecureBinary31
-from spsdk.utils.schema_validator import ConfigTemplate, SPSDK_Merger
+from spsdk.utils.schema_validator import ConfigTemplate, SPSDKMerger
 
 DOC_PATH = os.path.abspath(".")
 SCHEMAS_DIR = os.path.join(DOC_PATH, "_prebuild")
@@ -27,7 +26,7 @@ def get_schema(schemas: List[Dict[str, Any]]) -> Dict:
     :return: Dictionary with valid schema
     """
 
-    schemas_merger = SPSDK_Merger(
+    schemas_merger = SPSDKMerger(
         [(list, ["set"]), (dict, ["merge"]), (set, ["union"])],
         ["override"],
         ["override"],

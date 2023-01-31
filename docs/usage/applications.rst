@@ -91,6 +91,20 @@ The tool for generating TrustZone, MasterBootImage, and SecureBinary images.
 
     elftosb --help
 
+:ref:`ifr`
+================
+
+The *ifr* application allows user to generate IFR0:
+
+- generate user configuration
+- parse binary and extract configuration
+- generate binary data
+- list supported devices
+
+.. code:: bash
+
+    ifr --help
+
 :ref:`nxpcertgen`
 =================
 
@@ -183,7 +197,6 @@ The *nxpkeygen* application allows user to:
 .. code:: bash
 
     nxpkeygen --help
-
 
 :ref:`pfr`
 ==========

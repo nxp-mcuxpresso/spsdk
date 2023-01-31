@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,13 +11,14 @@ import concurrent.futures
 import time
 from concurrent.futures import CancelledError, Future
 from concurrent.futures.process import ProcessPoolExecutor
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import colorama
 
 from spsdk.utils.easy_enum import Enum
 
-colorama.init()
+colorama.just_fix_windows_console()
 
 
 class TaskState(Enum):
@@ -30,12 +31,23 @@ class TaskState(Enum):
     FAILED = (4, "Failed")
 
 
+@dataclass
+class TaskResult:
+    error_count: int
+    output_log: str
+
+
 class TaskInfo:
 
     """Task information class."""
 
     def __init__(
-        self, name: str, method: Callable, *args: Any, dependencies: List[str] = None, **kwargs: Any
+        self,
+        name: str,
+        method: Callable,
+        *args: Any,
+        dependencies: Optional[List[str]] = None,
+        **kwargs: Any,
     ) -> None:
         self.name = name
         self.method = method
@@ -43,10 +55,10 @@ class TaskInfo:
         self.kwargs = kwargs
         self.dependencies = dependencies
         self._state = TaskState.READY
-        self.result = None
+        self.result: Optional[TaskResult] = None
         self.exec_start = 0.0
         self.exec_time = 0.0
-        self.exception: Optional[Exception] = None
+        self.exception: Optional[BaseException] = None
 
     def __str__(self) -> str:
         """Print Task information."""
@@ -88,7 +100,7 @@ class TaskInfo:
         self.exec_start = time.perf_counter()
         self.status = TaskState.RUNNING
 
-    def finish_task(self, result: Any, exc: Optional[Exception]) -> None:
+    def finish_task(self, result: Optional[TaskResult], exc: Optional[BaseException]) -> None:
         """Finish task event."""
         if not self.is_running():
             raise IndexError("The task is not running.")
@@ -241,7 +253,7 @@ class PrettyProcessRunner:
     def __init__(
         self,
         tasks: TaskList,
-        print_func: Callable = None,
+        print_func: Optional[Callable] = None,
     ) -> None:
         """Initialize the Pretty parallel runner.
 
@@ -287,7 +299,7 @@ class PrettyProcessRunner:
         if clear_console:
             self._clear_lines()
 
-    def _clear_lines(self, lines_to_clear: int = None) -> None:
+    def _clear_lines(self, lines_to_clear: Optional[int] = None) -> None:
         lines_cnt = lines_to_clear or len(self.tasks) + 1
         self.print_func("\033[A" * lines_cnt)
 
@@ -309,7 +321,7 @@ class PrettyProcessRunner:
             exc = loc_exc
             result = None
         future_set.pop(future)
-        task.finish_task(result, exc)  # type: ignore
+        task.finish_task(result, exc)
 
     def _schedule_user_task(
         self, executor: ProcessPoolExecutor, future_set: dict, task: TaskInfo

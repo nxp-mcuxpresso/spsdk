@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Common utils for DAT module."""
 import math
-from typing import Union
+from typing import Optional, Union
 
 from spsdk import crypto
 from spsdk.crypto import utils_cryptography
 
 
-def reconstruct_signature(signature_bytes: bytes, size: int = None) -> bytes:
+def reconstruct_signature(signature_bytes: bytes, size: Optional[int] = None) -> bytes:
     """Reconstructs signature.
 
     :param signature_bytes: signature's bytes
@@ -30,7 +30,7 @@ def reconstruct_signature(signature_bytes: bytes, size: int = None) -> bytes:
 
 
 def ecc_public_numbers_to_bytes(
-    public_numbers: crypto.EllipticCurvePublicNumbers, length: int = None
+    public_numbers: crypto.EllipticCurvePublicNumbers, length: Optional[int] = None
 ) -> bytes:
     """Converts public numbers from ECC key into bytes.
 
@@ -48,8 +48,8 @@ def ecc_public_numbers_to_bytes(
 
 def rsa_key_to_bytes(
     key: Union[crypto.RSAPublicKey, crypto.RSAPrivateKeyWithSerialization],
-    exp_length: int = None,
-    modulus_length: int = None,
+    exp_length: Optional[int] = None,
+    modulus_length: Optional[int] = None,
 ) -> bytes:
     """Converts RSA key into bytes.
 
@@ -67,7 +67,7 @@ def rsa_key_to_bytes(
     return mod_rotk_bytes + exp_rotk_bytes
 
 
-def ecc_key_to_bytes(key: crypto.EllipticCurvePublicKey, length: int = None) -> bytes:
+def ecc_key_to_bytes(key: crypto.EllipticCurvePublicKey, length: Optional[int] = None) -> bytes:
     """Converts key into bytes.
 
     :param key: instance of ECC Public Key

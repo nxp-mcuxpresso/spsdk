@@ -13,7 +13,7 @@ charset = utf-8
 indent_style = tab
 end_of_line = crlf
 
-[*.{yaml,yml}]
+[*.{yaml,yml,xml}]
 indent_size = 2
 
 [Makefile]

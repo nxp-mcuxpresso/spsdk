@@ -9,6 +9,17 @@ output_folder: otfad_rt6xx_outputs # [Required], OTFAD output folder, Folder nam
 # ----------------------------------------------------------------------------------------------------
 kek: test_kek.bin # [Required], KEK, OTFAD Key Encryption Key to encrypt OTFAD table
 otfad_table_address: 0 # [Required], The base address of key blob table, it should be aligned to 1 KB (1024 B)
+
+data_blobs: # [Optional], Data blobs list, List of all data blobs included in this key blob
+  - data: keyblob0_data0.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
+    address: 1024 # [Optional], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
+  - data: keyblob0_data1.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
+    address: 1536 # [Optional], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
+  - data: keyblob1_data0.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
+    address: 3088 # [Optional], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
+  - data: keyblob2_data0.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
+    address: 10240 # [Optional], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
+
 key_blobs: # [Required], List of Key Blobs used by OTFAD, The list of definition of individual key blobs including plain data. Add other array items as you need and device allows
   - aes_key: '0xB1A0C56AF31E98CD6936A79D9E6F829D'  # [Required], AES key, AES key for the key blob
     aes_ctr: '0x5689fab8b4bfb264' # [Required], AES Counter value, AES counter value for the key blob
@@ -16,11 +27,6 @@ key_blobs: # [Required], List of Key Blobs used by OTFAD, The list of definition
     end_address: 2048 # [Required], End address of key blob data, End address of key blob data, it should be aligned to 1 KB (1024 B)
     aes_decryption_enable: true # [Optional], AES decryption enable flag, For accesses hitting in a valid context, this bit indicates if the fetched data is to be decrypted or simply bypassed
     valid: true # [Optional], Valid flag, This field signals if the context is valid or not
-    data_blobs: # [Optional], Data blobs list, List of all data blobs included in this key blob
-      - data: keyblob0_data0.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
-        address: 1024 # [Optional], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
-      - data: keyblob0_data1.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
-        address: 1536 # [Optional], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
 
   - aes_key: '0x000102030405060708090A0B0C0D0E0F'  # [Required], AES key, AES key for the key blob
     aes_ctr: '0x0001020304050607' # [Required], AES Counter value, AES counter value for the key blob
@@ -28,9 +34,6 @@ key_blobs: # [Required], List of Key Blobs used by OTFAD, The list of definition
     end_address: 4096 # [Required], End address of key blob data, End address of key blob data, it should be aligned to 1 KB (1024 B)
     aes_decryption_enable: false # [Optional], AES decryption enable flag, For accesses hitting in a valid context, this bit indicates if the fetched data is to be decrypted or simply bypassed
     valid: true # [Optional], Valid flag, This field signals if the context is valid or not
-    data_blobs: # [Optional], Data blobs list, List of all data blobs included in this key blob
-      - data: keyblob1_data0.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
-        address: 3088 # [Optional], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
 
   - aes_key: '0x000102030405060708090A0B0C0D0E0F'  # [Required], AES key, AES key for the key blob
     aes_ctr: '0x0001020304050607' # [Required], AES Counter value, AES counter value for the key blob
@@ -39,5 +42,3 @@ key_blobs: # [Required], List of Key Blobs used by OTFAD, The list of definition
     aes_decryption_enable: true # [Optional], AES decryption enable flag, For accesses hitting in a valid context, this bit indicates if the fetched data is to be decrypted or simply bypassed
     valid: false # [Optional], Valid flag, This field signals if the context is valid or not
     data_blobs: # [Optional], Data blobs list, List of all data blobs included in this key blob
-      - data: keyblob2_data0.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
-        address: 10240 # [Optional], Data blob address, Data blob address, it could be omitted if data blob starts at start_address

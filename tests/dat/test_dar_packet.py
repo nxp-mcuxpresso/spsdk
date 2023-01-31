@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,7 +23,7 @@ from spsdk.utils.misc import load_binary, use_working_directory
     "yml_file_name, dac_bin_file, version, dck_key_file, expected_length",
     [
         ("new_dck_rsa2048.yml", "sample_dac.bin", "1.0", "new_dck_2048.pem", 1200),
-        ("new_dck_secp256.yml", "sample_dac_ecc.bin", "2.0", "new_dck_secp256r1.pem", 968),
+        ("new_dck_secp256.yml", "sample_dac_ecc.bin", "2.0", "new_dck_secp256r1.pem", 316),
     ],
 )
 def test_dar_packet_rsa(

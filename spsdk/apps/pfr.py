@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Console script for pfr."""
 
-import io
 import logging
 import os
 import sys
@@ -15,9 +14,8 @@ from typing import Optional, Tuple, Type, Union
 
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
-from ruamel.yaml import YAML
 
-from spsdk import SPSDK_YML_INDENT, pfr
+from spsdk import pfr
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
 from spsdk.apps.utils.common_cli_options import (
     FC,
@@ -31,6 +29,7 @@ from spsdk.mboot import McuBoot
 from spsdk.pfr.exceptions import SPSDKError, SPSDKPfrConfigError, SPSDKPfrError
 from spsdk.pfr.pfrc import Pfrc
 from spsdk.utils.misc import find_file, load_configuration, size_fmt, write_file
+from spsdk.utils.schema_validator import ConfigTemplate
 
 PFRArea = Union[Type[pfr.CMPA], Type[pfr.CFPA]]
 logger = logging.getLogger(__name__)
@@ -95,12 +94,8 @@ def main(log_level: int) -> int:
 def get_template(device: str, revision: str, area: str, output: str, full: bool) -> None:
     """Generate user configuration template file."""
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
-    yaml = YAML(pure=True)
-    yaml.indent(sequence=SPSDK_YML_INDENT * 2, offset=SPSDK_YML_INDENT)
     data = pfr_obj.get_yaml_config(not full)
-    stream = io.StringIO()
-    yaml.dump(data, stream)
-    yaml_data = stream.getvalue()
+    yaml_data = ConfigTemplate.convert_cm_to_yaml(data)
     _store_output(yaml_data, output)
 
 
@@ -153,13 +148,14 @@ def parse_binary(
         show_diff=show_diff,
     )
     _store_output(yaml_data, output)
+    click.echo(f"Success. (PFR: {binary} has been parsed and stored into {output}.)")
 
 
 def _parse_binary_data(
     data: bytes,
     device: str,
     area: str,
-    revision: str = None,
+    revision: Optional[str] = None,
     show_calc: bool = False,
     show_diff: bool = False,
 ) -> str:
@@ -176,11 +172,7 @@ def _parse_binary_data(
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     pfr_obj.parse(data)
     parsed = pfr_obj.get_yaml_config(exclude_computed=not show_calc, diff=show_diff)
-    yaml = YAML()
-    yaml.indent(sequence=4, offset=2)
-    stream = io.StringIO()
-    yaml.dump(parsed, stream)
-    yaml_data = stream.getvalue()
+    yaml_data = ConfigTemplate.convert_cm_to_yaml(parsed)
     return yaml_data
 
 
@@ -250,12 +242,15 @@ def generate_binary(
         raise SPSDKPfrConfigError(
             f"The configuration file is not valid. The reason is: {invalid_reason}"
         )
-    assert pfr_config.type
+    area = pfr_config.type
+    assert area
+    pfr_obj = _get_pfr_class(area)(device=pfr_config.device, revision=pfr_config.revision)
+    pfr_obj.set_config(pfr_config, raw=not calc_inverse)
     if pfr_config.device in Pfrc.get_supported_families():
         try:
             pfrc = Pfrc(
-                cmpa=pfr_config if pfr_config.type.upper() == "CMPA" else None,
-                cfpa=pfr_config if pfr_config.type.upper() == "CFPA" else None,
+                cmpa=pfr_obj if area.lower() == "cmpa" else None,  # type: ignore
+                cfpa=pfr_obj if area.lower() == "cfpa" else None,  # type: ignore
             )
             rules = pfrc.validate_brick_conditions()
         except (SPSDKPfrConfigError, SPSDKPfrError) as e:
@@ -279,16 +274,13 @@ def generate_binary(
         root_of_trust = tuple((find_file(x, search_paths=[elf2sb_config_dir]) for x in public_keys))
     if secret_file:
         root_of_trust = secret_file
-    area = pfr_config.type
     if area.lower() == "cmpa" and root_of_trust:
         keys = extract_public_keys(root_of_trust, password)
-    pfr_obj = _get_pfr_class(area)(device=pfr_config.device, revision=pfr_config.revision)
     if not pfr_config.revision:
         pfr_config.revision = pfr_obj.revision
-    pfr_obj.set_config(pfr_config, raw=not calc_inverse)
-
     data = pfr_obj.export(add_seal=add_seal, keys=keys)
     _store_output(data, output, "wb")
+    click.echo(f"Success. (PFR binary has been generated into {output}.)")
 
 
 @main.command(name="info", no_args_is_help=True)
@@ -328,7 +320,14 @@ def devices() -> None:
 
 
 @main.command(name="write", no_args_is_help=True)
-@isp_interfaces(uart=True, usb=True, lpcusbsio=True, buspal=True, json_option=False)
+@isp_interfaces(
+    uart=True,
+    usb=True,
+    lpcusbsio=True,
+    buspal=True,
+    json_option=False,
+    use_long_timeout_option=True,
+)
 @pfr_device_type_options
 @click.option(
     "-b",
@@ -349,11 +348,6 @@ def write(
     binary: str,
 ) -> None:
     """Write PFR page to the device."""
-    # silence warning about missing revision in 'normal' logging mode
-    if not logger.isEnabledFor(logging.INFO):
-        pfr_logger = logging.getLogger("spsdk.pfr")
-        pfr_logger.setLevel(level=logging.ERROR)
-
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     pfr_page_address = pfr_obj.config.get_address(device)
     pfr_page_length = pfr_obj.BINARY_SIZE
@@ -379,7 +373,14 @@ def write(
 
 
 @main.command(name="read", no_args_is_help=True)
-@isp_interfaces(uart=True, usb=True, lpcusbsio=True, buspal=True, json_option=False)
+@isp_interfaces(
+    uart=True,
+    usb=True,
+    lpcusbsio=True,
+    buspal=True,
+    json_option=False,
+    use_long_timeout_option=True,
+)
 @pfr_device_type_options
 @click.option(
     "-o",
@@ -422,11 +423,6 @@ def read(
     show_calc: bool,
 ) -> None:
     """Read PFR page from the device."""
-    # silence warning about missing revision in 'normal' logging mode
-    if not logger.isEnabledFor(logging.INFO):
-        pfr_logger = logging.getLogger("spsdk.pfr")
-        pfr_logger.setLevel(level=logging.ERROR)
-
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     pfr_page_address = pfr_obj.config.get_address(device)
     pfr_page_length = pfr_obj.BINARY_SIZE

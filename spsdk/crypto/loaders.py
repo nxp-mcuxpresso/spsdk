@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Loading methods for keys/certificates/CSR."""
@@ -31,7 +31,7 @@ from spsdk.utils.misc import load_binary
 
 
 def load_private_key_from_data(
-    data: bytes, password: bytes = None, encoding: Encoding = None
+    data: bytes, password: Optional[bytes] = None, encoding: Optional[Encoding] = None
 ) -> PrivateKey:
     """Load private key from bytes.
 
@@ -54,7 +54,7 @@ def load_private_key_from_data(
 
 
 def load_private_key(
-    file_path: str, password: bytes = None, encoding: Encoding = None
+    file_path: str, password: Optional[bytes] = None, encoding: Optional[Encoding] = None
 ) -> PrivateKey:
     """Load private key from file.
 
@@ -67,7 +67,7 @@ def load_private_key(
     return load_private_key_from_data(data, password, encoding)
 
 
-def load_public_key_from_data(data: bytes, encoding: Encoding = None) -> PublicKey:
+def load_public_key_from_data(data: bytes, encoding: Optional[Encoding] = None) -> PublicKey:
     """Load the public key from bytes.
 
     :param data: data of public key loaded from file
@@ -87,7 +87,7 @@ def load_public_key_from_data(data: bytes, encoding: Encoding = None) -> PublicK
         raise SPSDKError(f"Cannot load public key: ({str(exc)})") from exc
 
 
-def load_public_key(file_path: str, encoding: Encoding = None) -> PublicKey:
+def load_public_key(file_path: str, encoding: Optional[Encoding] = None) -> PublicKey:
     """Load the public key from file.
 
     :param file_path: path to file, where public key is stored
@@ -98,7 +98,7 @@ def load_public_key(file_path: str, encoding: Encoding = None) -> PublicKey:
     return load_public_key_from_data(data, encoding)
 
 
-def load_certificate_from_data(data: bytes, encoding: Encoding = None) -> Certificate:
+def load_certificate_from_data(data: bytes, encoding: Optional[Encoding] = None) -> Certificate:
     """Load the certificate from bytes.
 
     :param data: data with certificate loaded from file
@@ -115,7 +115,7 @@ def load_certificate_from_data(data: bytes, encoding: Encoding = None) -> Certif
         raise SPSDKError(f"Cannot load certificate: ({str(exc)})") from exc
 
 
-def load_certificate(file_path: str, encoding: Encoding = None) -> Certificate:
+def load_certificate(file_path: str, encoding: Optional[Encoding] = None) -> Certificate:
     """Load the certificate from file.
 
     :param file_path: path to file, where certificate is stored
@@ -180,11 +180,11 @@ def extract_public_key_from_data(object_data: bytes, password: Optional[str] = N
         public_candidate = load_public_key_from_data(object_data)
         return public_candidate
     except SPSDKError as exc:
-        raise SPSDKError(f"Unable to load secret data.") from exc
+        raise SPSDKError("Unable to load secret data.") from exc
 
 
 def extract_public_key(
-    file_path: str, password: Optional[str] = None, search_paths: List[str] = None
+    file_path: str, password: Optional[str] = None, search_paths: Optional[List[str]] = None
 ) -> PublicKey:
     """Extract any kind of public key from a file that contains Certificate, Private Key or Public Key.
 
@@ -202,7 +202,9 @@ def extract_public_key(
 
 
 def extract_public_keys(
-    secret_files: Iterable[str], password: str = None, search_paths: List[str] = None
+    secret_files: Iterable[str],
+    password: Optional[str] = None,
+    search_paths: Optional[List[str]] = None,
 ) -> List[PublicKey]:
     """Extract any kind of public key from files that contain Certificate, Private Key or Public Key.
 

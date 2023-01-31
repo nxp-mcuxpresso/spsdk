@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """The shadow registers control DAT support file."""
 import logging
-import math
 import os
 from typing import Any, List, Optional
 
@@ -18,7 +17,7 @@ from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.dm_commands import StartDebugSession
 from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.debuggers.utils import test_ahb_access
-from spsdk.utils.misc import change_endianness, reverse_bytes_in_longs, value_to_bytes, value_to_int
+from spsdk.utils.misc import change_endianness, value_to_bytes, value_to_int
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister, SPSDKRegsErrorRegisterNotFound
 
@@ -48,7 +47,11 @@ class ShadowRegisters:
 
         self.regs = Registers(self.device)
         rev = revision or "latest"
-        self.revision = rev if rev != "latest" else config.get_latest_revision(self.device)
+        self.revision = (
+            rev
+            if rev != "latest"
+            else config.devices.get_by_name(self.device).revisions.get_latest().name
+        )
         self.regs.load_registers_from_xml(
             config.get_data_file(self.device, self.revision),
             grouped_regs=config.get_grouped_registers(self.device),
@@ -236,7 +239,9 @@ class ShadowRegisters:
                 reg.set_value(reg.get_value())
             except SPSDKRegsErrorRegisterNotFound as exc:
                 self.fuse_mode = False
-                raise SPSDKError(f"Register {reg_name} has not found for {self.device} device.")
+                raise SPSDKError(
+                    f"Register {reg_name} has not found for {self.device} device."
+                ) from exc
 
             if reg.has_group_registers():
                 for sub_reg in reg.sub_regs:
@@ -382,8 +387,8 @@ class ShadowRegisters:
             return (crc & 0xFF) ^ 0x55
         return crc & 0xFF
 
-    # @staticmethod
-    def comalg_dcfg_cc_socu_crc8(self, val: int) -> int:
+    @staticmethod
+    def comalg_dcfg_cc_socu_crc8(val: int) -> int:
         """Function that creates the crc for DCFG_CC_SOCU.
 
         :param val: Input DCFG_CC_SOCU Value.
@@ -396,7 +401,6 @@ class ShadowRegisters:
         val |= ShadowRegisters.crc_update(in_val)
         return val
 
-    # @staticmethod
     def comalg_dcfg_cc_socu_test_en(self, val: int) -> int:
         """Function fill up the DCFG_CC_SOCU DEV_TEST_EN set to True to satisfy MCU needs.
 
@@ -408,8 +412,8 @@ class ShadowRegisters:
 
         return val | 0x80000000
 
-    # @staticmethod
-    def comalg_do_nothing(self, val: int) -> int:
+    @staticmethod
+    def comalg_do_nothing(val: int) -> int:
         """Function that do nothing.
 
         :param val: Input Value.

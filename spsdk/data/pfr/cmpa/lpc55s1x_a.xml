@@ -17,7 +17,14 @@
       <bit_field_value name="BOOT_CFG_BOOT_SPEED_SYSTEM_SPEED_CODE" value="0b00" description="Defined by NMPA.SYSTEM_SPEED_CODE"/>
       <bit_field_value name="BOOT_CFG_BOOT_SPEED_FRO_48MHZ" value="0b10" description="48MHz FRO"/>
     </bit_field>
-    <reserved_bit_field offset="9" width="15" reset_value="0"/>
+    <bit_field offset="9" width="2" name="USB_SPEED" access="RW" reset_value="0" description="Defines which USB module is used for ISP:">
+      <alias type="CMSIS" value="FLASH_CMPA_BOOT_CFG_USB_SPEED(x)"/>
+      <bit_field_value name="BOOT_CFG_USB_SPEED_USB_SPEED_0" value="0b00" description="Defined by NMPA.USBCFG.USB_SPEED"/>
+      <bit_field_value name="BOOT_CFG_USB_SPEED_USB_FS" value="0b01" description="USB FS module used for ISP"/>
+      <bit_field_value name="BOOT_CFG_USB_SPEED_USB_HS" value="0b10" description="USB HS module used for ISP"/>
+      <bit_field_value name="BOOT_CFG_USB_SPEED_USB_SPEED_1" value="0b11" description="Defined by NMPA.USBCFG.USB_SPEED"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="13" reset_value="0"/>
     <bit_field offset="24" width="8" name="BOOT_FAILURE_PIN" access="RW" reset_value="0" description="GPIO port and pin number to use for indicating failure reason. The toggle rate of the pin is used to decode the error type. [2:0] - Defines GPIO port [7:3] - Defines GPIO pin">
       <alias type="CMSIS" value="FLASH_CMPA_BOOT_CFG_BOOT_FAILURE_PIN(x)"/>
     </bit_field>

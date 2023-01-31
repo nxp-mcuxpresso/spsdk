@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,19 +11,14 @@ import os
 import sys
 
 import click
-from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
+from click_option_group import optgroup
 
 from spsdk import SPSDK_DATA_FOLDER, SPSDKError
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroupAliasedGetCfgTemplate,
     spsdk_apps_common_options,
 )
-from spsdk.apps.utils.utils import (
-    SPSDKAppError,
-    catch_spsdk_error,
-    check_destination_dir,
-    check_file_exists,
-)
+from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error, check_file_exists
 from spsdk.crypto import (
     Encoding,
     ec,
@@ -34,7 +29,7 @@ from spsdk.crypto import (
 )
 from spsdk.crypto.certificate_management import generate_name
 from spsdk.crypto.loaders import extract_public_key, load_certificate
-from spsdk.utils.misc import find_file, load_configuration
+from spsdk.utils.misc import find_file, load_configuration, load_text, write_file
 
 NXPCERTGEN_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpcertgen")
 
@@ -103,7 +98,6 @@ def generate(config: str, output: str, encoding: str, force: bool) -> None:
     logger.info("Generating Certificate...")
     logger.info("Loading configuration from yml file...")
 
-    check_destination_dir(output, force)
     check_file_exists(output, force)
 
     config_data = load_configuration(config)
@@ -148,14 +142,9 @@ def get_template(output: str, force: bool) -> None:
     PATH    - file name path to write template config file
     """
     logger.info("Creating Certificate template...")
-    check_destination_dir(output, force)
     check_file_exists(output, force)
 
-    with open(os.path.join(NXPCERTGEN_DATA_FOLDER, "certgen_config.yml"), "r") as file:
-        template = file.read()
-
-    with open(output, "w") as file:
-        file.write(template)
+    write_file(load_text(os.path.join(NXPCERTGEN_DATA_FOLDER, "certgen_config.yml")), output)
 
     click.echo(f"The configuration template file has been created: {os.path.abspath(output)}")
 
@@ -204,8 +193,8 @@ def verify(certificate: str, sign: str, puk: str) -> None:
                 ec.ECDSA(cert.signature_hash_algorithm),
             )
             click.echo("Signature is OK")
-        except:
-            raise SPSDKAppError("Invalid signature")
+        except Exception as e:
+            raise SPSDKAppError("Invalid signature") from e
     if puk:
         logger.info("Performing public key verification")
         cert_puk = cert.public_key()

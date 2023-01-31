@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,12 +18,13 @@ from ruamel.yaml.comments import CommentedMap as CM
 from spsdk import version as spsdk_version
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.fcb import FCB_DATA_FOLDER, FCB_DATABASE_FILE, FCB_SCH_FILE
+from spsdk.image.segments_base import SegmentBase
 from spsdk.utils.database import Database
 from spsdk.utils.registers import Registers
 from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
 
 
-class FCB:
+class FCB(SegmentBase):
     """FCB (Flash Configuration Block)."""
 
     def __init__(self, family: str, mem_type: str, revision: str = "latest") -> None:
@@ -34,42 +35,25 @@ class FCB:
         :param revision: Optional Chip family revision.
         :raises SPSDKValueError: Unsupported family.
         """
-        if family not in FCB.get_supported_families():
-            raise SPSDKValueError(f"FCB: Unsupported chip family:{family}")
-        self.family = family
-        self.revision = revision
+        super().__init__(family, revision)
+        mem_types = FCB.get_supported_memory_types(self.family, self.revision)
+        if mem_type not in mem_types:
+            raise SPSDKValueError(f"Unsupported memory type:{mem_type} not in {mem_types}")
         self.mem_type = mem_type
-        self._database = Database(FCB_DATABASE_FILE)
-        self.mem_types: Dict = self._database.get_device_value("mem_types", family, revision)
-        if mem_type not in self.mem_types.keys():
-            raise SPSDKValueError(
-                f"FCB: Unsupported memory type:{mem_type} not in {self.mem_types.keys()}"
-            )
-        self.regs = Registers(family, base_endianness="little")
-        self.regs.load_registers_from_xml(os.path.join(FCB_DATA_FOLDER, self.mem_types[mem_type]))
+        self._registers = Registers(family, base_endianness="little")
 
-    def export(self) -> bytes:
-        """Export FCB block binary.
+        block_file_name = self.get_memory_types(self.family, self.revision)[self.mem_type]
+        self._registers.load_registers_from_xml(os.path.join(FCB_DATA_FOLDER, block_file_name))
 
-        :return: Binary representation of FCB.
-        """
-        return self.regs.image_info().export()
+    @staticmethod
+    def get_database() -> Database:
+        """Get the devices database."""
+        return Database(FCB_DATABASE_FILE)
 
-    def parse(self, binary: bytes) -> None:
-        """Parse binary block into FCB object.
-
-        :param binary: FCB binary image.
-        :raises SPSDKValueError: Invalid input binary length.
-        """
-        if len(binary) != len(self.regs.image_info()):
-            raise SPSDKValueError(
-                "FCB parse: Invalid length of input binary."
-                f" {len(binary)} != {len(self.regs.image_info())}"
-            )
-        for reg in self.regs.get_registers():
-            reg.set_value(
-                int.from_bytes(binary[reg.offset // 8 : reg.offset // 8 + reg.width // 8], "little")
-            )
+    @property
+    def registers(self) -> Registers:
+        """Registers of segment."""
+        return self._registers
 
     @staticmethod
     def load_from_config(config: Dict) -> "FCB":
@@ -83,7 +67,7 @@ class FCB:
         revision = config.get("revision", "latest")
         fcb = FCB(family=family, mem_type=mem_type, revision=revision)
         fcb_settings = config.get("fcb_settings", {})
-        fcb.regs.load_yml_config(fcb_settings)
+        fcb.registers.load_yml_config(fcb_settings)
         return fcb
 
     def create_config(self) -> str:
@@ -95,7 +79,7 @@ class FCB:
         config["family"] = self.family
         config["revision"] = self.revision
         config["type"] = self.mem_type
-        config["fcb_settings"] = self.regs.create_yml_config()
+        config["fcb_settings"] = self.registers.create_yml_config()
         config.yaml_set_start_comment(
             f"FCB configuration for {self.family}.\n"
             f"Created: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}.\n"
@@ -120,10 +104,14 @@ class FCB:
         try:
             sch_cfg["fcb_family_rev"]["properties"]["family"]["enum"] = FCB.get_supported_families()
             revisions = ["latest"]
-            revisions.extend(fcb_obj._database.get_revisions(family))
+            revisions.extend(
+                fcb_obj.get_database().devices.get_by_name(family).revisions.revision_names
+            )
             sch_cfg["fcb_family_rev"]["properties"]["revision"]["enum"] = revisions
-            sch_cfg["fcb_family_rev"]["properties"]["type"]["enum"] = list(fcb_obj.mem_types.keys())
-            sch_cfg["fcb"]["properties"]["fcb_settings"] = fcb_obj.regs.get_validation_schema()
+            sch_cfg["fcb_family_rev"]["properties"]["type"]["enum"] = list(
+                fcb_obj.get_supported_memory_types(fcb_obj.family, revision)
+            )
+            sch_cfg["fcb"]["properties"]["fcb_settings"] = fcb_obj.registers.get_validation_schema()
             return [sch_cfg["fcb_family_rev"], sch_cfg["fcb"]]
         except (KeyError, SPSDKError) as exc:
             raise SPSDKError(f"Family {family} or {revision} is not supported") from exc
@@ -157,27 +145,9 @@ class FCB:
             override["type"] = mem_type
 
             ret = ConfigTemplate(
-                f"Trust Zone Configuration template for {family}.",
+                f"Flash Configuration Block template for {family}.",
                 schemas,
                 override,
             ).export_to_yaml()
 
         return ret
-
-    @staticmethod
-    def get_supported_families() -> List[str]:
-        """Return list of supported families.
-
-        :return: List of supported families.
-        """
-        database = Database(FCB_DATABASE_FILE)
-        return database.get_devices()
-
-    @staticmethod
-    def get_supported_memory_types(family: str, revision: str = "latest") -> List[str]:
-        """Return list of supported memory types.
-
-        :return: List of supported families.
-        """
-        database = Database(FCB_DATABASE_FILE)
-        return list(database.get_device_value("mem_types", family, revision).keys())

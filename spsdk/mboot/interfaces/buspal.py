@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,9 +21,10 @@ from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
 from .base import Interface
 from .uart import FPType, Uart, to_int
 
-logger = logging.getLogger("MBOOT:BUSPAL")
+logger = logging.getLogger(__name__)
 
 
+# pylint: disable=invalid-name
 class BuspalMode(Enum):
     """Bit Bang mode command."""
 
@@ -32,6 +33,7 @@ class BuspalMode(Enum):
     i2c = 0x02  # Enter binary I2C mode, responds "I2C1"
 
 
+# pylint: disable=invalid-name
 class BBConstants(Enum):
     """Constants."""
 
@@ -41,6 +43,7 @@ class BBConstants(Enum):
     packet_timeout_ms = 10  # Packet timeout in milliseconds
 
 
+# pylint: disable=invalid-name
 class Response(str, Enum):
     """Response to enter bit bang mode."""
 
@@ -74,7 +77,9 @@ class Buspal(Uart):
         super().__init__(port, baudrate=self.BUSPAL_BAUDRATE, timeout=timeout)
 
     @classmethod
-    def check_port(cls, port: str, timeout: int, props: List[str] = None) -> Optional[Interface]:
+    def check_port(
+        cls, port: str, timeout: int, props: Optional[List[str]] = None
+    ) -> Optional[Interface]:
         """Check if device on comport 'port' can connect using BUSPAL communication protocol.
 
         :param port: name of port to check
@@ -95,7 +100,10 @@ class Buspal(Uart):
 
     @classmethod
     def scan_buspal(
-        cls, port: str = None, timeout: int = DEFAULT_TIMEOUT, props: List[str] = None
+        cls,
+        port: Optional[str] = None,
+        timeout: int = DEFAULT_TIMEOUT,
+        props: Optional[List[str]] = None,
     ) -> List[Interface]:
         """Scan connected serial ports and set BUSPAL properties.
 
@@ -126,7 +134,7 @@ class Buspal(Uart):
         logger.debug("Entered BB mode")
         self.enter_mode(self.mode)
 
-    def _read_frame_header(self, expected_frame_type: int = None) -> Tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: Optional[int] = None) -> Tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected

@@ -1,0 +1,7 @@
+devices:
+  lpc55s6x:
+    revisions:
+      0a: lpc55s6x_0a.xml
+    latest: 1a
+
+

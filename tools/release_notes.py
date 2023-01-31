@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -100,7 +100,7 @@ class RecordsList(List[TicketRecord]):
         return cls(data)
 
 
-def parse_inputs(input_args: List[str] = None) -> RNParams:
+def parse_inputs(input_args: Optional[List[str]] = None) -> RNParams:
     """Parse user inputs."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

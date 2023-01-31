@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -76,7 +76,7 @@ class BootSectionV1(BaseClass):
     @property
     def cmd_size(self) -> int:
         """Return size of the binary representation of the commands."""
-        return sum([cmd.raw_size for cmd in self._commands])
+        return sum(cmd.raw_size for cmd in self._commands)
 
     @property
     def size(self) -> int:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -143,7 +143,7 @@ def test_aes_encrypt():
     key = b"1234567812345678"
     plain_text = bytes(16)
     cipher_text = b"\x9a\xe8\xfd\x02\xb3@(\x8a\x0e{\xbf\xf0\xf0\xbaT\xd6"
-    calc_cipher_text = internal_backend.aes_cbc_encrypt(key, plain_text)
+    calc_cipher_text = internal_backend.aes_cbc_encrypt(key, plain_text, bytes(16))
     assert calc_cipher_text == cipher_text
 
 

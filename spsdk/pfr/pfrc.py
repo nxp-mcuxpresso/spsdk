@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@
 import logging
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 from spsdk.pfr import PFR_DATA_FOLDER, Processor, Translator
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError, SPSDKPfrConfigError
@@ -18,7 +18,7 @@ from spsdk.pfr.pfr import PfrConfiguration
 from spsdk.utils.database import Database
 from spsdk.utils.misc import load_configuration
 
-from .pfr import SPSDKPfrError
+from .pfr import CFPA, CMPA, SPSDKPfrError
 
 PFRC_DATA_FOLDER = os.path.join(PFR_DATA_FOLDER, "pfrc")
 PFRC_DATABASE_FILE = os.path.join(PFRC_DATA_FOLDER, "database.yaml")
@@ -68,8 +68,8 @@ class Pfrc:
 
     def __init__(
         self,
-        cmpa: Optional[PfrConfiguration] = None,
-        cfpa: Optional[PfrConfiguration] = None,
+        cmpa: Optional[CMPA] = None,
+        cfpa: Optional[CFPA] = None,
     ) -> None:
         """Initialize an instance.
 
@@ -81,10 +81,10 @@ class Pfrc:
         self.database = Database(PFRC_DATABASE_FILE)
         if not (cmpa or cfpa):
             raise SPSDKPfrError("No cmpa or cfpa configurations specified")
-        self.cmpa_config = cmpa
-        self.cfpa_config = cfpa
+        self.cmpa = cmpa
+        self.cfpa = cfpa
         self.chip_family = cmpa.device if cmpa else cfpa.device  # type: ignore
-        if not self.chip_family or self.chip_family not in Pfrc.get_supported_families():
+        if not self.chip_family or self.chip_family not in self.get_supported_families():
             raise SPSDKPfrConfigError(
                 f"Chip family from configuration is not supported: {self.chip_family} "
                 f"Supported families:{self.get_supported_families()}"
@@ -97,20 +97,19 @@ class Pfrc:
         :return: List of supported families.
         """
         database = Database(PFRC_DATABASE_FILE)
-        return database.get_devices()
+        return database.devices.device_names
 
     def validate_brick_conditions(
-        self, additional_rules_file: str = None, raw: bool = False
+        self, additional_rules_file: Optional[str] = None
     ) -> Tuple[RulesList, RulesList, RulesList]:
-        """The method validates the brick condiditions for specified configuration.
+        """The method validates the brick conditions for specified configuration.
 
         :param additional_rules_file: Additional rules file, defaults to None
-        :param raw: When set the computed fields from configuration will be applied
         :returns Tuple with passed, failed and skipped rules as a RulesList
         :raises SPSDKPfrError: Brick condition validation failed
         """
         rules = self.load_rules(additional_rules_file)
-        translator = Translator(cmpa=self.cmpa_config, cfpa=self.cfpa_config, raw=raw)
+        translator = Translator(cmpa=self.cmpa, cfpa=self.cfpa)
         processor = Processor(translator=translator)
         try:
             failed_rules, passed_rules, skipped_rules = RulesList(), RulesList(), RulesList()
@@ -137,7 +136,7 @@ class Pfrc:
             raise SPSDKPfrError(f"Error e({e}) while evaluating {rule.cond}") from e
         return passed_rules, failed_rules, skipped_rules
 
-    def load_rules(self, additional_rules_file: str = None) -> RulesList:
+    def load_rules(self, additional_rules_file: Optional[str] = None) -> RulesList:
         """The function loads the rules for family and optionally add additional rules from user.
 
         :param additional_rules_file: Additional rules file, defaults to None

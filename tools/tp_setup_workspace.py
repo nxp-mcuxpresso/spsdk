@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -39,11 +39,11 @@ class HexNumberValidator(NumberValidator):
     def validate(self, document: Document) -> None:
         try:
             int(document.text, 0)
-        except ValueError:
+        except ValueError as e:
             raise ValidationError(
                 message=self._message,  # pylint: disable=no-member
                 cursor_position=document.cursor_position,
-            )
+            ) from e
 
 
 def setup_tp_device_model(tp_device_id: str, use_ctr: bool) -> str:
@@ -231,7 +231,7 @@ def main() -> None:
             sys.exit()
     family = inquirer.rawlist(
         message="Select family",
-        choices=Database.devices(DATABASE_FILE),
+        choices=Database.get_devices(DATABASE_FILE).device_names,
         default="lpc55s6x",
     ).execute()
     tp_device_type = inquirer.rawlist(

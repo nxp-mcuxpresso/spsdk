@@ -18,6 +18,7 @@ fcb_family_rev:
       title: Chip silicon revision
       description: If needed this could be used to specify silicon revision of device.
       template_value: a1
+
     type:
       type: string
       title: Memory type

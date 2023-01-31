@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -78,9 +78,12 @@ class StatusCode(Enum):
     # SDMMC driver errors.
 
     # FlexSPI statuses.
-    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT  = (7000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")
-    FLEXSPI_INVALID_SEQUENCE            = (7001, "FLEXSPI_InvalidSequence", "FLEXSPI: Invalid Sequence")
-    FLEXSPI_DEVICE_TIMEOUT              = (7002, "FLEXSPI_DeviceTimeout", "FLEXSPI: Device Timeout")
+    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT_RT5xx = (6000, "FLEXSPI_SequenceExecutionTimeout_RT5xx", "FLEXSPI: Sequence Execution Timeout")
+    FLEXSPI_INVALID_SEQUENCE_RT5xx           = (6001, "FLEXSPI_InvalidSequence_RT5xx", "FLEXSPI: Invalid Sequence")
+    FLEXSPI_DEVICE_TIMEOUT_RT5xx             = (6002, "FLEXSPI_DeviceTimeout_RT5xx", "FLEXSPI: Device Timeout")
+    FLEXSPI_SEQUENCE_EXECUTION_TIMEOUT       = (7000, "FLEXSPI_SequenceExecutionTimeout", "FLEXSPI: Sequence Execution Timeout")
+    FLEXSPI_INVALID_SEQUENCE                 = (7001, "FLEXSPI_InvalidSequence", "FLEXSPI: Invalid Sequence")
+    FLEXSPI_DEVICE_TIMEOUT                   = (7002, "FLEXSPI_DeviceTimeout", "FLEXSPI: Device Timeout")
 
     # Bootloader errors.
     UNKNOWN_COMMAND             = (10000, "UnknownCommand", "Unknown Command")
@@ -259,6 +262,9 @@ class StatusCode(Enum):
     OTP_TIMEOUT                     = (52807, "OTP_Timeout", "OTP: Operation timed out")
     OTP_CRC_CHECK_PASS              = (52808, "OTP_CRCCheckPass", "OTP: CRC check passed")
     OTP_VERIFY_FAIL                 = (52009, "OPT_VerifyFail", "OTP: Failed to verify OTP write")
+
+    # Security subsystem statuses.
+    SECURITY_SUBSYSTEM_ERROR  = (1515890085, "SecuritySubSystemError", "Security SubSystem Error")
 
     # TrustProvisioning statuses.
     TP_SUCCESS                  = (0,     "TP_SUCCESS", "TP: SUCCESS")

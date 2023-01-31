@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to covert Shadow register description EXCEL file to XML."""
@@ -9,15 +9,15 @@
 import os
 import re
 import sys
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import click
 import openpyxl
 from openpyxl import utils
 from openpyxl.utils import cell as cell_utils
 
-from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 from spsdk.utils.misc import value_to_int
+from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
 XLS_COLUMN_NAMES = (
     "Block Name",
@@ -74,7 +74,7 @@ class ShadowRegsXlsToXml:
     "Class to convert XLSX to XML with shadow register description"
 
     def __init__(
-        self, xls_file: str, sheet_name: str = None, xml_file: str = "", xls_type: int = 1
+        self, xls_file: str, sheet_name: Optional[str] = None, xml_file: str = "", xls_type: int = 1
     ) -> None:
         self.registers = Registers("Unknown")
         self.xls_type = xls_type
@@ -100,8 +100,7 @@ class ShadowRegsXlsToXml:
         assert self.workbook
         if self.sheet_name:
             return self.workbook[self.sheet_name]
-        else:
-            return self.workbook.active
+        return self.workbook.active
 
     def _get_header(self) -> None:
         """Returns the dictionary with cells of header.

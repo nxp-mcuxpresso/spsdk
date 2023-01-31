@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Translator is responsible for converting stringified keys into values."""
 
 import logging
+from typing import Optional
 
 from .exceptions import SPSDKPfrcMissingConfigError
 from .pfr import CFPA, CMPA, PfrConfiguration
@@ -19,24 +20,17 @@ class Translator:
     """Translates single strings (register/key names) into values."""
 
     def __init__(
-        self, cmpa: PfrConfiguration = None, cfpa: PfrConfiguration = None, raw: bool = False
+        self,
+        cmpa: Optional[CMPA] = None,
+        cfpa: Optional[CFPA] = None,
     ) -> None:
         """Initialize CMPA and CFPA data.
 
         :param cmpa: configuration data loaded from CMPA config file
         :param cfpa: configuration data loaded from CFPA config file
-        :param raw: When set the computed fields from configuration will be applied
         """
-        self.cmpa_obj = (
-            CMPA(device=cmpa.device, revision=cmpa.revision, user_config=cmpa, raw=raw)
-            if cmpa
-            else None
-        )
-        self.cfpa_obj = (
-            CFPA(device=cfpa.device, revision=cfpa.revision, user_config=cfpa, raw=raw)
-            if cfpa
-            else None
-        )
+        self.cmpa_obj = cmpa
+        self.cfpa_obj = cfpa
         self.handlers = {
             "CMPA": self._cmpa_translate,
             "CFPA": self._cfpa_translate,

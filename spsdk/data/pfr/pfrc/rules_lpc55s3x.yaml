@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-- req_id: "lpc55s3x_3.1"
-  desc: Dice feature is enabled by default (SKIP_DICE = 0). This feature becomes
-    active as soon as secure boot is enabled. In case that valid UDS keycode is
-    not present in PFR Key Store Area, secure boot will always fail.
-  msg: Secure boot is enabled (SEC_BOOT_EN) and while DICE is not being skipped. Either skip DICE or make sure a valid UDS key code is set.
-  cond: CMPA.SECURE_BOOT_CFG.SEC_BOOT_EN != 0 and CMPA.SECURE_BOOT_CFG.SKIP_DICE == 0 and UTIL.isUDSKeyCodeValid == False
-
 - req_id: "lpc55s3x_4.1"
   desc: By default (blank device), the RoTKx_EN values are set to 0b00.
     When secure boot is enabled (SEC_BOOT_EN != 0) there must be at

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@
 import logging
 
 # pylint: disable=unused-import  # Type is necessary for Mypy
-from typing import Dict, Type
+from typing import Dict, Optional, Type
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class SerialProxy:
         cls.ignore_ack = ignore_ack
         return cls
 
-    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int = None):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: Optional[int] = None):
         """Basic initialization for serial.Serial class.
 
         __init__ signature must accommodate instantiation of serial.Serial
@@ -118,7 +118,7 @@ class SimpleReadSerialProxy(SerialProxy):
         cls.FULL_BUFFER = data
         return cls
 
-    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: int = None):
+    def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: Optional[int] = None):
         """Basic initialization for serial.Serial class.
 
         __init__ signature must accommodate instantiation of serial.Serial

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for registers utility."""
@@ -19,7 +19,7 @@ from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.misc import use_working_directory, value_to_int
 from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
 TEST_DEVICE_NAME = "TestDevice1"
@@ -556,7 +556,7 @@ def test_bitfield_enums():
         if index < (1 << TEST_BITFIELD_WIDTH) - 1:
             assert f"{TEST_ENUM_NAME}{index}" == bitfield.get_enum_value()
         else:
-            assert index == bitfield.get_enum_value()
+            assert index == value_to_int(bitfield.get_enum_value())
 
     for index in range((1 << TEST_BITFIELD_WIDTH) - 1):
         bitfield.set_enum_value(f"{TEST_ENUM_NAME}{index}")
@@ -782,7 +782,7 @@ def test_create_yml():
     assert yml[TEST_REG_NAME]["value"] == "0x00000000"
     assert "bitfields" in yml[TEST_REG_NAME + "_2"].keys()
     assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
-    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == 30
+    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == "0x1E"
     assert TEST_BITFIELD_NAME + "_2" in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
     assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME + "_2"] == TEST_ENUM_NAME
 
@@ -810,7 +810,7 @@ def test_create_yml_excluded_fields():
     assert yml[TEST_REG_NAME]["value"] == "0x00000000"
     assert TEST_REG_NAME + "_2" in yml.keys()
     assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
-    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == 30
+    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == "0x1E"
     assert TEST_BITFIELD_NAME + "_2" not in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
 
 
@@ -824,5 +824,5 @@ def test_create_yml_ignored_fields():
     assert yml[TEST_REG_NAME]["value"] == "0x00000000"
     assert TEST_REG_NAME + "_2" in yml.keys()
     assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
-    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == 30
+    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == "0x1E"
     assert TEST_BITFIELD_NAME + "_2" not in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()

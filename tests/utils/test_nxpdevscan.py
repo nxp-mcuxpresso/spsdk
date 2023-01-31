@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -223,11 +223,12 @@ def test_path_conversion():
 
 
 PATH_BY_SYSTEM = {
-    "win": (b"some_path", "SOME_PATH"),
-    "linux": (b"000A:000B:00", "10#11"),
+    "win": (b"some_path", "SOME_PATH", "0a595daf"),
+    "linux": (b"000A:000B:00", "10#11", "6359be0f"),
     "darwin": (
         b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
         "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
+        "cafe5e92",
     ),
 }
 
@@ -265,7 +266,8 @@ def test_sio_device_search():
             "LIBUSBSIO - manufacturer X, my product\n"
             "Vendor ID: 0x000a\n"
             "Product ID: 0x0014\n"
-            f"Path: {path}\n"
+            f"Path: {path[1]}\n"
+            f"Path Hash: {path[2]}\n"
             "Serial number: sio device\n"
             "Interface number: 5\n"
             "Release number: 125"
@@ -274,17 +276,17 @@ def test_sio_device_search():
     with patch("platform.system", MagicMock(return_value="Windows")):
         devices = nds.search_libusbsio_devices()
         assert len(devices) == 1
-        assert devices[0].info() == get_return(PATH_BY_SYSTEM["win"][1])
+        assert devices[0].info() == get_return(PATH_BY_SYSTEM["win"])
 
     with patch("platform.system", MagicMock(return_value="Linux")):
         devices = nds.search_libusbsio_devices()
         assert len(devices) == 1
-        assert devices[0].info() == get_return(PATH_BY_SYSTEM["linux"][1])
+        assert devices[0].info() == get_return(PATH_BY_SYSTEM["linux"])
 
     with patch("platform.system", MagicMock(return_value="Darwin")):
         devices = nds.search_libusbsio_devices()
         assert len(devices) == 1
-        assert devices[0].info() == get_return(PATH_BY_SYSTEM["darwin"][1])
+        assert devices[0].info() == get_return(PATH_BY_SYSTEM["darwin"])
 
 
 def mock_libusbsio_GetNumPorts(self, vidpids=None):

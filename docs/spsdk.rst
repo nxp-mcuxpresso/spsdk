@@ -15,6 +15,8 @@
 .. _RT1010_link: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1010-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1010
 .. _RT600_link: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt600-crossover-mcu-with-arm-cortex-m33-and-dsp-cores:i.MX-RT600
 .. _RT500_link: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500
+.. _KW45_link: https://www.nxp.com/products/wireless/bluetooth-low-energy/32-bit-bluetooth-5-3-long-range-mcus-with-can-fd-and-lin-bus-options-arm-cortex-m33-core:KW45
+.. _K32W1_link: https://www.nxp.com/products/wireless/multiprotocol-mcus/tri-core-secure-and-ultra-low-power-mcu-for-matter-over-thread-and-bluetooth-le-5-3:K32W148
 
 .. Project location
 
@@ -64,6 +66,8 @@ Supported Devices
 - i.MX RT `600 <RT600_link_>`__ / `500 <RT500_link_>`__
 - i.MX RT `1060 <RT1060_link_>`__ / `1050 <RT1050_link_>`__ / `1020 <RT1020_link_>`__ / `1010 <RT1010_link_>`__
 - i.Mx RT `1170 <RT1170_link_>`__ / `1160 <RT1160_link_>`__ (blhost)
+- `KW45 <KW45_link_>`__
+- `K32W1 <K32W1_link_>`__
 
 ============
 Supported OS

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,6 +21,7 @@ from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
 
 from .blhost import main as blhost_main
 from .elftosb import main as elftosb_main
+from .ifr import main as ifr_main
 from .nxpcertgen import main as nxpcertgen_main
 from .nxpcrypto import main as nxpcrypto_main
 from .nxpdebugmbox import main as nxpdebugmbox_main
@@ -51,6 +52,7 @@ def main() -> int:
 
 main.add_command(blhost_main, name="blhost")
 main.add_command(elftosb_main, name="elftosb")
+main.add_command(ifr_main, name="ifr")
 main.add_command(nxpcertgen_main, name="nxpcertgen")
 main.add_command(nxpcrypto_main, name="nxpcrypto")
 main.add_command(nxpdebugmbox_main, name="nxpdebugmbox")

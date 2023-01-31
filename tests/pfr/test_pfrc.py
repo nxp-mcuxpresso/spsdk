@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """The test file for PFRC API."""
@@ -12,7 +12,7 @@ import pytest
 import ruamel.yaml
 
 from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
-from spsdk.pfr.pfr import PfrConfiguration
+from spsdk.pfr.pfr import CFPA, CMPA, PfrConfiguration
 from spsdk.pfr.pfrc import Pfrc, RulesList
 
 
@@ -34,9 +34,11 @@ def test_pfrc_with_cfpa_and_cmpa_configs(data_dir):
     """Test the PFCA with cfpa and cmpa config."""
     cfpa_config_path = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
     cfpa_config = PfrConfiguration(cfpa_config_path)
+    cfpa = CFPA(device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config)
     cmpa_config_path = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     cmpa_config = PfrConfiguration(cmpa_config_path)
-    pfrc = Pfrc(cfpa=cfpa_config, cmpa=cmpa_config)
+    cmpa = CMPA(device=cmpa_config.device, revision=cmpa_config.revision, user_config=cmpa_config)
+    pfrc = Pfrc(cfpa=cfpa, cmpa=cmpa)
     rules = pfrc.load_rules()
     passed, failed, skipped = pfrc.validate_brick_conditions()
     assert len(failed) == 0
@@ -48,7 +50,8 @@ def test_pfrc_with_cfpa_config(data_dir):
     """Test the PFCA with only cfpa config."""
     cfpa_config_path = os.path.join(data_dir, "cfpa_lpc55s3x_default.yaml")
     cfpa_config = PfrConfiguration(cfpa_config_path)
-    pfrc = Pfrc(cfpa=cfpa_config)
+    cfpa = CFPA(device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config)
+    pfrc = Pfrc(cfpa=cfpa)
     rules = pfrc.load_rules()
     rules_to_be_skipped = RulesList(rule for rule in rules if "CMPA." in rule.cond)
     passed, failed, skipped = pfrc.validate_brick_conditions()
@@ -79,7 +82,8 @@ def test_pfrc_with_incorrect_rule(data_dir):
     """Test the PFCA with incorrect rule."""
     cfpa_config_path = os.path.join(data_dir, "cfpa_pfrc_lpc55s3x.yml")
     cfpa_config = PfrConfiguration(cfpa_config_path)
-    pfrc = Pfrc(cfpa=cfpa_config)
+    cfpa = CFPA(device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config)
+    pfrc = Pfrc(cfpa=cfpa)
     rules_path = os.path.join(data_dir, "rules_incorrect_rule.json")
     with pytest.raises(SPSDKPfrError, match="ERROR: Unable to parse"):
         pfrc.validate_brick_conditions(additional_rules_file=rules_path)
@@ -132,8 +136,10 @@ def test_rule_1_1(tmp_path, data_dir, nr_of_failed, cmpa_pin_bitfields, cfpa_pin
         yaml.indent(mapping=cfpa_ind, sequence=cfpa_ind, offset=cfpa_bsi)
         yaml.dump(cfpa_config, fp)
     cmpa_config = PfrConfiguration(cmpa_config_path)
+    cmpa = CMPA(device=cmpa_config.device, revision=cmpa_config.revision, user_config=cmpa_config)
     cfpa_config = PfrConfiguration(cfpa_config_path)
-    pfrc = Pfrc(cmpa=cmpa_config, cfpa=cfpa_config)
+    cfpa = CFPA(device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config)
+    pfrc = Pfrc(cmpa=cmpa, cfpa=cfpa)
     _, failed, _ = pfrc.validate_brick_conditions()
     assert len(failed) == nr_of_failed
     for fail in failed:
@@ -177,8 +183,10 @@ def test_rule_1_2(tmp_path, data_dir, nr_of_failed, cmpa_dflt_bitfields, cfpa_df
         yaml.indent(mapping=cfpa_ind, sequence=cfpa_ind, offset=cfpa_bsi)
         yaml.dump(cfpa_config, fp)
     cmpa_config = PfrConfiguration(cmpa_config_path)
+    cmpa = CMPA(device=cmpa_config.device, revision=cmpa_config.revision, user_config=cmpa_config)
     cfpa_config = PfrConfiguration(cfpa_config_path)
-    pfrc = Pfrc(cmpa=cmpa_config, cfpa=cfpa_config)
+    cfpa = CFPA(device=cmpa_config.device, revision=cmpa_config.revision, user_config=cfpa_config)
+    pfrc = Pfrc(cmpa=cmpa, cfpa=cfpa)
     _, failed, _ = pfrc.validate_brick_conditions()
     # Some other rules may be brokem with this config
     failed = [fail for fail in failed if fail.req_id == "1.2"]
@@ -223,8 +231,11 @@ def test_cmpa_inverse_bits_rules(tmp_path, data_dir, nr_of_failed, bit_bitfields
         yaml.indent(mapping=ind, sequence=ind, offset=bsi)
         yaml.dump(config, fp)
     cmpa_config = PfrConfiguration(cmpa_config_path)
-    pfrc = Pfrc(cmpa=cmpa_config)
-    _, failed, _ = pfrc.validate_brick_conditions(raw=True)
+    cmpa = CMPA(
+        device=cmpa_config.device, revision=cmpa_config.revision, user_config=cmpa_config, raw=True
+    )
+    pfrc = Pfrc(cmpa=cmpa)
+    _, failed, _ = pfrc.validate_brick_conditions()
     assert len(failed) == nr_of_failed
     for fail in failed:
         assert "Inverse values are generated automatically based on configuration." in fail.msg
@@ -265,9 +276,13 @@ def test_cfpa_inverse_bits_rules(tmp_path, data_dir, nr_of_failed, bit_bitfields
         yaml = ruamel.yaml.YAML()
         yaml.indent(mapping=ind, sequence=ind, offset=bsi)
         yaml.dump(config, fp)
+
     cfpa_config = PfrConfiguration(cfpa_config_path)
-    pfrc = Pfrc(cfpa=cfpa_config)
-    _, failed, _ = pfrc.validate_brick_conditions(raw=True)
+    cfpa = CFPA(
+        device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config, raw=True
+    )
+    pfrc = Pfrc(cfpa=cfpa)
+    _, failed, _ = pfrc.validate_brick_conditions()
     assert len(failed) == nr_of_failed
     for fail in failed:
         assert "Inverse values are generated automatically based on configuration." in fail.msg
@@ -297,7 +312,8 @@ def test_cmpa_invalid_pin_dflt_confguration_rules(
         yaml.indent(mapping=ind, sequence=ind, offset=bsi)
         yaml.dump(config, fp)
     cmpa_config = PfrConfiguration(cmpa_config_path)
-    pfrc = Pfrc(cmpa=cmpa_config)
+    cmpa = CMPA(device=cmpa_config.device, revision=cmpa_config.revision, user_config=cmpa_config)
+    pfrc = Pfrc(cmpa=cmpa)
     _, failed, _ = pfrc.validate_brick_conditions()
     if test_pass:
         assert len(failed) == 0
@@ -330,7 +346,8 @@ def test_cfpa_invalid_pin_dflt_confguration_rules(
         yaml.indent(mapping=ind, sequence=ind, offset=bsi)
         yaml.dump(config, fp)
     cfpa_config = PfrConfiguration(cfpa_config_path)
-    pfrc = Pfrc(cfpa=cfpa_config)
+    cfpa = CFPA(device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config)
+    pfrc = Pfrc(cfpa=cfpa)
     _, failed, _ = pfrc.validate_brick_conditions()
     if test_pass:
         assert len(failed) == 0
@@ -358,7 +375,8 @@ def test_cmpa_prog_in_progress_rule(tmp_path, data_dir, test_pass, cmpa_prog_in_
         yaml.indent(mapping=ind, sequence=ind, offset=bsi)
         yaml.dump(config, fp)
     cfpa_config = PfrConfiguration(cfpa_config_path)
-    pfrc = Pfrc(cfpa=cfpa_config)
+    cfpa = CFPA(device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config)
+    pfrc = Pfrc(cfpa=cfpa)
     _, failed, _ = pfrc.validate_brick_conditions()
     if test_pass:
         assert len(failed) == 0
@@ -389,8 +407,11 @@ def test_vendor_usage_rule(tmp_path, data_dir, test_pass, vendor_usage_value, in
         yaml.indent(mapping=ind, sequence=ind, offset=bsi)
         yaml.dump(config, fp)
     cfpa_config = PfrConfiguration(cfpa_config_path)
-    pfrc = Pfrc(cfpa=cfpa_config)
-    _, failed, _ = pfrc.validate_brick_conditions(raw=True)
+    cfpa = CFPA(
+        device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config, raw=True
+    )
+    pfrc = Pfrc(cfpa=cfpa)
+    _, failed, _ = pfrc.validate_brick_conditions()
     if test_pass:
         assert len(failed) == 0
     else:

@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<regs>
+	<register offset="0x0" width="8" name="magicNumber" reversed="False" description="Fixed to 0xA1" value="0xA1"/>
+	<register offset="0x08" width="8" name="version" reversed="False" description="Set to 1 for this implementation" value="0x1"/>
+	<register offset="0x10" width="8" name="configOption" reversed="False" description="Simplified - 0x00, Full - 0xFF - Must be 0x00 in this case" value="0x0"/>
+	<register offset="0x18" width="8" name="clkMhz" reversed="False" description="Set the working frequency in the unit of MHz"/>
+	<register offset="0x20" width="32" name="sdramSizeKb" reversed="False" description="Set the memory size of SDRAM CS0 in the unit of kilobytes.Range: 4~4*1024*1024"/>
+	<register offset="0x40" width="8" name="portSize" reversed="False" description="Port size of SDRAM."/>
+</regs>

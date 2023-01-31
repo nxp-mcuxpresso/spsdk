@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,6 +10,7 @@
 import os
 import sys
 from time import sleep
+from typing import Optional
 
 from spsdk import mboot, sdp
 
@@ -21,7 +22,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 
 def run_flash_loader(
-    load_address: int, start_address: int, data: bytes, device_name: str = None
+    load_address: int, start_address: int, data: bytes, device_name: Optional[str] = None
 ) -> bool:
     """Load an execute flashloader binary in i.MX-RT.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -47,6 +47,12 @@ def process_config_file(
         ("sb3_384_384.json", "lpc55s3x"),
         ("sb3_384_none.json", "lpc55s3x"),
         ("sb3_test_384_384_unencrypted.json", "lpc55s3x"),
+        ("sb3_test_384_384_unencrypted.json", "kw45xx"),
+        ("sb3_384_384.json", "kw45xx"),
+        ("sb3_384_none.json", "kw45xx"),
+        ("sb3_test_384_384_unencrypted.json", "k32w1xx"),
+        ("sb3_384_384.json", "k32w1xx"),
+        ("sb3_384_none.json", "k32w1xx"),
     ],
 )
 def test_elftosb_sb31(data_dir, tmpdir, config_file, device):

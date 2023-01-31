@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module for handling Certificate block."""
 
+import logging
 import re
 from struct import calcsize, pack, unpack_from
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -15,6 +16,7 @@ from Crypto.PublicKey import ECC
 
 from spsdk import SPSDKError
 from spsdk.crypto.loaders import load_certificate_as_bytes
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils import misc
 from spsdk.utils.crypto import CRYPTO_SCH_FILE
 from spsdk.utils.schema_validator import ValidationSchemas
@@ -23,6 +25,8 @@ from .abstract import BaseClass
 from .backend_internal import internal_backend
 from .certificate import Certificate
 from .common import crypto_backend
+
+logger = logging.getLogger(__name__)
 
 
 class CertBlock(BaseClass):
@@ -414,7 +418,9 @@ class CertBlockV2(CertBlock):
         ]
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CertBlockV2":
+    def from_config(
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "CertBlockV2":
         """Creates an instance of CertBlockV2 from configuration.
 
         :param config: Input standard configuration.
@@ -430,7 +436,7 @@ class CertBlockV2(CertBlock):
         root_certificates[1].append(config.get("rootCertificate1File", None))
         root_certificates[2].append(config.get("rootCertificate2File", None))
         root_certificates[3].append(config.get("rootCertificate3File", None))
-        main_cert_chain_id = config.get("mainCertChainId", 0)
+        main_cert_chain_id = get_main_cert_index(config, default=0)
 
         # get all certificate chain related keys from config
         pattern = f"chainCertificate{main_cert_chain_id}File[0-3]"
@@ -450,12 +456,12 @@ class CertBlockV2(CertBlock):
             cert_block.add_certificate(cert_data)
         # set root key hash of each root certificate
         empty_rec = False
-        for cert_idx, cert_path in enumerate(root_certificates):
-            if cert_path[0]:
+        for cert_idx, cert_path_list in enumerate(root_certificates):
+            if cert_path_list[0]:
                 if empty_rec:
                     raise SPSDKError("There are gaps in rootCertificateXFile definition")
                 cert_data = load_certificate_as_bytes(
-                    misc.find_file(str(cert_path[0]), search_paths=search_paths)
+                    misc.find_file(str(cert_path_list[0]), search_paths=search_paths)
                 )
                 cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
             else:
@@ -469,8 +475,8 @@ class CertBlockV2(CertBlock):
 ########################################################################################################################
 def get_ecc_key_bytes(key: ECC.EccKey) -> bytes:
     """Function to get ECC Key pointQ as bytes."""
-    point_x = key.pointQ.x.to_bytes()  # type: ignore
-    point_y = key.pointQ.y.to_bytes()  # type: ignore
+    point_x = key.pointQ.x.to_bytes(block_size=key.pointQ.size_in_bytes())  # type: ignore
+    point_y = key.pointQ.y.to_bytes(block_size=key.pointQ.size_in_bytes())  # type: ignore
     return point_x + point_y
 
 
@@ -533,13 +539,15 @@ class CertificateBlockHeader(BaseClass):
             magic,
             minor_format_version,
             major_format_version,
-            _cert_block_size,
+            cert_block_size,
         ) = unpack_from(cls.FORMAT, data, offset)
 
         if magic != cls.MAGIC:
             raise SPSDKError("Magic is not same!")
 
-        return cls(format_version=f"{major_format_version}.{minor_format_version}")
+        obj = cls(format_version=f"{major_format_version}.{minor_format_version}")
+        obj.cert_block_size = cert_block_size
+        return obj
 
 
 class RootKeyRecord(BaseClass):
@@ -564,6 +572,7 @@ class RootKeyRecord(BaseClass):
         self.used_root_cert = used_root_cert
         self.flags = self._calculate_flags()
         self.ctrk_hash_table = self._create_ctrk_hash_table()
+        self.rotkth = self._calculate_rotkth()
         self.root_public_key = self._create_root_public_key()
         # the '4' means 4 bytes for flags
         self.expected_size = 4 + len(self.ctrk_hash_table) + len(self.root_public_key)
@@ -609,6 +618,11 @@ class RootKeyRecord(BaseClass):
                 ctrk_hash_table += ctrk_hash
         return ctrk_hash_table
 
+    def _calculate_rotkth(self) -> bytes:
+        return internal_backend.hash(
+            self.ctrk_hash_table, f"sha{self.root_certs[0].pointQ.size_in_bits()}"
+        )
+
     def export(self) -> bytes:
         """Export Root key record as bytes array."""
         data = bytes()
@@ -636,7 +650,7 @@ class IskCertificate(BaseClass):
         constraints: int,
         isk_private_key: Union[ECC.EccKey, bytes],
         isk_cert: Union[ECC.EccKey, bytes],
-        user_data: bytes = None,
+        user_data: Optional[bytes] = None,
     ) -> None:
         """Constructor for ISK certificate.
 
@@ -726,9 +740,9 @@ class CertBlockV31(CertBlock):
         version: str = "2.1",
         used_root_cert: int = 0,
         constraints: int = 0,
-        isk_private_key: Union[ECC.EccKey, bytes] = None,
-        isk_cert: Union[ECC.EccKey, bytes] = None,
-        user_data: bytes = None,
+        isk_private_key: Optional[Union[ECC.EccKey, bytes]] = None,
+        isk_cert: Optional[Union[ECC.EccKey, bytes]] = None,
+        user_data: Optional[bytes] = None,
     ) -> None:
         """The Constructor for Certificate block."""
         # workaround for base MasterBootImage
@@ -771,6 +785,7 @@ class CertBlockV31(CertBlock):
 
     def export(self) -> bytes:
         """Export Certificate block as bytes array."""
+        logger.info(f"RoTKTH: {self.root_key_record.rotkth.hex()}")
         key_record_data = self.root_key_record.export()
         self.header.cert_block_size = self.header.SIZE + len(key_record_data)
         isk_cert_data = bytes()
@@ -801,7 +816,9 @@ class CertBlockV31(CertBlock):
         return [sch_cfg["certificate_v31"], sch_cfg["certificate_root_keys"]]
 
     @classmethod
-    def from_config(cls, config: Dict[str, Any], search_paths: List[str] = None) -> "CertBlockV31":
+    def from_config(
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "CertBlockV31":
         """Creates an instance of CertBlockV31 from configuration.
 
         :param config: Input standard configuration.
@@ -818,7 +835,7 @@ class CertBlockV31(CertBlock):
             if org != filtered:
                 raise SPSDKError("There are gaps in rootCertificateXFile definition")
 
-        main_root_cert_id = config.get("mainRootCertId", 0)
+        main_root_cert_id = get_main_cert_index(config, default=0)
         main_root_private_key_file = config.get("mainRootCertPrivateKeyFile")
         use_isk = config.get("useIsk", False)
         isk_certificate = config.get("signingCertificateFile")
@@ -863,3 +880,31 @@ class CertBlockV31(CertBlock):
         if self.isk_certificate:
             if not isinstance(self.isk_certificate.isk_private_key, ECC.EccKey):
                 raise SPSDKError("Invalid ISK certificate.")
+
+
+def get_main_cert_index(config: Dict[str, Any], default: Optional[int] = None) -> int:
+    """Gets main certificate index from configuration.
+
+    :param config: Input standard configuration.
+    :param default: List of paths where to search for the file, defaults to None
+    :return: Instance of CertBlockV2
+    :raises SPSDKError: If invalid configuration is provided.
+    :raises SPSDKValueError: If certificate is not of correct type.
+    """
+    root_cert_id = config.get("mainRootCertId")
+    cert_chain_id = config.get("mainCertChainId")
+    if root_cert_id is not None and cert_chain_id is not None and root_cert_id != cert_chain_id:
+        raise SPSDKError(
+            "The mainRootCertId and mainRootCertId are specified and have different values."
+        )
+    if root_cert_id is None and cert_chain_id is None:
+        if default is None:
+            raise SPSDKError("Main cert ID is not specified. Use a property mainRootCertId.")
+        return default
+    # root_cert_id may be 0 which is falsy value, therefore 'or' cannot be used
+    cert_index = root_cert_id if root_cert_id != None else cert_chain_id
+    try:
+        cert_index = int(cert_index)  # type: ignore[arg-type]
+    except ValueError:
+        raise SPSDKValueError(f"A certificate index is not a number: {cert_index}")
+    return cert_index

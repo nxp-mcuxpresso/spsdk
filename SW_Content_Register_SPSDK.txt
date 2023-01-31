@@ -1,7 +1,7 @@
 NXP Software Content Register
 
 Package:                   NXP SPSDK
-Version:                   1.8.0
+Version:                   1.9.0
 Outgoing License:          BSD-3-Clause
 License Files:             LICENSE
 Type of content:           Source code
@@ -9,24 +9,28 @@ Description and comments:  NXP Secure Provisioning SDK
 Origin:                    NXP (BSD-3-Clause)
 
 PyIMX               Name: PyIMX
+                    Version: 0.1.3
                     License: BSD-3-Clause
                     Location: spsdk/sdp
                     Type: Source
                     URL: https://github.com/molejar/pyIMX
 
 PyMBoot             Name: PyMBoot
+                    Version: 0.3.0
                     License: BSD-3-Clause
                     Location: spsdk/mboot
                     Type: Source
                     URL: https://github.com/molejar/pyMBoot
 
 PyEnum              Name: PyEnum
+                    Version: 0.3.0
                     License: Apache-2
                     Location: spsdk/utils
                     Type: Source
                     URL: https://github.com/molejar/pyEnum
 
 Flashloader         Name: Flashloader
+                    Version: 2.4
                     License: BSD-3-Clause
                     Location: tests/mcu_examples/data
                     Type: Binary
@@ -34,6 +38,7 @@ Flashloader         Name: Flashloader
                     Note: Built from Flashloader sources in NXP MCUXpresso SDK
 
 Roboto              Name: Roboto
+                    Version: 2.138
                     License: Apache License, Version 2.0
                     Location: spsdk/docs/_static/fonts/Roboto-Medium.ttf
                     Type: Source

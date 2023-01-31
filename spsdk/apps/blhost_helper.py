@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Helper module for blhost application."""
 
 import contextlib
-from typing import Any, Callable, Iterator, Union
+from copy import deepcopy
+from typing import Any, Callable, Iterator, Optional, Union
 
 import click
 
@@ -53,51 +54,67 @@ class OemSetMasterShareHelp(click.Command):
 
 
 PROPERTIES_NAMES = {
-    "list-properties": 0,
-    "current-version": 1,
-    "available-peripherals": 2,
-    "flash-start-address": 3,
-    "flash-size-in-bytes": 4,
-    "flash-sector-size": 5,
-    "flash-block-count": 6,
-    "available-commands": 7,
-    "check-status": 8,
-    "reserved": 9,
-    "verify-writes": 10,
-    "max-packet-size": 11,
-    "reserved-regions": 12,
-    "reserved_1": 13,
-    "ram-start-address": 14,
-    "ram-size-in-bytes": 15,
-    "system-device-id": 16,
-    "security-state": 17,
-    "unique-device-id": 18,
-    "flash-fac-support": 19,
-    "flash-access-segment-size": 20,
-    "flash-access-segment-count": 21,
-    "flash-read-margin": 22,
-    "qspi/otfad-init-status": 23,
-    "target-version": 24,
-    "external-memory-attributes": 25,
-    "reliable-update-status": 26,
-    "flash-page-size": 27,
-    "irq-notify-pin": 28,
-    "pfr-keystore_update-opt": 29,
-    "byte-write-timeout-ms": 30,
+    0: "list-properties",
+    1: "current-version",
+    2: "available-peripherals",
+    3: "flash-start-address",
+    4: "flash-size-in-bytes",
+    5: "flash-sector-size",
+    6: "flash-block-count",
+    7: "available-commands",
+    8: "check-status",
+    9: "reserved",
+    10: "verify-writes",
+    11: "max-packet-size",
+    12: "reserved-regions",
+    13: "reserved_1",
+    14: "ram-start-address",
+    15: "ram-size-in-bytes",
+    16: "system-device-id",
+    17: "security-state",
+    18: "unique-device-id",
+    19: "flash-fac-support",
+    20: "flash-access-segment-size",
+    21: "flash-access-segment-count",
+    22: "flash-read-margin",
+    23: "qspi/otfad-init-status",
+    24: "target-version",
+    25: "external-memory-attributes",
+    26: "reliable-update-status",
+    27: "flash-page-size",
+    28: "irq-notify-pin",
+    29: "pfr-keystore_update-opt",
+    30: "byte-write-timeout-ms",
+    31: "fuse-locked-status",
 }
 
+KW45XX = {
+    10: "verify-erase",
+    20: "boot-status",
+    21: "loadable-fw-version",
+    22: "fuse-program-voltage",
+}
 
-def parse_property_tag(property_tag: str) -> int:
+PROPERTIES_OVERRIDE = {"kw45xx": KW45XX, "k32w1xx": KW45XX}
+
+
+def parse_property_tag(property_tag: str, family: Optional[str] = None) -> int:
     """Convert the property as name or stringified number into integer.
 
     :param property_tag: Name or number of the property tag
+    :param family: supported family
     :return: Property integer tag
     """
+    properties_dict = deepcopy(PROPERTIES_NAMES)
+    if family and family in PROPERTIES_OVERRIDE.keys():
+        properties_dict.update(PROPERTIES_OVERRIDE[family])
     try:
-        value = value_to_int(property_tag)
-        return value if value in PROPERTIES_NAMES.values() else 0xFF
+        return value_to_int(property_tag)
     except SPSDKError:
-        return PROPERTIES_NAMES.get(property_tag, 0xFF)
+        for key, value in properties_dict.items():
+            if value == property_tag:
+                return key
+        return 0xFF
 
 
 def parse_key_prov_key_type(key_type: str) -> int:
@@ -136,7 +153,7 @@ def parse_trust_prov_wrapping_key_type(key_type: str) -> int:
     return _parse_key_type(key_type, TrustProvWrappingKeyType)
 
 
-def _parse_key_type(user_input: str, collection: Any, default: int = None) -> int:
+def _parse_key_type(user_input: str, collection: Any, default: Optional[int] = None) -> int:
     try:
         return value_to_int(user_input)
     except SPSDKError:
@@ -156,7 +173,7 @@ def progress_bar(
     """Creates a progress bar and return callback function for updating the progress bar.
 
     :param suppress: Suppress the progress bar creation; return an empty callback, defaults to False
-    :param **progress_bar_params: Standard parameters for click.progressbar
+    :param progress_bar_params: Standard parameters for click.progressbar
     :yield: Callback for updating the progress bar
     """
     if suppress:

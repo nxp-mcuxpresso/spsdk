@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for serial communication with a target device using SDP protocol."""
@@ -10,7 +10,7 @@
 import logging
 from typing import List, Optional, Union
 
-from serial import Serial
+from serial import Serial, SerialTimeoutException
 from serial.tools.list_ports import comports
 
 from spsdk.sdp.commands import CmdPacket, CmdResponse
@@ -21,7 +21,9 @@ from .base import SDPInterface
 logger = logging.getLogger(__name__)
 
 
-def scan_uart(port: str = None, baudrate: int = None, timeout: int = None) -> List["Uart"]:
+def scan_uart(
+    port: Optional[str] = None, baudrate: Optional[int] = None, timeout: Optional[int] = None
+) -> List["Uart"]:
     """Scan connected serial ports.
 
     Returns list of serial ports with devices that respond to PING command.
@@ -74,7 +76,7 @@ class Uart(SDPInterface):
         """Return True if device is open, False otherwise."""
         return self.device.is_open
 
-    def __init__(self, port: str = None, timeout: int = 5000, baudrate: int = 115200):
+    def __init__(self, port: Optional[str] = None, timeout: int = 5000, baudrate: int = 115200):
         """Initialize the UART interface.
 
         :param port: name of the serial port, defaults to None
@@ -131,7 +133,7 @@ class Uart(SDPInterface):
         :param config: parameters dictionary
         """
 
-    def read(self, length: int = None) -> CmdResponse:
+    def read(self, length: Optional[int] = None) -> CmdResponse:
         """Read data from device.
 
         :return: data read from device
@@ -173,6 +175,7 @@ class Uart(SDPInterface):
         """Send data to device.
 
         :param data: Data to send
+        :raises TimeoutError: when sendig of data times-out
         :raises SdpConnectionError: when send data to device fails
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
@@ -181,5 +184,9 @@ class Uart(SDPInterface):
             self.device.reset_output_buffer()
             self.device.write(data)
             self.device.flush()
+        except SerialTimeoutException as e:
+            raise TimeoutError(
+                f"Write timeout error. The timeout is set to {self.device.write_timeout} s. Consider increasing it."
+            ) from e
         except Exception as e:
             raise SdpConnectionError(str(e)) from e

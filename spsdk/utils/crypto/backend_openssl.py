@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,7 @@ import math
 
 # Used security modules
 from secrets import token_bytes
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -21,6 +21,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from spsdk import SPSDKError
 from spsdk.crypto import EllipticCurvePrivateKey, PrivateKey, RSAPrivateKey
+from spsdk.utils.misc import align_block
 
 # Abstract Class Interface
 from .abstract import BackendClass
@@ -107,6 +108,55 @@ class Backend(BackendClass):
         """
         return keywrap.aes_key_unwrap(kek, wrapped_key, default_backend())
 
+    def aes_cbc_encrypt(
+        self, key: bytes, plain_data: bytes, iv_data: Optional[bytes] = None
+    ) -> bytes:
+        """Encrypt plain data with AES in CBC mode.
+
+        :param key: The key for data encryption
+        :param plain_data: Input data
+        :param iv_data: Initialization vector data
+        :raises SPSDKError: Invalid Key or IV
+        :return: Encrypted image
+        """
+        if len(key) * 8 not in algorithms.AES.key_sizes:
+            raise SPSDKError(
+                "The key must be a valid AES key length: "
+                f"{', '.join([str(k) for k in algorithms.AES.key_sizes])}"
+            )
+        init_vector = iv_data or bytes(algorithms.AES.block_size)
+        if len(init_vector) * 8 != algorithms.AES.block_size:
+            raise SPSDKError(f"The initial vector length must be {algorithms.AES.block_size}")
+        cipher = Cipher(algorithms.AES(key), modes.CBC(init_vector), default_backend())
+        enc = cipher.encryptor()
+        return (
+            enc.update(align_block(plain_data, alignment=algorithms.AES.block_size // 8))
+            + enc.finalize()
+        )
+
+    def aes_cbc_decrypt(
+        self, key: bytes, encrypted_data: bytes, iv_data: Optional[bytes] = None
+    ) -> bytes:
+        """Decrypt encrypted data with AES in CBC mode.
+
+        :param key: The key for data decryption
+        :param encrypted_data: Input data
+        :param iv_data: Initialization vector data
+        :raises SPSDKError: Invalid Key or IV
+        :return: Decrypted image
+        """
+        if len(key) * 8 not in algorithms.AES.key_sizes:
+            raise SPSDKError(
+                "The key must be a valid AES key length: "
+                f"{', '.join([str(k) for k in algorithms.AES.key_sizes])}"
+            )
+        init_vector = iv_data or bytes(algorithms.AES.block_size)
+        if len(init_vector) * 8 != algorithms.AES.block_size:
+            raise SPSDKError(f"The initial vector length must be {algorithms.AES.block_size}")
+        cipher = Cipher(algorithms.AES(key), modes.CBC(init_vector), default_backend())
+        dec = cipher.decryptor()
+        return dec.update(encrypted_data) + dec.finalize()
+
     def aes_ctr_encrypt(self, key: bytes, plain_data: bytes, nonce: bytes) -> bytes:
         """Encrypt plain data with AES in CTR mode.
 
@@ -128,6 +178,30 @@ class Backend(BackendClass):
         :return: Decrypted data
         """
         cipher = Cipher(algorithms.AES(key), modes.CTR(nonce), default_backend())
+        enc = cipher.decryptor()
+        return enc.update(encrypted_data) + enc.finalize()
+
+    def aes_xts_encrypt(self, key: bytes, plain_data: bytes, tweak: bytes) -> bytes:
+        """Encrypt plain data with AES in XTS mode.
+
+        :param key: The key for data encryption
+        :param plain_data: Input data
+        :param tweak: The tweak is a 16 byte value
+        :return: Encrypted data
+        """
+        cipher = Cipher(algorithms.AES(key), modes.XTS(tweak), default_backend())
+        enc = cipher.encryptor()
+        return enc.update(plain_data) + enc.finalize()
+
+    def aes_xts_decrypt(self, key: bytes, encrypted_data: bytes, tweak: bytes) -> bytes:
+        """Decrypt encrypted data with AES in XTS mode.
+
+        :param key: The key for data decryption
+        :param encrypted_data: Input data
+        :param tweak: The tweak is a 16 byte value
+        :return: Decrypted data
+        """
+        cipher = Cipher(algorithms.AES(key), modes.XTS(tweak), default_backend())
         enc = cipher.decryptor()
         return enc.update(encrypted_data) + enc.finalize()
 
@@ -203,7 +277,7 @@ class Backend(BackendClass):
         self,
         private_key: Union[ec.EllipticCurvePrivateKey, bytes],
         data: bytes,
-        algorithm: str = None,
+        algorithm: Optional[str] = None,
     ) -> bytes:
         """Sign data using (EC)DSA.
 
@@ -219,7 +293,10 @@ class Backend(BackendClass):
         if isinstance(private_key, ec.EllipticCurvePrivateKey):
             processed_private_key = private_key
         assert isinstance(processed_private_key, ec.EllipticCurvePrivateKey)
-        hash_name = algorithm or f"sha{processed_private_key.key_size}"
+        hash_name = (
+            algorithm
+            or {256: "sha256", 384: "sha384", 521: "sha512"}[processed_private_key.key_size]
+        )
         # pylint: disable=no-value-for-parameter    # pylint is mixing RSA and ECC sing methods
         der_signature = processed_private_key.sign(data, ec.ECDSA(self._get_algorithm(hash_name)))
         # pylint: disable=invalid-name  # we want to use established names
@@ -234,7 +311,7 @@ class Backend(BackendClass):
         public_key: Union[ec.EllipticCurvePublicKey, bytes],
         signature: bytes,
         data: bytes,
-        algorithm: str = None,
+        algorithm: Optional[str] = None,
     ) -> bool:
         """Verify (EC)DSA signature.
 

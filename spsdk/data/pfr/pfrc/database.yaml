@@ -5,35 +5,42 @@
 # Database file for PFRC chip family rules
 devices:
   lpc55xx:
-    rules:
-      - rules_common.yaml
-      - rules_lpc55xx.yaml
+    attributes:
+      rules:
+        - rules_common.yaml
+        - rules_lpc55xx.yaml
 
   lpc55s0x:
-    rules:
-      - rules_common.yaml
-      - rules_lpc55xx.yaml
+    attributes:
+      rules:
+        - rules_common.yaml
+        - rules_lpc55xx.yaml
 
   lpc55s1x:
-    rules:
-      - rules_common.yaml
-      - rules_lpc55xx.yaml
+    attributes:
+      rules:
+        - rules_common.yaml
+        - rules_lpc55xx.yaml
 
   lpc55s2x:
-    rules:
-      - rules_common.yaml
-      - rules_lpc55xx.yaml
+    attributes:
+      rules:
+        - rules_common.yaml
+        - rules_lpc55xx.yaml
 
   lpc55s6x:
-    rules:
-      - rules_common.yaml
-      - rules_lpc55xx.yaml
+    attributes:
+      rules:
+        - rules_common.yaml
+        - rules_lpc55xx.yaml
 
   lpc55s3x:
-    rules:
-      - rules_common.yaml
-      - rules_lpc55s3x.yaml
+    attributes:
+      rules:
+        - rules_common.yaml
+        - rules_lpc55s3x.yaml
 
   lpc553x:
-    rules:
-      - rules_common.yaml
+    attributes:
+      rules:
+        - rules_common.yaml

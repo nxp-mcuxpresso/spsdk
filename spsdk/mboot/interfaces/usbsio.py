@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright (c) 2019-2022 NXP
+# Copyright (c) 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,7 +19,6 @@ from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.usbfilter import USBDeviceFilter
 
-from .base import MBootInterface
 from .uart import Uart
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ def _get_usbsio() -> LIBUSBSIO:
         raise SPSDKError(str(e)) from e
 
 
-def get_usbsio_devices(config: str = None) -> List[int]:
+def get_usbsio_devices(config: Optional[str] = None) -> List[int]:
     """Returns list of ports indexes of USBSIO devices.
 
     It could be filtered by standard SPSDK USB filters.
@@ -93,7 +92,7 @@ def get_usbsio_devices(config: str = None) -> List[int]:
     return port_indexes
 
 
-def scan_usbsio(config: str = None, timeout: int = 5000) -> List["UsbSio"]:
+def scan_usbsio(config: Optional[str] = None, timeout: int = 5000) -> List["UsbSio"]:
     """Scan connected USB-SIO bridge devices.
 
     :param config: Configuration string identifying spi or i2c SIO interface
@@ -148,7 +147,7 @@ def scan_usbsio(config: str = None, timeout: int = 5000) -> List["UsbSio"]:
     return devices
 
 
-def scan_usbsio_i2c(config: str = None, timeout: int = 5000) -> List["UsbSioI2C"]:
+def scan_usbsio_i2c(config: Optional[str] = None, timeout: int = 5000) -> List["UsbSioI2C"]:
     """Scan connected USB-SIO bridge devices and return just I2C devices.
 
     :param config: Configuration string identifying spi or i2c SIO interface
@@ -160,7 +159,7 @@ def scan_usbsio_i2c(config: str = None, timeout: int = 5000) -> List["UsbSioI2C"
     return [x for x in devices if isinstance(x, UsbSioI2C)]
 
 
-def scan_usbsio_spi(config: str = None, timeout: int = 5000) -> List["UsbSioSPI"]:
+def scan_usbsio_spi(config: Optional[str] = None, timeout: int = 5000) -> List["UsbSioSPI"]:
     """Scan connected USB-SIO bridge devices and return just SPI devices.
 
     :param config: Configuration string identifying spi or i2c SIO interface
@@ -185,7 +184,7 @@ class UsbSio(Uart):
         """Indicates whether interface is open."""
         return bool(self.port)
 
-    def __init__(self, dev: int = 0, config: str = None, timeout: int = 5000) -> None:
+    def __init__(self, dev: int = 0, config: Optional[str] = None, timeout: int = 5000) -> None:
         """Initialize the Interface object.
 
         :param dev: device index to be used, default is set to 0
@@ -232,7 +231,7 @@ class UsbSioSPI(UsbSio):
 
     def __init__(
         self,
-        config: str = None,
+        config: Optional[str] = None,
         dev: int = 0,
         port: int = 0,
         ssel_port: int = 0,
@@ -351,7 +350,7 @@ class UsbSioI2C(UsbSio):
 
     def __init__(
         self,
-        config: str = None,
+        config: Optional[str] = None,
         dev: int = 0,
         port: int = 0,
         address: int = 0x10,

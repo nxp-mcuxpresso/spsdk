@@ -1,20 +1,25 @@
 devices:
   lpc55s6x:
-    cfpa_address: 0x9_DE00
+    attributes:
+      cfpa_address: 0x9_DE00
   lpc55s2x:
-    device_alias: lpc55s6x
+    attributes:
+      device_alias: lpc55s6x
   lpc55s1x:
-    cfpa_address: 0x3_DE00
-    erase_memory: true
-    erase_memory_start: 0
-    erase_memory_length: 0x1_8000
+    attributes:
+      cfpa_address: 0x3_DE00
+      erase_memory: true
+      erase_memory_start: 0
+      erase_memory_length: 0x1_8000
   lpc55s0x:
-    device_alias: lpc55s1x
-erase_memory: false
-need_tp_fw: true
-need_cfpa_update: true
-need_revoke_update: true
-cfpa_size: 512
-version_offset: 0x4
-revoke_offset: 0x18
-max_oem_cert_size: 1000
+    attributes:
+      device_alias: lpc55s1x
+attributes:
+  erase_memory: false
+  need_tp_fw: true
+  need_cfpa_update: true
+  need_revoke_update: true
+  cfpa_size: 512
+  version_offset: 0x4
+  revoke_offset: 0x18
+  max_oem_cert_size: 1000

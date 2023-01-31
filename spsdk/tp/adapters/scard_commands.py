@@ -1,25 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Commands used in SmartCard."""
 
 import logging
 from struct import pack
-from typing import Tuple
+from typing import Optional, Tuple
 
 from spsdk import SPSDKError
+from spsdk.utils.easy_enum import Enum
 
 try:
     from smartcard.CardConnection import CardConnection
-except ImportError:
+except ImportError as e:
     raise SPSDKError(
         "pyscard package is missing, please install it with pip install 'spsdk[tp]' in order to use TP"
-    )
+    ) from e
 
-from spsdk.utils.easy_enum import Enum
 
 from .. import SPSDKTpError
 
@@ -55,7 +55,7 @@ class SmartCardAPDU:
     """Implement SmartCard APDU's operation."""
 
     def __init__(
-        self, cla: int, ins: int, p1: int, p2: int, data: bytes = None, le: int = 0
+        self, cla: int, ins: int, p1: int, p2: int, data: Optional[bytes] = None, le: int = 0
     ) -> None:
         """Simple APDU transfer descriptor.
 
@@ -106,7 +106,7 @@ class SmartCardAPDU:
         return f"{hex(code)}: {desc}"
 
     @classmethod
-    def format_error_message(cls, status_code: int, extra_message: str = None) -> str:
+    def format_error_message(cls, status_code: int, extra_message: Optional[str] = None) -> str:
         """Format error message.
 
         :param status_code: Status code of the operation.
@@ -118,7 +118,7 @@ class SmartCardAPDU:
         message += cls.get_status_description(status_code)
         return message
 
-    def transmit(self, connection: CardConnection, extra_message: str = None) -> bytes:
+    def transmit(self, connection: CardConnection, extra_message: Optional[str] = None) -> bytes:
         """Transmit the command data using `connection`.
 
         :param connection: Connection to use for transmission
@@ -172,7 +172,8 @@ class GetProductionCounter(SmartCardAPDU):
         """Get Current value of the production counter."""
         super().__init__(cla=0x00, ins=0xCA, p1=0x01, p2=0x17)
 
-    def format(self, response: bytes) -> int:
+    @staticmethod
+    def format(response: bytes) -> int:
         """Format the `transmit` response into `int`."""
         return int.from_bytes(response, byteorder="big")
 
@@ -184,7 +185,8 @@ class GetProductionRemainder(SmartCardAPDU):
         """Get Current value of the production counter."""
         super().__init__(cla=0x00, ins=0xCA, p1=0x01, p2=0x18)
 
-    def format(self, response: bytes) -> int:
+    @staticmethod
+    def format(response: bytes) -> int:
         """Format the `transmit` response into `int`."""
         return int.from_bytes(response, byteorder="big")
 
@@ -210,7 +212,8 @@ class GetAppletName(SmartCardAPDU):
         """Get the applet name."""
         super().__init__(cla=0x00, ins=0xCA, p1=0x01, p2=0x00)
 
-    def format(self, response: bytes) -> str:
+    @staticmethod
+    def format(response: bytes) -> str:
         """Format the `transmit` response into `str`."""
         return bytes(response).decode("utf-8")
 
@@ -222,7 +225,8 @@ class GetSerialNumber(SmartCardAPDU):
         """Get Serial Number."""
         super().__init__(cla=0x00, ins=0xCA, p1=0x01, p2=0x14)
 
-    def format(self, response: bytes) -> int:
+    @staticmethod
+    def format(response: bytes) -> int:
         """Format the `transmit` response into `int`."""
         return int.from_bytes(response, byteorder="big")
 
@@ -234,7 +238,8 @@ class GetAppletVersion(SmartCardAPDU):
         """Get Version command."""
         super().__init__(cla=0x00, ins=0xCA, p1=0x01, p2=0x16)
 
-    def format(self, response: bytes) -> str:
+    @staticmethod
+    def format(response: bytes) -> str:
         """Format the `transmit` response into `str`."""
         return ".".join(str(i) for i in response[:3])
 
@@ -249,7 +254,8 @@ class GetFreeMemory(SmartCardAPDU):
         """
         super().__init__(cla=0x00, ins=0xCA, p1=0x02, p2=memory_type)
 
-    def format(self, response: bytes) -> int:
+    @staticmethod
+    def format(response: bytes) -> int:
         """Format the `transmit` response into `int`."""
         return int.from_bytes(response, byteorder="big")
 
@@ -257,7 +263,7 @@ class GetFreeMemory(SmartCardAPDU):
 class Echo(SmartCardAPDU):
     """Send data and receive it back."""
 
-    def __init__(self, data: bytes = None) -> None:
+    def __init__(self, data: Optional[bytes] = None) -> None:
         """Send `data` and receive it back."""
         super().__init__(cla=0x80, ins=0x00, p1=0x00, p2=0x00, data=data)
 

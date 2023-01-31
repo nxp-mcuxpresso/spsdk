@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,16 +14,14 @@ from typing import Any, Dict, List, Optional, Union
 
 from ruamel.yaml.comments import CommentedMap as CM
 
-from spsdk import SPSDKError
-from spsdk import __author__ as spsdk_author
-from spsdk import __release__ as spsdk_release
+from spsdk import SPSDK_DATA_FOLDER, SPSDKError
 from spsdk import __version__ as spsdk_version
 from spsdk.crypto import PublicKey, ec, rsa
 from spsdk.utils.crypto.abstract import BackendClass
 from spsdk.utils.crypto.backend_openssl import openssl_backend
 from spsdk.utils.crypto.rkht import RKHT
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
-from spsdk.utils.misc import change_endianness, load_configuration, value_to_int
+from spsdk.utils.misc import load_configuration, value_to_int
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister
 
@@ -43,10 +41,10 @@ class PfrConfiguration:
 
     def __init__(
         self,
-        config: Union[str, dict, "PfrConfiguration"] = None,
-        device: str = None,
-        revision: str = None,
-        cfg_type: str = None,
+        config: Optional[Union[str, dict, "PfrConfiguration"]] = None,
+        device: Optional[str] = None,
+        revision: Optional[str] = None,
+        cfg_type: Optional[str] = None,
     ) -> None:
         """Open config PFR file.
 
@@ -117,9 +115,9 @@ class PfrConfiguration:
     def set_config_dict(
         self,
         data: Union[CM, dict],
-        device: str = None,
-        revision: str = None,
-        cfg_type: str = None,
+        device: Optional[str] = None,
+        revision: Optional[str] = None,
+        cfg_type: Optional[str] = None,
     ) -> None:
         """Apply configuration dictionary.
 
@@ -181,20 +179,18 @@ class PfrConfiguration:
         description = CM()
         description.insert(1, "device", self.device, comment="The NXP device name.")
         description.insert(2, "revision", self.revision, comment="The NXP device revision.")
-        description.insert(3, "type", self.type.upper(), comment="The PFR type (CMPA, CFPA).")
+        description.insert(
+            3, "type", self.type.upper(), comment="The PFR type (CMPA, CFPA) or IFR type."
+        )
         description.insert(4, "version", spsdk_version, comment="The SPSDK tool version.")
-        description.insert(5, "author", spsdk_author, comment="The author of the configuration.")
-        description.insert(6, "release", spsdk_release, comment="The SPSDK release.")
 
         res_data.insert(
             1,
             "description",
             description,
-            comment=f"The PFR {self.type} configuration description.",
+            comment=f"The {self.type} configuration description.",
         )
-        res_data.insert(
-            2, "settings", data, comment=f"The PFR {self.type} registers configuration."
-        )
+        res_data.insert(2, "settings", data, comment=f"The {self.type} registers configuration.")
         return res_data
 
     def is_invalid(self) -> Optional[str]:
@@ -230,9 +226,9 @@ class BaseConfigArea:
 
     def __init__(
         self,
-        device: str = None,
-        revision: str = None,
-        user_config: PfrConfiguration = None,
+        device: Optional[str] = None,
+        revision: Optional[str] = None,
+        user_config: Optional[PfrConfiguration] = None,
         raw: bool = False,
     ) -> None:
         """Initialize an instance.
@@ -251,20 +247,21 @@ class BaseConfigArea:
         # either 'device' or 'user_config' IS defined! Mypy doesn't understand the check above
         self.device = device or user_config.device  # type: ignore
 
-        if self.device not in self.config.get_devices():
+        if self.device not in self.config.devices.device_names:
             raise SPSDKError(f"Device '{self.device}' is not supported")
         self.revision = revision or (user_config.revision if user_config else "latest")
+        revisions = self.config.devices.get_by_name(self.device).revisions  # type: ignore
         if not self.revision or self.revision == "latest":
-            self.revision = self.config.get_latest_revision(self.device)
-            logger.warning(
+            self.revision = revisions.get_latest().name
+            logger.info(
                 f"The silicon revision is not specified, the latest: '{self.revision}' has been used."
             )
 
-        if self.revision not in self.config.get_revisions(self.device):
+        if self.revision not in revisions.revision_names:
             raise SPSDKError(f"Invalid revision '{self.revision}' for '{self.device}'")
-        self.registers = Registers(self.device, base_endianness="little")
+        self.registers = Registers(self.device, base_endianness="little")  # type: ignore
         self.registers.load_registers_from_xml(
-            xml=self.config.get_data_file(self.device, self.revision),
+            xml=self.config.get_data_file(self.device, self.revision),  # type: ignore
             filter_reg=self.config.get_ignored_registers(self.device),
             grouped_regs=self.config.get_grouped_registers(self.device),
         )
@@ -313,6 +310,18 @@ class BaseConfigArea:
         ret |= (ret ^ 0xFFFF) << 16
         return ret
 
+    @staticmethod
+    def pfr_reg_inverse_lower_8_bits(val: int) -> int:
+        """Function that inverse lower 8-bits of register value to 8-16 bits.
+
+        :param val: Input current reg value.
+        :return: Returns the complete register value with updated 8-16 bit field.
+        """
+        ret = val & 0xFFFF_00FF
+        inverse = (val & 0xFF) ^ 0xFF
+        ret |= inverse << 8
+        return ret
+
     @classmethod
     def _load_config(cls) -> RegConfig:
         """Loads the PFR block configuration file.
@@ -328,7 +337,7 @@ class BaseConfigArea:
         :return: List of supported devices.
         """
         config = cls._load_config()
-        return config.get_devices()
+        return config.devices.device_names
 
     def _get_registers(self) -> List[RegsRegister]:
         """Get a list of all registers.
@@ -357,7 +366,9 @@ class BaseConfigArea:
                 f"Invalid device in configuration. {self.device} != {config.device}"
             )
         if not config.revision or config.revision in ("latest", ""):
-            config.revision = self.config.get_latest_revision(self.device)
+            config.revision = (
+                self.config.devices.get_by_name(self.device).revisions.get_latest().name
+            )
             logger.warning(
                 f"The configuration file doesn't contains silicon revision,"
                 f" the latest: '{config.revision}' has been used."
@@ -471,7 +482,7 @@ class BaseConfigArea:
             raise SPSDKError("Can't find 'seal_count' in database.yaml")
         return value_to_int(count)
 
-    def export(self, add_seal: bool = False, keys: List[PublicKey] = None) -> bytes:
+    def export(self, add_seal: bool = False, keys: Optional[List[PublicKey]] = None) -> bytes:
         """Generate binary output.
 
         :param add_seal: The export is finished in the PFR record by seal.
@@ -526,6 +537,14 @@ class CFPA(BaseConfigArea):
 
     CONFIG_DIR = os.path.join(BaseConfigArea.CONFIG_DIR, "cfpa")
     DESCRIPTION = "Customer In-field Programmable Area"
+
+
+class ROMCFG(BaseConfigArea):
+    """Information flash region - ROMCFG."""
+
+    CONFIG_DIR = os.path.join(os.path.join(SPSDK_DATA_FOLDER, "ifr"))
+    BINARY_SIZE = 304
+    IMAGE_PREFILL_PATTERN = 0xFF
 
 
 def calc_pub_key_hash(

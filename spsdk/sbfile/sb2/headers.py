@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -98,7 +98,7 @@ class ImageHeaderV2(BaseClass):
         nfo += f" Build Number:         {self.build_number}\n"
         return nfo
 
-    def export(self, padding: bytes = None) -> bytes:
+    def export(self, padding: Optional[bytes] = None) -> bytes:
         """Serialize object into bytes.
 
         :param padding: header padding 8 bytes (for testing purposes); None to use random value
@@ -168,10 +168,10 @@ class ImageHeaderV2(BaseClass):
         :param data: binary representation
         :param offset: to start parsing data
         :return: parsed instance of the header
-        :raise Exception: raised when size/signature is incorrect
+        :raise SPSDKError: Unable to parse data
         """
         if cls.SIZE > len(data) - offset:
-            raise Exception()
+            raise SPSDKError("Insufficient amount of data")
         (
             nonce,
             # padding0
@@ -212,11 +212,11 @@ class ImageHeaderV2(BaseClass):
 
         # check header signature 1
         if signature1 != cls.SIGNATURE1:
-            raise Exception()
+            raise SPSDKError("SIGNATURE #1 doesn't match")
 
         # check header signature 2
         if signature2 != cls.SIGNATURE2:
-            raise Exception()
+            raise SPSDKError("SIGNATURE #2 doesn't match")
 
         obj = cls(
             version=f"{major_version}.{minor_version}",

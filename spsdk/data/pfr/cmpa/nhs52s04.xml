@@ -887,21 +887,20 @@
       <bit_field_value name="BMAPCTX3_BEN31_ENABLE" value="0b1" description="Enable encryption/decryption"/>
     </bit_field>
   </register>
-  <register offset="0x50" width="32" name="XTAL_32KHZ_CAPABANK_TRIM" description="Xtal 32kHz capabank triming.">
-    <alias type="CMSIS" value="XTAL_32KHZ_CAPABANK_TRIM"/>
-    <bit_field offset="0" width="1" name="TRIM_VALID" access="RW" reset_value="0" description="0 : Capa Bank trimmings not valid.">
-      <alias type="CMSIS" value="FLASH_CMPA_XTAL_32KHZ_CAPABANK_TRIM_TRIM_VALID(x)"/>
+  <register offset="0x50" width="32" name="BLE_UNIQUE_ADDRESS0" description="BLE_UNIQUE_ADDRESS part 1">
+    <alias type="CMSIS" value="BLE_UNIQUE_ADDRESS.BLE_UNIQUE_ADDRESS0"/>
+    <bit_field offset="0" width="32" name="BLE_UNIQUE_ADDRESS_31_0" access="RW" reset_value="0" description="Bits 31 downto 0 of the BLE Unique Address to be used when BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5">
+      <alias type="CMSIS" value="FLASH_CMPA_BLE_UNIQUE_ADDRESS0_BLE_UNIQUE_ADDRESS_31_0(x)"/>
     </bit_field>
-    <bit_field offset="1" width="10" name="XTAL_LOAD_CAP_IEC_PF_X100" access="RW" reset_value="0" description="Load capacitance, pF x 100.">
-      <alias type="CMSIS" value="FLASH_CMPA_XTAL_32KHZ_CAPABANK_TRIM_XTAL_LOAD_CAP_IEC_PF_X100(x)"/>
+  </register>
+  <register offset="0x54" width="32" name="BLE_UNIQUE_ADDRESS1" description="BLE_UNIQUE_ADDRESS part 2">
+    <alias type="CMSIS" value="BLE_UNIQUE_ADDRESS.BLE_UNIQUE_ADDRESS1"/>
+    <bit_field offset="0" width="16" name="BLE_UNIQUE_ADDRESS_47_32" access="RW" reset_value="0" description="Bits 47 downto 32 of the BLE Unique Address to be used when BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5">
+      <alias type="CMSIS" value="FLASH_CMPA_BLE_UNIQUE_ADDRESS1_BLE_UNIQUE_ADDRESS_47_32(x)"/>
     </bit_field>
-    <bit_field offset="11" width="10" name="PCB_XIN_PARA_CAP_PF_X100" access="RW" reset_value="0" description="PCB XIN parasitic capacitance, pF x 100.">
-      <alias type="CMSIS" value="FLASH_CMPA_XTAL_32KHZ_CAPABANK_TRIM_PCB_XIN_PARA_CAP_PF_X100(x)"/>
+    <bit_field offset="16" width="16" name="BLE_UNIQUE_ADDRESS_VALID" access="RW" reset_value="0" description="Use 48-bit value from BLE_UNIQUE_ADDRESS field as BLE address when this field is equal to 0xC3A5. If this field is different from 0xC3A5, check BLE_DEFAULT_ADDRESS_VALID field in NMPA to know which address to use.">
+      <alias type="CMSIS" value="FLASH_CMPA_BLE_UNIQUE_ADDRESS1_BLE_UNIQUE_ADDRESS_VALID(x)"/>
     </bit_field>
-    <bit_field offset="21" width="10" name="PCB_XOUT_PARA_CAP_PF_X100" access="RW" reset_value="0" description="PCB XOUT parasitic capacitance, pF x 100.">
-      <alias type="CMSIS" value="FLASH_CMPA_XTAL_32KHZ_CAPABANK_TRIM_PCB_XOUT_PARA_CAP_PF_X100(x)"/>
-    </bit_field>
-    <reserved_bit_field offset="31" width="1" reset_value="0"/>
   </register>
   <register offset="0x58" width="32" name="FLASH_REMAP_SIZE" description="This 32-bit register contains the size of the image to remap, in bytes.">
     <alias type="CMSIS" value="FLASH_REMAP_SIZE"/>

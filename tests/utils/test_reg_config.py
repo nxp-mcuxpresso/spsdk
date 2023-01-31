@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for registers utility."""
@@ -9,14 +9,14 @@ import os
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk import SPSDKError, SPSDKValueError
 from spsdk.utils.reg_config import RegConfig
 
 
 def test_reg_config_get_devices(data_dir):
     """Test Register Config - get_devices function."""
     reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-    devices = reg_config.get_devices()
+    devices = reg_config.devices.device_names
 
     assert "test_device1" in devices
     assert "test_device2" in devices
@@ -24,32 +24,32 @@ def test_reg_config_get_devices(data_dir):
 
 def test_reg_config_get_devices_class(data_dir):
     """Test Register Config - get_devices class function."""
-    devices = RegConfig.devices(os.path.join(data_dir, "reg_config.json"))
+    devices = RegConfig.get_devices(os.path.join(data_dir, "reg_config.json")).device_names
 
     assert "test_device1" in devices
     assert "test_device2" in devices
 
 
-def test_reg_config_get_latest_revision(data_dir):
-    """Test Register Config - get_latest_revision function."""
+def test_reg_config_get_latest(data_dir):
+    """Test Register Config - get_latest function."""
     reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
 
-    rev = reg_config.get_latest_revision("test_device1")
+    rev = reg_config.devices.get_by_name("test_device1").revisions.get_latest().name
     assert rev == "x1"
 
-    rev = reg_config.get_latest_revision("test_device2")
+    rev = reg_config.devices.get_by_name("test_device2").revisions.get_latest().name
     assert rev == "b0"
 
 
-def test_reg_config_get_revisions(data_dir):
-    """Test Register Config - get_revisions function."""
+def test_reg_config_revisions(data_dir):
+    """Test Register Config - revisions property."""
     reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
 
-    revs = reg_config.get_revisions("test_device1")
+    revs = reg_config.devices.get_by_name("test_device1").revisions.revision_names
     assert "x0" in revs
     assert "x1" in revs
 
-    revs = reg_config.get_revisions("test_device2")
+    revs = reg_config.devices.get_by_name("test_device2").revisions.revision_names
     assert "b0" in revs
 
 
@@ -227,3 +227,10 @@ def test_reg_invalid(data_dir):
         reg_config.get_seal_start_address("test_device1")
     with pytest.raises(SPSDKError, match="Invalid seal count"):
         reg_config.get_seal_count("test_device1")
+
+
+def test_reg_config_missing_data_file(data_dir):
+    """Test Register Config - get_devices function."""
+    reg_config = RegConfig(os.path.join(data_dir, "reg_config_missing_datafile.json"))
+    with pytest.raises(SPSDKValueError):
+        reg_config.get_data_file("test_device1", "x0")

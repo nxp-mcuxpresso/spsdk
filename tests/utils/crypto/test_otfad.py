@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -95,7 +95,7 @@ def test_otfad(data_dir):
 
 
 def test_oftad_invalid(data_dir):
-    """Test OTFAD - image address range does not match to key blob"""
+    """Test OTFAD - image address range does not match to key blob, won't be encrypted"""
     otfad = Otfad()
     key = bytes.fromhex("B1A0C56AF31E98CD6936A79D9E6F829D")
     counter = bytes.fromhex("5689fab8b4bfb264")
@@ -103,9 +103,10 @@ def test_oftad_invalid(data_dir):
     otfad.add_key_blob(key_blob)
     assert otfad[0] == key_blob
     with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
-        image = f.read()
-    with pytest.raises(SPSDKError):
-        otfad.encrypt_image(align_block(image, 512), 0x0800FFF, True)
+        image = align_block(f.read(), 512)
+
+    encrypted = otfad.encrypt_image(image, 0x0800FFF, True)
+    assert image == encrypted
 
 
 def test_keyblob_invalid():

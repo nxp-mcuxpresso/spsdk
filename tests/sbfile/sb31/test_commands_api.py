@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
@@ -239,7 +239,29 @@ def test_parse_invalid_cmd_loadhashlocking_cmd_tag():
 def test_cmd_loadkeyblob():
     """Test offset, length, key_wrap, data info value, size after export and parsing of CmdLoadKeyBlob command."""
     cmd = CmdLoadKeyBlob(
-        offset=100, key_wrap_id=CmdLoadKeyBlob.KeyWraps.NXP_CUST_KEK_EXT_SK, data=10 * b"x"
+        offset=100,
+        key_wrap_id=CmdLoadKeyBlob.get_key_id(
+            "LPC55S3x", CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK
+        ),
+        data=10 * b"x",
+    )
+    assert cmd.address == 100
+    assert cmd.length == 10
+    assert cmd.key_wrap_id == 17
+    assert cmd.info()
+
+    data = cmd.export()
+    assert len(data) % 16 == 0
+
+    cmd_parsed = CmdLoadKeyBlob.parse(data=data)
+    assert cmd == cmd_parsed
+    assert cmd.data == cmd_parsed.data == 10 * b"x"
+
+
+def test_cmd_loadkeyblob():
+    """Test offset, length, key_wrap, data info value, size after export and parsing of CmdLoadKeyBlob command."""
+    cmd = CmdLoadKeyBlob(
+        offset=100, key_wrap_id=CmdLoadKeyBlob._KeyWraps.NXP_CUST_KEK_EXT_SK.value, data=10 * b"x"
     )
     assert cmd.address == 100
     assert cmd.length == 10
@@ -257,7 +279,7 @@ def test_cmd_loadkeyblob():
 def test_parse_invalid_cmd_loadkeyblob_cmd_tag():
     """CmdLoadKeyBlob tag validity test."""
     cmd = CmdLoadKeyBlob(
-        offset=100, key_wrap_id=CmdLoadKeyBlob.KeyWraps.NXP_CUST_KEK_EXT_SK, data=bytes(10)
+        offset=100, key_wrap_id=CmdLoadKeyBlob._KeyWraps.NXP_CUST_KEK_EXT_SK.value, data=bytes(10)
     )
     cmd.cmd_tag = EnumCmdTag.CALL
     data = cmd.export()

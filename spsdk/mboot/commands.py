@@ -2,14 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Commands and responses used by MBOOT module."""
 
 from struct import pack, unpack, unpack_from
-from typing import Dict, List, Type
+from typing import Dict, List, Optional, Type
 
 from spsdk.utils.easy_enum import Enum
 
@@ -225,7 +225,7 @@ class CmdPacket:
     SIZE = 32
     EMPTY_VALUE = 0x00
 
-    def __init__(self, tag: int, flags: int, *args: int, data: bytes = None) -> None:
+    def __init__(self, tag: int, flags: int, *args: int, data: Optional[bytes] = None) -> None:
         """Initialize the Command Packet object.
 
         :param tag: Tag identifying the command

@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Script for creation of image with all SPSDK apps"""
 import os
 from typing import List, Tuple
-from spsdk.apps.spsdk_apps import main as spsdk_main
 
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
+
+from spsdk.apps.spsdk_apps import main as spsdk_main
 
 IMG_PATH = os.path.join(os.path.abspath("."), "_static/images/")
 IMG_APPS_PATH = os.path.join(IMG_PATH, "spsdk-architecture-apps.png")

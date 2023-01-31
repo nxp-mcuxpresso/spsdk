@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to handle registers descriptions with support for XML files."""
@@ -9,10 +9,8 @@
 import logging
 import re
 import xml.etree.ElementTree as ET
-from dataclasses import replace
-from typing import Any, Callable, Dict, List, Mapping, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union
 from xml.dom import minidom
-from xmlrpc.client import Boolean
 
 from jinja2 import Environment, FileSystemLoader
 from ruamel.yaml.comments import CommentedMap as CM
@@ -64,7 +62,7 @@ class RegsEnum:
         :return: The instance of this class.
         :raises SPSDKRegsError: Error during enum XML parsing.
         """
-        name = xml_element.attrib["name"] if "name" in xml_element.attrib else "N/A"
+        name = xml_element.attrib.get("name", "N/A")
         if "value" not in xml_element.attrib:
             raise SPSDKRegsError(f"Missing Enum Value Key for {name}.")
 
@@ -74,9 +72,9 @@ class RegsEnum:
         except (TypeError, ValueError, SPSDKError) as exc:
             raise SPSDKRegsError(f"Invalid Enum Value: {raw_val}") from exc
 
-        descr = xml_element.attrib["description"] if "description" in xml_element.attrib else "N/A"
+        description = xml_element.attrib.get("description", "N/A")
 
-        return cls(name, value, descr, maxwidth)
+        return cls(name, value, description, maxwidth)
 
     def get_value_int(self) -> int:
         """Method returns Integer value of enum.
@@ -115,6 +113,120 @@ class RegsEnum:
         return output
 
 
+class ConfigProcessor:
+    """Base class for processing configuration data."""
+
+    NAME = "NOP"
+
+    def __init__(self, description: str = "") -> None:
+        """Initialize the processor."""
+        self.description = description
+
+    def pre_process(self, value: int) -> int:
+        """Pre-process value coming from config file."""
+        return value
+
+    def post_process(self, value: int) -> int:
+        """Post-process value going to config file."""
+        return value
+
+    def width_update(self, value: int) -> int:
+        """Update bit-width of value going to config file."""
+        return value
+
+    @classmethod
+    def get_method_name(cls, config_string: str) -> str:
+        """Return config processor method name."""
+        return config_string.split(":")[0]
+
+    @classmethod
+    def get_params(cls, config_string: str) -> Dict[str, int]:
+        """Return config processor method parameters."""
+
+        def split_params(param: str) -> Tuple[str, str]:
+            """Split key=value pair into a tuple."""
+            parts = param.split("=")
+            if len(parts) != 2:
+                raise SPSDKRegsError(
+                    f"Invalid param setting: '{param}'. Expected format '<name>=<value>'"
+                )
+            return (parts[0], parts[1])
+
+        parts = config_string.split(";", maxsplit=1)[0].split(":")
+        if len(parts) == 1:
+            return dict()
+        params = parts[1].split(",")
+        params_dict: Dict[str, str] = dict(split_params(p) for p in params)
+        return {key.lower(): value_to_int(value) for key, value in params_dict.items()}
+
+    @classmethod
+    def get_description(cls, config_string: str) -> str:
+        """Return extra description for config processor."""
+        parts = config_string.partition(";")
+        return parts[2].replace("DESC=", "")
+
+    @classmethod
+    def from_str(cls, config_string: str) -> "ConfigProcessor":
+        """Create config processor instance from configuration string."""
+        return cls(config_string)
+
+    @classmethod
+    def from_xml(cls, element: ET.Element) -> Optional["ConfigProcessor"]:
+        """Create config processor from XML data entry."""
+        processor_node = element.find("alias[@type='CONFIG_PREPROCESS']")
+        if processor_node is None:
+            return None
+        if "value" not in processor_node.attrib:
+            raise SPSDKRegsError("CONFIG_PREPROCESS alias node doesn't have a value")
+        config_string = processor_node.attrib["value"]
+        method_name = cls.get_method_name(config_string=config_string)
+        for klass in cls.__subclasses__():
+            if klass.NAME == method_name:
+                return klass.from_str(config_string=config_string)
+        return None
+
+
+class ShiftRightConfigProcessor(ConfigProcessor):
+    """Config processor performing the right-shift operation."""
+
+    NAME = "SHIFT_RIGHT"
+
+    def __init__(self, count: int, description: str = "") -> None:
+        """Initialize the right-shift config processor.
+
+        :param count: Count of bit for shift operation
+        :param description: Extra description for config processor, defaults to ""
+        """
+        super().__init__(
+            description=description or f"Actual binary value is shifted by {count} bits to right."
+        )
+        self.count = count
+
+    def pre_process(self, value: int) -> int:
+        """Pre-process value coming from config file."""
+        return value >> self.count
+
+    def post_process(self, value: int) -> int:
+        """Post-process value going to config file."""
+        return value << self.count
+
+    def width_update(self, value: int) -> int:
+        """Update bit-width of value going to config file."""
+        return value + self.count
+
+    @classmethod
+    def from_str(cls, config_string: str) -> "ShiftRightConfigProcessor":
+        """Create config processor instance from configuration string."""
+        name = cls.get_method_name(config_string=config_string)
+        if name != cls.NAME:
+            raise SPSDKRegsError(f"Invalid method name '{name}' expected {cls.NAME}")
+        params = cls.get_params(config_string=config_string)
+        if "count" not in params:
+            raise SPSDKRegsError(f"{cls.NAME} requires the COUNT parameter")
+        description = cls.get_description(config_string=config_string)
+        return cls(count=value_to_int(params["count"]), description=description)
+
+
 class RegsBitField:
     """Storage for register bitfields."""
 
@@ -124,10 +236,11 @@ class RegsBitField:
         name: str,
         offset: int,
         width: int,
-        description: str = None,
+        description: Optional[str] = None,
         reset_val: Any = "0",
         access: str = "RW",
         hidden: bool = False,
+        config_processor: Optional[ConfigProcessor] = None,
     ) -> None:
         """Constructor of RegsBitField class. Used to store bitfield information.
 
@@ -149,6 +262,8 @@ class RegsBitField:
         self.access = access
         self.hidden = hidden
         self._enums: List[RegsEnum] = []
+        self.config_processor = config_processor or ConfigProcessor()
+        self.config_width = self.config_processor.width_update(width)
         self._update_reset_value()
         self.set_value(self.reset_value, raw=True)
 
@@ -160,23 +275,22 @@ class RegsBitField:
         :param parent: Reference to parent RegsRegister object.
         :return: The instance of this class.
         """
-        name = xml_element.attrib["name"] if "name" in xml_element.attrib else "N/A"
-        offset = value_to_int(xml_element.attrib["offset"]) if "offset" in xml_element.attrib else 0
-        width = value_to_int(xml_element.attrib["width"]) if "width" in xml_element.attrib else 0
-        descr = xml_element.attrib["description"] if "description" in xml_element.attrib else "N/A"
-        access = xml_element.attrib["access"] if "access" in xml_element.attrib else "R/W"
-        reset_value = (
-            value_to_int(xml_element.attrib["reset_value"])
-            if "reset_value" in xml_element.attrib
-            else 0
-        )
+        name = xml_element.attrib.get("name", "N/A")
+        offset = value_to_int(xml_element.attrib.get("offset", 0))
+        width = value_to_int(xml_element.attrib.get("width", 0))
+        description = xml_element.attrib.get("description", "N/A")
+        access = xml_element.attrib.get("access", "R/W")
+        reset_value = value_to_int(xml_element.attrib.get("reset_value", 0))
         hidden = xml_element.tag != "bit_field"
-        bitfield = cls(parent, name, offset, width, descr, reset_value, access, hidden)
+        config_processor = ConfigProcessor.from_xml(xml_element)
 
-        if xml_element.text:
-            xml_enums = xml_element.findall("bit_field_value")
-            for xml_enum in xml_enums:
-                bitfield.add_enum(RegsEnum.from_xml_element(xml_enum, width))
+        bitfield = cls(
+            parent, name, offset, width, description, reset_value, access, hidden, config_processor
+        )
+
+        for xml_enum in xml_element.findall("bit_field_value"):
+            bitfield.add_enum(RegsEnum.from_xml_element(xml_enum, width))
+
         return bitfield
 
     def has_enums(self) -> bool:
@@ -209,6 +323,7 @@ class RegsBitField:
         value = reg_val >> self.offset
         mask = (1 << self.width) - 1
         value = value & mask
+        value = self.config_processor.post_process(value)
         return value
 
     def get_reset_value(self) -> int:
@@ -226,6 +341,7 @@ class RegsBitField:
         :raises SPSDKError: The input value is out of range.
         """
         new_val_int = value_to_int(new_val)
+        new_val_int = self.config_processor.pre_process(new_val_int)
         if new_val_int > 1 << self.width:
             raise SPSDKError("The input value is out of bitfield range")
         reg_val = self.parent.get_value()
@@ -267,11 +383,20 @@ class RegsBitField:
         :return: Current value of bitfield.
         """
         value = self.get_value()
-        if len(self._enums) > 0:
-            for enum in self._enums:
-                if enum.get_value_int() == value:
-                    return enum.name
-        return value
+        for enum in self._enums:
+            if enum.get_value_int() == value:
+                return enum.name
+        # return value
+        return self.get_hex_value()
+
+    def get_hex_value(self) -> str:
+        """Get the value of register in string hex format.
+
+        :return: Hexadecimal value of register.
+        """
+        fmt = f"0{self.config_width // 4}X"
+        val = f"0x{format(self.get_value(), fmt)}"
+        return val
 
     def get_enum_constant(self, enum_name: str) -> int:
         """Returns constant representation of enum by its name.
@@ -355,11 +480,11 @@ class RegsRegister:
         name: str,
         offset: int,
         width: int,
-        description: str = None,
+        description: Optional[str] = None,
         reverse: bool = False,
-        access: str = None,
+        access: Optional[str] = None,
         config_as_hexstring: bool = False,
-        otp_index: int = None,
+        otp_index: Optional[int] = None,
         reverse_subregs_order: bool = False,
         base_endianness: str = "big",
     ) -> None:
@@ -403,19 +528,13 @@ class RegsRegister:
         :param xml_element: Input XML subelement with register data.
         :return: The instance of this class.
         """
-        name = xml_element.attrib["name"] if "name" in xml_element.attrib else "N/A"
-        offset = value_to_int(xml_element.attrib["offset"]) if "offset" in xml_element.attrib else 0
-        width = value_to_int(xml_element.attrib["width"]) if "width" in xml_element.attrib else 0
-        descr = xml_element.attrib["description"] if "description" in xml_element.attrib else "N/A"
-        reverse_subregs_order = (
-            xml_element.attrib["reverse_subregs_order"]
-            if "reverse_subregs_order" in xml_element.attrib
-            else "False"
-        ) == "True"
-        reverse = (
-            xml_element.attrib["reversed"] if "reversed" in xml_element.attrib else "False"
-        ) == "True"
-        access = xml_element.attrib["access"] if "access" in xml_element.attrib else "N/A"
+        name = xml_element.attrib.get("name", "N/A")
+        offset = value_to_int(xml_element.attrib.get("offset", 0))
+        width = value_to_int(xml_element.attrib.get("width", 0))
+        description = xml_element.attrib.get("description", "N/A")
+        reverse_subregs_order = (xml_element.attrib.get("reverse_subregs_order", "False")) == "True"
+        reverse = (xml_element.attrib.get("reversed", "False")) == "True"
+        access = xml_element.attrib.get("access", "N/A")
         otp_index_raw = xml_element.attrib.get("otp_index")
         otp_index = None
         if otp_index_raw:
@@ -424,12 +543,15 @@ class RegsRegister:
             name,
             offset,
             width,
-            descr,
+            description,
             reverse,
             access,
             otp_index=otp_index,
             reverse_subregs_order=reverse_subregs_order,
         )
+        value = xml_element.attrib.get("value")
+        if value:
+            reg.set_value(value)
 
         if xml_element.text:
             xml_bitfields = xml_element.findall("bit_field")
@@ -516,7 +638,7 @@ class RegsRegister:
         for bitfield in self._bitfields:
             bitfield.add_et_subelement(element)
 
-    def get_html_data_element(self, exclude: List[str] = None) -> HTMLDataElement:
+    def get_html_data_element(self, exclude: Optional[List[str]] = None) -> HTMLDataElement:
         """Returns HTML element of register.
 
         :return: HTML element.
@@ -543,7 +665,9 @@ class RegsRegister:
         try:
             value = value_to_int(val)
             if value >= 1 << self.width:
-                raise SPSDKError("Input value doesn't into register.")
+                raise SPSDKError(
+                    f"Input value {value} doesn't fit into register of width {self.width}."
+                )
             if not raw and len(self._set_value_hooks) > 0:
                 for hook in self._set_value_hooks:
                     value = hook[0](value, hook[1])
@@ -632,7 +756,7 @@ class RegsRegister:
 
         :return: Hexadecimal value of register.
         """
-        fmt = f"0{self.width // 4}x"
+        fmt = f"0{self.width // 4}X"
         val = f"{'' if self.config_as_hexstring else '0x'}{format(self.get_value(), fmt)}"
         return val
 
@@ -650,7 +774,7 @@ class RegsRegister:
         """
         self._bitfields.append(bitfield)
 
-    def get_bitfields(self, exclude: List[str] = None) -> List[RegsBitField]:
+    def get_bitfields(self, exclude: Optional[List[str]] = None) -> List[RegsBitField]:
         """Returns register bitfields.
 
         Method allows exclude some bitfields by their names.
@@ -666,7 +790,7 @@ class RegsRegister:
             ret.append(bitf)
         return ret
 
-    def get_bitfield_names(self, exclude: List[str] = None) -> List[str]:
+    def get_bitfield_names(self, exclude: Optional[List[str]] = None) -> List[str]:
         """Returns list of the bitfield names.
 
         :param exclude: Exclude list of bitfield names if needed.
@@ -687,7 +811,7 @@ class RegsRegister:
 
         raise SPSDKRegsErrorBitfieldNotFound(f" The {name} is not found in register {self.name}.")
 
-    def add_setvalue_hook(self, hook: Callable, context: Any = None) -> None:
+    def add_setvalue_hook(self, hook: Callable, context: Optional[Any] = None) -> None:
         """Set the value hook for write operation.
 
         :param hook: Callable hook for set value operation.
@@ -785,7 +909,7 @@ class Registers:
                 self._registers.remove(reg)
 
     def get_registers(
-        self, exclude: List[str] = None, include_group_regs: bool = False
+        self, exclude: Optional[List[str]] = None, include_group_regs: bool = False
     ) -> List[RegsRegister]:
         """Returns list of the registers.
 
@@ -808,7 +932,7 @@ class Registers:
         return regs
 
     def get_reg_names(
-        self, exclude: List[str] = None, include_group_regs: bool = False
+        self, exclude: Optional[List[str]] = None, include_group_regs: bool = False
     ) -> List[str]:
         """Returns list of the register names.
 
@@ -818,7 +942,7 @@ class Registers:
         """
         return [x.name for x in self.get_registers(exclude, include_group_regs)]
 
-    def run_hooks(self, exclude: List[str] = None) -> None:
+    def run_hooks(self, exclude: Optional[List[str]] = None) -> None:
         """The method run hooks on all regular registers.
 
         :param exclude: The list of register names to be excluded.
@@ -826,7 +950,7 @@ class Registers:
         for reg in self.get_registers(exclude):
             reg.set_value(reg.get_value(), False)
 
-    def reset_values(self, exclude: List[str] = None) -> None:
+    def reset_values(self, exclude: Optional[List[str]] = None) -> None:
         """The method reset values in registers.
 
         :param exclude: The list of register names to be excluded.
@@ -937,8 +1061,8 @@ class Registers:
         self,
         heading1: str,
         heading2: str,
-        regs_exclude: List[str] = None,
-        fields_exclude: List[str] = None,
+        regs_exclude: Optional[List[str]] = None,
+        fields_exclude: Optional[List[str]] = None,
     ) -> str:
         """Generate describing HTML file with registers.
 
@@ -968,7 +1092,10 @@ class Registers:
 
     # pylint: disable=dangerous-default-value
     def load_registers_from_xml(
-        self, xml: str, filter_reg: List[str] = None, grouped_regs: List[dict] = None
+        self,
+        xml: str,
+        filter_reg: Optional[List[str]] = None,
+        grouped_regs: Optional[List[dict]] = None,
     ) -> None:
         """Function loads the registers from the given XML.
 
@@ -982,6 +1109,7 @@ class Registers:
             """Help function to recognize if the register should be part of group."""
             if grouped_regs:
                 for group in grouped_regs:
+                    # pylint: disable=anomalous-backslash-in-string  # \d is a part of the regex pattern
                     if re.fullmatch(f"{group['name']}\d+", reg) is not None:
                         return group
             return None
@@ -1020,8 +1148,8 @@ class Registers:
     def load_yml_config(
         self,
         yml_data: Any,
-        exclude_regs: List[str] = None,
-        exclude_fields: Dict[str, Dict[str, str]] = None,
+        exclude_regs: Optional[List[str]] = None,
+        exclude_fields: Optional[Dict[str, Dict[str, str]]] = None,
     ) -> None:
         """The function loads the configuration from YML file.
 
@@ -1070,11 +1198,13 @@ class Registers:
         def new_line(comment: str) -> str:
             return f"\n{' '*indent}# {comment}"
 
-        description = f"Width: {bitfield.width}b[0-{(1<<bitfield.width)-1}]"
+        description = f"Width: {bitfield.config_width}b"
         if bitfield.description not in ("", "."):
             description += ", Description: " + bitfield.description.replace(
                 "&#10;", f"\n{' '*indent}# "
             )
+        if bitfield.config_processor.description:
+            description += ". NOTE: " + bitfield.config_processor.description
         if bitfield.has_enums():
             for enum in bitfield.get_enums():
                 descr = enum.description if enum.description != "." else enum.name
@@ -1085,7 +1215,7 @@ class Registers:
         return description
 
     def create_yml_config_white_list(
-        self, white_list: Dict[str, Any] = None, diff: bool = False, indent: int = 0
+        self, white_list: Optional[Dict[str, Any]] = None, diff: bool = False, indent: int = 0
     ) -> Any:
         """The function creates the configuration YML file.
 
@@ -1145,9 +1275,9 @@ class Registers:
     # pylint: disable=(useless-param-doc, useless-type-doc)
     def create_yml_config(
         self,
-        exclude_regs: List[str] = None,
-        exclude_fields: Dict[str, Dict[str, str]] = None,
-        ignored_fields: List[str] = None,
+        exclude_regs: Optional[List[str]] = None,
+        exclude_fields: Optional[Dict[str, Dict[str, str]]] = None,
+        ignored_fields: Optional[List[str]] = None,
         diff: bool = False,
         indent: int = 0,
     ) -> Any:

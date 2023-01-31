@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Utilities used in SmartCard."""
 
 import logging
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Optional, Tuple
 
 from spsdk import SPSDKError
+from spsdk.apps.utils import format_raw_data
+from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import get_hash
 
 try:
     from smartcard.CardConnectionDecorator import CardConnection
@@ -19,13 +22,11 @@ try:
     from smartcard.CardType import ATRCardType
     from smartcard.System import readers
     from smartcard.util import toBytes
-except ImportError:
+except ImportError as import_error:
     raise SPSDKError(
         "pyscard package is missing, please install it with pip install 'spsdk[tp]' in order to use TP"
-    )
+    ) from import_error
 
-from spsdk.apps.utils import format_raw_data
-from spsdk.utils.easy_enum import Enum
 
 from . import scard_commands
 
@@ -102,13 +103,18 @@ class AppletInfo(NamedTuple):
     card_connection: CardConnection
 
 
-def get_readers() -> List[str]:
-    """Return list of all readers in the system."""
-    return [str(reader) for reader in readers()]
+def get_readers() -> List[Tuple[str, str]]:
+    """Return list of all readers in the system.
+
+    Each reader is represented by a tuple:
+        1. item: card reader name
+        2. item: hash of the card reader's name
+    """
+    return [(str(reader), get_hash(str(reader))) for reader in readers()]
 
 
 def get_applet_infos(
-    atr: str, applet: str, filter_id: int = None, filter_reader: str = None
+    atr: str, applet: str, filter_id: Optional[int] = None, filter_reader: Optional[str] = None
 ) -> List[AppletInfo]:
     """Collets information about attached card readers.
 
@@ -119,14 +125,14 @@ def get_applet_infos(
     :return: List of card/applets fulfilling the search criteria.
     """
     ret = []
-    card_readers = readers()
-    for reader in card_readers:
-        if filter_reader and filter_reader != str(reader):
+    card_readers = get_readers()
+    for reader_tuple in card_readers:
+        if filter_reader and filter_reader not in reader_tuple:
             continue
-        logger.info(f"Checking reader '{reader}'")
+        logger.info(f"Checking reader {reader_tuple}")
         try:
             request = CardRequest(
-                readers=[str(reader)],
+                readers=[reader_tuple[0]],
                 cardType=ATRCardType(toBytes(atr)),
                 timeout=0.1,
             )
@@ -152,7 +158,7 @@ def get_applet_infos(
             version = version_cmd.format(version_cmd.transmit(scard.connection))
             ret.append(
                 AppletInfo(
-                    reader_name=str(reader),
+                    reader_name=reader_tuple[0],
                     version=version,
                     serial_number=serial_number,
                     card_connection=scard.connection,

@@ -2,79 +2,91 @@
     "devices": {
         "test_device1": {
             "revisions": {
-                "x0": "test_device1_x0.xml",
-                "x1": "test_device1_x1.xml"
+                "x0": {
+                    "data_file": "test_device1_x0.xml"
+                },
+                "x1": {
+                    "data_file": "test_device1_x1.xml"
+                }
             },
             "latest": "x1",
-            "address": "0xA5A5_1234",
-            "inverted_regs": {
-                "INVERTED_REG": "INVERTED_REG_AP"
-            },
-            "computed_registers": {
-                "COMPUTED_REG": ""
-            },
-            "computed_fields": {
-                "COMPUTED_REG": {
-                    "TEST_FIELD1": "computed_reg_test_field1",
-                    "TEST_FIELD2": "computed_reg_test_field2"
+            "attributes": {
+                "address": "0xA5A5_1234",
+                "inverted_regs": {
+                    "INVERTED_REG": "INVERTED_REG_AP"
                 },
-                "COMPUTED_REG2": {
-                    "TEST_FIELD1": "computed_reg2_test_field1",
-                    "TEST_FIELD2": "computed_reg2_test_field2"
-                }
-            },
-            "ignored_registers": [
-                "IGNORED_REG"
-            ],
-            "ignored_fields": [
-                "FIELD"
-            ],
-            "grouped_registers": [
-                {
-                    "name": "DeviceTest"
-                }
-            ],
-            "seal_start": "COMPUTED_REG",
-            "seal_count": 4
+                "computed_registers": {
+                    "COMPUTED_REG": ""
+                },
+                "computed_fields": {
+                    "COMPUTED_REG": {
+                        "TEST_FIELD1": "computed_reg_test_field1",
+                        "TEST_FIELD2": "computed_reg_test_field2"
+                    },
+                    "COMPUTED_REG2": {
+                        "TEST_FIELD1": "computed_reg2_test_field1",
+                        "TEST_FIELD2": "computed_reg2_test_field2"
+                    }
+                },
+                "ignored_registers": [
+                    "IGNORED_REG"
+                ],
+                "ignored_fields": [
+                    "FIELD"
+                ],
+                "grouped_registers": [
+                    {
+                        "name": "DeviceTest"
+                    }
+                ],
+                "seal_start": "COMPUTED_REG",
+                "seal_count": 4
+            }
         },
         "test_device2": {
             "revisions": {
-                "b0": "test_device2_b0.xml"
+                "b0": {
+                    "data_file": "test_device2_b0.xml"
+                }
             },
             "latest": "b0",
-            "address": "0x4000_0000",
-            "inverted_regs": {
-                "INVERTED_REG": "INVERTED_REG_AP"
-            },
-            "computed_fields": {
-                "COMPUTED_REG": {
-                    "TEST_FIELD1": "computed_reg_test_field1",
-                    "TEST_FIELD2": "computed_reg_test_field2"
+            "attributes": {
+                "address": "0x4000_0000",
+                "inverted_regs": {
+                    "INVERTED_REG": "INVERTED_REG_AP"
                 },
-                "COMPUTED_REG2": {
-                    "TEST_FIELD1": "computed_reg2_test_field1",
-                    "TEST_FIELD2": "computed_reg2_test_field2"
+                "computed_fields": {
+                    "COMPUTED_REG": {
+                        "TEST_FIELD1": "computed_reg_test_field1",
+                        "TEST_FIELD2": "computed_reg_test_field2"
+                    },
+                    "COMPUTED_REG2": {
+                        "TEST_FIELD1": "computed_reg2_test_field1",
+                        "TEST_FIELD2": "computed_reg2_test_field2"
+                    }
                 }
             }
         }
     },
-    "inverted_regs": {
-        "INVERTED_REG": "INVERTED_REG_AP"
-    },
-    "computed_registers": {
-        "COMPUTED_REG_GENERAL": "Hello"
-    },
-    "ignored_registers": [
-        "IGNORED_REG_GENERAL"
-    ],
-    "ignored_fields": [
-        "FIELD_GENERAL"
-    ],
-    "grouped_registers": [
-        {
-            "name": "Test"
-        }
-    ],
-    "seal_start": "COMPUTED_REG2",
-    "seal_count": 8
+    "attributes": {
+        "inverted_regs": {
+            "INVERTED_REG": "INVERTED_REG_AP"
+        },
+        "computed_registers": {
+            "COMPUTED_REG_GENERAL": "Hello"
+        },
+        "ignored_registers": [
+            "IGNORED_REG_GENERAL"
+        ],
+        "ignored_fields": [
+            "FIELD_GENERAL"
+        ],
+        "grouped_registers": [
+            {
+                "name": "Test"
+            }
+        ],
+        "seal_start": "COMPUTED_REG2",
+        "seal_count": 8
+    }
 }

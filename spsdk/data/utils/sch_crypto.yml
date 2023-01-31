@@ -117,13 +117,25 @@ certificate_v2_chain_id:
   type: object
   title: Certificate V2 Settings
   properties:
-    mainCertChainId:
+    mainRootCertId:
       type: [number, string]
-      title: Main Certificate Chain Index
-      description: Index of chain certificate that is used as a main.
+      title: Main Certificate Index
+      description: Index of certificate that is used as a main.
       format: number
       template_value: 0
 
+    mainCertChainId:
+      type: [number, string]
+      title: Main Certificate Chain Index
+      description: Caution! This property is kept here for backwards compatibility with old schemas. Use mainRootCertId instead.
+      format: number
+      skip_in_template: true
+
+  anyOf:
+  - required:
+    - mainRootCertId
+  - required:
+    - mainCertChainId
 
 certificate_v31:
   type: object
@@ -158,7 +170,12 @@ certificate_v31:
       description: Path to Signing Certificate data
       format: optional_file
       template_value: sign_cert.bin
-  required: [mainRootCertId]
+
+  anyOf:
+  - required:
+    - mainRootCertId
+  - required:
+    - mainCertChainId
   if:
     properties:
       useIsk:
@@ -176,25 +193,25 @@ certificate_root_keys:
       title: Root Certificate File 0
       description: Root certificate file index 0.
       format: file
-      template_value: my_certificate0.pem
+      template_value: my_certificate0.pub
     rootCertificate1File:
       type: string
       title: Root Certificate File 1
       description: Root certificate file index 1.
       format: optional_file
-      template_value: my_certificate1.pem
+      template_value: my_certificate1.pub
     rootCertificate2File:
       type: string
       title: Root Certificate File 2
       description: Root certificate file index 2.
       format: optional_file
-      template_value: my_certificate2.pem
+      template_value: my_certificate2.pub
     rootCertificate3File:
       type: string
       title: Root Certificate File 3
       description: Root certificate file index 3.
       format: optional_file
-      template_value: my_certificate3.pem
+      template_value: my_certificate3.pub
 
     mainRootCertId:
       type: [number, string]
@@ -202,5 +219,12 @@ certificate_root_keys:
       description: Index of certificate that is used as a main.
       format: number
       template_value: 0
+
+    mainCertChainId:
+      type: [number, string]
+      title: Main Certificate Chain Index
+      description: Caution! This property is kept here for backwards compatibility with old schemas. Use mainRootCertId instead.
+      format: number
+      skip_in_template: true
 
   required: [rootCertificate0File]

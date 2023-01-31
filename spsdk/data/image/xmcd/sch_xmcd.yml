@@ -1,0 +1,39 @@
+# Copyright 2022 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+xmcd_family_rev:
+  type: object
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      template_value: rt117x
+
+    revision:
+      type: string
+      title: Chip silicon revision
+      description: If needed this could be used to specify silicon revision of device.
+      template_value: latest
+
+    mem_type:
+      type: string
+      title: Memory type
+      description: Specify type of memory used by XMCD description.
+      template_value: flexspi_ram
+
+    config_type:
+      type: string
+      title: Configuration type
+      description: Specify type of configuration used by XMCD description.
+      template_value: simplified
+xmcd:
+  type: object
+  properties:
+    xmcd_settings:
+      type: object
+      title: Settings of XMCD
+      description: External memory configuration settings for selected MCU.
+
+  required: [family, xmcd_settings]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,12 +12,13 @@ import logging
 import os
 import struct
 import sys
-from typing import Dict, Iterator, List
+from dataclasses import dataclass
+from typing import Callable, Iterator, List, Optional
 
 import click
 import colorama
 
-from spsdk import SPSDK_DATA_FOLDER, SPSDKError, SPSDKValueError
+from spsdk import SPSDK_DATA_FOLDER, SPSDKError
 from spsdk.apps.blhost_helper import progress_bar
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
 from spsdk.apps.utils.common_cli_options import (
@@ -28,7 +29,6 @@ from spsdk.apps.utils.utils import (
     INT,
     SPSDKAppError,
     catch_spsdk_error,
-    check_destination_dir,
     check_file_exists,
     format_raw_data,
     parse_file_and_size,
@@ -37,84 +37,112 @@ from spsdk.apps.utils.utils import (
 from spsdk.dat import DebugAuthenticateResponse, DebugAuthenticationChallenge, dm_commands
 from spsdk.dat.debug_credential import DebugCredential
 from spsdk.dat.debug_mailbox import DebugMailbox
-from spsdk.debuggers.debug_probe import DebugProbe
 from spsdk.debuggers.utils import PROBES, open_debug_probe, test_ahb_access
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.crypto.rkht import RKHT
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import find_file, load_binary, load_configuration, write_file
+from spsdk.utils.misc import find_file, load_binary, load_configuration, load_text, write_file
 
 logger = logging.getLogger(__name__)
-colorama.init()
 NXPDEBUGMBOX_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpdebugmbox")
 
-PROTOCOL_VERSIONS = ["1.0", "1.1", "2.0", "2.1", "2.2"]
 
+def get_debug_probe_options_help() -> str:
+    """Get Click help for debug probe user params.
 
-def determine_protocol_version(protocol: str) -> bool:
-    """Validate the protocol version correctness, determine whether rsa or ecc is used.
-
-    :param protocol: one of the values: '1.0', '1.1', '2.0', '2.1', '2.2'
-    :return: is_rsa (true/false)
-    :raises SPSDKValueError: In case that protocol is using unsupported key type.
+    :return: Help string.
     """
-    if protocol not in PROTOCOL_VERSIONS:
-        raise SPSDKValueError(f"Unsupported protocol '{protocol}' was given.")
-    protocol_version = protocol.split(".")
-    is_rsa = protocol_version[0] == "1"
-    return is_rsa
+    ret = (
+        "This option could be used multiply to setup non-standard option for debug probe.\n\n"
+        "The example of use: -o KEY=VALUE"
+    )
+    for probe, probe_cls in PROBES.items():
+        options_help = probe_cls.get_options_help()
+        if options_help:
+            ret += f"\n\n[{probe}]:"
+            for option, help_text in options_help.items():
+                ret += f"\n\n  [{option}]: {help_text}"
+
+    return ret
 
 
-def print_output(succeeded: bool, title: str) -> None:
-    """Do output console print and set the right exit code.
+@dataclass
+class DatProtocol:
+    """Debug Authentication protocol."""
 
-    :param succeeded: Result of operation.
-    :param title: Name of operation
-    :raises SPSDKAppError: Operation failed
-    """
-    if succeeded:
-        click.echo(f"{title} succeeded.")
-    else:
-        raise SPSDKAppError(f"{title} failed!")
+    VERSIONS = [
+        "1.0",
+        "1.1",
+        "2.0",
+        "2.1",
+        "2.2",
+    ]
+
+    version: str
+
+    def is_rsa(self) -> bool:
+        """Determine whether rsa or ecc is used.
+
+        :return: True if the protocol is RSA type. False otherwise
+        """
+        protocol_version = self.version.split(".")
+        is_rsa = protocol_version[0] == "1"
+        return is_rsa
+
+    def __post_init__(self) -> None:
+        """Post init validation.
+
+        :raises SPSDKValueError: In case that protocol is using unsupported key type.
+        """
+        if self.version not in self.VERSIONS:
+            raise SPSDKValueError(f"Unsupported protocol '{self.version}' was given.")
+
+
+@dataclass
+class DebugProbeParams:
+    """Debug probe related parameters."""
+
+    interface: str
+    serial_no: str
+    debug_probe_user_params: dict
+
+
+@dataclass
+class DebugMailboxParams:
+    """Debug mailbox related parameters."""
+
+    reset: bool
+    more_delay: float
+    operation_timeout: int
 
 
 @contextlib.contextmanager
-def _open_debug_probe(pass_obj: Dict) -> Iterator[DebugProbe]:
-    """Method opens DebugProbe object based on input arguments.
-
-    :param pass_obj: Input dictionary with arguments.
-    :return: Active DebugProbe object.
-    :raises SPSDKError: Raised with any kind of problems with debug probe.
-    """
-    interface = pass_obj["interface"]
-    serial_no = pass_obj["serial_no"]
-    debug_probe_params = pass_obj["debug_probe_params"]
-
-    with open_debug_probe(
-        interface=interface, serial_no=serial_no, debug_probe_params=debug_probe_params
-    ) as probe:
-        yield probe
-
-
-@contextlib.contextmanager
-def _open_debugmbox(pass_obj: Dict) -> Iterator[DebugMailbox]:
+def _open_debugmbox(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+) -> Iterator[DebugMailbox]:
     """Method opens DebugMailbox object based on input arguments.
 
-    :param pass_obj: Input dictionary with arguments.
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
     :return: Active DebugMailbox object.
     :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
-    timing = pass_obj["timing"]
-    reset = pass_obj["reset"]
-    operation_timeout = pass_obj["operation_timeout"]
-
-    with _open_debug_probe(pass_obj) as debug_probe:
+    with open_debug_probe(
+        interface=debug_probe_params.interface,
+        serial_no=debug_probe_params.serial_no,
+        debug_probe_params=debug_probe_params.debug_probe_user_params,
+    ) as debug_probe:
         dm = DebugMailbox(
-            debug_probe=debug_probe, reset=reset, moredelay=timing, op_timeout=operation_timeout
+            debug_probe=debug_probe,
+            reset=debug_mailbox_params.reset,
+            moredelay=debug_mailbox_params.more_delay,
+            op_timeout=debug_mailbox_params.operation_timeout,
         )
         try:
             yield dm
         except SPSDKError as exc:
-            raise SPSDKError(f"Failed Debug Mailbox command:({str(exc)}).") from exc
+            raise exc
         finally:
             dm.close()
 
@@ -138,8 +166,8 @@ def _open_debugmbox(pass_obj: Dict) -> Iterator[DebugMailbox]:
     metavar="VERSION",
     default="1.0",
     help=f"Set the protocol version. Default is 1.0 (RSA). "
-    f'Available options are: {", ".join(PROTOCOL_VERSIONS)}',
-    type=click.Choice(PROTOCOL_VERSIONS),
+    f'Available options are: {", ".join(DatProtocol.VERSIONS)}',
+    type=click.Choice(DatProtocol.VERSIONS),
 )
 @click.option(
     "-t",
@@ -163,17 +191,14 @@ def _open_debugmbox(pass_obj: Dict) -> Iterator[DebugMailbox]:
     "-o",
     "--debug-probe-option",
     multiple=True,
-    help=(
-        "This option could be used multiply to setup non-standard option for debug probe."
-        " The example of use: -o KEY=VALUE"
-    ),
+    help=get_debug_probe_options_help(),
 )
 @click.option(
     "--operation-timeout",
     type=INT(),
-    default="4000",
+    default="1000",
     help="Special option to change the standard operation timeout used"
-    " for communication with debug mailbox. Default value is 4000ms.",
+    " for communication with debug mailbox. Default value is 1000ms.",
 )
 @spsdk_apps_common_options
 @click.pass_context
@@ -200,13 +225,13 @@ def main(
         probe_user_params[par_splitted[0]] = par_splitted[1]
 
     ctx.obj = {
-        "protocol": protocol,
-        "interface": interface,
-        "serial_no": serial_no,
-        "debug_probe_params": probe_user_params,
-        "timing": timing,
-        "reset": reset,
-        "operation_timeout": operation_timeout,
+        "debug_mailbox_params": DebugMailboxParams(
+            reset=reset, more_delay=timing, operation_timeout=operation_timeout
+        ),
+        "debug_probe_params": DebugProbeParams(
+            interface=interface, serial_no=serial_no, debug_probe_user_params=probe_user_params
+        ),
+        "protocol": DatProtocol(version=protocol),
     }
 
     return 0
@@ -223,12 +248,43 @@ def main(
     help="When used, exit debug mailbox command is not executed after debug authentication.",
 )
 @click.pass_obj
-def auth(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool) -> None:
+def auth_command(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool) -> None:
     """Perform the Debug Authentication."""
+    auth(
+        pass_obj["debug_probe_params"],
+        pass_obj["debug_mailbox_params"],
+        pass_obj["protocol"],
+        beacon,
+        certificate,
+        key,
+        no_exit,
+    )
+
+
+def auth(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    protocol: DatProtocol,
+    beacon: int,
+    certificate: str,
+    key: str,
+    no_exit: bool,
+) -> None:
+    """Perform the Debug Authentication.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param protocol: Debug authentication protocol.
+    :param beacon: Authentication beacon.
+    :param certificate: Path to Debug Credentials.
+    :param key: Path to DCK private key.
+    :param no_exit: When true, exit debug mailbox command is not executed after debug authentication.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     try:
         logger.info("Starting Debug Authentication")
 
-        with _open_debugmbox(pass_obj) as mail_box:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             debug_cred_data = load_binary(certificate)
             debug_cred = DebugCredential.parse(debug_cred_data)
             dac_rsp_len = 30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc == 4 else 26
@@ -237,8 +293,9 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool)
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
             logger.info(f"DAC: \n{dac.info()}")
+            dac.validate_against_dc(debug_cred)
             dar = DebugAuthenticateResponse.create(
-                version=pass_obj["protocol"],
+                version=protocol.version,
                 socc=dac.socc,
                 dc=debug_cred,
                 auth_beacon=beacon,
@@ -252,7 +309,7 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool)
             dar_response = dm_commands.DebugAuthenticationResponse(
                 dm=mail_box, paramlen=len(dar_data_words)
             ).run(dar_data_words)
-            logger.info(f"DAR response: {dar_response}")
+            logger.debug(f"DAR response: {dar_response}")
             if not no_exit:
                 exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
                 logger.debug(f"Exit response: {exit_response}")
@@ -275,88 +332,196 @@ def auth(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool)
                 )
 
     except SPSDKError as e:
-        logger.error(f"Start Debug Mailbox failed!\n{e}")
-        raise SPSDKAppError() from e
+        raise SPSDKAppError(
+            f"{colorama.Fore.RED}Debug Mailbox authentication failed:{colorama.Fore.RESET}\n{e}"
+        ) from e
 
 
 @main.command(name="reset")
+@click.option(
+    "-h",
+    "--hard-reset",
+    is_flag=True,
+    default=False,
+    help="When used, the hardware reset is used instead of debug mailbox reset.",
+)
 @click.pass_obj
-def reset(pass_obj: dict) -> None:
-    """Reset MCU by DebugMailBox."""
-    result = False
-    pass_obj["reset"] = True
+def reset_command(pass_obj: dict, hard_reset: bool) -> None:
+    """Reset MCU by DebugMailBox.
+
+    The reset command implemented in NXPDEBUGMBOX has two modes (option -h):
+
+    Reset by RESET REQUEST of debug mailbox that causes the reset of MCU by SYSRESET_REQ.
+    The chip is reset, but the ROM code returns back the chip into debug mailbox handler
+    (without -h/--hard-reset option).
+
+    Reset by external reset signal. This reset is done by asserting external reset signal over
+    debug probe. After this reset type the chip behavior is same as after standard reset button on the board.
+    (with -h/--hard-reset option)
+    """
+    reset(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], hard_reset)
+    click.echo("Reset MCU by Debug Mailbox succeeded.")
+
+
+def reset(
+    debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailboxParams, hard_reset: bool
+) -> None:
+    """Reset MCU by DebugMailBox.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param hard_reset: If true, use the hardware reset instead of debug mailbox reset.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     try:
-        with _open_debugmbox(pass_obj) as mail_box:
-            pass
-        result = True
-    finally:
-        print_output(result, "Reset MCU by Debug Mailbox.")
+        debug_mailbox_params.reset = True
+        if hard_reset:
+            with open_debug_probe(
+                interface=debug_probe_params.interface,
+                serial_no=debug_probe_params.serial_no,
+                debug_probe_params=debug_probe_params.debug_probe_user_params,
+            ) as debug_probe:
+                debug_probe.reset()
+        else:
+            with _open_debugmbox(debug_probe_params, debug_mailbox_params):
+                pass
+    except Exception as e:
+        raise SPSDKAppError(f"Reset MCU by Debug Mailbox failed: {e}") from e
 
 
 @main.command(name="start")
 @click.pass_obj
-def start(pass_obj: dict) -> None:
+def start_command(pass_obj: dict) -> None:
     """Start DebugMailBox."""
-    result = False
+    start(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
+    click.echo("Start Debug Mailbox succeeded")
+
+
+def start(debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailboxParams) -> None:
+    """Start DebugMailBox.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     try:
-        with _open_debugmbox(pass_obj) as mail_box:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             dm_commands.StartDebugMailbox(dm=mail_box).run()
-        result = True
-    finally:
-        print_output(result, "Start Debug Mailbox")
+    except Exception as e:
+        raise SPSDKAppError(f"Start Debug Mailbox failed: {e}") from e
 
 
 @main.command(name="exit")
 @click.pass_obj
-def exit(pass_obj: dict) -> None:  # pylint: disable=redefined-builtin
+def exit_command(pass_obj: dict) -> None:  # pylint: disable=redefined-builtin
     """Exit DebugMailBox."""
-    result = False
+    exit(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
+    click.echo("Exit Debug Mailbox succeeded")
+
+
+def exit(
+    debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailboxParams
+) -> None:  # pylint: disable=redefined-builtin
+    """Exit DebugMailBox.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     try:
-        with _open_debugmbox(pass_obj) as mail_box:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             dm_commands.ExitDebugMailbox(dm=mail_box).run()
-        result = True
-    finally:
-        print_output(result, "Exit Debug Mailbox")
+    except Exception as e:
+        raise SPSDKAppError(f"Exit Debug Mailbox failed: {e}") from e
 
 
 @main.command(name="erase")
 @click.pass_obj
-def erase(pass_obj: dict) -> None:
+def erase_command(pass_obj: dict) -> None:
     """Erase Flash."""
-    result = False
+    erase(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
+    click.echo("Mass flash erase succeeded")
+
+
+def erase(debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailboxParams) -> None:
+    """Erase Flash.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     try:
-        with _open_debugmbox(pass_obj) as mail_box:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             dm_commands.EraseFlash(dm=mail_box).run()
-        result = True
-    finally:
-        print_output(result, "Mass flash erase")
+    except Exception as e:
+        raise SPSDKAppError(f"Mass flash erase failed: {e}") from e
 
 
-@main.command(name="famode")
+@main.command(name="famode", no_args_is_help=True)
+@click.option(
+    "-m",
+    "--message",
+    type=click.Path(),
+    required=False,
+    help="Path to message file.",
+)
 @click.pass_obj
-def famode(pass_obj: dict) -> None:
+def famode_command(pass_obj: dict, message: str) -> None:
     """Set Fault Analysis Mode."""
-    result = False
+    famode(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], message)
+    click.echo("Set fault analysis mode succeeded.")
+
+
+def famode(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    message: str,
+) -> None:
+    """Set Fault Analysis Mode.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param message: Path to message file..
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     try:
-        with _open_debugmbox(pass_obj) as mail_box:
-            dm_commands.SetFaultAnalysisMode(dm=mail_box).run()
-        result = True
-    finally:
-        print_output(result, "Set fault analysis mode")
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
+            if message:
+                data = load_binary(message)
+                data_words = list(struct.unpack(f"<{len(data) // 4}I", data))
+                dm_commands.SetFaultAnalysisMode(dm=mail_box, paramlen=len(data_words)).run(
+                    data_words
+                )
+            else:
+                dm_commands.SetFaultAnalysisMode(dm=mail_box).run()
+    except Exception as e:
+        raise SPSDKAppError(f"Set fault analysis mode failed: {e}") from e
 
 
 @main.command(name="ispmode", no_args_is_help=True)
 @click.option("-m", "--mode", type=INT(), required=True)
 @click.pass_obj
-def ispmode(pass_obj: dict, mode: int) -> None:
+def ispmode_command(pass_obj: dict, mode: int) -> None:
     """Enter ISP Mode."""
-    result = False
+    ispmode(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], mode)
+    click.echo("Entering into ISP mode succeeded")
+
+
+def ispmode(
+    debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailboxParams, mode: int
+) -> None:
+    """Enter ISP Mode.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param mode: ISP mode
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     try:
-        with _open_debugmbox(pass_obj) as mail_box:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             dm_commands.EnterISPMode(dm=mail_box).run([mode])
-        result = True
-    finally:
-        print_output(result, "Entering into ISP mode")
+    except Exception as e:
+        raise SPSDKAppError(f"Entering into ISP mode failed: {e}") from e
 
 
 @main.command(name="blankauth", no_args_is_help=True)
@@ -370,13 +535,31 @@ def ispmode(pass_obj: dict, mode: int) -> None:
     help="When used, exit debug mailbox command is not executed after debug authentication.",
 )
 @click.pass_obj
-def blankauth(pass_obj: dict, file: str, no_exit: bool) -> None:
+def blankauth_command(pass_obj: dict, file: str, no_exit: bool) -> None:
     """Debug Authentication for Blank Device."""
+    blankauth(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], file, no_exit)
+    click.echo("Debug authentication for blank device succeeded")
+
+
+def blankauth(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    token_file: str,
+    no_exit: bool,
+) -> None:
+    """Debug Authentication for Blank Device.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param token_file: Path to token file.
+    :param no_exit: When true, exit debug mailbox command is not executed after debug authentication.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    token = []
+    logger.info("Starting Debug Authentication for Blank Device..")
     try:
-        token = []
-        logger.info("Starting Debug Authentication for Blank Device..")
-        with _open_debugmbox(pass_obj) as mail_box:
-            with open(file, "rb") as f:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
+            with open(token_file, "rb") as f:
                 while True:
                     chunk = f.read(8).strip()
                     if not chunk:
@@ -397,63 +580,94 @@ def blankauth(pass_obj: dict, file: str, no_exit: bool) -> None:
                     if ahb_access_granted
                     else (colorama.Fore.RED + "without AHB access")
                 )
-                logger.info(f"Debug Authentication ends {res_str}{colorama.Fore.RESET}.")
                 if not ahb_access_granted:
-                    raise SPSDKAppError()
+                    raise SPSDKAppError("Access to AHB is not granted.")
+
+                logger.info(f"Debug Authentication ends {res_str}{colorama.Fore.RESET}.")
             else:
                 logger.info(
                     "Debug Authentication ends without exit and without test of AHB access."
                 )
-
-    except SPSDKError as e:
-        logger.error(colorama.Fore.RED + f"Debug authentication for Blank device failed!\n{e}")
-        raise SPSDKAppError() from e
+    except Exception as e:
+        raise SPSDKAppError(f"Debug authentication for blank device failed: {e}") from e
 
 
 @main.command(name="get-crp")
 @click.pass_obj
-def get_crp(pass_obj: dict) -> None:
-    """Get CRP level.
+def get_crp_command(pass_obj: dict) -> None:
+    """Get CRP level."""
+    get_crp(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
+    click.echo("Get CRP Level succeeded")
 
-    Note: This command should be called after 'start' command and with no-reset '-n' option.
+
+def get_crp(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+) -> None:
+    """Get CRP level. This command should be called after 'start' command and with no-reset '-n' option.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :raises SPSDKAppError: Raised if any error occurred.
     """
-    result = False
     try:
-        with _open_debugmbox(pass_obj) as mail_box:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             crp_level = dm_commands.GetCRPLevel(dm=mail_box).run()[0]
-            click.echo(f"CRP level is: {crp_level}.")
-        result = True
-    finally:
-        print_output(result, "Get CRP Level")
+            logger.info(f"CRP level is: {crp_level}.")
+    except Exception as e:
+        raise SPSDKAppError(f"Get CRP Level failed: {e}") from e
 
 
 @main.command(name="start-debug-session")
 @click.pass_obj
-def start_debug_session(pass_obj: dict) -> None:
+def start_debug_session_command(pass_obj: dict) -> None:
     """Start debug session."""
-    result = False
+    start_debug_session(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
+    click.echo("Start debug session succeeded")
+
+
+def start_debug_session(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+) -> None:
+    """Start debug session.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     try:
-        with _open_debugmbox(pass_obj) as mail_box:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             dm_commands.StartDebugSession(dm=mail_box).run()
-        result = True
-    finally:
-        print_output(result, "Start debug session")
+    except Exception as e:
+        raise SPSDKAppError(f"Start debug session failed: {e}") from e
 
 
 @main.command(name="test-connection")
 @click.pass_obj
-def test_connection(pass_obj: dict) -> None:
+def test_connection_command(pass_obj: dict) -> None:
     """Method just try if the device debug port is opened or not."""
-    ahb_access_granted = False
-    with _open_debug_probe(pass_obj) as debug_probe:
-        try:
-            debug_probe.enable_memory_interface()
+    ahb_access_granted = test_connection(pass_obj["debug_probe_params"])
+    access_str = colorama.Fore.GREEN if ahb_access_granted else colorama.Fore.RED + "not-"
+    click.echo(f"The device is {access_str}accessible for debugging.{colorama.Fore.RESET}")
+
+
+def test_connection(debug_probe_params: DebugProbeParams) -> bool:
+    """Method just try if the device debug port is opened or not.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        with open_debug_probe(
+            interface=debug_probe_params.interface,
+            serial_no=debug_probe_params.serial_no,
+            debug_probe_params=debug_probe_params.debug_probe_user_params,
+        ) as debug_probe:
             ahb_access_granted = test_ahb_access(debug_probe)
-        except SPSDKError as exc:
-            click.echo(str(exc))
-        finally:
-            access_str = colorama.Fore.GREEN if ahb_access_granted else colorama.Fore.RED + "not-"
-            click.echo(f"The device is {access_str}accessible for debugging.{colorama.Fore.RESET}")
+        return ahb_access_granted
+    except Exception as e:
+        raise SPSDKAppError(f"Testing AHB access failed: {e}") from e
 
 
 @main.command(name="read-memory", no_args_is_help=True)
@@ -462,7 +676,7 @@ def test_connection(pass_obj: dict) -> None:
 @click.argument("out_file", metavar="FILE", type=click.Path(), required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_obj
-def read_memory(
+def read_memory_command(
     pass_obj: dict,
     address: int,
     byte_count: int,
@@ -478,34 +692,8 @@ def read_memory(
     BYTE_COUNT  - number of bytes to read
     FILE        - store result into this file, if not specified use stdout
     """
-    bin_image = BinaryImage("memRead", byte_count, offset=address)
-    start_addr = bin_image.aligned_start(4)
-    length = bin_image.aligned_length(4)
-
-    data = bytes()
-    with _open_debug_probe(pass_obj) as debug_probe:
-        try:
-            debug_probe.enable_memory_interface()
-            with progress_bar(
-                suppress=logger.getEffectiveLevel() > logging.INFO
-            ) as progress_callback:
-                for addr in range(start_addr, start_addr + length, 4):
-                    progress_callback(addr, start_addr + length)
-                    data += debug_probe.mem_reg_read(addr).to_bytes(4, "little")
-        except SPSDKError as exc:
-            logger.error(str(exc))
-
-    if not data:
-        click.echo("The read operation failed.")
-        return
-    if len(data) != length:
-        click.echo(
-            f"The memory wasn't read complete. It was read just first {len(data) - (address-start_addr)} Bytes."
-        )
-    # Shrink start padding data
-    data = data[address - start_addr :]
-    # Shrink end padding data
-    data = data[:byte_count]
+    with progress_bar(suppress=logger.getEffectiveLevel() > logging.INFO) as progress_callback:
+        data = read_memory(pass_obj["debug_probe_params"], address, byte_count, progress_callback)
     if out_file:
         write_file(data, out_file, mode="wb")
         click.echo(f"The memory has been read and write into {out_file}")
@@ -513,11 +701,56 @@ def read_memory(
         click.echo(format_raw_data(data, use_hexdump=use_hexdump))
 
 
+def read_memory(
+    debug_probe_params: DebugProbeParams,
+    address: int,
+    byte_count: int,
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+) -> bytes:
+    """Reads the memory.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param address: Starting address.
+    :param byte_count: Number of bytes to read.
+    :param progress_callback: Progressbar callback method.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    bin_image = BinaryImage("memRead", byte_count, offset=address)
+    start_addr = bin_image.aligned_start(4)
+    length = bin_image.aligned_length(4)
+
+    data = bytes()
+    with open_debug_probe(
+        interface=debug_probe_params.interface,
+        serial_no=debug_probe_params.serial_no,
+        debug_probe_params=debug_probe_params.debug_probe_user_params,
+    ) as debug_probe:
+        try:
+            for addr in range(start_addr, start_addr + length, 4):
+                if progress_callback:
+                    progress_callback(addr, start_addr + length)
+                data += debug_probe.mem_reg_read(addr).to_bytes(4, "little")
+        except SPSDKError as exc:
+            raise SPSDKAppError(str(exc)) from exc
+
+    if not data:
+        raise SPSDKAppError("The read operation failed.")
+    if len(data) != length:
+        logger.warning(
+            f"The memory wasn't read complete. It was read just first {len(data) - (address-start_addr)} Bytes."
+        )
+    # Shrink start padding data
+    data = data[address - start_addr :]
+    # Shrink end padding data
+    data = data[:byte_count]
+    return data
+
+
 @main.command(name="write-memory", no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.argument("data_source", metavar="FILE[,BYTE_COUNT] | {{HEX-DATA}}", type=str, required=True)
 @click.pass_obj
-def write_memory(pass_obj: dict, address: int, data_source: str) -> None:
+def write_memory_command(pass_obj: dict, address: int, data_source: str) -> None:
     """Writes memory from a file or a hex-data.
 
     Writes memory at <ADDRESS> from <FILE> or <HEX-DATA>
@@ -536,69 +769,55 @@ def write_memory(pass_obj: dict, address: int, data_source: str) -> None:
         file_path, size = parse_file_and_size(data_source)
         with open(file_path, "rb") as f:
             data = f.read(size)
+    write_memory(pass_obj["debug_probe_params"], address, data)
+    click.echo("The memory has been write successfully.")
 
+
+def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes) -> None:
+    """Writes memory from a file or a hex-data.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param address: Starting address.
+    :param data: Data to write into memory.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
     byte_count = len(data)
     bin_image = BinaryImage("memRead", byte_count, offset=address)
     start_addr = bin_image.aligned_start(4)
     length = bin_image.aligned_length(4)
+    with open_debug_probe(
+        interface=debug_probe_params.interface,
+        serial_no=debug_probe_params.serial_no,
+        debug_probe_params=debug_probe_params.debug_probe_user_params,
+    ) as debug_probe:
+        start_padding = address - start_addr
+        align_data = data
+        if start_padding:
+            align_start_word = debug_probe.mem_reg_read(start_addr).to_bytes(4, "little")
+            align_data = align_start_word[:start_padding] + data
 
-    with _open_debug_probe(pass_obj) as debug_probe:
-        try:
-            debug_probe.enable_memory_interface()
-            start_padding = address - start_addr
-            align_data = data
-            if start_padding:
-                align_start_word = debug_probe.mem_reg_read(start_addr).to_bytes(4, "little")
-                align_data = align_start_word[:start_padding] + data
+        end_padding = length - byte_count - start_padding
+        if end_padding:
+            align_end_word = debug_probe.mem_reg_read(start_addr + length - 4).to_bytes(4, "little")
+            align_data = align_data + align_end_word[4 - end_padding :]
 
-            end_padding = length - byte_count - start_padding
-            if end_padding:
-                align_end_word = debug_probe.mem_reg_read(start_addr + length - 4).to_bytes(
-                    4, "little"
-                )
-                align_data = align_data + align_end_word[4 - end_padding :]
-
-            with progress_bar(
-                suppress=logger.getEffectiveLevel() > logging.INFO
-            ) as progress_callback:
-                for i, addr in enumerate(range(start_addr, start_addr + length, 4)):
-                    progress_callback(addr, start_addr + length)
-                    to_write = int.from_bytes(align_data[i * 4 : i * 4 + 4], "little")
-                    debug_probe.mem_reg_write(addr, to_write)
-                    # verify write
-                    try:
-                        verify_data = debug_probe.mem_reg_read(addr)
-                    except SPSDKError as ver_exc:
-                        raise SPSDKError("The write verification failed.") from ver_exc
-                    if to_write != verify_data:
-                        raise SPSDKError(
-                            f"Data verification failed! {hex(to_write)} != {hex(verify_data)}"
-                        )
-        except SPSDKError as exc:
-            click.echo(f"The write operation failed. Reason: {str(exc)}")
-            return
-
-    click.echo("The memory has been write successfully.")
+        with progress_bar(suppress=logger.getEffectiveLevel() > logging.INFO) as progress_callback:
+            for i, addr in enumerate(range(start_addr, start_addr + length, 4)):
+                progress_callback(addr, start_addr + length)
+                to_write = int.from_bytes(align_data[i * 4 : i * 4 + 4], "little")
+                debug_probe.mem_reg_write(addr, to_write)
+                # verify write
+                try:
+                    verify_data = debug_probe.mem_reg_read(addr)
+                except SPSDKError as ver_exc:
+                    raise SPSDKAppError("The write verification failed.") from ver_exc
+                if to_write != verify_data:
+                    raise SPSDKAppError(
+                        f"Data verification failed! {hex(to_write)} != {hex(verify_data)}"
+                    )
 
 
 @main.command(name="gendc", no_args_is_help=True)
-@click.option(
-    "-p",
-    "--protocol",
-    "protocol",
-    type=str,
-    metavar="VERSION",
-    default="1.0",
-    help="""\b
-        Set the protocol version. Default is 1.0 (RSA).
-        NXP Protocol Version    Encryption Type
-        1.0                     RSA 2048
-        1.1                     RSA 4096
-        2.0                     NIST P-256 SECP256R1
-        2.1                     NIST P-384 SECP384R1
-        2.2                     NIST P-521 SECP521R1
-    """,
-)
 @click.option(
     "-c",
     "--config",
@@ -626,8 +845,9 @@ def write_memory(pass_obj: dict, address: int, data_source: str) -> None:
     help="External python file containing a custom SignatureProvider implementation.",
 )
 @click.argument("dc_file_path", metavar="PATH", type=click.Path(file_okay=True))
-def gendc(
-    protocol: str,
+@click.pass_obj
+def gendc_command(
+    pass_obj: dict,
     plugin: str,
     dc_file_path: str,
     config: str,
@@ -639,53 +859,84 @@ def gendc(
     \b
     PATH    - path to dc file
     """
-    if plugin:
-        # if a plugin is present simply load it
-        # The SignatureProvider will automatically pick up any implementation(s)
-        from importlib.util import (  # pylint: disable=import-outside-toplevel
-            module_from_spec,
-            spec_from_file_location,
-        )
-
-        spec = spec_from_file_location(name="plugin", location=plugin)  # type: ignore
-        assert spec
-        mod = module_from_spec(spec)
-        spec.loader.exec_module(mod)  # type: ignore
-
-    is_rsa = determine_protocol_version(protocol)
-    check_destination_dir(dc_file_path, force)
-    check_file_exists(dc_file_path, force)
-
-    logger.info("Loading configuration from yml file...")
-    yaml_content = load_configuration(config)
-    if elf2sb_config:
-        elf2sb_config_dir = os.path.dirname(elf2sb_config)
-        logger.info("Loading configuration from elf2sb config file...")
-        rot_info = RootOfTrustInfo(
-            load_configuration(elf2sb_config), search_paths=[elf2sb_config_dir]
-        )
-        yaml_content["rot_meta"] = [
-            find_file(x, search_paths=[elf2sb_config_dir]) for x in rot_info.public_keys
-        ]
-        assert rot_info.private_key
-        yaml_content["rotk"] = find_file(rot_info.private_key, search_paths=[elf2sb_config_dir])
-        yaml_content["rot_id"] = rot_info.public_key_index
-
-    # enforcing rot_id presence in yaml config...
-    assert "rot_id" in yaml_content, "Config file doesn't contain the 'rot_id' field"
-
-    logger.info(f"Creating {'RSA' if is_rsa else 'ECC'} debug credential object...")
-    rotkh = RKHT(keys=yaml_content["rot_meta"], search_paths=[os.path.dirname(config)]).rotkh()
-    click.echo(f"RoT Key Hash: {rotkh.hex()}")
-    dc = DebugCredential.create_from_yaml_config(
-        version=protocol, yaml_config=yaml_content, search_paths=[os.path.dirname(config)]
+    gendc(
+        pass_obj["protocol"],
+        plugin,
+        dc_file_path,
+        config,
+        elf2sb_config,
+        force,
     )
-    dc.sign()
-    data = dc.export()
-    logger.info("Saving the debug credential to a file...")
-    write_file(data, dc_file_path, mode="wb")
+    click.echo("Creating Debug credential file succeeded")
 
-    print_output(True, "Creating Debug credential file")
+
+def gendc(
+    protocol: DatProtocol,
+    plugin: str,
+    dc_file_path: str,
+    config: str,
+    elf2sb_config: str,
+    force: bool,
+) -> None:
+    """Generate debug certificate (DC).
+
+    :param protocol: Debug authentication protocol.
+    :param plugin: External python file containing a custom SignatureProvider implementation.
+    :param dc_file_path: Path to debug certificate file.
+    :param config: YAML credential config file.
+    :param elf2sb_config: Root Of Trust from configuration file used by elf2sb tool.
+    :param force: Force overwriting of an existing file.
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        if plugin:
+            # if a plugin is present simply load it
+            # The SignatureProvider will automatically pick up any implementation(s)
+            from importlib.util import (  # pylint: disable=import-outside-toplevel
+                module_from_spec,
+                spec_from_file_location,
+            )
+
+            spec = spec_from_file_location(name="plugin", location=plugin)  # type: ignore
+            assert spec
+            mod = module_from_spec(spec)
+            spec.loader.exec_module(mod)  # type: ignore
+
+        check_file_exists(dc_file_path, force)
+
+        logger.info("Loading configuration from yml file...")
+        yaml_content = load_configuration(config)
+        if elf2sb_config:
+            elf2sb_config_dir = os.path.dirname(elf2sb_config)
+            logger.info("Loading configuration from elf2sb config file...")
+            rot_info = RootOfTrustInfo(
+                load_configuration(elf2sb_config), search_paths=[elf2sb_config_dir]
+            )
+            yaml_content["rot_meta"] = [
+                find_file(x, search_paths=[elf2sb_config_dir]) for x in rot_info.public_keys
+            ]
+            assert rot_info.private_key
+            yaml_content["rotk"] = find_file(rot_info.private_key, search_paths=[elf2sb_config_dir])
+            yaml_content["rot_id"] = rot_info.public_key_index
+
+        # enforcing rot_id presence in yaml config...
+        assert "rot_id" in yaml_content, "Config file doesn't contain the 'rot_id' field"
+
+        logger.info(f"Creating {'RSA' if protocol.is_rsa() else 'ECC'} debug credential object...")
+        dc = DebugCredential.create_from_yaml_config(
+            version=protocol.version,
+            yaml_config=yaml_content,
+            search_paths=[os.path.dirname(config)],
+        )
+        dc.sign()
+        data = dc.export()
+        click.echo(f"RoT Key Hash: {dc.get_rotkh().hex()}")
+        logger.debug(f"Debug credential file details:\n {dc.info()}")
+        logger.info(f"Saving the debug credential to a file: {dc_file_path}")
+        write_file(data, dc_file_path, mode="wb")
+
+    except Exception as e:
+        raise SPSDKAppError(f"The generating of Debug Credential file failed: {e}") from e
 
 
 @main.command(name="get-template", no_args_is_help=True)
@@ -697,22 +948,24 @@ def gendc(
     default=False,
     help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
 )
-def get_template(output: str, force: bool) -> None:
+def get_template_command(output: str, force: bool) -> None:
     """Generate the template of Debug Credentials YML configuration file.
 
     \b
     PATH    - file name path to write template config file
     """
-    check_destination_dir(str(output), force)
-    check_file_exists(str(output), force)
-
-    with open(os.path.join(NXPDEBUGMBOX_DATA_FOLDER, "template_config.yml"), "r") as file:
-        template = file.read()
-
-    with open(str(output), "w") as file:
-        file.write(template)
-
+    get_template(output, force)
     click.echo("The configuration template file has been created.")
+
+
+def get_template(output: str, force: bool) -> None:
+    """Generate the template of Debug Credentials YML configuration file.
+
+    :param output: Path to output file.
+    :param force: Force overwriting of an existing file.
+    """
+    check_file_exists(str(output), force)
+    write_file(load_text(os.path.join(NXPDEBUGMBOX_DATA_FOLDER, "template_config.yml")), output)
 
 
 @catch_spsdk_error

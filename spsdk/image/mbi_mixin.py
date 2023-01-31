@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -37,7 +37,7 @@ class MasterBootImageManifest:
     DIGEST_PRESENT_FLAG = 0x8000_0000
 
     def __init__(
-        self, firmware_version: int, trust_zone: TrustZone, sign_hash_len: int = None
+        self, firmware_version: int, trust_zone: TrustZone, sign_hash_len: Optional[int] = None
     ) -> None:
         """Initialize MBI Manifest object.
 
@@ -409,10 +409,11 @@ class Mbi_MixinFwVersion(Mbi_Mixin):
 class Mbi_MixinImageSubType(Mbi_Mixin):
     """Master Boot Image SubType class."""
 
-    class Mbi_ImageSubType(Enum):
-        """List of supported subtypes."""
+    class Mbi_ImageSubTypeKw45xx(Enum):
+        """Supported MAIN and NBU subtypes for KW45xx and K32W1xx."""
 
         MAIN = (0x00, "MAIN", "Default (main) application image")
+        NBU = (0x01, "NBU", "NBU (Narrowband Unit) image")
 
     VALIDATION_SCHEMAS: List[str] = ["image_subtype"]
     NEEDED_MEMBERS: List[str] = ["image_subtype"]
@@ -429,16 +430,14 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
     def set_image_subtype(self, image_subtype: Optional[Union[str, int]]) -> None:
         """Convert string value to int by enum table and store to class."""
         if image_subtype is None:
-            self.image_subtype = Mbi_MixinImageSubType.Mbi_ImageSubType.MAIN
+            self.image_subtype = Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.MAIN
         else:
-            image_subtype = Mbi_MixinImageSubType.Mbi_ImageSubType.get(
-                image_subtype, Mbi_MixinImageSubType.Mbi_ImageSubType.MAIN
-            )
+            image_subtype = Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.get(image_subtype)
 
             self.image_subtype = (
                 image_subtype
                 if isinstance(image_subtype, int)
-                else Mbi_MixinImageSubType.Mbi_ImageSubType.MAIN
+                else Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.MAIN
             )
 
 
@@ -480,7 +479,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
         if hasattr(self, "image_subtype"):
             assert self.image_subtype is not None
-            flags |= self.image_subtype << 4
+            flags |= self.image_subtype << 6
 
         if hasattr(self, "user_hw_key_enabled") and self.user_hw_key_enabled:
             flags |= self._HW_USER_KEY_EN_FLAG
@@ -615,10 +614,12 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
 class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
     """Master Boot Image Manifest class."""
 
+    manifest_class = MasterBootImageManifest
+    manifest: Optional[MasterBootImageManifest]
+
     VALIDATION_SCHEMAS: List[str] = ["tz", "family", "firmware_version", "sign_hash_len"]
     NEEDED_MEMBERS: List[str] = ["manifest", "firmware_version"]
 
-    manifest: Optional[MasterBootImageManifest]
     firmware_version: Optional[int]
 
     def mix_len(self) -> int:
@@ -638,7 +639,7 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
         self.firmware_version = value_to_int(config.get("firmwareVersion", 0))
         sign_hash_len_raw = config.get("manifestSigningHashLength", None)
         sign_hash_len = value_to_int(sign_hash_len_raw) if sign_hash_len_raw else None
-        self.manifest = MasterBootImageManifest(
+        self.manifest = self.manifest_class(
             self.firmware_version, self.tz, sign_hash_len=sign_hash_len
         )
 
@@ -941,7 +942,7 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
         if len(self.ctr_init_vector) != self._CTR_INIT_VECTOR_SIZE:
             raise SPSDKError("Invalid size of Initial vector for encryption counter.")
 
-    def store_ctr_init_vector(self, ctr_iv: bytes = None) -> None:
+    def store_ctr_init_vector(self, ctr_iv: Optional[bytes] = None) -> None:
         """Stores the Counter init vector, if not specified the random value is used.
 
         param ctr_iv: Counter Initial Vector.
@@ -1147,14 +1148,18 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
     update_ivt: Callable
     get_app_data: Callable
     cert_block: Optional[CertBlockV31]
-    manifest: Optional[MasterBootImageManifest]
+    manifest: Optional[MasterBootImageManifest]  # type: ignore  # we don't use regular bound method
 
     def collect_data(self) -> bytes:
         """Collect application data, Certification Block and Manifest including update IVT.
 
+        :raises SPSDKError: When either application data or certification block or manifest is missing
         :return: Image with updated IVT and added Certification Block with Manifest.
         """
-        assert self.app and self.manifest and self.cert_block
+        if not (self.app and self.manifest and self.cert_block):
+            raise SPSDKError(
+                "Either application data or certification block or manifest is missing"
+            )
         app = self.get_app_data() if hasattr(self, "get_app_data") else self.app
         return self.update_ivt(
             app + self.cert_block.export() + self.manifest.export(),

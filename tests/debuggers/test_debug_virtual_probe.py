@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for Virtual Debug Probe."""
@@ -9,7 +9,6 @@ import pytest
 
 from spsdk.debuggers.debug_probe import (
     SPSDKDebugProbeError,
-    SPSDKDebugProbeMemoryInterfaceNotEnabled,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
 )
@@ -87,29 +86,6 @@ def test_virtualprobe_ap():
     assert virtual_probe.coresight_reg_read(True, 0) == 1
 
 
-def test_virtualprobe_debugmbox():
-    """Test of virtual Debug Probe - Debug mailbox API."""
-    virtual_probe = DebugProbeVirtual("ID", None)
-    with pytest.raises(SPSDKDebugProbeNotOpenError):
-        virtual_probe.dbgmlbx_reg_read(0)
-    with pytest.raises(SPSDKDebugProbeNotOpenError):
-        virtual_probe.dbgmlbx_reg_write(0, 0)
-
-    virtual_probe.open()
-
-    assert virtual_probe.dbgmlbx_reg_read(0) == 0
-    virtual_probe.dbgmlbx_reg_write(0, 1)
-    assert virtual_probe.dbgmlbx_reg_read(0) == 1
-
-    virtual_probe.dbgmlbx_reg_write(0, 1)
-    assert virtual_probe.dbgmlbx_reg_read(0) == 1
-
-    virtual_probe.set_coresight_ap_substitute_data({0x02000000: [2, 3]})
-    assert virtual_probe.dbgmlbx_reg_read(0) == 2
-    assert virtual_probe.dbgmlbx_reg_read(0) == 3
-    assert virtual_probe.dbgmlbx_reg_read(0) == 1
-
-
 def test_virtualprobe_memory():
     """Test of virtual Debug Probe - Memory access tests."""
     virtual_probe = DebugProbeVirtual("ID", None)
@@ -120,12 +96,6 @@ def test_virtualprobe_memory():
         virtual_probe.mem_reg_write(0, 0)
 
     virtual_probe.open()
-    with pytest.raises(SPSDKDebugProbeMemoryInterfaceNotEnabled):
-        virtual_probe.mem_reg_read(0)
-    with pytest.raises(SPSDKDebugProbeMemoryInterfaceNotEnabled):
-        virtual_probe.mem_reg_write(0, 0)
-
-    virtual_probe.enable_memory_interface()
 
     assert virtual_probe.mem_reg_read(0) == 0
     virtual_probe.mem_reg_write(0, 1)

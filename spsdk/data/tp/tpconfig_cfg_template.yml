@@ -64,9 +64,3 @@ tp_device_parameter:
 
 # Timeout configuration in seconds
 timeout: 60
-
-##################################################
-# Temporary stuff until we have manufactured cards
-
-# Path to private key used for mutual authentication
-nxp_prod_card_prk_path:

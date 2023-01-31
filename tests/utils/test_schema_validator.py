@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
 
 import pytest
+import yaml
 from attr import validate
 
 from spsdk import SPSDKError
@@ -137,10 +138,29 @@ def test_config_template():
                 "description": "n3_description",
                 "template_value": "n3_value",
             },
+            "n4": {
+                "type": "string",
+                "title": "n4_title",
+                "description": "n4_description",
+                "skip_in_template": True,
+            },
+            "n5": {
+                "type": "string",
+                "title": "n5_title",
+                "description": "n5_description",
+                "template_value": "n5_value",
+            },
+            "n6": {
+                "type": "string",
+                "title": "n6_title",
+                "description": "n6_description",
+                "template_value": "n6_value",
+            },
         },
         "required": ["n2"],
         "if": {"properties": {"n1": "true"}},
         "then": {"required": ["n3"]},
+        "anyOf": [{"required": ["n5"]}, {"required": ["n6"]}],
     }
 
     my_yml_template = ConfigTemplate("Super Main Title", [schema]).export_to_yaml()
@@ -152,6 +172,10 @@ def test_config_template():
     assert _is_yaml_comment(my_yml_template, "[Optional]", "n1")
     assert _is_yaml_comment(my_yml_template, "[Required]", "n2")
     assert _is_yaml_comment(my_yml_template, "[Conditionally required]", "n3")
+    yaml_config = yaml.safe_load(my_yml_template)
+    assert "n4" not in yaml_config
+    assert _is_yaml_comment(my_yml_template, "[Conditionally required]", "n5")
+    assert _is_yaml_comment(my_yml_template, "[Conditionally required]", "n6")
 
 
 def test_validate_oneof():

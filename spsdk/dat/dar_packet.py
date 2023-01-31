@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -91,8 +91,11 @@ class DebugAuthenticateResponse:
 
     @classmethod
     def _get_class(cls, version: str, socc: int) -> "Type[DebugAuthenticateResponse]":
-        if socc == 4:
-            return _lpc55s3x_version_mapping[version]
+        """Get the right Debug Authentication Response class by the protocol version.
+
+        :param version: DAT protocol version
+        :param socc: SOCC of used chip
+        """
         return _version_mapping[version]
 
     @classmethod
@@ -141,17 +144,15 @@ class DebugAuthenticateResponseRSA(DebugAuthenticateResponse):
 class DebugAuthenticateResponseECC(DebugAuthenticateResponse):
     """Class for ECC specific of DAR."""
 
+    KEY_LENGTH = 0
+    CURVE: crypto.ec.EllipticCurve = crypto.ec.SECP256R1()
+
     def _get_signature(self) -> bytes:
         """Sign the DAR data using SignatureProvider."""
         signature = super()._get_signature()
         r, s = crypto.utils_cryptography.decode_dss_signature(signature)
-        public_numbers = crypto.EllipticCurvePublicNumbers(r, s, crypto.ec.SECP256R1())
-        signature = ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=66)
-        return signature
-
-
-class DebugAuthenticateResponseLpc55s3x(DebugAuthenticateResponse):
-    """Class for LPC55S3x specific of DAR."""
+        public_numbers = crypto.EllipticCurvePublicNumbers(r, s, self.CURVE)
+        return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=self.KEY_LENGTH)
 
     def _get_common_data(self) -> bytes:
         """Collects dc, auth_beacon and UUID."""
@@ -161,37 +162,31 @@ class DebugAuthenticateResponseLpc55s3x(DebugAuthenticateResponse):
         return data
 
 
-class DebugAuthenticateResponseLpc55s3x_256(DebugAuthenticateResponseLpc55s3x):
+class DebugAuthenticateResponseECC_256(DebugAuthenticateResponseECC):
     """Class for LPC55S3x specific of DAR, 256 bits sized keys."""
 
-    def _get_signature(self) -> bytes:
-        """Sign the DAR data using SignatureProvider."""
-        signature = super()._get_signature()
-        r, s = crypto.utils_cryptography.decode_dss_signature(signature)
-        public_numbers = crypto.EllipticCurvePublicNumbers(r, s, crypto.ec.SECP256R1())
-        return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=32)
+    KEY_LENGTH = 32
+    CURVE = crypto.ec.SECP256R1()
 
 
-class DebugAuthenticateResponseLpc55s3x_384(DebugAuthenticateResponseLpc55s3x):
+class DebugAuthenticateResponseECC_384(DebugAuthenticateResponseECC):
     """Class for LPC55S3x specific of DAR, 384 bits sized keys."""
 
-    def _get_signature(self) -> bytes:
-        """Sign the DAR data using SignatureProvider."""
-        signature = super()._get_signature()
-        r, s = crypto.utils_cryptography.decode_dss_signature(signature)
-        public_numbers = crypto.EllipticCurvePublicNumbers(r, s, crypto.ec.SECP384R1())
-        return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=48)
+    KEY_LENGTH = 48
+    CURVE = crypto.ec.SECP384R1()
+
+
+class DebugAuthenticateResponseECC_521(DebugAuthenticateResponseECC):
+    """Class for LPC55S3x specific of DAR, 521 bits sized keys."""
+
+    KEY_LENGTH = 66
+    CURVE = crypto.ec.SECP521R1()
 
 
 _version_mapping = {
     "1.0": DebugAuthenticateResponseRSA,
     "1.1": DebugAuthenticateResponseRSA,
-    "2.0": DebugAuthenticateResponseECC,
-    "2.1": DebugAuthenticateResponseECC,
-    "2.2": DebugAuthenticateResponseECC,
-}
-
-_lpc55s3x_version_mapping = {
-    "2.0": DebugAuthenticateResponseLpc55s3x_256,
-    "2.1": DebugAuthenticateResponseLpc55s3x_384,
+    "2.0": DebugAuthenticateResponseECC_256,
+    "2.1": DebugAuthenticateResponseECC_384,
+    "2.2": DebugAuthenticateResponseECC_521,
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,6 +15,7 @@ from spsdk.mboot.properties import (
     DeviceUidValue,
     EnumValue,
     ExternalMemoryAttributesValue,
+    FuseLockedStatus,
     IntValue,
     IrqNotifierPinValue,
     PropertyTag,
@@ -197,3 +198,10 @@ def test_external_memory_attributes():
     assert value.to_str() == "Sector Size:   6 B"
     value = ExternalMemoryAttributesValue(tag=4, raw_values=[16, 3, 4, 5, 6, 7])
     assert value.to_str() == "Block Size:    7 B"
+
+
+def test_fuse_locked_status():
+    value = FuseLockedStatus(tag=31, raw_values=[0x4, 0x1E17F00F, 0x30000, 65535, 0])
+    assert "FUSE000: UNLOCKED" in value.to_str()
+    assert "FUSE084: LOCKED" in value.to_str()
+    assert "FUSE143: UNLOCKED" in value.to_str()

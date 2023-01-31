@@ -23,6 +23,27 @@ otfad_output:
       title: OTFAD output folder
       description: Folder name to be stored generated OTFAD outputs
       template_value: otfad_outputs
+
+    output_name:
+      type: string
+      title: Output binary image file name
+      description: File name of the output image containing keyblobs and encrypted data blobs
+      template_value: "encrypted.bin"
+      default: "encrypted.bin"
+
+    keyblob_name:
+      type: string
+      title: Keyblob file name
+      description: File name of the keyblob, output_folder/keyblob_name
+      template_value: "iee_keyblob.bin"
+      default: "iee_keyblob.bin"
+
+    encrypted_name:
+      type: string
+      title: Encrypted name
+      description: filename of the encrypted datablobs
+      template_value: encrypted_blob.bin
+      default: encrypted_blob.bin
   required: [output_folder]
 
 otfad:
@@ -43,6 +64,28 @@ otfad:
       description: The base address of key blob table, it should be aligned to 1 KB (1024 B)
       format: number
       template_value: "0x08000000"
+
+    data_blobs:
+      type: array
+      title: Data blobs list
+      description: List of all data blobs included in this key blob
+      items:
+        type: object
+        required: [data, address]
+        properties:
+          data:
+            type: string
+            title: Plain Text data blob
+            description: Path to binary file with plain text data to be encrypted if desired
+            format: file
+            template_value: my_data.bin
+
+          address:
+            type: [number, string]
+            title: Data blob address
+            description: Data blob address, it could be omitted if data blob starts at start_address
+            format: number
+            template_value: "0x08001000"
 
     key_blobs:
       title: List of Key Blobs used by OTFAD
@@ -101,29 +144,6 @@ otfad:
             description: This field signals if the context is Read only or not
             template_value: True
             default: True
-
-          data_blobs:
-            type: array
-            title: Data blobs list
-            description: List of all data blobs included in this key blob
-            items:
-              type: object
-              required: [data, address]
-              properties:
-                data:
-                  type: string
-                  title: Plain Text data blob
-                  description: Path to binary file with plain text data to be encrypted if desired
-                  format: file
-                  template_value: my_data.bin
-
-                address:
-                  type: [number, string]
-                  title: Data blob address
-                  description: Data blob address, it could be omitted if data blob starts at start_address
-                  format: number
-                  template_value: "0x08001000"
-
 
 otfad_scramble:
   type: object

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,7 +21,7 @@ def test_nxpdevhsm_run_generate(data_dir, tmpdir):
     runner = CliRunner()
     with use_working_directory(data_dir):
 
-        cmd = f"generate -p COMx -k test_bin.bin -o test_bin.bin {tmpdir}/bootable_images/cust_mk_sk.sb"
+        cmd = f"generate -p COMx -f lpc55s3x -k test_bin.bin -o test_bin.bin {tmpdir}/bootable_images/cust_mk_sk.sb"
         result = runner.invoke(nxpdevhsm.main, cmd.split())
         assert result.exit_code == 1
         assert "COMx" in result.exception.description
@@ -44,16 +44,21 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
             oem_share_input=b"abcd",
             info_print=None,
             container_conf=config,
+            family="lpc55s3x",
         )
         cmds = devhsm.get_cmd_from_config()
         assert len(cmds) == n_cmds
 
-        sb3_data = SecureBinary31Commands(curve_name="secp256r1", is_encrypted=False)
+        sb3_data = SecureBinary31Commands(
+            family="lpc55s3x", curve_name="secp256r1", is_encrypted=False
+        )
         sb3_data.add_command(
             CmdLoadKeyBlob(
                 offset=0x04,
                 data=b"0123456789012345",
-                key_wrap_id=CmdLoadKeyBlob.KeyWraps["NXP_CUST_KEK_EXT_SK"],
+                key_wrap_id=CmdLoadKeyBlob.get_key_id(
+                    family="lpc55s3x", key_name=CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK
+                ),
             )
         )
         sb3_data.load_from_config(cmds)
@@ -75,5 +80,6 @@ def test_load_commands_with_keyblob4(data_dir):
                 oem_share_input=b"abcd",
                 info_print=None,
                 container_conf="cfg_sb3_keyblob4.yaml",
+                family="lpc55s3x",
             )
             devhsm.get_cmd_from_config()

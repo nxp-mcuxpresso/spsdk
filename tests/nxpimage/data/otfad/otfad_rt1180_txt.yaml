@@ -9,6 +9,11 @@ output_folder: otfad_rt1180_outputs # [Required], OTFAD output folder, Folder na
 # ----------------------------------------------------------------------------------------------------
 kek: kek_inc.txt # [Required], KEK, OTFAD Key Encryption Key to encrypt OTFAD table
 otfad_table_address: 0x04000000 # [Required], OTFAD key blobs table address, The base address of key blob table, it should be aligned to 1 KB (1024 B)
+
+data_blobs: # [Optional], Data blobs list, List of all data blobs included in this key blob
+  - data: blink_fspi2_xip_cm33_ahab.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
+    address: '0x04001000' # [Required], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
+
 key_blobs: # [Required], List of Key Blobs used by OTFAD, The list of definition of individual key blobs including plain data. Add other array items as you need and device allows
   - aes_key: 0x000102030405060708090a0b0c0d0e0f  # [Required], AES key, AES key for the key blob
     aes_ctr: 0x0123456789abcdef # [Required], AES Counter value, AES counter value for the key blob
@@ -16,6 +21,3 @@ key_blobs: # [Required], List of Key Blobs used by OTFAD, The list of definition
     end_address: 0x0401ffff # [Required], End address of key blob data, End address of key blob data, it should be aligned to 1 KB (1024 B)
     aes_decryption_enable: true # [Optional], AES decryption enable flag, For accesses hitting in a valid context, this bit indicates if the fetched data is to be decrypted or simply bypassed
     valid: true # [Optional], Valid flag, This field signals if the context is valid or not
-    data_blobs: # [Optional], Data blobs list, List of all data blobs included in this key blob
-      - data: blink_fspi2_xip_cm33_ahab.bin  # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
-        address: '0x04001000' # [Required], Data blob address, Data blob address, it could be omitted if data blob starts at start_address

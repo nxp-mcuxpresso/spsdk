@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -30,9 +30,10 @@ ENABLE_DEBUG = False
 logger = logging.getLogger(__name__)
 
 
-class SPSDK_ListStrategies(ListStrategies):
+class SPSDKListStrategies(ListStrategies):
     """Extended List Strategies."""
 
+    # pylint: disable=unused-argument   # because of the base class
     @staticmethod
     def strategy_set(config, path, base, nxt):  # type: ignore
         """Use the set of both as a output."""
@@ -48,11 +49,11 @@ class SPSDK_ListStrategies(ListStrategies):
         return ret
 
 
-class SPSDK_Merger(Merger):
+class SPSDKMerger(Merger):
     """Modified Merger to add new list strategy 'set'."""
 
     PROVIDED_TYPE_STRATEGIES = {
-        list: SPSDK_ListStrategies,
+        list: SPSDKListStrategies,
         dict: DictStrategies,
         set: SetStrategies,
     }
@@ -74,7 +75,7 @@ def _is_number(param: Any) -> bool:
 
 def _print_validation_fail_reason(
     exc: fastjsonschema.JsonSchemaValueException,
-    extra_formaters: Dict[str, Callable[[str], bool]] = None,
+    extra_formaters: Optional[Dict[str, Callable[[str], bool]]] = None,
 ) -> str:
     """Print formated and easy to read reason why the  validation failed.
 
@@ -90,7 +91,7 @@ def _print_validation_fail_reason(
         if exc.rule_definition == "file":
             message += f"; Non-existing file: {exc.value}"
     elif exc.rule == "anyOf":
-        message += f"\nYou need to define at least one of the following sets:"
+        message += "\nYou need to define at least one of the following sets:"
         for rule_def in exc.rule_definition:
             message += f" {rule_def['required']}"
     elif exc.rule == "oneOf":
@@ -106,7 +107,7 @@ def _print_validation_fail_reason(
                 )
         # check if the error is caused by "required oneOf" condition
         if all(rule_def.get("required") for rule_def in exc.rule_definition):
-            message += f"\nYou need to define exactly one of the following sets:"
+            message += "\nYou need to define exactly one of the following sets:"
             for rule_def in exc.rule_definition:
                 message += f" {rule_def['required']}"
     return message
@@ -115,8 +116,8 @@ def _print_validation_fail_reason(
 def check_config(
     config: Union[str, Dict[str, Any]],
     schemas: List[Dict[str, Any]],
-    extra_formaters: Dict[str, Callable[[str], bool]] = None,
-    search_paths: List[str] = None,
+    extra_formaters: Optional[Dict[str, Callable[[str], bool]]] = None,
+    search_paths: Optional[List[str]] = None,
 ) -> None:
     """Check the configuration by provided list of validation schemas.
 
@@ -177,8 +178,8 @@ class ConfigTemplate:
         self,
         main_title: str,
         schemas: List[Dict[str, Any]],
-        override_values: Dict[str, Any] = None,
-        note: str = None,
+        override_values: Optional[Dict[str, Any]] = None,
+        note: Optional[str] = None,
     ):
         """Constructor for Config templates.
 
@@ -194,7 +195,7 @@ class ConfigTemplate:
         self.note = note
 
     @staticmethod
-    def _get_title_block(title: str, description: str = None) -> str:
+    def _get_title_block(title: str, description: Optional[str] = None) -> str:
         """Get unified title blob.
 
         :param title: Simple title of block
@@ -225,6 +226,7 @@ class ConfigTemplate:
         :param block: Source data block
         :return: Final description.
         """
+        schema_kws = ["allOf", "anyOf", "oneOf"]
 
         def _find_required(d_in: Dict[str, Any]) -> Optional[List[str]]:
             if "required" in d_in:
@@ -237,6 +239,18 @@ class ConfigTemplate:
                         return ret
             return None
 
+        def _find_required_in_schema_kws(d_in: Dict[str, Any]) -> List[str]:
+            """Find all required properties in structure composed of nested properties such as allOf/anyOf/oneOf."""
+            all_props: List[str] = []
+            for k, v in d_in.items():
+                if k == "required":
+                    all_props.extend(v)
+                elif k in schema_kws:
+                    for item in v:
+                        req_props = _find_required_in_schema_kws(item)
+                        all_props.extend(req_props)
+            return all_props
+
         if "required" in block and key in block["required"]:
             return "Required"
 
@@ -246,12 +260,17 @@ class ConfigTemplate:
                 if ret and key in ret:
                     return "Conditionally required"
 
+        actual_kws = {k: v for k, v in block.items() if k in schema_kws}
+        ret = _find_required_in_schema_kws(actual_kws)
+        if key in ret:
+            return "Conditionally required"
+
         return "Optional"
 
     def _create_object_block(
         self,
         block: Dict[str, Dict[str, Any]],
-        order_list: List[str] = None,
+        order_list: Optional[List[str]] = None,
     ) -> CM:
         """Private function used to create object block with data.
 
@@ -301,7 +320,7 @@ class ConfigTemplate:
         if isinstance(value, CS):
             self.indent -= 1
             return value
-        elif isinstance(value, list):
+        if isinstance(value, list):
             cfg_s.extend(value)
         else:
             cfg_s.append(value)
@@ -396,7 +415,12 @@ class ConfigTemplate:
         """
         if "properties" not in schema:
             return []
-        return list(schema["properties"].keys())
+        return [
+            key
+            for key in schema["properties"]
+            if "skip_in_template" not in schema["properties"][key]
+            or schema["properties"][key]["skip_in_template"] is False
+        ]
 
     def export(self) -> CM:
         """Export configuration template into CommentedMap.
@@ -425,7 +449,7 @@ class ConfigTemplate:
                 block_list[title]["description"] = schema.get("description", "")
 
         # 2. Merge all schemas together to get whole single schema
-        schemas_merger = SPSDK_Merger(
+        schemas_merger = SPSDKMerger(
             [(list, ["set"]), (dict, ["merge"]), (set, ["union"])],
             ["override"],
             ["override"],

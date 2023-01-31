@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import copy
-import json
-import os
 
 import pytest
 
@@ -24,7 +22,6 @@ from spsdk.image.ahab.ahab_container import (
     SRKRecord,
     SRKTable,
 )
-from spsdk.utils.misc import use_working_directory
 
 
 @pytest.fixture
@@ -142,21 +139,21 @@ def test_container_head_compare(container_head):
 def test_container_head_validate(container_head: HeaderContainer):
     """Test of HeaderContainer class validate function."""
 
-    container_head.validate()
+    container_head.validate_header()
 
     container_head.tag = None
     with pytest.raises(SPSDKValueError):
-        container_head.validate()
+        container_head.validate_header()
     container_head.tag = 0x01
 
     container_head.length = None
     with pytest.raises(SPSDKValueError):
-        container_head.validate()
+        container_head.validate_header()
     container_head.length = 0x01
 
     container_head.version = None
     with pytest.raises(SPSDKValueError):
-        container_head.validate()
+        container_head.validate_header()
     container_head.version = 0x01
 
 

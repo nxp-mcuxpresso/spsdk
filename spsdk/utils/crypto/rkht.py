@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@
 
 import logging
 import math
-from typing import List, Union
+from typing import List, Optional, Union
 
 from spsdk.crypto import (
     Certificate,
@@ -32,11 +32,11 @@ class RKHT:
 
     def __init__(
         self,
-        keys: List = None,
+        keys: Optional[List] = None,
         keys_cnt: int = 4,
         min_keys_cnt: int = 4,
-        password: str = None,
-        search_paths: List[str] = None,
+        password: Optional[str] = None,
+        search_paths: Optional[List[str]] = None,
     ) -> None:
         """Initialization of Root Key Hash Table class.
 
@@ -167,8 +167,8 @@ class RKHT:
     @staticmethod
     def convert_key(
         key: Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate],
-        password: str = None,
-        search_paths: List[str] = None,
+        password: Optional[str] = None,
+        search_paths: Optional[List[str]] = None,
     ) -> PublicKey:
         """Convert practically whole input that could hold Public key into public key.
 

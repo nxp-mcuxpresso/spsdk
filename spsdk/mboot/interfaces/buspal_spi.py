@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,16 +11,18 @@ import logging
 import struct
 import time
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .base import Interface
 from .buspal import BBConstants, Buspal, BuspalMode
 
-logger = logging.getLogger("MBOOT:BUSPAL_SPI")
+logger = logging.getLogger(__name__)
 
 
 def scan_buspal_spi(
-    port: str = None, timeout: int = Buspal.DEFAULT_TIMEOUT, props: List[str] = None
+    port: Optional[str] = None,
+    timeout: int = Buspal.DEFAULT_TIMEOUT,
+    props: Optional[List[str]] = None,
 ) -> List[Interface]:
     """Scan connected serial ports and set BUSPAL properties.
 
@@ -36,6 +38,7 @@ def scan_buspal_spi(
     return BuspalSPI.scan_buspal(port, timeout, props)
 
 
+# pylint: disable=invalid-name
 class SpiModeCommand(Enum):
     """Spi mode commands."""
 
@@ -50,6 +53,7 @@ class SpiModeCommand(Enum):
     write_then_read = 0x04  # 00000100 - Write then read extended command
 
 
+# pylint: disable=invalid-name
 class SpiConfigShift(Enum):
     """Spi configuration shifts for the mask."""
 
@@ -58,6 +62,7 @@ class SpiConfigShift(Enum):
     polarity = 2
 
 
+# pylint: disable=invalid-name
 class SpiClockPolarity(Enum):
     """SPI clock polarity configuration."""
 
@@ -65,6 +70,7 @@ class SpiClockPolarity(Enum):
     active_low = 1  # Active-low SPI clock (idles high).
 
 
+# pylint: disable=invalid-name
 class SpiClockPhase(Enum):
     """SPI clock phase configuration."""
 
@@ -74,6 +80,7 @@ class SpiClockPhase(Enum):
     second_edge = 1
 
 
+# pylint: disable=invalid-name
 class SpiShiftDirection(Enum):
     """SPI clock phase configuration."""
 

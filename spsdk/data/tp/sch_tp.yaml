@@ -12,7 +12,7 @@ family:
       type: string
       enum: [lpc55s6x, lpc55s2x, lpc55s1x, lpc55s0x]
       template_value: lpc55s6x
-  required: family
+  required: [family]
 
 provisioning_firmware:
   type: object
@@ -379,12 +379,3 @@ oem_id:
           - oem_id_prk_path
           - oem_id_addresses
           - oem_id_config
-
-tp_config_manufacturing:
-  type: object
-  title: Trust Provisioning Configuration Temporary Settings
-  properties:
-    nxp_prod_card_prk_path:
-      type: string
-      format: file
-  required: [nxp_prod_card_prk_path]
