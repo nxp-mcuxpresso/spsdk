@@ -43,7 +43,7 @@ NXPDEVHSM_DATABASE_FILE: str = os.path.join(NXPDEVHSM_DATA_FOLDER, "database.yam
 class DeviceHsm:
     """Class to handle device HSM provisioning procedure."""
 
-    DEVBUFF_BASE = 0x20007000
+    DEVBUFF_BASE = 0x20008000
     DEVBUFF_SIZE = 0x100
 
     DEVBUFF_BASE0 = DEVBUFF_BASE
@@ -73,7 +73,8 @@ class DeviceHsm:
         family: str,
         container_conf: Optional[str] = None,
         workspace: Optional[str] = None,
-        reset: bool = True,
+        initial_reset: bool = False,
+        final_reset: bool = True,
     ) -> None:
         """Initialization of device HSM class. Its design to create provisioned SB3 file.
 
@@ -83,7 +84,8 @@ class DeviceHsm:
         :param family: chip family
         :param container_conf: Optional elftosb configuration file (to specify user list of SB commands).
         :param workspace: Optional folder to store middle results.
-        :param reset: Reset device before and after DevHSM creation of SB3 file.
+        :param initial_reset: Reset device before DevHSM creation of SB3 file.
+        :param final_reset: Reset device after DevHSM creation of SB3 file.
         :raises SPSDKError: In case of any vulnerability.
         """
         self.database = Database(NXPDEVHSM_DATABASE_FILE)
@@ -92,7 +94,8 @@ class DeviceHsm:
         self.oem_share_input = oem_share_input
         self.info_print = info_print
         self.workspace = workspace
-        self.reset = reset
+        self.initial_reset = initial_reset
+        self.final_reset = final_reset
         self.container_conf_dir = os.path.dirname(container_conf) if container_conf else None
         if self.workspace and not os.path.isdir(self.workspace):
             os.mkdir(self.workspace)
@@ -150,7 +153,7 @@ class DeviceHsm:
     def create_sb3(self) -> None:
         """Do device hsm process to create SB_KEK provisioning SB file."""
         # 1: Initial target reset to ensure OEM_MASTER_SHARE works properly (not tainted by previous run)
-        if self.reset:
+        if self.initial_reset:
             self.info_print(" 1: Resetting the target device")
             self.mboot.reset(timeout=self.RESET_TIMEOUT)
         else:
@@ -284,9 +287,9 @@ class DeviceHsm:
         )
 
         # 10: Final reset to ensure followup operations (e.g. receive-sb-file) work correctly
-        if self.reset:
+        if self.final_reset:
             self.info_print("10: Resetting the target device")
-            self.mboot.reset(timeout=self.RESET_TIMEOUT)
+            self.mboot.reset(timeout=self.RESET_TIMEOUT, reopen=False)
         else:
             self.info_print("10: Final target reset disabled")
 
@@ -305,7 +308,9 @@ class DeviceHsm:
         :return: Tuple with OEM generate master share outputs.
         """
         if not self.mboot.write_memory(self.DEVBUFF_BASE0, oem_share_input):
-            raise SPSDKError("Cannot write OEM SHARE INPUT into device.")
+            raise SPSDKError(
+                f"Cannot write OEM SHARE INPUT into device. Error: {self.mboot.status_string}"
+            )
 
         oem_gen_master_share_res = self.mboot.tp_oem_gen_master_share(
             self.DEVBUFF_BASE0,
@@ -320,8 +325,8 @@ class DeviceHsm:
 
         if not oem_gen_master_share_res:
             raise SPSDKError(
-                "OEM generate master share command failed,"
-                " device probably needs reset due to doubled call of this command."
+                f"OEM generate master share command failed. Error: {self.mboot.status_string}\n"
+                "Device probably needs reset due to doubled call of this command."
             )
 
         if (
@@ -336,7 +341,9 @@ class DeviceHsm:
             self.DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE,
         )
         if not oem_enc_share:
-            raise SPSDKError("Cannot read OEM ENCRYPTED SHARE OUTPUT from device.")
+            raise SPSDKError(
+                f"Cannot read OEM ENCRYPTED SHARE OUTPUT from device. Error: {self.mboot.status_string}"
+            )
         self.store_temp_res("ENC_OEM_SHARE.bin", oem_enc_share)
 
         oem_enc_master_share = self.mboot.read_memory(
@@ -344,7 +351,9 @@ class DeviceHsm:
             self.DEVBUFF_GEN_MASTER_ENC_MASTER_SHARE_OUTPUT_SIZE,
         )
         if not oem_enc_master_share:
-            raise SPSDKError("Cannot read OEM ENCRYPTED MASTER SHARE OUTPUT from device.")
+            raise SPSDKError(
+                f"Cannot read OEM ENCRYPTED MASTER SHARE OUTPUT from device. Error: {self.mboot.status_string}"
+            )
         self.store_temp_res("ENC_OEM_MASTER_SHARE.bin", oem_enc_master_share)
 
         oem_cert = self.mboot.read_memory(
@@ -352,7 +361,9 @@ class DeviceHsm:
             self.DEVBUFF_GEN_MASTER_CUST_CERT_PUK_OUTPUT_SIZE,
         )
         if not oem_cert:
-            raise SPSDKError("Cannot read OEM CERTIFICATE from device.")
+            raise SPSDKError(
+                f"Cannot read OEM CERTIFICATE from device. Error: {self.mboot.status_string}"
+            )
         self.store_temp_res("OEM_CERT.bin", oem_cert)
 
         return oem_enc_share, oem_enc_master_share, oem_cert
@@ -377,7 +388,7 @@ class DeviceHsm:
         )
 
         if not hsm_gen_key_res:
-            raise SPSDKError("HSM generate key command failed.")
+            raise SPSDKError(f"HSM generate key command failed. Error: {self.mboot.status_string}")
 
         if (
             hsm_gen_key_res[0] != self.DEVBUFF_HSM_GENKEY_KEYBLOB_SIZE
@@ -390,14 +401,18 @@ class DeviceHsm:
             self.DEVBUFF_HSM_GENKEY_KEYBLOB_SIZE,
         )
         if not prk:
-            raise SPSDKError("Cannot read generated private key from device.")
+            raise SPSDKError(
+                f"Cannot read generated private key from device. Error: {self.mboot.status_string}"
+            )
 
         puk = self.mboot.read_memory(
             self.DEVBUFF_BASE1,
             self.DEVBUFF_HSM_GENKEY_KEYBLOB_PUK_SIZE,
         )
         if not puk:
-            raise SPSDKError("Cannot read generated public key from device.")
+            raise SPSDKError(
+                f"Cannot read generated public key from device. Error: {self.mboot.status_string}"
+            )
 
         self.store_temp_res((key_name or str(TrustProvOemKeyType[str(key_type)])) + "_PRK.bin", prk)
         self.store_temp_res((key_name or str(TrustProvOemKeyType[str(key_type)])) + "_PUK.bin", puk)
@@ -412,7 +427,9 @@ class DeviceHsm:
         :return: Wrapped user PCK by RFC3396.
         """
         if not self.mboot.write_memory(self.DEVBUFF_BASE0, user_pck):
-            raise SPSDKError("Cannot write USER_PCK into device.")
+            raise SPSDKError(
+                f"Cannot write USER_PCK into device. Error: {self.mboot.status_string}"
+            )
 
         hsm_store_key_res = self.mboot.tp_hsm_store_key(
             TrustProvKeyType.CKDFK,
@@ -424,7 +441,7 @@ class DeviceHsm:
         )
 
         if not hsm_store_key_res:
-            raise SPSDKError("HSM Store Key command failed.")
+            raise SPSDKError(f"HSM Store Key command failed. Error: {self.mboot.status_string}")
 
         if hsm_store_key_res[1] != self.DEVBUFF_WRAPPED_USER_PCK_KEY_SIZE:
             raise SPSDKError("HSM Store Key command has invalid results.")
@@ -434,7 +451,9 @@ class DeviceHsm:
             self.DEVBUFF_WRAPPED_USER_PCK_KEY_SIZE,
         )
         if not wrapped_user_pck:
-            raise SPSDKError("Cannot read WRAPPED USER PCK from device.")
+            raise SPSDKError(
+                f"Cannot read WRAPPED USER PCK from device. Error: {self.mboot.status_string}"
+            )
 
         self.store_temp_res("CUST_MK_SK.bin", wrapped_user_pck)
 
@@ -449,9 +468,13 @@ class DeviceHsm:
         :return: Data blob signature (64 bytes).
         """
         if not self.mboot.write_memory(self.DEVBUFF_BASE0, key):
-            raise SPSDKError("Cannot write signing key into device.")
+            raise SPSDKError(
+                f"Cannot write signing key into device. Error: {self.mboot.status_string}"
+            )
         if not self.mboot.write_memory(self.DEVBUFF_BASE1, data_to_sign):
-            raise SPSDKError("Cannot write Data to sign into device.")
+            raise SPSDKError(
+                f"Cannot write Data to sign into device. Error: {self.mboot.status_string}"
+            )
         hsm_gen_key_res = self.mboot.tp_hsm_enc_sign(
             self.DEVBUFF_BASE0,
             len(key),
@@ -462,14 +485,19 @@ class DeviceHsm:
         )
 
         if hsm_gen_key_res != self.DEVBUFF_SB3_SIGNATURE_SIZE:
-            raise SPSDKError("HSM signing command failed.")
+            raise SPSDKError(
+                f"HSM signing command failed. Invalid signature size: {hsm_gen_key_res} "
+                f"MBoot Status: {self.mboot.status_string}"
+            )
 
         signature = self.mboot.read_memory(
             self.DEVBUFF_BASE2,
             self.DEVBUFF_SB3_SIGNATURE_SIZE,
         )
         if not signature:
-            raise SPSDKError("Cannot read generated signature from device.")
+            raise SPSDKError(
+                f"Cannot read generated signature from device. Error: {self.mboot.status_string}"
+            )
 
         self.store_temp_res("SB3_sign.bin", signature, "to_merge")
 
@@ -525,16 +553,23 @@ class DeviceHsm:
         :return: List of encrypted command blocks on device.
         """
         if not self.mboot.write_memory(self.DEVBUFF_BASE0, cust_fw_enc_key):
-            raise SPSDKError("Cannot write customer fw encryption key into device.")
+            raise SPSDKError(
+                f"Cannot write customer fw encryption key into device. Error: {self.mboot.status_string}"
+            )
         self.store_temp_res("SB3_header.bin", sb3_header, "to_encrypt")
         if not self.mboot.write_memory(self.DEVBUFF_BASE1, sb3_header):
-            raise SPSDKError("Cannot write SB3 header into device.")
+            raise SPSDKError(
+                f"Cannot write SB3 header into device. Error: {self.mboot.status_string}"
+            )
 
         encrypted_blocks = []
         for data_cmd_block_ix, data_cmd_block in enumerate(data_cmd_blocks, start=1):
             self.store_temp_res(f"SB3_block_{data_cmd_block_ix}.bin", data_cmd_block, "to_encrypt")
             if not self.mboot.write_memory(self.DEVBUFF_BASE2, data_cmd_block):
-                raise SPSDKError(f"Cannot write SB3 data block{data_cmd_block_ix} into device.")
+                raise SPSDKError(
+                    f"Cannot write SB3 data block{data_cmd_block_ix} into device. "
+                    f"Error: {self.mboot.status_string}"
+                )
             key_id = CmdLoadKeyBlob.get_key_id(
                 self.family, CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_INT_SK
             )
@@ -549,7 +584,8 @@ class DeviceHsm:
                 self.DEVBUFF_DATA_BLOCK_SIZE,
             ):
                 raise SPSDKError(
-                    f"Cannot run SB3 data block_{data_cmd_block_ix} HSM Encryption in device."
+                    f"Cannot run SB3 data block_{data_cmd_block_ix} HSM Encryption in device. "
+                    f"Error: {self.mboot.status_string}"
                 )
 
             encrypted_block = self.mboot.read_memory(
@@ -557,7 +593,10 @@ class DeviceHsm:
                 self.DEVBUFF_DATA_BLOCK_SIZE,
             )
             if not encrypted_block:
-                raise SPSDKError(f"Cannot read SB3 data block_{data_cmd_block_ix} from device.")
+                raise SPSDKError(
+                    f"Cannot read SB3 data block_{data_cmd_block_ix} from device. "
+                    f"Error: {self.mboot.status_string}"
+                )
 
             self.store_temp_res(f"SB3_block_{data_cmd_block_ix}.bin", encrypted_block, "encrypted")
 
@@ -650,10 +689,23 @@ def main(log_level: int) -> int:
     type=click.Choice(["lpc55s3x"], case_sensitive=False),
 )
 @click.option(
-    "-r/-R",
-    "--reset/--no-reset",
+    "-ir/-IR",
+    "--initial-reset/--no-init-reset",
+    default=False,
+    help=(
+        "Reset device BEFORE DevHSM operation. The DevHSM operation can run only once between resets. "
+        "Do not enable this option on Linux/Mac when using USB. By default this reset is DISABLED."
+    ),
+)
+@click.option(
+    "-fr/-FR",
+    "--final-reset/--no-final-reset",
     default=True,
-    help="Control resetting target before and after DevHSM operation. Reset is enabled by default.",
+    help=(
+        "Reset device AFTER DevHSM operation. This reset is required if you need to use the device "
+        "after DevHSM operation for other security related operations (e.g. receive-sb-file). "
+        "By default this reset is ENABLED."
+    ),
 )
 @click.argument("output-path", type=click.File(mode="wb"))
 def generate(
@@ -668,7 +720,8 @@ def generate(
     container_conf: str,
     timeout: int,
     family: str,
-    reset: bool,
+    initial_reset: bool,
+    final_reset: bool,
 ) -> None:
     """Generate provisioning SB3.1 file.
 
@@ -706,7 +759,8 @@ def generate(
             container_conf=container_conf,
             workspace=workspace,
             family=family_final,
-            reset=reset,
+            initial_reset=initial_reset,
+            final_reset=final_reset,
         )
         devhsm.create_sb3()
         output_path.write(devhsm.export())

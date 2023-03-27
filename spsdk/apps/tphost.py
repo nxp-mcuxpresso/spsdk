@@ -232,6 +232,7 @@ def load_tpfw(
         timeout=tp_config.timeout,
         skip_test=skip_test,
         keep_target_open=False,
+        skip_usb_enumeration=skip_test,
     )
 
 

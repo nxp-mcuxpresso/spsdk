@@ -74,7 +74,7 @@ Secure Provisioning SDK (SPSDK)
     examples/jupyter
     examples/lpc55sxx_secure_boot
     examples/lpc55sxx_secure_fw_update
-    examples/kw45xx
+    examples/kw45xx_k32w1xx
 
 Indices and tables
 ==================

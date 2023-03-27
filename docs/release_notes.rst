@@ -8,6 +8,27 @@
 Release Notes
 =============
 
+-----------------------
+1.9.1 (17-March-2023)
+-----------------------
+
+**New features**
+
+* :ref:`nxpdevhsm`:
+    - split reset option in nxpdevhsm into two; disable init reset by default
+
+**Bugfixes**
+
+* :ref:`nxpdebugmbox`:
+    - fix Linux error on PyOCD
+    - fix PyOCD and PEmicro connection for kw45xx and k32w1xx
+* :ref:`nxpdevhsm`:
+    - fix buffer base address for DevHSM operations
+* :ref:`nxpimage`:
+    - fix handling exception when the root cert index is wrong
+* :ref:`tphost`/:ref:`tpconfig`:
+    - incorrect output in TP PG command in case of an failure
+
 -------------------------
 1.9.0 (30-January-2023)
 -------------------------

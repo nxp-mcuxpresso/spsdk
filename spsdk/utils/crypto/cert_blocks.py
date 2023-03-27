@@ -836,6 +836,13 @@ class CertBlockV31(CertBlock):
                 raise SPSDKError("There are gaps in rootCertificateXFile definition")
 
         main_root_cert_id = get_main_cert_index(config, default=0)
+        try:
+            root_certificates[main_root_cert_id]
+        except IndexError as e:
+            raise SPSDKError(
+                f"Main root certificate with id {main_root_cert_id} does not exist"
+            ) from e
+
         main_root_private_key_file = config.get("mainRootCertPrivateKeyFile")
         use_isk = config.get("useIsk", False)
         isk_certificate = config.get("signingCertificateFile")

@@ -1515,7 +1515,9 @@ def prove_genuinity(ctx: click.Context, address: int, buffer_size: int) -> None:
             [tp_response_length],
             mboot.status_code,
             use_json=ctx.obj["use_json"],
-            extra_output=f"TP response will be {tp_response_length} bytes long.",
+            extra_output=f"TP response will be {tp_response_length} bytes long."
+            if tp_response_length
+            else None,
         )
 
 

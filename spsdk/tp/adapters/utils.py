@@ -16,8 +16,6 @@ from spsdk.utils.misc import Timeout
 from .. import SPSDKTpError
 from .tptarget_blhost import TpTargetBlHost
 
-USB_DETECTION_TIMEOUT = 1
-
 logger = logging.getLogger(__name__)
 
 
@@ -57,17 +55,20 @@ def get_current_usb_paths() -> Set[bytes]:
     return {device.path for device in scan_usb()}
 
 
-def detect_new_usb_path(initial_set: Optional[Set[bytes]] = None) -> bytes:
+def detect_new_usb_path(
+    initial_set: Optional[Set[bytes]] = None, timeout: int = 1000
+) -> Optional[bytes]:
     """Return USB path to newly found NXP USB device.
 
     :param initial_set: Initial set of USB device paths, defaults to None
-    :raises SPSDKTpError: Unable to detect new device in time USB_DETECTION_TIMEOUT (default: 1sec)
+    :param timeout: Timeout in milliseconds for the device detection
+    :raises SPSDKTpError: Unable to determine single USB device change in time
     :raises SPSDKTpError: Multiple USB devices detected at once
-    :return: USB path to newly detected device
+    :return: USB path to newly detected device, None in case no changes were detected
     """
-    timeout = Timeout(USB_DETECTION_TIMEOUT)
+    loc_timeout = Timeout(timeout=timeout, units="ms")
     previous_set = initial_set or set()
-    while not timeout.overflow():
+    while not loc_timeout.overflow():
         new_set = get_current_usb_paths()
         addition = new_set.difference(previous_set)
         logger.info(f"Additions: {addition}")
@@ -76,13 +77,20 @@ def detect_new_usb_path(initial_set: Optional[Set[bytes]] = None) -> bytes:
             raise SPSDKTpError("Multiple new usb devices detected at once!")
         if len(addition) == 1:
             return addition.pop()
-        # TODO: should we wait here for a bit?
 
-    raise SPSDKTpError(f"No new USB device detected in time ({USB_DETECTION_TIMEOUT} sec)")
+    # when timeout passes and the USB paths set stays the same
+    # this happens mostly on Windows under higher CPU load
+    if initial_set == previous_set:
+        logger.info("No changes were detected")
+        return None
+
+    raise SPSDKTpError(f"USB device detected malfunctioned")
 
 
-def update_usb_path(tptarget: TpTargetBlHost, new_usb_path: bytes) -> None:
+def update_usb_path(tptarget: TpTargetBlHost, new_usb_path: Optional[bytes]) -> None:
     """Update USB path in TP target's MBoot USB."""
     if not isinstance(tptarget.mboot._device, RawHid):
+        return
+    if new_usb_path is None:
         return
     tptarget.mboot._device.path = new_usb_path

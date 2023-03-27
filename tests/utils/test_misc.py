@@ -11,7 +11,6 @@ import time
 from typing import Union
 
 import pytest
-from bincopy import BinFile
 
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError

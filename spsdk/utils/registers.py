@@ -1173,7 +1173,14 @@ class Registers:
             elif "bitfields" in reg_dict.keys():
                 for bitfield_name in reg_dict["bitfields"]:
                     bitfield_val = reg_dict["bitfields"][bitfield_name]
-                    bitfield = register.find_bitfield(bitfield_name)
+                    try:
+                        bitfield = register.find_bitfield(bitfield_name)
+                    except SPSDKRegsErrorBitfieldNotFound:
+                        logger.error(
+                            f"The {bitfield_name} is not found in register {register.name}."
+                            " Please update the PFR configuration data"
+                        )
+                        continue
                     if (
                         exclude_fields
                         and reg_name in exclude_fields.keys()
@@ -1181,7 +1188,20 @@ class Registers:
                     ):
                         continue
 
-                    bitfield.set_enum_value(bitfield_val, True)
+                    try:
+                        bitfield.set_enum_value(bitfield_val, True)
+                    except SPSDKError:
+                        # New versions of register data do not contain register and bitfield value in enum
+                        old_bitfield = bitfield_val
+                        bitfield_val = bitfield_val.replace(bitfield.name + "_", "").replace(
+                            register.name + "_", ""
+                        )
+                        # Some bitfield were renamed from ENABLE to ALLOW
+                        bitfield_val = "ALLOW" if bitfield_val == "ENABLE" else bitfield_val
+                        logger.warning(
+                            f"Bitfield {old_bitfield} not found, trying backward compatibility mode with {bitfield_val}"
+                        )
+                        bitfield.set_enum_value(bitfield_val, True)
             else:
                 logger.error(f"There are no data for {reg_name} register.")
 

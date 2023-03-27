@@ -111,8 +111,6 @@ class DebugProbePyOCD(DebugProbe):
             )
 
             self.probe.session = Session(self.probe)
-
-            # pylint: disable=protected-access  # we require a more specific setup
             self.probe.open()
             if isinstance(self.probe, JLinkProbe):
                 self.probe._link.set_tif(pylink.enums.JLinkInterfaces.SWD)
@@ -138,6 +136,7 @@ class DebugProbePyOCD(DebugProbe):
         """
         if self.probe:
             self.probe.close()
+            self.probe = None
 
     def assert_reset_line(self, assert_reset: bool = False) -> None:
         """Control reset line at a target.
@@ -186,8 +185,9 @@ class DebugProbePyOCD(DebugProbe):
             raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
         try:
             if access_port:
-                self.select_ap(addr)
-                addr = addr & 0x0F
+                if not PyOCDDebugProbe.Capability.MANAGED_AP_SELECTION in self.probe.capabilities:
+                    self.select_ap(addr)
+                    addr = addr & 0x0F
                 ret = self.probe.read_ap(addr=addr)
             else:
                 ret = self.probe.read_dp(addr)
@@ -215,8 +215,9 @@ class DebugProbePyOCD(DebugProbe):
             raise SPSDKDebugProbeNotOpenError("The PyOCD debug probe is not opened yet")
         try:
             if access_port:
-                self.select_ap(addr)
-                addr = addr & 0x0F
+                if not PyOCDDebugProbe.Capability.MANAGED_AP_SELECTION in self.probe.capabilities:
+                    self.select_ap(addr)
+                    addr = addr & 0x0F
                 self.probe.write_ap(addr=addr, data=data)
             else:
                 self.probe.write_dp(addr, data)

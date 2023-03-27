@@ -3,8 +3,7 @@ devices:
     attributes:
       cfpa_address: 0x9_DE00
   lpc55s2x:
-    attributes:
-      device_alias: lpc55s6x
+    device_alias: lpc55s6x
   lpc55s1x:
     attributes:
       cfpa_address: 0x3_DE00
@@ -12,8 +11,7 @@ devices:
       erase_memory_start: 0
       erase_memory_length: 0x1_8000
   lpc55s0x:
-    attributes:
-      device_alias: lpc55s1x
+    device_alias: lpc55s1x
 attributes:
   erase_memory: false
   need_tp_fw: true

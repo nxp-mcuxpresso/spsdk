@@ -62,6 +62,7 @@ class TrustProvisioningHost:
         database: Optional[Database] = None,
         skip_test: bool = True,
         keep_target_open: bool = True,
+        skip_usb_enumeration: bool = False,
     ) -> None:
         """Method loads the provisioning firmware into device.
 
@@ -71,6 +72,7 @@ class TrustProvisioningHost:
         :param database: Database of all supported devices (automatic lookup if not specified)
         :param skip_test: Skip test for checking that OEM Provisioning Firmware booted-up
         :param keep_target_open: Keep target device open
+        :param skip_usb_enumeration: Skip USB enumeration after loading the Provisioning firmware
         :raises SPSDKTpError: The Provisioning firmware doesn't boot
         """
         if database is None:
@@ -98,7 +100,7 @@ class TrustProvisioningHost:
             # Need to reset the connection due to re-init on the MCU side
             self.tptarget.close()
 
-            if self.tptarget.uses_usb:
+            if self.tptarget.uses_usb and not skip_usb_enumeration:
                 assert isinstance(self.tptarget, TpTargetBlHost)
                 new_usb_path = detect_new_usb_path(initial_set=initial_usb_set)
                 update_usb_path(self.tptarget, new_usb_path=new_usb_path)
@@ -118,7 +120,7 @@ class TrustProvisioningHost:
         except SPSDKError as e:
             self.tptarget.close()
             raise SPSDKTpError(
-                "Can't load/connect to the TrustProvisioning Firmware. "
+                f"Can't load/connect to the TrustProvisioning Firmware. Error: {e}\n"
                 "Please make sure your device supports TrustProvisioning."
             ) from e
 
@@ -220,6 +222,7 @@ class TrustProvisioningHost:
                     database=database,
                     skip_test=True,
                     keep_target_open=True,
+                    skip_usb_enumeration=False,
                 )
 
             self.info_print("2.Step - Get the initial challenge from TP device.")

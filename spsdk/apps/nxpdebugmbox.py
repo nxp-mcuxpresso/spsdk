@@ -13,6 +13,7 @@ import os
 import struct
 import sys
 from dataclasses import dataclass
+from time import sleep
 from typing import Callable, Iterator, List, Optional
 
 import click
@@ -317,6 +318,7 @@ def auth(
                 mail_box.debug_probe.close()
                 mail_box.debug_probe.open()
                 # Do test of access to AHB bus
+                sleep(0.2)
                 ahb_access_granted = test_ahb_access(mail_box.debug_probe)
                 res_str = (
                     (colorama.Fore.GREEN + "successfully")
