@@ -1,4 +1,9 @@
 <?xml version="1.0" ?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs>
 	<register offset="0x210" width="32" name="REG1" reversed="False" description="Register 1, used for testing antipole register and some computed fields.">
 		<bit_field offset="0x0" width="8" name="CRC8" access="RW" reset_value="0" description="CRC-8/ITU of upper 3 bytes of this register. Polynomial=0x07, initial value= 0x00, XorOut=0x55. "/>

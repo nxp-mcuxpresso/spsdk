@@ -138,6 +138,7 @@ class TrustZone:
         :return: List of validation schemas for TZ supported families.
         """
         sch_cfg = ValidationSchemas.get_schema_file(TZ_SCH_FILE)
+        sch_cfg["tz_family_rev"]["properties"]["family"]["enum"] = cls.get_supported_families()
         return [sch_cfg["tz_family_rev"]]
 
     @classmethod
@@ -170,7 +171,7 @@ class TrustZone:
             if "patternProperties" in sch_cfg["tz"]["properties"]["trustZonePreset"].keys():
                 sch_cfg["tz"]["properties"]["trustZonePreset"].pop("patternProperties")
             sch_cfg["tz"]["properties"]["trustZonePreset"]["properties"] = preset_properties
-
+            sch_cfg["tz_family_rev"]["properties"]["family"]["enum"] = cls.get_supported_families()
             return [sch_cfg["tz_family_rev"], sch_cfg["tz"]]
         except (KeyError, SPSDKError) as exc:
             raise SPSDKError(f"Family {family} or revision {revision} is not supported") from exc

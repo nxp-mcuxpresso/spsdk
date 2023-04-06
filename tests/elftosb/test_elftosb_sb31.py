@@ -21,7 +21,6 @@ from spsdk.utils.misc import load_configuration, use_working_directory
 def process_config_file(
     config_path: str, destination: str, config_member: str
 ) -> Tuple[str, str, str]:
-
     config_data = load_configuration(config_path)
     for key in config_data:
         if isinstance(config_data[key], str):
@@ -70,7 +69,6 @@ def test_elftosb_sb31(data_dir, tmpdir, config_file, device):
 
 
 def test_elftosb_sb31_notime(data_dir, tmpdir):
-
     config_file = "sb3_256_256.json"
     device = "lpc55s3x"
     runner = CliRunner()

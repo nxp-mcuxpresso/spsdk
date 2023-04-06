@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 Secure vector table address (vtor_addr): "0x0"
 Non-secure vector table address (vtor_ns_addr): "0x0"
 Interrupt target non-secure register 0 (nvic_itns0): "0x0"

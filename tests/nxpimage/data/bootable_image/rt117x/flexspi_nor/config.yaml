@@ -1,0 +1,14 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Bootable Image Configuration template for rt117x.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==                                        
+# ----------------------------------------------------------------------------------------------------
+family: rt117x  # [Required], MCU family, MCU family name., Possible options:['rt116x', 'rt117x']
+revision: latest # [Optional], Chip silicon revision, If needed this could be used to specify silicon revision of device., Possible options:['latest', 'latest']
+memory_type: flexspi_nor # [Required], Memory type, Specify type of memory used by bootable image description., Possible options:['flexspi_nor']
+keyblob: keyblob.bin # [Optional], Key Blob block path, Key blob block path
+fcb: fcb.bin # [Optional], FCB block path, Flash Configuration block path
+keystore: keystore.bin # [Optional], Key Store block path, Key store block path
+hab_container: hab_container.bin # [Optional], HAB container, HAB container path

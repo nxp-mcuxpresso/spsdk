@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Tests for Signature Provider interface."""
 from os import path
 
-from spsdk.crypto import SignatureProvider
+from spsdk.crypto.signature_provider import SignatureProvider
 
 
 def test_types():
@@ -27,7 +27,7 @@ def test_invalid_sp_type():
 
 
 def test_plain_file(data_dir):
-    my_key_path = path.join(data_dir, "priv.pem")
+    my_key_path = path.join(data_dir, "priv.pem").replace("\\", "/")
     provider = SignatureProvider.create(f"type=file;file_path={my_key_path}")
 
     assert provider.sp_type == "file"

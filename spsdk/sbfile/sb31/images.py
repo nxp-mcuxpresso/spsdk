@@ -6,23 +6,29 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module used for generation SecureBinary V3.1."""
 import logging
+import os
+from copy import deepcopy
 from datetime import datetime
 from struct import calcsize, pack, unpack_from
 from typing import Any, Dict, List, Optional
 
 from spsdk import SPSDKError
-from spsdk.crypto.loaders import load_private_key_from_data
-from spsdk.image import MBIMG_SCH_FILE, SB3_SCH_FILE
+from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.image import IMG_DATA_FOLDER, MBIMG_SCH_FILE
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
 from spsdk.sbfile.sb31.functions import KeyDerivator
 from spsdk.utils.crypto import CRYPTO_SCH_FILE
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.backend_internal import internal_backend
 from spsdk.utils.crypto.cert_blocks import CertBlockV31
-from spsdk.utils.misc import align_block, load_binary, load_text, value_to_int
+from spsdk.utils.database import Database
+from spsdk.utils.misc import align_block, load_text, value_to_int
 from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
 
 logger = logging.getLogger(__name__)
+
+SB3_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_sb3.yaml")
+DATABASE_FILE = os.path.join(IMG_DATA_FOLDER, "database_sb31.yaml")
 
 
 ########################################################################################################################
@@ -381,7 +387,7 @@ class SecureBinary31(BaseClass):
         curve_name: str,
         cert_block: CertBlockV31,
         firmware_version: int,
-        signing_key: bytes,
+        signature_provider: SignatureProvider,
         pck: Optional[bytes] = None,
         kdk_access_rights: Optional[int] = None,
         description: Optional[str] = None,
@@ -395,7 +401,7 @@ class SecureBinary31(BaseClass):
         :param curve_name: Name of the ECC curve used for Secure binary (secp256r1/secp384r1).
         :param cert_block: Certification block.
         :param firmware_version: Firmware version (must be bigger than current CMPA record).
-        :param signing_key: Key to final sign of SB3.1 image.
+        :param signature_provider: Signature provider for final sign of SB3.1 image.
         :param pck: Part Common Key (needed if `is_encrypted` is True), defaults to None
         :param kdk_access_rights: Key Derivation Key access rights (needed if `is_encrypted` is True), defaults to None
         :param description: Custom description up to 16 characters long, defaults to None
@@ -416,7 +422,7 @@ class SecureBinary31(BaseClass):
         self.description = description
         self.is_nxp_container = is_nxp_container
         self.flags = flags
-        self.signing_key = signing_key
+        self.signature_provider = signature_provider
 
         self.sb_header = SecureBinary31Header(
             firmware_version=self.firmware_version,
@@ -443,11 +449,42 @@ class SecureBinary31(BaseClass):
         return {"secp256r1": 256, "secp384r1": 384}[curve_name]
 
     @classmethod
+    def get_validation_schemas_family(cls) -> List[Dict[str, Any]]:
+        """Create the validation schema just for supported families.
+
+        :return: List of validation schemas for SB31 supported families.
+        """
+        sch_cfg = ValidationSchemas.get_schema_file(SB3_SCH_FILE)
+        sch_cfg["sb3_family"]["properties"]["family"]["enum"] = cls.get_supported_families()
+        return [sch_cfg["sb3_family"]]
+
+    @classmethod
+    def get_commands_validation_schemas(cls, family: str) -> List[Dict[str, Any]]:
+        """Create the list of validation schemas.
+
+        :param family: Family description.
+        :return: List of validation schemas.
+        """
+        sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
+
+        schemas: List[Dict[str, Any]] = [deepcopy(sb3_sch_cfg["sb3_commands"])]
+
+        # remove unused command for current family
+        supported_commands = Database(DATABASE_FILE).get_device_value("supported_commands", family)
+        list_of_commands: List[Dict] = schemas[0]["properties"]["commands"]["items"]["oneOf"]
+        for command in list_of_commands:
+            if list(command["properties"].keys())[0] not in supported_commands:
+                list_of_commands.remove(command)
+
+        return schemas
+
+    @classmethod
     def get_validation_schemas(
-        cls, include_test_configuration: bool = False
+        cls, family: str, include_test_configuration: bool = False
     ) -> List[Dict[str, Any]]:
         """Create the list of validation schemas.
 
+        :param family: Family description.
         :param include_test_configuration: Add also testing configuration schemas.
         :return: List of validation schemas.
         """
@@ -455,27 +492,29 @@ class SecureBinary31(BaseClass):
         crypto_sch_cfg = ValidationSchemas().get_schema_file(CRYPTO_SCH_FILE)
         sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
 
-        ret: List[Dict[str, Any]] = []
-        ret.extend(
+        schemas: List[Dict[str, Any]] = []
+        schemas.extend(
             [
                 mbi_sch_cfg[x]
                 for x in [
                     "firmware_version",
-                    "use_isk",
-                    "signing_cert_prv_key",
-                    "signing_root_prv_key",
                     "signing_prv_key_lpc55s3x",
                     "elliptic_curves",
                 ]
             ]
         )
-        ret.extend([crypto_sch_cfg[x] for x in ["certificate_v31", "certificate_root_keys"]])
-        ret.extend(
-            [sb3_sch_cfg[x] for x in ["sb3_family", "sb3", "sb3_description", "sb3_commands"]]
-        )
+        schemas.extend([crypto_sch_cfg[x] for x in ["certificate_v31", "certificate_root_keys"]])
+        schemas.extend([sb3_sch_cfg[x] for x in ["sb3_family", "sb3", "sb3_description"]])
+        schemas.extend(cls.get_commands_validation_schemas(family))
         if include_test_configuration:
-            ret.append(sb3_sch_cfg["sb3_test"])
-        return ret
+            schemas.append(sb3_sch_cfg["sb3_test"])
+
+        # find family
+        for schema in schemas:
+            if "properties" in schema and "family" in schema["properties"]:
+                schema["properties"]["family"]["enum"] = cls.get_supported_families()
+                break
+        return schemas
 
     @classmethod
     def load_from_config(
@@ -516,10 +555,13 @@ class SecureBinary31(BaseClass):
         )
         assert curve_name and isinstance(curve_name, str)
         assert signing_key_path
-        signing_key = (
-            load_binary(signing_key_path, search_paths=search_paths) if signing_key_path else None
+        signature_provider = get_signature_provider(
+            sp_cfg=config.get("signProvider"),
+            local_file_key=signing_key_path,
+            search_paths=search_paths,
+            mode="deterministic-rfc6979",
         )
-        assert signing_key
+        assert signature_provider
 
         pck = None
         if is_encrypted:
@@ -539,7 +581,7 @@ class SecureBinary31(BaseClass):
             description=description,
             is_nxp_container=is_nxp_container,
             flags=container_configuration_word,
-            signing_key=signing_key,
+            signature_provider=signature_provider,
             timestamp=timestamp,
             is_encrypted=is_encrypted,
         )
@@ -554,36 +596,36 @@ class SecureBinary31(BaseClass):
 
         :raises SPSDKError: Invalid configuration of SB3.1 class members.
         """
-        if self.signing_key is None or not isinstance(self.signing_key, bytes):
-            raise SPSDKError(f"SB3.1 Signing Key is invalid: {self.signing_key}")
+        if self.signature_provider is None or not isinstance(
+            self.signature_provider, SignatureProvider
+        ):
+            raise SPSDKError(f"SB3.1 signature provider is invalid: {self.signature_provider}")
 
         try:
             prv_key_length = self._get_prv_key_length(self.curve_name)
         except KeyError as exc:
             raise SPSDKError(f"Invalid SB3 curve name: ({self.curve_name})") from exc
 
-        try:
-            prv_key = load_private_key_from_data(self.signing_key)
-        except SPSDKError as exc:
-            raise SPSDKError(f"Invalid SB3 Signing key: ({str(exc)})") from exc
-
-        if prv_key.key_size != prv_key_length:
+        if (self.signature_provider.signature_length / 2) * 8 != prv_key_length:
             raise SPSDKError(
-                f"Invalid length of SB3.1 signing key({len(self.signing_key)} != {prv_key_length})"
+                f"Invalid length of SB3.1 signing key({self.signature_provider.signature_length} != {prv_key_length})"
                 f" for used curve: {self.curve_name}!"
             )
         self.cert_block.validate()
         self.sb_header.validate()
         self.sb_commands.validate()
 
-    def export(self) -> bytes:
+    def export(self, cert_block: Optional[bytes] = None) -> bytes:
         """Generate binary output of SB3.1 file.
 
         :return: Content of SB3.1 file in bytes.
         """
         self.validate()
 
-        cert_block_data = self.cert_block.export()
+        if cert_block:
+            cert_block_data = cert_block
+        else:
+            cert_block_data = self.cert_block.export()
         sb3_commands_data = self.sb_commands.export()
 
         final_data = bytes()
@@ -596,7 +638,7 @@ class SecureBinary31(BaseClass):
         final_data += cert_block_data
 
         # SIGNATURE
-        final_data += internal_backend.ecc_sign(self.signing_key, final_data)
+        final_data += self.signature_provider.sign(final_data)
 
         # COMMANDS BLOBS DATA
         final_data += sb3_commands_data
@@ -625,10 +667,7 @@ class SecureBinary31(BaseClass):
 
         :return: List of supported families.
         """
-        sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
-        sb3_families = sb3_sch_cfg["sb3_family"]
-
-        return sb3_families["properties"]["family"]["enum"]
+        return Database(DATABASE_FILE).devices.device_names
 
     @classmethod
     def generate_config_template(cls, family: str) -> Dict[str, str]:
@@ -640,7 +679,7 @@ class SecureBinary31(BaseClass):
         ret: Dict[str, str] = {}
 
         if family in cls.get_supported_families():
-            schemas = cls.get_validation_schemas()
+            schemas = cls.get_validation_schemas(family)
             schemas.append(ValidationSchemas.get_schema_file(SB3_SCH_FILE)["sb3_output"])
             override = {}
             override["family"] = family

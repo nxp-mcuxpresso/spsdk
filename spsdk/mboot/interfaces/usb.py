@@ -13,6 +13,7 @@ from typing import List, Optional, Union
 
 import libusbsio
 
+from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import get_hash
 from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
@@ -228,7 +229,7 @@ class RawHid(MBootInterface):
         :raises McuBootConnectionError: Raises an error if device is not opened for reading
         :raises McuBootConnectionError: Raises if device is not available
         :raises McuBootConnectionError: Raises if reading fails
-        :raises TimeoutError: Time-out
+        :raises SPSDKTimeoutError: Time-out
         """
         if not self.is_opened:
             raise McuBootConnectionError("Device is not opened for reading")
@@ -240,7 +241,7 @@ class RawHid(MBootInterface):
             raise McuBootConnectionError(str(e)) from e
         if not raw_data:
             logger.error(f"Cannot read from HID device, error={result}")
-            raise TimeoutError()
+            raise SPSDKTimeoutError()
         # NOTE: uncomment the following when using KBoot/Flashloader v2.1 and older
         # import platform
         # if platform.system() == "Linux":

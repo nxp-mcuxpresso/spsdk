@@ -209,7 +209,7 @@ def test_ecc_verify(data_dir):
         b"\xc3\x0f~\x8b\xd7<\xb02,DIr\x15\x0br\x98\x8c\xa7\x93\x0f\x19\x85"
         b"V\x13\xfc\x94\x07Y\xab\xcax\xc5\x15\x07\x8d\xaeQ-mE1\xc9"
     )
-    is_valid = internal_backend.ecc_verify(key=public_key, signature=signature, data=data)
+    is_valid = internal_backend.ecc_verify(public_key=public_key, signature=signature, data=data)
     assert is_valid
 
 

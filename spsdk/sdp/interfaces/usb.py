@@ -137,6 +137,8 @@ class RawHid(SDPInterface):
         :param raw_data: Data received
         :return: CmdResponse object
         """
+        if not raw_data:
+            raise SdpConnectionError("No data were received")
         logger.debug(f"IN [{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         return CmdResponse(raw_data[0] == HID_REPORT["HAB"][0], raw_data[1:])
 

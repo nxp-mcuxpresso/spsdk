@@ -1,9 +1,10 @@
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 - req_id: "lpc55xx_4.1"
-  desc: By default (blank device), the RoTKx_EN values are set to 0b00 which means
+  desc:
+    By default (blank device), the RoTKx_EN values are set to 0b00 which means
     invalid. When secure boot is enabled (SEC_BOOT_EN != 0) there must be at
     least one RoTKx_EN which is set to 0b01 (enabled) to allow device to boot
     successfully.

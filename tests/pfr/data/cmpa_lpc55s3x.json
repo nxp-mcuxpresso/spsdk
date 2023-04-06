@@ -1,0 +1,213 @@
+{
+    "device": "lpc55s3x",
+    "type": "cmpa",
+    "settings": {
+        "BOOT_CFG": {
+            "DEFAULT_BOOT_SOURCE": "0b000",
+            "DEFAULT_ISP_MODE": "0b000",
+            "BOOT_SPEED": "0b00",
+            "ITRC_ZEROIZE": "0b00",
+            "ASRT_FATAL": "0b0",
+            "ASRT_RBF": "0b0",
+            "ASRT_ISPF": "0b0",
+            "BOOT_FAILURE_PIN": "0x00"
+        },
+        "SPI_CAN_CFG": {
+            "SPI_RECOVERY_BOOT_EN": "0b00",
+            "SPI_REC_IF": "0b000",
+            "CAN_BAUD_RATE": "0b0000"
+        },
+        "USB_ID": {
+            "USB_VENDOR_ID": "0x0000",
+            "USB_PRODUCT_ID": "0x0000"
+        },
+        "BOOT_TIMEOUT": {
+            "POWERDOWN_TIMEOUT_SECS": "0x0000",
+            "WDOG_TIMEOUT_SECS": "0x0000"
+        },
+        "DCFG_CC_SOCU_PIN": {
+            "NIDEN": "0b0",
+            "DBGEN": "0b0",
+            "SPNIDEN": "0b0",
+            "SPIDEN": "0b0",
+            "ISP_CMD_EN": "0b0",
+            "FA_CMD_EN": "0b0",
+            "ME_CMD_EN": "0b0",
+            "UUID_CHECK": "0b0",
+            "INVERSE_VALUE": "0x0000"
+        },
+        "DCFG_CC_SOCU_DFLT": {
+            "NIDEN": "0b0",
+            "DBGEN": "0b0",
+            "SPNIDEN": "0b0",
+            "SPIDEN": "0b0",
+            "ISP_CMD_EN": "0b0",
+            "FA_CMD_EN": "0b0",
+            "ME_CMD_EN": "0b0",
+            "INVERSE_VALUE": "0x0000"
+        },
+        "VENDOR_USAGE": {
+            "VENDOR_USAGE": "0x0000"
+        },
+        "SECURE_BOOT_CFG": {
+            "ENF_CNSA": "0b01",
+            "DICE_INC_NXP_CFG": "0b00",
+            "DICE_CUST_CFG": "0b00",
+            "SKIP_DICE": "0b00",
+            "ENF_TZM_PRESET": "0b00",
+            "BLOCK_SET_KEY": "0b00",
+            "BLOCK_ENROLL": "0b00",
+            "FIPS_SHA_STEN": "0b00",
+            "FIPS_AES_STEN": "0b00",
+            "FIPS_ECDSA_STEN": "0b00",
+            "FIPS_DRBG_STEN": "0b00",
+            "FIPS_CMAC_STEN": "0b00",
+            "FIPS_KDF_STEN": "0b00",
+            "SEC_BOOT_EN": "0b00"
+        },
+        "PRINCE_CONFIG": {
+            "LOCK_REG0": "0b00",
+            "LOCK_REG1": "0b00",
+            "LOCK_REG2": "0b00",
+            "REG0_ERASE_CHECK_EN": "0b00",
+            "REG1_ERASE_CHECK_EN": "0b00",
+            "REG2_ERASE_CHECK_EN": "0b00"
+        },
+        "PRINCE_SR_0": "0x0000_0000",
+        "PRINCE_SR_1": "0x0000_0000",
+        "PRINCE_SR_2": "0x0000_0000",
+        "XTAL_32KHZ_CAPABANK_TRIM": {
+            "TRIM_VALID": "0b0",
+            "XTAL_LOAD_CAP_IEC_PF_X100": "0b00_0000_0000",
+            "PCB_XIN_PARA_CAP_PF_X100": "0b00_0000_0000",
+            "PCB_XOUT_PARA_CAP_PF_X100": "0b00_0000_0000"
+        },
+        "XTAL_16MHZ_CAPABANK_TRIM": {
+            "TRIM_VALID": "0b0",
+            "XTAL_LOAD_CAP_IEC_PF_X100": "0b00_0000_0000",
+            "PCB_XIN_PARA_CAP_PF_X100": "0b00_0000_0000",
+            "PCB_XOUT_PARA_CAP_PF_X100": "0b00_0000_0000"
+        },
+        "FLASH_REMAP_SIZE": "0x0000_0000",
+        "FLASH_REMAP_OFFSET": "0x0000_0000",
+        "PRINCE_XOM_0": "0x0000_0000",
+        "PRINCE_XOM_1": "0x0000_0000",
+        "PRINCE_XOM_2": "0x0000_0000",
+        "RoTK_USAGE": {
+            "RoTK0_Usage": "0b000",
+            "RoTK1_Usage": "0b000",
+            "RoTK2_Usage": "0b000",
+            "RoTK3_Usage": "0b000"
+        },
+        "FLEXSPI_BOOT_CFG0": {
+            "FLEXSPI_AUTO_PROBE_EN": "0b0",
+            "FLEXSPI_PROBE_TYPE": "0b000",
+            "FLEXSPI_FLASH_TYPE": "0b000",
+            "FLEXSPI_DUMMY_CYCLES": "0b0000",
+            "FLEXSPI_FREQUENCY": "0b000",
+            "FLEXSPI_RESET_ENABLE": "0b0",
+            "FLEXSPI_RESET_GPIO_PORT": "0b000",
+            "FLEXSPI_RESET_GPIO_PIN": "0b0_0000",
+            "FLEXSPI_HOLD_TIME": "0b00",
+            "FLEXSPI_PWR_HOLD_TIME": "0b0000",
+            "PIN_SLEW_RATE": "0b0"
+        },
+        "FLEXSPI_BOOT_CFG1": {
+            "FLEXSPI_DELAY_CELL_NUM": "0b000_0000",
+            "FLEXSPI_IMAGE_OFFSET": "0b00_0000_0000",
+            "FLEXSPI_REMAP_IMAGE_SIZE": "0b0000"
+        },
+        "IPED0_START": {
+            "ENABLE_REG0": "0b00",
+            "IPED_REG0_START_ADDR": "0x00_0000"
+        },
+        "IPED0_END": {
+            "IPED_REG0_END_ADDR": "0x00_0000"
+        },
+        "IPED1_START": {
+            "ENABLE_REG1": "0b00",
+            "IPED_REG1_START_ADDR": "0x00_0000"
+        },
+        "IPED1_END": {
+            "IPED_REG1_END_ADDR": "0x00_0000"
+        },
+        "IPED2_START": {
+            "ENABLE_REG2": "0b00",
+            "IPED_REG2_START_ADDR": "0x00_0000"
+        },
+        "IPED2_END": {
+            "IPED_REG2_END_ADDR": "0x00_0000"
+        },
+        "IPED3_START": {
+            "ENABLE_REG3": "0b00",
+            "IPED_REG3_START_ADDR": "0x00_0000"
+        },
+        "IPED3_END": {
+            "IPED_REG3_END_ADDR": "0x00_0000"
+        },
+        "QUICK_SET_GPIO_0": "0x0000_0000",
+        "QUICK_CLR_GPIO_0": "0x0000_0000",
+        "QUICK_SET_GPIO_1": "0x0000_0000",
+        "QUICK_CLR_GPIO_1": "0x0000_0000",
+        "CUSTOMER_DEFINED0": "0x0000_0000",
+        "CUSTOMER_DEFINED1": "0x0000_0000",
+        "CUSTOMER_DEFINED2": "0x0000_0000",
+        "CUSTOMER_DEFINED3": "0x0000_0000",
+        "CUSTOMER_DEFINED4": "0x0000_0000",
+        "CUSTOMER_DEFINED5": "0x0000_0000",
+        "CUSTOMER_DEFINED6": "0x0000_0000",
+        "CUSTOMER_DEFINED7": "0x0000_0000",
+        "CUSTOMER_DEFINED8": "0x0000_0000",
+        "CUSTOMER_DEFINED9": "0x0000_0000",
+        "CUSTOMER_DEFINED10": "0x0000_0000",
+        "CUSTOMER_DEFINED11": "0x0000_0000",
+        "CUSTOMER_DEFINED12": "0x0000_0000",
+        "CUSTOMER_DEFINED13": "0x0000_0000",
+        "CUSTOMER_DEFINED14": "0x0000_0000",
+        "CUSTOMER_DEFINED15": "0x0000_0000",
+        "CUSTOMER_DEFINED16": "0x0000_0000",
+        "CUSTOMER_DEFINED17": "0x0000_0000",
+        "CUSTOMER_DEFINED18": "0x0000_0000",
+        "CUSTOMER_DEFINED19": "0x0000_0000",
+        "CUSTOMER_DEFINED20": "0x0000_0000",
+        "CUSTOMER_DEFINED21": "0x0000_0000",
+        "CUSTOMER_DEFINED22": "0x0000_0000",
+        "CUSTOMER_DEFINED23": "0x0000_0000",
+        "CUSTOMER_DEFINED24": "0x0000_0000",
+        "CUSTOMER_DEFINED25": "0x0000_0000",
+        "CUSTOMER_DEFINED26": "0x0000_0000",
+        "CUSTOMER_DEFINED27": "0x0000_0000",
+        "CUSTOMER_DEFINED28": "0x0000_0000",
+        "CUSTOMER_DEFINED29": "0x0000_0000",
+        "CUSTOMER_DEFINED30": "0x0000_0000",
+        "CUSTOMER_DEFINED31": "0x0000_0000",
+        "CUSTOMER_DEFINED32": "0x0000_0000",
+        "CUSTOMER_DEFINED33": "0x0000_0000",
+        "CUSTOMER_DEFINED34": "0x0000_0000",
+        "CUSTOMER_DEFINED35": "0x0000_0000",
+        "CUSTOMER_DEFINED36": "0x0000_0000",
+        "CUSTOMER_DEFINED37": "0x0000_0000",
+        "CUSTOMER_DEFINED38": "0x0000_0000",
+        "CUSTOMER_DEFINED39": "0x0000_0000",
+        "CUSTOMER_DEFINED40": "0x0000_0000",
+        "CUSTOMER_DEFINED41": "0x0000_0000",
+        "CUSTOMER_DEFINED42": "0x0000_0000",
+        "CUSTOMER_DEFINED43": "0x0000_0000",
+        "CUSTOMER_DEFINED44": "0x0000_0000",
+        "CUSTOMER_DEFINED45": "0x0000_0000",
+        "CUSTOMER_DEFINED46": "0x0000_0000",
+        "CUSTOMER_DEFINED47": "0x0000_0000",
+        "CUSTOMER_DEFINED48": "0x0000_0000",
+        "CUSTOMER_DEFINED49": "0x0000_0000",
+        "CUSTOMER_DEFINED50": "0x0000_0000",
+        "CUSTOMER_DEFINED51": "0x0000_0000",
+        "CUSTOMER_DEFINED52": "0x0000_0000",
+        "CUSTOMER_DEFINED53": "0x0000_0000",
+        "CUSTOMER_DEFINED54": "0x0000_0000",
+        "CUSTOMER_DEFINED55": "0x0000_0000",
+        "CUSTOMER_DEFINED56": "0x0000_0000",
+        "CUSTOMER_DEFINED57": "0x0000_0000",
+        "CUSTOMER_DEFINED58": "0x0000_0000",
+        "CUSTOMER_DEFINED59": "0x0000_0000"
+    }
+}

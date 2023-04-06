@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # The template configuration file for TPCONFIG application
 version: 3
 

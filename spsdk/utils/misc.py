@@ -11,6 +11,7 @@ import logging
 import math
 import os
 import re
+import sys
 import time
 from math import ceil
 from struct import pack, unpack
@@ -116,7 +117,7 @@ def align(number: int, alignment: int = 4) -> int:
 def align_block(
     data: Union[bytes, bytearray],
     alignment: int = 4,
-    padding: Optional[Union[int, BinaryPattern]] = None,
+    padding: Optional[Union[int, str, BinaryPattern]] = None,
 ) -> bytes:
     """Align binary data block length to specified boundary by adding padding bytes to the end.
 
@@ -401,10 +402,11 @@ def format_value(value: int, size: int, delimiter: str = "_", use_prefix: bool =
     """
     padding = size if size % 8 else (size // 8) * 2
     infix = "b" if size % 8 else "x"
-    parts = re.findall(".{1,4}", f"{value:0{padding}{infix}}"[::-1])
+    sign = "-" if value < 0 else ""
+    parts = re.findall(".{1,4}", f"{abs(value):0{padding}{infix}}"[::-1])
     rev = delimiter.join(parts)[::-1]
     prefix = f"0{infix}" if use_prefix else ""
-    return f"{prefix}{rev}"
+    return f"{sign}{prefix}{rev}"
 
 
 def get_bytes_cnt_of_int(
@@ -825,3 +827,39 @@ def get_hash(text: Union[str, bytes]) -> str:
     if isinstance(text, str):
         text = text.encode("utf-8")
     return hashlib.sha1(text).digest().hex()[:8]
+
+
+def import_source(source: str) -> None:
+    """Import Python source file directly.
+
+    :param source: A path to python source file or existing module name
+        Accepted values are:
+        - an absolute path to py file
+        - a path to py file, relative to current working directory
+        - installed package/module name
+        and more, and more
+    :raises SPSDKError: If importing of source file failed
+    """
+    from importlib.util import (  # pylint: disable=import-outside-toplevel
+        find_spec,
+        module_from_spec,
+        spec_from_file_location,
+    )
+
+    if not os.path.isfile(source):
+        spec = find_spec(name=source)
+    else:
+        module_name = os.path.splitext(os.path.basename(source))[0]
+        spec = spec_from_file_location(name=module_name, location=source)  # type: ignore
+    if not spec:
+        raise SPSDKError(
+            f"Source '{source}' does not exist.Check if it is valid file path/module name"
+        )
+
+    mod = module_from_spec(spec)
+    try:
+        sys.modules[spec.name] = mod
+        spec.loader.exec_module(mod)  # type: ignore
+        logger.debug(f"A module {source} has been imported.")
+    except Exception as e:
+        raise SPSDKError(f"Failed to load source {source}: {e}") from e

@@ -407,7 +407,6 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             ext_mem_ids = [ExtMemId.QUAD_SPI0]
 
         for mem_id in ext_mem_ids:
-
             try:
                 values = self.get_property(PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES, mem_id)
             except McuBootCommandError:
@@ -1129,6 +1128,36 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         logger.info(f"CMD: UpdateLifeCycle (life cycle=0x{life_cycle:02X})")
         cmd_packet = CmdPacket(CommandTag.UPDATE_LIFE_CYCLE, CommandFlag.NONE, life_cycle)
+        return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
+
+    def ele_message(
+        self, cmdMsgAddr: int, cmdMsgCnt: int, respMsgAddr: int, respMsgCnt: int
+    ) -> bool:
+        """Send EdgeLock Enclave message.
+
+        :param cmdMsgAddr: Address in RAM where is prepared the command message words
+        :param cmdMsgCnt: Count of 32bits command words
+        :param respMsgAddr: Address in RAM where the command store the response
+        :param respMsgCnt: Count of 32bits response words
+
+        :return: False in case of any problems, True otherwise.
+        """
+        logger.info(
+            f"CMD: EleMessage Command (cmdMsgAddr=0x{cmdMsgAddr:08X}, cmdMsgCnt={cmdMsgCnt})"
+        )
+        if respMsgCnt:
+            logger.info(
+                f"CMD: EleMessage Response (respMsgAddr=0x{respMsgAddr:08X}, respMsgCnt={respMsgCnt})"
+            )
+        cmd_packet = CmdPacket(
+            CommandTag.ELE_MESSAGE,
+            CommandFlag.NONE,
+            0,  # reserved for future use as a sub command ID or anything else
+            cmdMsgAddr,
+            cmdMsgCnt,
+            respMsgAddr,
+            respMsgCnt,
+        )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def tp_hsm_gen_key(

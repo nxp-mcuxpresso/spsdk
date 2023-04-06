@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.crypto import SignatureProvider
+from spsdk.crypto.signature_provider import SignatureProvider
 
 
 class TestSignatureProvider(SignatureProvider):
@@ -13,10 +13,6 @@ class TestSignatureProvider(SignatureProvider):
 
     def __init__(self, param: str) -> None:
         self.param = int(param)
-
-    def info(self) -> str:
-        msg = "Test Signature provider"
-        msg += f"param: {self.param}"
 
     def sign(self, data: bytes) -> bytes:
         return b"x" * self.param

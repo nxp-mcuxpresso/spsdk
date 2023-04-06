@@ -20,6 +20,8 @@ import click
 import pkg_resources
 import requests
 
+from spsdk.exceptions import SPSDKError
+
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 REPO_ROOT = os.path.normpath(os.path.join(THIS_DIR, ".."))
 IGNORE_LIST = ["cmsis-pack-manager"]
@@ -39,7 +41,7 @@ class NextVersion(str, Enum):
             return NextVersion.MINOR
         if selector == "major":
             return NextVersion.MAJOR
-        raise ValueError(f"Unknown NextVersion selector '{selector}'. Use 'minor' or 'major'")
+        raise SPSDKError(f"Unknown NextVersion selector '{selector}'. Use 'minor' or 'major'")
 
 
 @dataclass
@@ -75,7 +77,7 @@ class RequirementsRecord:
 
     def get_next_version(self, selector: NextVersion) -> str:
         if not self.max_version:
-            raise ValueError("max_version is not defined")
+            raise SPSDKError("max_version is not defined")
         if selector == NextVersion.NONE:
             return self.max_version
         version = pkg_resources.parse_version(self.max_version)
@@ -83,7 +85,7 @@ class RequirementsRecord:
             return f"{version.major}.{version.minor + 1}"
         if selector == NextVersion.MAJOR:
             return f"{version.major + 1}"
-        raise ValueError(f"Unknown next version selector: {selector}")
+        raise SPSDKError(f"Unknown next version selector: {selector}")
 
     @staticmethod
     def from_str(req_line: str) -> "RequirementsRecord":
@@ -116,7 +118,7 @@ class RequirementsList(List[RequirementsRecord]):
         for req in self:
             if req.name == name:
                 return req
-        raise ValueError(f"Requirement named {name} wasn't found")
+        raise SPSDKError(f"Requirement named {name} wasn't found")
 
     @staticmethod
     def from_pip() -> "RequirementsList":

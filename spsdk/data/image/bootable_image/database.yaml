@@ -1,0 +1,67 @@
+# Copyright 2022-2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+devices:
+  rt5xx:
+    attributes:
+      mem_types:
+        flexspi_nor:
+          keyblob_offset: 0x0000
+          fcb_offset: 0x0400
+          image_version_offset: 0x0600
+          keystore_offset: 0x0800
+          application_offset: 0x1000
+          remap_align: 0x40000 # 256 KB
+  rt6xx:
+    device_alias: rt5xx
+  lpc55s3x:
+    attributes:
+      mem_types:
+        flexspi_nor:
+          fcb_offset: 0x0400
+          image_version_offset: 0x0600
+          application_offset: 0x1000
+          remap_align: 0x40000 # 256 KB
+  rt101x:
+    attributes:
+      mem_types:
+        flexspi_nor:
+          keyblob_offset: 0x0000
+          fcb_offset: 0x0400
+          hab_container_offset: 0x1000
+  rt102x:
+    attributes:
+      mem_types:
+        flexspi_nor:
+          fcb_offset: 0x0000
+          bee_header_0_offset: 0x0400
+          bee_header_1_offset: 0x0800
+          hab_container_offset: 0x1000
+  rt105x:
+    device_alias: rt102x
+  rt106x:
+    device_alias: rt102x
+  rt117x:
+    attributes:
+      mem_types:
+        flexspi_nor:
+          keyblob_offset: 0x0000
+          fcb_offset: 0x0400
+          keystore_offset: 0x0800
+          hab_container_offset: 0x1000
+        flexspi_nand:
+          hab_container_offset: 0x400
+        semc_nand:
+          hab_container_offset: 0x400
+  rt116x:
+    device_alias: rt117x
+  rt118x:
+    attributes:
+      mem_types:
+        flexspi_nor:
+          keyblob_offset: 0x0000
+          fcb_offset: 0x0400
+          xmcd_offset: 0x0800
+          ahab_container_offset: 0x1000
+

@@ -35,4 +35,4 @@ def test_elftosb_cfgtmp_create(tmpdir, device):
     result = runner.invoke(elftosb.main, cmd.split())
     assert result.exit_code == 0
     # Check at least common TrustZone Configuration file
-    assert os.path.isfile(os.path.join(tmpdir, f"{device}_tz.yml"))
+    assert os.path.isfile(os.path.join(tmpdir, f"{device}_tz.yaml"))

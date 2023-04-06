@@ -12,6 +12,7 @@ from struct import calcsize, pack, unpack_from
 from typing import Optional
 
 from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKParsingError
 from spsdk.utils.easy_enum import Enum
 
 ########################################################################################################################
@@ -51,19 +52,6 @@ class CmdTag(Enum):
     NOP = (0xC0, "NOP", "No Operation (NOP)")
     INIT = (0xB4, "INIT", "Initialize")
     UNLK = (0xB2, "UNLK", "Unlock")
-
-
-########################################################################################################################
-# Exceptions
-########################################################################################################################
-
-
-class UnparsedException(Exception):
-    """Unparsed Exception."""
-
-
-class CorruptedException(Exception):
-    """Corrupted Exception."""
 
 
 ########################################################################################################################
@@ -137,11 +125,11 @@ class Header:
         :param offset: Offset of input data
         :param required_tag: Check header TAG if specified value or ignore if is None
         :return: Header object
-        :raise UnparsedException: if required header tag does not match
+        :raises SPSDKParsingError: if required header tag does not match
         """
         tag, length, param = unpack_from(cls.FORMAT, data, offset)
         if required_tag is not None and tag != required_tag:
-            raise UnparsedException(
+            raise SPSDKParsingError(
                 f" Invalid header tag: '0x{tag:02X}' expected '0x{required_tag:02X}' "
             )
 
@@ -176,7 +164,7 @@ class CmdHeader(Header):
         :param offset: to start reading binary data
         :param required_tag: CmdTag, None if not required
         :return: parsed instance
-        :raises UnparsedException: if required header tag does not match
+        :raises SPSDKParsingError: If required header tag does not match
         :raises SPSDKError: If invalid tag
         """
         if required_tag is not None:
@@ -201,12 +189,12 @@ class Header2(Header):
         :param data: Raw data as bytes or bytearray
         :param offset: Offset of input data
         :param required_tag: Check header TAG if specified value or ignore if is None
-        :raises UnparsedException: Raises an error if required tag is empty or not valid
+        :raises SPSDKParsingError: Raises an error if required tag is empty or not valid
         :return: Header2 object
         """
         param, length, tag = unpack_from(cls.FORMAT, data, offset)
         if required_tag is not None and tag != required_tag:
-            raise UnparsedException(
+            raise SPSDKParsingError(
                 f" Invalid header tag: '0x{tag:02X}' expected '0x{required_tag:02X}' "
             )
 

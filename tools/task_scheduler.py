@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import colorama
 
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.easy_enum import Enum
 
 colorama.just_fix_windows_console()
@@ -27,7 +28,7 @@ class TaskState(Enum):
     READY = (0, "Ready")
     BLOCKED = (1, "Blocked")
     RUNNING = (2, "Running")
-    DONE = (3, "Done")
+    PASSED = (3, "Passed")
     FAILED = (4, "Failed")
 
 
@@ -47,13 +48,26 @@ class TaskInfo:
         method: Callable,
         *args: Any,
         dependencies: Optional[List[str]] = None,
+        inherit_failure: bool = True,
+        info_only: bool = False,
         **kwargs: Any,
     ) -> None:
+        """Task info initialization.
+        :param name: Name of the task
+        :param method: Method to be called in the task
+        :param args: Argument to be passed into method
+        :param kwargs: Keyword argument to be passed into method
+        :param dependencies: Task names the actual task is dependent on
+        :param inherit_failure: Fail the task immediately if the dependency fails
+        :param info_only: This is just information task - fault of this task doesn't cause fail result
+        """
         self.name = name
         self.method = method
         self.args = args
         self.kwargs = kwargs
         self.dependencies = dependencies
+        self.inherit_failure = inherit_failure
+        self.info_only = info_only
         self._state = TaskState.READY
         self.result: Optional[TaskResult] = None
         self.exec_start = 0.0
@@ -89,13 +103,16 @@ class TaskInfo:
 
         :return: Task state.
         """
-
-        return TaskState.name(self._state)
+        ret = f"{self.get_color_by_status()}{TaskState.name(self._state)}"
+        if self.info_only:
+            ret += f"{colorama.Fore.CYAN} [INFO ONLY]"
+        ret += colorama.Fore.RESET
+        return ret
 
     def start_task(self) -> None:
         """Start task event."""
         if self.is_failed():
-            raise IndexError("The task is already failed.")
+            raise SPSDKError("The task is already failed.")
 
         self.exec_start = time.perf_counter()
         self.status = TaskState.RUNNING
@@ -103,11 +120,12 @@ class TaskInfo:
     def finish_task(self, result: Optional[TaskResult], exc: Optional[BaseException]) -> None:
         """Finish task event."""
         if not self.is_running():
-            raise IndexError("The task is not running.")
+            raise SPSDKError("The task is not running.")
 
         exec_stop = time.perf_counter()
         self.exec_time = exec_stop - self.exec_start
-        self.status = TaskState.DONE if not exc else TaskState.FAILED
+        passed = not exc and result.error_count == 0 if result else not exc
+        self.status = TaskState.PASSED if passed else TaskState.FAILED
         self.result = result
         self.exception = exc
 
@@ -116,7 +134,7 @@ class TaskInfo:
 
         :return: True if task is finished, otherwise False.
         """
-        return self.status in [TaskState.DONE, TaskState.FAILED]
+        return self.status in [TaskState.PASSED, TaskState.FAILED]
 
     def is_failed(self) -> bool:
         """Get the state if the task is failed.
@@ -148,17 +166,24 @@ class TaskInfo:
             TaskState.READY: colorama.Fore.WHITE,
             TaskState.BLOCKED: colorama.Fore.MAGENTA,
             TaskState.RUNNING: colorama.Fore.YELLOW,
-            TaskState.DONE: colorama.Fore.GREEN,
+            TaskState.PASSED: colorama.Fore.GREEN,
             TaskState.FAILED: colorama.Fore.RED,
         }
         return colors[self.status]
 
     def get_exec_time(self) -> str:
-        """GEt execution time in string format.
+        """Get execution time in string format.
 
         :return: Execution time information.
         """
         return str(round(self.exec_time, 1)) + "s"
+
+    def reset(self) -> None:
+        """Reset the task to its initial state."""
+        self._state = TaskState.READY
+        self.result = None
+        self.exec_start = 0.0
+        self.exec_time = 0.0
 
 
 # pylint: disable=not-an-iterable,no-member
@@ -177,9 +202,13 @@ class TaskList(List[TaskInfo]):
         """Set the states to task by its dependencies."""
         for task in self:
             if task.status in [TaskState.READY, TaskState.BLOCKED]:
-                task.status = self.check_dependencies(task.dependencies)
-                if task.status == TaskState.FAILED:
-                    task.exception = Exception("Failed due to dependency task is failed.")
+                depend_state = self.check_dependencies(task.dependencies)
+                if depend_state != TaskState.FAILED:
+                    task.status = depend_state
+                else:
+                    task.status = TaskState.FAILED if task.inherit_failure else TaskState.READY
+                    if task.status == TaskState.FAILED:
+                        task.exception = Exception("Failed due to dependency task is failed.")
 
     def all_finished(self) -> bool:
         """Get information if all tasks are finished.
@@ -192,19 +221,19 @@ class TaskList(List[TaskInfo]):
         """Get the task from this list by its name.
 
         :param name: Task name.
-        :raises ValueError: Task name is not in active task list.
+        :raises SPSDKError: Task name is not in active task list.
         :return: Task info object.
         """
         for task in self:
             if task.name == name:
                 return task
-        raise ValueError(f"Task {name} not found in list.")
+        raise SPSDKError(f"Task {name} not found in list.")
 
     def check_dependencies(self, dependencies: Optional[List[str]]) -> TaskState:
         """Checks dependencies if is blocking or not.
 
         :param dependencies: List of names of tasks that must be finished before this task.
-        :raises ValueError: Dependency doesn't exits in task list.
+        :raises SPSDKError: Dependency doesn't exits in task list.
         :return: 'Blocks', 'Failed', 'OK'
         """
         if not dependencies:
@@ -214,7 +243,7 @@ class TaskList(List[TaskInfo]):
             try:
                 task = self.get_task_by_name(depend)
             except ValueError as exc:
-                raise ValueError(f"Dependency '{depend}' doesn't exits in task list.") from exc
+                raise SPSDKError(f"Dependency '{depend}' doesn't exits in task list.") from exc
             task_dep_st = self.check_dependencies(task.dependencies)
             if task_dep_st in [TaskState.BLOCKED, TaskState.FAILED]:
                 return task_dep_st
@@ -307,9 +336,7 @@ class PrettyProcessRunner:
         if repaint:
             self._clear_lines()
         for task in self.tasks:
-            self.print_func(
-                f"\033[K{task.name} -> {task.get_color_by_status()}{task.status_str()}{colorama.Fore.RESET}"
-            )
+            self.print_func(f"\033[K{task.name} -> {task.status_str()}")
 
     def _user_task_done_callback(  # pylint: disable=no-self-use
         self, future: Future, future_set: dict, task: TaskInfo

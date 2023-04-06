@@ -10,29 +10,39 @@
 import logging
 import os
 import sys
-from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import click
 
 from spsdk import SPSDK_DATA_FOLDER, SPSDKError, SPSDKValueError
-from spsdk import __version__ as version
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     isp_interfaces,
     spsdk_apps_common_options,
 )
 from spsdk.apps.utils.utils import catch_spsdk_error, format_raw_data, get_interface
-from spsdk.image import MBIMG_SCH_FILE, SB3_SCH_FILE
+from spsdk.image import MBIMG_SCH_FILE
 from spsdk.mboot.commands import TrustProvKeyType, TrustProvOemKeyType
 from spsdk.mboot.interfaces import MBootInterface
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
-from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
+from spsdk.sbfile.sb31.images import (
+    SB3_SCH_FILE,
+    SecureBinary31,
+    SecureBinary31Commands,
+    SecureBinary31Header,
+)
 from spsdk.utils.crypto.cert_blocks import CertificateBlockHeader
 from spsdk.utils.crypto.common import crypto_backend
 from spsdk.utils.database import Database
-from spsdk.utils.misc import load_configuration, value_to_bool, value_to_int
-from spsdk.utils.schema_validator import ValidationSchemas, check_config
+from spsdk.utils.misc import (
+    load_binary,
+    load_configuration,
+    value_to_bool,
+    value_to_int,
+    write_file,
+)
+from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas, check_config
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +67,8 @@ class DeviceHsm:
     DEVBUFF_GEN_MASTER_CUST_CERT_PUK_OUTPUT_SIZE = 64
     DEVBUFF_HSM_GENKEY_KEYBLOB_SIZE = 48
     DEVBUFF_HSM_GENKEY_KEYBLOB_PUK_SIZE = 64
-    DEVBUFF_USER_PCK_KEY_SIZE = 32
-    DEVBUFF_WRAPPED_USER_PCK_KEY_SIZE = 48
+    DEVBUFF_CUST_MK_SK_KEY_SIZE = 32
+    DEVBUFF_WRAPPED_CUST_MK_SK_KEY_SIZE = 48
     DEVBUFF_DATA_BLOCK_SIZE = 256
     DEVBUFF_SB3_SIGNATURE_SIZE = 64
 
@@ -67,7 +77,7 @@ class DeviceHsm:
     def __init__(
         self,
         mboot: McuBoot,
-        user_pck: bytes,
+        cust_mk_sk: bytes,
         oem_share_input: bytes,
         info_print: Callable,
         family: str,
@@ -80,7 +90,7 @@ class DeviceHsm:
 
         :param mboot: mBoot communication interface.
         :param oem_share_input: OEM share input data.
-        :param user_pck: USER PCK key.
+        :param cust_mk_sk: Customer Master Key Symmetric Key.
         :param family: chip family
         :param container_conf: Optional elftosb configuration file (to specify user list of SB commands).
         :param workspace: Optional folder to store middle results.
@@ -90,7 +100,7 @@ class DeviceHsm:
         """
         self.database = Database(NXPDEVHSM_DATABASE_FILE)
         self.mboot = mboot
-        self.user_pck = user_pck
+        self.cust_mk_sk = cust_mk_sk
         self.oem_share_input = oem_share_input
         self.info_print = info_print
         self.workspace = workspace
@@ -115,7 +125,7 @@ class DeviceHsm:
             # validate input configuration
             check_config(
                 config_data,
-                DeviceHsm.get_validation_schemas(),
+                DeviceHsm.get_validation_schemas(family, include_test_configuration=True),
                 search_paths=[os.path.dirname(container_conf)],
             )
             self.config_data = config_data
@@ -124,7 +134,7 @@ class DeviceHsm:
             if "timestamp" in config_data:
                 self.timestamp = value_to_int(str(config_data.get("timestamp")))
 
-        self.wrapped_user_pck = bytes()
+        self.wrapped_cust_mk_sk = bytes()
         self.final_sb = bytes()
         self.family = family
 
@@ -136,18 +146,64 @@ class DeviceHsm:
         """Update command order based on family."""
         return value_to_bool(self.database.get_device_value("order", self.family))
 
+    @staticmethod
+    def get_supported_families() -> List[str]:
+        """Get the list of supported families by Device HSM.
+
+        :return: List of supported families.
+        """
+        return Database(NXPDEVHSM_DATABASE_FILE).devices.device_names
+
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(
+        cls, family: str, include_test_configuration: bool = False
+    ) -> List[Dict[str, Any]]:
         """Create the list of validation schemas.
 
+        :param family: Family description.
+        :param include_test_configuration: Add also testing configuration schemas.
         :return: List of validation schemas.
         """
         mbi_sch_cfg = ValidationSchemas().get_schema_file(MBIMG_SCH_FILE)
         sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
 
-        ret: List[Dict[str, Any]] = []
-        ret.extend([mbi_sch_cfg["firmware_version"]])
-        ret.extend([sb3_sch_cfg[x] for x in ["sb3_description", "sb3_commands", "sb3_test"]])
+        schemas: List[Dict[str, Any]] = []
+        schemas.append(mbi_sch_cfg["firmware_version"])
+        schemas.append(sb3_sch_cfg["sb3_family"])
+        schemas.append(sb3_sch_cfg["sb3_description"])
+        schemas.extend(SecureBinary31.get_commands_validation_schemas(family))
+        if include_test_configuration:
+            schemas.append(sb3_sch_cfg["sb3_test"])
+        # find family
+        for schema in schemas:
+            if "properties" in schema and "family" in schema["properties"]:
+                schema["properties"]["family"]["enum"] = cls.get_supported_families()
+                break
+        return schemas
+
+    @classmethod
+    def generate_config_template(cls, family: str) -> Dict[str, str]:
+        """Generate configuration for selected family.
+
+        :param family: Family description.
+        :return: Dictionary of individual templates (key is name of template, value is template itself).
+        """
+        ret: Dict[str, str] = {}
+
+        if family in cls.get_supported_families():
+            schemas = cls.get_validation_schemas(family)
+            schemas.append(ValidationSchemas.get_schema_file(SB3_SCH_FILE)["sb3_output"])
+            override = {}
+            override["family"] = family
+
+            yaml_data = ConfigTemplate(
+                f"DEVHSM procedure Secure Binary v3.1 Configuration template for {family}.",
+                schemas,
+                override,
+            ).export_to_yaml()
+
+            ret[f"sb31_{family}_devhsm"] = yaml_data
+
         return ret
 
     def create_sb3(self) -> None:
@@ -173,11 +229,11 @@ class DeviceHsm:
         self.info_print(" 4: Generating 48 bytes FW encryption keys.")
         cust_fw_enc_prk, _ = self.generate_key(TrustProvOemKeyType.MFWENCK, "CUST_FW_ENC_SK")
 
-        # 5: Call hsm_store_key to generate user defined CUST_MK_SK (aka PCK).
+        # 5: Call hsm_store_key to generate user defined CUST_MK_SK.
         # Will be stored into PFR using loadKeyBlob SB3 command.
         # Use NXP_CUST_KEK_EXT_SK in SB json
-        self.info_print(" 5: Wrapping user PCK key.")
-        self.wrapped_user_pck = self.wrap_key(self.user_pck)
+        self.info_print(" 5: Wrapping CUST_MK_SK key.")
+        self.wrapped_cust_mk_sk = self.wrap_key(self.cust_mk_sk)
 
         # 6: Generate template sb3 fw, sb3ImageType=6
         self.info_print(" 6: Creating template un-encrypted SB3 header and data blobs.")
@@ -213,7 +269,7 @@ class DeviceHsm:
             index=key_blob_command_position,
             command=CmdLoadKeyBlob(
                 offset=self.update_keyblob_offset(),
-                data=self.wrapped_user_pck,
+                data=self.wrapped_cust_mk_sk,
                 key_wrap_id=CmdLoadKeyBlob.get_key_id(
                     family=self.family, key_name=CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK
                 ),
@@ -419,23 +475,23 @@ class DeviceHsm:
 
         return prk, puk
 
-    def wrap_key(self, user_pck: bytes) -> bytes:
-        """Wrap the user PCK key.
+    def wrap_key(self, cust_mk_sk: bytes) -> bytes:
+        """Wrap the CUST_MK_SK key.
 
-        :param user_pck: User PCK key
+        :param cust_mk_sk : Customer Master Key Symmetric Key
         :raises SPSDKError: In case of any vulnerability.
-        :return: Wrapped user PCK by RFC3396.
+        :return: Wrapped CUST_MK_SK by RFC3396.
         """
-        if not self.mboot.write_memory(self.DEVBUFF_BASE0, user_pck):
+        if not self.mboot.write_memory(self.DEVBUFF_BASE0, cust_mk_sk):
             raise SPSDKError(
-                f"Cannot write USER_PCK into device. Error: {self.mboot.status_string}"
+                f"Cannot write CUST_MK_SK into device. Error: {self.mboot.status_string}"
             )
 
         hsm_store_key_res = self.mboot.tp_hsm_store_key(
             TrustProvKeyType.CKDFK,
             0x01,
             self.DEVBUFF_BASE0,
-            self.DEVBUFF_USER_PCK_KEY_SIZE,
+            self.DEVBUFF_CUST_MK_SK_KEY_SIZE,
             self.DEVBUFF_BASE1,
             self.DEVBUFF_SIZE,
         )
@@ -443,21 +499,22 @@ class DeviceHsm:
         if not hsm_store_key_res:
             raise SPSDKError(f"HSM Store Key command failed. Error: {self.mboot.status_string}")
 
-        if hsm_store_key_res[1] != self.DEVBUFF_WRAPPED_USER_PCK_KEY_SIZE:
+        if hsm_store_key_res[1] != self.DEVBUFF_WRAPPED_CUST_MK_SK_KEY_SIZE:
             raise SPSDKError("HSM Store Key command has invalid results.")
 
-        wrapped_user_pck = self.mboot.read_memory(
+        wrapped_cust_mk_sk = self.mboot.read_memory(
             self.DEVBUFF_BASE1,
-            self.DEVBUFF_WRAPPED_USER_PCK_KEY_SIZE,
+            self.DEVBUFF_WRAPPED_CUST_MK_SK_KEY_SIZE,
         )
-        if not wrapped_user_pck:
+
+        if not wrapped_cust_mk_sk:
             raise SPSDKError(
-                f"Cannot read WRAPPED USER PCK from device. Error: {self.mboot.status_string}"
+                f"Cannot read WRAPPED CUST_MK_SK from device. Error: {self.mboot.status_string}"
             )
 
-        self.store_temp_res("CUST_MK_SK.bin", wrapped_user_pck)
+        self.store_temp_res("CUST_MK_SK.bin", wrapped_cust_mk_sk)
 
-        return wrapped_user_pck
+        return wrapped_cust_mk_sk
 
     def sign_data_blob(self, data_to_sign: bytes, key: bytes) -> bytes:
         """Get HSM encryption sign for data blob.
@@ -517,9 +574,7 @@ class DeviceHsm:
             os.mkdir(group_dir)
 
         filename = os.path.join(self.workspace, group or "", file_name)
-
-        with open(filename, "wb") as data_file:
-            data_file.write(data)
+        write_file(data, filename, mode="wb")
 
     def get_cmd_from_config(self) -> List[Dict[str, Any]]:
         """Process command description into a command object.
@@ -605,24 +660,24 @@ class DeviceHsm:
         return encrypted_blocks
 
 
-def get_user_pck(key: BinaryIO) -> bytes:
+def get_cust_mk_sk(key: str) -> bytes:
     """Get binary from text or binary file.
 
-    :param key: Binary user PCK key file.
+    :param key: Binary customer master key symmetric key file.
     :return: Binary array loaded from file.
     :raises SPSDKValueError: When invalid input value is recognized.
     """
-    user_pck = key.read()
+    cust_mk_sk = load_binary(key)
 
-    if len(user_pck) != 32:
+    if len(cust_mk_sk) != 32:
         raise SPSDKValueError(
-            f"Invalid length of USER PCK INPUT ({len(user_pck)} not equal to 32)."
+            f"Invalid length of CUST_MK_SK INPUT ({len(cust_mk_sk )} not equal to 32)."
         )
 
-    return user_pck
+    return cust_mk_sk
 
 
-def get_oem_share_input(binary: BinaryIO) -> bytes:
+def get_oem_share_input(binary: str) -> bytes:
     """Get binary from text or binary file.
 
     :param binary: Path to binary file.
@@ -630,7 +685,7 @@ def get_oem_share_input(binary: BinaryIO) -> bytes:
     :raises SPSDKValueError: When invalid input value is recognized.
     """
     if binary:
-        oem_share_input = binary.read()
+        oem_share_input = load_binary(binary)
     else:
         oem_share_input = crypto_backend().random_bytes(16)
 
@@ -655,15 +710,16 @@ def main(log_level: int) -> int:
 @click.option(
     "-k",
     "--key",
-    type=click.File(mode="rb"),
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
     required=True,
-    help="User PCK secret file (32-bytes long binary file). PCK (provisioned by OEM, known by OEM) - Part Common Key."
-    " This is a 256-bit pre-shared AES key provisioned by OEM. PCK is used to derive FW image encryption keys.",
+    help="""Customer Master Key Symmetric Key secret file (32-bytes long binary file).
+    CUST_MK_SK (provisioned by OEM, known by OEM).
+    This is a 256-bit pre-shared AES key provisioned by OEM. CUST_MK_SK is used to derive FW image encryption keys.""",
 )
 @click.option(
     "-o",
     "--oem-share-input",
-    type=click.File(mode="rb"),
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
     help="OEM share input file to use as a seed to randomize the provisioning process (16-bytes long binary file).",
 )
 @click.option(
@@ -684,9 +740,9 @@ def main(log_level: int) -> int:
 @click.option(
     "-f",
     "--family",
-    required=False,
+    required=True,
     help="Select the chip family.",
-    type=click.Choice(["lpc55s3x"], case_sensitive=False),
+    type=click.Choice(DeviceHsm.get_supported_families(), case_sensitive=False),
 )
 @click.option(
     "-ir/-IR",
@@ -707,15 +763,15 @@ def main(log_level: int) -> int:
         "By default this reset is ENABLED."
     ),
 )
-@click.argument("output-path", type=click.File(mode="wb"))
+@click.argument("output-path", type=click.Path())
 def generate(
     port: str,
     usb: str,
     buspal: str,
     lpcusbsio: str,
-    oem_share_input: BinaryIO,
-    key: BinaryIO,
-    output_path: BinaryIO,
+    oem_share_input: str,
+    key: str,
+    output_path: str,
     workspace: str,
     container_conf: str,
     timeout: int,
@@ -734,7 +790,7 @@ def generate(
     assert isinstance(interface, MBootInterface)
 
     oem_share_in = get_oem_share_input(oem_share_input)
-    user_pck = get_user_pck(key)
+    cust_mk_sk = get_cust_mk_sk(key)
     if container_conf:
         family_from_cfg = load_configuration(container_conf).get("family")
         if not isinstance(family_from_cfg, str):
@@ -744,28 +800,56 @@ def generate(
             f"Family from json configuration file: {family_from_cfg} differs from the family parameter {family}"
         )
 
-    if not family and not container_conf:
-        raise SPSDKError(
-            "Need to provide family. Either as -f parameter or in json configuration file."
-        )
-    family_final = family if not container_conf else family_from_cfg
-    assert isinstance(family_final, str)
     with McuBoot(interface) as mboot:
         devhsm = DeviceHsm(
             mboot=mboot,
-            user_pck=user_pck,
+            cust_mk_sk=cust_mk_sk,
             oem_share_input=oem_share_in,
             info_print=click.echo,
             container_conf=container_conf,
             workspace=workspace,
-            family=family_final,
+            family=family,
             initial_reset=initial_reset,
             final_reset=final_reset,
         )
         devhsm.create_sb3()
-        output_path.write(devhsm.export())
+        write_file(devhsm.export(), output_path, "wb")
 
-    click.echo(f"Final SB3 file has been written: {os.path.abspath(output_path.name)}")
+    click.echo(f"Final SB3 file has been written: {os.path.abspath(output_path)}")
+
+
+@main.command(name="get-template", no_args_is_help=True)
+@click.option(
+    "-f",
+    "--family",
+    required=True,
+    help="Select the chip family.",
+    type=click.Choice(DeviceHsm.get_supported_families(), case_sensitive=False),
+)
+@click.option(
+    "-o",
+    "--overwrite",
+    default=False,
+    type=bool,
+    is_flag=True,
+    help="Allow overwriting existing template file.",
+)
+@click.argument("output", type=click.Path(resolve_path=True))
+def get_template_command(family: str, overwrite: bool, output: str) -> None:
+    """Create template of configuration in YAML format.
+
+    The template file name is specified as argument of this command.
+    """
+    get_template(family, overwrite, output)
+
+
+def get_template(family: str, overwrite: bool, output: str) -> None:
+    """Create template of configuration in YAML format."""
+    if not os.path.isfile(output) or overwrite:
+        click.echo(f"Creating {output} template file.")
+        write_file(DeviceHsm.generate_config_template(family)[f"sb31_{family}_devhsm"], output)
+    else:
+        click.echo(f"Skip creating {output}, this file already exists.")
 
 
 @catch_spsdk_error

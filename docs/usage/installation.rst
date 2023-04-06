@@ -6,7 +6,7 @@ Installation Guide
 Requirements
 ------------
 
-- Make sure to have `Python 3.7+ <https://www.python.org>`_ installed (old version 2.x is not supported).
+- Make sure to have `Python 3.8+ <https://www.python.org>`_ installed (old version 2.x is not supported).
 - Create and activate a virtual environment (``venv``, ``pipenv``, etc.)
 - Upgrade PyPI to the latest version
 - Install SPSDK

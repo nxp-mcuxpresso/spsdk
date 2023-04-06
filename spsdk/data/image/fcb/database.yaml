@@ -1,0 +1,49 @@
+# Copyright 2022-2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+devices:
+  lpc55s3x:
+    attributes:
+      mem_types:
+        flexspi_nor: lpc55s3x_flexspi_nor.xml
+  rt5xx:
+    attributes:
+      mem_types:
+        flexspi_nor: rt5xx_flexspi_nor.xml
+  rt6xx:
+    attributes:
+      mem_types:
+        flexspi_nor: rt6xx_flexspi_nor.xml
+  rt101x:
+    attributes:
+      mem_types:
+        flexspi_nor: rt101x_flexspi_nor.xml
+  rt102x:
+    attributes:
+      mem_types:
+        flexspi_nor: rt102x_flexspi_nor.xml
+  rt104x:
+    attributes:
+      mem_types:
+        flexspi_nor: rt104x_flexspi_nor.xml
+  rt105x:
+    attributes:
+      mem_types:
+        flexspi_nor: rt105x_flexspi_nor.xml
+  rt106x:
+    attributes:
+      mem_types:
+        flexspi_nor: rt106x_flexspi_nor.xml
+  rt116x:
+    attributes:
+      mem_types:
+        flexspi_nor: rt116x_flexspi_nor.xml
+  rt117x:
+    attributes:
+      mem_types:
+        flexspi_nor: rt117x_flexspi_nor.xml
+  rt118x:
+    attributes:
+      mem_types:
+        flexspi_nor: rt118x_flexspi_nor.xml

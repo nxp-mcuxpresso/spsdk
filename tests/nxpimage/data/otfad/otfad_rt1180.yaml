@@ -1,11 +1,15 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  On-The-Fly AES decryption Configuration template for rt5xx.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                         == Basic Settings ==                                        
+#                                         == Basic Settings ==
 # ----------------------------------------------------------------------------------------------------
-family: rt1180  # [Required], MCU family, MCU family name., Possible options:['rt5xx', 'rt6xx']
+family: rt118x  # [Required], MCU family, MCU family name., Possible options:['rt5xx', 'rt6xx']
 output_folder: otfad_rt1180_outputs # [Required], OTFAD output folder, Folder name to be stored generated OTFAD outputs
 # ----------------------------------------------------------------------------------------------------
-#                                         == OTFAD Settings ==                                        
+#                                         == OTFAD Settings ==
 # ----------------------------------------------------------------------------------------------------
 kek: kek_inc.bin # [Required], KEK, OTFAD Key Encryption Key to encrypt OTFAD table
 otfad_table_address: 0x04000000 # [Required], OTFAD key blobs table address, The base address of key blob table, it should be aligned to 1 KB (1024 B)

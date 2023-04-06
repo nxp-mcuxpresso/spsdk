@@ -331,30 +331,32 @@ class Backend(BackendClass):
 
     def ecc_verify(
         self,
-        key: Union[ECC.EccKey, bytes],  # TODO  - could we renamed abstract class to "key" only?
+        public_key: Union[ECC.EccKey, bytes],
         signature: bytes,
         data: bytes,
         algorithm: Optional[str] = None,
     ) -> bool:
         """Verify (EC)DSA signature.
 
-        :param key: ECC private or public key, either as EccKey or bytes
+        :param public_key: ECC private or public key, either as EccKey or bytes
         :param signature: Signature to verify, r and s coordinates as bytes
         :param data: Data to validate
         :param algorithm: Hash algorithm, if None the hash length is determined from ECC curve size
         :return: True if the signature is valid
         :raises SPSDKError: Signature length is invalid
         """
-        key = key if isinstance(key, ECC.EccKey) else ECC.import_key(key)
-        hash_name = algorithm or f"sha{key.pointQ.size_in_bits()}"
-        coordinate_size = key.pointQ.size_in_bytes()
+        public_key = (
+            public_key if isinstance(public_key, ECC.EccKey) else ECC.import_key(public_key)
+        )
+        hash_name = algorithm or f"sha{public_key.pointQ.size_in_bits()}"
+        coordinate_size = public_key.pointQ.size_in_bytes()
         if len(signature) != 2 * coordinate_size:
             raise SPSDKError(
                 f"Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}"
             )
         hasher = self._get_algorithm(name=hash_name, data=data)
         try:
-            DSS.new(key, mode="deterministic-rfc6979").verify(hasher, signature)
+            DSS.new(public_key, mode="deterministic-rfc6979").verify(hasher, signature)
             return True
         except ValueError:
             return False

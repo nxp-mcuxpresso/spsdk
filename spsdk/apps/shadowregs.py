@@ -71,16 +71,13 @@ def _open_shadow_registers(pass_obj: Dict, connect: bool = True) -> Iterator[Sha
     if not connect:
         yield ShadowRegisters(debug_probe=None, config=regs_cfg, device=device, revision=revision)
     else:
-        try:
-            with _open_debug_probe(pass_obj) as debug_probe:
-                if not enable_debug(debug_probe):
-                    raise SPSDKError("Cannot enable debug interface")
+        with _open_debug_probe(pass_obj) as debug_probe:
+            if not enable_debug(debug_probe):
+                raise SPSDKError("Cannot enable debug interface")
 
-                yield ShadowRegisters(
-                    debug_probe=debug_probe, config=regs_cfg, device=device, revision=revision
-                )
-        except SPSDKError as exc:
-            raise SPSDKError(f"Error with opening debug probe: ({str(exc)})") from exc
+            yield ShadowRegisters(
+                debug_probe=debug_probe, config=regs_cfg, device=device, revision=revision
+            )
 
 
 @click.group(name="shadowregs", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -149,9 +146,10 @@ def main(
 @click.option(
     "-f",
     "--filename",
-    default="sr_config.yml",
+    type=click.Path(resolve_path=True),
+    default="sr_config.yaml",
     help="The name of file used to save the current configuration."
-    " Default name is 'sr_config'. The extension is always '.yml'.",
+    " Default name is 'sr_config'. The extension is always '.yaml'.",
 )
 @click.option(
     "-r",
@@ -170,23 +168,24 @@ def main(
 )
 @click.pass_obj
 def saveconfig(pass_obj: dict, filename: str, raw: bool, save_diff: bool) -> None:
-    """Save current state of shadow registers to YML file."""
+    """Save current state of shadow registers to YAML file."""
     try:
         with _open_shadow_registers(pass_obj) as shadow_regs:
             shadow_regs.reload_registers()
-            shadow_regs.create_yml_config(filename, raw, diff=save_diff)
+            shadow_regs.create_yaml_config(filename, raw, diff=save_diff)
         click.echo(f"The Shadow registers has been saved into {filename} YAML file")
     except SPSDKError as exc:
         raise SPSDKError(f"Save configuration of Shadow registers failed! ({str(exc)})") from exc
 
 
-@main.command()
+@main.command(no_args_is_help=True)
 @click.option(
     "-f",
     "--filename",
-    default="sr_config.yml",
+    type=click.Path(resolve_path=True),
+    required=True,
     help="The name of file used to load a new configuration."
-    " Default name is 'sr_config'. The extension is always '.yml'.",
+    " Default name is 'sr_config'. The extension is always '.yaml'.",
 )
 @click.option(
     "-r",
@@ -196,20 +195,25 @@ def saveconfig(pass_obj: dict, filename: str, raw: bool, save_diff: bool) -> Non
     help="In loaded configuration will accepted also the computed fields "
     "and anti-pole registers.",
 )
+@click.option(
+    "--verify/--no-verify",
+    is_flag=True,
+    default=True,
+    help="Verify write operation (verify by default)",
+)
 @click.pass_obj
-def loadconfig(pass_obj: dict, filename: str = "sr_config.yml", raw: bool = False) -> None:
-    """Load new state of shadow registers from YML file into microcontroller."""
+def loadconfig(pass_obj: dict, filename: str, raw: bool, verify: bool) -> None:
+    """Load new state of shadow registers from YAML file into microcontroller."""
     try:
         with _open_shadow_registers(pass_obj) as shadow_regs:
-            shadow_regs.load_yml_config(filename, raw)
-            shadow_regs.sets_all_registers()
+            shadow_regs.load_yaml_config(filename, raw)
+            shadow_regs.sets_all_registers(verify)
         click.echo(f"The Shadow registers has been loaded by configuration in {filename} YAML file")
     except SPSDKError as exc:
         raise SPSDKError(f"Load configuration of Shadow registers failed ({str(exc)})!") from exc
 
 
 @main.command(name="get-template", no_args_is_help=True)
-@click.argument("output", metavar="PATH", type=click.Path())
 @click.option(
     "-r",
     "--raw",
@@ -218,15 +222,16 @@ def loadconfig(pass_obj: dict, filename: str = "sr_config.yml", raw: bool = Fals
     help="In loaded configuration will accepted also the computed fields "
     "and anti-pole registers.",
 )
+@click.argument("output", metavar="PATH", type=click.Path(resolve_path=True))
 @click.pass_obj
 def get_template(pass_obj: dict, output: str, raw: bool) -> None:
-    """Generate the template of Shadow registers YML configuration file.
+    """Generate the template of Shadow registers YAML configuration file.
 
     \b
     PATH    - file name path to write template config file
     """
     with _open_shadow_registers(pass_obj, connect=False) as shadow_regs:
-        shadow_regs.create_yml_config(output, raw)
+        shadow_regs.create_yaml_config(output, raw)
     click.echo(
         f"The Shadow registers template for {pass_obj['device']} has been saved into {output} YAML file"
     )
@@ -263,8 +268,8 @@ def printregs(pass_obj: dict, rich: bool = False) -> None:
         raise SPSDKError(f"Print of Shadow registers failed! ({str(exc)})") from exc
 
 
-@main.command()
-@click.option("-r", "--reg", type=str, help="The name of register to be read.")
+@main.command(no_args_is_help=True)
+@click.option("-r", "--reg", type=str, required=True, help="The name of register to be read.")
 @click.pass_obj
 def getreg(pass_obj: dict, reg: str) -> None:
     """The command prints the current value of one shadow register."""
@@ -277,15 +282,23 @@ def getreg(pass_obj: dict, reg: str) -> None:
         raise SPSDKError(f"Getting Shadow register failed! ({str(exc)})") from exc
 
 
-@main.command()
-@click.option("-r", "--reg", type=str, help="The name of register to be set.")
-@click.option("-v", "--reg-val", type=str, help="The new value of register in hex format.")
+@main.command(no_args_is_help=True)
+@click.option("-r", "--reg", type=str, required=True, help="The name of register to be set.")
+@click.option(
+    "-v", "--reg-val", type=str, required=True, help="The new value of register in hex format."
+)
+@click.option(
+    "--verify/--no-verify",
+    is_flag=True,
+    default=True,
+    help="Verify write operation (verify by default)",
+)
 @click.pass_obj
-def setreg(pass_obj: dict, reg: str, reg_val: str) -> None:
+def setreg(pass_obj: dict, reg: str, reg_val: str, verify: bool) -> None:
     """The command sets a value of one shadow register defined by parameter."""
     try:
         with _open_shadow_registers(pass_obj) as shadow_regs:
-            shadow_regs.set_register(reg, reg_val)
+            shadow_regs.set_register(reg, reg_val, verify)
         click.echo(f"The Shadow register {reg} has been set to {reg_val} value")
     except SPSDKError as exc:
         raise SPSDKError(f"Setting Shadow register failed! ({str(exc)})") from exc
@@ -304,9 +317,9 @@ def reset(pass_obj: dict) -> None:
 @click.option(
     "-o",
     "--output",
-    type=click.Path(),
+    type=click.Path(resolve_path=True),
     required=True,
-    help="Save the output into a file instead of console",
+    help="File name of generated output HTML description file",
 )
 @click.option(
     "-p",
@@ -347,7 +360,7 @@ def info(pass_obj: dict, output: str, open_result: bool) -> None:
 )
 @click.argument(
     "output",
-    type=click.Path(),
+    type=click.Path(resolve_path=True),
     required=True,
 )
 @click.pass_obj
@@ -358,7 +371,7 @@ def fuses_script(pass_obj: dict, config: str, output: str) -> None:
     """
     try:
         with _open_shadow_registers(pass_obj, connect=False) as shadow_regs:
-            shadow_regs.load_yml_config(config, False)
+            shadow_regs.load_yaml_config(config, False)
             cfg = load_configuration(config)
             write_file(shadow_regs.create_fuse_blhost_script(list(cfg["registers"].keys())), output)
         click.echo(f"BLHOST script to burn fuses has been generated: {output}")

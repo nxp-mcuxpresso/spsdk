@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -131,7 +131,6 @@ def test_lexer():
     ],
 )
 def test_source_name(input_text, expected_result):
-
     lexer = BDLexer()
     lexer._sources.append(Variable("source_name", "source", ""))
 

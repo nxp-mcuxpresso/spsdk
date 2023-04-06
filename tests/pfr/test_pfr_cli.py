@@ -85,6 +85,18 @@ def test_generate_cmpa_with_elf2sb(data_dir, tmpdir):
     assert filecmp.cmp(org_file, new_file)
 
 
+def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir, tmpdir):
+    """Test PFR CLI - Generation CMPA binary with elf2sb."""
+    new = f"{tmpdir}/new.bin"
+    org = "cmpa_lpc55s3x.bin"
+    cmd = f"generate-binary --user-config cmpa_lpc55s3x.json -e mbi_config_lpc55s3x.json -o {new}"
+
+    with use_working_directory(data_dir):
+        result = CliRunner().invoke(cli.main, cmd.split())
+        assert result.exit_code == 0, result.output
+        assert filecmp.cmp(org, new)
+
+
 def test_parse(data_dir, tmpdir):
     """Test PFR CLI - Parsing CMPA binary to get config."""
     cmd = "parse-binary --device lpc55s6x --type cmpa "

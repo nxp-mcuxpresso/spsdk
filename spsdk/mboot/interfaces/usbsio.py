@@ -16,6 +16,7 @@ from libusbsio.libusbsio import LIBUSBSIO
 
 from spsdk import SPSDKError, SPSDKValueError
 from spsdk.mboot.exceptions import McuBootConnectionError
+from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.usbfilter import USBDeviceFilter
 
@@ -323,7 +324,7 @@ class UsbSioSPI(UsbSio):
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
         if result < 0 or not data:
-            raise TimeoutError()
+            raise SPSDKTimeoutError()
         logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
@@ -332,7 +333,7 @@ class UsbSioSPI(UsbSio):
 
         :param data: Data to send
         :raises McuBootConnectionError: When sending the data fails
-        :raises TimeoutError: When data could not be written
+        :raises SPSDKTimeoutError: When data could not be written
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
         try:
@@ -342,7 +343,7 @@ class UsbSioSPI(UsbSio):
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
         if result < 0:
-            raise TimeoutError()
+            raise SPSDKTimeoutError()
 
 
 class UsbSioI2C(UsbSio):
@@ -416,16 +417,16 @@ class UsbSioI2C(UsbSio):
 
         :param length: Number of bytes to read
         :return: Data read from the device
-        :raises TimeoutError: Time-out
+        :raises SPSDKTimeoutError: Time-out
         :raises McuBootConnectionError: When reading data from device fails
-        :raises TimeoutError: When no data received
+        :raises SPSDKTimeoutError: When no data received
         """
         try:
             (data, result) = self.port.DeviceRead(devAddr=self.i2c_address, rxSize=length)
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
         if result < 0 or not data:
-            raise TimeoutError()
+            raise SPSDKTimeoutError()
         logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
@@ -442,4 +443,4 @@ class UsbSioI2C(UsbSio):
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
         if result < 0:
-            raise TimeoutError()
+            raise SPSDKTimeoutError()

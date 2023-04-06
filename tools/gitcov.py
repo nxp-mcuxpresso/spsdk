@@ -14,7 +14,7 @@ import subprocess
 import sys
 from configparser import ConfigParser
 from os import path
-from typing import Optional, Sequence, Tuple
+from typing import Iterable, Optional, Sequence, Tuple
 from xml.etree import ElementTree as et
 
 logger = logging.getLogger()
@@ -156,7 +156,10 @@ def parse_input(input_args: Optional[Sequence[str]] = None) -> argparse.Namespac
 
 
 def get_changed_files(
-    repo_path: str, include_merges: bool, parent_branch: Optional[str] = None
+    repo_path: str,
+    include_merges: bool,
+    parent_branch: Optional[str] = None,
+    file_extensions: Iterable[str] = ["py"],
 ) -> Sequence[str]:
     """Get a list of changed files.
 
@@ -165,7 +168,8 @@ def get_changed_files(
     :param include_merges: Include changes done via merge-commits
     :return: List of changed files
     """
-    file_regex_str = r"^(?P<op>[AM])\s+(?P<path>[a-zA-Z0-9_/\\]+\.py)$"
+    file_extension_regex = "(" + "|".join(file_extensions) + ")"
+    file_regex_str = rf"^(?P<op>[AM])\s+(?P<path>[a-zA-Z0-9_/\\]+\.{file_extension_regex})$"
     file_regex = re.compile(file_regex_str)
 
     parent_branch = parent_branch or get_parent_commit()
@@ -366,7 +370,6 @@ def get_parent_commit() -> str:
     )
 
     while 1:
-
         # first check if we're not on a merge commit
         if current_sha in merge_commits:
             break

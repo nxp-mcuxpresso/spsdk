@@ -16,6 +16,8 @@ from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 from pip import __version__ as pip_version
 
+from spsdk.exceptions import SPSDKError
+
 APPROVED_LICENSES_FILE_NAME = "approved_packages.json"
 APPROVED_LICENSES_FILE = os.path.abspath(
     os.path.join(os.path.dirname(__file__), APPROVED_LICENSES_FILE_NAME)
@@ -107,7 +109,7 @@ class DependenciesList(List[DependencyInfo]):
         """Get packages info for list of packages.
 
         :param packages: List of packages names.
-        :raises ValueError: Some of required packages doesn't exists.
+        :raises SPSDKError: Some of required packages doesn't exists.
         :return: List of Tuples with DependencyInfo and List of package dependencies.
         """
         packages_info: List[str] = []
@@ -116,7 +118,7 @@ class DependenciesList(List[DependencyInfo]):
                 f"pip show {' '.join(packages)}".split(), stderr=subprocess.DEVNULL
             ).decode("utf-8")
             if "WARNING: Package(s) not found:" in output:
-                raise ValueError(f"Some package(s) not found: \n{output}")
+                raise SPSDKError(f"Some package(s) not found: \n{output}")
 
             packages_info = output.split("---")
 
@@ -223,7 +225,6 @@ def check_dependencies(actual_list: DependenciesList) -> int:
     approved_licenses = DependenciesList.load_licenses(APPROVED_LICENSES_FILE)
     issues_counter = 0
     for actual_dep in actual_list:
-
         lic = actual_dep.license
         if actual_dep.is_manual:
             fall_back = approved_list.get(actual_dep.name)

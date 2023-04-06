@@ -20,10 +20,13 @@ import colorama
 import prettytable
 
 from tools import gitcov
+from tools.checker_copyright_year import COPYRIGHT_EXTENSIONS, fix_copyright_in_files
 from tools.task_scheduler import PrettyProcessRunner, TaskInfo, TaskList, TaskResult
 
 OUTPUT_FOLDER = "reports"
 CPU_CNT = os.cpu_count() or 1
+
+
 CHECK_LIST = [
     "PYTEST",
     "GITCOV",
@@ -41,12 +44,13 @@ CHECK_LIST = [
     "BLACK",
     "ISORT",
     "COPYRIGHT",
+    "PY_HEADERS",
 ]
 log = logging.getLogger(__name__)
 colorama.init()
 
 
-def print_results(tasks: List[TaskInfo], info_checks: Optional[List[str]] = None) -> None:
+def print_results(tasks: List[TaskInfo]) -> None:
     """Print Code Check results in table."""
     table = prettytable.PrettyTable(["#", "Test", "Result", "Exec Time", "Error count", "Log"])
     table.align = "l"
@@ -55,25 +59,14 @@ def print_results(tasks: List[TaskInfo], info_checks: Optional[List[str]] = None
     table.hrules = prettytable.HEADER
     table.vrules = prettytable.NONE
 
-    result_colors = {
-        "PASS": colorama.Fore.GREEN,
-        "FAILED": colorama.Fore.RED,
-        "INFO": colorama.Fore.CYAN,
-    }
-
     for i, task in enumerate(tasks, start=1):
-        result_text = "FAILED"
         assert task.result
-        if task.result.error_count == 0:
-            result_text = "PASS"
-        if info_checks and task.name in info_checks:
-            result_text = "INFO"
 
         table.add_row(
             [
                 colorama.Fore.YELLOW + str(i),
                 colorama.Fore.WHITE + task.name,
-                result_colors[result_text] + result_text,
+                task.status_str(),
                 colorama.Fore.WHITE + task.get_exec_time(),
                 colorama.Fore.CYAN + str(task.result.error_count),
                 colorama.Fore.BLUE + task.result.output_log,
@@ -83,12 +76,11 @@ def print_results(tasks: List[TaskInfo], info_checks: Optional[List[str]] = None
     click.echo(colorama.Style.RESET_ALL)
 
 
-def check_results(tasks: List[TaskInfo], info_check: List[str], output: str = "reports") -> int:
+def check_results(tasks: List[TaskInfo], output: str = "reports") -> int:
     """Print Code Check results in table."""
     ret = 0
 
     for task in tasks:
-
         err_cnt = task.result.error_count if task.result else -1
         output_log: List[str] = []
         if task.exception:
@@ -98,9 +90,8 @@ def check_results(tasks: List[TaskInfo], info_check: List[str], output: str = "r
                 f.write(str(task.exception))
             output_log.append(exc_log)
 
-        if not task.result or err_cnt != 0:
-            if not info_check or (info_check and task.name not in info_check):
-                ret = 1
+        if not task.result or (err_cnt != 0 and not task.info_only):
+            ret = 1
 
         if task.result:
             res_log = task.result.output_log
@@ -254,7 +245,9 @@ def check_copyright_year(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Check the project against copy right year rules."""
     output_log = os.path.join(output, "copyright_year.txt")
     res = 0
-    changed_files = gitcov.get_changed_files(repo_path=".", include_merges=True)
+    changed_files = gitcov.get_changed_files(
+        repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
+    )
     with open(output_log, "w", encoding="utf-8") as f:
         res = subprocess.call(
             f"python tools/checker_copyright_year.py {' '.join(changed_files)}".split(),
@@ -267,6 +260,66 @@ def check_copyright_year(output: str = OUTPUT_FOLDER) -> TaskResult:
             res = len(f.read().splitlines())
 
     return TaskResult(error_count=res, output_log=output_log)
+
+
+def check_py_file_headers(output: str = OUTPUT_FOLDER) -> TaskResult:
+    """Check that python files have valid header."""
+    output_log = os.path.join(output, "py_header.txt")
+    res = 0
+    changed_files = gitcov.get_changed_files(
+        repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
+    )
+    with open(output_log, "w", encoding="utf-8") as f:
+        res = subprocess.call(
+            f"python tools/checker_py_headers.py {' '.join(changed_files)}".split(),
+            stdout=f,
+            stderr=f,
+        )
+
+    if res:
+        with open(output_log, "r", encoding="utf-8") as f:
+            res = len(f.read().splitlines())
+
+    return TaskResult(error_count=res, output_log=output_log)
+
+
+def fix_copyight_year() -> None:
+    """Find all changed files and fix the copyright year in them."""
+    changed_files = gitcov.get_changed_files(
+        repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
+    )
+    fix_copyright_in_files(changed_files)
+
+
+def fix_py_file_headers() -> None:
+    changed_files = gitcov.get_changed_files(
+        repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
+    )
+    subprocess.call(
+        f"python tools/checker_py_headers.py --fix {' '.join(changed_files)}".split(),
+    )
+
+
+def fix_found_problems(checks: TaskList, silence: int = 0, run_check_again: bool = True) -> None:
+    """Fix the failed checks automatically is possible."""
+    re_checks = TaskList()
+    fixers = {"COPYRIGHT": fix_copyight_year, "PY_HEADERS": fix_py_file_headers}
+    for check in checks:
+        if check.name not in fixers:
+            continue
+        if check.result and check.result.error_count != 0:
+            fixers[check.name]()
+            click.echo(f"{colorama.Fore.GREEN}{check.name} problems fixed .{colorama.Fore.RESET}")
+            check.reset()
+            re_checks.append(check)
+    if run_check_again and len(re_checks) > 0:
+        click.echo("Running the failed codechecks again.")
+        runner = PrettyProcessRunner(
+            re_checks, print_func=(lambda x: None) if silence else click.echo
+        )
+        runner.run(CPU_CNT, True)
+        if silence < 2:
+            print_results(re_checks)
 
 
 @click.command(no_args_is_help=False)
@@ -311,37 +364,50 @@ def check_copyright_year(output: str = OUTPUT_FOLDER) -> TaskResult:
     default="reports",
     help="Output folder to store reports files.",
 )
+@click.option(
+    "-f",
+    "--fix",
+    is_flag=True,
+    default=False,
+    help="Fix the problems automatically if possible.",
+)
 def main(
     check: List[str],
     info_check: List[str],
     job_cnt: int,
     silence: int,
     output: click.Path,
+    fix: bool,
 ) -> None:
     """Simple tool to check the SPSDK development rules.
 
     Overall result is passed to OS.
-
-    :param check: List of tests to run.
-    :param info_check: List of tests to run which don't affect the overall result.
-    :param silence: Level of silence 0: full print; 1: print only summary; 2: print nothing.
-    :param job_cnt: Select count of concurrent tests.
-    :param output: Output folder for reports.
     """
     # logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
     logging.basicConfig(level=logging.INFO)
     output_dir = str(output) if output else OUTPUT_FOLDER
     ret = 1
+    # the baseline PYLINT_ALL, RADON_ALL, and RADON_C checkers are always just informative
+    info_check = [x.upper() for x in list(info_check)]
     try:
         available_checks = TaskList(
             [
-                TaskInfo("PYTEST", check_pytest, output=output_dir),
-                TaskInfo("GITCOV", check_gitcov, output=output_dir, dependencies=["PYTEST"]),
+                TaskInfo(
+                    "PYTEST", check_pytest, output=output_dir, info_only="PYTEST" in info_check
+                ),
+                TaskInfo(
+                    "GITCOV",
+                    check_gitcov,
+                    output=output_dir,
+                    dependencies=["PYTEST"],
+                    info_only="GITCOV" in info_check,
+                ),
                 TaskInfo(
                     "PYLINT_ALL",
                     check_pylint,
                     args="spsdk examples tools codecheck.py",
                     output_log=os.path.join(output_dir, "pylint_all.txt"),
+                    info_only=True,
                 ),
                 TaskInfo(
                     "PYLINT",
@@ -349,6 +415,8 @@ def main(
                     input_log=os.path.join(output_dir, "pylint_all.txt"),
                     output_log=os.path.join(output_dir, "pylint.txt"),
                     dependencies=["PYLINT_ALL"],
+                    inherit_failure=False,
+                    info_only="PYLINT" in info_check,
                 ),
                 # This is already covered by PYLINT
                 # TaskInfo(
@@ -362,23 +430,39 @@ def main(
                     check_pylint,
                     args="spsdk --rcfile pylint-doc-rules.ini",
                     output_log=os.path.join(output_dir, "pylint_docs.txt"),
+                    info_only="PYLINT_DOCS" in info_check,
                 ),
                 TaskInfo(
                     "MYPY",
                     check_mypy,
                     args=["spsdk", "examples"],
                     output_log=os.path.join(output_dir, "mypy.txt"),
+                    info_only="MYPY" in info_check,
                 ),
                 TaskInfo(
                     "MYPY_TOOLS",
                     check_mypy,
                     args=["tools", "codecheck.py"],
                     output_log=os.path.join(output_dir, "mypy_tools.txt"),
+                    info_only="MYPY_TOOLS" in info_check,
                 ),
-                TaskInfo("DEPENDENCIES", check_dependencies, output=output),
-                TaskInfo("PYDOCSTYLE", check_pydocstyle, output=output_dir),
                 TaskInfo(
-                    "RADON_ALL", check_radon, output_log=os.path.join(output_dir, "radon_all.txt")
+                    "DEPENDENCIES",
+                    check_dependencies,
+                    output=output,
+                    info_only="DEPENDENCIES" in info_check,
+                ),
+                TaskInfo(
+                    "PYDOCSTYLE",
+                    check_pydocstyle,
+                    output=output_dir,
+                    info_only="PYDOCSTYLE" in info_check,
+                ),
+                TaskInfo(
+                    "RADON_ALL",
+                    check_radon,
+                    output_log=os.path.join(output_dir, "radon_all.txt"),
+                    info_only=True,
                 ),
                 TaskInfo(
                     "RADON_C",
@@ -387,6 +471,7 @@ def main(
                     input_log=os.path.join(output_dir, "radon_all.txt"),
                     output_log=os.path.join(output_dir, "radon_c.txt"),
                     dependencies=["RADON_ALL"],
+                    info_only=True,
                 ),
                 TaskInfo(
                     "RADON_D",
@@ -395,10 +480,32 @@ def main(
                     input_log=os.path.join(output_dir, "radon_all.txt"),
                     output_log=os.path.join(output_dir, "radon_d.txt"),
                     dependencies=["RADON_ALL"],
+                    info_only="RADON_D" in info_check,
                 ),
-                TaskInfo("BLACK", check_black, output=output_dir),
-                TaskInfo("ISORT", check_isort, output=output_dir),
-                TaskInfo("COPYRIGHT", check_copyright_year, output=output_dir),
+                TaskInfo(
+                    "BLACK",
+                    check_black,
+                    output=output_dir,
+                    info_only="BLACK" in info_check,
+                ),
+                TaskInfo(
+                    "ISORT",
+                    check_isort,
+                    output=output_dir,
+                    info_only="ISORT" in info_check,
+                ),
+                TaskInfo(
+                    "COPYRIGHT",
+                    check_copyright_year,
+                    output=output_dir,
+                    info_only="COPYRIGHT" in info_check,
+                ),
+                TaskInfo(
+                    "PY_HEADERS",
+                    check_py_file_headers,
+                    output=output_dir,
+                    info_only="PY_HEADERS" in info_check,
+                ),
             ]
         )
         checks = TaskList()
@@ -415,29 +522,28 @@ def main(
                             checks.append(extra_task)
                 checks.append(task)
 
-        # the baseline PYLINT_ALL, RADON_ALL, and RADON_C checkers are always just informative
-        info_check = list(info_check)
-        info_check.append("PYLINT_ALL")
-        info_check.append("RADON_ALL")
-        info_check.append("RADON_C")
-
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
 
         runner = PrettyProcessRunner(checks, print_func=(lambda x: None) if silence else click.echo)
         runner.run(job_cnt, True)
 
-        ret = check_results(checks, info_check, output_dir)
+        ret = check_results(checks, output_dir)
         if silence < 2:
-            print_results(checks, info_check)
+            print_results(checks)
             click.echo(f"Overall time: {round(runner.process_time, 1)} second(s).")
             click.echo(
                 f"Overall result: {(colorama.Fore.GREEN+'PASS') if ret == 0 else (colorama.Fore.RED+'FAILED')}."
             )
 
+        if fix:
+            fix_found_problems(checks, silence=silence)
+            ret = 0
+
     except Exception as exc:  # pylint: disable=broad-except
         click.echo(exc)
         ret = 1
+
     sys.exit(ret)
 
 

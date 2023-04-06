@@ -1,11 +1,15 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  On-The-Fly AES decryption Configuration template for rt5xx.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                         == Basic Settings ==                                        
+#                                         == Basic Settings ==
 # ----------------------------------------------------------------------------------------------------
-family: rt1180  # [Required], MCU family, MCU family name., Possible options:['rt5xx', 'rt6xx']
+family: rt118x  # [Required], MCU family, MCU family name., Possible options:['rt5xx', 'rt6xx']
 output_folder: otfad_rt5xx_outputs # [Required], OTFAD output folder, Folder name to be stored generated OTFAD outputs
 # ----------------------------------------------------------------------------------------------------
-#                                         == OTFAD Settings ==                                        
+#                                         == OTFAD Settings ==
 # ----------------------------------------------------------------------------------------------------
 kek: kek_inc.bin # [Required], KEK, OTFAD Key Encryption Key to encrypt OTFAD table
 otfad_table_address: 0x04000000 # [Required], OTFAD key blobs table address, The base address of key blob table, it should be aligned to 1 KB (1024 B)
@@ -21,7 +25,7 @@ key_blobs: # [Required], List of Key Blobs used by OTFAD, The list of definition
     aes_decryption_enable: true # [Optional], AES decryption enable flag, For accesses hitting in a valid context, this bit indicates if the fetched data is to be decrypted or simply bypassed
     valid: true # [Optional], Valid flag, This field signals if the context is valid or not
 # ----------------------------------------------------------------------------------------------------
-#                                 == OTFAD Key Scrambling Settings ==                                 
+#                                 == OTFAD Key Scrambling Settings ==
 # ----------------------------------------------------------------------------------------------------
 key_scramble: # [Optional], , If Key scrambling is not required, this section must be commented out
   key_scramble_mask: 0x78563412  # [Required], Key Scramble, OTFAD Key Scramble mask (4 bytes size)

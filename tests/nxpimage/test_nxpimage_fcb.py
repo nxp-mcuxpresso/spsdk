@@ -27,7 +27,7 @@ from spsdk.utils.misc import use_working_directory
         ("lpc55s3x", "flexspi_nor"),
     ],
 )
-def test_nxpimage_bimg_export(tmpdir, data_dir, family, mem_type):
+def test_nxpimage_fcb_export(tmpdir, data_dir, family, mem_type):
     runner = CliRunner()
     with use_working_directory(data_dir):
         config_file = os.path.join(data_dir, "fcb", family, f"fcb_{family}_{mem_type}.yaml")
@@ -83,5 +83,5 @@ def test_nxpimage_fcb_template_cli(tmpdir, family, mem_types):
     assert result.exit_code == 0
 
     for mem_type in mem_types:
-        template_name = os.path.join(tmpdir, f"fcb_{family}_{mem_type}.yml")
+        template_name = os.path.join(tmpdir, f"fcb_{family}_{mem_type}.yaml")
         assert os.path.isfile(template_name)

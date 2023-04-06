@@ -83,7 +83,7 @@ class DebugAuthenticationChallenge:
             )
 
         dc_rotkh = dc.get_rotkh()
-        if not all(
+        if dc_rotkh and not all(
             self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
         ):
             raise SPSDKValueError(

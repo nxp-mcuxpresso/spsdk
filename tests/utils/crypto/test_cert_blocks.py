@@ -11,10 +11,13 @@ import pytest
 
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
-from spsdk.utils.crypto import CertBlockV2, Certificate
 from spsdk.utils.crypto.cert_blocks import (
     CertBlockHeader,
+    CertBlockV2,
+    Certificate,
     CertificateBlockHeader,
+    find_main_cert_index,
+    find_root_certificates,
     get_main_cert_index,
 )
 
@@ -165,24 +168,175 @@ def test_cert_block_invalid():
 
 
 @pytest.mark.parametrize(
-    "config,default,passed,expected_result",
+    "config,passed,expected_result",
     [
-        ({}, None, False, SPSDKError),
-        ({}, 0, True, 0),
-        ({"mainRootCertId": 1}, 0, True, 1),
-        ({"mainCertChainId": 1}, 0, True, 1),
-        ({"mainRootCertId": "2"}, 0, True, 2),
-        ({"mainCertChainId": "2"}, 0, True, 2),
-        ({"mainRootCertId": "1abc"}, 0, False, SPSDKValueError),
-        ({"mainRootCertId": "1abc"}, 0, False, SPSDKValueError),
-        ({"mainRootCertId": 1, "mainCertChainId": 1}, 0, True, 1),
-        ({"mainRootCertId": 1, "mainCertChainId": 2}, 0, False, SPSDKError),
+        ({}, False, SPSDKError),
+        (
+            {
+                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "rootCertificate0File": "root_k0_signed_cert0_noca.der.cert",
+                "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
+            },
+            True,
+            0,
+        ),
+        (
+            {
+                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "rootCertificate0File": "root_k0_signed_cert0_noca.der.cert",
+                "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
+                "mainRootCertId": 1,
+            },
+            True,
+            1,
+        ),
+        ({"mainRootCertId": 1}, True, 1),
+        ({"mainCertChainId": 1}, True, 1),
+        ({"mainRootCertId": "2"}, True, 2),
+        ({"mainCertChainId": "2"}, True, 2),
+        ({"mainRootCertId": "1abc"}, False, SPSDKValueError),
+        ({"mainRootCertId": "1abc"}, False, SPSDKValueError),
+        ({"mainRootCertId": 1, "mainCertChainId": 1}, True, 1),
+        ({"mainRootCertId": 1, "mainCertChainId": 2}, False, SPSDKError),
     ],
 )
-def test_get_main_cert_index(config, default, passed, expected_result):
+def test_get_main_cert_index(data_dir, config, passed, expected_result):
+    search_paths = [os.path.join(data_dir, "certs_and_keys")]
     if passed:
-        result = get_main_cert_index(config, default)
+        result = get_main_cert_index(config, search_paths=search_paths)
         assert result == expected_result
     else:
         with pytest.raises(expected_result):
-            get_main_cert_index(config, default)
+            get_main_cert_index(config, search_paths=search_paths)
+
+
+@pytest.mark.parametrize(
+    "config,index",
+    [
+        (
+            {
+                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "rootCertificate0File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate1File": "root_k0_signed_cert0_noca.der.cert",
+                "rootCertificate2File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate3File": "root_k1_signed_cert0_noca.der.cert",
+            },
+            1,
+        ),
+        (
+            {
+                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "rootCertificate0File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate2File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate3File": "root_k1_signed_cert0_noca.der.cert",
+            },
+            None,
+        ),
+        (
+            {
+                "rootCertificate0File": "root_k0_signed_cert0_noca.der.cert",
+                "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate2File": "root_k2_signed_cert0_noca.der.cert",
+                "rootCertificate3File": "root_k3_signed_cert0_noca.der.cert",
+            },
+            None,
+        ),
+        (
+            {
+                "mainCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "rootCertificate0File": "non_existing.cert",
+                "rootCertificate1File": "another_non_existing.cert",
+                "rootCertificate2File": "one_more_non_existing.cert",
+            },
+            None,
+        ),
+        (
+            {
+                "mainCertPrivateKeyFile": "non_existing.pem",
+                "rootCertificate0File": "root_k0_signed_cert0_noca.der.cert",
+                "rootCertificate1File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate2File": "root_k2_signed_cert0_noca.der.cert",
+                "rootCertificate3File": "root_k3_signed_cert0_noca.der.cert",
+            },
+            None,
+        ),
+    ],
+)
+def test_find_main_cert_index(data_dir, config, index):
+    search_paths = [os.path.join(data_dir, "certs_and_keys")]
+    found_index = find_main_cert_index(config, search_paths=search_paths)
+    assert found_index == index
+
+
+@pytest.mark.parametrize(
+    "config,error,expected_list",
+    [
+        (
+            {
+                "rootCertificate0File": "root_k0.cert",
+                "rootCertificate1File": "root_k1.cert",
+                "rootCertificate2File": "root_k2.cert",
+                "rootCertificate3File": "root_k3.cert",
+            },
+            None,
+            [
+                "root_k0.cert",
+                "root_k1.cert",
+                "root_k2.cert",
+                "root_k3.cert",
+            ],
+        ),
+        (
+            {
+                "rootCertificate0File": "root_k0.cert",
+                "rootCertificate1File": "root_k1.cert",
+                "rootCertificate2File": "root_k2.cert",
+                "rootCertificate3File": "",
+            },
+            None,
+            [
+                "root_k0.cert",
+                "root_k1.cert",
+                "root_k2.cert",
+            ],
+        ),
+        (
+            {
+                "rootCertificate0File": "root_k0.cert",
+                "rootCertificate1File": "root_k1.cert",
+                "rootCertificate2File": "",
+                "rootCertificate3File": "root_k2.cert",
+            },
+            SPSDKError,
+            None,
+        ),
+        (
+            {
+                "rootCertificate0File": "root_k0.cert",
+                "rootCertificate3File": "root_k2.cert",
+            },
+            SPSDKError,
+            None,
+        ),
+        (
+            {
+                "rootCertificate0File": "root_k0.cert",
+                "rootCertificate1File": "root_k1.cert",
+            },
+            None,
+            [
+                "root_k0.cert",
+                "root_k1.cert",
+            ],
+        ),
+    ],
+)
+def test_find_root_certficates(config, error, expected_list):
+    if error is not None:
+        with pytest.raises(error):
+            find_root_certificates(config)
+    else:
+        certificates = find_root_certificates(config)
+        assert certificates == expected_list
+        assert certificates == expected_list

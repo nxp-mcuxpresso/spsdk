@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,9 +13,8 @@ import os
 from spsdk import SPSDK_DATA_FOLDER
 
 IMG_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "image")
-TZ_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_tz.yml")
-MBIMG_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_mbimg.yml")
-SB3_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_sb3.yml")
+TZ_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_tz.yaml")
+MBIMG_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_mbimg.yaml")
 
 from .bee import BeeFacRegion, BeeKIB, BeeProtectRegionBlock, BeeRegionHeader
 from .commands import (

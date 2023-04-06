@@ -1,4 +1,9 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs>
 	<register offset="0x20" width="16" name="CUST_WR_RD_LOCK0" reversed="False" description="Fuses used to define read/write access permisions to shadows registers of Customer configured OTP words. This is a redundant OTP word hence only 16 bits defined." otp_index="8">
 		<bit_field offset="0x0" width="1" name="DCFG_CC_SOCU_WR" access="RW" reset_value="0b0" description="When set locks APB write access to DCFG_CC_SOCU and DCFG_CC_SOCU_AP shadow registers. (Fuse 256)"/>

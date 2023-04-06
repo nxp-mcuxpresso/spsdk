@@ -31,7 +31,7 @@ def run_flash_loader(
     :param data: flashloader binary data
     :param device_name: i.MX-RT device name or VID:PID
     :return: True if running flashloader was successful
-    :raise sdp.SdpError: If SDP operation fails
+    :raises sdp.SdpError: If SDP operation fails
     """
     devices = sdp.scan_usb(device_name)
     if not devices:

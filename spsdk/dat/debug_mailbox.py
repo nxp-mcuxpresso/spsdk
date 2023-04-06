@@ -31,15 +31,15 @@ class DebugMailbox:
         self,
         debug_probe: DebugProbe,
         reset: bool = True,
-        moredelay: float = 1.0,
+        moredelay: float = 0.0,
         op_timeout: int = 1000,
     ) -> None:
         """Initialize DebugMailbox object.
 
         :param debug_probe: Debug probe instance.
         :param reset: Do reset of debug mailbox during initialization, defaults to True.
-        :param moredelay: Time of extra delay after reset sequence, defaults to 1.0.
-        :param op_timeout: Atomic operation timeout, defaults to 4000.
+        :param moredelay: Time of extra delay after reset sequence, defaults to 0.0.
+        :param op_timeout: Atomic operation timeout, defaults to 1000.
         :raises SPSDKIOError: Various kind of vulnerabilities during connection to debug mailbox.
         """
         # setup debug port / access point

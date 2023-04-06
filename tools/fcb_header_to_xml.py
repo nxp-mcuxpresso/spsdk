@@ -27,6 +27,7 @@ def get_struct(text: str, name: str) -> str:
 
     :param text_lines: Input lines with header file.
     :param name: name of structure
+    :raises SPSDKError: When there is invalid structure name to find
     :return: Subset of lines with structure content.
     """
     # pylint: disable=anomalous-backslash-in-string  # \s is a part of the regular expression
@@ -97,7 +98,7 @@ class StructMemberIter:
         )
         match = re.match(re_type_name, self.text[self.last_ix :])
         if not match:
-            raise StopIteration
+            raise SPSDKError()
         self.last_ix += match.end()
         mem_type = match.group("mem_type")
         mem_name = match.group("mem_name")
@@ -120,7 +121,6 @@ class StructMemberIter:
 
 
 def get_reg(member: StructMember, offset: int, header: str) -> RegsRegister:
-
     if member.is_standard_type():
         return RegsRegister(
             name=member.name,

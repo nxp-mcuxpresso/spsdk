@@ -75,7 +75,7 @@ def main(log_level: int) -> None:
 @click.option(
     "-o",
     "--output",
-    type=click.Path(),
+    type=click.Path(resolve_path=True),
     required=True,
     help="Path where certificate will be stored.",
 )
@@ -123,11 +123,11 @@ def generate(config: str, output: str, encoding: str, force: bool) -> None:
     encoding_type = Encoding.PEM if encoding.lower() == "pem" else Encoding.DER
     save_crypto_item(certificate, output, encoding_type=encoding_type)
     logger.info("Certificate generated successfully...")
-    click.echo(f"The certificate file has been created: {os.path.abspath(output)}")
+    click.echo(f"The certificate file has been created: {output}")
 
 
 @main.command(name="get-template", no_args_is_help=True)
-@click.argument("output", metavar="PATH", type=click.Path())
+@click.argument("output", metavar="PATH", type=click.Path(resolve_path=True))
 @click.option(
     "-f",
     "--force",
@@ -144,9 +144,9 @@ def get_template(output: str, force: bool) -> None:
     logger.info("Creating Certificate template...")
     check_file_exists(output, force)
 
-    write_file(load_text(os.path.join(NXPCERTGEN_DATA_FOLDER, "certgen_config.yml")), output)
+    write_file(load_text(os.path.join(NXPCERTGEN_DATA_FOLDER, "certgen_config.yaml")), output)
 
-    click.echo(f"The configuration template file has been created: {os.path.abspath(output)}")
+    click.echo(f"The configuration template file has been created: {output}")
 
 
 @main.command(name="verify", no_args_is_help=True)

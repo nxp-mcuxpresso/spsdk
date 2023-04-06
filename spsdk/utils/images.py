@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     # bincopy will be loaded lazily as needed, this is just to satisfy type-hint checkers
     import bincopy
 
-BINARY_SCH_FILE = os.path.join(SPSDK_DATA_FOLDER, "image", "sch_binary.yml")
+BINARY_SCH_FILE = os.path.join(SPSDK_DATA_FOLDER, "image", "sch_binary.yaml")
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +204,7 @@ class BinaryImage:
             begin = image.offset
             end = begin + len(image) - 1
             # Check if it fits inside the parent image
-            if end > len(self):
+            if end >= len(self):
                 raise SPSDKOverlapError(
                     f"The image {image.name} doesn't fit into {self.name} parent image."
                 )
@@ -231,7 +231,7 @@ class BinaryImage:
         """
         widths = [
             self.MINIMAL_DRAW_WIDTH,
-            len(f"+--0x0000_0000--{self.name}--+"),
+            len(f"+==-0x0000_0000= {self.name} =+"),
             len(f"|Size: {size_fmt(len(self), False)}|"),
         ]
         if include_sub_images:
@@ -246,6 +246,7 @@ class BinaryImage:
         color: str = "",
         no_color: bool = False,
     ) -> str:
+        # fmt: off
         """Draw the image into the ASCII graphics.
 
         :param include_sub_images: Include also sub images into, defaults to True
@@ -255,22 +256,23 @@ class BinaryImage:
         :raises SPSDKValueError: In case of invalid width.
         :return: ASCII art representation of image.
         """
-        # +--0x0000_0000--Title1---------------+
+        # +==0x0000_0000==Title1===============+
         # |            Size: 2048B             |
         # |           Description1             |
         # |       Description1 2nd line        |
-        # |+--0x0000_0000--Title11------------+|
+        # |+==0x0000_0000==Title11============+|
         # ||           Size: 512B             ||
         # ||           Description11          ||
         # ||       Description11 2nd line     ||
-        # |+--0x0000_01FF---------------------+|
+        # |+==0x0000_01FF=====================+|
         # |                                    |
-        # |+--0x0000_0210--Title12------------+|
+        # |+==0x0000_0210==Title12============+|
         # ||           Size: 512B             ||
         # ||           Description12          ||
         # ||       Description12 2nd line     ||
-        # |+--0x0000_041F---------------------+|
-        # +--0x0000_07FF-----------------------+
+        # |+==0x0000_041F=====================+|
+        # +==0x0000_07FF=======================+
+        # fmt: on
         def _get_centered_line(text: str) -> str:
             text_len = len(text)
             spaces = width - text_len - 2
@@ -307,8 +309,8 @@ class BinaryImage:
             )
 
         # - Title line
-        header = f"+--{format_value(self.absolute_address, 32)}--{self.name}--"
-        block += color + f"{header}{'-'*(width-len(header)-1)}+\n"
+        header = f"+=={format_value(self.absolute_address, 32)}= {self.name} ="
+        block += color + f"{header}{'='*(width-len(header)-1)}+\n"
         # - Size
         block += _get_centered_line(f"Size: {size_fmt(len(self), False)}")
         # - Description
@@ -337,8 +339,8 @@ class BinaryImage:
                 block += wrap_block(inner_block)
 
         # - Closing line
-        footer = f"+--{format_value(self.absolute_address + len(self) - 1, 32)}--"
-        block += color + f"{footer}{'-'*(width-len(footer)-1)}+\n"
+        footer = f"+=={format_value(self.absolute_address + len(self) - 1, 32)}=="
+        block += color + f"{footer}{'='*(width-len(footer)-1)}+\n"
 
         if self.parent is None:
             block += "\n" + "" if no_color else colorama.Fore.RESET
@@ -408,10 +410,17 @@ class BinaryImage:
             for i, region in enumerate(regions):
                 binary_file: Dict = region.get("binary_file")
                 if binary_file:
-                    binary = load_binary(binary_file["path"], search_paths=search_paths)
                     offset = binary_file["offset"]
                     name = binary_file.get("name", binary_file["path"])
-                    ret.add_image(BinaryImage(name, len(binary), offset, binary=binary))
+                    ret.add_image(
+                        BinaryImage.load_binary_image(
+                            binary_file["path"],
+                            name=name,
+                            offset=offset,
+                            pattern=pattern,
+                            search_paths=search_paths,
+                        )
+                    )
                 binary_block: Dict = region.get("binary_block")
                 if binary_block:
                     size = binary_block["size"]

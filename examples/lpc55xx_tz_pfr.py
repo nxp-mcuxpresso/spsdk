@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,6 +16,8 @@ import os
 
 from spsdk.image import TrustZone
 from spsdk.pfr import CFPA
+from spsdk.pfr.pfr import PfrConfiguration
+from spsdk.utils.misc import load_configuration
 
 # Uncomment for printing debug messages
 # import logging
@@ -23,6 +25,7 @@ from spsdk.pfr import CFPA
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, "data")
+CFPA_TEST_FILE = os.path.join(DATA_DIR, "cfpa_lpc55s6x_test.yaml")
 
 
 def generate_trustzone() -> None:
@@ -53,10 +56,8 @@ def generate_pfr() -> None:
     !!! Caution !!!
     Incorrectly configured data may lock the device from further use
     """
-    with open(os.path.join(DATA_DIR, "cfpa_test.json")) as config_file:
-        config_data = json.load(config_file)
-
-    cfpa = CFPA("lpc55xx", user_config=config_data)
+    config_data = PfrConfiguration(load_configuration(CFPA_TEST_FILE))
+    cfpa = CFPA("lpc55s6x", revision="1b", user_config=config_data)
     cfpa_data = cfpa.export()
 
     with open(os.path.join(THIS_DIR, "cfpa.bin"), "wb") as binary_file:

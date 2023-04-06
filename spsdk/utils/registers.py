@@ -374,7 +374,7 @@ class RegsBitField:
             try:
                 val_int = value_to_int(new_val)
             except TypeError:
-                raise exc  # pylint: disable=raise-missing-from
+                raise SPSDKRegsErrorEnumNotFound  # pylint: disable=raise-missing-from
         self.set_value(val_int, raw)
 
     def get_enum_value(self) -> Union[str, int]:

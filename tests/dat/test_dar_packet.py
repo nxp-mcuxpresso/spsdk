@@ -38,7 +38,6 @@ def test_dar_packet_rsa(
         assert dc.VERSION == DAC.parse(dac_bytes).version, "Version of DC and DAC are different."
         dar = DebugAuthenticateResponse.create(
             version=version,
-            socc=dc.socc,
             dc=dc,
             auth_beacon=0,
             dac=DAC.parse(dac_bytes),
@@ -66,7 +65,6 @@ def test_dar_packet_lpc55s3x_256(data_dir, yml_file_name, version, file_key, exp
         dc.sign()
         dar = DebugAuthenticateResponse.create(
             version=version,
-            socc=dc.socc,
             dc=dc,
             auth_beacon=0,
             dac=DAC.parse(dac_bytes),

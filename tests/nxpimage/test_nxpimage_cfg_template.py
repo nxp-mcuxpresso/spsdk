@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -30,7 +30,7 @@ def test_nxpimage_cfgtmp_create_sb3(tmpdir, device):
 
 @pytest.mark.parametrize(
     "device",
-    [("rt1180")],
+    [("rt118x")],
 )
 def test_nxpimage_cfgtmp_create_ahab(tmpdir, device):
     runner = CliRunner()

@@ -1,0 +1,46 @@
+# Copyright 2022-2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+devices:
+  rt117x:
+    latest: a0
+    attributes:
+      reg_fuses: fuses_rt117x.xml
+      sb_21_supported: False
+      has_kek_fuses: True
+      additional_template: ["ibkek", "key_blobs"]
+
+      grouped_registers:
+        - name: USER_KEY1
+          width: 512
+          reverse_subregs_order: True
+          config_as_hexstring: true
+          description: USER KEY 1 (IBKEK).
+        - name: USER_KEY2
+          width: 512
+          reverse_subregs_order: True
+          config_as_hexstring: true
+          description: USER KEY 2 (IBKEK).
+
+  rt116x:
+    device_alias: rt117x
+
+  rt118x:
+    latest: a0
+    attributes:
+      generate_keyblob: False
+      sb_21_supported: False
+      has_kek_fuses: False
+      additional_template: ["master_id", "key_blobs_rt118x"]
+
+# default values for all devices
+attributes:
+  key_blob_rec_size: 96
+  key_blob_max_cnt: 4
+  key_blob_min_cnt: 4
+  sb_21_supported: True
+  has_kek_fuses: False
+  additional_template: []
+  additional_template_text: ""
+  generate_keyblob: True

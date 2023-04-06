@@ -12,7 +12,6 @@ import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
-from spsdk.exceptions import SPSDKOverlapError
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 
 INPUT_BINARY = "evkbimxrt1050_iled_blinky_ext_FLASH_unencrypted_nopadding.bin"

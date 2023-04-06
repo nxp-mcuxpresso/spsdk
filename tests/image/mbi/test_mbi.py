@@ -12,6 +12,8 @@ from typing import Optional
 import pytest
 
 from spsdk import SPSDKError
+from spsdk.apps.nxpimage import mbi_export
+from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.image import (
     MBIMG_SCH_FILE,
     MasterBootImage,
@@ -32,7 +34,7 @@ from spsdk.image.mbimg import (
     get_all_mbi_classes,
 )
 from spsdk.utils.crypto import CertBlockV2, Certificate
-from spsdk.utils.misc import load_binary, load_configuration
+from spsdk.utils.misc import load_configuration
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 #################################################################
@@ -76,15 +78,6 @@ def certificate_block(data_dir, der_file_names, index=0, chain_der_file_names=No
     cert_block.info()  # check info works
 
     return cert_block
-
-
-def _load_private_key(data_dir: str, filename: str) -> bytes:
-    """Load PEM private key from data_dir
-
-    :param filename: private key file name to load
-    :return: private key as binary data in PEM format, decrypted
-    """
-    return load_binary(os.path.join(data_dir, "keys_and_certs", filename))
 
 
 @pytest.mark.parametrize(
@@ -186,13 +179,14 @@ def test_signed_xip_single_certificate_no_tz(data_dir, priv_key, der_certificate
         org_data = f.read()
     # create certification block
     cert_block = certificate_block(data_dir, [der_certificate])
-    priv_key_pem_data = _load_private_key(data_dir, priv_key)
 
+    priv_key = os.path.join(data_dir, "keys_and_certs", priv_key)
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
     mbi = Mbi_SignedXip(
         app=org_data,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
     )
 
     assert _compare_image(mbi, data_dir, expected_mbi)
@@ -226,7 +220,10 @@ def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filen
         org_data = f.read()
     # create certification block
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
-    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+
+    priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
+
     key_store = None
     if key_store_filename:
         with open(os.path.join(data_dir, key_store_filename), "rb") as f:
@@ -238,7 +235,7 @@ def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filen
         load_addr=0x12345678,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
         hmac_key=user_key,
         key_store=key_store,
     )
@@ -287,14 +284,15 @@ def test_encrypted_ram_single_certificate_no_tz(
     ctr_init_vector = bytes.fromhex(ctr_iv)
     # create certification block
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
-    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
     mbi = Mbi_EncryptedRamRtxxx(
         app=org_data,
         load_addr=0x12345678,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
         hmac_key=user_key,
         key_store=key_store,
         ctr_init_vector=ctr_init_vector,
@@ -310,13 +308,14 @@ def test_encrypted_random_ctr_single_certificate_no_tz(data_dir):
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
     key_store = KeyStore(KeySourceType.KEYSTORE, None)
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
-    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
     mbi = Mbi_EncryptedRamRtxxx(
         app=org_data,
         load_addr=0x12345678,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
         hmac_key=user_key,
         key_store=key_store,
     )
@@ -364,13 +363,14 @@ def test_signed_xip_multiple_certificates_no_tz(
         org_data = f.read()
     # create certification block
     cert_block = certificate_block(data_dir, der_certificates, root_index)
-    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
     mbi = Mbi_SignedXip(
         app=org_data,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
     )
 
     assert _compare_image(mbi, data_dir, expected_mbi)
@@ -400,13 +400,14 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
     # public key in certificate and private key does not match
     der_file_names = ["selfsign_4096_v3.der.crt"]
     cert_block = certificate_block(data_dir, der_file_names, 0)
-    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
     with pytest.raises(SPSDKError):
         Mbi_SignedXip(
             app=bytes(range(128)),
             trust_zone=TrustZone.disabled(),
             cert_block=cert_block,
-            priv_key_data=priv_key_pem_data,
+            signature_provider=signature_provider,
         ).export()
 
     # chain of certificates does not match
@@ -449,13 +450,14 @@ def test_signed_xip_certificates_chain_no_tz(
         org_data = f.read()
     # create certification block
     cert_block = certificate_block(data_dir, der_certificates, 0, chain_certificates)
-    priv_key_pem_data = _load_private_key(data_dir, priv_key)
+    priv_key = os.path.join(data_dir, "keys_and_certs", priv_key)
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
     mbi = Mbi_SignedXip(
         app=org_data,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
     )
 
     assert _compare_image(mbi, data_dir, expected_mbi)
@@ -641,13 +643,14 @@ def test_master_boot_image_invalid_hmac(data_dir):
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
     key_store = KeyStore(KeySourceType.KEYSTORE, None)
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
-    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
     mbi = Mbi_EncryptedRamRtxxx(
         app=org_data,
         load_addr=0x12345678,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
         hmac_key=user_key,
         key_store=key_store,
     )
@@ -662,21 +665,22 @@ def test_invalid_export_mbi(data_dir):
     key_store_bin = None
     key_store = KeyStore(KeySourceType.KEYSTORE, key_store_bin)
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
-    priv_key_pem_data = _load_private_key(data_dir, "selfsign_privatekey_rsa2048.pem")
+    priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
     mbi = Mbi_EncryptedRamRtxxx(
         app=org_data,
         load_addr=0x12345678,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
         hmac_key=user_key,
         key_store=key_store,
         ctr_init_vector=bytes(16),
     )
-    mbi.priv_key_data = None
+    mbi.signature_provider = None
     with pytest.raises(SPSDKError):
         mbi.export()
-    mbi.priv_key_data = priv_key_pem_data
+    mbi.signature_provider = signature_provider
     mbi.cert_block = None
     with pytest.raises(SPSDKError):
         mbi.export()

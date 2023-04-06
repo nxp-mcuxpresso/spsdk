@@ -1,0 +1,12 @@
+{
+    "family": "lpc55s3x",
+    "inputImageFile": ".\\workspace\\input_images\\normal_boot.bin",
+    "outputImageExecutionTarget": "xip",
+    "outputImageExecutionAddress": "0x0",
+    "outputImageAuthenticationType": "signed",
+    "trustZonePresetFile": "",
+    "firmwareVersion": "0x1",
+    "signingCertificatePrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp384r1_sign_cert.pem",
+    "binaryCertificateBlock": ".\\workspace\\output_images\\lpc55s3x\\cert_384_384.bin",
+    "masterBootOutputFile": ".\\workspace\\output_images\\lpc55s3x\\mb_xip_384_384.bin"
+}

@@ -49,6 +49,7 @@ class CommandTag(Enum):
     TRUST_PROVISIONING          = (0x16, "TrustProvisioning", "Trust Provisioning")
     FUSE_READ                   = (0x17, "ReadFuse", "Read Fuse")
     UPDATE_LIFE_CYCLE           = (0x18, "UpdateLifeCycle", "Update Life Cycle")
+    ELE_MESSAGE                 = (0x19, "EleMessage", "Send EdgeLock Enclave Message")
 
     # reserved commands
     CONFIGURE_I2C = (0xC1, "ConfigureI2c", "Configure I2C")

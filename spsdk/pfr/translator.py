@@ -11,7 +11,7 @@ import logging
 from typing import Optional
 
 from .exceptions import SPSDKPfrcMissingConfigError
-from .pfr import CFPA, CMPA, PfrConfiguration
+from .pfr import CFPA, CMPA
 
 logger = logging.getLogger(__name__)
 

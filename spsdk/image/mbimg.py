@@ -9,14 +9,14 @@
 """Master Boot Image."""
 
 
+import os
 from copy import deepcopy
 from inspect import isclass
 from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 from Crypto.Cipher import AES
-from ruamel.yaml import YAML
 
-from spsdk.crypto import SignatureProvider
+from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKValueError
 from spsdk.image import IMG_DATA_FOLDER, MBIMG_SCH_FILE
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
@@ -54,7 +54,7 @@ from spsdk.image.mbi_mixin import (
 )
 from spsdk.image.trustzone import TrustZone
 from spsdk.utils.crypto.cert_blocks import CertBlockV2, CertBlockV31
-from spsdk.utils.misc import align_block, get_key_by_val
+from spsdk.utils.misc import align_block, get_key_by_val, load_configuration
 from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas, check_config
 
 PLAIN_IMAGE = (0x00, "Plain Image (either XIP or Load-to-RAM)")
@@ -64,7 +64,8 @@ ENCRYPTED_RAM_IMAGE = (0x03, "Encrypted Load-to-RAM Image")
 SIGNED_XIP_IMAGE = (0x04, "Plain Signed XIP Image")
 CRC_XIP_IMAGE = (0x05, "Plain CRC XIP Image")
 
-DEVICE_FILE = IMG_DATA_FOLDER + "/database.yml"
+DEVICE_FILE = os.path.join(IMG_DATA_FOLDER, "database.yaml")
+
 
 # pylint: disable=too-many-ancestors
 def get_mbi_class(config: Dict[str, Any]) -> Type["MasterBootImage"]:
@@ -74,8 +75,7 @@ def get_mbi_class(config: Dict[str, Any]) -> Type["MasterBootImage"]:
     :return: MBI Class.
     """
     schema_cfg = ValidationSchemas.get_schema_file(MBIMG_SCH_FILE)
-    with open(DEVICE_FILE) as f:
-        device_cfg = YAML(typ="safe").load(f)
+    device_cfg = load_configuration(DEVICE_FILE)
     # Validate needed configuration to recognize MBI class
     check_config(config, [schema_cfg["image_type"], schema_cfg["family"]])
     try:
@@ -104,8 +104,7 @@ def get_mbi_classes(family: str) -> Dict[str, Tuple[Type["MasterBootImage"], str
     :return: Dictionary with key like image name and values are Tuple with it's MBI Class
         and target and authentication type.
     """
-    with open(DEVICE_FILE) as f:
-        device_cfg = YAML(typ="safe").load(f)
+    device_cfg = load_configuration(DEVICE_FILE)
     if not family in device_cfg["devices"]:
         raise SPSDKValueError("Not supported family for Master Boot Image")
 
@@ -179,8 +178,7 @@ def mbi_get_supported_families() -> List[str]:
 
     :return: List of supported family names.
     """
-    with open(DEVICE_FILE) as f:
-        device_cfg = YAML(typ="safe").load(f)
+    device_cfg = load_configuration(DEVICE_FILE)
     devices: Dict[str, Any] = device_cfg["devices"]
     return list(devices.keys())
 
@@ -278,9 +276,7 @@ class MasterBootImage:
         :return: List of supported families.
         """
         ret = set()
-        with open(DEVICE_FILE) as f:
-            device_cfg = YAML(typ="safe").load(f)
-
+        device_cfg = load_configuration(DEVICE_FILE)
         devices: Dict[str, Dict] = device_cfg["devices"]
         for device, dev_val in devices.items():
             images: Dict[str, Dict[str, str]] = dev_val["images"]
@@ -320,6 +316,7 @@ class MasterBootImage:
 ########################################################################################################################
 # Master Boot Image Class (LPC55)
 ########################################################################################################################
+
 
 # pylint: disable=invalid-name
 # pylint: disable=abstract-method
@@ -411,19 +408,19 @@ class Mbi_SignedXip(
         app: Optional[bytes] = None,
         trust_zone: Optional[TrustZone] = None,
         cert_block: Optional[CertBlockV2] = None,
-        priv_key_data: Optional[bytes] = None,
+        signature_provider: Optional[SignatureProvider] = None,
     ) -> None:
         """Constructor for Master Boot Signed XiP Image for LPC55xxx family.
 
         :param app: Application image data, defaults to None
         :param trust_zone: TrustZone object, defaults to None
         :param cert_block: Certification block of image, defaults to None
-        :param priv_key_data: Private key used to sign image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
         """
         self.app = align_block(app) if app else None
         self.tz = trust_zone or TrustZone.enabled()
         self.cert_block = cert_block
-        self.priv_key_data = priv_key_data
+        self.signature_provider = signature_provider
         super().__init__()
 
 
@@ -447,7 +444,7 @@ class Mbi_SignedRam(
         trust_zone: Optional[TrustZone] = None,
         load_addr: Optional[int] = None,
         cert_block: Optional[CertBlockV2] = None,
-        priv_key_data: Optional[bytes] = None,
+        signature_provider: Optional[SignatureProvider] = None,
     ) -> None:
         """Constructor for Master Boot Signed XiP Image for LPC55xxx family.
 
@@ -455,13 +452,13 @@ class Mbi_SignedRam(
         :param trust_zone: TrustZone object, defaults to None
         :param load_addr: Load/Execution address in RAM of image, defaults to 0
         :param cert_block: Certification block of image, defaults to None
-        :param priv_key_data: Private key used to sign image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
         """
         self.app = align_block(app) if app else None
         self.tz = trust_zone or TrustZone.enabled()
         self.load_address = load_addr
         self.cert_block = cert_block
-        self.priv_key_data = priv_key_data
+        self.signature_provider = signature_provider
         super().__init__()
 
 
@@ -528,7 +525,7 @@ class Mbi_PlainSignedRamRtxxx(
         trust_zone: Optional[TrustZone] = None,
         load_addr: Optional[int] = None,
         cert_block: Optional[CertBlockV2] = None,
-        priv_key_data: Optional[bytes] = None,
+        signature_provider: Optional[SignatureProvider] = None,
         hmac_key: Optional[Union[bytes, str]] = None,
         key_store: Optional[KeyStore] = None,
         hwk: bool = False,
@@ -540,7 +537,7 @@ class Mbi_PlainSignedRamRtxxx(
         :param trust_zone: TrustZone object, defaults to None
         :param load_addr: Load/Execution address in RAM of image, defaults to 0
         :param cert_block: Certification block of image, defaults to None
-        :param priv_key_data: Private key used to sign image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
         :param hmac_key: HMAC key of image, defaults to None
         :param key_store: Optional KeyStore object for image, defaults to None
         :param hwk: Enable HW user mode keys, defaults to false
@@ -550,7 +547,7 @@ class Mbi_PlainSignedRamRtxxx(
         self.load_address = load_addr
         self.tz = trust_zone or TrustZone.enabled()
         self.cert_block = cert_block
-        self.priv_key_data = priv_key_data
+        self.signature_provider = signature_provider
         self.hmac_key = bytes.fromhex(hmac_key) if isinstance(hmac_key, str) else hmac_key
         self.key_store = key_store
         self.user_hw_key_enabled = hwk
@@ -631,7 +628,7 @@ class Mbi_EncryptedRamRtxxx(
         trust_zone: Optional[TrustZone] = None,
         load_addr: Optional[int] = None,
         cert_block: Optional[CertBlockV2] = None,
-        priv_key_data: Optional[bytes] = None,
+        signature_provider: Optional[SignatureProvider] = None,
         hmac_key: Optional[Union[bytes, str]] = None,
         key_store: Optional[KeyStore] = None,
         ctr_init_vector: Optional[bytes] = None,
@@ -644,7 +641,7 @@ class Mbi_EncryptedRamRtxxx(
         :param trust_zone: TrustZone object, defaults to None
         :param load_addr: Load/Execution address in RAM of image, defaults to 0
         :param cert_block: Certification block of image, defaults to None
-        :param priv_key_data: Private key used to sign image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
         :param hwk: Enable HW user mode keys, defaults to false
         :param key_store: Optional KeyStore object for image, defaults to None
         :param hmac_key: HMAC key of image, defaults to None
@@ -655,7 +652,7 @@ class Mbi_EncryptedRamRtxxx(
         self.app_table = app_table
         self.tz = trust_zone or TrustZone.enabled()
         self.cert_block = cert_block
-        self.priv_key_data = priv_key_data
+        self.signature_provider = signature_provider
         self.user_hw_key_enabled = hwk
         self.key_store = key_store
         self.hmac_key = bytes.fromhex(hmac_key) if isinstance(hmac_key, str) else hmac_key
@@ -768,7 +765,7 @@ class Mbi_PlainSignedXipRtxxx(
         trust_zone: Optional[TrustZone] = None,
         load_addr: Optional[int] = None,
         cert_block: Optional[CertBlockV2] = None,
-        priv_key_data: Optional[bytes] = None,
+        signature_provider: Optional[SignatureProvider] = None,
         hwk: bool = False,
     ) -> None:
         """Constructor for Master Boot Plain Signed XiP Image for RTxxx family.
@@ -777,14 +774,14 @@ class Mbi_PlainSignedXipRtxxx(
         :param trust_zone: TrustZone object, defaults to None
         :param load_addr: Load/Execution address in RAM of image, defaults to 0
         :param cert_block: Certification block of image, defaults to None
-        :param priv_key_data: Private key used to sign image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
         :param hwk: Enable HW user mode keys, defaults to false
         """
         self.app = align_block(app) if app else None
         self.tz = trust_zone or TrustZone.enabled()
         self.load_address = load_addr
         self.cert_block = cert_block
-        self.priv_key_data = priv_key_data
+        self.signature_provider = signature_provider
         self.user_hw_key_enabled = hwk
         super().__init__()
 

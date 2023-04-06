@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
   <register offset="0" width="32" name="HEADER" description="Header">
     <alias type="CMSIS" value="HEADER"/>
@@ -34,31 +39,31 @@
     <alias type="CMSIS" value="ROTKH_REVOKE"/>
     <bit_field offset="0" width="2" name="RoTK0_EN" access="RW" reset_value="0" description="RoT Key 0 enable.">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK0_EN(x)"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_INVALID" value="0b00" description="Invalid"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_ENABLED" value="0b01" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_REVOKED_0" value="0b10" description="Key revoked"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_REVOKED_1" value="0b11" description="Key revoked"/>
+      <bit_field_value name="INVALID" value="0b00" description="Invalid"/>
+      <bit_field_value name="ENABLED" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_0" value="0b10" description="Key revoked"/>
+      <bit_field_value name="REVOKED_1" value="0b11" description="Key revoked"/>
     </bit_field>
     <bit_field offset="2" width="2" name="RoTK1_EN" access="RW" reset_value="0" description="RoT Key 1 enable.">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK1_EN(x)"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_INVALID" value="0b00" description="Invalid"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_ENABLED" value="0b01" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_REVOKED_0" value="0b10" description="Key revoked"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_REVOKED_1" value="0b11" description="Key revoked"/>
+      <bit_field_value name="INVALID" value="0b00" description="Invalid"/>
+      <bit_field_value name="ENABLED" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_0" value="0b10" description="Key revoked"/>
+      <bit_field_value name="REVOKED_1" value="0b11" description="Key revoked"/>
     </bit_field>
     <bit_field offset="4" width="2" name="RoTK2_EN" access="RW" reset_value="0" description="RoT Key 2 enable.">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK2_EN(x)"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_INVALID" value="0b00" description="Invalid"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_ENABLED" value="0b01" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_REVOKED_0" value="0b10" description="Key revoked"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_REVOKED_1" value="0b11" description="Key revoked"/>
+      <bit_field_value name="INVALID" value="0b00" description="Invalid"/>
+      <bit_field_value name="ENABLED" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_0" value="0b10" description="Key revoked"/>
+      <bit_field_value name="REVOKED_1" value="0b11" description="Key revoked"/>
     </bit_field>
     <bit_field offset="6" width="2" name="RoTK3_EN" access="RW" reset_value="0" description="RoT Key 3 enable.">
       <alias type="CMSIS" value="FLASH_CFPA_ROTKH_REVOKE_RoTK3_EN(x)"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_INVALID" value="0b00" description="Invalid"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_ENABLED" value="0b01" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_REVOKED_0" value="0b10" description="Key revoked"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_REVOKED_1" value="0b11" description="Key revoked"/>
+      <bit_field_value name="INVALID" value="0b00" description="Invalid"/>
+      <bit_field_value name="ENABLED" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_0" value="0b10" description="Key revoked"/>
+      <bit_field_value name="REVOKED_1" value="0b11" description="Key revoked"/>
     </bit_field>
     <reserved_bit_field offset="8" width="24" reset_value="0"/>
   </register>
@@ -71,91 +76,91 @@
       <alias type="CMSIS" value="FLASH_CFPA_VENDOR_USAGE_INVERSE_VALUE(x)"/>
     </bit_field>
   </register>
-  <register offset="0x20" width="32" name="DCFG_CC_SOCU_NS_PIN" description="Device Configuration Credential Constraints for SoC specific Use Pinned">
+  <register offset="0x20" width="32" name="DCFG_CC_SOCU_NS_PIN" description="Device Configuration Credential Constraints for SoC specific Use Pinned. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.">
     <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_NIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_NIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_NIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="1" width="1" name="DBGEN" access="RW" reset_value="0" description="Non Secure debug enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_DBGEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DBGEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DBGEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="2" width="1" name="SPNIDEN" access="RW" reset_value="0" description="Secure non-invasive debug enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_SPNIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPNIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPNIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="3" width="1" name="SPIDEN" access="RW" reset_value="0" description="Secure invasive debug enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_SPIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="4" width="1" name="TAPEN" access="RW" reset_value="0" description="JTAG TAP enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_TAPEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_TAPEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_TAPEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <reserved_bit_field offset="5" width="1" reset_value="0"/>
     <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RW" reset_value="0" description="ISP Boot Command enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="7" width="1" name="FA_ME_CMD_EN" access="RW" reset_value="0" description="Fault Analysis/Mass Erase Command enable">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_FA_ME_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_FA_ME_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_FA_ME_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <reserved_bit_field offset="8" width="7" reset_value="0"/>
     <bit_field offset="15" width="1" name="UUID_CHECK" access="RW" reset_value="0" description="Enforce UUID match during Debug authentication.">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_UUID_CHECK(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_UUID_CHECK_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_UUID_CHECK_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_INVERSE_VALUE(x)"/>
     </bit_field>
   </register>
-  <register offset="0x24" width="32" name="DCFG_CC_SOCU_NS_DFLT" description="Device Configuration Credential Constraints for SoC specific Use Debug Filter">
+  <register offset="0x24" width="32" name="DCFG_CC_SOCU_NS_DFLT" description="Device Configuration Credential Constraints for SoC specific Use Debug Filter. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.">
     <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RW" reset_value="0" description="Non Secure non-invasive debug fixed state">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_NIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_NIDEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_NIDEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="1" width="1" name="DBGEN" access="RW" reset_value="0" description="Non Secure debug fixed state">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_DBGEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DBGEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DBGEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="2" width="1" name="SPNIDEN" access="RW" reset_value="0" description="Secure non-invasive debug fixed state">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_SPNIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPNIDEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPNIDEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="3" width="1" name="SPIDEN" access="RW" reset_value="0" description="Secure invasive debug fixed state">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_SPIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPIDEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPIDEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="4" width="1" name="TAPEN" access="RW" reset_value="0" description="JTAG TAP fixed state">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_TAPEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_TAPEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_TAPEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <reserved_bit_field offset="5" width="1" reset_value="0"/>
     <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RW" reset_value="0" description="ISP Boot Command fixed state">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="7" width="1" name="FA_ME_CMD_EN" access="RW" reset_value="0" description="Fault Analysis/Mass Erase Command fixed state">
       <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_FA_ME_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_FA_ME_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_FA_ME_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <reserved_bit_field offset="8" width="8" reset_value="0"/>
     <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
@@ -747,337 +752,337 @@
       <alias type="CMSIS" value="FLASH_CFPA_PRINCE_REGION2_IV_CODE_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x100" width="32" name="CUSTOMER_DEFINED0" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x100" width="32" name="CUSTOMER_DEFINED0" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[0]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x104" width="32" name="CUSTOMER_DEFINED1" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x104" width="32" name="CUSTOMER_DEFINED1" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[1]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x108" width="32" name="CUSTOMER_DEFINED2" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x108" width="32" name="CUSTOMER_DEFINED2" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[2]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x10C" width="32" name="CUSTOMER_DEFINED3" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x10C" width="32" name="CUSTOMER_DEFINED3" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[3]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x110" width="32" name="CUSTOMER_DEFINED4" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x110" width="32" name="CUSTOMER_DEFINED4" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[4]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x114" width="32" name="CUSTOMER_DEFINED5" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x114" width="32" name="CUSTOMER_DEFINED5" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[5]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x118" width="32" name="CUSTOMER_DEFINED6" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x118" width="32" name="CUSTOMER_DEFINED6" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[6]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x11C" width="32" name="CUSTOMER_DEFINED7" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x11C" width="32" name="CUSTOMER_DEFINED7" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[7]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x120" width="32" name="CUSTOMER_DEFINED8" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x120" width="32" name="CUSTOMER_DEFINED8" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[8]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x124" width="32" name="CUSTOMER_DEFINED9" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x124" width="32" name="CUSTOMER_DEFINED9" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[9]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x128" width="32" name="CUSTOMER_DEFINED10" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x128" width="32" name="CUSTOMER_DEFINED10" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[10]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x12C" width="32" name="CUSTOMER_DEFINED11" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x12C" width="32" name="CUSTOMER_DEFINED11" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[11]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x130" width="32" name="CUSTOMER_DEFINED12" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x130" width="32" name="CUSTOMER_DEFINED12" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[12]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x134" width="32" name="CUSTOMER_DEFINED13" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x134" width="32" name="CUSTOMER_DEFINED13" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[13]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x138" width="32" name="CUSTOMER_DEFINED14" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x138" width="32" name="CUSTOMER_DEFINED14" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[14]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x13C" width="32" name="CUSTOMER_DEFINED15" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x13C" width="32" name="CUSTOMER_DEFINED15" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[15]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x140" width="32" name="CUSTOMER_DEFINED16" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x140" width="32" name="CUSTOMER_DEFINED16" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[16]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x144" width="32" name="CUSTOMER_DEFINED17" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x144" width="32" name="CUSTOMER_DEFINED17" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[17]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x148" width="32" name="CUSTOMER_DEFINED18" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x148" width="32" name="CUSTOMER_DEFINED18" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[18]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x14C" width="32" name="CUSTOMER_DEFINED19" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x14C" width="32" name="CUSTOMER_DEFINED19" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[19]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x150" width="32" name="CUSTOMER_DEFINED20" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x150" width="32" name="CUSTOMER_DEFINED20" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[20]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x154" width="32" name="CUSTOMER_DEFINED21" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x154" width="32" name="CUSTOMER_DEFINED21" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[21]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x158" width="32" name="CUSTOMER_DEFINED22" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x158" width="32" name="CUSTOMER_DEFINED22" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[22]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x15C" width="32" name="CUSTOMER_DEFINED23" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x15C" width="32" name="CUSTOMER_DEFINED23" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[23]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x160" width="32" name="CUSTOMER_DEFINED24" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x160" width="32" name="CUSTOMER_DEFINED24" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[24]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x164" width="32" name="CUSTOMER_DEFINED25" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x164" width="32" name="CUSTOMER_DEFINED25" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[25]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x168" width="32" name="CUSTOMER_DEFINED26" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x168" width="32" name="CUSTOMER_DEFINED26" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[26]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x16C" width="32" name="CUSTOMER_DEFINED27" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x16C" width="32" name="CUSTOMER_DEFINED27" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[27]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x170" width="32" name="CUSTOMER_DEFINED28" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x170" width="32" name="CUSTOMER_DEFINED28" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[28]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x174" width="32" name="CUSTOMER_DEFINED29" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x174" width="32" name="CUSTOMER_DEFINED29" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[29]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x178" width="32" name="CUSTOMER_DEFINED30" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x178" width="32" name="CUSTOMER_DEFINED30" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[30]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x17C" width="32" name="CUSTOMER_DEFINED31" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x17C" width="32" name="CUSTOMER_DEFINED31" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[31]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x180" width="32" name="CUSTOMER_DEFINED32" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x180" width="32" name="CUSTOMER_DEFINED32" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[32]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x184" width="32" name="CUSTOMER_DEFINED33" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x184" width="32" name="CUSTOMER_DEFINED33" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[33]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x188" width="32" name="CUSTOMER_DEFINED34" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x188" width="32" name="CUSTOMER_DEFINED34" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[34]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x18C" width="32" name="CUSTOMER_DEFINED35" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x18C" width="32" name="CUSTOMER_DEFINED35" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[35]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x190" width="32" name="CUSTOMER_DEFINED36" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x190" width="32" name="CUSTOMER_DEFINED36" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[36]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x194" width="32" name="CUSTOMER_DEFINED37" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x194" width="32" name="CUSTOMER_DEFINED37" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[37]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x198" width="32" name="CUSTOMER_DEFINED38" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x198" width="32" name="CUSTOMER_DEFINED38" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[38]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x19C" width="32" name="CUSTOMER_DEFINED39" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x19C" width="32" name="CUSTOMER_DEFINED39" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[39]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1A0" width="32" name="CUSTOMER_DEFINED40" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1A0" width="32" name="CUSTOMER_DEFINED40" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[40]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1A4" width="32" name="CUSTOMER_DEFINED41" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1A4" width="32" name="CUSTOMER_DEFINED41" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[41]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1A8" width="32" name="CUSTOMER_DEFINED42" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1A8" width="32" name="CUSTOMER_DEFINED42" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[42]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1AC" width="32" name="CUSTOMER_DEFINED43" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1AC" width="32" name="CUSTOMER_DEFINED43" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[43]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1B0" width="32" name="CUSTOMER_DEFINED44" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1B0" width="32" name="CUSTOMER_DEFINED44" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[44]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1B4" width="32" name="CUSTOMER_DEFINED45" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1B4" width="32" name="CUSTOMER_DEFINED45" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[45]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1B8" width="32" name="CUSTOMER_DEFINED46" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1B8" width="32" name="CUSTOMER_DEFINED46" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[46]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1BC" width="32" name="CUSTOMER_DEFINED47" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1BC" width="32" name="CUSTOMER_DEFINED47" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[47]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1C0" width="32" name="CUSTOMER_DEFINED48" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1C0" width="32" name="CUSTOMER_DEFINED48" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[48]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1C4" width="32" name="CUSTOMER_DEFINED49" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1C4" width="32" name="CUSTOMER_DEFINED49" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[49]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1C8" width="32" name="CUSTOMER_DEFINED50" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1C8" width="32" name="CUSTOMER_DEFINED50" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[50]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1CC" width="32" name="CUSTOMER_DEFINED51" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1CC" width="32" name="CUSTOMER_DEFINED51" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[51]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1D0" width="32" name="CUSTOMER_DEFINED52" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1D0" width="32" name="CUSTOMER_DEFINED52" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[52]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1D4" width="32" name="CUSTOMER_DEFINED53" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1D4" width="32" name="CUSTOMER_DEFINED53" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[53]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1D8" width="32" name="CUSTOMER_DEFINED54" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1D8" width="32" name="CUSTOMER_DEFINED54" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[54]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x1DC" width="32" name="CUSTOMER_DEFINED55" description="Customer Defined (Programable through ROM API)">
+  <register offset="0x1DC" width="32" name="CUSTOMER_DEFINED55" description="Customer Defined (Programmable through ROM API)">
     <alias type="CMSIS" value="CUSTOMER_DEFINED[55]"/>
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CUSTOMER_DEFINED_FIELD(x)"/>

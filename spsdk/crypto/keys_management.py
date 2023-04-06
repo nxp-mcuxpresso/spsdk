@@ -7,7 +7,7 @@
 """Module for key generation and saving keys to file (RSA and ECC)."""
 
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional
 
 from spsdk.crypto import (
     EllipticCurvePrivateKeyWithSerialization,

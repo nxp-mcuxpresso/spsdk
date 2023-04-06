@@ -13,7 +13,12 @@ import pytest
 from spsdk import SPSDKError
 from spsdk.sbfile.sb31.commands import BaseCmd, CmdErase, MainCmd
 from spsdk.sbfile.sb31.functions import KeyDerivator, _get_key_derivation_data, derive_block_key
-from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands, SecureBinary31Header
+from spsdk.sbfile.sb31.images import (
+    SecureBinary31,
+    SecureBinary31Commands,
+    SecureBinary31Header,
+    get_signature_provider,
+)
 from spsdk.utils.crypto import CertBlockV31
 from spsdk.utils.misc import load_binary
 
@@ -208,23 +213,28 @@ def test_secure_binary3_validate(data_dir):
 
     rot = [load_binary(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem")) for x in range(4)]
     cert_blk = CertBlockV31(root_certs=rot, ca_flag=1)
+    cert_blk.calculate()
 
     sb3 = SecureBinary31(
         family="lpc55s3x",
         curve_name="secp256r1",
         cert_block=cert_blk,
         firmware_version=1,
-        signing_key=rot[0],
+        signature_provider=get_signature_provider(
+            sp_cfg=None, local_file_key="ecc_secp256r1_priv_key.pem", search_paths=[data_dir]
+        ),
         is_encrypted=False,
     )
     sb3.validate()
     with pytest.raises(SPSDKError):
-        sb3.signing_key = None
+        sb3.signature_provider = None
         sb3.validate()
     with pytest.raises(SPSDKError):
-        sb3.signing_key = "Invalid"
+        sb3.signature_provider = "Invalid"
         sb3.validate()
-    sb3.signing_key = rot[0]
+    sb3.signature_provider = get_signature_provider(
+        sp_cfg=None, local_file_key="ecc_secp256r1_priv_key.pem", search_paths=[data_dir]
+    )
     sb3.validate()
     with pytest.raises(SPSDKError):
         sb3.curve_name = "Invalid"
@@ -233,11 +243,6 @@ def test_secure_binary3_validate(data_dir):
         sb3.curve_name = "secp384r1"
         sb3.validate()
     sb3.curve_name = "secp256r1"
-    with pytest.raises(SPSDKError):
-        signig_key_bck = sb3.signing_key
-        sb3.signing_key = b"Invalid Key"
-        sb3.validate()
-    sb3.signing_key = signig_key_bck
     sb3.validate()
 
 
@@ -246,13 +251,16 @@ def test_secure_binary3_info(data_dir):
 
     rot = [load_binary(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem")) for x in range(4)]
     cert_blk = CertBlockV31(root_certs=rot, ca_flag=1)
+    cert_blk.calculate()
 
     sb3 = SecureBinary31(
         family="lpc55s3x",
         curve_name="secp256r1",
         cert_block=cert_blk,
         firmware_version=1,
-        signing_key=rot[0],
+        signature_provider=get_signature_provider(
+            sp_cfg=None, local_file_key="ecc_secp256r1_priv_key.pem", search_paths=[data_dir]
+        ),
         is_encrypted=False,
     )
     info = sb3.info()
@@ -266,10 +274,17 @@ def test_cert_block_validate(data_dir):
     rot = [load_binary(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem")) for x in range(4)]
     isk_cert = load_binary(os.path.join(data_dir, "ec_secp256r1_cert0.pem"))
     cert_blk = CertBlockV31(
-        root_certs=rot, ca_flag=0, version="2.0", isk_private_key=rot[0], isk_cert=isk_cert
+        root_certs=rot,
+        ca_flag=0,
+        version="2.0",
+        signature_provider=get_signature_provider(
+            sp_cfg=None, local_file_key="ecc_secp256r1_priv_key.pem", search_paths=[data_dir]
+        ),
+        isk_cert=isk_cert,
     )
+    cert_blk.calculate()
     cert_blk.validate()
 
     with pytest.raises(SPSDKError):
-        cert_blk.isk_certificate.isk_private_key = "invalid"
+        cert_blk.isk_certificate.signature_provider = "invalid"
         cert_blk.validate()

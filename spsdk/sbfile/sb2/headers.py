@@ -168,7 +168,7 @@ class ImageHeaderV2(BaseClass):
         :param data: binary representation
         :param offset: to start parsing data
         :return: parsed instance of the header
-        :raise SPSDKError: Unable to parse data
+        :raises SPSDKError: Unable to parse data
         """
         if cls.SIZE > len(data) - offset:
             raise SPSDKError("Insufficient amount of data")

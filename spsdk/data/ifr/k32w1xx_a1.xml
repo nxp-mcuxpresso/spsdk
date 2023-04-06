@@ -1,17 +1,22 @@
 <?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
-  <register offset="0" width="8" name="FLW_Configuration" description="FLW Configuration" reset_value="11111111">
+  <register offset="0" width="8" name="FLW_Configuration" description="FLW Configuration" reset_value="0b11111111">
     <bit_field offset="0" width="1" name="RESTORE_FLW_FLAG" access="RW" reset_value="1" description="FLW Configuration">
       <bit_field_value name="NORMAL" value="0b0" description="Normal, use specified mapping"/>
       <bit_field_value name="UNINITIALIZED" value="0b1" description="Dual Image Boot is uninitialized"/>
     </bit_field>
     <reserved_bit_field offset="1" width="7" reset_value="0x7F"/>
   </register>
-  <register offset="0x8" width="32" name="FLW_REGION_ABASE" access="RW" reset_value="0" description="FLW region, the starting address of the alternative boot image">
+  <register offset="0x8" width="32" name="FLW_REGION_ABASE" access="RW" reset_value="0xFFFFFFFF" description="FLW region, the starting address of the alternative boot image">
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
   </register>
-  <register offset="0xC" width="32" name="FLW_REGION_BCNT" access="RW" reset_value="0" description="FLW region, the size of the alternative boot image in 32 KB blocks">
+  <register offset="0xC" width="32" name="FLW_REGION_BCNT" access="RW" reset_value="0xFFFFFFFF" description="FLW region, the size of the alternative boot image in 32 KB blocks">
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
   </register>
   <register offset="0x10" width="8" name="CONFIGURE_NPX_FOR_NORMAL_BOOT" description="NPX configuration">
@@ -20,27 +25,27 @@
       <bit_field_value name="NOT_CONFIGURE_NPX" value="0b1" description="Not configure NPX"/>
     </bit_field>
     <bit_field offset="1" width="1" name="GLOBAL_CLOCK" access="RW" reset_value="1" description="Global clock">
-      <bit_field_value name="GLOBAL_CLOCK_ENABLE" value="0b0" description="Global clock enable"/>
-      <bit_field_value name="GLOBAL_CLOCK_DISABLE" value="0b1" description="Global clock disable"/>
+      <bit_field_value name="ENABLE" value="0b0" description="Global clock enable"/>
+      <bit_field_value name="DISABLE" value="0b1" description="Global clock disable"/>
     </bit_field>
     <bit_field offset="2" width="1" name="SYSTEM_CLOCK" access="RW" reset_value="1" description="System clock">
-      <bit_field_value name="SYSTEM_CLOCK_ENABLE" value="0b0" description="System clock enable"/>
-      <bit_field_value name="SYSTEM_CLOCK_DISABLE" value="0b1" description="System clock disable"/>
+      <bit_field_value name="ENABLE" value="0b0" description="System clock enable"/>
+      <bit_field_value name="DISABLE" value="0b1" description="System clock disable"/>
     </bit_field>
     <bit_field offset="3" width="1" name="GLOBAL_DECRYPTION" access="RW" reset_value="1" description="Global decryption">
-      <bit_field_value name="GLOBAL_DECRYPTION_ENABLE" value="0b0" description="Global decryption enable"/>
-      <bit_field_value name="GLOBAL_DECRYPTION_DISABLE" value="0b1" description="Global decryption disable"/>
+      <bit_field_value name="ENABLE" value="0b0" description="Global decryption enable"/>
+      <bit_field_value name="DISABLE" value="0b1" description="Global decryption disable"/>
     </bit_field>
     <bit_field offset="4" width="1" name="GLOBAL_ENCRYPTION" access="RW" reset_value="1" description="Global encryption">
-      <bit_field_value name="GLOBAL_ENCRYPTION_ENABLE" value="0b0" description="Global encryption enable"/>
-      <bit_field_value name="GLOBAL_ENCRYPTION_DISABLE" value="0b1" description="Global encryption disable"/>
+      <bit_field_value name="ENABLE" value="0b0" description="Global encryption enable"/>
+      <bit_field_value name="DISABLE" value="0b1" description="Global encryption disable"/>
     </bit_field>
     <reserved_bit_field offset="5" width="3" reset_value="0x7"/>
   </register>
   <register offset="0x11" width="8" name="STICKY" description="NPX configuration">
     <bit_field offset="0" width="1" name="CONFIGURE_NPX_REQUIRED" access="RW" reset_value="1" description="Configure NPX required">
-      <bit_field_value name="CONFIGURE_NPX_REQUIRED_REQUIRED" value="0b0" description="NPX config. required; ROM follows normal boot path"/>
-      <bit_field_value name="CONFIGURE_NPX_REQUIRED_NOT_REQUIRED" value="0b1" description="Not required, ROM follows Low-power wakeup path"/>
+      <bit_field_value name="REQUIRED" value="0b0" description="NPX config. required; ROM follows normal boot path"/>
+      <bit_field_value name="NOT_REQUIRED" value="0b1" description="Not required, ROM follows Low-power wakeup path"/>
     </bit_field>
     <reserved_bit_field offset="1" width="7" reset_value="0x7F"/>
   </register>
@@ -88,8 +93,8 @@
   </register>
   <register offset="0x50" width="8" name="BOOT_CONFIGURATION" reset_value="0b11111111" description="Boot configuration">
     <bit_field offset="0" width="1" name="ENABLE_ISP_OR_NOT" access="RW" reset_value="0b1" description="Enable ISP">
-      <bit_field_value name="BOOT_CFG_PIN_ENABLED" value="0b1" description="Boot config pin enabled"/>
-      <bit_field_value name="BOOT_CFG_PIN_DISABLED" value="0b0" description="Boot config pin disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Boot config pin enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Boot config pin disabled"/>
     </bit_field>
     <bit_field offset="1" width="2" name="BOOT_SPEED" access="RW" reset_value="0b11" description="Boot speed">
       <bit_field_value name="NORMAL_BOOT_32_MHZ" value="0b00" description="Normal Boot (32MHz)"/>
@@ -105,8 +110,8 @@
       <bit_field_value name="SERIAL_DOWNLOAD" value="0b1" description="Serial download"/>
     </bit_field>
     <bit_field offset="1" width="1" name="SECURE_BOOT_FAILURE_ALERT_PIN" access="RW" reset_value="1" description="Secure Boot failure alert pin">
-      <bit_field_value name="SECURE_BOOT_FAILURE_ALERT_PIN_ENABLED" value="0b0" description="Secure Boot failure alert pin is enabled"/>
-      <bit_field_value name="SECURE_BOOT_FAILURE_ALERT_PIN_DISABLED" value="0b1" description="Secure Boot failure alert pin is disabled"/>
+      <bit_field_value name="ENABLED" value="0b0" description="Secure Boot failure alert pin is enabled"/>
+      <bit_field_value name="DISABLED" value="0b1" description="Secure Boot failure alert pin is disabled"/>
     </bit_field>
     <reserved_bit_field offset="2" width="6" reset_value="0x3F"/>
   </register>
@@ -156,66 +161,30 @@
       <bit_field_value name="RESERVED_7" value="0b111" description="RESERVED"/>
     </bit_field>
   </register>
-  <register offset="0x80" width="32" name="BOOT_IMAGE_BASE_ADDRESS0" description="Boot Image Base Address 0">
+  <register offset="0x80" width="32" name="BOOT_IMAGE_BASE_ADDRESS3" description="Boot Image Base Address 3">
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
   </register>
-  <register offset="0x84" width="32" name="BOOT_IMAGE_BASE_ADDRESS1" description="Boot Image Base Address 1">
+  <register offset="0x90" width="32" name="BOOT_IMAGE_BASE_ADDRESS2" description="Boot Image Base Address 2">
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
   </register>
-  <register offset="0x88" width="32" name="BOOT_IMAGE_BASE_ADDRESS2" description="Boot Image Base Address 2">
+  <register offset="0xA0" width="32" name="BOOT_IMAGE_BASE_ADDRESS1" description="Boot Image Base Address 1">
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
   </register>
-  <register offset="0x8C" width="32" name="BOOT_IMAGE_BASE_ADDRESS3" description="Boot Image Base Address 3">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0x90" width="32" name="BOOT_IMAGE_BASE_ADDRESS4" description="Boot Image Base Address 4">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0x94" width="32" name="BOOT_IMAGE_BASE_ADDRESS5" description="Boot Image Base Address 5">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0x98" width="32" name="BOOT_IMAGE_BASE_ADDRESS6" description="Boot Image Base Address 6">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0x9C" width="32" name="BOOT_IMAGE_BASE_ADDRESS7" description="Boot Image Base Address 7">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0xA0" width="32" name="BOOT_IMAGE_BASE_ADDRESS8" description="Boot Image Base Address 8">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0xA4" width="32" name="BOOT_IMAGE_BASE_ADDRESS9" description="Boot Image Base Address 9">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0xA8" width="32" name="BOOT_IMAGE_BASE_ADDRESS10" description="Boot Image Base Address 10">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0xAC" width="32" name="BOOT_IMAGE_BASE_ADDRESS11" description="Boot Image Base Address 11">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0xB0" width="32" name="BOOT_IMAGE_BASE_ADDRESS12" description="Boot Image Base Address 12">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0xB4" width="32" name="BOOT_IMAGE_BASE_ADDRESS13" description="Boot Image Base Address 13">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0xB8" width="32" name="BOOT_IMAGE_BASE_ADDRESS14" description="Boot Image Base Address 14">
-    <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
-  </register>
-  <register offset="0xBC" width="32" name="BOOT_IMAGE_BASE_ADDRESS15" description="Boot Image Base Address 15">
+  <register offset="0xB0" width="32" name="BOOT_IMAGE_BASE_ADDRESS0" description="Boot Image Base Address 0">
     <bit_field offset="0" width="32" name="FIELD" access="RW" reset_value="0xFFFFFFFF" description="Field."/>
   </register>
   <register offset="0x100" width="8" name="PERIPHERALS_ENABLE" description="Peripherals Enable">
     <bit_field offset="0" width="1" name="LPUART1_PERIPHERAL_FOR_ISP" access="RW" reset_value="1" description="LPUART1 peripheral for ISP">
-      <bit_field_value name="LPUART1_DISABLED" value="0b0" description="LPUART1 disabled"/>
-      <bit_field_value name="LUPART1_ENABLED" value="0b1" description="LUPART1 enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="LPUART1 disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="LPUART1 enabled"/>
     </bit_field>
     <bit_field offset="1" width="1" name="LPI2C1_PERIPHERAL_FOR_ISP" access="RW" reset_value="1" description="LPI2C1 peripheral for ISP">
-      <bit_field_value name="LPI2C1_DISABLED" value="0b0" description="LPI2C1 disabled"/>
-      <bit_field_value name="LPI2C1_ENABLED" value="0b1" description="LPI2C1 enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="LPI2C1 disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="LPI2C1 enabled"/>
     </bit_field>
     <bit_field offset="2" width="1" name="LPSPI1_PERIPHERAL_FOR_ISP" access="RW" reset_value="1" description="LPSPI1 peripheral for ISP">
-      <bit_field_value name="LPSPI1_DISABLED" value="0b0" description="LPSPI1 disabled"/>
-      <bit_field_value name="LPSPI1_ENABLED" value="0b1" description="LPSPI1 enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="LPSPI1 disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="LPSPI1 enabled"/>
     </bit_field>
     <reserved_bit_field offset="3" width="5" reset_value="0x1F"/>
   </register>
@@ -230,8 +199,8 @@
   </register>
   <register offset="0x120" width="32" name="SECURE_HASH_BASED_IMAGE_VERIFICATION" description="Secure Hash based image verification feature">
     <bit_field offset="0" width="32" name="SECURE_HASH_BASED_IMAGE_VERIFICATION_CONFIG" access="RW" reset_value="0xFFFFFFFF" description="Secure Hash based image verification feature">
-      <bit_field_value name="SECURE_HASH_BASED_IMAGE_VERIFICATION_DISABLED" value="0b11111111111111111111111111111111" description="Disabled"/>
-      <bit_field_value name="SECURE_HASH_BASED_IMAGE_VERIFICATION_ENABLED" value="0b01001000010100110100000101001000" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b11111111111111111111111111111111" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b01001000010100110100000101001000" description="Enabled"/>
     </bit_field>
   </register>
 </regs:peripheral>

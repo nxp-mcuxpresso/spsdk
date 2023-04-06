@@ -686,7 +686,7 @@ class SignedMessage(AHABContainerBase):
                 f"{len(self.encrypt_iv)*8} Bits != {self.ENCRYPT_IV_LEN * 8} Bits"
             )
         if self.message is None:
-            raise SPSDKValueError(f"Signed Message: Invalid Message payload.")
+            raise SPSDKValueError("Signed Message: Invalid Message payload.")
         self.message.validate()
 
     @staticmethod

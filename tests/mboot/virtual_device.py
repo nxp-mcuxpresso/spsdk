@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
 from struct import pack
 
+from spsdk.exceptions import SPSDKError
 from spsdk.mboot.commands import (
     CmdPacket,
     CommandTag,
     KeyProvOperation,
     ResponseTag,
-    TrustProvisioningResponse,
     TrustProvOperation,
     parse_cmd_response,
 )
@@ -351,7 +351,7 @@ class VirtualDevice(MBootInterface):
             self._cmd_data = packet
             raw_data = packet
         else:
-            raise Exception("Not valid packet type !")
+            raise SPSDKError("Not valid packet type !")
         logging.debug(f"RAW-OUT[{len(raw_data)}]: " + ", ".join(f"{b:02X}" for b in raw_data))
 
     def info(self):

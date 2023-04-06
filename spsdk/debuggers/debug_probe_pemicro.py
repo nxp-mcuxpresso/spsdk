@@ -82,15 +82,18 @@ class DebugProbePemicro(DebugProbe):
         # pylint: disable=import-outside-toplevel
         from .utils import DebugProbes, ProbeDescription
 
-        pemicro = DebugProbePemicro.get_pemicro_lib()
-
         probes = DebugProbes()
-        connected_probes = pemicro.list_ports()
-        for probe in connected_probes:
-            probes.append(
-                ProbeDescription("PEMicro", probe["id"], probe["description"], DebugProbePemicro)
-            )
-
+        try:
+            connected_probes = PyPemicro.list_ports()
+            for probe in connected_probes:
+                if not hardware_id or hardware_id == str(probe["id"]):
+                    probes.append(
+                        ProbeDescription(
+                            "PEMicro", probe["id"], probe["description"], DebugProbePemicro
+                        )
+                    )
+        except PEMicroException as exc:
+            logger.warning(f"Cannot get list of PEMicro probes: {str(exc)}")
         return probes
 
     def open(self) -> None:

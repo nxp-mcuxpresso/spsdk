@@ -14,11 +14,11 @@ from typing import Any, Mapping, Optional, Type
 from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk import SPSDKError
-from spsdk.mboot import ExtMemId, MemId
+from spsdk.mboot import ExtMemId
 from spsdk.sbfile.misc import SecBootBlckSize
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo, swap16
+from spsdk.utils.misc import DebugInfo
 
 ########################################################################################################################
 # Constants
@@ -28,6 +28,7 @@ DEVICE_ID_MASK = 0xFF
 DEVICE_ID_SHIFT = 0
 GROUP_ID_MASK = 0xF00
 GROUP_ID_SHIFT = 8
+
 
 ########################################################################################################################
 # Enums
@@ -118,11 +119,11 @@ class CmdHeader:
         :param data: Input data as bytes
         :param offset: The offset of input data
         :return: CMDHeader object
-        :raise Exception: raised when size is incorrect
+        :raises SPSDKError: raised when size is incorrect
         :raises SPSDKError: Raised when CRC is incorrect
         """
         if calcsize(cls.FORMAT) > len(data) - offset:
-            raise Exception()
+            raise SPSDKError("Incorrect size")
         obj = cls(EnumCmdTag.NOP)
         (crc, obj.tag, obj.flags, obj.address, obj.count, obj.data) = unpack_from(
             cls.FORMAT, data, offset

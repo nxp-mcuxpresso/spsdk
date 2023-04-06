@@ -44,7 +44,10 @@ def load_private_key_from_data(
     real_encoding = encoding or _get_encoding_type(data)
 
     try:
-        private_key = {Encoding.PEM: load_pem_private_key, Encoding.DER: load_der_private_key,}[
+        private_key = {
+            Encoding.PEM: load_pem_private_key,
+            Encoding.DER: load_der_private_key,
+        }[
             real_encoding
         ](data, password, default_backend())
         assert isinstance(private_key, (RSAPrivateKey, EllipticCurvePrivateKey))
@@ -78,7 +81,10 @@ def load_public_key_from_data(data: bytes, encoding: Optional[Encoding] = None) 
     real_encoding = encoding or _get_encoding_type(data)
 
     try:
-        public_key = {Encoding.PEM: load_pem_public_key, Encoding.DER: load_der_public_key,}[
+        public_key = {
+            Encoding.PEM: load_pem_public_key,
+            Encoding.DER: load_der_public_key,
+        }[
             real_encoding
         ](data, default_backend())
         assert isinstance(public_key, (RSAPublicKey, EllipticCurvePublicKey))
@@ -108,7 +114,10 @@ def load_certificate_from_data(data: bytes, encoding: Optional[Encoding] = None)
     """
     real_encoding = encoding or _get_encoding_type(data)
     try:
-        return {Encoding.PEM: load_pem_x509_certificate, Encoding.DER: load_der_x509_certificate,}[
+        return {
+            Encoding.PEM: load_pem_x509_certificate,
+            Encoding.DER: load_der_x509_certificate,
+        }[
             real_encoding
         ](data, default_backend())
     except ValueError as exc:

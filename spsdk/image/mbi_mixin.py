@@ -8,14 +8,15 @@
 
 """Master Boot Image."""
 
+import logging
 import struct
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk import SPSDKError
-from spsdk.crypto import SignatureProvider
-from spsdk.image import IMG_DATA_FOLDER
+from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.exceptions import SPSDKUnsupportedOperation
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.trustzone import TrustZone, TrustZoneType
 from spsdk.utils.crypto import crypto_backend
@@ -25,7 +26,7 @@ from spsdk.utils.easy_enum import Enum
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import align_block, find_file, load_binary, load_configuration, value_to_int
 
-SCHEMA_FILE = IMG_DATA_FOLDER + "/sch_mbimg.yml"
+logger = logging.getLogger(__name__)
 
 
 class MasterBootImageManifest:
@@ -224,6 +225,7 @@ class MultipleImageTable:
 # ****************************************************************************************************
 #                                             Mbi Mixins
 # ****************************************************************************************************
+
 
 # pylint: disable=invalid-name
 class Mbi_Mixin:
@@ -657,10 +659,10 @@ class Mbi_MixinCertBlockV2(Mbi_Mixin):
     """Master Boot Image certification block V2 class."""
 
     VALIDATION_SCHEMAS: List[str] = ["cert_prv_key"]
-    NEEDED_MEMBERS: List[str] = ["cert_block", "priv_key_data"]
+    NEEDED_MEMBERS: List[str] = ["cert_block", "signature_provider"]
 
     cert_block: Optional[CertBlockV2]
-    priv_key_data: Optional[bytes]
+    signature_provider: Optional[SignatureProvider]
     search_paths: Optional[List[str]]
 
     def mix_len(self) -> int:
@@ -684,8 +686,10 @@ class Mbi_MixinCertBlockV2(Mbi_Mixin):
         :param config: Dictionary with configuration fields.
         """
         self.cert_block = CertBlockV2.from_config(config, self.search_paths)
-        self.priv_key_data = load_binary(
-            config["mainCertPrivateKeyFile"], search_paths=self.search_paths
+        self.signature_provider = get_signature_provider(
+            sp_cfg=config.get("signProvider"),
+            local_file_key=config.get("mainCertPrivateKeyFile"),
+            search_paths=self.search_paths,
         )
 
     def mix_validate(self) -> None:
@@ -695,23 +699,26 @@ class Mbi_MixinCertBlockV2(Mbi_Mixin):
         """
         if not self.cert_block:
             raise SPSDKError("Certification block is missing")
-
-        if not self.priv_key_data:
-            raise SPSDKError("Certification block Private key is missing")
-
-        if not self.cert_block.verify_private_key(self.priv_key_data):  # type: ignore
-            raise SPSDKError(
-                "Signature verification failed, private key does not match to certificate"
-            )
+        if not self.signature_provider:
+            raise SPSDKError("Signature provider is not defined")
+        public_key = self.cert_block.certificates[-1].public_key
+        try:
+            result = self.signature_provider.verify_public_key(public_key.dump())
+            if not result:
+                raise SPSDKError(
+                    "Signature verification failed, public key does not match to private key"
+                )
+            logger.debug("The verification of private key pair integrity has been successful.")
+        except SPSDKUnsupportedOperation:
+            logger.warning("Signature provider could not verify the integrity of private key pair.")
 
 
 class Mbi_MixinCertBlockV31(Mbi_Mixin):
     """Master Boot Image certification block V3.1 class."""
 
     VALIDATION_SCHEMAS: List[str] = [
-        "use_isk",
-        "signing_cert_prv_key",
         "signing_root_prv_key",
+        "signature_provider",
         "signing_prv_key_lpc55s3x",
     ]
     NEEDED_MEMBERS: List[str] = ["cert_block", "signature_provider"]
@@ -742,17 +749,16 @@ class Mbi_MixinCertBlockV31(Mbi_Mixin):
         :param config: Dictionary with configuration fields.
         """
         self.cert_block = CertBlockV31.from_config(config, search_paths=self.search_paths)
-        # if ISK is used, we use for signing the ISK certificate instead of root
-        if self.cert_block.isk_certificate:
-            signing_private_key_path = config.get("signingCertificatePrivateKeyFile")
-        else:
-            signing_private_key_path = config.get("mainRootCertPrivateKeyFile")
-        assert signing_private_key_path
-        signing_private_key_path = find_file(
-            signing_private_key_path, search_paths=self.search_paths
+
+        private_key_file_name = (
+            config.get("signingCertificatePrivateKeyFile")
+            if self.cert_block and self.cert_block.isk_certificate
+            else config.get("mainRootCertPrivateKeyFile")
         )
-        self.signature_provider = SignatureProvider.create(
-            f"type=file;file_path={signing_private_key_path}"
+        self.signature_provider = get_signature_provider(
+            sp_cfg=config.get("signProvider"),
+            local_file_key=private_key_file_name,
+            search_paths=self.search_paths,
         )
 
     def mix_validate(self) -> None:
@@ -953,11 +959,12 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
 class Mbi_MixinSignDigest(Mbi_Mixin):
     """Master Boot Image Signature Digest."""
 
-    VALIDATION_SCHEMAS: List[str] = ["attach_sign_digest", "use_isk", "elliptic_curves"]
+    VALIDATION_SCHEMAS: List[str] = ["attach_sign_digest"]
     NEEDED_MEMBERS: List[str] = ["attach_sign_digest"]
     SIGN_DIGEST_VALUES: Dict[str, int] = {"sha256": 32, "sha384": 48}
 
     attach_sign_digest: Optional[str]
+    cert_block: Optional[CertBlockV31]
     signature_provider: Optional[SignatureProvider]
 
     def mix_len(self) -> int:
@@ -973,14 +980,7 @@ class Mbi_MixinSignDigest(Mbi_Mixin):
         :param config: Dictionary with configuration fields.
         """
         attach_sign_digest = config.get("attachSignDigest", False)
-        use_isk = config.get("useIsk", False)
-        if attach_sign_digest:
-            cfg_root_curve = config.get(
-                "iskCertificateEllipticCurve" if use_isk else "rootCertificateEllipticCurve"
-            )
-            self.attach_sign_digest = "sha256" if cfg_root_curve == "secp256r1" else "sha384"
-        else:
-            self.attach_sign_digest = None
+        self.attach_sign_digest = self.get_sign_digest() if attach_sign_digest else None
 
     def mix_validate(self) -> None:
         """Validate the setting of image.
@@ -995,12 +995,12 @@ class Mbi_MixinSignDigest(Mbi_Mixin):
     def get_sign_digest(self) -> Optional[str]:
         """Get sign digest type from signature provider.
 
+        :raises SPSDKError: Missing defined signature provider in class.
         :return: Type of signature digest.
         """
-        if self.signature_provider:
-            return "sha256" if self.signature_provider.signature_length == 32 else "sha384"
-
-        return None
+        if not self.signature_provider:
+            raise SPSDKError("MBI: Signature Digest needs to has defined signature provider.")
+        return "sha256" if self.signature_provider.signature_length // 2 == 32 else "sha384"
 
 
 class Mbi_MixinNXPImage(Mbi_Mixin):
@@ -1131,6 +1131,7 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
         assert self.app and self.tz and self.cert_block
         self.cert_block.alignment = 4
         self.cert_block.image_length = self.app_len
+        logger.info(f"RKTH: {self.cert_block.rkht.hex()}")
         app = self.get_app_data() if hasattr(self, "get_app_data") else self.app
         return self.update_ivt(
             app + self.cert_block.export() + self.tz.export(),
@@ -1193,7 +1194,7 @@ class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
 class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
     """Export Mixin to handle sign by RSA."""
 
-    priv_key_data: Optional[bytes]
+    signature_provider: Optional[SignatureProvider]
 
     def sign(self, image: bytes) -> bytes:
         """Do calculation of RSA signature and return updated image with it.
@@ -1201,8 +1202,9 @@ class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
         :param image: Input raw image.
         :return: Image enriched by RSA signature at end of image.
         """
-        assert self.priv_key_data
-        return image + crypto_backend().rsa_sign(self.priv_key_data, image)
+        assert self.signature_provider
+        signature = self.signature_provider.sign(image)
+        return image + signature
 
 
 class Mbi_ExportMixinEccSign(Mbi_ExportMixin):

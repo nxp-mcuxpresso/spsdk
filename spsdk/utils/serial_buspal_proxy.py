@@ -14,6 +14,7 @@ from typing import (  # pylint: disable=unused-import  # Type is necessary for M
     Type,
 )
 
+from spsdk.exceptions import SPSDKError
 from spsdk.mboot.interfaces.buspal_i2c import I2cModeCommand
 from spsdk.mboot.interfaces.buspal_spi import SpiModeCommand
 
@@ -38,14 +39,14 @@ class SerialBuspalProxy(SerialProxy):
         :param target: BUSPAL target type
         :param data: Dictionary of write and read bytes
         :return: SerialProxy class with configured data
-        :raise AttributeError: target not supported
+        :raises SPSDKError: target not supported
         """
         if target == "i2c":
             cls.frame_header = I2cModeCommand.write_then_read.value
         elif target == "spi":
             cls.frame_header = SpiModeCommand.write_then_read.value
         else:
-            raise AttributeError(f"Target {target} not supported")
+            raise SPSDKError(f"Target {target} not supported")
         return super().init_proxy(data)
 
     def __init__(self, port: str, timeout: int, baudrate: int, write_timeout: Optional[int] = None):

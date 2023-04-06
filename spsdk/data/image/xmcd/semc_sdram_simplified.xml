@@ -1,4 +1,9 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs>
 	<register offset="0x0" width="8" name="magicNumber" reversed="False" description="Fixed to 0xA1" value="0xA1"/>
 	<register offset="0x08" width="8" name="version" reversed="False" description="Set to 1 for this implementation" value="0x1"/>

@@ -39,6 +39,7 @@ from spsdk.apps.utils.utils import (
     catch_spsdk_error,
     format_raw_data,
     get_interface,
+    get_key,
     parse_file_and_size,
     parse_hex_data,
 )
@@ -117,8 +118,6 @@ def batch(ctx: click.Context, command_file: str) -> None:
     \b
     COMMAND_FILE    - path to blhost command file
     """
-    click.secho("This is an experimental command. Use at your own risk!", fg="yellow")
-
     with open(command_file) as f:
         for line in f.readlines():
             tokes = shlex.split(line, comments=True)
@@ -326,7 +325,6 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
     with McuBoot(ctx.obj["interface"]) as mboot:
         if erase == "erase":
             for segment in bin_image.sub_images:
-
                 mboot.flash_erase_region(
                     address=segment.aligned_start(ALIGNMENT),
                     length=segment.aligned_length(ALIGNMENT),
@@ -963,15 +961,32 @@ def program_aeskey(ctx: click.Context, file: click.File) -> None:
 
 
 @key_provisioning.command(name="set_user_key")
+@click.option(
+    "-s",
+    "--key-size",
+    type=INT(),
+    required=False,
+    help=(
+        "Key size in bits. If this field is defined,"
+        " the command could load as text as binary form of key."
+    ),
+)
 @click.argument("key_type", metavar="TYPE", type=str, required=True)
 @click.argument("file_and_size", metavar="FILE[,SIZE]", type=str, required=True)
 @click.pass_context
-def set_user_key(ctx: click.Context, key_type: str, file_and_size: str) -> None:
+def set_user_key(ctx: click.Context, key_type: str, file_and_size: str, key_size: int) -> None:
     """Sends the user key specified by type to the bootloader.
 
     <FILE> is the binary file containing user key plain text.
     If <SIZE> is not specified, the entire <FILE> will be sent.
     Otherwise, blhost only sends the first <SIZE> bytes.
+
+    \b
+    If the '--key-size' option is defined, the argument 'file_and_size' accepts those formats:
+     - filename to binary file
+     - filename to text file
+     - string with key
+    The size part is ignored in this case.
 
     \b
     TYPE  - Type of user key
@@ -996,8 +1011,11 @@ def set_user_key(ctx: click.Context, key_type: str, file_and_size: str) -> None:
     """
     file_path, size = parse_file_and_size(file_and_size)
     key_type_int = parse_key_prov_key_type(key_type)
-    with open(file_path, "rb") as key_file:
-        key_data = key_file.read(size)
+
+    if not key_size:
+        key_size = (size if size > 0 else os.path.getsize(file_path)) * 8
+
+    key_data = get_key(file_path, expected_size=key_size // 8)
 
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.kp_set_user_key(key_type=key_type_int, key_data=key_data)  # type: ignore
@@ -1456,7 +1474,7 @@ def oem_get_cust_cert_dice_puk(
     """Creates the initial trust provisioning keys.
 
     \b
-    OEM_RKTH_INPUT_ADDR                 - The input buffer address where the OEM RKTH locates at
+    OEM_RKTH_INPUT_ADDR                - The input buffer address where the OEM RKTH locates at
     OEM_RKTH_INPUT_SIZE                - The byte count of the OEM RKTH
     OEM_CUST_CERT_DICE_PUK_OUTPUT_ADDR - The output buffer address where ROM writes the OEM Customer
                                          Certificate Public Key for DICE to
@@ -1495,6 +1513,41 @@ def update_life_cycle(ctx: click.Context, life_cycle: int) -> None:
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.update_life_cycle(life_cycle)
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
+
+
+@main.command()
+@click.argument("cmd-msg-addr", metavar="COMMAND MESSAGE ADDRESS", type=INT(), required=True)
+@click.argument("cmd-msg-cnt", metavar="COMMAND MESSAGE COUNT", type=INT(), required=True)
+@click.argument("resp-msg-addr", metavar="RESPONSE MESSAGE ADDRESS", type=INT(), required=True)
+@click.argument("resp-msg-cnt", metavar="RESPONSE MESSAGE COUNT", type=INT(), required=True)
+@click.pass_context
+def ele_message(
+    ctx: click.Context, cmd_msg_addr: int, cmd_msg_cnt: int, resp_msg_addr: int, resp_msg_cnt: int
+) -> None:
+    """Send message to EdgeLock Enclave.
+
+    This command is designed to be, as general, as is possible to work with EdgeLock Enclave.
+    EdgeLock Enclave message is prepared in PC and stored in target RAM (for example by 'blhost write-memory').
+    The response of ELE command is stored also in target memory on place that is defined by 'resp-msg-addr
+    and could be read back (for example by 'blhost read-memory').
+
+
+    Size of command message and response is in count of 32-bit words.
+
+    \b
+    COMMAND MESSAGE ADDRESS     - Address in target where is stored the command words.
+    COMMAND MESSAGE COUNT       - Count of the stored command words.
+    RESPONSE MESSAGE ADDRESS    - Address in target memory space where the ELE store response.
+    RESPONSE MESSAGE COUNT      - Maximal count of words reserved for response.
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        mboot.ele_message(
+            cmdMsgAddr=cmd_msg_addr,
+            cmdMsgCnt=cmd_msg_cnt,
+            respMsgAddr=resp_msg_addr,
+            respMsgCnt=resp_msg_cnt,
+        )
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 

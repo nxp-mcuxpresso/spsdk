@@ -112,7 +112,7 @@ class TrustProvisioningHost:
                 self.info_print("1.4.Step - Checking whether provisioning firmware booted.")
                 self.tptarget.open()
                 if not self.tptarget.check_provisioning_firmware():
-                    raise SPSDKError()
+                    raise SPSDKError("Provisioning firmware did not boot properly")
 
             if keep_target_open and not self.tptarget.is_open:
                 self.tptarget.open()
@@ -230,8 +230,7 @@ class TrustProvisioningHost:
 
             logger.info(f"TP Challenge:\n{Container.parse(challenge)}")
             if save_debug_data:
-                with open("x_challenge.bin", "wb") as f:
-                    f.write(challenge)
+                write_file(challenge, "x_challenge.bin", "wb")
 
             self.info_print("3.Step - Prove a genuinity in TP target.")
             tp_data = self.tptarget.prove_genuinity_challenge(
@@ -240,8 +239,7 @@ class TrustProvisioningHost:
 
             logger.info(f"TP Response:\n{Container.parse(tp_data)}")
             if save_debug_data:
-                with open("x_tp_response.bin", "wb") as f:
-                    f.write(tp_data)
+                write_file(tp_data, "x_tp_response.bin", "wb")
 
             self.info_print("4.Step - Authenticate TP response from TP target.")
             wrapped_data = self.tpdev.authenticate_response(
@@ -250,8 +248,7 @@ class TrustProvisioningHost:
 
             logger.info(f"TP ISP WRAPPED DATA:\n{Container.parse(wrapped_data)}")
             if save_debug_data:
-                with open("x_wrapped_data.bin", "wb") as f:
-                    f.write(wrapped_data)
+                write_file(wrapped_data, "x_wrapped_data.bin", "wb")
 
             self.info_print("5.Step - Create Audit Log record.")
             self.create_audit_log_record(wrapped_data, audit_log)
@@ -463,7 +460,7 @@ class TrustProvisioningHost:
 
             challenge = challenge or secrets.token_bytes(16)
             if len(challenge) != 16:
-                raise SPSDKTpError(f"Challenge has to be 16B long")
+                raise SPSDKTpError("Challenge has to be 16B long")
 
             challenge_container = Container()
             challenge_container.add_entry(

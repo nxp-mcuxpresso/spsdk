@@ -45,6 +45,7 @@ from spsdk.image import (
 )
 from spsdk.mboot import ExtMemId, McuBoot, PropertyTag
 from spsdk.mboot import scan_usb as mboot_scan_usb
+from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.sbfile.sb1 import (
     BootSectionV1,
     CmdErase,
@@ -122,6 +123,9 @@ class CpuParams:
         board: str,
         cpu_data: hab_audit_log.CpuData,
         ext_flash_cfg_word0: int,
+        encryption_supported: bool = True,
+        xip_signature_supported: bool = True,
+        none_xip_signature_supported: bool = True,
     ):
         """Constructor.
 
@@ -131,6 +135,9 @@ class CpuParams:
         :param board: name of the board (used to select name of the source and output image)
         :param cpu_data: contains important specific data for each cpu
         :param ext_flash_cfg_word0: configuration word 0 for external FLASH
+        :param encryption_supported: Flag that CPU supports encryption HAB
+        :param xip_signature_supported: Flag that CPU supports XIP signed HAB
+        :param none_xip_signature_supported: Flag that CPU supports None XIP signed HAB
         """
         # ID of the test configuration
         self.id = data_subdir
@@ -148,6 +155,9 @@ class CpuParams:
         self.ext_flash_cfg_word0 = ext_flash_cfg_word0
         self.ext_flash_cfg_word1 = 0  # currently zero for all RT
         self.cpu_data = cpu_data
+        self.encryption_supported = encryption_supported
+        self.xip_signature_supported = xip_signature_supported
+        self.none_xip_signature_supported = none_xip_signature_supported
 
     def __str__(self) -> str:
         return self.id + " " + self.__class__.__name__
@@ -162,6 +172,8 @@ class CpuParams:
             "evkmimxrt1020",
             hab_audit_log.CpuData.MIMXRT1020,
             IS25WP_FLASH_CFG_WORD0,
+            encryption_supported=False,
+            none_xip_signature_supported=False,
         )
 
     @classmethod
@@ -331,7 +343,7 @@ def init_flashloader(cpu_params: CpuParams) -> McuBoot:
 
     :param cpu_params: processor specific parameters of the test
     :return: McuBoot instance to communicate with flash-loader
-    :raises ConnectionError: if connection cannot be established
+    :raises McuBootConnectionError: if connection cannot be established
     """
     devs = mboot_scan_usb(
         cpu_params.com_processor_name
@@ -344,13 +356,15 @@ def init_flashloader(cpu_params: CpuParams) -> McuBoot:
 
         devs = sdp_scan_usb(cpu_params.com_processor_name)
         if len(devs) != 1:
-            raise ConnectionError("Cannot connect to ROM bootloader")
+            raise McuBootConnectionError("Cannot connect to ROM bootloader")
 
         with SDP(devs[0], cmd_exception=True) as sd:
             assert sd.is_opened
             try:
                 sd.read(INT_RAM_ADDR_CODE, 4)  # dummy read to receive response
-            except SdpCommandError:  # there is an exception if HAB is locked, cause read not supported
+            except (
+                SdpCommandError
+            ):  # there is an exception if HAB is locked, cause read not supported
                 pass
 
             if (sd.status_code == StatusCode.HAB_IS_LOCKED) and (
@@ -799,6 +813,9 @@ def test_signed(cpu_params: CpuParams, srk_key_index: int) -> None:
     :param cpu_params: processor specific parameters of the test
     :param srk_key_index: index of the SRK key used
     """
+    if not cpu_params.xip_signature_supported:
+        pytest.skip("Unsupported configuration")
+
     image_name = f"{cpu_params.board}_iled_blinky_ext_FLASH"
     tgt_address = EXT_FLASH_ADDR
 
@@ -814,6 +831,9 @@ def test_signed_flashloader(cpu_params: CpuParams) -> None:
     :param cpu_params: processor specific parameters of the test
     """
     assert TEST_IMG_CONTENT  # this should be used in test mode only to verify the flashloader image creation process
+
+    if not cpu_params.none_xip_signature_supported:
+        pytest.skip("Unsupported configuration")
 
     image_name = "ivt_flashloader"
     tgt_address = INT_RAM_ADDR_CODE
@@ -915,6 +935,9 @@ def test_hab_encrypted(cpu_params: CpuParams) -> None:
     """Test HAB encrypted image.
     :param cpu_params: processor specific parameters of the test
     """
+    if not cpu_params.encryption_supported:
+        pytest.skip("Unsupported configuration")
+
     image_name = f"{cpu_params.board}_iled_blinky_int_RAM"
     tgt_address = INT_RAM_ADDR_CODE
     srk_key_index = 0

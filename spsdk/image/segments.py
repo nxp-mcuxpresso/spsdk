@@ -14,7 +14,12 @@ from struct import calcsize, pack, unpack_from
 from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import (
+    SPSDKCorruptedException,
+    SPSDKParsingError,
+    SPSDKSyntaxError,
+    SPSDKValueError,
+)
 from spsdk.utils.misc import DebugInfo, align, align_block, extend_block, size_fmt
 
 from .bee import BEE_ENCR_BLOCK_SIZE, BeeRegionHeader
@@ -31,7 +36,7 @@ from .commands import (
     EnumWriteOps,
     parse_command,
 )
-from .header import CorruptedException, Header, Header2, SegTag, UnparsedException
+from .header import Header, Header2, SegTag
 from .secret import MAC, BaseClass
 
 logger = logging.getLogger(__name__)
@@ -1011,7 +1016,7 @@ class SegDCD(BaseSegment):
 
         for cmd in self._commands:
             if isinstance(cmd, CmdWriteData):
-                for (address, value) in cmd:
+                for address, value in cmd:
                     txt_data += (
                         f"{write_ops[cmd.ops]} {cmd.num_bytes} 0x{address:08X} 0x{value:08X}\n"
                     )
@@ -1070,7 +1075,7 @@ class SegDCD(BaseSegment):
         """Parse segment from bytes array.
 
         :param data: The bytes array of DCD segment
-        :raises CorruptedException: Exception caused by corrupted data
+        :raises SPSDKCorruptedException: Exception caused by corrupted data
         :return: SegDCD object
         """
         header = Header.parse(data, 0, SegTag.DCD)
@@ -1080,7 +1085,7 @@ class SegDCD(BaseSegment):
             try:
                 cmd_obj = parse_command(data, index)
             except ValueError as exc:
-                raise CorruptedException("Unknown command at position: " + hex(index)) from exc
+                raise SPSDKCorruptedException("Unknown command at position: " + hex(index)) from exc
 
             obj.append(cmd_obj)
             index += cmd_obj.size
@@ -1102,7 +1107,7 @@ class SegDcdBuilder:
 
         :param dcd_obj: result of the builder
         :param cmd: command with arguments
-        :raises SyntaxError: command is corrupted
+        :raises SPSDKError: command is corrupted
         :raises SPSDKError: When command is unsupported
         """
         # ----------------------------
@@ -1123,7 +1128,7 @@ class SegDcdBuilder:
                     self.cmd_write = None
 
                 if cmd[1] not in EnumEngine:
-                    raise SyntaxError(
+                    raise SPSDKError(
                         f"Unlock CMD: wrong engine parameter at line {self.line_cnt - 1}"
                     )
 
@@ -1136,7 +1141,7 @@ class SegDcdBuilder:
 
         elif cmd_tuple[0] == "write":
             if len(cmd) < 4:
-                raise SyntaxError(f"Write CMD: not enough arguments at line {self.line_cnt - 1}")
+                raise SPSDKError(f"Write CMD: not enough arguments at line {self.line_cnt - 1}")
 
             ops = cmd_tuple[1]
             numbytes = int(cmd[1])
@@ -1155,7 +1160,9 @@ class SegDcdBuilder:
 
         else:
             if len(cmd) < 4:
-                raise SyntaxError(f"Check CMD: not enough arguments at line {self.line_cnt - 1}")
+                raise SPSDKSyntaxError(
+                    f"Check CMD: not enough arguments at line {self.line_cnt - 1}"
+                )
 
             if self.cmd_write is not None:
                 dcd_obj.append(self.cmd_write)
@@ -1173,7 +1180,6 @@ class SegDcdBuilder:
 
         :param text: input text to import
         :return: SegDCD object
-        :raise SyntaxError: if input format is not valid
         """
         dcd_obj = SegDCD(enabled=True)
         cmd_mline = False
@@ -1435,8 +1441,8 @@ class SegCSF(BaseSegment):
 
         :param data: The bytes array of CSF segment
         :param offset: to start parsing the data
-        :raises CorruptedException: When there is unknown command
-        :raises CorruptedException: When command can not be parsed
+        :raises SPSDKCorruptedException: When there is unknown command
+        :raises SPSDKCorruptedException: When command can not be parsed
         :return: SegCSF instance
         """
         header = Header.parse(data, offset, SegTag.CSF)
@@ -1448,7 +1454,7 @@ class SegCSF(BaseSegment):
                 cmd_obj = parse_command(data, offset + index)
                 obj.append_command(cmd_obj)
             except ValueError as exc:
-                raise CorruptedException(
+                raise SPSDKCorruptedException(
                     "Failed to parse command at position: " + hex(offset + index)
                 ) from exc
             index += cmd_obj.size
@@ -1490,7 +1496,7 @@ class XMCDHeader:
         return pack(
             self.FORMAT,
             self.block_size & 0xFF,
-            self.block_type << 4 + self.block_size >> 8,
+            (self.block_type << 4) + (self.block_size >> 8),
             self.interface << 4 + self.instance,
             self.tag << 4 + self.version,
         )
@@ -1515,14 +1521,14 @@ class XMCDHeader:
         size_low, type_size, interface_instance, tag_ver = unpack_from(cls.FORMAT, data)
         tag = (tag_ver & 0xF0) >> 4
         if tag != cls.TAG:
-            raise UnparsedException(f"Invalid TAG for XMCDHeader {tag}. Expected: {cls.TAG}")
+            raise SPSDKParsingError(f"Invalid TAG for XMCDHeader {tag}. Expected: {cls.TAG}")
         version = tag_ver & 0x0F
         if version != 0:
-            raise UnparsedException(f"Invalid version {version}. Expected: 0")
+            raise SPSDKParsingError(f"Invalid version {version}. Expected: 0")
         interface = (interface_instance & 0xF0) >> 4
         instance = interface_instance & 0x0F
         block_type = (type_size & 0xF0) >> 4
-        block_size = type_size & 0x0F
+        block_size = (type_size & 0x0F) << 8
         block_size += size_low
         return XMCDHeader(
             interface=interface, instance=instance, block_type=block_type, block_size=block_size

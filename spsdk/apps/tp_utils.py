@@ -13,7 +13,6 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import click
 import colorama
 import prettytable
-import yaml
 from typing_extensions import Literal
 
 from spsdk import SPSDKError
@@ -32,7 +31,7 @@ from spsdk.tp.utils import (
     single_tp_device_adapter,
     single_tp_target_adapter,
 )
-from spsdk.utils.misc import find_file
+from spsdk.utils.misc import find_file, load_binary, load_configuration
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 
@@ -85,11 +84,8 @@ class TPBaseConfig:
     def _get_config_data(config_file_path: Optional[str] = None) -> Dict[str, Any]:
         """Setup initial configuration data."""
         if config_file_path:
-            with open(config_file_path) as f:
-                return yaml.safe_load(f)
-        return {
-            "timeout": 60,
-        }
+            return load_configuration(config_file_path)
+        return {"timeout": 60}
 
     @property
     def tp_device(self) -> str:
@@ -222,8 +218,7 @@ class TPHostConfig(TPBaseConfig):
             self.config_data["firmware"],
             search_paths=[self.config_dir] if self.config_dir else None,
         )
-        with open(file_path, "rb") as f:
-            return f.read()
+        return load_binary(file_path)
 
     @property
     def prov_firmware_data(self) -> Optional[bytes]:
@@ -234,8 +229,7 @@ class TPHostConfig(TPBaseConfig):
             self.config_data["prov_firmware"],
             search_paths=[self.config_dir] if self.config_dir else None,
         )
-        with open(file_path, "rb") as f:
-            return f.read()
+        return load_binary(file_path)
 
 
 class TPConfigConfig(TPBaseConfig):

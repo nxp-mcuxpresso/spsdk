@@ -4,51 +4,49 @@ name: Python Continous Integration
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 permissions:
   contents: read
 
 jobs:
   codecheck:
-
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest,windows-latest,macos-latest]
-        python-version: ['3.7','3.11']
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.8", "3.11"]
 
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Set-up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.3.0
-      with:
-        python-version: ${{ matrix.python-version }}
-        architecture: 'x64'
+      - name: Set-up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: "x64"
 
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-develop.txt
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-develop.txt
 
-    - name: Install SPSDK
-      run: |
-        python setup.py install
+      - name: Install SPSDK
+        run: |
+          python setup.py install
 
-    - name: Run Codecheck
-      run: |
-        python codecheck.py -s --output reports_codecheck --info-check gitcov
+      - name: Run Codecheck
+        run: |
+          python codecheck.py -s --output reports_codecheck --info-check gitcov
 
-    - name: Archive Results
-      uses: actions/upload-artifact@v3
-      with:
-        name: Results-${{ matrix.python-version }}-${{ matrix.os }}
-        path: reports_codecheck
-      if: always() && job.status == 'failure'
-
+      - name: Archive Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: Results-${{ matrix.python-version }}-${{ matrix.os }}
+          path: reports_codecheck
+        if: always() && job.status == 'failure'

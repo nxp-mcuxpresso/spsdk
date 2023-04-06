@@ -441,3 +441,7 @@ After the reset the device boots from flash and user image is programmed success
 .. click:: spsdk.apps.blhost:update_life_cycle
     :prog: blhost update-life-cycle
     :nested: full
+
+.. click:: spsdk.apps.blhost:ele_message
+    :prog: blhost ele-message
+    :nested: full

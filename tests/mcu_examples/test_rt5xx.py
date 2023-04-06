@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,6 +14,7 @@ from typing import List, Optional, Tuple
 import pytest
 from bitstring import BitArray
 
+from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.image import KeySourceType, KeyStore, TrustZone
 from spsdk.image.mbimg import (
     Mbi_CrcRamRtxxx,
@@ -23,6 +24,7 @@ from spsdk.image.mbimg import (
     Mbi_PlainSignedXipRtxxx,
 )
 from spsdk.mboot import ExtMemId, KeyProvUserKeyType, McuBoot, PropertyTag, scan_usb
+from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.sbfile.sb2.commands import CmdErase, CmdFill, CmdLoad, CmdMemEnable
 from spsdk.sbfile.sb2.images import BootImageV21, BootSectionV2, CertBlockV2, SBV2xAdvancedParams
 from spsdk.utils.crypto import Certificate, KeyBlob, Otfad
@@ -141,7 +143,7 @@ def write_shadow_regis(data_dir: str, writes: List[Tuple[int, int]]) -> None:
     assert len(datatable_old) == 12 * 8 * 2 + 2
     # this is new table content
     datatable_new = bytes()
-    for (addr, value) in writes:
+    for addr, value in writes:
         datatable_new += pack("<I", value)
         datatable_new += pack("<I", addr)
     # the table must contain 12 entries, so first entry is repeated, until table is full needed
@@ -165,7 +167,7 @@ def open_mboot() -> McuBoot:
     """Open USB communication with RT5xx boot-loader
 
     :return: McuBoot instance
-    :raises ConnectionError: if device not connected
+    :raises McuBootConnectionError: if device not connected
     """
     assert not TEST_IMG_CONTENT
 
@@ -180,7 +182,7 @@ def open_mboot() -> McuBoot:
         sleep(1)
 
     if len(devs) != 1:
-        raise ConnectionError(
+        raise McuBootConnectionError(
             "RT5xx not connected via USB, "
             "ensure BOOT CONFIG SW7 is ON,OFF,ON and connect USB cable via J38"
         )
@@ -203,7 +205,7 @@ def burn_img_via_usb_into_flexspi_flash(data_dir: str, img_data: bytes) -> Optio
     :param data_dir: absolute path where the data files are located
     :param img_data: binary image data
     :return: McuBoot instance to talk to processor bootloader; None in test mode
-    :raise ConnectionError: if USB connection with processor's boot-loader cannot be established
+    :raises ConnectionError: if USB connection with processor's boot-loader cannot be established
     """
     if TEST_IMG_CONTENT:  # this function communicates with HW board, it cannot be used in test mode
         return None
@@ -242,7 +244,7 @@ def send_sb_via_usb_into_processor(sb_data: bytes, key_store: KeyStore) -> None:
 
     :param sb_data: SB file to be sent
     :param key_store: key-store used for SB file
-    :raise ConnectionError: if USB connection with processor's boot-loader cannot be established
+    :raises ConnectionError: if USB connection with processor's boot-loader cannot be established
     """
     if TEST_IMG_CONTENT:  # this function communicates with HW board, it cannot be used in test mode
         return
@@ -349,13 +351,11 @@ def get_keystore(data_dir: str) -> KeyStore:
     return KeyStore(KeySourceType.KEYSTORE, key_store_bin)
 
 
-def create_cert_block(data_dir: str) -> Tuple[CertBlockV2, bytes]:
+def create_cert_block(data_dir: str) -> CertBlockV2:
     """Load 4 certificates and create certificate block
 
     :param data_dir: absolute path
-    :return: tuple with the following items:
-    - certificate block with 4 certificates, certificate 0 is selected
-    - private key 0, decrypted binary data in PEM format
+    :return: certificate block with 4 certificates, certificate 0 is selected
     """
     # load certificates
     cert_path = os.path.join(data_dir, "keys_certs")
@@ -372,9 +372,13 @@ def create_cert_block(data_dir: str) -> Tuple[CertBlockV2, bytes]:
     for root_key_index, cert in enumerate(cert_list):
         if cert:
             cert_block.set_root_key_hash(root_key_index, cert)
-    # private key that matches selected root certificate
-    priv_key_pem_data = load_binary(os.path.join(cert_path, "k0_cert0_2048.pem"))
-    return cert_block, priv_key_pem_data
+    return cert_block
+
+
+def create_signature_provider(data_dir: str) -> SignatureProvider:
+    priv_key_pem_path = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
+    signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key_pem_path}")
+    return signature_provider
 
 
 #######################################################################################################################
@@ -449,7 +453,8 @@ def test_ram_signed_otp(data_dir: str, image_file_name: str, ram_addr: int) -> N
 
     keystore = KeyStore(KeySourceType.OTP)
 
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    signature_provider = create_signature_provider(data_dir)
 
     mbi = Mbi_PlainSignedRamRtxxx(
         app=unsigned_img,
@@ -458,7 +463,7 @@ def test_ram_signed_otp(data_dir: str, image_file_name: str, ram_addr: int) -> N
         hmac_key=MASTER_KEY,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
     )
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_signed_otp.bin")
@@ -483,7 +488,8 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     org_data = load_binary(path)
 
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    signature_provider = create_signature_provider(data_dir)
 
     key_store = get_keystore(data_dir)
 
@@ -496,7 +502,7 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
         trust_zone=TrustZone.disabled(),
         key_store=key_store,
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
         hmac_key=hmac_user_key,
     )
 
@@ -521,13 +527,14 @@ def test_xip_signed(data_dir: str, image_file_name: str) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_img = load_binary(path)
 
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    signature_provider = create_signature_provider(data_dir)
 
     mbi = Mbi_PlainSignedXipRtxxx(
         app=unsigned_img,
         load_addr=0x08001000,
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
     )
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_signed.bin")
@@ -552,7 +559,8 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
     org_data = load_binary(path)
     key_store = KeyStore(KeySourceType.OTP)
 
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    signature_provider = create_signature_provider(data_dir)
 
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
@@ -562,7 +570,7 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
         load_addr=ram_addr,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
         hmac_key=hmac_user_key,
         key_store=key_store,
         ctr_init_vector=ENCR_CTR_IV,
@@ -592,7 +600,8 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
     # load keystore with HMAC user key
     key_store = get_keystore(data_dir)
 
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    signature_provider = create_signature_provider(data_dir)
 
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
@@ -602,7 +611,7 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
         load_addr=ram_addr,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
-        priv_key_data=priv_key_pem_data,
+        signature_provider=signature_provider,
         hmac_key=hmac_user_key,
         key_store=key_store,
         ctr_init_vector=ENCR_CTR_IV,
@@ -657,7 +666,9 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     )
 
     # certificate + private key
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
@@ -740,7 +751,9 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     )
 
     # certificate + private key
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
@@ -820,7 +833,9 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
     )
 
     # certificate + private key
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
@@ -901,7 +916,9 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     )
 
     # certificate + private key
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 
@@ -1033,7 +1050,9 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     )
 
     # certificate + private key
-    cert_block, priv_key_pem_data = create_cert_block(data_dir)
+    cert_block = create_cert_block(data_dir)
+    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+
     boot_image.cert_block = cert_block
     boot_image.private_key_pem_data = priv_key_pem_data
 

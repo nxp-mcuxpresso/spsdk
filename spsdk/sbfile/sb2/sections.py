@@ -131,7 +131,7 @@ class BootSectionV2(BaseClass):
         :param counter: The counter object (required)
         :param dbg_info: Optional[List[str]] optional list to export debug information about content in text format
         :return: exported bytes
-        :raise SPSDKError: raised when dek, mac, counter have invalid format
+        :raises SPSDKError: raised when dek, mac, counter have invalid format
         """
         cmd_dbg_info: Optional[List[str]] = None
         if dbg_info is not None:
@@ -214,7 +214,7 @@ class BootSectionV2(BaseClass):
         :param mac: The MAC value in bytes (required)
         :param counter: The counter object (required)
         :return: exported bytes
-        :raise SPSDKError: raised when dek, mac, counter have invalid format
+        :raises SPSDKError: raised when dek, mac, counter have invalid format
         """
         if not isinstance(dek, bytes):
             raise SPSDKError("Invalid type of dek, should be bytes")
@@ -228,7 +228,7 @@ class BootSectionV2(BaseClass):
         offset += CmdHeader.SIZE + cls.HMAC_SIZE
         # Check header HMAC
         if header_hmac_data != crypto_backend().hmac(mac, header_encrypted):
-            raise SPSDKError()
+            raise SPSDKError("Invalid header HMAC")
         # Decrypt header
         header_decrypted = crypto_backend().aes_ctr_decrypt(dek, header_encrypted, counter.value)
         counter.increment()
@@ -249,7 +249,7 @@ class BootSectionV2(BaseClass):
                 block_size = section_size
             hmac_block = crypto_backend().hmac(mac, data[offset : offset + block_size])
             if hmac_block != hmac_data[hmac_index : hmac_index + cls.HMAC_SIZE]:
-                raise SPSDKError()
+                raise SPSDKError("HMAC failed")
             hmac_count -= 1
             hmac_index += cls.HMAC_SIZE
             section_size -= block_size
@@ -324,15 +324,15 @@ class CertSectionV2(BaseClass):
         :param mac: The MAC value in bytes (required)
         :param counter: The counter object (required)
         :return: exported bytes
-        :raise Exception: raised when dek, mac, counter have invalid format
+        :raises SPSDKError: raised when dek, mac, counter have invalid format
         :raises SPSDKError: Raised size of exported bytes is invalid
         """
         if not isinstance(dek, bytes):
-            raise Exception()
+            raise SPSDKError("DEK value is not in bytes")
         if not isinstance(mac, bytes):
-            raise Exception()
+            raise SPSDKError("MAC value is not in bytes")
         if not isinstance(counter, Counter):
-            raise Exception()
+            raise SPSDKError("Counter value is not incorrect")
         # Prepare Header data
         header_data = self._header.export()
         header_encrypted = crypto_backend().aes_ctr_encrypt(dek, header_data, counter.value)

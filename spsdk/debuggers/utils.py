@@ -225,6 +225,6 @@ def open_debug_probe(
     try:
         yield debug_probe
     except SPSDKError as exc:
-        raise exc
+        raise SPSDKError("Problem with debug probe occurred") from exc
     finally:
         debug_probe.close()

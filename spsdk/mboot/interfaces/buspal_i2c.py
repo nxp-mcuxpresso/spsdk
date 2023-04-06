@@ -12,6 +12,8 @@ import struct
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from spsdk.exceptions import SPSDKError
+
 from .base import Interface
 from .buspal import BBConstants, Buspal, BuspalMode
 
@@ -120,7 +122,7 @@ class BuspalI2C(Buspal):
                     retry_cnt -= 1
                     self._send_frame(frames, wait_for_ack, retry_cnt)
                 else:
-                    raise error
+                    raise SPSDKError("Failed retrying reading the I2C header frame")
 
     def _read_default(self, size: int) -> bytes:
         """Read 'length' amount of bytes from BUSPAL I2C device.

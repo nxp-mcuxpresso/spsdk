@@ -64,3 +64,15 @@ class SPSDKAlignmentError(SPSDKError, ValueError):
 
 class SPSDKParsingError(SPSDKError):
     """Cannot parse binary data."""
+
+
+class SPSDKCorruptedException(SPSDKError):
+    """Corrupted Exception."""
+
+
+class SPSDKUnsupportedOperation(SPSDKError):
+    """SPSDK unsupported operation error."""
+
+
+class SPSDKSyntaxError(SyntaxError, SPSDKError):
+    """SPSDK syntax error."""

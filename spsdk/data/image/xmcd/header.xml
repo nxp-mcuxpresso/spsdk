@@ -1,4 +1,9 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs>
 	<register offset="0x00" width="32" name="header" reversed="False" description="XMCD Header">
 		<bit_field offset="0x00" width="12" name="configurationBlockSize" reset_value="0x000" description="Configuration block size including XMCD header itself"/>

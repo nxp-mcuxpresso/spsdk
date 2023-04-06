@@ -1,5 +1,5 @@
 {
-    "family": "rt1180",
+    "family": "rt118x",
     "revision": "a0",
     "output": "cntr_ctcm_cm33_img.bin",
     "image_type": "non_xip",

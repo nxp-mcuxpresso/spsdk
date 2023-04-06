@@ -112,15 +112,10 @@ class DebugProbePyOCD(DebugProbe):
 
             self.probe.session = Session(self.probe)
             self.probe.open()
-            if isinstance(self.probe, JLinkProbe):
-                self.probe._link.set_tif(pylink.enums.JLinkInterfaces.SWD)
-                self.probe._link.coresight_configure()
-                self._protocol = pylink.enums.JLinkInterfaces.SWD
-            else:
-                self.probe.connect(pyocd.probe.debug_probe.DebugProbe.Protocol.SWD)
+            self.probe.connect(pyocd.probe.debug_probe.DebugProbe.Protocol.SWD)
             # Do reset sequence to switch to used protocol
             connector = DPConnector(self.probe)
-            connector._connect_dp(pyocd.probe.debug_probe.DebugProbe.Protocol.SWD)
+            connector.connect()
             logger.debug(connector._idr)
             # Power Up the system and debug and clear sticky errors
             self.clear_sticky_errors()

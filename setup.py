@@ -38,14 +38,13 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     platforms="Windows, Linux, Mac OSX",
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     setup_requires=["setuptools>=40.0"],
     install_requires=requirements,
     include_package_data=True,
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -59,7 +58,7 @@ setup(
         "Topic :: System :: Hardware",
         "Topic :: Utilities",
     ],
-    packages=find_packages(exclude=["tests.*", "tests", "examples.*", "examples"]),
+    packages=find_packages(exclude=["tests.*", "tests", "examples.*", "examples", "tools", "tools.*"]),
     entry_points={
         "console_scripts": [
             "elftosb=spsdk.apps.elftosb:safe_main",

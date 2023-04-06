@@ -1,0 +1,15 @@
+{
+    "rootCertificate0File": ".\\workspace\\keys_certs\\ec_secp384r1_cert0.pem",
+    "rootCertificate1File": ".\\workspace\\keys_certs\\ec_secp384r1_cert1.pem",
+    "rootCertificate2File": ".\\workspace\\keys_certs\\ec_secp384r1_cert2.pem",
+    "rootCertificate3File": ".\\workspace\\keys_certs\\ec_secp384r1_cert3.pem",
+    "mainRootCertId": 0,
+    "mainRootCertPrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp384r1_cert0.pem",
+    "useIsk": true,
+    "signingCertificateFile": ".\\workspace\\keys_certs\\ec_secp256r1_sign_cert.pem",
+    "signingCertificatePrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp256r1_sign_cert.pem",
+    "signingCertificateConstraint": "0x25",
+    "iskCertificateEllipticCurve": "secp256r1",
+    "signCertData": "",
+    "containerOutputFile": ".\\workspace\\output_images\\lpc55s3x\\cert_384_256.bin"
+}

@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os
+
 import pytest
 
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.images import BinaryImage, BinaryPattern
 
 
@@ -93,3 +95,43 @@ def test_binary_image_draw_invalid():
     image.add_image(image_0x4)
 
     assert "\x1b[31m" in image.draw()
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ("images/image.bin"),
+        ("images/image.hex"),
+        ("images/image.s19"),
+        ("images/image.srec"),
+    ],
+)
+def test_load_binary_image(path, data_dir):
+    binary = BinaryImage.load_binary_image(os.path.join(data_dir, path))
+    assert binary
+    assert isinstance(binary, BinaryImage)
+    assert len(binary) > 0
+
+
+@pytest.mark.parametrize(
+    "path, error_msg",
+    [
+        (
+            "images/image_corrupted.s19",
+            "SPSDK: Error loading file: expected crc 'D3' in record S21407F41001020100010600000200000000000000D4, but got 'D4'",
+        ),
+        ("invalid_file", "Error loading file"),
+    ],
+)
+def test_load_binary_image_invalid(path, error_msg, data_dir):
+    with pytest.raises(SPSDKError, match=error_msg):
+        BinaryImage.load_binary_image(os.path.join(data_dir, path))
+
+
+def test_binary_image_load_elf(data_dir):
+    """Very simple load of problematic ELF file."""
+    binary = BinaryImage.load_binary_image(os.path.join(data_dir, "images/image_0x80002000.elf"))
+    assert binary
+    assert isinstance(binary, BinaryImage)
+    assert len(binary) > 0
+    assert binary.offset == 0x8000_2000

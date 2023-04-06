@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+#
 # Copyright 2019 Martin Olejar
 # Copyright 2020-2023 NXP
 #
@@ -26,6 +29,7 @@ __all__ = ["Enum"]
 from typing import Optional, Sequence, Union
 
 from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKKeyError, SPSDKTypeError
 
 EnumKeyType = Union[str, int]
 
@@ -63,15 +67,15 @@ class MetaEnum(type):
             for name, value, _ in cls._items_:
                 if key.upper() == name.upper():
                     return value
-            raise KeyError(f"'{cls.__name__}' has no item with name '{key}'")
+            raise SPSDKKeyError(f"'{cls.__name__}' has no item with name '{key}'")
 
         if isinstance(key, int):
             for name, value, _ in cls._items_:
                 if key == value:
                     return name
-            raise KeyError(f"'{cls.__name__}' has no item with value '{key}'")
+            raise SPSDKKeyError(f"'{cls.__name__}' has no item with value '{key}'")
 
-        raise TypeError(f"'{cls.__name__}' has no item with type '{type(key)}'")
+        raise SPSDKTypeError(f"'{cls.__name__}' has no item with type '{type(key)}'")
 
     def __iter__(cls):
         return (item for item in cls._items_)
@@ -110,7 +114,7 @@ class Enum(metaclass=MetaEnum):
         :param key: either value or name (name is case INSENSITIVE)
         :param default: value in case key does not exist
         :return: description of the value; empty string if description was not specified
-        :raises TypeError: Key is nor string or int
+        :raises SPSDKTypeError: Key is nor string or int
         """
         # pylint: disable=no-member
         if isinstance(key, str):
@@ -125,7 +129,7 @@ class Enum(metaclass=MetaEnum):
                     return desc
             return default
 
-        raise TypeError(f"'{cls.__name__}' has no item with type '{type(key)}'")
+        raise SPSDKTypeError(f"'{cls.__name__}' has no item with type '{type(key)}'")
 
     @classmethod
     def name(cls, key: int, default: Optional[str] = None) -> str:
@@ -134,7 +138,7 @@ class Enum(metaclass=MetaEnum):
         :param key: enumeration tag
         :param default: value to return of tag not found; if not defined, KeyError exception will be raised
         :return: name of the corresponding enumeration tag
-        :raise KeyError: if tag not supported and default value not provided
+        :raise SPSDKKeyError: if tag not supported and default value not provided
         """
         # pylint: disable=no-member
         for name, value, _ in cls._items_:
@@ -142,7 +146,7 @@ class Enum(metaclass=MetaEnum):
                 return name
 
         if default is None:
-            raise KeyError("Enumeration not supported: " + str(key))
+            raise SPSDKKeyError("Enumeration not supported: " + str(key))
 
         return default
 

@@ -123,7 +123,7 @@ def ahab_container(request):
 
 @pytest.fixture(scope="function")
 def ahab_image(request):
-    return AHABImage(family="rt1180", ahab_containers=[request.getfixturevalue("ahab_container")])
+    return AHABImage(family="rt118x", ahab_containers=[request.getfixturevalue("ahab_container")])
 
 
 def test_container_head_compare(container_head):

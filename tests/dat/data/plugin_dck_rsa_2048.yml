@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 socc: 0x0001
 uuid: "E004090E6BDD2155BBCE9E0665805BE3"
 cc_socu: 0x03FF

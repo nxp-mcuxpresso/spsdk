@@ -148,6 +148,13 @@ class IeeKeyBlobAttribute:
         return pack(self._FORMAT, self.lock, self.key_attribute, self.aes_mode, 0)
 
 
+class MasterId(Enum):
+    """Master IDs for RT118x."""
+
+    CM33 = 0b1000  # Cortex M33 Master ID
+    CM7 = 0b1001  # Cortex M7 Master ID
+
+
 class IeeKeyBlob:
     """IEE KeyBlob.
 
@@ -196,6 +203,7 @@ class IeeKeyBlob:
         key2: Optional[bytes] = None,
         page_offset: int = 0,
         crc: Optional[bytes] = None,
+        master: Optional[MasterId] = None,
     ):
         """Constructor.
 
@@ -219,6 +227,10 @@ class IeeKeyBlob:
         key1 = value_to_bytes(key1, byte_cnt=self.attributes.key1_size)
         key2 = value_to_bytes(key2, byte_cnt=self.attributes.key2_size)
 
+        if master == MasterId.CM33:
+            start_addr &= ~(1 << 28)
+            end_addr &= ~(1 << 28)
+
         if start_addr < 0 or start_addr > end_addr or end_addr > 0xFFFFFFFF:
             raise SPSDKError("Invalid start/end address")
 
@@ -227,6 +239,7 @@ class IeeKeyBlob:
                 f"Start address must be aligned to {hex(self._START_ADDR_MASK + 1)} boundary"
             )
 
+        self.master = master
         self.start_addr = start_addr
         self.end_addr = end_addr
 
@@ -292,7 +305,7 @@ class IeeKeyBlob:
         key2 = reverse_bytes_in_longs(self.key2)
 
         for block in split_data(bytearray(data), self._IEE_ENCR_BLOCK_SIZE_XTS):
-            tweak = self.calculate_tweak(current_start)
+            tweak = self.calculate_tweak(current_start, self.master)
 
             encrypted_block = crypto_backend().aes_xts_encrypt(
                 key1 + key2,
@@ -315,10 +328,12 @@ class IeeKeyBlob:
         key = reverse_bytes_in_longs(self.key1)
         nonce = reverse_bytes_in_longs(self.key2)
 
+        if self.master:
+            base_address |= self.master << 32
+
         counter = Counter(nonce, ctr_value=base_address >> 4, ctr_byteorder_encoding="big")
 
         for block in split_data(bytearray(data), self._ENCRYPTION_BLOCK_SIZE):
-
             encrypted_block = crypto_backend().aes_ctr_encrypt(
                 key,
                 block,
@@ -351,16 +366,19 @@ class IeeKeyBlob:
 
         if self.attributes.ctr_mode:
             return self.encrypt_image_ctr(base_address, data)
-        else:
-            return self.encrypt_image_xts(base_address, data)
+        return self.encrypt_image_xts(base_address, data)
 
     @staticmethod
-    def calculate_tweak(address: int) -> bytes:
+    def calculate_tweak(address: int, master: Optional[MasterId] = None) -> bytes:
         """Calculate tweak value for AES-XTS encryption based on the address value.
 
         :param address: start address of encryption
+        :param master: MasterID
         :return: 16 byte tweak values
         """
+        if master:
+            address |= master << 32
+
         sector = address >> 12
         tweak = bytearray(16)
         for n in range(16):
@@ -486,6 +504,7 @@ class IeeNxp(Iee):
         self.database = Database(IEE_DATABASE_FILE)
         self.blobs_min_cnt = self.database.get_device_value("key_blob_min_cnt", device=family)
         self.blobs_max_cnt = self.database.get_device_value("key_blob_max_cnt", device=family)
+        self.generate_keyblob = self.database.get_device_value("generate_keyblob", device=family)
 
         if key_blobs:
             for key_blob in key_blobs:
@@ -546,8 +565,8 @@ class IeeNxp(Iee):
         )
 
         fuses.load_registers_from_xml(xml_fuses, grouped_regs=grouped_regs)
-        fuses.find_reg(f"USER_KEY1").set_value(self.ibkek1)
-        fuses.find_reg(f"USER_KEY2").set_value(self.ibkek2)
+        fuses.find_reg("USER_KEY1").set_value(self.ibkek1)
+        fuses.find_reg("USER_KEY2").set_value(self.ibkek2)
 
         load_iee = fuses.find_reg("LOAD_IEE_KEY")
         load_iee.find_bitfield("LOAD_IEE_KEY_BITFIELD").set_value(1)
@@ -623,16 +642,17 @@ class IeeNxp(Iee):
         :return: IEE in BinaryImage.
         """
         iee = BinaryImage(image_name, offset=self.keyblob_address)
-        # Add mandatory IEE keyblob
-        iee_keyblobs = self.get_key_blobs() if plain_data else self.export_key_blobs()
-        iee.add_image(
-            BinaryImage(
-                keyblob_name,
-                offset=0,
-                description=f"IEE keyblobs {self.family}",
-                binary=iee_keyblobs,
+        if self.generate_keyblob:
+            # Add mandatory IEE keyblob
+            iee_keyblobs = self.get_key_blobs() if plain_data else self.export_key_blobs()
+            iee.add_image(
+                BinaryImage(
+                    keyblob_name,
+                    offset=0,
+                    description=f"IEE keyblobs {self.family}",
+                    binary=iee_keyblobs,
+                )
             )
-        )
         binaries = self.export_image()
 
         if binaries:
@@ -716,17 +736,31 @@ class IeeNxp(Iee):
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: initialized IEE object.
         """
-        iee_config: List[Dict[str, Any]] = config["key_blobs"]
+        iee_config: List[Dict[str, Any]] = config.get("key_blobs", [config.get("key_blob")])
         family = config["family"]
-
-        ibkek1 = get_key(config["ibkek1"], 32)
-        ibkek2 = get_key(config["ibkek2"], 32)
+        master = config.get("master")
+        if master:
+            master = MasterId[master]
+        ibkek1 = get_key(
+            config.get(
+                "ibkek1", "0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"
+            ),
+            32,
+        )
+        ibkek2 = get_key(
+            config.get(
+                "ibkek2", "0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"
+            ),
+            32,
+        )
 
         logger.debug(f"Loaded IBKEK1: {ibkek1.hex()}")
         logger.debug(f"Loaded IBKEK2: {ibkek2.hex()}")
 
         keyblob_address = value_to_int(config["keyblob_address"])
-        start_address = min([value_to_int(addr["start_address"]) for addr in iee_config])
+        start_address = min(
+            [value_to_int(addr.get("start_address", 0xFFFFFFFF)) for addr in iee_config]
+        )
 
         data_blobs: Optional[List[Dict]] = config.get("data_blobs")
         binaries = None
@@ -756,17 +790,11 @@ class IeeNxp(Iee):
 
                 binaries.add_image(binary)
 
-        iee = IeeNxp(
-            family,
-            keyblob_address,
-            ibkek1,
-            ibkek2,
-            binaries=binaries,
-        )
+        iee = IeeNxp(family, keyblob_address, ibkek1, ibkek2, binaries=binaries)
 
         for key_blob_cfg in iee_config:
             aes_mode = key_blob_cfg["aes_mode"]
-            region_lock = "LOCK" if key_blob_cfg["region_lock"] else "UNLOCK"
+            region_lock = "LOCK" if key_blob_cfg.get("region_lock") else "UNLOCK"
             key_size = key_blob_cfg["key_size"]
 
             attributes = IeeKeyBlobAttribute(
@@ -778,9 +806,9 @@ class IeeNxp(Iee):
             key1 = get_key(key_blob_cfg["key1"], attributes.key1_size)
             key2 = get_key(key_blob_cfg["key2"], attributes.key2_size)
 
-            start_addr = value_to_int(key_blob_cfg["start_address"])
-            end_addr = value_to_int(key_blob_cfg["end_address"])
-            page_offset = value_to_int(key_blob_cfg["page_offset"])
+            start_addr = value_to_int(key_blob_cfg.get("start_address", start_address))
+            end_addr = value_to_int(key_blob_cfg.get("end_address", 0xFFFFFFFF))
+            page_offset = value_to_int(key_blob_cfg.get("page_offset", 0))
 
             iee.add_key_blob(
                 IeeKeyBlob(
@@ -790,6 +818,7 @@ class IeeNxp(Iee):
                     key1=key1,
                     key2=key2,
                     page_offset=page_offset,
+                    master=master,
                 )
             )
 

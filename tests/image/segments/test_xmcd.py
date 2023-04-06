@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from spsdk.image.images import BootImgRT
+from spsdk.image.segments import XMCDHeader
 
 
 def test_parse_xmcd(data_dir):
@@ -22,3 +23,16 @@ def test_parse_no_xmcd(data_dir):
     image = BootImgRT.parse(data)
     assert image.xmcd is None
     assert "XMCD" not in image.info()
+
+
+def test_xmcd_header():
+    data = b"\x04\x12\x00\xc0"
+    xmcd = XMCDHeader.parse(data)
+    assert xmcd.block_size == 516
+    assert xmcd.block_type == 1
+    assert xmcd.instance == 0
+    assert xmcd.interface == 0
+    assert xmcd.tag == 12
+    assert xmcd.version == 0
+    exported = xmcd.export()
+    assert exported == data

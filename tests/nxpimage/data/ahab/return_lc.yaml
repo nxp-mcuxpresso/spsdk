@@ -1,8 +1,12 @@
-# ===========  Signed message Configuration template for rt1180.  ===========
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ===========  Signed message Configuration template for rt118x.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
 # ----------------------------------------------------------------------------------------------------
-family: rt1180  # [Required], MCU family, Family identifier including the chip revision. If revision is not present, latest revision is used as default., Possible options:['rt1180']
+family: rt118x  # [Required], MCU family, Family identifier including the chip revision. If revision is not present, latest revision is used as default., Possible options:['rt118x']
 revision: a0 # [Optional], MCU revision, Revision of silicon, Possible options:['a0']
 output: ahab/signed_msg_oem_field_return.bin # [Required], Output file name, Output Signed Message file name
 # ----------------------------------------------------------------------------------------------------

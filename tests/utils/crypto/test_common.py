@@ -74,7 +74,6 @@ def test_ecc_public_numbers_to_bytes():
 
 @pytest.mark.parametrize("length", [(2048), (4096)])
 def test_matching_keys_rsa(length):
-
     prv_keys = []
     pub_keys = []
     for i in range(4):
@@ -87,7 +86,6 @@ def test_matching_keys_rsa(length):
 
 @pytest.mark.parametrize("curve", [(curve_name) for curve_name in CurveName])
 def test_matching_keys_ecc(curve):
-
     prv_keys = []
     pub_keys = []
     for i in range(4):
@@ -99,7 +97,6 @@ def test_matching_keys_ecc(curve):
 
 
 def test_matching_keys_unmatch():
-
     prv_keys = []
     pub_keys = []
     for i in range(4):

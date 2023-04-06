@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 TestRegA:
 # Reg Description: Group of TestRegA registers.
   value: '0x01020304111213142122232431323334'  # The value width: 128b

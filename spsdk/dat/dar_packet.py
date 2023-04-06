@@ -89,12 +89,11 @@ class DebugAuthenticateResponse:
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
-    @classmethod
-    def _get_class(cls, version: str, socc: int) -> "Type[DebugAuthenticateResponse]":
+    @staticmethod
+    def _get_class(version: str) -> "Type[DebugAuthenticateResponse]":
         """Get the right Debug Authentication Response class by the protocol version.
 
         :param version: DAT protocol version
-        :param socc: SOCC of used chip
         """
         return _version_mapping[version]
 
@@ -102,7 +101,6 @@ class DebugAuthenticateResponse:
     def create(
         cls,
         version: str,
-        socc: int,
         dc: DebugCredential,
         auth_beacon: int,
         dac: DebugAuthenticationChallenge,
@@ -111,14 +109,13 @@ class DebugAuthenticateResponse:
         """Create a dar object out of input parameters.
 
         :param version: protocol version
-        :param socc: SoC Class
         :param dc: debug credential object
         :param auth_beacon: authentication beacon value
         :param dac: DebugAuthenticationChallenge object
         :param dck: string containing path to dck key
         :return: DAR object
         """
-        klass = DebugAuthenticateResponse._get_class(version=version, socc=socc)
+        klass = DebugAuthenticateResponse._get_class(version=version)
         dar_obj = klass(debug_credential=dc, auth_beacon=auth_beacon, dac=dac, path_dck_private=dck)
         return dar_obj
 

@@ -1,0 +1,15 @@
+options {
+    flags = 0x00;
+    startAddress = 0x2024ff00;
+    ivtOffset = 0x0;
+    initialLoadSize = 0x100;
+    
+    entryPointAddress = 0x202629e1;
+}
+
+sources {
+    elfFile = extern(0);
+}
+
+section (0) {
+}

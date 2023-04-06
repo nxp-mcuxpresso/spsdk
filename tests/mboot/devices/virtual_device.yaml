@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 Properties:
   CurrentVersion: "K0.1.0"
   AvailablePeripherals:

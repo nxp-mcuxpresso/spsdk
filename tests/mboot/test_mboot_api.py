@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,13 +13,11 @@ from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, 
 from spsdk.mboot.mcuboot import (
     CmdPacket,
     CommandTag,
-    ExtMemId,
     KeyProvUserKeyType,
     McuBoot,
     PropertyTag,
     StatusCode,
 )
-from tests.mcu_examples.test_rt5xx import write_shadow_regis
 
 
 def test_class(mcuboot, target, config):

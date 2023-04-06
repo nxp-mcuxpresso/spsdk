@@ -50,6 +50,12 @@ INPUT_BINARY = "evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_bootable_nopadding.bin"
             "encrypted_blobs.bin",
             "iee_keyblob.bin",
         ),
+        (
+            "aes_xts512_rt1180",
+            "iee_config.yaml",
+            "encrypted_blob.bin",
+            None,
+        ),
     ],
 )
 def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
@@ -68,7 +74,6 @@ def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(out_dir, output_name))
-        assert os.path.isfile(os.path.join(out_dir, keyblob_name))
         assert os.path.isfile(os.path.join(out_dir, encrypted_name))
 
         if reference:
@@ -77,6 +82,7 @@ def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
             assert encrypted_image_enc == encrypted_nxpimage
 
         if keyblobs:
+            assert os.path.isfile(os.path.join(out_dir, keyblob_name))
             reference_keyblob = load_binary(keyblobs)
             keyblobs_nxpimage = load_binary(os.path.join(out_dir, keyblob_name))
             assert reference_keyblob == keyblobs_nxpimage
@@ -84,7 +90,7 @@ def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
 
 def test_nxpimage_iee_template_cli(tmpdir):
     runner = CliRunner()
-    template = os.path.join(tmpdir, "bee_template.yaml")
+    template = os.path.join(tmpdir, "iee_template.yaml")
     cmd = f"iee get-template {template}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0

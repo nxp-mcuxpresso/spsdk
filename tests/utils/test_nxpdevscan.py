@@ -273,15 +273,17 @@ def test_sio_device_search():
             "Release number: 125"
         )
 
-    with patch("platform.system", MagicMock(return_value="Windows")):
-        devices = nds.search_libusbsio_devices()
-        assert len(devices) == 1
-        assert devices[0].info() == get_return(PATH_BY_SYSTEM["win"])
+    if platform.system() != "Darwin":
+        # Windows and Linux libraries cannot be loaded on Mac with Apple Sillicon
+        with patch("platform.system", MagicMock(return_value="Windows")):
+            devices = nds.search_libusbsio_devices()
+            assert len(devices) == 1
+            assert devices[0].info() == get_return(PATH_BY_SYSTEM["win"])
 
-    with patch("platform.system", MagicMock(return_value="Linux")):
-        devices = nds.search_libusbsio_devices()
-        assert len(devices) == 1
-        assert devices[0].info() == get_return(PATH_BY_SYSTEM["linux"])
+        with patch("platform.system", MagicMock(return_value="Linux")):
+            devices = nds.search_libusbsio_devices()
+            assert len(devices) == 1
+            assert devices[0].info() == get_return(PATH_BY_SYSTEM["linux"])
 
     with patch("platform.system", MagicMock(return_value="Darwin")):
         devices = nds.search_libusbsio_devices()

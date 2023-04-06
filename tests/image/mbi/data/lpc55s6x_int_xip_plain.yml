@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # ===========  Master Boot Image Configuration template for lpc55s6x, Plain Image (either XIP or Load-to-RAM).  ===========
 #  
 #  == Basic Settings == 
@@ -11,4 +15,4 @@ inputImageFile: tests/image/mbi/data/lpcxpresso55s36_led_blinky_ext_flash.s19 # 
 #  == Trust Zone Settings == 
 #  
 enableTrustZone: false # [Optional], TrustZone enable option, If not specified, the Trust zone is disabled.
-trustZonePresetFile: my_tz_custom.yml # [Optional], TrustZone Customization file, If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.
+trustZonePresetFile: my_tz_custom.yaml # [Optional], TrustZone Customization file, If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.

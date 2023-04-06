@@ -62,7 +62,7 @@ def test_nxpimage_ahab_export_signed_encrypted(tmpdir, data_dir, config_file):
 def test_nxpimage_ahab_parse_cli(tmpdir, data_dir):
     runner = CliRunner()
     with use_working_directory(data_dir):
-        cmd = f"ahab parse -f rt1180 -b ahab/mxrt1180a0-ahab-container.bin {tmpdir}"
+        cmd = f"ahab parse -f rt118x -b ahab/mxrt1180a0-ahab-container.bin {tmpdir}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(tmpdir, "parsed_config.yaml"))
@@ -71,7 +71,7 @@ def test_nxpimage_ahab_parse_cli(tmpdir, data_dir):
 def test_nxpimage_ahab_parse(data_dir):
     with use_working_directory(data_dir):
         original_file = load_binary(f"{data_dir}/ahab/mxrt1180a0-ahab-container.bin")
-        ahab = AHABImage("rt1180", "a0")
+        ahab = AHABImage("rt118x", "a0")
         ahab.parse(original_file)
         ahab.update_fields()
         ahab.validate()
@@ -105,7 +105,7 @@ def test_nxpimage_signed_message_export(tmpdir, data_dir, config_file):
 def test_nxpimage_signed_message_parse_cli(tmpdir, data_dir):
     runner = CliRunner()
     with use_working_directory(data_dir):
-        cmd = f"signed-msg parse -f rt1180 -b ahab/signed_msg_oem_field_return.bin {tmpdir}"
+        cmd = f"signed-msg parse -b ahab/signed_msg_oem_field_return.bin {tmpdir}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(tmpdir, "parsed_config.yaml"))

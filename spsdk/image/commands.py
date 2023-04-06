@@ -17,6 +17,7 @@ from asn1crypto import cms, util, x509
 
 from spsdk import SPSDKError
 from spsdk.crypto import Certificate, Encoding
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.crypto import crypto_backend, matches_key_and_cert
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo
@@ -267,7 +268,7 @@ class CmdWriteData(CmdBase):
     @ops.setter
     def ops(self, value: int) -> None:
         if value not in EnumWriteOps:
-            raise SPSDKError
+            raise SPSDKValueError("Value not defined")
         self._header.param &= ~(0x3 << 3)
         self._header.param |= int(value) << 3
 
@@ -1342,14 +1343,14 @@ class CmdAuthData(CmdBase):
         By default, the command does not support cmd_data_reference
 
         :param value: to be set
-        :raise ExpectedSignatureOrMACError: if unsupported data object is provided
+        :raises ExpectedSignatureOrMACError: if unsupported data object is provided
         """
         if self.sig_format == EnumCertFormat.AEAD:
             assert isinstance(value, MAC)
         elif self.sig_format == EnumCertFormat.CMS:
             assert isinstance(value, Signature)
         else:
-            raise ExpectedSignatureOrMACError()
+            raise ExpectedSignatureOrMACError("Unsupported data object is provided")
         self._signature = value
 
     def parse_cmd_data(self, data: bytes, offset: int) -> SignatureOrMAC:
@@ -1358,7 +1359,7 @@ class CmdAuthData(CmdBase):
         :param data: to be parsed
         :param offset: start position in data to parse
         :return: parsed data object; command-specific: Signature or MAC
-        :raise ExpectedSignatureOrMACError: if unsupported data object is provided
+        :raises ExpectedSignatureOrMACError: if unsupported data object is provided
         """
         header = Header.parse(data, offset)
         if header.tag == SegTag.MAC:

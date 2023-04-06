@@ -71,7 +71,7 @@ class DebugMailboxCommand:
         ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
 
-        new_protocol = bool(ret >> 31)
+        new_protocol = bool(ret >> 31)  # bit 31 is flag in new protocol version
         error_indication = bool(ret >> 20) and not bool(self.resplen)
         # solve the case that response is in legacy protocol and there is some
         # unwanted bits in none expected data. In this case return valid read data.
@@ -112,7 +112,7 @@ class DebugMailboxCommand:
             return self.run(**args)
         except (SPSDKTimeoutError, TimeoutError) as error:
             if raise_if_failure:
-                raise error
+                raise SPSDKTimeoutError("Timeout occurred") from error
             logger.error(str(error))
         return None
 

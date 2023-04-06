@@ -40,9 +40,15 @@ from spsdk.dat.debug_credential import DebugCredential
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.debuggers.utils import PROBES, open_debug_probe, test_ahb_access
 from spsdk.exceptions import SPSDKValueError
-from spsdk.utils.crypto.rkht import RKHT
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import find_file, load_binary, load_configuration, load_text, write_file
+from spsdk.utils.misc import (
+    find_file,
+    import_source,
+    load_binary,
+    load_configuration,
+    load_text,
+    write_file,
+)
 
 logger = logging.getLogger(__name__)
 NXPDEBUGMBOX_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpdebugmbox")
@@ -125,7 +131,7 @@ def _open_debugmbox(
     """Method opens DebugMailbox object based on input arguments.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
-    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
     :return: Active DebugMailbox object.
     :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
@@ -143,7 +149,7 @@ def _open_debugmbox(
         try:
             yield dm
         except SPSDKError as exc:
-            raise exc
+            raise SPSDKError("Problem with debug probe occurred") from exc
         finally:
             dm.close()
 
@@ -153,7 +159,7 @@ def _open_debugmbox(
     "-i",
     "--interface",
     type=click.Choice(list(PROBES.keys())),
-    help="Probe interface selection,if not specified, all available debug probe interfaces are used.",
+    help="Probe interface selection, if not specified, all available debug probe interfaces are used.",
 )
 @click.option(
     "-s",
@@ -175,7 +181,7 @@ def _open_debugmbox(
     "--timing",
     type=float,
     default=0.0,
-    help="Time of extra delay after reset sequence, defaults to 1.0 second",
+    help="Duration of additional delay after reset sequence, defaults to 0 seconds",
 )
 @click.option(
     "-n",
@@ -274,7 +280,7 @@ def auth(
     """Perform the Debug Authentication.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
-    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
     :param protocol: Debug authentication protocol.
     :param beacon: Authentication beacon.
     :param certificate: Path to Debug Credentials.
@@ -297,7 +303,6 @@ def auth(
             dac.validate_against_dc(debug_cred)
             dar = DebugAuthenticateResponse.create(
                 version=protocol.version,
-                socc=dac.socc,
                 dc=debug_cred,
                 auth_beacon=beacon,
                 dac=dac,
@@ -698,7 +703,7 @@ def read_memory_command(
         data = read_memory(pass_obj["debug_probe_params"], address, byte_count, progress_callback)
     if out_file:
         write_file(data, out_file, mode="wb")
-        click.echo(f"The memory has been read and write into {out_file}")
+        click.echo(f"The memory has been read and written into {out_file}")
     else:
         click.echo(format_raw_data(data, use_hexdump=use_hexdump))
 
@@ -762,8 +767,8 @@ def write_memory_command(pass_obj: dict, address: int, data_source: str) -> None
     ADDRESS     - starting address
     FILE        - write the content of this file
     BYTE_COUNT  - if specified, load only first BYTE_COUNT number of bytes from file
-    HEX-DATA    - string of hex values: {{112233}}, {{11 22 33}}
-                - when using Jupyter notebook, use [[ ]] instead of {{ }}: eg. [[11 22 33]]
+    HEX-DATA    - string of hex values: {{112233}}, "{{11 22 33}}"
+                - when using Jupyter notebook, use [[ ]] instead of {{ }}: eg. [[112233]]
     """
     try:
         data = parse_hex_data(data_source)
@@ -772,7 +777,7 @@ def write_memory_command(pass_obj: dict, address: int, data_source: str) -> None
         with open(file_path, "rb") as f:
             data = f.read(size)
     write_memory(pass_obj["debug_probe_params"], address, data)
-    click.echo("The memory has been write successfully.")
+    click.echo("The memory has been written successfully.")
 
 
 def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes) -> None:
@@ -817,6 +822,75 @@ def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes
                     raise SPSDKAppError(
                         f"Data verification failed! {hex(to_write)} != {hex(verify_data)}"
                     )
+
+
+@main.command(name="get-uuid")
+@click.pass_obj
+def get_uuid_command(pass_obj: dict) -> None:
+    """Get the UUID from target if possible.
+
+    Some devices need to call 'start' command prior the get-uuid!
+    Also there could be issue with repeating of this command without hard reset of device 'reset -h'.
+    """
+    uuid = get_uuid(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
+    if uuid:
+        click.echo(f"The device UUID is: {uuid.hex()}")
+    else:
+        click.echo(f"The device UUID is not possible to retrieve from target.")
+
+
+def get_uuid(
+    debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailboxParams
+) -> Optional[bytes]:
+    """Get the UUID from target if possible.
+
+    Some devices need to call 'start' command prior the get-uuid!
+    Also there could be issue with repeating of this command without hard reset of device 'reset -h'.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debug mailbox.
+    :raises SPSDKAppError: Raised if any error occurred.
+    :return: UUID value in bytes if succeeded, None otherwise.
+    """
+    try:
+        with open_debug_probe(
+            debug_probe_params.interface,
+            debug_probe_params.serial_no,
+            debug_probe_params.debug_probe_user_params,
+        ) as debug_probe:
+            try:
+                dm = DebugMailbox(
+                    debug_probe=debug_probe,
+                    reset=debug_mailbox_params.reset,
+                    moredelay=debug_mailbox_params.more_delay,
+                    op_timeout=debug_mailbox_params.operation_timeout,
+                )
+                dac_data = dm_commands.DebugAuthenticationStart(dm=dm, resplen=26).run()
+            except SPSDKError:
+                debug_probe.close()
+                debug_probe.open()
+                dm = DebugMailbox(
+                    debug_probe=debug_probe,
+                    reset=debug_mailbox_params.reset,
+                    moredelay=debug_mailbox_params.more_delay,
+                    op_timeout=debug_mailbox_params.operation_timeout,
+                )
+                dac_data = dm_commands.DebugAuthenticationStart(dm=dm, resplen=30).run()
+            # convert List[int] to bytes
+            dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
+            dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
+    except Exception as e:
+        raise SPSDKAppError(f"Getting UUID from target failed: {e}") from e
+
+    if dac.uuid == bytes(16):
+        logger.warning(f"The valid UUID is not included in DAC.")
+        logger.info(f"DAC info:\n {dac.info()}")
+        return None
+
+    logger.info(
+        f"Got DAC from SOCC:'{DebugCredential.get_socc_description(dac.version, dac.socc)}' to retrieve UUID."
+    )
+    return dac.uuid
 
 
 @main.command(name="gendc", no_args_is_help=True)
@@ -883,7 +957,7 @@ def gendc(
     """Generate debug certificate (DC).
 
     :param protocol: Debug authentication protocol.
-    :param plugin: External python file containing a custom SignatureProvider implementation.
+    :param plugin: Path to external python file containing a custom SignatureProvider implementation.
     :param dc_file_path: Path to debug certificate file.
     :param config: YAML credential config file.
     :param elf2sb_config: Root Of Trust from configuration file used by elf2sb tool.
@@ -892,20 +966,8 @@ def gendc(
     """
     try:
         if plugin:
-            # if a plugin is present simply load it
-            # The SignatureProvider will automatically pick up any implementation(s)
-            from importlib.util import (  # pylint: disable=import-outside-toplevel
-                module_from_spec,
-                spec_from_file_location,
-            )
-
-            spec = spec_from_file_location(name="plugin", location=plugin)  # type: ignore
-            assert spec
-            mod = module_from_spec(spec)
-            spec.loader.exec_module(mod)  # type: ignore
-
+            import_source(plugin)
         check_file_exists(dc_file_path, force)
-
         logger.info("Loading configuration from yml file...")
         yaml_content = load_configuration(config)
         if elf2sb_config:
@@ -967,7 +1029,7 @@ def get_template(output: str, force: bool) -> None:
     :param force: Force overwriting of an existing file.
     """
     check_file_exists(str(output), force)
-    write_file(load_text(os.path.join(NXPDEBUGMBOX_DATA_FOLDER, "template_config.yml")), output)
+    write_file(load_text(os.path.join(NXPDEBUGMBOX_DATA_FOLDER, "template_config.yaml")), output)
 
 
 @catch_spsdk_error

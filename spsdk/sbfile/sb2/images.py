@@ -13,13 +13,14 @@ from datetime import datetime
 from typing import Iterator, List, Optional
 
 from spsdk import SPSDKError
+from spsdk.apps.utils import get_key
 from spsdk.crypto.loaders import load_certificate_as_bytes
 from spsdk.utils.crypto import CertBlockV2, Counter, crypto_backend
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.backend_internal import internal_backend
 from spsdk.utils.crypto.certificate import Certificate
 from spsdk.utils.crypto.common import calc_cypher_block_count
-from spsdk.utils.misc import find_first, load_binary, write_file
+from spsdk.utils.misc import find_first, load_binary, load_text, write_file
 
 from . import sb_21_helper as elf2sb_helper21
 from . import sly_bd_parser as bd_parser
@@ -394,11 +395,11 @@ class BootImageV20(BaseClass):
         :param offset: The offset of input data
         :param kek: The Key for unwrapping DEK and MAC keys (required)
         :return: parsed image object
-        :raise Exception: raised when header is in wrong format
-        :raise Exception: raised when there is invalid header version
-        :raise Exception: raised when signature is incorrect
+        :raises SPSDKError: raised when header is in wrong format
+        :raises SPSDKError: raised when there is invalid header version
+        :raises SPSDKError: raised when signature is incorrect
         :raises SPSDKError: Raised when kek is empty
-        :raises Exception: raised when header's nonce is not present
+        :raises SPSDKError: raised when header's nonce is not present
         """
         if not kek:
             raise SPSDKError("kek cannot be empty")
@@ -414,11 +415,11 @@ class BootImageV20(BaseClass):
         mac = key_blob_unwrap[32:]
         header_mac_data_calc = crypto_backend().hmac(mac, header_raw_data)
         if header_mac_data != header_mac_data_calc:
-            raise Exception()
+            raise SPSDKError("Invalid header MAC data")
         # Parse Header
         header = ImageHeaderV2.parse(header_raw_data)
         if header.version != "2.0":
-            raise Exception(f"Invalid Header Version: {header.version} instead 2.0")
+            raise SPSDKError(f"Invalid Header Version: {header.version} instead 2.0")
         image_size = header.image_blocks * 16
         # Initialize counter
         if not header.nonce:
@@ -447,7 +448,7 @@ class BootImageV20(BaseClass):
             if not cert_sect.cert_block.verify_data(
                 data[offset + image_size :], data[offset : offset + image_size]
             ):
-                raise Exception()
+                raise SPSDKError("Parsing Certification section failed")
         # Parse Boot Sections
         while index < (image_size + offset):
             boot_section = BootSectionV2.parse(data, index, dek=dek, mac=mac, counter=counter)
@@ -771,10 +772,10 @@ class BootImageV21(BaseClass):
         :param plain_sections: Sections are not encrypted; this is used only for debugging,
             not supported by ROM code
         :return: BootImageV21 parsed object
-        :raises Exception: raised when header is in incorrect format
-        :raises Exception: raised when signature is incorrect
+        :raises SPSDKError: raised when header is in incorrect format
+        :raises SPSDKError: raised when signature is incorrect
         :raises SPSDKError: Raised when kek is empty
-        :raises Exception: raised when header's nonce not present"
+        :raises SPSDKError: raised when header's nonce not present"
         """
         if not kek:
             raise SPSDKError("kek cannot be empty")
@@ -791,7 +792,7 @@ class BootImageV21(BaseClass):
         # Parse Header
         header = ImageHeaderV2.parse(header_raw_data)
         if header.offset_to_certificate_block != (index - offset):
-            raise Exception()
+            raise SPSDKError("Invalid offset")
         # Parse Certificate Block
         cert_block = CertBlockV2.parse(data, index)
         index += cert_block.raw_size
@@ -808,7 +809,7 @@ class BootImageV21(BaseClass):
         )
 
         if not result:
-            raise Exception()
+            raise SPSDKError("Verification failed")
         # Check flags, if 0x8000 bit is set, the SB file contains SHA-256 between
         # certificate and signature.
         if header.flags & BootImageV21.FLAGS_SHA_PRESENT_BIT:
@@ -819,7 +820,7 @@ class BootImageV21(BaseClass):
         # Not implemented yet
         # hmac_data_calc = crypto_backend().hmac(mac, data[index + CmdHeader.SIZE: index + CmdHeader.SIZE + ((2) * 32)])
         # if hmac_data != hmac_data_calc:
-        #    raise Exception()
+        #    raise SPSDKError("HMAC failed")
         if not header.nonce:
             raise SPSDKError("Header's nonce not present")
         counter = Counter(header.nonce)
@@ -883,8 +884,7 @@ def generate_SB21(  # pylint: disable=invalid-name
     """
     # Create lexer and parser, load the BD file content and parse it for
     # further execution - the parsed BD file is a dictionary in JSON format
-    with open(str(bd_file_path)) as bd_file:
-        bd_file_content = bd_file.read()
+    bd_file_content = load_text(bd_file_path)
 
     parser = bd_parser.BDParser()
 
@@ -950,10 +950,7 @@ def generate_SB21(  # pylint: disable=invalid-name
         logger.warning("No KEK key provided, using a zero KEK key")
         sb_kek = bytes.fromhex("0" * 64)
     else:
-        with open(str(key_file_path)) as kek_key_file:
-            # TODO maybe we should validate the key length and content, to make
-            # sure the key provided in the file is valid??
-            sb_kek = bytes.fromhex(kek_key_file.readline())
+        sb_kek = get_key(key_file_path, expected_size=32)
 
     # validate keyblobs and perform appropriate actions
     keyblobs = parsed_bd_file.get("keyblobs", [])

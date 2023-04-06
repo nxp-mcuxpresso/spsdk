@@ -8,9 +8,9 @@
 import os
 from typing import List, Optional, Type
 
-from ruamel.yaml import YAML
-
 from spsdk.crypto import ec
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.misc import load_configuration
 
 from . import TP_DATA_FOLDER, TpDevInterface, TpIntfDescription, TpTargetInterface
 from .adapters import TP_DEVICES, TP_TARGETS
@@ -31,8 +31,7 @@ def get_supported_devices() -> List[str]:
 
     :return: List of devices.
     """
-    with open(os.path.join(TP_DATA_FOLDER, "database.yaml")) as f:
-        data = YAML(typ="safe").load(f)
+    data = load_configuration(os.path.join(TP_DATA_FOLDER, "database.yaml"))
     return list(data["devices"].keys())
 
 
@@ -49,10 +48,10 @@ def scan_tp_devices(
     :param tpdev: Selection of one type of TP device, defaults to None (scan all supported).
     :param settings: Additional settings to setup interface, defaults to {}.
     :return: List of active TP device descriptors.
-    :raises ValueError: Invalid value of parameter.
+    :raises SPSDKError: Invalid value of parameter.
     """
     if tpdev and tpdev not in get_tp_device_types():
-        raise ValueError(f"Unsupported TP device name - {tpdev}")
+        raise SPSDKError(f"Unsupported TP device name - {tpdev}")
 
     dev_list = [tpdev] if tpdev else get_tp_device_types()
 
@@ -102,10 +101,10 @@ def scan_tp_targets(
     :param tptarget: Selection of one type of TP target, defaults to None (scan all supported).
     :param settings: Additional settings to setup interface, defaults to {}.
     :return: List of active TP devices.
-    :raises ValueError: Invalid value of parameter.
+    :raises SPSDKError: Invalid value of parameter.
     """
     if tptarget and tptarget not in get_tp_target_types():
-        raise ValueError(f"Unsupported TP device name - {tptarget}")
+        raise SPSDKError(f"Unsupported TP device name - {tptarget}")
 
     target_list = [tptarget] if tptarget else get_tp_target_types()
 

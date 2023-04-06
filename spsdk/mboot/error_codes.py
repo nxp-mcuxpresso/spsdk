@@ -38,6 +38,7 @@ class StatusCode(Enum):
     FLASH_REGION_EXECUTE_ONLY       = (108, "FlashRegionExecuteOnly", "FLASH Driver: Region Execute Only")
     FLASH_EXEC_IN_RAM_NOT_READY     = (109, "FlashExecuteInRamFunctionNotReady", "FLASH Driver: Execute In RAM Function Not Ready")
     FLASH_COMMAND_NOT_SUPPORTED     = (111, "FlashCommandNotSupported", "FLASH Driver: Command Not Supported")
+    FLASH_ECC_ERROR                 = (116, "FlashEccError", "FLASH Driver: ECC Error")
     FLASH_OUT_OF_DATE_CFPA_PAGE     = (132, "FlashOutOfDateCfpaPage", "FLASH Driver: Out Of Date CFPA Page")
     FLASH_BLANK_IFR_PAGE_DATA       = (133, "FlashBlankIfrPageData", "FLASH Driver: Blank IFR Page Data")
     FLASH_ENCRYPTED_REGIONS_ERASE_NOT_DONE_AT_ONCE = (134, "FlashEncryptedRegionsEraseNotDoneAtOnce", "FLASH Driver: Encrypted Regions Erase Not Done At Once")
@@ -74,6 +75,9 @@ class StatusCode(Enum):
     OTFAD_LOGICALLY_DISABLED    = (501, "OtfadLogicallyDisabled", "OTFAD Driver: Logically Disabled")
     OTFAD_INVALID_KEY           = (502, "OtfadInvalidKey", "OTFAD Driver: Invalid Key")
     OTFAD_INVALID_KEY_BLOB      = (503, "OtfadInvalidKeyBlob", "OTFAD Driver: Invalid Key Blob")
+
+    # Sending errors.
+    SENDING_OPERATION_CONDITION_ERROR = (1812, "SendOperationConditionError", "Send Operation Condition failed")
 
     # SDMMC driver errors.
 

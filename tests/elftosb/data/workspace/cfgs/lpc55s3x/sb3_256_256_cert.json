@@ -1,0 +1,35 @@
+{
+    "family": "lpc55s3x",
+    "containerKeyBlobEncryptionKey": ".\\workspace\\keys\\userkey.txt",
+    "isNxpContainer": false,
+    "description": "sb3_256_256.sb3",
+    "kdkAccessRights": 3,
+    "containerConfigurationWord": "0x0",
+    "firmwareVersion": "0x1",
+    "binaryCertificateBlock": ".\\workspace\\output_images\\lpc55s3x\\cert_256_256.bin",
+    "signingCertificatePrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp256r1_sign_cert.pem",
+    "rootCertificateEllipticCurve": "secp256r1",
+    "testSb3Magic": "",
+    "testSb3ImageType": false,
+    "testSb3ImageTypeValue": 255,
+    "testCertBlockMagic": "",
+    "testCorruptRkhRecord": false,
+    "testCorruptRkhRecordId": 0,
+    "testCorruptIskSignature": false,
+    "timestamp": "0x123456",
+    "commands": [
+        {
+            "erase": {
+                "address": "0x0",
+                "size": "0x10000"
+            }
+        },
+        {
+            "load": {
+                "address": "0x0",
+                "file": ".\\workspace\\output_images\\lpc55s3x\\normal_boot_sign.bin"
+            }
+        }
+    ],
+    "containerOutputFile": ".\\workspace\\output_images\\lpc55s3x\\sb3_256_256.sb3"
+}

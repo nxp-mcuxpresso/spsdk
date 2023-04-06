@@ -1,15 +1,17 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # NXP lpc55s3x PFR CFPA configuration
-description:  # The PFR CFPA configuration description.
+description:  # The CFPA configuration description.
   device: lpc55s3x  # The NXP device name.
   revision: 1a # The NXP device revision.
-  type: CFPA # The PFR type (CMPA, CFPA).
-  version: 1.7.1 # The SPSDK tool version.
-  author: NXP # The author of the configuration.
-  release: alpha # The SPSDK release.
-settings: # The PFR CFPA registers configuration.
+  type: CFPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 1.9.1 # The SPSDK tool version.
+settings: # The CFPA registers configuration.
   HEADER:  # Header
     value: '0x00000000'  # The value width: 32b
-  CFPA_PAGE_VERSION: # CFPA Page Version
+  CFPA_PAGE_VERSION: # CFPA Page Version. Use value of 0xFFFF_FFFF to auto increment current CFPA page version value (by ROM).
     value: '0x00000000'  # The value width: 32b
   S_FW_Version: # Secure Firmware Version (Monotonic counter)
     value: '0x00000000'  # The value width: 32b
@@ -49,107 +51,101 @@ settings: # The PFR CFPA registers configuration.
     value: '0x00000000'  # The value width: 32b
   ROTKH_REVOKE: # Root of Trust Key Hash Revoke
     bitfields:  # The register bitfields
-      RoTK0_EN: ROTKH_REVOKE_RoTK0_EN_ENABLED_0  # Width: 2b[0-3], Description: Root of Trust Key 0 Enable
-      # - ROTKH_REVOKE_RoTK0_EN_ENABLED_0, (0): Enabled
-      # - ROTKH_REVOKE_RoTK0_EN_ENABLED_1, (1): Enabled
-      # - ROTKH_REVOKE_RoTK0_EN_KEY_REVOKED_0, (2): Key Revoked
-      # - ROTKH_REVOKE_RoTK0_EN_KEY_REVOKED_1, (3): Key Revoked
-      RoTK1_EN: ROTKH_REVOKE_RoTK1_EN_ENABLED_0 # Width: 2b[0-3], Description: Root of Trust Key 1 Enable
-      # - ROTKH_REVOKE_RoTK1_EN_ENABLED_0, (0): Enabled
-      # - ROTKH_REVOKE_RoTK1_EN_ENABLED_1, (1): Enabled
-      # - ROTKH_REVOKE_RoTK1_EN_KEY_REVOKED_0, (2): Key Revoked
-      # - ROTKH_REVOKE_RoTK1_EN_KEY_REVOKED_1, (3): Key Revoked
-      RoTK2_EN: ROTKH_REVOKE_RoTK2_EN_ENABLED_0 # Width: 2b[0-3], Description: Root of Trust Key 2 Enable
-      # - ROTKH_REVOKE_RoTK2_EN_ENABLED_0, (0): Enabled
-      # - ROTKH_REVOKE_RoTK2_EN_ENABLED_1, (1): Enabled
-      # - ROTKH_REVOKE_RoTK2_EN_KEY_REVOKED_0, (2): Key Revoked
-      # - ROTKH_REVOKE_RoTK2_EN_KEY_REVOKED_1, (3): Key Revoked
-      RoTK3_EN: ROTKH_REVOKE_RoTK3_EN_ENABLED_0 # Width: 2b[0-3], Description: Root of Trust Key 3 Enable
-      # - ROTKH_REVOKE_RoTK3_EN_ENABLED_0, (0): Enabled
-      # - ROTKH_REVOKE_RoTK3_EN_ENABLED_1, (1): Enabled
-      # - ROTKH_REVOKE_RoTK3_EN_KEY_REVOKED_0, (2): Key Revoked
-      # - ROTKH_REVOKE_RoTK3_EN_KEY_REVOKED_1, (3): Key Revoked
-      DICE_SKIP_CSR: ROTKH_REVOKE_DICE_SKIP_CSR_GENERATE_CSR # Width: 2b[0-3], Description: DICE Skip CSR
-      # - ROTKH_REVOKE_DICE_SKIP_CSR_GENERATE_CSR, (0): Generate CSR
-      # - ROTKH_REVOKE_DICE_SKIP_CSR_SKIP_CSR, (1): Skip CSR
+      RoTK0_EN: ENABLED_0  # Width: 2b, Description: Root of Trust Key 0 Enable
+      # - ENABLED_0, (0): Enabled
+      # - ENABLED_1, (1): Enabled
+      # - KEY_REVOKED_0, (2): Key Revoked
+      # - KEY_REVOKED_1, (3): Key Revoked
+      RoTK1_EN: ENABLED_0 # Width: 2b, Description: Root of Trust Key 1 Enable
+      # - ENABLED_0, (0): Enabled
+      # - ENABLED_1, (1): Enabled
+      # - KEY_REVOKED_0, (2): Key Revoked
+      # - KEY_REVOKED_1, (3): Key Revoked
+      RoTK2_EN: ENABLED_0 # Width: 2b, Description: Root of Trust Key 2 Enable
+      # - ENABLED_0, (0): Enabled
+      # - ENABLED_1, (1): Enabled
+      # - KEY_REVOKED_0, (2): Key Revoked
+      # - KEY_REVOKED_1, (3): Key Revoked
+      RoTK3_EN: ENABLED_0 # Width: 2b, Description: Root of Trust Key 3 Enable
+      # - ENABLED_0, (0): Enabled
+      # - ENABLED_1, (1): Enabled
+      # - KEY_REVOKED_0, (2): Key Revoked
+      # - KEY_REVOKED_1, (3): Key Revoked
+      DICE_SKIP_CSR: GENERATE_CSR # Width: 2b, Description: DICE Skip CSR
+      # - GENERATE_CSR, (0): Generate CSR
+      # - SKIP_CSR, (1): Skip CSR
   VENDOR_USAGE: # Vendor Usage
     bitfields:  # The register bitfields
-      DBG_VENDOR_USAGE: 0  # Width: 16b[0-65535], Description: Debug Vendor Usage
+      DBG_VENDOR_USAGE: '0x0000'  # Width: 16b, Description: Debug Vendor Usage
   DCFG_CC_SOCU_NS_PIN: # Device Configuration Credential Constraints for SoC specific Use Pinned
     bitfields:  # The register bitfields
-      NIDEN: DCFG_CC_SOCU_NS_PIN_NIDEN_USE_DAP  # Width: 1b[0-1], Description: Non-secure Non-invasive Debug Enable
-      # - DCFG_CC_SOCU_NS_PIN_NIDEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_NIDEN_FIXED_STATE, (1): Fixed state
-      DBGEN: DCFG_CC_SOCU_NS_PIN_DBGEN_USE_DAP # Width: 1b[0-1], Description: Non-secure Debug Enable
-      # - DCFG_CC_SOCU_NS_PIN_DBGEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_DBGEN_FIXED_STATE, (1): Fixed state
-      SPNIDEN: DCFG_CC_SOCU_NS_PIN_SPNIDEN_USE_DAP # Width: 1b[0-1], Description: Secure Non-invasive Debug Enable
-      # - DCFG_CC_SOCU_NS_PIN_SPNIDEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_SPNIDEN_FIXED_STATE, (1): Fixed state
-      SPIDEN: DCFG_CC_SOCU_NS_PIN_SPIDEN_USE_DAP # Width: 1b[0-1], Description: Secure Invasive Debug Enable
-      # - DCFG_CC_SOCU_NS_PIN_SPIDEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_SPIDEN_FIXED_STATE, (1): Fixed state
-      DSP_DBGEN: DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_USE_DAP # Width: 1b[0-1], Description: DSP Debug Enable
-      # - DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_FIXED_STATE, (1): Fixed state
-      ISP_CMD_EN: DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_USE_DAP # Width: 1b[0-1], Description: ISP Boot Command Enable
-      # - DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_FIXED_STATE, (1): Fixed state
-      FA_CMD_EN: DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_USE_DAP # Width: 1b[0-1], Description: FA Command Enable
-      # - DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_FIXED_STATE, (1): Fixed state
-      ME_CMD_EN: DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_USE_DAP # Width: 1b[0-1], Description: Flash Mass Erase Command Enable
-      # - DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_FIXED_STATE, (1): Fixed state
-      UUID_CHECK: DCFG_CC_SOCU_NS_PIN_UUID_CHECK_DISABLED # Width: 1b[0-1], Description: UUID Check
-      # - DCFG_CC_SOCU_NS_PIN_UUID_CHECK_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_PIN_UUID_CHECK_ENABLED, (1): Enabled
+      NIDEN: USE_DAP  # Width: 1b, Description: Non-secure Non-invasive Debug Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      DBGEN: USE_DAP # Width: 1b, Description: Non-secure Debug Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPNIDEN: USE_DAP # Width: 1b, Description: Secure Non-invasive Debug Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPIDEN: USE_DAP # Width: 1b, Description: Secure Invasive Debug Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      ISP_CMD_EN: USE_DAP # Width: 1b, Description: ISP Boot Command Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      FA_CMD_EN: USE_DAP # Width: 1b, Description: FA Command Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      ME_CMD_EN: USE_DAP # Width: 1b, Description: Flash Mass Erase Command Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      UUID_CHECK: DISABLED # Width: 1b, Description: Enforce UUID match during debug authentication.
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
   DCFG_CC_SOCU_NS_DFLT: # Device Configuration Credential Constraints for SoC specific Use Debug Filter
     bitfields:  # The register bitfields
-      NIDEN: DCFG_CC_SOCU_NS_DFLT_NIDEN_DISABLED  # Width: 1b[0-1], Description: Non-secure Non-invasive Debug Fixed State
-      # - DCFG_CC_SOCU_NS_DFLT_NIDEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_NIDEN_ENABLED, (1): Enabled
-      DBGEN: DCFG_CC_SOCU_NS_DFLT_DBGEN_DISABLED # Width: 1b[0-1], Description: Non-secure Debug Fixed State
-      # - DCFG_CC_SOCU_NS_DFLT_DBGEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_DBGEN_ENABLED, (1): Enabled
-      SPNIDEN: DCFG_CC_SOCU_NS_DFLT_SPNIDEN_DISABLED # Width: 1b[0-1], Description: Secure Non-invasive Debug Fixed State
-      # - DCFG_CC_SOCU_NS_DFLT_SPNIDEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_SPNIDEN_ENABLED, (1): Enabled
-      SPIDEN: DCFG_CC_SOCU_NS_DFLT_SPIDEN_DISABLED # Width: 1b[0-1], Description: Secure Invasive Debug Fixed State
-      # - DCFG_CC_SOCU_NS_DFLT_SPIDEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_SPIDEN_ENABLED, (1): Enabled
-      DSP_DBGEN: DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_DISABLED # Width: 1b[0-1], Description: DSP Debug Fixed State
-      # - DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_ENABLED, (1): Enabled
-      ISP_CMD_EN: DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_DISABLED # Width: 1b[0-1], Description: ISP Boot Command Fixed State
-      # - DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_ENABLED, (1): Enabled
-      FA_CMD_EN: DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_DISABLED # Width: 1b[0-1], Description: FA Command Fixed State
-      # - DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_ENABLED, (1): Enabled
-      ME_CMD_EN: DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_DISABLED # Width: 1b[0-1], Description: Flash Mass Erase Command Fixed State
-      # - DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_ENABLED, (1): Enabled
+      NIDEN: DISABLED  # Width: 1b, Description: Non-secure Non-invasive Debug Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      DBGEN: DISABLED # Width: 1b, Description: Non-secure Debug Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPNIDEN: DISABLED # Width: 1b, Description: Secure Non-invasive Debug Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPIDEN: DISABLED # Width: 1b, Description: Secure Invasive Debug Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      ISP_CMD_EN: DISABLED # Width: 1b, Description: ISP Boot Command Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      FA_CMD_EN: DISABLED # Width: 1b, Description: FA Command Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      ME_CMD_EN: DISABLED # Width: 1b, Description: Flash Mass Erase Command Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
   ENABLE_FA_MODE: # Enable FA Mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.
     value: '0x00000000'  # The value width: 32b
   CMPA_PROG_IN_PROGRESS: # CMPA Page Programming On Going. Set this field to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.
     value: '0x00000000'  # The value width: 32b
   CMAC_UPD: # CMAC Update
     bitfields:  # The register bitfields
-      IMG_UPD: CMAC_UPD_IMG_UPD_NOTHING_CHANGED  # Width: 2b[0-3], Description: Image Updated
-      # - CMAC_UPD_IMG_UPD_NOTHING_CHANGED, (0): Nothing changed
-      # - CMAC_UPD_IMG_UPD_IMAGE0_CMAC_UPDATE, (1): Update image 0 CMAC
-      # - CMAC_UPD_IMG_UPD_IMAGE1_CMAC_UPDATE, (2): Update image 1 CMAC
-      # - CMAC_UPD_IMG_UPD_BOTH_IMG_CMAC_UPDATE, (3): Update CMAC for both images
-      CMPA_UPD: CMAC_UPD_CMPA_UPD_NO_ACTION # Width: 3b[0-7], Description: CMPA page updated through ROM API. Thus compute CMAC on sub-sequent boot. This field is checked only in OEM_OPEN (0x3) LC state.
-      # - CMAC_UPD_CMPA_UPD_NO_ACTION, (0): No action
-      # - CMAC_UPD_CMPA_UPD_RESERVED_0, (1): Combination is ignored.
-      # - CMAC_UPD_CMPA_UPD_UPDATE_IN_CMPA, (2): Update CMAC field in CMPA page.
-      # - CMAC_UPD_CMPA_UPD_TO_OEM_SECURE, (3): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_SECURE (0x7).
-      # - CMAC_UPD_CMPA_UPD_RESERVED_1, (4): Combination is ignored.
-      # - CMAC_UPD_CMPA_UPD_TO_OEM_CLOSED, (5): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_CLOSED (0xF).
-      # - CMAC_UPD_CMPA_UPD_TO_OEM_LOCKED, (6): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_LOCKED (0xCF).
-      # - CMAC_UPD_CMPA_UPD_RESERVED_2, (7): Combination is ignored.
+      IMG_UPD: NOTHING_CHANGED  # Width: 2b, Description: Image Updated
+      # - NOTHING_CHANGED, (0): Nothing changed
+      # - IMAGE0_CMAC_UPDATE, (1): Update image 0 CMAC
+      # - IMAGE1_CMAC_UPDATE, (2): Update image 1 CMAC
+      # - BOTH_IMG_CMAC_UPDATE, (3): Update CMAC for both images
+      CMPA_UPD: NO_ACTION # Width: 3b, Description: CMPA page updated through ROM API. Thus compute CMAC on sub-sequent boot. This field is checked only in OEM_OPEN (0x3) LC state.
+      # - NO_ACTION, (0): No action
+      # - RESERVED_0, (1): Combination is ignored.
+      # - UPDATE_IN_CMPA, (2): Update CMAC field in CMPA page.
+      # - TO_OEM_SECURE, (3): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_SECURE (0x7).
+      # - RESERVED_1, (4): Combination is ignored.
+      # - TO_OEM_CLOSED, (5): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_CLOSED (0xF).
+      # - TO_OEM_LOCKED, (6): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_LOCKED (0xCF).
+      # - RESERVED_2, (7): Combination is ignored.
   IMG0_CMAC0: # Image 0 CMAC 0
     value: '0x00000000'  # The value width: 32b
   IMG0_CMAC1: # Image 0 CMAC 1

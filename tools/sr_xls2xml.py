@@ -16,6 +16,7 @@ import openpyxl
 from openpyxl import utils
 from openpyxl.utils import cell as cell_utils
 
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
@@ -283,7 +284,7 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
                     reg.add_bitfield(bitfield)
                 except Exception as exc:
                     print(f"Error raised during loading bitfield {bitfield_name}. {exc}")
-                    raise ValueError(str(exc)) from exc
+                    raise SPSDKError(str(exc)) from exc
                 cells = self._get_merged_by_first_cell(bitfieldname_cr[0] + str(row))
                 if cells is not None:
                     # find the number of rows of the register description
@@ -329,7 +330,7 @@ class ShadowRegsXlsToXmlType1(ShadowRegsXlsToXml):
                         )
                 except Exception as exc:
                     print(f"Error raised during loading enum {enum_name}. {exc}")
-                    raise ValueError(str(exc)) from exc
+                    raise SPSDKError(str(exc)) from exc
 
     def _get_merged_by_first_cell(self, cell: str) -> str:
         """Function returns the merged range by first cell."""

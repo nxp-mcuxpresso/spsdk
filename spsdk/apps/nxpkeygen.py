@@ -72,7 +72,7 @@ def get_list_of_supported_keys() -> List[str]:
     help="Password with which the output file will be encrypted. "
     "If not provided, the output will be unencrypted.",
 )
-@click.argument("path", type=click.Path(file_okay=True))
+@click.argument("path", type=click.Path(file_okay=True, resolve_path=True))
 @click.option(
     "--force",
     is_flag=True,
@@ -111,6 +111,7 @@ def main(log_level: int, key_type: str, path: str, password: str, force: bool) -
         logger.info("Saving ECC key pair...")
         save_ecc_private_key(priv_key_ec, path, password if password else None)
         save_ecc_public_key(pub_key_ec, pub_key_path)
+    click.echo(f"The key pair has been created: {(pub_key_path)}, {(path)}")
     return 0
 
 

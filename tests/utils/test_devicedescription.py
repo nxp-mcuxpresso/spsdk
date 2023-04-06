@@ -8,7 +8,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from libusbsio import LIBUSBSIO
 
 import spsdk.utils.devicedescription as devicedescription
 from spsdk.mboot.interfaces.usb import USB_DEVICES as MB_USB_DEVICES

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,6 @@ from spsdk.apps import tphost
 
 
 def test_cli_run(data_dir):
-
     cmd = (
         f"verify --audit-log {data_dir}/tp_audit_log.db "
         f"--audit-log-key {data_dir}/oem_log_puk.pub"
@@ -38,7 +37,6 @@ def test_cli_run(data_dir):
     ],
 )
 def test_tphost_extract(data_dir, tmpdir, skip_nxp, skip_oem, cert_index, expected_count):
-
     cmd = (
         f"verify --audit-log {data_dir}/tp_audit_log.db "
         f"--audit-log-key {data_dir}/oem_log_puk.pub --destination {tmpdir}"

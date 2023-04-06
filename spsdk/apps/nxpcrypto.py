@@ -26,7 +26,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_apps_common_options,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
-from spsdk.utils.misc import load_binary
+from spsdk.utils.misc import load_binary, write_file
 
 
 @click.group(name="nxpcrypto", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -166,8 +166,7 @@ def convert(output_format: str, infile: str, outfile: str, puk: bool, use_pkcs8:
             y = key.pointQ.y.to_bytes(key_size)  # type: ignore  # this `to_bytes` doesn't have byteorder
             out_data = x + y
 
-    with open(outfile, "wb") as f:
-        f.write(out_data)
+    write_file(out_data, outfile, mode="wb")
 
 
 @key_group.command(name="verify", no_args_is_help=True)

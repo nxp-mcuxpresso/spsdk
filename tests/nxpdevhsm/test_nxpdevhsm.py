@@ -20,7 +20,6 @@ from spsdk.utils.misc import load_binary, use_working_directory
 def test_nxpdevhsm_run_generate(data_dir, tmpdir):
     runner = CliRunner()
     with use_working_directory(data_dir):
-
         cmd = f"generate -p COMx -f lpc55s3x -k test_bin.bin -o test_bin.bin {tmpdir}/bootable_images/cust_mk_sk.sb"
         result = runner.invoke(nxpdevhsm.main, cmd.split())
         assert result.exit_code == 1
@@ -40,7 +39,7 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
     with use_working_directory(data_dir):
         devhsm = DeviceHsm(
             mboot=None,
-            user_pck=b"abcd",
+            cust_mk_sk=b"abcd",
             oem_share_input=b"abcd",
             info_print=None,
             container_conf=config,
@@ -76,7 +75,7 @@ def test_load_commands_with_keyblob4(data_dir):
         with pytest.raises(SPSDKError):
             devhsm = DeviceHsm(
                 mboot=None,
-                user_pck=b"abcd",
+                cust_mk_sk=b"abcd",
                 oem_share_input=b"abcd",
                 info_print=None,
                 container_conf="cfg_sb3_keyblob4.yaml",

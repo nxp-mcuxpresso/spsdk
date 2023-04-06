@@ -18,7 +18,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM
 from cryptography.hazmat.primitives.serialization import Encoding
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError
 from spsdk.utils.crypto import crypto_backend
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import DebugInfo, align, align_block, extend_block
@@ -32,7 +32,7 @@ from .commands import (
     EnumEngine,
     EnumInsKey,
 )
-from .header import Header, Header2, UnparsedException
+from .header import Header, Header2
 from .misc import NotEnoughBytesException, read_raw_data, read_raw_segment
 from .secret import MAC, CertificateImg, Signature, SrkTable
 from .segments import (
@@ -145,6 +145,7 @@ class BootImgBase:
 ########################################################################################################################
 # Boot Image V2 (i.MX-RT)
 ########################################################################################################################
+
 
 # pylint: disable=too-many-public-methods
 class BootImgRT(BootImgBase):
@@ -381,9 +382,20 @@ class BootImgRT(BootImgBase):
         Please mind: the offset include FCB block (even the FCB block is not exported)
         The offset is 0x2000 for XIP images and 0x1000 for non-XIP images
         """
+        return self.get_app_offset(self.ivt_offset)
+
+    @staticmethod
+    def get_app_offset(ivt_offset: int) -> int:
+        """:return: offset in the binary image, where the application starts.
+
+        :param ivt_offset: Offset of IVT segment
+
+        Please mind: the offset include FCB block (even the FCB block is not exported)
+        The offset is 0x2000 for XIP images and 0x1000 for non-XIP images
+        """
         return (
             BootImgRT.XIP_APP_OFFSET
-            if (self.ivt_offset == self.IVT_OFFSET_NOR_FLASH)
+            if (ivt_offset == BootImgRT.IVT_OFFSET_NOR_FLASH)
             else BootImgRT.NON_XIP_APP_OFFSET
         )
 
@@ -1005,7 +1017,6 @@ class BootImgRT(BootImgBase):
             end_pos = min(start_pos + size, end_pos)
 
         for ivt_ofs in cls.IVT_OFFSETS:
-
             if start_pos + ivt_ofs > end_pos:
                 break
             strm.seek(start_pos + ivt_ofs)
@@ -1014,7 +1025,7 @@ class BootImgRT(BootImgBase):
                 header = Header.parse(header_data, required_tag=SegTag.IVT2)
                 if (header.length == SegIVT2.SIZE) and (header.param in cls.VERSIONS):
                     return header, start_pos + ivt_ofs, end_pos
-            except UnparsedException:  # ignore different header tags
+            except SPSDKParsingError:  # ignore different header tags
                 pass
 
         raise SPSDKError("IVT not found")
@@ -1083,7 +1094,7 @@ class BootImgRT(BootImgBase):
             xmcd_header = XMCDHeader.parse(read_raw_data(stream, XMCDHeader.SIZE))
             xmcd_data = read_raw_data(stream, xmcd_header.config_data_size)
             obj.xmcd = SegXMCD(header=xmcd_header, config_data=xmcd_data)
-        except UnparsedException:
+        except SPSDKParsingError:
             # No XMCD found
             pass
         # Parse BDT
@@ -1308,7 +1319,7 @@ class BootImg2(BootImgBase):
             if address != 0:
                 self.address = address
         else:
-            raise Exception("Unknown data type !")
+            raise SPSDKError("Unknown data type !")
 
     def export(self) -> bytes:
         """Export image as bytes array.
@@ -1594,7 +1605,7 @@ class BootImg8m(BootImgBase):
             if address != 0:
                 self.address = address
         else:
-            raise Exception("Unknown data type !")
+            raise SPSDKError("Unknown data type !")
 
     def export(self) -> bytes:
         """Export Image as bytes array.
@@ -1955,7 +1966,7 @@ class BootImg3a(BootImgBase):
 
         elif img_type == EnumAppType.SCD:
             if self._sdc_address == 0:
-                raise Exception("SCFW have to be define before SCD!")
+                raise SPSDKError("SCFW have to be define before SCD!")
             image_index = self.bdt[0].images_count
             self.bdt[0].images[image_index].image_destination = self._sdc_address
             self.bdt[0].images[image_index].image_entry = 0
@@ -1969,7 +1980,7 @@ class BootImg3a(BootImgBase):
             self.app[0][image_index].padding = self._compute_padding(len(data), self.SECTOR_SIZE)
 
         else:
-            raise Exception("Unknown data type!")
+            raise SPSDKError("Unknown data type!")
 
     def export(self) -> bytes:
         """Export Image as binary blob."""
@@ -2363,7 +2374,7 @@ class BootImg3b(BootImgBase):
 
         elif img_type == EnumAppType.SCD:
             if self._scd_address == 0:
-                raise Exception("SCFW have to be define before SCD!")
+                raise SPSDKError("SCFW have to be define before SCD!")
             self.scd.data = data
             self.scd.padding = self._compute_padding(len(data), self.SECTOR_SIZE)
             self.bdt[0].scd.image_destination = self._scd_address
@@ -2372,7 +2383,7 @@ class BootImg3b(BootImgBase):
             self.ivt[0].scd_address = self.bdt[0].scd.image_destination
 
         else:
-            raise Exception("Unknown image type!")
+            raise SPSDKError("Unknown image type!")
 
     def export(self) -> bytes:
         """Export."""

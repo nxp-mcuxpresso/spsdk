@@ -537,16 +537,20 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of section options.
         """
-        return token.section_option_list.update(token.section_option)
+        options = {}
+        options.update(token.section_option)
+        if token.section_option_list:
+            token.section_option_list.append(options)
+        return token.section_option_list
 
     @_("section_option")  # type: ignore
-    def section_option_list(self, token: YaccProduction) -> Dict:  # type: ignore
+    def section_option_list(self, token: YaccProduction) -> List:  # type: ignore
         """Parser rule.
 
         :param token: object holding the content defined in decorator.
         :return: dictionary holding a section option.
         """
-        return token.section_option
+        return [token.section_option]
 
     @_("IDENT ASSIGN const_expr")  # type: ignore
     def section_option(self, token: YaccProduction) -> Dict:  # type: ignore
@@ -555,7 +559,6 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the content of a section option.
         """
-        self.error(token, ": section options are not supported")
         return {token.IDENT: token.const_expr}
 
     @_("LBRACE statement RBRACE")  # type: ignore

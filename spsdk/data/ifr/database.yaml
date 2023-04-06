@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 devices:
   kw45xx:
     revisions:
@@ -6,6 +10,8 @@ devices:
       a1:
         data_file: kw45xx_a1.xml
     latest: a1
+    attributes:
+      address: 0x200_0000
   k32w1xx:
     revisions:
       a0:
@@ -13,3 +19,5 @@ devices:
       a1:
         data_file: k32w1xx_a1.xml
     latest: a1
+    attributes:
+      address: 0x200_0000

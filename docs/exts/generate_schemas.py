@@ -4,7 +4,7 @@
 # Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# Script for the automated generation of schemas documentation for elftosb
+# Script for the automated generation of schemas documentation for elftosb/nxpimage
 import os
 from typing import Any, Dict, List, Sequence
 
@@ -93,15 +93,9 @@ def get_template(schemas: Dict, name: str) -> str:
     return yaml_data
 
 
-def main():
-    print("Running generate schemas script")
-    if os.path.exists(SCHEMAS_FILE):
-        os.remove(SCHEMAS_FILE)
-        print("Existing schemas file has been removed")
-
+def get_mbi_doc() -> None:
+    """Get doc for MBI classes."""
     image_classes = get_all_mbi_classes()
-    image_classes.append(SecureBinary31)
-
     for cls in image_classes:
         validation_schemas = cls.get_validation_schemas()
         schema = get_schema(validation_schemas)
@@ -109,6 +103,28 @@ def main():
         parsed_schema = parse_schema(schema)
         template = get_template([schema], f"YAML template {cls.__name__}")
         append_schema(parsed_schema, template)
+
+
+def get_sb3_doc() -> None:
+    """Get doc for SB3 configurations."""
+    families = SecureBinary31.get_supported_families()
+    for fam in families:
+        validation_schemas = SecureBinary31.get_validation_schemas(fam)
+        schema = get_schema(validation_schemas)
+        schema["title"] = f"{SecureBinary31.__name__} for {fam}"
+        parsed_schema = parse_schema(schema)
+        template = get_template([schema], f"YAML template {SecureBinary31.__name__} for {fam}")
+        append_schema(parsed_schema, template)
+
+
+def main():
+    print("Running generate schemas script")
+    if os.path.exists(SCHEMAS_FILE):
+        os.remove(SCHEMAS_FILE)
+        print("Existing schemas file has been removed")
+
+    get_mbi_doc()
+    get_sb3_doc()
     print("Finished running")
 
 

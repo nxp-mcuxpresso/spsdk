@@ -9,6 +9,39 @@ Release Notes
 =============
 
 -----------------------
+1.10.0 (5-April-2023)
+-----------------------
+
+**New features**
+
+* :ref:`blhost`:
+    - add new command: ele_message
+* :ref:`nxpdebugmbox`:
+    - add command: read UUID from device
+    - update PyOCD to latest version to support CMSIS DAP FW v3
+* :ref:`nxpdevhsm`:
+    - USER_PCK rename to CUST_MK_SK
+* :ref:`nxpimage`:
+    - add subcommand group for generate and parse certificate block
+    - replace private key to signature provider in master boot image
+    - OTFAD support for RT1170
+* :ref:`ifr`:
+    -  add commands read/write
+* :ref:`pfr`:
+    - add CMPA erase command
+
+**Bugfixes**
+
+* :ref:`nxpdebugmbox`:
+    - fix AP selection issue for PyOCD and PEMICRO
+    - fix DAC verification when there is only 1 root key
+* :ref:`nxpimage`:
+    - fix MBI issue with HMAC
+* :ref:`shadowregs`:
+    - fix endianness for OTP MASTER KEY
+* drop support for Python 3.7
+
+-----------------------
 1.9.1 (17-March-2023)
 -----------------------
 
@@ -27,7 +60,7 @@ Release Notes
 * :ref:`nxpimage`:
     - fix handling exception when the root cert index is wrong
 * :ref:`tphost`/:ref:`tpconfig`:
-    - incorrect output in TP PG command in case of an failure
+    - Incorrect output in TP PG command in case of an failure
 
 -------------------------
 1.9.0 (30-January-2023)

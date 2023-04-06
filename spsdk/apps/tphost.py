@@ -42,6 +42,7 @@ from spsdk.tp.utils import (
     scan_tp_devices,
     scan_tp_targets,
 )
+from spsdk.utils.misc import load_binary, load_text, write_file
 
 
 @click.group(name="tphost", cls=CommandsTreeGroupAliasedGetCfgTemplate)
@@ -247,7 +248,7 @@ def load_tpfw(
 @click.option(
     "-o",
     "--output",
-    type=click.Path(dir_okay=False),
+    type=click.Path(dir_okay=False, resolve_path=True),
     required=True,
     help="The output YAML template configuration file name.",
 )
@@ -257,13 +258,10 @@ def get_template(
     output: str,
 ) -> None:
     """Command to generate tphost template of configuration YML file."""
-    with open(os.path.join(TP_DATA_FOLDER, "tphost_cfg_template.yml"), "r") as file:
-        template = file.read()
+    template = load_text(os.path.join(TP_DATA_FOLDER, "tphost_cfg_template.yaml"))
+    write_file(template, output)
 
-    with open(str(output), "w") as file:
-        file.write(template)
-
-    click.echo(f"The configuration template created. {os.path.abspath(output)}")
+    click.echo(f"The configuration template created. {output}")
 
 
 @main.command(name="verify", no_args_is_help=True)
@@ -538,8 +536,7 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
 
     message = "Parsing TP_RESPONSE data container..."
     try:
-        with open(tp_response, "rb") as f:
-            tp_data = f.read()
+        tp_data = load_binary(tp_response)
         tp_response_container = Container.parse(tp_data)
         message += "OK"
     except Exception:

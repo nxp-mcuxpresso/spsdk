@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -212,7 +212,7 @@ class SecureBootV1(BaseClass):
         :param data: given binary data to be converted
         :param offset: to start parsing the data
         :return: converted instance
-        :raise ValueError: raised when digest does not match
+        :raises SPSDKError: raised when digest does not match
         :raises SPSDKError: Raised when section is invalid
         """
         obj = SecureBootV1()
@@ -236,6 +236,6 @@ class SecureBootV1(BaseClass):
         # authentication code
         sha1_auth = crypto_backend().hash(data[offset:cur_pos], "sha1")
         if sha1_auth != data[cur_pos : cur_pos + len(sha1_auth)]:
-            raise ValueError("Authentication failure: digest does not match")
+            raise SPSDKError("Authentication failure: digest does not match")
         # done
         return obj

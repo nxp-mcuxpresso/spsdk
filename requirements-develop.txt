@@ -1,34 +1,33 @@
 # tox has to be installed first
-tox<4.3
+tox<4.5
 -r requirements.txt
 # testing
 pytest<7.3
 pytest-cov<4.1
-pytest-xdist<3.2
-pyyaml<5.5
+pytest-xdist<3.3
 voluptuous<0.14
 # metrics
 radon<5.2
-mypy>=0.800,<0.992
+mypy>=0.800,<1.2
 types-requests>=2.26,<2.29
-types-setuptools<65.8
+types-setuptools<67.7
 types-pyyaml<6.1
 # codestyle
-pylint>=2.6.0,<2.16
-pydocstyle[toml]<6.3
-black<22.13
+pylint>=2.6.0,<2.18
+pydocstyle[toml]<6.4
+black<23.2
 # cli executables
-pyinstaller<5.8
-pyinstaller-hooks-contrib<2022.15
+pyinstaller<5.10
+pyinstaller-hooks-contrib<2023.2
 # developement/CI tools
 bump2version<1.1
-pre-commit<2.22
-openpyxl<3.1
+pre-commit<3.3
+openpyxl<3.2
 cachier<2.1
-jira<3.5
+jira<3.6
 inquirerpy<0.4
 # examples
 flask<2.3
 requests<2.29
-ipython<8.9
+ipython<8.12
 notebook<6.6

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Dict, Set
 
 from asn1crypto import x509
+from asn1crypto.keys import PublicKeyInfo
 from oscrypto.asymmetric import load_public_key, rsa_pkcs1v15_verify
 from oscrypto.errors import SignatureError
 
@@ -64,18 +65,23 @@ class Certificate:
     @property
     def public_key_modulus(self) -> int:
         """Modulus of the public key of the certificate."""
-        return self._cert.public_key.native["public_key"]["modulus"]
+        return self.public_key.native["public_key"]["modulus"]
 
     @property
     def public_key_exponent(self) -> int:
         """Exponent of the public key of the certificate."""
-        return self._cert.public_key.native["public_key"]["public_exponent"]
+        return self.public_key.native["public_key"]["public_exponent"]
+
+    @property
+    def public_key(self) -> PublicKeyInfo:
+        """Public key."""
+        return self._cert.public_key
 
     @property
     def public_key_hash(self) -> bytes:
         """32 bytes hash (SHA-256) of public key (modulus and exponent)."""
-        modulus = self._cert.public_key.native["public_key"]["modulus"]
-        exponent = self._cert.public_key.native["public_key"]["public_exponent"]
+        modulus = self.public_key.native["public_key"]["modulus"]
+        exponent = self.public_key.native["public_key"]["public_exponent"]
         modulus_len = (modulus.bit_length() + 7) // 8
         exponent_len = (exponent.bit_length() + 7) // 8
         return crypto_backend().hash(

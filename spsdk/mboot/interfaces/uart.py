@@ -21,6 +21,7 @@ from serial.tools.list_ports import comports
 from spsdk.mboot.commands import CmdPacket, CmdResponse, parse_cmd_response
 from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
 from spsdk.utils.easy_enum import Enum
+from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import Timeout
 
 from .base import MBootInterface
@@ -119,6 +120,7 @@ class PingResponse(NamedTuple):
 PING_TIMEOUT_MS = 500
 MAX_PING_RESPONSE_DUMMY_BYTES = 50
 MAX_UART_OPEN_ATTEMPTS = 3
+
 
 ########################################################################################################################
 # UART Interface Class
@@ -272,7 +274,7 @@ class Uart(MBootInterface):
 
         :param length: Number of bytes to read
         :return: Data read from the device
-        :raises TimeoutError: Time-out
+        :raises SPSDKTimeoutError: Time-out
         :raises McuBootConnectionError: When reading data from device fails
         """
         try:
@@ -280,7 +282,7 @@ class Uart(MBootInterface):
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
         if not data:
-            raise TimeoutError()
+            raise SPSDKTimeoutError()
         logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
         return data
 
@@ -288,7 +290,7 @@ class Uart(MBootInterface):
         """Send data to device.
 
         :param data: Data to send
-        :raises TimeoutError: Time-out
+        :raises SPSDKTimeoutError: Time-out
         :raises McuBootConnectionError: When sending the data fails
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
@@ -298,7 +300,7 @@ class Uart(MBootInterface):
             self.device.write(data)
             self.device.flush()
         except SerialTimeoutException as e:
-            raise TimeoutError(
+            raise SPSDKTimeoutError(
                 f"Write timeout error. The timeout is set to {self.device.write_timeout} s. Consider increasing it."
             ) from e
         except Exception as e:

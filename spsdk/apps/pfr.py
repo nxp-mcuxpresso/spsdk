@@ -10,7 +10,7 @@
 import logging
 import os
 import sys
-from typing import Optional, Tuple, Type, Union
+from typing import Callable, Optional, Tuple, Type, Union
 
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
@@ -28,18 +28,23 @@ from spsdk.crypto.loaders import extract_public_keys
 from spsdk.mboot import McuBoot
 from spsdk.pfr.exceptions import SPSDKError, SPSDKPfrConfigError, SPSDKPfrError
 from spsdk.pfr.pfrc import Pfrc
-from spsdk.utils.misc import find_file, load_configuration, size_fmt, write_file
+from spsdk.utils.misc import find_file, load_binary, load_configuration, size_fmt, write_file
 from spsdk.utils.schema_validator import ConfigTemplate
 
 PFRArea = Union[Type[pfr.CMPA], Type[pfr.CFPA]]
 logger = logging.getLogger(__name__)
 
 
-def _store_output(data: Union[str, bytes], path: Optional[str], mode: str = "w") -> None:
+def _store_output(
+    data: Union[str, bytes], path: Optional[str], mode: str = "w", msg: Optional[str] = None
+) -> None:
     """Store the output data; either on stdout or into file if it's provided."""
+    if msg:
+        click.echo(msg)
     if path is None:
         click.echo(data)
     else:
+        click.echo(f"Result has been stored in: {path}")
         write_file(data, path=path, mode=mode)
 
 
@@ -48,29 +53,39 @@ def _get_pfr_class(area_name: str) -> PFRArea:
     return getattr(pfr, area_name.upper())
 
 
-def pfr_device_type_options(options: FC) -> FC:
-    """Setup PFR options for device, revision and area (PFR page type)."""
-    options = click.option(
-        "-r",
-        "--revision",
-        help="Chip revision; if not specified, most recent one will be used",
-    )(options)
-    options = click.option(
-        "-d",
-        "--device",
-        type=click.Choice(pfr.CMPA.devices()),
-        help="Device to use",
-        required=True,
-    )(options)
-    options = click.option(
-        "-t",
-        "--type",
-        "area",
-        required=True,
-        type=click.Choice(["cmpa", "cfpa"]),
-        help="Select PFR partition",
-    )(options)
-    return options
+def pfr_device_type_options(no_type: bool = False) -> Callable:
+    """PFR common device click options.
+
+    :param no_type: If true, the type option is not added, defaults to False
+    :return: Click decorator
+    """
+
+    def decorator(options: Callable[[FC], FC]) -> Callable[[FC], FC]:
+        """Setup PFR options for device, revision and area (PFR page type)."""
+        options = click.option(
+            "-r",
+            "--revision",
+            help="Chip revision; if not specified, most recent one will be used",
+        )(options)
+        options = click.option(
+            "-d",
+            "--device",
+            type=click.Choice(pfr.CMPA.devices()),
+            help="Device to use",
+            required=True,
+        )(options)
+        if not no_type:
+            options = click.option(
+                "-t",
+                "--type",
+                "area",
+                required=True,
+                type=click.Choice(["cmpa", "cfpa"]),
+                help="Select PFR partition",
+            )(options)
+        return options
+
+    return decorator
 
 
 @click.group(name="pfr", no_args_is_help=True, cls=CommandsTreeGroupAliasedGetCfgTemplate)
@@ -82,11 +97,11 @@ def main(log_level: int) -> int:
 
 
 @main.command(name="get-template", no_args_is_help=True)
-@pfr_device_type_options
+@pfr_device_type_options()
 @click.option(
     "-o",
     "--output",
-    type=click.Path(),
+    type=click.Path(resolve_path=True),
     required=False,
     help="Save the output into a file instead of console",
 )
@@ -96,11 +111,11 @@ def get_template(device: str, revision: str, area: str, output: str, full: bool)
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     data = pfr_obj.get_yaml_config(not full)
     yaml_data = ConfigTemplate.convert_cm_to_yaml(data)
-    _store_output(yaml_data, output)
+    _store_output(yaml_data, output, msg=f"PFR {area} configuration template has been created.")
 
 
 @main.command(name="parse-binary", no_args_is_help=True)
-@pfr_device_type_options
+@pfr_device_type_options()
 @click.option(
     "-o",
     "--output",
@@ -111,7 +126,7 @@ def get_template(device: str, revision: str, area: str, output: str, full: bool)
 @click.option(
     "-b",
     "--binary",
-    type=click.Path(exists=True, dir_okay=False),
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
     required=True,
     help="Binary to parse",
 )
@@ -137,8 +152,7 @@ def parse_binary(
     show_diff: bool,
 ) -> None:
     """Parse binary and extract configuration."""
-    with open(binary, "rb") as f:
-        data = f.read()
+    data = load_binary(binary)
     yaml_data = _parse_binary_data(
         data=data,
         device=device,
@@ -147,8 +161,7 @@ def parse_binary(
         show_calc=show_calc,
         show_diff=show_diff,
     )
-    _store_output(yaml_data, output)
-    click.echo(f"Success. (PFR: {binary} has been parsed and stored into {output}.)")
+    _store_output(yaml_data, output, msg=f"Success. (PFR: {binary} has been parsed.")
 
 
 def _parse_binary_data(
@@ -202,7 +215,7 @@ def _parse_binary_data(
 @click.option(
     "-o",
     "--output",
-    type=click.Path(dir_okay=False),
+    type=click.Path(dir_okay=False, resolve_path=True),
     required=True,
     help="Save the output into a file instead of console",
 )
@@ -279,16 +292,15 @@ def generate_binary(
     if not pfr_config.revision:
         pfr_config.revision = pfr_obj.revision
     data = pfr_obj.export(add_seal=add_seal, keys=keys)
-    _store_output(data, output, "wb")
-    click.echo(f"Success. (PFR binary has been generated into {output}.)")
+    _store_output(data, output, "wb", msg=f"Success. (PFR binary has been generated)")
 
 
 @main.command(name="info", no_args_is_help=True)
-@pfr_device_type_options
+@pfr_device_type_options()
 @click.option(
     "-o",
     "--output",
-    type=click.Path(dir_okay=False),
+    type=click.Path(dir_okay=False, resolve_path=True),
     required=True,
     help="Save the output into a file instead of console",
 )
@@ -308,7 +320,7 @@ def info(device: str, revision: str, area: str, output: str, open_result: bool) 
         regs_exclude=["SHA256_DIGEST"],
         fields_exclude=["FIELD"],
     )
-    _store_output(html_output, output)
+    _store_output(html_output, output, msg=f"Success. (PFR info HTML page has been generated)")
     if open_result:  # pragma: no cover # can't test opening the html document
         click.launch(f"{output}")
 
@@ -328,7 +340,7 @@ def devices() -> None:
     json_option=False,
     use_long_timeout_option=True,
 )
-@pfr_device_type_options
+@pfr_device_type_options()
 @click.option(
     "-b",
     "--binary",
@@ -354,8 +366,7 @@ def write(
 
     click.echo(f"{pfr_obj.__class__.__name__} page address on {device} is {pfr_page_address:#x}")
 
-    with open(binary, "rb") as f:
-        data = f.read()
+    data = load_binary(binary)
     if len(data) != pfr_page_length:
         raise SPSDKError(
             f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
@@ -381,18 +392,18 @@ def write(
     json_option=False,
     use_long_timeout_option=True,
 )
-@pfr_device_type_options
+@pfr_device_type_options()
 @click.option(
     "-o",
     "--output",
-    type=click.Path(dir_okay=False),
+    type=click.Path(dir_okay=False, resolve_path=True),
     help="Store PFR data into a file. If not specified hexdump data into stdout.",
 )
 @click.option(
     "-y",
     "--yaml",
     "yaml_output",
-    type=click.Path(dir_okay=False),
+    type=click.Path(dir_okay=False, resolve_path=True),
     help="Parse data read from device into YAML config.",
 )
 @click.option(
@@ -455,6 +466,41 @@ def read(
         click.echo(f"Parsed config stored to {yaml_output}")
     if not output and not yaml_output:
         click.echo(format_raw_data(data=data, use_hexdump=True))
+
+
+@main.command(name="erase-cmpa", no_args_is_help=True)
+@isp_interfaces(
+    uart=True,
+    usb=True,
+    lpcusbsio=True,
+    buspal=True,
+    json_option=False,
+    use_long_timeout_option=True,
+)
+@pfr_device_type_options(no_type=True)
+def erase_cmpa(
+    port: str,
+    usb: str,
+    buspal: str,
+    lpcusbsio: str,
+    timeout: int,
+    device: str,
+    revision: str,
+) -> None:
+    """Erase CMPA PFR page in the device if is not sealed."""
+    pfr_obj = _get_pfr_class("cmpa")(device=device, revision=revision)
+    pfr_page_address = pfr_obj.config.get_address(device)
+    pfr_page_length = pfr_obj.BINARY_SIZE
+
+    click.echo(f"CMPA page address on {device} is {pfr_page_address:#x}")
+
+    interface = get_interface(
+        module="mboot", port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
+    )
+    assert isinstance(interface, MBootInterface)
+    with McuBoot(device=interface) as mboot:
+        mboot.write_memory(address=pfr_page_address, data=bytes(pfr_page_length))
+    click.echo(f"CMPA page {'has been erased.' if mboot.status_code == 0 else 'erase failed!'}")
 
 
 @catch_spsdk_error

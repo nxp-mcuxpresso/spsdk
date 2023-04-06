@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 Start of block (tzm_magic): "0x4d2d5a54"
 TZM info which data are initialized (tzm_control): "0x0"
 CM33 Secure vector table address (cm33_vtor_addr): "0x0"

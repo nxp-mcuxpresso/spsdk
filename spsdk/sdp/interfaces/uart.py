@@ -13,8 +13,10 @@ from typing import List, Optional, Union
 from serial import Serial, SerialTimeoutException
 from serial.tools.list_ports import comports
 
+from spsdk.exceptions import SPSDKError
 from spsdk.sdp.commands import CmdPacket, CmdResponse
 from spsdk.sdp.exceptions import SdpConnectionError
+from spsdk.utils.exceptions import SPSDKTimeoutError
 
 from .base import SDPInterface
 
@@ -165,7 +167,7 @@ class Uart(SDPInterface):
         try:
             data = self.device.read(length)
             if not data:
-                raise Exception("No response from SDP device.")
+                raise SPSDKError("No response from SDP device.")
             logger.debug(f"<{' '.join(f'{b:02x}' for b in data)}>")
             return data
         except Exception as e:
@@ -175,7 +177,7 @@ class Uart(SDPInterface):
         """Send data to device.
 
         :param data: Data to send
-        :raises TimeoutError: when sendig of data times-out
+        :raises SPSDKTimeoutError: when sending of data times-out
         :raises SdpConnectionError: when send data to device fails
         """
         logger.debug(f"[{' '.join(f'{b:02x}' for b in data)}]")
@@ -185,7 +187,7 @@ class Uart(SDPInterface):
             self.device.write(data)
             self.device.flush()
         except SerialTimeoutException as e:
-            raise TimeoutError(
+            raise SPSDKTimeoutError(
                 f"Write timeout error. The timeout is set to {self.device.write_timeout} s. Consider increasing it."
             ) from e
         except Exception as e:

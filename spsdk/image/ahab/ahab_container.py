@@ -254,8 +254,7 @@ class ImageArrayEntry(Container):
 
         if self.flags_is_encrypted:
             return self.encrypted_image
-        else:
-            return self.plain_image
+        return self.plain_image
 
     # We need to extend the format, as the base provides only endianness.
     @classmethod
@@ -316,7 +315,7 @@ class ImageArrayEntry(Container):
         :return: Image flags data field.
         """
         flags_data = ImageArrayEntry.FLAGS_TYPES[image_type]
-        flags_data |= {"cortex-m33": 0x1, "cortex-m7": 0x02}[core_id] << 4
+        flags_data |= {"cortex-m33": 0x1, "cortex-m7": 0x02, "cortex-a55": 0x02}[core_id] << 4
         flags_data |= {"sha256": 0x0, "sha384": 0x1, "sha512": 0x2}[
             hash_type
         ] << ImageArrayEntry.FLAGS_HASH_OFFSET
@@ -470,8 +469,8 @@ class ImageArrayEntry(Container):
         :param parent: Parent AHABContainer object.
         :param binary: Binary data with Image Array Entry block to parse.
         :param offset: Offset to Image Array Entry block data, default is 0.
-        :raise SPSDKLengthError: If invalid length of image is detected.
-        :raise SPSDKValueError: Invalid hash for image.
+        :raises SPSDKLengthError: If invalid length of image is detected.
+        :raises SPSDKValueError: Invalid hash for image.
         :return: Object recreated from the binary data.
         """
         binary_size = len(binary)
@@ -1809,7 +1808,7 @@ class Blob(HeaderContainer):
 
         :param config: Blob configuration
         :param search_paths: List of paths where to search for the file, defaults to None
-        :raises SPSDKError: Invalid configuration - Invalid DEK Keyblob
+        :raises SPSDKValueError: Invalid configuration - Invalid DEK KeyBlob
         :return: Blob object.
         """
         dek_size = value_to_int(config.get("dek_key_size", 128))
@@ -1823,7 +1822,7 @@ class Blob(HeaderContainer):
             dek_keyblob_input, Blob.compute_keyblob_size(dek_size) + 8, search_paths
         )
         if not dek_keyblob_value:
-            raise SPSDKValueError("Invalid DEK Keyblob.")
+            raise SPSDKValueError("Invalid DEK KeyBlob.")
 
         keyblob = Blob.parse(dek_keyblob_value)
         keyblob.dek = dek
@@ -2680,7 +2679,6 @@ class AHABContainer(AHABContainerBase):
         """Decrypt all images if possible."""
         for ix, image_entry in enumerate(self.image_array):
             if image_entry.flags_is_encrypted and self.signature_block.blob:
-
                 decrypted_data = self.signature_block.blob.decrypt_data(
                     image_entry.image_iv[16:], image_entry.encrypted_image
                 )
@@ -2922,7 +2920,7 @@ class AHABImage:
 
         The order of the added images is important.
         :param container: New AHAB Container to be added.
-        :raise SPSDKLengthError: The container count in image is overflowed.
+        :raises SPSDKLengthError: The container count in image is overflowed.
         """
         if len(self.ahab_containers) >= self.containers_max_cnt:
             raise SPSDKLengthError(
@@ -3075,7 +3073,7 @@ class AHABImage:
             self.image_info().validate()
         except SPSDKError as exc:
             logger.error(self.image_info().draw())
-            raise exc
+            raise SPSDKError("Validation failed") from exc
 
     @staticmethod
     def load_from_config(
@@ -3092,7 +3090,7 @@ class AHABImage:
         """
         containers_config: List[Dict[str, Any]] = config["containers"]
         family = config["family"]
-        revision = config["revision"]
+        revision = config.get("revision", "latest")
         image_type = config["image_type"]
         ahab = AHABImage(
             family=family, revision=revision, image_type=image_type, search_paths=search_paths

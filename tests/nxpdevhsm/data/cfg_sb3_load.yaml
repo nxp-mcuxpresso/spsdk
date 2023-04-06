@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 family: lpc55s3x
 description: LPC55S36 SB3
 commands:

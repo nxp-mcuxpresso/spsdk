@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # FCB configuration for rt5xx.
 # Created: 23/05/2022 10:47:19.
 # NXP SPSDK version: 1.7.0

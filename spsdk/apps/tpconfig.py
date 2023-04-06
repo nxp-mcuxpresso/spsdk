@@ -29,6 +29,7 @@ from spsdk.apps.utils import (
 )
 from spsdk.tp import TP_DATA_FOLDER, SPSDKTpError, TpDevInterface, TrustProvisioningConfig
 from spsdk.tp.utils import get_supported_devices, scan_tp_devices
+from spsdk.utils.misc import load_text, write_file
 
 
 @click.group(name="tpconfig", cls=CommandsTreeGroupAliasedGetCfgTemplate)
@@ -155,20 +156,17 @@ def seal(
 @click.option(
     "-o",
     "--output",
-    type=click.Path(dir_okay=False),
+    type=click.Path(dir_okay=False, resolve_path=True),
     required=True,
     help="The output YAML template configuration file name.",
 )
 # pylint: disable=unused-argument   # preparation for the future
 def get_template(family: str, output: str) -> None:
     """Command to generate tphost template of configuration YML file."""
-    with open(os.path.join(TP_DATA_FOLDER, "tpconfig_cfg_template.yml"), "r") as file:
-        template = file.read()
+    template = load_text(os.path.join(TP_DATA_FOLDER, "tpconfig_cfg_template.yaml"))
+    write_file(template, output)
 
-    with open(str(output), "w") as file:
-        file.write(template)
-
-    click.echo(f"The configuration template created. {os.path.abspath(output)}")
+    click.echo(f"The configuration template created. {output}")
 
 
 main.add_command(device_help)

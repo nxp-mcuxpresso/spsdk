@@ -413,13 +413,13 @@ def test_extern(input_text, throws_exception, extern):
             r"""section (1;id=5) {
 
         }""",
-            True,
+            False,
         ),
         (
             r"""section (1;id=5, bla=7) {
 
         }""",
-            True,
+            False,
         ),
     ],
 )
@@ -1266,6 +1266,110 @@ def test_unary_expr(input_text, throws_exception):
         exception_thrown = True
 
     assert exception_thrown == throws_exception
+
+
+def test_csf_sections():
+    """"""
+    bd_file = r"""
+    options {
+        flags = 0x08;
+        startAddress = 0x30000000;
+        ivtOffset = 0x1000;
+        initialLoadSize = 0x2000;
+        entryPointAddress = 0x300024e1;
+    }
+
+
+    constants {
+        SEC_CSF_HEADER              = 20;
+        SEC_CSF_INSTALL_SRK         = 21;
+        SEC_CSF_INSTALL_CSFK        = 22;
+        SEC_CSF_INSTALL_NOCAK       = 23;
+        SEC_CSF_AUTHENTICATE_CSF    = 24;
+        SEC_CSF_INSTALL_KEY         = 25;
+        SEC_CSF_AUTHENTICATE_DATA   = 26;
+        SEC_CSF_INSTALL_SECRET_KEY  = 27;
+        SEC_CSF_DECRYPT_DATA        = 28;
+        SEC_NOP                     = 29;
+        SEC_SET_MID                 = 30;
+        SEC_SET_ENGINE              = 31;
+        SEC_INIT                    = 32;
+        SEC_UNLOCK                  = 33;
+    }
+
+    section (SEC_CSF_HEADER;
+        Header_Version="4.2",
+        Header_HashAlgorithm="sha256",
+        Header_Engine="ANY",
+        Header_EngineConfiguration=0,
+        Header_CertificateFormat="x509",
+        Header_SignatureFormat="CMS"
+        )
+    {
+    }
+
+    section (SEC_SET_ENGINE;
+        SetEngine_HashAlgorithm = "sha256",
+        SetEngine_Engine = "ANY",
+        SetEngine_EngineConfiguration = "0")
+    {
+    }
+
+    section (SEC_UNLOCK;
+        Unlock_Engine = "SNVS",
+        Unlock_features = "ZMK WRITE"
+        )
+    {
+    }
+    """
+
+    expected_result = {
+        "options": {
+            "flags": 8,
+            "startAddress": 805306368,
+            "ivtOffset": 4096,
+            "initialLoadSize": 8192,
+            "entryPointAddress": 805315809,
+        },
+        "sections": [
+            {
+                "section_id": 20,
+                "options": [
+                    {"Header_Version": "4.2"},
+                    {"Header_HashAlgorithm": "sha256"},
+                    {"Header_Engine": "ANY"},
+                    {"Header_EngineConfiguration": 0},
+                    {"Header_CertificateFormat": "x509"},
+                    {"Header_SignatureFormat": "CMS"},
+                ],
+                "commands": [],
+            },
+            {
+                "section_id": 31,
+                "options": [
+                    {"SetEngine_HashAlgorithm": "sha256"},
+                    {"SetEngine_Engine": "ANY"},
+                    {"SetEngine_EngineConfiguration": "0"},
+                ],
+                "commands": [],
+            },
+            {
+                "section_id": 33,
+                "options": [{"Unlock_Engine": "SNVS"}, {"Unlock_features": "ZMK WRITE"}],
+                "commands": [],
+            },
+        ],
+    }
+
+    parser = bd_parser.BDParser()
+
+    try:
+        result = parser.parse(bd_file)
+        exception_thrown = False
+        assert expected_result == result
+    except spsdk.SPSDKError:
+        exception_thrown = True
+    assert exception_thrown == False
 
 
 # TODO document from_stmt - change syntax to SOURCE_NAME

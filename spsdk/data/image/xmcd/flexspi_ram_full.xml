@@ -1,4 +1,9 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs>
 	<register offset="0x0" width="32" name="tag" reversed="False" description=" [0x000-0x003] Tag, fixed value 0x62666366"/>
 	<register offset="0x20" width="32" name="version" reversed="False" description=" [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor, [7:0] - bugfix"/>

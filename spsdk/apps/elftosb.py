@@ -16,10 +16,10 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
 from spsdk.exceptions import SPSDKError
-from spsdk.image import SB3_SCH_FILE, TrustZone, get_mbi_class
+from spsdk.image import TrustZone, get_mbi_class
 from spsdk.image.mbimg import mbi_generate_config_templates, mbi_get_supported_families
 from spsdk.sbfile.sb2.images import generate_SB21
-from spsdk.sbfile.sb31.images import SecureBinary31
+from spsdk.sbfile.sb31.images import SB3_SCH_FILE, SecureBinary31
 from spsdk.utils.misc import load_configuration, write_file
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
@@ -33,7 +33,7 @@ def generate_trustzone_binary(tzm_conf: str) -> None:
     check_config(config_data, TrustZone.get_validation_schemas(config_data["family"]))
     trustzone = TrustZone.from_config(config_data)
     tz_data = trustzone.export()
-    output_file = config_data["tzpOutputFile"]
+    output_file = os.path.abspath(config_data["tzpOutputFile"])
     write_file(tz_data, output_file, mode="wb")
     click.echo(f"Success. (Trustzone binary: {output_file} created.)")
 
@@ -53,18 +53,17 @@ def generate_config_templates(family: str, output_folder: str) -> None:
 
     # And generate all config templates files
     for key, val in templates.items():
-        file_name = f"{key}.yml"
+        file_name = f"{key}.yaml"
         if os.path.isfile(output_folder):
             raise SPSDKError(f"The specified path {output_folder} is file.")
         if not os.path.isdir(output_folder):
             os.mkdir(output_folder)
-        full_file_name = os.path.join(output_folder, file_name)
+        full_file_name = os.path.abspath(os.path.join(output_folder, file_name))
         if not os.path.isfile(full_file_name):
             click.echo(f"Creating {file_name} template file.")
-            with open(full_file_name, "w") as f:
-                f.write(val)
+            write_file(val, full_file_name)
         else:
-            click.echo(f"Skip creating {file_name}, this file already exists.")
+            click.echo(f"Skip creating {full_file_name}, this file already exists.")
 
 
 def generate_master_boot_image(image_conf: str) -> None:
@@ -79,7 +78,7 @@ def generate_master_boot_image(image_conf: str) -> None:
     mbi.load_from_config(config_data)
     mbi_data = mbi.export()
 
-    mbi_output_file_path = config_data["masterBootOutputFile"]
+    mbi_output_file_path = os.path.abspath(config_data["masterBootOutputFile"])
     write_file(mbi_data, mbi_output_file_path, mode="wb")
 
     click.echo(f"Success. (Master Boot Image: {mbi_output_file_path} created.)")
@@ -125,7 +124,8 @@ def generate_secure_binary_21(
             hoh_out_path=str(hoh_out_path),
             external_files=[str(x) for x in external_files],
         )
-        write_file(sb2_data, str(output_file_path), mode="wb")
+        output_file_path = os.path.abspath(output_file_path)
+        write_file(sb2_data, output_file_path, mode="wb")
     except SPSDKError as exc:
         raise SPSDKAppError(f"The SB2.1 file generation failed: ({str(exc)}).") from exc
     else:
@@ -141,13 +141,16 @@ def generate_secure_binary_31(container_conf: str) -> None:
     :raises SPSDKError: Raised when there is no signing key
     """
     config_data = load_configuration(container_conf)
-    schemas = SecureBinary31.get_validation_schemas(include_test_configuration=True)
+    check_config(config_data, SecureBinary31.get_validation_schemas_family())
+    schemas = SecureBinary31.get_validation_schemas(
+        config_data["family"], include_test_configuration=True
+    )
     schemas.append(ValidationSchemas.get_schema_file(SB3_SCH_FILE)["sb3_output"])
     check_config(config_data, schemas)
     sb3 = SecureBinary31.load_from_config(config_data)
-    sb3_data = sb3.export()
+    sb3_data = sb3.export(cert_block=None)
 
-    sb3_output_file_path = config_data["containerOutputFile"]
+    sb3_output_file_path = os.path.abspath(config_data["containerOutputFile"])
     write_file(sb3_data, sb3_output_file_path, mode="wb")
 
     click.echo(f"Success. (Secure binary 3.1: {sb3_output_file_path} created.)")

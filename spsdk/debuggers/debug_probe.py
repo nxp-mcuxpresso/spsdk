@@ -12,6 +12,7 @@ from time import sleep
 from typing import Any, Dict, List, Optional, no_type_check
 
 from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import Timeout
 
@@ -237,10 +238,10 @@ class DebugProbe:
         :param access_port: Index of access port 0-255.
         :param address: Register address.
         :return: Coresight address.
-        :raises ValueError: In case of invalid value.
+        :raises SPSDKError: In case of invalid value.
         """
         if access_port > 255:
-            raise ValueError()
+            raise SPSDKValueError("Invalid value of access port")
 
         return access_port << cls.APSEL_SHIFT | address
 
@@ -328,6 +329,7 @@ class DebugProbe:
 
         :param sys_power: Control the target system power state.
         :param debug_power: Control the target debug power state.
+        :raises SPSDKTimeoutError: Timeout on power enable operation.
         """
         logger.debug(
             f"Power Control the debug connection:\nSystem power: {sys_power}\nDebug power: {debug_power}"

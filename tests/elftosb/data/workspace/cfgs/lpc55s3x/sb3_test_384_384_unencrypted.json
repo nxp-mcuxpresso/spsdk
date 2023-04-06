@@ -103,16 +103,6 @@
             }
         },
         {
-            "call": {
-                "address": "0x1384"
-            }
-        },
-        {
-            "call": {
-                "address": "0x2588"
-            }
-        },
-        {
             "execute": {
                 "address": "0x1384"
             }

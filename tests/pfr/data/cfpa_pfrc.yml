@@ -1,9 +1,13 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # NXP lpc55s6x PFR CFPA configuration
 description:  # The PFR CFPA configuration description.
   device: lpc55s6x  # The NXP device name.
   revision: 1b # The NXP device revision.
-  type: CFPA # The PFR type (CMPA, CFPA).
-  version: 1.5.0 # The SPSDK tool version.
+  type: CFPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 1.9.1 # The SPSDK tool version.
   author: NXP # The author of the configuration.
   release: alpha # The SPSDK release.
 settings: # The PFR CFPA registers configuration.
@@ -19,88 +23,90 @@ settings: # The PFR CFPA registers configuration.
     value: '0x00000000'  # The value width: 32b
   ROTKH_REVOKE: # Root of Trust Key Hash Revoke
     bitfields:  # The register bitfields
-      RoTK0_EN: ROTKH_REVOKE_RoTK0_EN_ENABLED  # Width: 2b[0-3], Description: RoT Key 0 enable.
-      # - ROTKH_REVOKE_RoTK0_EN_INVALID, (0): Invalid
-      # - ROTKH_REVOKE_RoTK0_EN_ENABLED, (1): Enabled
-      # - ROTKH_REVOKE_RoTK0_EN_REVOKED_0, (2): Key revoked
-      # - ROTKH_REVOKE_RoTK0_EN_REVOKED_1, (3): Key revoked
-      RoTK1_EN: ROTKH_REVOKE_RoTK1_EN_ENABLED # Width: 2b[0-3], Description: RoT Key 1 enable.
-      # - ROTKH_REVOKE_RoTK1_EN_INVALID, (0): Invalid
-      # - ROTKH_REVOKE_RoTK1_EN_ENABLED, (1): Enabled
-      # - ROTKH_REVOKE_RoTK1_EN_REVOKED_0, (2): Key revoked
-      # - ROTKH_REVOKE_RoTK1_EN_REVOKED_1, (3): Key revoked
-      RoTK2_EN: ROTKH_REVOKE_RoTK2_EN_ENABLED # Width: 2b[0-3], Description: RoT Key 2 enable.
-      # - ROTKH_REVOKE_RoTK2_EN_INVALID, (0): Invalid
-      # - ROTKH_REVOKE_RoTK2_EN_ENABLED, (1): Enabled
-      # - ROTKH_REVOKE_RoTK2_EN_REVOKED_0, (2): Key revoked
-      # - ROTKH_REVOKE_RoTK2_EN_REVOKED_1, (3): Key revoked
-      RoTK3_EN: ROTKH_REVOKE_RoTK3_EN_ENABLED # Width: 2b[0-3], Description: RoT Key 3 enable.
-      # - ROTKH_REVOKE_RoTK3_EN_INVALID, (0): Invalid
-      # - ROTKH_REVOKE_RoTK3_EN_ENABLED, (1): Enabled
-      # - ROTKH_REVOKE_RoTK3_EN_REVOKED_0, (2): Key revoked
-      # - ROTKH_REVOKE_RoTK3_EN_REVOKED_1, (3): Key revoked
+      RoTK0_EN: ENABLED  # Width: 2b, Description: RoT Key 0 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK1_EN: ENABLED # Width: 2b, Description: RoT Key 1 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK2_EN: ENABLED # Width: 2b, Description: RoT Key 2 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK3_EN: ENABLED # Width: 2b, Description: RoT Key 3 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
   VENDOR_USAGE: # Vendor Usage
     bitfields:  # The register bitfields
-      DBG_VENDOR_USAGE: 0  # Width: 16b[0-65535], Description: Debug Vendor Usage
+      DBG_VENDOR_USAGE: 0  # Width: 16b, Description: Debug Vendor Usage
   DCFG_CC_SOCU_NS_PIN: # Device Configuration Credential Constraints for SoC specific Use Pinned
     bitfields:  # The register bitfields
-      NIDEN: DCFG_CC_SOCU_NS_PIN_NIDEN_USE_DAP  # Width: 1b[0-1], Description: Non Secure non-invasive debug enable
-      # - DCFG_CC_SOCU_NS_PIN_NIDEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_NIDEN_FIXED_STATE, (1): Fixed state
-      DBGEN: DCFG_CC_SOCU_NS_PIN_DBGEN_USE_DAP # Width: 1b[0-1], Description: Non Secure debug enable
-      # - DCFG_CC_SOCU_NS_PIN_DBGEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_DBGEN_FIXED_STATE, (1): Fixed state
-      SPNIDEN: DCFG_CC_SOCU_NS_PIN_SPNIDEN_USE_DAP # Width: 1b[0-1], Description: Secure non-invasive debug enable
-      # - DCFG_CC_SOCU_NS_PIN_SPNIDEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_SPNIDEN_FIXED_STATE, (1): Fixed state
-      SPIDEN: DCFG_CC_SOCU_NS_PIN_SPIDEN_USE_DAP # Width: 1b[0-1], Description: Secure invasive debug enable
-      # - DCFG_CC_SOCU_NS_PIN_SPIDEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_SPIDEN_FIXED_STATE, (1): Fixed state
-      TAPEN: DCFG_CC_SOCU_NS_PIN_TAPEN_USE_DAP # Width: 1b[0-1], Description: JTAG TAP enable
-      # - DCFG_CC_SOCU_NS_PIN_TAPEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_TAPEN_FIXED_STATE, (1): Fixed state
-      MCM33_DBGEN: DCFG_CC_SOCU_NS_PIN_MCM33_DBGEN_USE_DAP # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) invasive debug enable
-      # - DCFG_CC_SOCU_NS_PIN_MCM33_DBGEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_MCM33_DBGEN_FIXED_STATE, (1): Fixed state
-      ISP_CMD_EN: DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_USE_DAP # Width: 1b[0-1], Description: ISP Boot Command enable
-      # - DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_FIXED_STATE, (1): Fixed state
-      FA_ME_CMD_EN: DCFG_CC_SOCU_NS_PIN_FA_ME_CMD_EN_USE_DAP # Width: 1b[0-1], Description: Fault Analysis/Mass Erase Command enable
-      # - DCFG_CC_SOCU_NS_PIN_FA_ME_CMD_EN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_FA_ME_CMD_EN_FIXED_STATE, (1): Fixed state
-      MCM33_NIDEN: DCFG_CC_SOCU_NS_PIN_MCM33_NIDEN_USE_DAP # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) non-invasive debug enable
-      # - DCFG_CC_SOCU_NS_PIN_MCM33_NIDEN_USE_DAP, (0): Use DAP to enable
-      # - DCFG_CC_SOCU_NS_PIN_MCM33_NIDEN_FIXED_STATE, (1): Fixed state
-      UUID_CHECK: 0 # Width: 1b[0-1], Description: Enforce UUID match during Debug authentication.
+      NIDEN: USE_DAP  # Width: 1b, Description: Non Secure non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      DBGEN: USE_DAP # Width: 1b, Description: Non Secure debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPNIDEN: USE_DAP # Width: 1b, Description: Secure non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPIDEN: USE_DAP # Width: 1b, Description: Secure invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      TAPEN: USE_DAP # Width: 1b, Description: JTAG TAP enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      CPU1_DBGEN: USE_DAP # Width: 1b, Description: CPU1 (Micro cortex M33) invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      ISP_CMD_EN: USE_DAP # Width: 1b, Description: ISP Boot Command enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      FA_ME_CMD_EN: USE_DAP # Width: 1b, Description: Fault Analysis/Mass Erase Command enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      CPU1_NIDEN: USE_DAP # Width: 1b, Description: CPU1 (Micro cortex M33) non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      UUID_CHECK: DISABLED # Width: 1b, Description: Enforce UUID match during Debug authentication.
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
   DCFG_CC_SOCU_NS_DFLT: # Device Configuration Credential Constraints for SoC specific Use Debug Filter
     bitfields:  # The register bitfields
-      NIDEN: DCFG_CC_SOCU_NS_DFLT_NIDEN_DISABLED  # Width: 1b[0-1], Description: Non Secure non-invasive debug fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_NIDEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_NIDEN_ENABLED, (1): Enabled
-      DBGEN: DCFG_CC_SOCU_NS_DFLT_DBGEN_DISABLED # Width: 1b[0-1], Description: Non Secure debug fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_DBGEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_DBGEN_ENABLED, (1): Enabled
-      SPNIDEN: DCFG_CC_SOCU_NS_DFLT_SPNIDEN_DISABLED # Width: 1b[0-1], Description: Secure non-invasive debug fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_SPNIDEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_SPNIDEN_ENABLED, (1): Enabled
-      SPIDEN: DCFG_CC_SOCU_NS_DFLT_SPIDEN_DISABLED # Width: 1b[0-1], Description: Secure invasive debug fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_SPIDEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_SPIDEN_ENABLED, (1): Enabled
-      TAPEN: DCFG_CC_SOCU_NS_DFLT_TAPEN_DISABLED # Width: 1b[0-1], Description: JTAG TAP fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_TAPEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_TAPEN_ENABLED, (1): Enabled
-      MCM33_DBGEN: DCFG_CC_SOCU_NS_DFLT_MCM33_DBGEN_DISABLED # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) invasive debug fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_MCM33_DBGEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_MCM33_DBGEN_ENABLED, (1): Enabled
-      ISP_CMD_EN: DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_DISABLED # Width: 1b[0-1], Description: ISP Boot Command fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_ENABLED, (1): Enabled
-      FA_ME_CMD_EN: DCFG_CC_SOCU_NS_DFLT_FA_ME_CMD_EN_DISABLED # Width: 1b[0-1], Description: Fault Analysis/Mass Erase Command fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_FA_ME_CMD_EN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_FA_ME_CMD_EN_ENABLED, (1): Enabled
-      MCM33_NIDEN: DCFG_CC_SOCU_NS_DFLT_MCM33_NIDEN_DISABLED # Width: 1b[0-1], Description: CPU1 (Micro cortex M33) non-invasive debug fixed state
-      # - DCFG_CC_SOCU_NS_DFLT_MCM33_NIDEN_DISABLED, (0): Disabled
-      # - DCFG_CC_SOCU_NS_DFLT_MCM33_NIDEN_ENABLED, (1): Enabled
+      NIDEN: DISABLED  # Width: 1b, Description: Non Secure non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      DBGEN: DISABLED # Width: 1b, Description: Non Secure debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPNIDEN: DISABLED # Width: 1b, Description: Secure non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPIDEN: DISABLED # Width: 1b, Description: Secure invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      TAPEN: DISABLED # Width: 1b, Description: JTAG TAP fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      CPU1_DBGEN: DISABLED # Width: 1b, Description: CPU1 (Micro cortex M33) invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      ISP_CMD_EN: DISABLED # Width: 1b, Description: ISP Boot Command fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      FA_ME_CMD_EN: DISABLED # Width: 1b, Description: Fault Analysis/Mass Erase Command fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      CPU1_NIDEN: DISABLED # Width: 1b, Description: CPU1 (Micro cortex M33) non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
   ENABLE_FA_MODE: # Enable FA mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.
     value: '0x00000000'  # The value width: 32b
   CMPA_PROG_IN_PROGRESS: # CMPA Page programming on going. This field shall be set to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.
@@ -109,9 +115,9 @@ settings: # The PFR CFPA registers configuration.
     value: '0x00000000'  # The value width: 32b
   PRINCE_REGION0_IV_HEADER1: # Header.
     bitfields:  # The register bitfields
-      TYPE: 0  # Width: 2b[0-3], Description: Type.
-      INDEX: 0 # Width: 4b[0-15], Description: Index.
-      SIZE: 0 # Width: 6b[0-63], Description: Size.
+      TYPE: '0x0'  # Width: 2b, Description: Type.
+      INDEX: '0x0' # Width: 4b, Description: Index.
+      SIZE: '0x0' # Width: 6b, Description: Size.
   PRINCE_REGION0_IV_BODY0: # Field.
     value: '0x00000000'  # The value width: 32b
   PRINCE_REGION0_IV_BODY1: # Field.
@@ -140,9 +146,9 @@ settings: # The PFR CFPA registers configuration.
     value: '0x00000000'  # The value width: 32b
   PRINCE_REGION1_IV_HEADER1: # Header.
     bitfields:  # The register bitfields
-      TYPE: 0  # Width: 2b[0-3], Description: Type.
-      INDEX: 0 # Width: 4b[0-15], Description: Index.
-      SIZE: 0 # Width: 6b[0-63], Description: Size.
+      TYPE: '0x0'  # Width: 2b, Description: Type.
+      INDEX: '0x0' # Width: 4b, Description: Index.
+      SIZE: '0x0' # Width: 6b, Description: Size.
   PRINCE_REGION1_IV_BODY0: # Field.
     value: '0x00000000'  # The value width: 32b
   PRINCE_REGION1_IV_BODY1: # Field.
@@ -171,9 +177,9 @@ settings: # The PFR CFPA registers configuration.
     value: '0x00000000'  # The value width: 32b
   PRINCE_REGION2_IV_HEADER1: # Header.
     bitfields:  # The register bitfields
-      TYPE: 0  # Width: 2b[0-3], Description: Type.
-      INDEX: 0 # Width: 4b[0-15], Description: Index.
-      SIZE: 0 # Width: 6b[0-63], Description: Size.
+      TYPE: '0x0'  # Width: 2b, Description: Type.
+      INDEX: '0x0' # Width: 4b, Description: Index.
+      SIZE: '0x0' # Width: 6b, Description: Size.
   PRINCE_REGION2_IV_BODY0: # Field.
     value: '0x00000000'  # The value width: 32b
   PRINCE_REGION2_IV_BODY1: # Field.

@@ -123,7 +123,7 @@ def setup_tp_host_file(
     tp_target_parameter: dict,
     family: str,
 ) -> None:
-    shutil.copy(f"{TP_DATA_FOLDER}/tphost_cfg_template.yml", "tp_host.yaml")
+    shutil.copy(f"{TP_DATA_FOLDER}/tphost_cfg_template.yaml", "tp_host.yaml")
     yaml = ruamel.yaml.YAML()
     with open("tp_host.yaml") as f:
         data: dict = yaml.load(f)

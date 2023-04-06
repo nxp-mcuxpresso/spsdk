@@ -1,4 +1,9 @@
 <?xml version="1.0" ?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs>
 	<register offset="0x400" width="32" name="TestRegA0" reversed="False" description="TestRegA0 Description"></register>
 	<register offset="0x404" width="32" name="TestRegA1" reversed="False" description="TestRegA1 Description"></register>

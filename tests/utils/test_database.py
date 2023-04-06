@@ -10,7 +10,7 @@ import os
 
 import pytest
 
-from spsdk.exceptions import SPSDKTypeError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKTypeError, SPSDKValueError
 from spsdk.utils.database import Database, Devices, Revisions
 from spsdk.utils.misc import load_configuration
 
@@ -60,7 +60,7 @@ def test_invalid_revision(data_dir):
 
 def test_loading_invalid_database(data_dir):
     db_path = os.path.join(data_dir, "database_invalid.yaml")
-    with pytest.raises(SPSDKTypeError):
+    with pytest.raises(SPSDKError):
         Database(db_path)
 
 

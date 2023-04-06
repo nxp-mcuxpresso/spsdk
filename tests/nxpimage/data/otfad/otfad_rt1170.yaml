@@ -1,0 +1,26 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+--- # ----------------------------------------------------------------------------------------------------
+# ===========  On-The-Fly AES decryption Configuration template for rt5xx.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+family: rt117x # [Required], MCU family, MCU family name., Possible options:['rt5xx', 'rt6xx']
+output_folder: otfad_rt1170_outputs # [Required], OTFAD output folder, Folder name to be stored generated OTFAD outputs
+# ----------------------------------------------------------------------------------------------------
+#                                         == OTFAD Settings ==
+# ----------------------------------------------------------------------------------------------------
+kek: kek_inc.bin # [Required], KEK, OTFAD Key Encryption Key to encrypt OTFAD table
+otfad_table_address: 0x30000000 # [Required], OTFAD key blobs table address, The base address of key blob table, it should be aligned to 1 KB (1024 B)
+
+data_blobs: # [Optional], Data blobs list, List of all data blobs included in this key blob
+  - data: evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_bootable_nopadding.bin # [Required], Plain Text data blob, Path to binary file with plain text data to be encrypted if desired
+    address: 0x30001000 # [Required], Data blob address, Data blob address, it could be omitted if data blob starts at start_address
+
+key_blobs: # [Required], List of Key Blobs used by OTFAD, The list of definition of individual key blobs including plain data. Add other array items as you need and device allows
+  - aes_key: 0x000102030405060708090a0b0c0d0e0f # [Required], AES key, AES key for the key blob
+    aes_ctr: 0x0123456789abcdef # [Required], AES Counter value, AES counter value for the key blob
+    start_address: 0x30001000 # [Required], Start address of key blob data, Start address of key blob data, it should be aligned to 1 KB (1024 B)
+    end_address: 0x30008000 # [Required], End address of key blob data, End address of key blob data, it should be aligned to 1 KB (1024 B)
+    aes_decryption_enable: true # [Optional], AES decryption enable flag, For accesses hitting in a valid context, this bit indicates if the fetched data is to be decrypted or simply bypassed
+    valid: true # [Optional], Valid flag, This field signals if the context is valid or not

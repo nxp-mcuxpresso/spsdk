@@ -5,8 +5,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """The shadow registers control DAT support file."""
+
 import logging
-import os
 from typing import Any, List, Optional
 
 from ruamel.yaml import YAML
@@ -17,9 +17,16 @@ from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.dm_commands import StartDebugSession
 from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.debuggers.utils import test_ahb_access
-from spsdk.utils.misc import change_endianness, value_to_bytes, value_to_int
+from spsdk.utils.misc import (
+    change_endianness,
+    load_configuration,
+    value_to_bytes,
+    value_to_int,
+    write_file,
+)
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister, SPSDKRegsErrorRegisterNotFound
+from spsdk.utils.schema_validator import ConfigTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +98,8 @@ class ShadowRegisters:
             read_back = self.probe.mem_reg_read(addr)
             if read_back & verify_mask != data & verify_mask:
                 raise IoVerificationError(
-                    f"The written data 0x{data:08X} to 0x{addr:08X} address are invalid."
+                    f"The verification of written shadow register 0x{addr:08X} failed."
+                    " Maybe a READ LOCK is set for that register."
                 )
 
     def reload_registers(self) -> None:
@@ -99,14 +107,13 @@ class ShadowRegisters:
         for reg in self.regs.get_registers():
             self.reload_register(reg)
 
-    def sets_all_registers(self) -> None:
-        """Update all shadow registers in target by local values."""
+    def sets_all_registers(self, verify: bool = True) -> None:
+        """Update all shadow registers in target by local values.
+
+        :param verify: Verity write operation.
+        """
         for reg in self.regs.get_registers():
-            if reg.has_group_registers():
-                for subreg in reg.sub_regs:
-                    self.set_register(subreg.name, subreg.get_value())
-            else:
-                self.set_register(reg.name, reg.get_value())
+            self.set_register(reg.name, reg.get_value(), verify)
 
     def reload_register(self, reg: RegsRegister) -> None:
         """Reload the value in requested register.
@@ -122,12 +129,14 @@ class ShadowRegisters:
         """
         return bytes(self.get_register(reg.name))
 
-    def set_register(self, reg_name: str, data: Any) -> None:
+    def set_register(self, reg_name: str, data: Any, verify: bool = True) -> None:
         """The function sets the value of the specified register.
 
-        param reg: The register name.
-        param data: The new data to be stored to shadow register.
-        raises SPSDKDebugProbeError: The debug probe is not specified.
+        :param reg_name: The register name.
+        :param data: The new data to be stored to shadow register.
+        :param verify: Verity write operation.
+        :raises SPSDKDebugProbeError: The debug probe is not specified.
+        :raises SPSDKError: General error with write of Shadow register.
         """
 
         def write_reg(base_address: int, reg: RegsRegister) -> None:
@@ -145,13 +154,14 @@ class ShadowRegisters:
             if reg.reverse:
                 value = int.from_bytes(change_endianness(value_to_bytes(value)), "big")
             # Create verify mask
-            bitfields = reg.get_bitfields()
             verify_mask = 0
-            if bitfields:
-                for bitfield in bitfields:
-                    verify_mask = verify_mask | (((1 << bitfield.width) - 1) << bitfield.offset)
-            else:
-                verify_mask = (1 << reg.width) - 1
+            if verify:
+                bitfields = reg.get_bitfields()
+                if bitfields:
+                    for bitfield in bitfields:
+                        verify_mask = verify_mask | (((1 << bitfield.width) - 1) << bitfield.offset)
+                else:
+                    verify_mask = (1 << reg.width) - 1
 
             self._write_shadow_reg(
                 addr=base_address + reg.offset, data=value, verify_mask=verify_mask
@@ -161,7 +171,7 @@ class ShadowRegisters:
             reg = self.regs.find_reg(reg_name, include_group_regs=True)
             reg.set_value(data, raw=True)
             if reg.has_group_registers():
-                for sub_reg in reg.sub_regs:
+                for sub_reg in reg.sub_regs[:: -1 if reg.reverse_subregs_order else 1]:
                     write_reg(self.offset, sub_reg)
             else:
                 write_reg(self.offset, reg=reg)
@@ -196,8 +206,7 @@ class ShadowRegisters:
 
             ret = bytearray()
             if reg.has_group_registers():
-
-                for sub_reg in reg.sub_regs:
+                for sub_reg in reg.sub_regs[:: -1 if reg.reverse_subregs_order else 1]:
                     ret.extend(read_reg(self.offset, sub_reg))
             else:
                 ret.extend(read_reg(self.offset, reg=reg))
@@ -244,7 +253,7 @@ class ShadowRegisters:
                 ) from exc
 
             if reg.has_group_registers():
-                for sub_reg in reg.sub_regs:
+                for sub_reg in reg.sub_regs[:: -1 if reg.reverse_subregs_order else 1]:
                     ret += add_reg(sub_reg)
             else:
                 ret += add_reg(reg)
@@ -252,7 +261,7 @@ class ShadowRegisters:
         self.fuse_mode = False
         return ret
 
-    def create_yml_config(self, file_name: str, raw: bool = False, diff: bool = False) -> None:
+    def create_yaml_config(self, file_name: str, raw: bool = False, diff: bool = False) -> None:
         """The function creates the configuration YML file.
 
         :param file_name: The file_name (without extension) of stored configuration.
@@ -284,14 +293,9 @@ class ShadowRegisters:
             indent=2,
             diff=diff,
         )
+        write_file(ConfigTemplate.convert_cm_to_yaml(data), file_name, encoding="utf8")
 
-        if not os.path.exists(os.path.dirname(file_name)):
-            os.makedirs(os.path.dirname(file_name))
-
-        with open(file_name, "w", encoding="utf8") as out_file:
-            yaml.dump(data, out_file)
-
-    def load_yml_config(self, file_name: str, raw: bool = False) -> None:
+    def load_yaml_config(self, file_name: str, raw: bool = False) -> None:
         """The function loads the configuration from YML file.
 
         :param file_name: The file_name (without extension) of stored configuration.
@@ -300,14 +304,7 @@ class ShadowRegisters:
         """
         antipole_regs = None if raw else list(self.config.get_antipole_regs(self.device).values())
         computed_fields = None if raw else self.config.get_computed_fields(self.device)
-        try:
-            with open(file_name, "r", encoding="utf8") as yml_config_file:
-                yaml = YAML()
-                yaml.indent(sequence=4, offset=2)
-                data = yaml.load(yml_config_file)
-        except FileNotFoundError as exc:
-            raise SPSDKError("File with YML configuration doesn't exists.") from exc
-
+        data = load_configuration(file_name)
         self.regs.load_yml_config(data["registers"], antipole_regs, computed_fields)
         if not raw:
             # Just update only configured registers

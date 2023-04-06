@@ -7,28 +7,35 @@ configure the device, prepare, download and upload data, including security oper
 delivered in the form of a python library and command-line applications.
 
 
-Version: 1.9.1
-
+Version: 1.10.0
 ==============
-Date: 17-March-2023
+Date: 5-April-2023
 
 New features
-- nxpdevhsm
-    - split reset option in nxpdevhsm into two; disable init reset by default
-
-Bugfixes
-
+- blhost:
+    - add new command: ele_message
 - nxpdebugmbox:
-    - fix Linux error on PyOCD
-    - fix PyOCD and PEmicro connection for kw45xx and k32w1xx
+    - add command: read UUID from device
+    - update PyOCD to latest version to support CMSIS DAP FW v3
 - nxpdevhsm:
-    - fix buffer base address for DevHSM operations
+    - USER_PCK rename to CUST_MK_SK
 - nxpimage:
-    - fix handling exception when the root cert index is wrong
-
-- tphost/tpconfig:
-    - incorrect output in TP PG command in case of an failure
-
+    - add subcommand group for generate and parse certificate block
+    - replace private key to signature provider in master boot image
+    - OTFAD support for RT1170
+- ifr:
+    -  add commands read/write
+- pfr:
+    - add CMPA erase command
+Bugfixes
+- nxpdebugmbox:
+    - fix AP selection issue for PyOCD and PEMICRO
+    - fix DAC verification when there is only 1 root key
+- nxpimage:
+    - fix MBI issue with HMAC
+- shadowregs:
+    - fix endianness for OTP MASTER KEY
+- drop support for Python 3.7
 
 Supported devices
 =================
@@ -50,11 +57,22 @@ System Requirements
 Supported Environment
 =====================
 
-Python 3.7+ interpreter, old version 2.x is not supported
+Python 3.8+ interpreter, old version 2.x is not supported
 
 
 Revision History
 ================
+1.9.1
+- nxpdebugmbox:
+    - fix Linux error on PyOCD
+    - fix PyOCD and PEmicro connection for kw45xx and k32w1xx
+- nxpdevhsm:
+    - fix buffer base address for DevHSM operations
+    - split reset option in nxpdevhsm into two; disable init reset by default
+- nxpimage:
+    - fix handling exception when the root cert index is wrong
+- tphost/tpconfig:
+    - incorrect output in TP PG command in case of an failure
 1.9.0
 - nxpdebugmbox:
     - add check of root of trust hash in dat authentication

@@ -1,0 +1,37 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# NXP lpc55s6x PFR CFPA configuration
+description: # The CFPA configuration description.
+  device: lpc55s6x # The NXP device name.
+  revision: 1b # The NXP device revision.
+  type: CFPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 1.10.0 # The SPSDK tool version.
+settings: # The CFPA registers configuration.
+  VERSION: # Version
+    value: "0x0000_0002" # The value width: 32b
+  ROTKH_REVOKE: # Root of Trust Key Hash Revoke
+    bitfields: # The register bitfields
+      RoTK0_EN: 0b01 # Width: 2b, Description: RoT Key 0 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK1_EN: 0b01 # Width: 2b, Description: RoT Key 1 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK2_EN: 0b01 # Width: 2b, Description: RoT Key 2 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK3_EN: 0b01 # Width: 2b, Description: RoT Key 3 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+  CMPA_PROG_IN_PROGRESS: # CMPA Page programming on going. This field shall be set to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.
+    value: "0x5cc5_5aa5" # The value width: 32b

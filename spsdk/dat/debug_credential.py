@@ -12,8 +12,8 @@ from struct import calcsize, pack, unpack_from
 from typing import Any, List, Optional, Type
 
 from spsdk import SPSDKError, crypto
-from spsdk.crypto import SignatureProvider
 from spsdk.crypto.loaders import extract_public_key
+from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.dat.utils import ecc_key_to_bytes, ecc_public_numbers_to_bytes, rsa_key_to_bytes
 from spsdk.exceptions import SPSDKValueError
 from spsdk.image.ahab.ahab_container import SRKRecord, SRKTable
@@ -36,7 +36,7 @@ class DebugCredential:
         0x0001: "LPC550x, LPC55s0x, LPC551x, LPC55s1x, LPC552x, LPC55s2x, LPC55s6",
         0x0004: "LPC55s3",
         0x0005: "KW45xx/K32W1xx",
-        0x5254049C: "i.MXRT1180",
+        0x5254049C: "i.MXRT118x",
     }
 
     def __init__(
@@ -214,6 +214,11 @@ class DebugCredential:
         if "rotk" in yaml_config.keys():
             yaml_config["rotk"] = find_file(yaml_config["rotk"], search_paths=search_paths)
         yaml_config["dck"] = find_file(yaml_config["dck"], search_paths=search_paths)
+        signature_provider = get_signature_provider(
+            sp_cfg=yaml_config.get("sign_provider"),
+            local_file_key=yaml_config.get("rotk"),
+            search_paths=search_paths,
+        )
         dc_obj = klass(
             socc=yaml_config["socc"],
             uuid=bytes.fromhex(yaml_config["uuid"]),
@@ -228,11 +233,7 @@ class DebugCredential:
             rot_pub=klass._get_rot_pub(  # pylint: disable=protected-access
                 yaml_config["rot_id"], yaml_config["rot_meta"]
             ),
-            signature_provider=SignatureProvider.create(
-                # if the yaml_config doesn't contain 'sign_provider' assume file-type
-                yaml_config.get("sign_provider")
-                or f'type=file;file_path={yaml_config["rotk"]}'
-            ),
+            signature_provider=signature_provider,
         )
         return dc_obj
 
@@ -519,6 +520,8 @@ class DebugCredentialECC(DebugCredential):
         :return: RoTKH in bytes
         """
         srk_records_num = self.rot_meta[0] >> 4
+        if srk_records_num == 1:
+            return b""
         key_length = 256 if ((len(self.rot_meta) - 4) // srk_records_num) == 32 else 384
         return internal_backend.hash(data=self.rot_meta[4:], algorithm=f"sha{key_length}")
 

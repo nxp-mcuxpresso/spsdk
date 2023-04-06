@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,8 +13,6 @@ from click.testing import CliRunner
 
 import spsdk
 from spsdk.apps import blhost
-from spsdk.mboot.interfaces.buspal import BBConstants, BuspalMode, Response
-from spsdk.mboot.interfaces.buspal_i2c import BuspalI2C, I2cModeCommand
 from spsdk.utils.misc import load_binary
 from spsdk.utils.serial_buspal_proxy import SerialBuspalProxy
 from spsdk.utils.serial_proxy import SerialProxy

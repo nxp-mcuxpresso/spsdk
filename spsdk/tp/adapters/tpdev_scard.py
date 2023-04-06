@@ -425,8 +425,7 @@ class TpDevSmartCard(TpDevInterface):
         cert_file_path: str, search_dirs: Optional[List[str]] = None, destination: int = 0
     ) -> bytes:
         cert_file = find_file(cert_file_path, search_paths=search_dirs)
-        with open(cert_file, "rb") as f:
-            cert_data = f.read()
+        cert_data = load_binary(cert_file)
         return TpDevSmartCard._serialize_cert_data(cert_data, destination)
 
     @staticmethod

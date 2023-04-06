@@ -21,6 +21,7 @@ from spsdk import version as spsdk_version
 from spsdk.apps.utils.utils import get_key
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.database import Database
+from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     align_block,
@@ -584,25 +585,41 @@ class OtfadNxp(Otfad):
         xml_fuses = os.path.join(OTFAD_DATA_FOLDER, xml_fuses)
 
         fuses = Registers(self.family, base_endianness="little")
+        self.database.index = index
+
         grouped_regs = self.database.get_device_value(
             "grouped_registers", device=self.family, default=None
         )
-        if grouped_regs:
-            for reg in grouped_regs:
-                reg["name"] = reg["name"].replace("{index}", str(index))
+
         fuses.load_registers_from_xml(xml_fuses, filter_out_list, grouped_regs)
 
         scramble_enabled = (
             self.key_scramble_mask is not None and self.key_scramble_align is not None
         )
 
-        fuses.find_reg(f"OTFAD{index}_KEY").set_value(self.kek)
-        otfad_cfg = fuses.find_reg(f"OTFAD{index}_CFG4")
-        otfad_cfg.find_bitfield("OTFAD_ENABLE").set_value(1)
+        otfad_key_fuse = self.database.get_device_value("otfad_key_fuse", self.family)
+        otfad_cfg_fuse = self.database.get_device_value("otfad_cfg_fuse", self.family)
+
+        fuses.find_reg(otfad_key_fuse).set_value(self.kek)
+        otfad_cfg = fuses.find_reg(otfad_cfg_fuse)
+
+        try:
+            otfad_cfg.find_bitfield(
+                self.database.get_device_value("otfad_enable_bitfield", self.family)
+            ).set_value(1)
+        except SPSDKRegsErrorBitfieldNotFound as e:
+            logger.debug(f"Bitfield for OTFAD ENABLE not found for {self.family}")
+
         if scramble_enabled:
-            otfad_cfg.find_bitfield("OTFAD_SCRAMBLE_ENABLE").set_value(1)
-            otfad_cfg.find_bitfield("OTFAD_SCRAMBLE_ALIGN").set_value(self.key_scramble_align)
-            fuses.find_reg(f"OTFAD{index}_KEY_SCRAMBLE").set_value(self.key_scramble_mask)
+            otfad_cfg.find_bitfield(
+                self.database.get_device_value("otfad_scramble_enable_bitfield", self.family)
+            ).set_value(1)
+            otfad_cfg.find_bitfield(
+                self.database.get_device_value("otfad_scramble_align_bitfield", self.family)
+            ).set_value(self.key_scramble_align)
+            fuses.find_reg(
+                self.database.get_device_value("otfad_scramble_key", self.family)
+            ).set_value(self.key_scramble_mask)
 
         ret = (
             f"# BLHOST OTFAD{index} KEK fuses programming script\n"
@@ -611,7 +628,7 @@ class OtfadNxp(Otfad):
         )
 
         ret += f"# OTP KEK (Big Endian): {self.kek.hex()}\n\n"
-        for reg in fuses.find_reg(f"OTFAD{index}_KEY").sub_regs:
+        for reg in fuses.find_reg(otfad_key_fuse).sub_regs:
             ret += f"# {reg.name} fuse.\n"
             ret += f"efuse-program-once {reg.offset} 0x{reg.get_bytes_value().hex()} --no-verify\n"
 
@@ -621,7 +638,9 @@ class OtfadNxp(Otfad):
         ret += f"efuse-program-once {otfad_cfg.offset} 0x{otfad_cfg.get_bytes_value().hex()} --no-verify\n"
 
         if scramble_enabled:
-            scramble = fuses.find_reg(f"OTFAD{index}_KEY_SCRAMBLE")
+            scramble = fuses.find_reg(
+                self.database.get_device_value("otfad_scramble_key", self.family)
+            )
             ret += f"\n# {scramble.name} fuse.\n"
             ret += f"efuse-program-once {scramble.offset} 0x{scramble.get_bytes_value().hex()} --no-verify\n"
 
@@ -675,11 +694,17 @@ class OtfadNxp(Otfad):
 
         return binaries
 
-    def binary_image(self, plain_data: bool = False, data_alignment: int = 16) -> BinaryImage:
+    def binary_image(
+        self,
+        plain_data: bool = False,
+        data_alignment: int = 16,
+        otfad_table_name: str = "OTFAD_Table",
+    ) -> BinaryImage:
         """Get the OTFAD Binary Image representation.
 
         :param plain_data: Binary representation in plain format, defaults to False
         :param data_alignment: Alignment of data part key blobs.
+        :param otfad_table_name: name of the output file that contains OTFAD table
         :return: OTFAD in BinaryImage.
         """
         otfad = BinaryImage("OTFAD", offset=self.table_address)
@@ -696,7 +721,7 @@ class OtfadNxp(Otfad):
         )
         otfad.add_image(
             BinaryImage(
-                "OTFAD_Table",
+                otfad_table_name,
                 size=self.key_blob_rec_size * self.blobs_max_cnt,
                 offset=0,
                 description=f"OTFAD description table for {self.family}",
@@ -789,7 +814,7 @@ class OtfadNxp(Otfad):
         otfad_config: List[Dict[str, Any]] = config["key_blobs"]
         family = config["family"]
         database = Database(OTFAD_DATABASE_FILE)
-        kek = get_key(find_file(config["kek"], search_paths=search_paths), 16)
+        kek = get_key(config["kek"], expected_size=16, search_paths=search_paths)
         logger.debug(f"Loaded KEK: {kek.hex()}")
         table_address = value_to_int(config["otfad_table_address"])
         start_address = min([value_to_int(addr["start_address"]) for addr in otfad_config])

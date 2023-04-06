@@ -9,7 +9,6 @@ import os
 
 import pytest
 
-import spsdk.debuggers.debug_probe as DP
 import spsdk.shadowregs.shadowregs as SR
 import spsdk.utils.registers as REGS
 from spsdk.exceptions import SPSDKError
@@ -157,14 +156,14 @@ def test_shadowreg_yml(data_dir, tmpdir):
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 
-    shadowregs.create_yml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
-    shadowregs.create_yml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=True)
+    shadowregs.create_yaml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
+    shadowregs.create_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=True)
 
     probe.clear()
 
     shadowregs_load_raw = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
-    shadowregs_load_raw.load_yml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=True)
-    shadowregs_load_raw.sets_all_registers()
+    shadowregs_load_raw.load_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=True)
+    shadowregs_load_raw.sets_all_registers(verify=True)
 
     assert shadowregs_load_raw.get_register("REG1") == 0x12345678.to_bytes(4, "big")
     assert shadowregs_load_raw.get_register("REG2") == 0x00004321.to_bytes(4, "big")
@@ -175,8 +174,8 @@ def test_shadowreg_yml(data_dir, tmpdir):
     probe.clear()
 
     shadowregs_load = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
-    shadowregs_load.load_yml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
-    shadowregs_load.sets_all_registers()
+    shadowregs_load.load_yaml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
+    shadowregs_load.sets_all_registers(verify=True)
 
     assert shadowregs_load.get_register("REG1") == b"\x92\x34\x56\x56"
     assert shadowregs_load.get_register("REG2") == b"\x00\x00\x03!"
@@ -187,8 +186,18 @@ def test_shadowreg_yml(data_dir, tmpdir):
     probe.clear()
 
     shadowregs_load2 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
-    shadowregs_load2.load_yml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=False)
-    shadowregs_load2.sets_all_registers()
+    shadowregs_load2.load_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=False)
+    shadowregs_load2.sets_all_registers(verify=True)
+
+    assert shadowregs_load2.get_register("REG1") == b"\x92\x34\x56\x56"
+    assert shadowregs_load2.get_register("REG2") == b"\x00\x00\x03!"
+    assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
+    assert shadowregs_load2.get_register("REG_BIG") == test_val
+    assert shadowregs_load2.get_register("REG_BIG_REV") == test_val
+
+    shadowregs_load2 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs_load2.load_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=False)
+    shadowregs_load2.sets_all_registers(verify=False)
 
     assert shadowregs_load2.get_register("REG1") == b"\x92\x34\x56\x56"
     assert shadowregs_load2.get_register("REG2") == b"\x00\x00\x03!"
@@ -208,7 +217,7 @@ def test_shadowreg_yml_corrupted(data_dir):
 
     shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
     with pytest.raises((SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound)):
-        shadowregs.load_yml_config(os.path.join(data_dir, "sh_regs_corrupted.yml"), raw=True)
+        shadowregs.load_yaml_config(os.path.join(data_dir, "sh_regs_corrupted.yml"), raw=True)
 
 
 def test_shadowreg_yml_invalid_computed(tmpdir, data_dir):
@@ -234,12 +243,12 @@ def test_shadowreg_yml_invalid_computed(tmpdir, data_dir):
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 
-    shadowregs.create_yml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
+    shadowregs.create_yaml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
 
     shadowregs1 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
 
     with pytest.raises(SPSDKError):
-        shadowregs1.load_yml_config(os.path.join(tmpdir, "sh_regs.yml"))
+        shadowregs1.load_yaml_config(os.path.join(tmpdir, "sh_regs.yml"))
 
 
 def test_shadowreg_yml_none_existing(data_dir):
@@ -253,7 +262,7 @@ def test_shadowreg_yml_none_existing(data_dir):
 
     shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
     with pytest.raises(SPSDKError):
-        shadowregs.load_yml_config(os.path.join(data_dir, "sh_regs_none.yml"), raw=True)
+        shadowregs.load_yaml_config(os.path.join(data_dir, "sh_regs_none.yml"), raw=True)
 
 
 def test_shadow_register_crc8():

@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # NXP lpc55s3x PFR CFPA configuration
 description:  # The PFR CFPA configuration description.
   device: lpc55s3x  # The NXP device name.

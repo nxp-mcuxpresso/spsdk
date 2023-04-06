@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -29,5 +29,5 @@ class SPSDKRegsErrorEnumNotFound(SPSDKRegsError):
     """Enum has not been found."""
 
 
-class SPSDKTimeoutError(SPSDKError):
+class SPSDKTimeoutError(TimeoutError, SPSDKError):
     """SPSDK Timeout."""

@@ -1,15 +1,17 @@
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 - req_id: "1.1"
-  desc: Never write any non-zero configuration into DCFG_CC_SOCU_NS_PIN before DCFG_CC_SOCU_PIN
+  desc:
+    Never write any non-zero configuration into DCFG_CC_SOCU_NS_PIN before DCFG_CC_SOCU_PIN
     contains any valid (non-zero) configuration.
   msg: The CMPA.DCFG_CC_SOCU_PIN[0:9] must be set in case the CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is set.
   cond: any(True if (((CFPA.DCFG_CC_SOCU_NS_PIN >> index) & 1) and not ((CMPA.DCFG_CC_SOCU_PIN >> index) & 1)) else False for index in range(0, int(10)))
 
 - req_id: "1.2"
-  desc: Never write any non-zero configuration into DCFG_CC_SOCU_NS_DFLT before DCFG_CC_SOCU_DFLT
+  desc:
+    Never write any non-zero configuration into DCFG_CC_SOCU_NS_DFLT before DCFG_CC_SOCU_DFLT
     contains any valid (non-zero) configuration.
   msg: The CMPA.DCFG_CC_SOCU_DFLT[0:9] must be set in case the CFPA.DCFG_CC_SOCU_NS_DFLT[0:9] is set.
   cond: any(True if (((CFPA.DCFG_CC_SOCU_NS_DFLT >> index) & 1) and not ((CMPA.DCFG_CC_SOCU_DFLT >> index) & 1)) else False for index in range(0, int(10)))
@@ -43,19 +45,22 @@
   cond: CFPA.DCFG_CC_SOCU_NS_DFLT != 0 and (~(CFPA.DCFG_CC_SOCU_NS_DFLT>>int(16)) & 0xFFFF) != (CFPA.DCFG_CC_SOCU_NS_DFLT & 0xFFFF)
 
 - req_id: "1.7"
-  desc: Do not write invalid PIN/DFLT configuration in CMPA area. Setting PIN bit
+  desc:
+    Do not write invalid PIN/DFLT configuration in CMPA area. Setting PIN bit
     to 0 and DFLT bit to 1 for given feature is not allowed
   msg: Invalid bit combination. If CMPA.DCFG_CC_SOCU_PIN[0:9] is 0, CMPA.DCFG_CC_SOCU_DFLT[0:9] can't be set to 1!
   cond: any(True if (not ((CMPA.DCFG_CC_SOCU_PIN >> index) & 1) and ((CMPA.DCFG_CC_SOCU_DFLT >> index) & 1)) else False for index in range(0, int(10)))
 
 - req_id: "1.8"
-  desc: Do not write invalid PIN/DFLT configuration in CFPA area. Setting PIN bit
+  desc:
+    Do not write invalid PIN/DFLT configuration in CFPA area. Setting PIN bit
     to 0 and DFLT bit to 1 for given feature is not allowed
   msg: Invalid bit combination. If CFPA.DCFG_CC_SOCU_NS_PIN[0:9] is 0, CFPA.DCFG_CC_SOCU_NS_DFLT[0:9] can't be set to 1!
   cond: any(True if (not ((CFPA.DCFG_CC_SOCU_NS_PIN >> index) & 1) and ((CFPA.DCFG_CC_SOCU_NS_DFLT >> index) & 1)) else False for index in range(0, int(10)))
 
 - req_id: "2.1"
-  desc: This CMPA_PROG_IN_PROGRESS must be always 0x00000000. Only ROM bootloader
+  desc:
+    This CMPA_PROG_IN_PROGRESS must be always 0x00000000. Only ROM bootloader
     is allowed to write anything to this field.
   msg: The CMPA_PROG_IN_PROGRESS must be set to 0!
   cond: CFPA.CMPA_PROG_IN_PROGRESS != 0

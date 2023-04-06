@@ -15,7 +15,6 @@ import pytest
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
-from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     BinaryPattern,
     Timeout,
@@ -468,37 +467,6 @@ def test_timeout_get_time():
 )
 def test_size_format(input_value, use_kibibyte, expected):
     assert size_fmt(input_value, use_kibibyte) == expected
-
-
-@pytest.mark.parametrize(
-    "path",
-    [
-        ("images/image.bin"),
-        ("images/image.hex"),
-        ("images/image.s19"),
-        ("images/image.srec"),
-    ],
-)
-def test_load_binary_image(path, data_dir):
-    binary = BinaryImage.load_binary_image(os.path.join(data_dir, path))
-    assert binary
-    assert isinstance(binary, BinaryImage)
-    assert len(binary) > 0
-
-
-@pytest.mark.parametrize(
-    "path, error_msg",
-    [
-        (
-            "images/image_corrupted.s19",
-            "SPSDK: Error loading file: expected crc 'D3' in record S21407F41001020100010600000200000000000000D4, but got 'D4'",
-        ),
-        ("invalid_file", "Error loading file"),
-    ],
-)
-def test_load_binary_image_invalid(path, error_msg, data_dir):
-    with pytest.raises(SPSDKError, match=error_msg):
-        BinaryImage.load_binary_image(os.path.join(data_dir, path))
 
 
 def test_swap16_invalid():

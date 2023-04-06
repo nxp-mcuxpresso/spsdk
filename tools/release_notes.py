@@ -21,6 +21,8 @@ from cachier import cachier
 from cryptography.hazmat.primitives import hashes
 from jira import JIRA, Issue
 
+from spsdk.exceptions import SPSDKError
+
 JIRA_SERVER = "https://jira.sw.nxp.com"
 TICKET_REGEX = re.compile(r"(SPSDK-\d+)")
 
@@ -215,7 +217,7 @@ def get_ticket_info(ticket: str, jira: Optional[JIRA]) -> TicketRecord:
     The `@cachier` decorator produces persistent cache to alleviate load on JIRA server.
     """
     if not jira:
-        raise RuntimeError(f"Info for {ticket} is not pre-recorded, can't work in offline mode")
+        raise SPSDKError(f"Info for {ticket} is not pre-recorded, can't work in offline mode")
     logging.info(f"Fetching info for ticket: {ticket}")
     issue = jira.issue(ticket)
     return TicketRecord.from_jira_issue(issue=issue)

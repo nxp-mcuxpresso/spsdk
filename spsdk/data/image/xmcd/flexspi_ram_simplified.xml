@@ -1,18 +1,32 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause 
+-->
 <regs>
-	<register offset="0x00" width="32" name="configBlock" reversed="False" description="XMCD Configuration Block">
+	<register offset="0x00" width="32" name="configOption0" reversed="False" description="XMCD Configuration Option 0">
 		<bit_field offset="0x00" width="8" name="sizeInMB" reset_value="0x00" description="Size in MB. 0 - Auto detection, Others - Size in MB"/>
 		<bit_field offset="0x08" width="4" name="maximumFrequency" reset_value="0x0" description="Maximum frequency. SoC specific definitions"/>
 		<bit_field offset="0x0c" width="4" name="misc" reset_value="0x0" description="Misc. For HyperRAM 0 - 1.8V, 1 - 3V">
-			<bit_field_value name="XMCD_FLEXSPI_RAM_MISC_1_8_V" value="0b0" description="Simplified configuration type"/>
-			<bit_field_value name="XMCD_FLEXSPI_RAM_MISC_3_0_V" value="0b1" description="Full configuration type"/>
+			<bit_field_value name="XMCD_FLEXSPI_RAM_MISC_1_8_V" value="0b0" description="1.8V"/>
+			<bit_field_value name="XMCD_FLEXSPI_RAM_MISC_3_0_V" value="0b1" description="3V"/>
 		</bit_field>
 		<bit_field offset="0x10" width="4" name="reserved" reset_value="0x0" description="Reserved for future use"/>
 		<bit_field offset="0x14" width="4" name="deviceType" reset_value="0x0" description="Device type 0 - Hyper RAM, 1 - APMemory">
 			<bit_field_value name="XMCD_FLEXSPI_RAM_DEVICE_TYPE_HYPER_RAM" value="0b0" description="Hyper RAM"/>
 			<bit_field_value name="XMCD_FLEXSPI_RAM_DEVICE_TYPE_AP_MEMORY" value="0b1" description="AP Memory"/>
 		</bit_field>
-		<bit_field offset="0x18" width="4" name="optionSize" reset_value="0x0" description="Option Size"/>
+		<bit_field offset="0x18" width="4" name="optionSize" reset_value="0x1" description="Option Size"/>
 		<bit_field offset="0x1c" width="4" name="tag" reset_value="0xc" description="Tag, fixed value 0xc"/>
+	</register>
+	<register offset="0x20" width="32" name="configOption1" reversed="False" description="XMCD Configuration Option 1">
+		<bit_field offset="0x00" width="4" name="readDummyCycles" reset_value="0x0" description="Read dummy cycles. 0 - Auto detection, Others - Specified dummy cycles"/>
+		<bit_field offset="0x04" width="4" name="writeDummyCycles" reset_value="0x0" description="Writw dummy cycles. 0 - Auto detection, Others - Specified dummy cycles"/>
+		<bit_field offset="0x08" width="8" name="reserved" reset_value="0x0" description="Reserved for future use"/>
+		<bit_field offset="0x10" width="4" name="pinMuxGroup" reset_value="0x0" description="0 - Primary Group, 1 - Secondary group"/>
+		<bit_field offset="0x14" width="4" name="dqsPinmuxGroup" reset_value="0x0" description="0 - Default Group, 1 - Secondary group"/>
+		<bit_field offset="0x18" width="4" name="reserved" reset_value="0x0" description="Reserved for future use"/>
+		<bit_field offset="0x1c" width="4" name="ramConnection" reset_value="0x0" description="0 - PORTA, 1 - PORTB"/>
 	</register>
 </regs>

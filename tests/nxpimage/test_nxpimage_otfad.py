@@ -43,8 +43,34 @@ def test_nxpimage_otfad_export(tmpdir, data_dir, config):
 
 
 @pytest.mark.parametrize(
-    "config,per_ix,blhost_bcf_res,bin_out",
+    "config,per_ix,blhost_bcf_res,bin_out,family",
     [
+        (
+            "otfad_rt1160.yaml",
+            2,
+            [
+                "efuse-program-once 128 0xffeeddcc --no-verify",
+                "efuse-program-once 129 0xbbaa9988 --no-verify",
+                "efuse-program-once 130 0x77665544 --no-verify",
+                "efuse-program-once 131 0x33221100 --no-verify",
+                "efuse-program-once 71 0x00000000 --no-verify",
+            ],
+            "otfad_rt1160_out.bin",
+            "rt116x",
+        ),
+        (
+            "otfad_rt1170.yaml",
+            2,
+            [
+                "efuse-program-once 128 0xffeeddcc --no-verify",
+                "efuse-program-once 129 0xbbaa9988 --no-verify",
+                "efuse-program-once 130 0x77665544 --no-verify",
+                "efuse-program-once 131 0x33221100 --no-verify",
+                "efuse-program-once 71 0x00000000 --no-verify",
+            ],
+            "otfad_rt1170_out.bin",
+            "rt117x",
+        ),
         (
             "otfad_rt1180.yaml",
             2,
@@ -53,6 +79,7 @@ def test_nxpimage_otfad_export(tmpdir, data_dir, config):
                 "efuse-program-once 182 0x00000008 --no-verify",
             ],
             "otfad_rt1180_out.bin",
+            "rt118x",
         ),
         (
             "otfad_rt1180_txt.yaml",
@@ -62,6 +89,7 @@ def test_nxpimage_otfad_export(tmpdir, data_dir, config):
                 "efuse-program-once 182 0x00000008 --no-verify",
             ],
             "otfad_rt1180_out.bin",
+            "rt118x",
         ),
         (
             "otfad_rt1180_scramble.yaml",
@@ -72,10 +100,13 @@ def test_nxpimage_otfad_export(tmpdir, data_dir, config):
                 "efuse-program-once 183 0x78563412 --no-verify",
             ],
             "otfad_rt1180_scramble_out.bin",
+            "rt118x",
         ),
     ],
 )
-def test_nxpimage_otfad_export_rt1180(tmpdir, data_dir, config, per_ix, blhost_bcf_res, bin_out):
+def test_nxpimage_otfad_export_rt11x0(
+    tmpdir, data_dir, config, per_ix, blhost_bcf_res, bin_out, family
+):
     runner = CliRunner()
     work_dir = os.path.join(tmpdir, "otfad")
     shutil.copytree(os.path.join(data_dir, "otfad"), work_dir)
@@ -85,13 +116,13 @@ def test_nxpimage_otfad_export_rt1180(tmpdir, data_dir, config, per_ix, blhost_b
         cmd = f"otfad export -i {per_ix} {config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
-        assert os.path.isfile(os.path.join(out_dir, f"otfad{per_ix}_rt1180_blhost.bcf"))
+        assert os.path.isfile(os.path.join(out_dir, f"otfad{per_ix}_{family}_blhost.bcf"))
         assert os.path.isfile(os.path.join(out_dir, "encrypted_blobs.bin"))
         assert os.path.isfile(os.path.join(out_dir, "OTFAD_Table.bin"))
         assert os.path.isfile(os.path.join(out_dir, "otfad_whole_image.bin"))
         assert os.path.isfile(os.path.join(out_dir, "readme.txt"))
 
-        blhost_script = load_text(f"otfad{per_ix}_rt1180_blhost.bcf", search_paths=[out_dir])
+        blhost_script = load_text(f"otfad{per_ix}_{family}_blhost.bcf", search_paths=[out_dir])
 
         for result in blhost_bcf_res:
             assert result in blhost_script

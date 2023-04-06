@@ -1,6 +1,7 @@
 {
     "licenses": [
         "Apache 2.0",
+        "Apache-2.0",
         "Apache-2.0 license",
         "Apache License 2.0",
         "Apache License, Version 2.0",
@@ -216,10 +217,22 @@
             "is_manual": false
         },
         {
+            "name": "libusb-package",
+            "license": "Apache 2.0",
+            "home_page": "https://github.com/pyocd/libusb-package",
+            "is_manual": true
+        },
+        {
             "name": "milksnake",
             "license": "Apache License 2.0",
             "home_page": "https://github.com/getsentry/milksnake",
             "is_manual": false
+        },
+        {
+            "name": "natsort",
+            "license": "MIT",
+            "home_page": "https://github.com/SethMMorton/natsort",
+            "is_manual": true
         },
         {
             "name": "naturalsort",

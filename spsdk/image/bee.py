@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 BEE_DATA_FOLDER: str = os.path.join(UTILS_DATA_FOLDER, "bee")
-BEE_SCH_FILE: str = os.path.join(BEE_DATA_FOLDER, "sch_bee.yml")
+BEE_SCH_FILE: str = os.path.join(BEE_DATA_FOLDER, "sch_bee.yaml")
 BEE_DATABASE_FILE: str = os.path.join(BEE_DATA_FOLDER, "database.yaml")
 
 # maximal size of encrypted block in bytes
@@ -535,15 +535,15 @@ class BeeRegionHeader(BeeBaseClass):
         # KIB
         kib_data = self._kib.export()
         dbg_info.append_binary_section("BEE-KIB (non-crypted)", kib_data)
-        aes = AES.new(self._sw_key, AES.MODE_ECB)
-        result += aes.encrypt(kib_data)
+        aes_ecb = AES.new(self._sw_key, AES.MODE_ECB)
+        result += aes_ecb.encrypt(kib_data)
         # padding
         result = extend_block(result, self.PRDB_OFFSET)
         # PRDB
         prdb_data = self._prdb.export()
         dbg_info.append_binary_section("BEE-PRDB (non-crypted)", prdb_data)
-        aes = AES.new(self._kib.kib_key, AES.MODE_CBC, self._kib.kib_iv)
-        result += aes.encrypt(prdb_data)
+        aes_cbc = AES.new(self._kib.kib_key, AES.MODE_CBC, self._kib.kib_iv)
+        result += aes_cbc.encrypt(prdb_data)
         # padding
         return extend_block(result, self.SIZE)
 
@@ -560,11 +560,11 @@ class BeeRegionHeader(BeeBaseClass):
         super().parse(data, offset)  # check size of the input data
         if len(sw_key) != 16:
             raise SPSDKError("Invalid sw key")
-        aes = AES.new(sw_key, AES.MODE_ECB)
-        decr_data = aes.decrypt(data[offset : offset + BeeKIB._size()])
+        aes_ecb = AES.new(sw_key, AES.MODE_ECB)
+        decr_data = aes_ecb.decrypt(data[offset : offset + BeeKIB._size()])
         kib = BeeKIB.parse(decr_data)
-        aes = AES.new(kib.kib_key, AES.MODE_CBC, kib.kib_iv)
-        decr_data = aes.decrypt(
+        aes_cbc = AES.new(kib.kib_key, AES.MODE_CBC, kib.kib_iv)
+        decr_data = aes_cbc.decrypt(
             data[offset + cls.PRDB_OFFSET : offset + cls.PRDB_OFFSET + BeeProtectRegionBlock.SIZE]
         )
         prdb = BeeProtectRegionBlock.parse(decr_data)

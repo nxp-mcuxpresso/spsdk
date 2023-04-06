@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 CM33 Secure vector table address (cm33_vtor_addr): "0x0"
 CM33 Non-secure vector table address (cm33_vtor_ns_addr): "0x0"
 CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0): "0x0"

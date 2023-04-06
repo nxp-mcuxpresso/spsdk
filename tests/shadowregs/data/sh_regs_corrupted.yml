@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 registers:
   REG1:
 # Reg Description:Register 1, used for testing antipole register and some computed fields.

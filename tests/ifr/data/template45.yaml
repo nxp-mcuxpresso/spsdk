@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # NXP kw45xx PFR ROMCFG configuration
 description:  # The ROMCFG configuration description.
   device: kw45xx  # The NXP device name.

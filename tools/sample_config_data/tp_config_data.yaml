@@ -1,3 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Path to CMPA binary
 cmpa_path: sample_config_data/cmpa_example.bin
 # Path to CFPA binary

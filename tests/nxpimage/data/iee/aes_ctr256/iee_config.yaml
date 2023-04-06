@@ -1,8 +1,12 @@
---- # ----------------------------------------------------------------------------------------------------
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ----------------------------------------------------------------------------------------------------
 # ===========  IEE: Inline Encryption Engine Configuration template for rt1170.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                         == Basic Settings ==
-family: rt1170 # [Required], MCU family, MCU family name., Possible options:['rt1170']
+family: rt117x # [Required], MCU family, MCU family name., Possible options:['rt1170']
 output_folder: iee_output # [Required], IEE output directory, Path to directory where the IEE output will be generated
 input_binary: evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_bootable_nopadding.bin # [Required], Input binary file, Path to input binary file
 output_name: encrypted.bin # [Optional], Output binary file name, File name of the encrypted file, output_folder/output_name

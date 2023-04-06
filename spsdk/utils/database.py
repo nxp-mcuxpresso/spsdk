@@ -11,7 +11,7 @@ import dataclasses
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from spsdk.exceptions import SPSDKTypeError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKTypeError, SPSDKValueError
 from spsdk.utils.misc import find_first, load_configuration
 
 
@@ -137,7 +137,9 @@ class Devices(List[Device]):
     @property
     def device_names(self) -> List[str]:
         """Get the list of all device names."""
-        return [dev.name for dev in self]
+        devices = [dev.name for dev in self]
+        devices.sort()
+        return devices
 
     def get_by_name(self, name: str) -> Device:
         """Return database device structure.
@@ -176,19 +178,21 @@ class Devices(List[Device]):
 class Database:
     """Class that helps manage used databases in SPSDK."""
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, index: Optional[int] = None) -> None:
         """Register Configuration class constructor.
 
         :param path: The path to configuration JSON file.
+        :param index: Values with {index} will be replaced with index value
         """
         self.path = path
+        self.index = index
         config: Dict[str, Any] = load_configuration(path)
         try:
             self._devices = Devices.load(config["devices"])
         except (SPSDKValueError, SPSDKTypeError) as exc:
             if exc.description:
                 exc.description += f"File path: {self.path}"
-            raise exc
+            raise SPSDKError("Database can not be created")
         self.attributes: dict = config.get("attributes", {})
 
     @classmethod
@@ -205,6 +209,19 @@ class Database:
         """Get the list of devices stored in the database."""
         return self._devices
 
+    def replace_idx_value(self, value: str) -> str:
+        """Replace index value if provided in the database.
+
+        :param value: value to be replaced f-string containing index
+        :return: value with replaced index
+        """
+        if self.index and isinstance(value, str):
+            value = value.replace("{index}", str(self.index))
+        if self.index and isinstance(value, list):
+            for reg in value:
+                reg["name"] = reg["name"].replace("{index}", str(self.index))
+        return value
+
     def get_device_value(
         self,
         key: str,
@@ -212,7 +229,7 @@ class Database:
         revision: str = "latest",
         default: Optional[Any] = None,
     ) -> Any:
-        """Return any parameter by key.
+        """Return any parameter by key and replace the index if provided in DB.
 
         :param key: The Key of the parameter to be returned.
         :param device: The device name.
@@ -227,7 +244,8 @@ class Database:
             except SPSDKValueError:
                 rev = None
             if rev and key in rev.attributes:
-                return rev.attributes[key]
+                return self.replace_idx_value(rev.attributes[key])
             if key in dev.attributes:
-                return dev.attributes[key]
-        return self.attributes.get(key, default)
+                return self.replace_idx_value(dev.attributes[key])
+
+        return self.replace_idx_value(self.attributes.get(key, default))
