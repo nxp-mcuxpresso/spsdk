@@ -932,7 +932,7 @@ class CertBlockV31(CertBlock):
             self.header.cert_block_size += len(isk_cert_data)
         header_data = self.header.export()
         if len(header_data + key_record_data + isk_cert_data) != self.expected_size:
-            raise SPSDKError("Ty vole spatna size!")
+            raise SPSDKError("Size if binary differs from expected size.")
         return header_data + key_record_data + isk_cert_data
 
     @classmethod

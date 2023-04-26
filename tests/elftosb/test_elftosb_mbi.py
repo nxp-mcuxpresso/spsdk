@@ -138,6 +138,7 @@ def test_elftosb_mbi_signed(data_dir, tmpdir, config_file, device, sign_digest):
 
         cmd = f"--image-conf {new_config}"
         result = runner.invoke(elftosb.main, cmd.split())
+        assert result.exit_code == 0
         assert os.path.isfile(new_binary)
 
         # validate file lengths
