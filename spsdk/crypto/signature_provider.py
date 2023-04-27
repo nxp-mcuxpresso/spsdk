@@ -13,15 +13,20 @@ Each concrete signature provider needs to implement:
 """
 
 import abc
+import importlib
 import logging
+import math
 from typing import Any, Dict, List, Optional, Union
 
 from Crypto.PublicKey import ECC
+from Crypto.Signature import DSS
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 
 from spsdk import crypto
 from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation, SPSDKValueError
-from spsdk.utils.crypto.backend_internal import internal_backend
-from spsdk.utils.crypto.common import crypto_backend
 from spsdk.utils.misc import find_file
 
 logger = logging.getLogger(__name__)
@@ -156,7 +161,7 @@ class PlainFileSP(SignatureProvider):
         data = bytes()
         if isinstance(crypto_public_key, crypto.RSAPublicKey):
             signature = self._rsa_sign(data)
-            is_matching = crypto_backend().rsa_verify(
+            is_matching = self._rsa_verify(
                 pub_key_mod=crypto_public_key.public_numbers().n,
                 pub_key_exp=crypto_public_key.public_numbers().e,
                 signature=signature,
@@ -165,9 +170,7 @@ class PlainFileSP(SignatureProvider):
             return is_matching
         else:  # public_key can be only one of RSAPublicKey | EllipticCurvePublicKey type
             signature = self._ecc_sign(data)
-            is_matching = crypto_backend().ecc_verify(
-                public_key=public_key, signature=signature, data=data
-            )
+            is_matching = self._ecc_verify(public_key=public_key, signature=signature, data=data)
             return is_matching
 
     def info(self) -> str:
@@ -201,12 +204,96 @@ class PlainFileSP(SignatureProvider):
                 encryption_algorithm=crypto.serialization.NoEncryption(),
             )
             crypto_dome_key = ECC.import_key(private_key_bytes)
-            signature = internal_backend.ecc_sign(crypto_dome_key, data)
+            hasher = self._get_crypto_algorithm(name=self.hash_alg.name, data=data)
+            signer = DSS.new(crypto_dome_key, mode="deterministic-rfc6979")
+            signature = signer.sign(hasher)
         else:
             signature = self.private_key.sign(
                 data=data, signature_algorithm=crypto.ec.ECDSA(self.hash_alg)
             )
         return signature
+
+    def _ecc_verify(
+        self,
+        public_key: bytes,
+        signature: bytes,
+        data: bytes,
+    ) -> bool:
+        """Verify (EC)DSA signature.
+
+        :param public_key: ECC public key
+        :param signature: Signature to verify, r and s coordinates as bytes
+        :param data: Data to validate
+        :return: True if the signature is valid
+        :raises SPSDKError: Signature length is invalid
+        """
+        assert isinstance(public_key, bytes)
+
+        processed_public_key = serialization.load_pem_public_key(public_key, default_backend())
+        assert isinstance(processed_public_key, ec.EllipticCurvePublicKey)
+        coordinate_size = math.ceil(processed_public_key.key_size / 8)
+        if len(signature) != 2 * coordinate_size:
+            raise SPSDKError(
+                f"Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}"
+            )
+        der_signature = utils.encode_dss_signature(
+            int.from_bytes(signature[:coordinate_size], byteorder="big"),
+            int.from_bytes(signature[coordinate_size:], byteorder="big"),
+        )
+        try:
+            # pylint: disable=no-value-for-parameter    # pylint is mixing RSA and ECC verify methods
+            processed_public_key.verify(der_signature, data, ec.ECDSA(self.hash_alg))
+            return True
+        except InvalidSignature:
+            return False
+
+    def _rsa_verify(
+        self,
+        pub_key_mod: int,
+        pub_key_exp: int,
+        signature: bytes,
+        data: bytes,
+    ) -> bool:
+        """Verify input data.
+
+        :param pub_key_mod: The public key modulus
+        :param pub_key_exp: The public key exponent
+        :param signature: The signature of input data
+        :param data: Input data
+        :return: True if signature is valid, False otherwise
+        :raises SPSDKError: If algorithm not found
+        """
+        public_key = rsa.RSAPublicNumbers(pub_key_exp, pub_key_mod).public_key(default_backend())
+        assert isinstance(public_key, rsa.RSAPublicKey)
+        try:
+            public_key.verify(
+                signature=signature,
+                data=data,
+                padding=padding.PKCS1v15(),
+                algorithm=self.hash_alg,
+            )
+        except InvalidSignature:
+            return False
+
+        return True
+
+    @staticmethod
+    def _get_crypto_algorithm(name: str, data: bytes) -> Any:
+        """For specified name return Hash algorithm instance.
+
+        :param name: Name of the algorithm (class name), case insensitive
+        :param data: parameter for the constructor of the algorithm class
+        :return: instance of algorithm class
+        :raises SPSDKError: If the algorithm is not found
+        """
+        # algo_cls = getattr(Hash, name.upper(), None)  # hack: get class object by name
+        try:
+            algo_cls = importlib.import_module(f"Crypto.Hash.{name.upper()}")
+        except ModuleNotFoundError as exc:
+            raise SPSDKError(f"No module named 'Crypto.Hash.{name.upper()}") from exc
+        if algo_cls is None:
+            raise SPSDKError(f"Unsupported algorithm: Hash.{name}".format(name=name.upper()))
+        return algo_cls.new(data)  # type: ignore  # pylint: disable=not-callable
 
 
 def get_signature_provider(
