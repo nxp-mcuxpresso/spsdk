@@ -1,0 +1,36 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family: rt5xx
+outputImageExecutionTarget: External flash (XIP)
+outputImageAuthenticationType: Signed
+masterBootOutputFile: my_mbi.bin
+inputImageFile: my_application.bin
+outputImageExecutionAddress: 0
+enableHwUserModeKeys: false
+enableTrustZone: false
+trustZonePresetFile: ""
+mainRootCertId: 0
+
+# ----------------------------------------------------------------------------------------------------
+#               Signature configuration area
+# ----------------------------------------------------------------------------------------------------
+# There are two ways how sign the final masterboot image.
+#
+# 1. In case that you have available private key, specify in mainCertPrivateKeyFile key
+#    As a second way to do same is use signProvider option with 'type=file'.
+#
+# 2. For case that Masterboot image is generated in untrusted environment (without access to RoT private keys),
+#    there is option to use plugin (example how to create own plugin is in: SPSDK/examples/signature_providerdat/hsm/). The plugin
+#    has simple interface that allows handle masterboot image binary into plugin with index of RoT private key to get back signed
+#    masterboot image.
+#
+#    Those options are exclusive, so only one option could be used to sign the masterboot image.
+
+
+#mainCertPrivateKeyFile: .\..\hsm\hsm_k0_cert0_2048.pem
+#signProvider: type=file;file_path=.\..\hsm\hsm_k0_cert0_2048.pem
+signProvider: type=sasp;key_number=0 # Signature Provider, A signature provider definition. It can be either path to local private key or signature provider string. Caution This is a replacement for mainCertPrivateKeyFile.
+rootCertificate0File: root_k0_signed_cert0_noca.der.cert # Root Certificate File 0, Root certificate file index 0.
+
