@@ -114,7 +114,7 @@ class DebugProbePyOCD(DebugProbe):
             self.probe.open()
             self.probe.connect(pyocd.probe.debug_probe.DebugProbe.Protocol.SWD)
             # Do reset sequence to switch to used protocol
-            connector = DPConnector(self.probe)
+            connector = DPConnector(self.probe, self.probe.session.board.target.dp)
             connector.connect()
             logger.debug(connector._idr)
             # Power Up the system and debug and clear sticky errors
