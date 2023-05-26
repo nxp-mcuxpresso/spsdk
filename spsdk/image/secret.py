@@ -296,7 +296,7 @@ class Signature(BaseClass):
 
 
 class MAC(BaseClass):
-    """Structure that holds initial parameter for AES encryption/description.
+    """Structure that holds initial parameter for AES encryption/decryption.
 
     - nonce - initialization vector for AEAD AES128 decryption
     - mac - message authentication code to verify the decryption was successful

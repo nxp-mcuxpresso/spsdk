@@ -13,6 +13,7 @@ from typing import List
 
 import click
 
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error, check_file_exists
 from spsdk.crypto import (
@@ -86,7 +87,7 @@ def main(log_level: int, key_type: str, path: str, password: str, force: bool) -
     PATH    - output file path, where the key pairs (private and public key) will be stored.
               Each key will be stored in separate file (.pub and .pem).
     """
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
 
     key_param = key_type.lower().strip()
     is_rsa = "rsa" in key_param

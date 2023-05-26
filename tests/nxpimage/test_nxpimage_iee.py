@@ -9,6 +9,7 @@ import os
 import shutil
 
 import pytest
+import yaml
 from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
@@ -95,3 +96,38 @@ def test_nxpimage_iee_template_cli(tmpdir):
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
     assert os.path.isfile(template)
+
+
+@pytest.mark.parametrize(
+    "case, config",
+    [
+        (
+            "aes_xts512_custom_names",
+            "iee_config.yaml",
+        )
+    ],
+)
+def test_iee_custom_output(tmpdir, data_dir, case, config):
+    runner = CliRunner()
+    work_dir = os.path.join(tmpdir, "iee", case)
+    shutil.copytree(os.path.join(data_dir, "iee", case), work_dir)
+    shutil.copy(os.path.join(data_dir, "iee", INPUT_BINARY), work_dir)
+
+    with use_working_directory(work_dir):
+        config_dict = load_configuration(config)
+        out_dir = os.path.join(work_dir, config_dict["output_folder"])
+        config_dict["output_name"] = os.path.join(tmpdir, "iee_output")
+        config_dict["keyblob_name"] = "keyblob"
+        config_dict["encrypted_name"] = ""
+
+        modified_config = os.path.join(work_dir, "modified_config.yaml")
+        with open(modified_config, "w") as f:
+            yaml.dump(config_dict, f)
+        cmd = f"iee export {modified_config}"
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+        assert os.path.isfile(os.path.join(out_dir, "keyblob.bin"))
+        assert not os.path.isfile(os.path.join(out_dir, "iee_rt117x_blhost.bcf"))
+        assert os.path.isfile(os.path.join(out_dir, "readme.txt"))
+        assert os.path.isfile(config_dict["output_name"] + ".bin")

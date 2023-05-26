@@ -1,4 +1,4 @@
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -21,13 +21,17 @@ xmcd_family_rev:
       type: string
       title: Memory type
       description: Specify type of memory used by XMCD description.
+      enum: [flexspi_ram, semc_sdram]
       template_value: flexspi_ram
 
     config_type:
       type: string
       title: Configuration type
       description: Specify type of configuration used by XMCD description.
+      enum: [full, simplified]
       template_value: simplified
+    
+  required: [family, mem_type, config_type]
 xmcd:
   type: object
   properties:
@@ -36,4 +40,4 @@ xmcd:
       title: Settings of XMCD
       description: External memory configuration settings for selected MCU.
 
-  required: [family, xmcd_settings]
+  required: [xmcd_settings]

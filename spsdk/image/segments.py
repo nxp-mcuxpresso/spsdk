@@ -1483,11 +1483,17 @@ class XMCDHeader:
         :param instance: Number of the interface instance, defaults to 0
         :param block_type: Type of XMCD data (0 - Simplified, 1 - Full), defaults to 0
         :param block_size: XMCD data block size, defaults to 4
+        :raises SPSDKValueError: If the given interface is not supported
+        :raises SPSDKValueError: If the given blovk type is not supported
         """
         self.tag = 0x0C
         self.version = 0
+        if interface not in [0, 1]:
+            raise SPSDKValueError(f"Interface not supported: {interface}")
         self.interface = interface
         self.instance = instance
+        if block_type not in [0, 1]:
+            raise SPSDKValueError(f"Block type not supported: {block_type}")
         self.block_type = block_type
         self.block_size = block_size
 

@@ -13,6 +13,7 @@ from typing import Optional, Union
 
 import click
 
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     FC,
     CommandsTreeGroupAliasedGetCfgTemplate,
@@ -89,7 +90,7 @@ def ifr_device_type_options(options: FC) -> FC:
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Utility for generating and parsing IFR. Please note that IFR0 ROMCFG region is one-time-programmable only."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
     return 0
 
 

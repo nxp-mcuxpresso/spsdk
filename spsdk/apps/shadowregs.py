@@ -16,6 +16,7 @@ import click
 
 from spsdk import SPSDK_DATA_FOLDER
 from spsdk.apps.nxpdebugmbox import get_debug_probe_options_help
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.debuggers.utils import DebugProbe, open_debug_probe
@@ -121,7 +122,7 @@ def main(
     revision: str,
 ) -> int:
     """NXP Shadow Registers control Tool."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
 
     probe_user_params = {}
     for par in debug_probe_option:

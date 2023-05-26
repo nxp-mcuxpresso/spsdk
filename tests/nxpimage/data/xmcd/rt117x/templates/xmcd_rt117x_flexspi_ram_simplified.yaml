@@ -21,7 +21,7 @@ xmcd_settings: # [Required], rt117x
   configOption0: # [Optional], configOption0, XMCD Configuration Option 0
     bitfields:  # [Required]
       sizeInMB: 0  # [Optional], sizeInMB, Size in MB. 0 - Auto detection, Others - Size in MB
-      maximumFrequency: 0 # [Optional], maximumFrequency, Maximum frequency. SoC specific definitions
+      maximumFrequency: 7 # [Optional], maximumFrequency, Maximum frequency. SoC specific definitions
       misc: 0 # [Optional], misc, Misc. For HyperRAM 0 - 1.8V, 1 - 3V
       reserved: 0 # [Optional], reserved, Reserved for future use
       deviceType: 0 # [Optional], deviceType, Device type 0 - Hyper RAM, 1 - APMemory

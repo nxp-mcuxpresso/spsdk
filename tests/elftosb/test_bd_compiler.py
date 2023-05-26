@@ -117,6 +117,11 @@ def test_parser():
             "componentVersion": "1.00.00",
             "secureBinaryVersion": "2.1",
         },
+        "sources": {
+            "myImage": "data/sb_sources/output_images/application_signed.bin",
+            "key_store": "data/sb_sources/key_store/key_store_rt5xx.bin",
+            "fcb_block": "data/sb_sources/input_images/rt500_oct_flash_fcb.bin",
+        },
         "keyblobs": [
             {
                 "keyblob_id": 0,

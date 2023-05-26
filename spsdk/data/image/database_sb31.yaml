@@ -5,11 +5,34 @@
 devices:
   lpc55s3x:
     attributes:
-      supported_commands: [erase, load, execute, programFuses, programIFR, loadCMAC, copy, loadHashLocking, loadKeyBlob, configureMemory, fillMemory, checkFwVersion]
-  mcxn9xx:
-    device_alias: lpc55s3x
+      supported_commands:
+        [
+          erase,
+          load,
+          execute,
+          programFuses,
+          programIFR,
+          loadCMAC,
+          copy,
+          loadHashLocking,
+          loadKeyBlob,
+          configureMemory,
+          fillMemory,
+          checkFwVersion,
+        ]
   kw45xx:
     attributes:
-      supported_commands: [erase, load, execute, programFuses, programIFR, loadCMAC, loadHashLocking, fillMemory, checkFwVersion]
+      supported_commands:
+        [
+          erase,
+          load,
+          execute,
+          programFuses,
+          programIFR,
+          loadCMAC,
+          loadHashLocking,
+          fillMemory,
+          checkFwVersion,
+        ]
   k32w1xx:
     device_alias: kw45xx

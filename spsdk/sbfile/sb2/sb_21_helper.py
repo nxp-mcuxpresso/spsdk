@@ -69,6 +69,16 @@ def get_command(cmd_name: str) -> Callable[[Dict], CmdBaseClass]:
 def _fill_memory(cmd_args: dict) -> CmdFill:
     """Returns a CmdFill object initialized based on cmd_args.
 
+    Fill is a type of load command used for filling a region of memory with pattern.
+
+    Example:
+    section(0) {
+        // pattern fill
+        load 0x55.b > 0x2000..0x3000;
+        // load two bytes at an address
+        load 0x1122.h > 0xf00;
+    }
+
     :param cmd_args: dictionary holding address and pattern
     :return: CmdFill object
     """
@@ -82,6 +92,26 @@ def _fill_memory(cmd_args: dict) -> CmdFill:
 
 def _load(cmd_args: dict) -> Union[CmdLoad, CmdProg]:
     """Returns a CmdLoad object initialized based on cmd_args.
+
+    The load statement is used to store data into the memory.
+    The load command is also used to write to the flash memory.
+    When loading to the flash memory, the region being loaded to must be erased before to the load operation.
+    The most common form of a load statement is loading a source file by name.
+
+    Example:
+    section (0) {
+        // load an entire binary file to an address
+        load myBinFile > 0x70000000;
+        // load an eight byte blob
+        load {{ ff 2e 90 07 77 5f 1d 20 }} > 0xa0000000;
+        // 4 byte load IFR statement
+        load ifr 0x1234567 > 0x30;
+        // Program fuse statement
+        load fuse {{00 00 00 01}} > 0x01000188;
+        // load to sdcard
+        load sdcard {{aa bb cc dd}} > 0x08000188;
+        load @288 {{aa bb cc dd}} > 0x08000188;
+    }
 
     :param cmd_args: dictionary holding path to file or values and address
     :raises SPSDKError: If dict doesn't contain 'file' or 'values' key
@@ -162,6 +192,26 @@ def _prog(cmd_args: dict, mem_id: int) -> CmdProg:
 def _erase_cmd_handler(cmd_args: dict) -> CmdErase:
     """Returns a CmdErase object initialized based on cmd_args.
 
+    The erase statement inserts a bootloader command to erase the flash memory.
+    There are two forms of the erase statement. The simplest form (erase all)
+    creates a command that erases the available flash memory.
+    The actual effect of this command depends on the runtime settings
+    of the bootloader and whether
+    the bootloader resides in the flash, ROM, or RAM.
+
+    Example:
+    section (0){
+        // Erase all
+        erase all;
+        // Erase unsecure all
+        erase unsecure all;
+        // erase statements specifying memory ID and range
+        erase @8 all;
+        erase @288 0x8001000..0x80074A4;
+        erase sdcard 0x8001000..0x80074A4;
+        erase mmccard 0x8001000..0x80074A4;
+    }
+
     :param cmd_args: dictionary holding path to address, length and flags
     :return: CmdErase object
     """
@@ -179,6 +229,16 @@ def _erase_cmd_handler(cmd_args: dict) -> CmdErase:
 
 def _enable(cmd_args: dict) -> CmdMemEnable:
     """Returns a CmdEnable object initialized based on cmd_args.
+
+    Enable statement is used for initialization of external memories
+    using a parameter block that was previously loaded to RAM.
+
+    Example:
+    section (0){
+        # Load quadspi config block bin file to RAM, use it to enable QSPI.
+        load myBinFile > 0x20001000;
+        enable qspi 0x20001000;
+    }
 
     :param cmd_args: dictionary holding address, size and memory type
     :return: CmdEnable object
@@ -253,7 +313,7 @@ def _keywrap(cmd_args: dict) -> CmdLoad:
     Keywrap holds keyblob ID to be encoded by a value stored in load command and
     stored to address defined in the load command.
 
-    e.g.
+    Example:
     keywrap (0) {
         load {{ 00000000 }} > 0x08000000;
     }
@@ -296,6 +356,7 @@ def _keystore_to_nv(cmd_args: dict) -> CmdKeyStoreRestore:
     The keystore_to_nv statement instructs the bootloader to load the backed up
     keystore values back into keystore memory region on non-volatile memory.
 
+    Example:
     section (0) {
         keystore_to_nv @9 0x8000800;
 
@@ -313,6 +374,7 @@ def _keystore_from_nv(cmd_args: dict) -> CmdKeyStoreBackup:
     The keystore_to_nv statement instructs the bootloader to load the backed up
     keystore values back into keystore memory region on non-volatile memory.
 
+    Example:
     section (0) {
         keystore_to_nv @9 0x8000800;
 
@@ -330,9 +392,11 @@ def _version_check(cmd_args: dict) -> CmdVersionCheck:
     Validates version of secure or non-secure firmware.
     The command fails if version is < expected.
 
+    Example:
     section (0) {
         version_check sec 0x2;
         version_check nsec 2;
+    }
 
     :param cmd_args: dictionary holding the version type and fw version.
     :return: CmdKeyStoreRestore object.
@@ -378,6 +442,7 @@ def _jump(cmd_args: dict) -> CmdJump:
     See the boot image format design document for specific details about these commands,
     such as the function prototypes they expect.
 
+    Example:
     section (0) {
         # jump to the entrypoint
         jump mySRecFile;

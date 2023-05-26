@@ -20,6 +20,7 @@ from Crypto.PublicKey import ECC, RSA
 from spsdk import SPSDKError
 from spsdk.apps.nxpcertgen import main as cert_gen_main
 from spsdk.apps.nxpkeygen import main as key_gen_main
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     GroupAliasedGetCfgTemplate,
@@ -33,7 +34,7 @@ from spsdk.utils.misc import load_binary, write_file
 @spsdk_apps_common_options
 def main(log_level: int) -> None:
     """Collection of utilities for cryptographic operations."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
 
 
 @main.command(name="digest", no_args_is_help=True)

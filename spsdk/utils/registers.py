@@ -353,7 +353,7 @@ class RegsBitField:
 
     def _update_reset_value(self) -> None:
         """Updates the reset value of the bitfield in register."""
-        reg_val = self.parent.get_value()
+        reg_val = self.parent.get_reset_value()
         mask = ((1 << self.width) - 1) << self.offset
         reg_val = reg_val & ~mask
         value = (self.reset_value << self.offset) & mask
@@ -802,8 +802,8 @@ class RegsRegister:
         """Returns the instance of the bitfield by its name.
 
         :param name: The name of the bitfield.
-        :return: The bitfield instance.
-        :raises SPSDKRegsErrorBitfieldNotFound: The register doesn't exists.
+        :return: Instance of the bitfield.
+        :raises SPSDKRegsErrorBitfieldNotFound: The bitfield doesn't exist.
         """
         for bitfield in self._bitfields:
             if name == bitfield.name:
@@ -856,8 +856,8 @@ class Registers:
 
         :param name: The name of the register.
         :param include_group_regs: The algorithm will check also group registers.
-        :return: The register instance.
-        :raises SPSDKRegsErrorRegisterNotFound: The register doesn't exists.
+        :return: Instance of the register.
+        :raises SPSDKRegsErrorRegisterNotFound: The register doesn't exist.
         """
         for reg in self._registers:
             if name == reg.name:
@@ -1178,7 +1178,6 @@ class Registers:
                     except SPSDKRegsErrorBitfieldNotFound:
                         logger.error(
                             f"The {bitfield_name} is not found in register {register.name}."
-                            " Please update the PFR configuration data"
                         )
                         continue
                     if (

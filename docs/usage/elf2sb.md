@@ -1,4 +1,4 @@
-# SB 2.1 generation using BD file
+# Parser grammar
 
 This is a user guide describing how to generate a secure binary rev. 2.1 based on a configuration file (a so called BD file or command file) and additional inputs like certificates, keys, binary files etc.
 

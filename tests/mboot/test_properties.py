@@ -205,3 +205,7 @@ def test_fuse_locked_status():
     assert "FUSE000: UNLOCKED" in value.to_str()
     assert "FUSE084: LOCKED" in value.to_str()
     assert "FUSE143: UNLOCKED" in value.to_str()
+
+    fuses = value.get_fuses()
+    assert not fuses[0].locked
+    assert fuses[84].locked

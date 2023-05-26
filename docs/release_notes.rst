@@ -8,6 +8,27 @@
 Release Notes
 =============
 
+---------------------
+1.10.1 (26-May-2023)
+---------------------
+
+**New features**
+
+* :ref:`nxpimage`:
+    - support encrypted image hab
+    - support for RT11xx and RT10xx
+    - improve OTFAD/IEE names generation
+* add API to retrieve info about fuses
+
+**Bugfixes**
+
+* :ref:`nxpimage`:
+    - fix XMCD load_from_config
+    - fix IEE template
+* fix circular dependency in signature provider import
+* fix issue with loading keys as INT
+* not enable logging when spsdk is used as a library
+
 -----------------------
 1.10.0 (5-April-2023)
 -----------------------
@@ -388,7 +409,7 @@ Release Notes
 
 * :ref:`elftosb`:
 
-  * support for :ref:`SB 2.1 generation using BD file`
+  * support for SB 2.1 generation using BD file
   * LPC55S3x - add support for unsigned/plain images
   * SB2.1 - SHA256 digest of all sections included in signed SB2.1 header
   * add supported families listing into elftosb

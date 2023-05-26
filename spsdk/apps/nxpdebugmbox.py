@@ -22,6 +22,7 @@ import colorama
 from spsdk import SPSDK_DATA_FOLDER, SPSDKError
 from spsdk.apps.blhost_helper import progress_bar
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroupAliasedGetCfgTemplate,
     spsdk_apps_common_options,
@@ -221,7 +222,7 @@ def main(
     operation_timeout: int,
 ) -> int:
     """Tool for working with Debug Mailbox."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
 
     probe_user_params = {}
     for par in debug_probe_option:

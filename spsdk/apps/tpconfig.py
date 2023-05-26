@@ -26,6 +26,7 @@ from spsdk.apps.utils import (
     CommandsTreeGroupAliasedGetCfgTemplate,
     catch_spsdk_error,
     spsdk_apps_common_options,
+    spsdk_logger,
 )
 from spsdk.tp import TP_DATA_FOLDER, SPSDKTpError, TpDevInterface, TrustProvisioningConfig
 from spsdk.tp.utils import get_supported_devices, scan_tp_devices
@@ -36,7 +37,7 @@ from spsdk.utils.misc import load_text, write_file
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Application for configuration of trusted device."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
     return 0
 
 

@@ -21,13 +21,13 @@ otfad_output:
     output_folder:
       type: string
       title: OTFAD output folder
-      description: Folder name to be stored generated OTFAD outputs
-      template_value: otfad_outputs
+      description: Path to directory where the OTFAD output will be generated
+      template_value: "otfad_output"
 
     output_name:
       type: string
       title: Output binary image file name
-      description: Filename of the output image containing keyblobs and encrypted data blob without file extension (.bin will be appended)
+      description: Filename of the output image containing keyblobs and encrypted data blobs without file extension (.bin will be appended)
       template_value: "otfad_whole_image"
       default: "otfad_whole_image"
 
@@ -42,8 +42,16 @@ otfad_output:
       type: string
       title: Encrypted name
       description: filename of the encrypted datablobs without file extension (.bin will be appended)
-      template_value: encrypted_blob
-      default: encrypted_blob
+      template_value: "encrypted_blob"
+      default: "encrypted_blob"
+
+    generate_readme:
+      type: boolean
+      title: Generate readme.txt
+      description: Readme file contains information about image layout
+      template_value: true
+      default: true
+
   required: [output_folder]
 
 otfad:
@@ -54,7 +62,7 @@ otfad:
     kek:
       type: string
       title: KEK
-      description: OTFAD Key Encryption Key to encrypt OTFAD table
+      description: OTFAD Key Encryption Key to encrypt OTFAD table. Might be provided as a path to binary file containing KEK or as a string or number
       template_value: my_secret_kek.bin
 
     otfad_table_address:

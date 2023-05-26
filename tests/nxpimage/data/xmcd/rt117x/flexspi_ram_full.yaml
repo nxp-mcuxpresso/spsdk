@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  External Memory Configuration Data template for rt117x.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                        == General Options ==                                        
+#                                        == General Options ==
 # ----------------------------------------------------------------------------------------------------
 family: rt117x  # [Required], MCU family, MCU family name., Possible options:['rt116x', 'rt117x', 'rt118x']
 revision: latest # [Optional], Chip silicon revision, If needed this could be used to specify silicon revision of device., Possible options:['latest']
@@ -21,7 +21,11 @@ xmcd_settings: # [Required], rt117x
   tag: # [Optional], tag,  [0x000-0x003] Tag, fixed value 0x62666366
     value: '0x00000000'  # [Required], tag,  [0x000-0x003] Tag, fixed value 0x62666366
   version: # [Optional], version,  [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor, [7:0] - bugfix
-    value: '0x00000000'  # [Required], version,  [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor, [7:0] - bugfix
+    bitfields:  # [Required]
+      bugfix: 0  # [Optional], bugfix;  bugfix
+      major: 0 # [Optional], major;  major = 0
+      minor: 0 # [Optional], minor;  minor
+      ascii: 0 # [Optional], ascii;  ascii 'V'
   reserved0: # [Optional], reserved0,  [0x008-0x00b] Reserved for future use
     value: '0x00000000'  # [Required], reserved0,  [0x008-0x00b] Reserved for future use
   readSampleClkSrc: # [Optional], readSampleClkSrc,  [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3
@@ -79,13 +83,26 @@ xmcd_settings: # [Required], rt117x
   reserved2: # [Optional], reserved2,  [0x03c-0x03f] Reserved for future use
     value: '0x00000000'  # [Required], reserved2,  [0x03c-0x03f] Reserved for future use
   controllerMiscOption: # [Optional], controllerMiscOption,  [0x040-0x043] Controller Misc Options, see Misc feature bit definitions for more details
-    value: '0x00000000'  # [Required], controllerMiscOption,  [0x040-0x043] Controller Misc Options, see Misc feature bit definitions for more details
+    bitfields:  # [Required]
+      bit0: 0  # [Optional], bit0;  Bit0 - differential clock enable
+      bit1: 0 # [Optional], bit1;  Bit1 - CK2 enable
+      bit2: 0 # [Optional], bit2;  Bit2 - ParallelModeEnable
+      bit3: 0 # [Optional], bit3;  Bit3 - wordAddressableEnable
+      bit4: 0 # [Optional], bit4;  Bit4 - Half-Speed access enable
+      bit5: 0 # [Optional], bit5;  Bit5 - Pad Settings Override Enable
+      bit6: 0 # [Optional], bit6;  Bit6 - DDR Mode Enable
+      bit7: 0 # [Optional], bit7;  Bit7 - Pad Settings Override Enable
+      bit8: 0 # [Optional], bit8;  Bit8 - Second Pinmux group
+      bit9: 0 # [Optional], bit9;  Bit9 - Second DQS pi mux group
+      bit10: 0 # [Optional], bit10;  Bit10 - Write Mask Enable
+      bit11: 0 # [Optional], bit11;  Bit11 - Write Opt1 Clear
+      reserved: 0 # [Optional], reserved; N/A
   deviceType: # [Optional], deviceType,  [0x044-0x044] Device Type:  See Flash Type Definition for more details
     value: '0x00'  # [Required], deviceType,  [0x044-0x044] Device Type:  See Flash Type Definition for more details
   sflashPadType: # [Optional], sflashPadType,  [0x045-0x045] Serial Flash Pad Type: 1 - Single, 2 - Dual, 4 - Quad, 8 - Octal
     value: '0x00'  # [Required], sflashPadType,  [0x045-0x045] Serial Flash Pad Type: 1 - Single, 2 - Dual, 4 - Quad, 8 - Octal
-  serialClkFreq: # [Optional], serialClkFreq,  [0x046-0x046] Serial Flash Frequencey, device specific definitions, See System Boot Chapter for more details
-    value: '0x00'  # [Required], serialClkFreq,  [0x046-0x046] Serial Flash Frequencey, device specific definitions, See System Boot Chapter for more details
+  serialClkFreq: # [Optional], serialClkFreq,  [0x046-0x046] Serial Flash Frequency, device specific definitions, See System Boot Chapter for more details
+    value: '0x00'  # [Required], serialClkFreq,  [0x046-0x046] Serial Flash Frequency, device specific definitions, See System Boot Chapter for more details
   lutCustomSeqEnable: # [Optional], lutCustomSeqEnable,  [0x047-0x047] LUT customization Enable, it is required if the program/erase cannot be done using 1 LUT sequence, currently, only applicable to HyperFLASH
     value: '0x00'  # [Required], lutCustomSeqEnable,  [0x047-0x047] LUT customization Enable, it is required if the program/erase cannot be done using 1 LUT sequence, currently, only applicable to HyperFLASH
   reserved3_0: # [Optional], reserved3_0,  [0x048-0x04f] Reserved for future use
@@ -119,7 +136,8 @@ xmcd_settings: # [Required], rt117x
   busyOffset: # [Optional], busyOffset,  [0x07c-0x07d] Busy offset, valid value: 0-31
     value: '0x0000'  # [Required], busyOffset,  [0x07c-0x07d] Busy offset, valid value: 0-31
   busyBitPolarity: # [Optional], busyBitPolarity,  [0x07e-0x07f] Busy flag polarity, 0 - busy flag is 1 when flash device is busy, 1 - busy flag is 0 when flash device is busy
-    value: '0x0000'  # [Required], busyBitPolarity,  [0x07e-0x07f] Busy flag polarity, 0 - busy flag is 1 when flash device is busy, 1 - busy flag is 0 when flash device is busy
+    bitfields:  # [Required]
+      busyBitPolarity: 0  # [Optional], busyBitPolarity; Busy flag polarity
   lookupTable_0: # [Optional], lookupTable_0,  [0x080-0x17f] Lookup table holds Flash command sequences
     value: '0x00000000'  # [Required], lookupTable_0,  [0x080-0x17f] Lookup table holds Flash command sequences
   lookupTable_1: # [Optional], lookupTable_1,  [0x080-0x17f] Lookup table holds Flash command sequences

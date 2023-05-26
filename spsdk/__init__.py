@@ -20,10 +20,6 @@ It is delivered in a form of python library with functionality presented as CLI 
 import logging
 import logging.config
 import os
-import re
-from typing import Any, Mapping, Optional
-
-import colorama
 
 from .__version__ import __version__ as version
 from .exceptions import (
@@ -45,75 +41,6 @@ __release__ = "alpha"
 # The SPSDK behavior settings
 SPSDK_DATA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 SPSDK_YML_INDENT = 2
-
-colorama.just_fix_windows_console()
-
-
-class ColoredFormatter(logging.Formatter):
-    """Colored Formatter.
-
-    SPSDK modified formatter class.
-    """
-
-    FORMAT = logging.BASIC_FORMAT
-    FORMAT_DEBUG = FORMAT + " (%(relativeCreated)dms since start, %(filename)s:%(lineno)d)"
-
-    COLORED_FORMATS = {
-        logging.DEBUG: colorama.Fore.BLUE + FORMAT_DEBUG + colorama.Fore.RESET,
-        logging.INFO: colorama.Fore.WHITE
-        + colorama.Style.BRIGHT
-        + FORMAT
-        + colorama.Fore.RESET
-        + colorama.Style.RESET_ALL,
-        logging.WARNING: colorama.Fore.YELLOW + FORMAT_DEBUG + colorama.Fore.RESET,
-        logging.ERROR: colorama.Fore.RED + FORMAT_DEBUG + colorama.Fore.RESET,
-        logging.CRITICAL: colorama.Fore.RED
-        + colorama.Style.BRIGHT
-        + FORMAT_DEBUG
-        + colorama.Fore.RESET
-        + colorama.Style.RESET_ALL,
-    }
-    FORMATS = {
-        logging.DEBUG: FORMAT_DEBUG,
-        logging.INFO: FORMAT,
-        logging.WARNING: FORMAT_DEBUG,
-        logging.ERROR: FORMAT_DEBUG,
-        logging.CRITICAL: FORMAT_DEBUG,
-    }
-
-    def __init__(
-        self,
-        colored: bool = True,
-    ) -> None:
-        """Overloaded init method to add colored parameter."""
-        super().__init__()
-
-        self.colored = colored
-        self.formats = self.COLORED_FORMATS if colored else self.FORMATS
-
-    def format(self, record: logging.LogRecord) -> str:
-        """Modified format method.
-
-        :param record: Input logging record to print.
-        :return: Formatted logging string.
-        """
-        fmt = self.formats.get(record.levelno)
-        formatter = logging.Formatter(fmt)
-        if not self.colored:
-            try:
-                record.msg = re.sub("\\x1b\[\d{1,3}m", "", record.msg)
-            except:
-                # Just ignore all exceptions on this "remove color" operation
-                pass
-        return formatter.format(record)
-
-
-spsdk_log_handler = logging.StreamHandler()
-spsdk_log_handler.setFormatter(ColoredFormatter(colored=spsdk_log_handler.stream.isatty()))
-spsdk_logger = logging.getLogger(__name__)
-spsdk_logger.addHandler(spsdk_log_handler)
-spsdk_logger.propagate = False
-
 
 # this import has to be after SPSDK_DATA_FOLDER definition
 # pylint: disable=wrong-import-position,wrong-import-order

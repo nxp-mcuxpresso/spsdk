@@ -5,6 +5,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pytest
+
+from spsdk.exceptions import SPSDKValueError
 from spsdk.image.images import BootImgRT
 from spsdk.image.segments import XMCDHeader
 
@@ -36,3 +39,10 @@ def test_xmcd_header():
     assert xmcd.version == 0
     exported = xmcd.export()
     assert exported == data
+
+
+def test_xmcd_header_invalid():
+    with pytest.raises(SPSDKValueError):
+        XMCDHeader(interface=2)
+    with pytest.raises(SPSDKValueError):
+        XMCDHeader(block_type=2)

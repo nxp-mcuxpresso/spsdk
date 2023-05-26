@@ -14,8 +14,16 @@ from typing import List, Optional
 
 import click
 
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
-from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, get_key, store_key
+from spsdk.apps.utils.utils import (
+    INT,
+    SPSDKAppError,
+    catch_spsdk_error,
+    filepath_from_config,
+    get_key,
+    store_key,
+)
 from spsdk.exceptions import SPSDKError
 from spsdk.image import TrustZone, get_mbi_class
 from spsdk.image.ahab.ahab_container import AHABImage
@@ -23,6 +31,7 @@ from spsdk.image.ahab.signed_msg import SignedMessage
 from spsdk.image.bee import BeeNxp
 from spsdk.image.bootable_image.bimg import BootableImage, get_bimg_class
 from spsdk.image.fcb.fcb import FCB
+from spsdk.image.hab.config_parser import ImageConfig
 from spsdk.image.hab.hab_container import HabContainer
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbimg import mbi_generate_config_templates, mbi_get_supported_families
@@ -31,7 +40,7 @@ from spsdk.sbfile.sb2 import sly_bd_parser as bd_parser
 from spsdk.sbfile.sb2.commands import CmdLoad
 from spsdk.sbfile.sb2.images import BootImageV21, generate_SB21
 from spsdk.sbfile.sb31.images import SB3_SCH_FILE, SecureBinary31
-from spsdk.utils.crypto.cert_blocks import CertBlockV2, CertBlockV31, convert_to_ecc_key
+from spsdk.utils.crypto.cert_blocks import CertBlockV2, CertBlockV31
 from spsdk.utils.crypto.iee import IeeNxp
 from spsdk.utils.crypto.otfad import OtfadNxp
 from spsdk.utils.images import BinaryImage, BinaryPattern
@@ -59,7 +68,7 @@ def main(log_level: int) -> None:
     Manage various kinds of images for NXP parts.
     It's successor of obsolete ELFTOSB tool.
     """
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
 
 
 @main.group(name="mbi", no_args_is_help=True)
@@ -883,7 +892,8 @@ def otfad_group() -> None:
     "--alignment",
     default="512",
     type=INT(),
-    help="Alignment of key blob data blocks to simplify align data to external memory blocks.",
+    help="Alignment of key blob data blocks. Default value is 512 B if not specified.",
+    required=False,
 )
 @click.option(
     "-i",
@@ -891,8 +901,9 @@ def otfad_group() -> None:
     type=INT(),
     help=(
         "OTFAD peripheral index - This is needed to generate proper "
-        "indexes of fuses in optional BLHOST script. For example for RT118x."
+        "indexes of fuses in optional BLHOST script. If not specified, BLHOST fuse script won't be generated"
     ),
+    required=False,
 )
 @click.argument("config", type=click.Path(exists=True, readable=True))
 def otfad_export_command(alignment: int, config: str, index: Optional[int] = None) -> None:
@@ -913,17 +924,22 @@ def otfad_export(alignment: int, config: str, index: Optional[int] = None) -> No
     family = config_data["family"]
     schemas = OtfadNxp.get_validation_schemas(family)
     check_config(config_data, schemas, search_paths=[config_dir])
-    otfad = OtfadNxp.load_from_config(config_data, search_paths=[config_dir])
-    otfad_table_name = config_data.get("keyblob_name", "OTFAD_Table")
-    binary_image = otfad.binary_image(data_alignment=alignment, otfad_table_name=otfad_table_name)
-    logger.info(f" The OTFAD image structure:\n{binary_image.draw()}")
+    otfad = OtfadNxp.load_from_config(config_data, config_dir, search_paths=[config_dir])
 
     output_folder = get_abs_path(config_data["output_folder"], config_dir)
-    output_name = config_data.get("output_name", "otfad_whole_image") + ".bin"
-
-    otfad_all = os.path.join(output_folder, output_name)
-    write_file(binary_image.export(), otfad_all, mode="wb")
-    logger.info(f"Created OTFAD Image:\n{otfad_all}")
+    otfad_table_name = filepath_from_config(
+        config_data, "keyblob_name", "OTFAD_Table", config_dir, output_folder
+    )
+    binary_image = otfad.binary_image(data_alignment=alignment, otfad_table_name=otfad_table_name)
+    logger.info(f" The OTFAD image structure:\n{binary_image.draw()}")
+    otfad_all = filepath_from_config(
+        config_data, "output_name", "otfad_whole_image", config_dir, output_folder
+    )
+    if otfad_all != "":
+        write_file(binary_image.export(), otfad_all, mode="wb")
+        logger.info(f"Created OTFAD Image:\n{otfad_all}")
+    else:
+        logger.info("Skipping export of OTFAD image")
     sb21_supported = otfad.database.get_device_value("sb_21_supported", otfad.family, default=False)
     memory_map = (
         "In folder is stored two kind of files:\n"
@@ -941,20 +957,27 @@ def otfad_export(alignment: int, config: str, index: Optional[int] = None) -> No
     )
 
     for i, image in enumerate(binary_image.sub_images):
-        image_file = os.path.join(output_folder, f"{image.name}.bin")
-        write_file(image.export(), image_file, mode="wb")
-        logger.info(f"Created OTFAD Image:\n{image_file}")
-        memory_map += f"\n{image_file}:\n{image.info()}"
+        if image.name != "":
+            write_file(image.export(), image.name, mode="wb")
+            logger.info(f"Created OTFAD Image:\n{image.name}")
+            memory_map += f"\n{image.name}:\n{image.info()}"
+        else:
+            logger.info(
+                f"Skipping export of {image.info()}, value is blank in the configuration file"
+            )
         if sb21_supported:
-            bd_file_sources += f'\n    image{i} = "{image_file}";'
+            bd_file_sources += f'\n    image{i} = "{image.name}";'
             bd_file_section0 += f"\n    // Load Image: {image.name}"
             bd_file_section0 += f"\n    erase {hex(image.absolute_address)}..{hex(image.absolute_address+len(image))};"
             bd_file_section0 += f"\n    load image{i} > {hex(image.absolute_address)}"
 
     readme_file = os.path.join(output_folder, "readme.txt")
 
-    write_file(memory_map, readme_file)
-    logger.info(f"Created OTFAD readme file:\n{readme_file}")
+    if config_data.get("generate_readme", True):
+        write_file(memory_map, readme_file)
+        logger.info(f"Created OTFAD readme file:\n{readme_file}")
+    else:
+        logger.info("Skipping generation of OTFAD readme file")
 
     if sb21_supported:
         bd_file_name = os.path.join(output_folder, "sb21_otfad_example.bd")
@@ -985,7 +1008,7 @@ def otfad_export(alignment: int, config: str, index: Optional[int] = None) -> No
             write_file(blhost_script, blhost_script_filename)
             click.echo(f"Created OTFAD BLHOST load fuses script:\n{blhost_script_filename}")
 
-    click.echo(f"Success. OTFAD files has been created and stored into: {output_folder}")
+    click.echo(f"Success. OTFAD files have been created")
 
 
 @otfad_group.command(name="get-kek", no_args_is_help=False)
@@ -1098,39 +1121,40 @@ def iee_group() -> None:  # pylint: disable=unused-argument
 
 @iee_group.command(name="export", no_args_is_help=True)
 @click.argument("config", type=click.Path(exists=True, readable=True))
-def iee_export(config: str) -> None:
+def iee_export_command(config: str) -> None:
     """Generate IEE Images from YAML/JSON configuration.
 
     CONFIG is path to the YAML/JSON configuration
 
     The configuration template files could be generated by subcommand 'get-template'.
     """
+    iee_export(config)
+
+
+def iee_export(config: str) -> None:
+    """Generate IEE Images from YAML/JSON configuration."""
     config_data = load_configuration(config)
     config_dir = os.path.dirname(config)
     check_config(config_data, IeeNxp.get_validation_schemas_family(), search_paths=[config_dir])
     family = config_data["family"]
     schemas = IeeNxp.get_validation_schemas(family)
     check_config(config_data, schemas, search_paths=[config_dir])
-    iee = IeeNxp.load_from_config(config_data, search_paths=[config_dir])
+    iee = IeeNxp.load_from_config(config_data, config_dir, search_paths=[config_dir])
 
     output_folder = get_abs_path(config_data["output_folder"], config_dir)
+    iee_all = filepath_from_config(config_data, "output_name", "iee_whole_image", output_folder)
+    keyblob_name = filepath_from_config(
+        config_data, "keyblob_name", "iee_keyblob", config_dir, output_folder
+    )
 
-    output_name = config_data.get("output_name")
-    if not output_name:
-        output_name = "encrypted.bin"
-
-    keyblob_name = config_data.get("keyblob_name")
-    if not keyblob_name:
-        keyblob_name = "iee_keyblob.bin"
-
-    iee_all = os.path.join(output_folder, output_name)
-
-    binary_image = iee.binary_image(keyblob_name=keyblob_name, image_name=output_name)
+    binary_image = iee.binary_image(keyblob_name=keyblob_name, image_name=iee_all)
     logger.info(binary_image.draw())
 
-    write_file(binary_image.export(), iee_all, mode="wb")
-
-    click.echo(f"Created IEE Image containing keyblobs and encrypted data:\n{iee_all}")
+    if iee_all == "":
+        logger.info("Skipping export of IEE whole image")
+    else:
+        write_file(binary_image.export(), iee_all, mode="wb")
+        click.echo(f"Created IEE Image containing keyblobs and encrypted data:\n{iee_all}")
 
     memory_map = (
         "Output folder contains:\n"
@@ -1140,24 +1164,34 @@ def iee_export(config: str) -> None:
     )
 
     for image in binary_image.sub_images:
-        image_file = os.path.join(output_folder, image.name)
-        write_file(image.export(), image_file, mode="wb")
-        logger.info(f"Created Encrypted IEE data blob:\n{image_file}")
-        memory_map += f"\n{image_file}:\n{image.info()}"
+        if image.name != "":
+            write_file(image.export(), image.name, mode="wb")
+            logger.info(f"Created Encrypted IEE data blob {image.description}:\n{image.name}")
+            memory_map += f"\n{image.name}:\n{image.info()}"
+        else:
+            logger.info(
+                f"Skipping export of {image.info()}, value is blank in the configuration file"
+            )
 
     readme_file = os.path.join(output_folder, "readme.txt")
 
-    write_file(memory_map, readme_file)
-    logger.info(f"Created IEE readme file:\n{readme_file}")
+    if config_data.get("generate_readme", True):
+        write_file(memory_map, readme_file)
+        logger.info(f"Created IEE readme file:\n{readme_file}")
+    else:
+        logger.info(f"Skipping generation of IEE readme file")
 
-    if iee.database.get_device_value("has_kek_fuses", iee.family):
+    if iee.database.get_device_value("has_kek_fuses", iee.family) and config_data.get(
+        "generate_fuses_script"
+    ):
         blhost_script = iee.get_blhost_script_otp_kek()
-        if blhost_script:
-            blhost_script_filename = os.path.join(output_folder, f"iee_{iee.family}_blhost.bcf")
-            write_file(blhost_script, blhost_script_filename)
-            click.echo(f"Created IEE BLHOST load fuses script:\n{blhost_script_filename}")
+        blhost_script_filename = os.path.join(output_folder, f"iee_{iee.family}_blhost.bcf")
+        write_file(blhost_script, blhost_script_filename)
+        click.echo(f"Created IEE BLHOST load fuses script:\n{blhost_script_filename}")
+    else:
+        logger.info("Skipping generation of IEE BLHOST load fuses script")
 
-    click.echo(f"Success. IEE files have been created and stored into: {output_folder}")
+    click.echo(f"Success. IEE files have been created")
 
 
 @iee_group.command(name="get-template", no_args_is_help=True)
@@ -1419,15 +1453,13 @@ def hab_export_command(
 
     EXTERNAL is a space separated list of external binary files defined in BD file
     """
-    image = hab_export(command, output, external)
+    image = hab_export(command, external)
     write_file(image, output, mode="wb")
     click.echo(f"Success. (HAB container: {output} created.)")
 
 
-def hab_export(command: str, output: str, external: List[str]) -> bytes:
+def hab_export(command: str, external: List[str]) -> bytes:
     """Generate HAB container from configuration."""
-    if output is None:
-        raise SPSDKAppError("Error: no output file was specified")
     try:
         parser = bd_parser.BDParser()
 
@@ -1435,8 +1467,11 @@ def hab_export(command: str, output: str, external: List[str]) -> bytes:
         bd_data = parser.parse(text=bd_file_content, extern=external)
         if bd_data is None:
             raise SPSDKError("Invalid bd file, secure binary file generation terminated")
+        bd_config = ImageConfig.parse(bd_data)
         hab_container = HabContainer.load(
-            bd_data, external=external, search_paths=[os.path.dirname(command)]
+            bd_config,
+            search_paths=[os.path.dirname(command)],
+            timestamp=bd_config.options.signature_timestamp,
         )
         data = hab_container.export()
         return data
@@ -1457,7 +1492,7 @@ def hab_parse_command(
     binary: str,
     output_folder: str,
 ) -> None:
-    """Parse HAb contianer into individual segments."""
+    """Parse HAB contianer into individual segments."""
     file_bin = load_binary(binary)
     created_files = hab_parse(file_bin, output_folder)
     for file_path in created_files:
@@ -1469,7 +1504,7 @@ def hab_parse(binary: bytes, output: str) -> List[str]:
     """Generate HAB container from configuration."""
     hab_container = HabContainer.parse(binary)
     created_files = []
-    for sub_image in hab_container.binary_image.sub_images:
+    for sub_image in hab_container.hab_image.sub_images:
         sub_image_data = sub_image.export()
         sub_image_path = os.path.join(output, f"{sub_image.name.lower()}.bin")
         write_file(sub_image_data, sub_image_path, mode="wb")
@@ -1622,8 +1657,6 @@ def xmcd_export(config: str, output: str) -> None:
     """Export XMCD Image from YAML/JSON configuration."""
     config_data = load_configuration(config)
     xmcd_image = XMCD.load_from_config(config_data)
-    check_config(config_data, XMCD.get_validation_schemas_family())
-    # Add validation of config
     xmcd_data = xmcd_image.export()
     write_file(xmcd_data, output, mode="wb")
 

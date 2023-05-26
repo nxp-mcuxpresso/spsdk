@@ -7,35 +7,23 @@ configure the device, prepare, download and upload data, including security oper
 delivered in the form of a python library and command-line applications.
 
 
-Version: 1.10.0
-==============
-Date: 5-April-2023
+Version: 1.10.1
+================
+Date: 26-May-2023
 
 New features
-- blhost:
-    - add new command: ele_message
-- nxpdebugmbox:
-    - add command: read UUID from device
-    - update PyOCD to latest version to support CMSIS DAP FW v3
-- nxpdevhsm:
-    - USER_PCK rename to CUST_MK_SK
 - nxpimage:
-    - add subcommand group for generate and parse certificate block
-    - replace private key to signature provider in master boot image
-    - OTFAD support for RT1170
-- ifr:
-    -  add commands read/write
-- pfr:
-    - add CMPA erase command
+    - support encrypted image hab
+    - support for RT11xx and RT10xx
+    - improve OTFAD/IEE names generation
+- add API to retrieve info about fuses
 Bugfixes
-- nxpdebugmbox:
-    - fix AP selection issue for PyOCD and PEMICRO
-    - fix DAC verification when there is only 1 root key
 - nxpimage:
-    - fix MBI issue with HMAC
-- shadowregs:
-    - fix endianness for OTP MASTER KEY
-- drop support for Python 3.7
+    - fix XMCD load_from_config
+    - fix IEE template
+- fix circular dependency in signature provider import
+- fix issue with loading keys as INT
+- not enable logging when spsdk is used as a library
 
 Supported devices
 =================
@@ -62,6 +50,28 @@ Python 3.8+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+1.10.0
+- blhost:
+    - add new command: ele_message
+- ifr:
+    -  add commands read/write
+- nxpdebugmbox:
+    - add command: read UUID from device
+    - update PyOCD to latest version to support CMSIS DAP FW v3
+    - fix AP selection issue for PyOCD and PEMICRO
+    - fix DAC verification when there is only 1 root key
+- nxpdevhsm:
+    - USER_PCK rename to CUST_MK_SK
+- nxpimage:
+    - add subcommand group for generate and parse certificate block
+    - replace private key to signature provider in master boot image
+    - OTFAD support for RT1170
+    - fix MBI issue with HMAC
+- pfr:
+    - add CMPA erase command
+- shadowregs:
+    - fix endianness for OTP MASTER KEY
+- drop support for Python 3.7
 1.9.1
 - nxpdebugmbox:
     - fix Linux error on PyOCD

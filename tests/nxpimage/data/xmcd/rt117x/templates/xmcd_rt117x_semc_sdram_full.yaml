@@ -30,20 +30,20 @@ xmcd_settings: # [Required], rt117x
     value: '0x00000000'  # [Required], sdramSizeKb, Set the memory size of SDRAM CS0 in the unit of kilobytes.Range: 4~4*1024*1024
   portSize: # [Optional], portSize, Port size of SDRAM. 0 - 8bit, 1 - 16bit, 2 - 32bit
     value: '0x00'  # [Required], portSize, Port size of SDRAM. 0 - 8bit, 1 - 16bit, 2 - 32bit
-  pinConfigPull: # [Optional], pinConfigPull, Pull config of the SDRAM GPIO pin. 0 - Forbidden, 1 - Pull up, 2 - Pull down
-    value: '0x00'  # [Required], pinConfigPull, Pull config of the SDRAM GPIO pin. 0 - Forbidden, 1 - Pull up, 2 - Pull down
+  pinConfigPull: # [Optional], pinConfigPull; Pull config of the SDRAM GPIO pin: 0 - Forbidden, 1 - Pull up, 2 - Pull down, 3 - No pull, Others - Invalid value
+    value: '0x03'  # [Required], pinConfigPull; Pull config of the SDRAM GPIO pin: 0 - Forbidden, 1 - Pull up, 2 - Pull down, 3 - No pull, Others - Invalid value
   pinConfigDriveStrength: # [Optional], pinConfigDriveStrength, Driver config of SDRAM GPIO pin. 0 - High driver, 1 - Normal driver, Others- Invalid
     value: '0x00'  # [Required], pinConfigDriveStrength, Driver config of SDRAM GPIO pin. 0 - High driver, 1 - Normal driver, Others- Invalid
   muxRdy: # [Optional], muxRdy, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x00'  # [Required], muxRdy, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
+    value: '0x01'  # [Required], muxRdy, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
   muxCsx0: # [Optional], muxCsx0, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x00'  # [Required], muxCsx0, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
+    value: '0x01'  # [Required], muxCsx0, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
   muxCsx1: # [Optional], muxCsx1, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x00'  # [Required], muxCsx1, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
+    value: '0x01'  # [Required], muxCsx1, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
   muxCsx2: # [Optional], muxCsx2, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x00'  # [Required], muxCsx2, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
+    value: '0x01'  # [Required], muxCsx2, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
   muxCsx3: # [Optional], muxCsx3, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x00'  # [Required], muxCsx3, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
+    value: '0x01'  # [Required], muxCsx3, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
   bank: # [Optional], bank, Bank numbers of SDRAM device. 0 - 4 banks, 1 - 2 banks, Others- Invalid
     value: '0x00'  # [Required], bank, Bank numbers of SDRAM device. 0 - 4 banks, 1 - 2 banks, Others- Invalid
   burstLen: # [Optional], burstLen, Burst length.0 - 1, 1 - 2, 2 - 4, 3 - 8, Others- Invalid
@@ -51,7 +51,7 @@ xmcd_settings: # [Required], rt117x
   columnAddrBitNum: # [Optional], columnAddrBitNum, Column address bit number.0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9 bit, 4 - 8 bit, Others- Invalid
     value: '0x00'  # [Required], columnAddrBitNum, Column address bit number.0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9 bit, 4 - 8 bit, Others- Invalid
   casLatency: # [Optional], casLatency, CAS Latency, 1 - 1, 2 - 2, 3 - 3, Others- Invalid
-    value: '0x00'  # [Required], casLatency, CAS Latency, 1 - 1, 2 - 2, 3 - 3, Others- Invalid
+    value: '0x01'  # [Required], casLatency, CAS Latency, 1 - 1, 2 - 2, 3 - 3, Others- Invalid
   writeRecoveryNs: # [Optional], writeRecoveryNs, Write recovery time in unit of nanosecond. This could help to meet tWR timing requirement by the SDRAM device.
     value: '0x00'  # [Required], writeRecoveryNs, Write recovery time in unit of nanosecond. This could help to meet tWR timing requirement by the SDRAM device.
   refreshRecoveryNs: # [Optional], refreshRecoveryNs, Refresh recovery time in unit of nanosecond. This could help to meet tRFC timing requirement by the SDRAM device.

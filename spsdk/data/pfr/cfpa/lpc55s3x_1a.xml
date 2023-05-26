@@ -11,7 +11,7 @@
       <alias type="CMSIS" value="FLASH_CFPA_HEADER_FIELD(x)"/>
     </bit_field>
   </register>
-  <register offset="0x4" width="32" name="CFPA_PAGE_VERSION" description="CFPA Page Version. Use value of 0xFFFF_FFFF to auto increment current CFPA page version value (by ROM).">
+  <register offset="0x4" width="32" name="CFPA_PAGE_VERSION" description="CFPA Page Version. Write '0xFFFF_FFFF' to auto increment current CFPA page version value (by ROM).">
     <alias type="CMSIS" value="CFPA.CFPA_PAGE_VERSION"/>
     <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
       <alias type="CMSIS" value="FLASH_CFPA_CFPA_PAGE_VERSION_FIELD(x)"/>
@@ -37,43 +37,43 @@
   </register>
   <register offset="0x14" width="32" name="MCTR_INT_IV_CTR0" description="Monotonic counter for internal Prince region 0">
     <alias type="CMSIS" value="CFPA.MCTR_INT_IV_CTR[0]"/>
-    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for internal Prince region 0 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for internal Prince region 0 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.">
       <alias type="CMSIS" value="FLASH_CFPA_MCTR_INT_IV_CTR_ERASE_COUNT(x)"/>
     </bit_field>
   </register>
   <register offset="0x18" width="32" name="MCTR_INT_IV_CTR1" description="Monotonic counter for internal Prince region 1">
     <alias type="CMSIS" value="CFPA.MCTR_INT_IV_CTR[1]"/>
-    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for internal Prince region 1 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for internal Prince region 1 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.">
       <alias type="CMSIS" value="FLASH_CFPA_MCTR_INT_IV_CTR_ERASE_COUNT(x)"/>
     </bit_field>
   </register>
   <register offset="0x1C" width="32" name="MCTR_INT_IV_CTR2" description="Monotonic counter for internal Prince region 2">
     <alias type="CMSIS" value="CFPA.MCTR_INT_IV_CTR[2]"/>
-    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for internal Prince region 2 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for internal Prince region 2 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.">
       <alias type="CMSIS" value="FLASH_CFPA_MCTR_INT_IV_CTR_ERASE_COUNT(x)"/>
     </bit_field>
   </register>
   <register offset="0x20" width="32" name="IPED_IV_CTR0" description="Monotonic Counter for external Prince region 0">
     <alias type="CMSIS" value="CFPA.IPED_IV_CTR[0]"/>
-    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for external Prince region 0 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for external Prince region 0 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.">
       <alias type="CMSIS" value="FLASH_CFPA_IPED_IV_CTR_ERASE_COUNT(x)"/>
     </bit_field>
   </register>
   <register offset="0x24" width="32" name="IPED_IV_CTR1" description="Monotonic Counter for external Prince region 1">
     <alias type="CMSIS" value="CFPA.IPED_IV_CTR[1]"/>
-    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for external Prince region 1 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for external Prince region 1 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.">
       <alias type="CMSIS" value="FLASH_CFPA_IPED_IV_CTR_ERASE_COUNT(x)"/>
     </bit_field>
   </register>
   <register offset="0x28" width="32" name="IPED_IV_CTR2" description="Monotonic Counter for external Prince region 2">
     <alias type="CMSIS" value="CFPA.IPED_IV_CTR[2]"/>
-    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for external Prince region 2 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for external Prince region 2 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.">
       <alias type="CMSIS" value="FLASH_CFPA_IPED_IV_CTR_ERASE_COUNT(x)"/>
     </bit_field>
   </register>
   <register offset="0x2C" width="32" name="IPED_IV_CTR3" description="Monotonic Counter for external Prince region 3">
     <alias type="CMSIS" value="CFPA.IPED_IV_CTR[3]"/>
-    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for external Prince region 3 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="ERASE_COUNT" access="RO" reset_value="0" description="Erase count for external Prince region 3 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.">
       <alias type="CMSIS" value="FLASH_CFPA_IPED_IV_CTR_ERASE_COUNT(x)"/>
     </bit_field>
   </register>

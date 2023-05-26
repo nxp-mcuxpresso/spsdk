@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,6 +14,7 @@ from typing import IO
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.utils import nxpdevscan
@@ -62,8 +63,7 @@ from spsdk.utils import nxpdevscan
 @spsdk_apps_common_options
 def main(extend_vids: str, out: IO[str], scope: str, log_level: int) -> None:
     """Utility listing all connected NXP USB and UART devices."""
-    logging.basicConfig(level=log_level or logging.WARNING)
-
+    spsdk_logger.install(level=log_level)
     additional_vids = [int(vid, 16) for vid in extend_vids]
 
     if scope in ["all", "usb"]:

@@ -7,8 +7,7 @@ User Guide - elftosb
 This user guide describes how to use *elftosb* application. *elftosb* is a tool for generating TrustZone,
 Master Boot Image and Secure Binary images.
 
-For more information about the supported binary images and how to configure them visit page
-:ref:`Supported binary images`
+Refer to the chapter supported binary images for more information.
 
 ----------------------------
 Legacy elftosb documentation

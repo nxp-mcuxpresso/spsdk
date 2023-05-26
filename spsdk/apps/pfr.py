@@ -17,6 +17,7 @@ from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import pfr
 from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     FC,
     CommandsTreeGroupAliasedGetCfgTemplate,
@@ -92,7 +93,7 @@ def pfr_device_type_options(no_type: bool = False) -> Callable:
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Utility for generating and parsing Protected Flash Region data (CMPA, CFPA)."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
     return 0
 
 

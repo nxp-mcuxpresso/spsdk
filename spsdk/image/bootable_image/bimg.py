@@ -69,6 +69,7 @@ def convert_segment_value(value: bytes, output_type: Type) -> Any:
 
     :param value: Segment value as bytes.
     :param output_type: Output type.
+    :raises SPSDKTypeError: If given type is not supported
     :return: Converted value.
     """
     if output_type == int:
@@ -882,8 +883,8 @@ class BootableImageRt118x(BootableImage):
             header = XMCDHeader.parse(header_binary)
         except SPSDKParsingError:
             return 0
-        mem_type = MemoryType(header.interface).name.lower()
-        config_type = ConfigurationBlockType(header.block_type).name.lower()
+        mem_type = MemoryType.name(header.interface)
+        config_type = ConfigurationBlockType.name(header.block_type)
         registers = XMCD.load_registers(self.family, mem_type, config_type, self.revision)
         return len(registers.image_info())
 

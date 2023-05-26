@@ -18,7 +18,7 @@ from cryptography.hazmat.primitives.keywrap import aes_key_wrap
 
 from spsdk import SPSDKError
 from spsdk import version as spsdk_version
-from spsdk.apps.utils.utils import get_key
+from spsdk.apps.utils.utils import filepath_from_config, get_key
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.database import Database
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound
@@ -801,13 +801,14 @@ class OtfadNxp(Otfad):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        config: Dict[str, Any], config_dir: str, search_paths: Optional[List[str]] = None
     ) -> "OtfadNxp":
         """Converts the configuration option into an OTFAD image object.
 
         "config" content array of containers configurations.
 
         :param config: array of OTFAD configuration dictionaries.
+        :param config_dir: directory where the config is located
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: initialized OTFAD object.
         """
@@ -834,7 +835,9 @@ class OtfadNxp(Otfad):
                 min([value_to_int(addr["address"]) for addr in data_blobs]), start_address
             )
             binaries = BinaryImage(
-                config.get("encrypted_name", "encrypted_blobs"),
+                filepath_from_config(
+                    config, "encrypted_name", "encrypted_blobs", config_dir, config["output_folder"]
+                ),
                 offset=start_address - table_address,
             )
             for data_blob in data_blobs:

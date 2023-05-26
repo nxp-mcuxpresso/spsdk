@@ -10,7 +10,10 @@ devices:
       sb_21_supported: False
       has_kek_fuses: True
       additional_template: ["ibkek", "key_blobs"]
-
+      additional_template_text: |
+        Refer to the Security Reference Manual for RT117x and Application Note 13250 for more information.
+        In case blank string is used, the output is not generated. If the filename contains directory,
+        the output folder will be ignored and the full path from filename will be used.
       grouped_registers:
         - name: USER_KEY1
           width: 512

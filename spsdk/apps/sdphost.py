@@ -15,6 +15,7 @@ from typing import Optional
 
 import click
 
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     isp_interfaces,
@@ -44,7 +45,7 @@ def main(
     timeout: int,
 ) -> int:
     """Utility for communication with ROM on i.MX targets using SDP protocol (i.MX RT1xxx)."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
     # if --help is provided anywhere on command line, skip interface lookup and display help message
     if "--help" not in sys.argv[1:]:
         ctx.obj = {

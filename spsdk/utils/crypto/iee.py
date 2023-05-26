@@ -17,7 +17,7 @@ from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk import SPSDKError
 from spsdk import version as spsdk_version
-from spsdk.apps.utils.utils import get_key
+from spsdk.apps.utils.utils import filepath_from_config, get_key
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.crypto import (
     IEE_DATA_FOLDER,
@@ -726,13 +726,14 @@ class IeeNxp(Iee):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], search_paths: Optional[List[str]] = None
+        config: Dict[str, Any], config_dir: str, search_paths: Optional[List[str]] = None
     ) -> "IeeNxp":
         """Converts the configuration option into an IEE image object.
 
         "config" content array of containers configurations.
 
         :param config: array of IEE configuration dictionaries.
+        :param config_dir: directory where the config is located
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: initialized IEE object.
         """
@@ -771,7 +772,9 @@ class IeeNxp(Iee):
                 start_address,
             )
             binaries = BinaryImage(
-                config.get("encrypted_name", "encrypted_blobs.bin"),
+                filepath_from_config(
+                    config, "encrypted_name", "encrypted_blobs", config_dir, config["output_folder"]
+                ),
                 offset=start_address - keyblob_address,
                 alignment=IeeKeyBlob._ENCRYPTION_BLOCK_SIZE,
             )

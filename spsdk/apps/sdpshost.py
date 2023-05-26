@@ -12,6 +12,7 @@ import sys
 
 import click
 
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     isp_interfaces,
@@ -33,7 +34,7 @@ WARNING_MSG = """
 @click.pass_context
 def main(ctx: click.Context, port: str, usb: str, name: str, log_level: int, timeout: int) -> int:
     """Utility for communication with ROM on i.MX targets using SDPS protocol (i.MX8/9)."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
     click.echo(WARNING_MSG)
     # if --help is provided anywhere on command line, skip interface lookup and display help message
     if "--help " in sys.argv:

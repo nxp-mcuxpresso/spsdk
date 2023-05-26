@@ -283,8 +283,10 @@ class BDParser(Parser):
         :param token: object holding the content defined in decorator.
         :return: dictionary holding the definition of sources
         """
-        dictionary: Dict = {}
-        return dictionary
+        sources = {}
+        for source in self._lexer._sources:
+            sources[source.name] = source.value
+        return {"sources": sources}
 
     @_("source_def IDENT ASSIGN source_value SEMI")  # type: ignore
     def source_def(self, token: YaccProduction) -> None:  # type: ignore

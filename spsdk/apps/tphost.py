@@ -29,6 +29,7 @@ from spsdk.apps.utils import (
     CommandsTreeGroupAliasedGetCfgTemplate,
     catch_spsdk_error,
     spsdk_apps_common_options,
+    spsdk_logger,
 )
 from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.crypto import Encoding, ec
@@ -49,7 +50,7 @@ from spsdk.utils.misc import load_binary, load_text, write_file
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Application to secure Trust provisioning process of loading application in Un-trusted environment."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
     return 0
 
 

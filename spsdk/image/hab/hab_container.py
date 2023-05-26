@@ -8,56 +8,18 @@
 """This module contains HAB related code."""
 
 import logging
-from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Dict, List, Optional, Type
+from datetime import datetime
+from typing import List, Optional
 
-from spsdk.exceptions import SPSDKKeyError
 from spsdk.image import segments
+from spsdk.image.hab.config_parser import ImageConfig
+from spsdk.image.hab.csf_builder import CsfBuildDirector, CsfBuilder
+from spsdk.image.hab.hab_binary_image import HabBinaryImage, HabSegment
 from spsdk.image.images import BootImgRT
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import BinaryPattern, find_file, find_first, load_binary
+from spsdk.utils.misc import BinaryPattern, load_binary
 
 logger = logging.getLogger(__name__)
-
-
-class HabEnumSegments(str, Enum):
-    """Enum definition for 'par' parameter of Check Data command."""
-
-    IVT = "ivt"
-    BDT = "bdt"
-    DCD = "dcd"
-    XMCD = "xmcd"
-    APP = "app"
-
-
-@dataclass
-class ConfigOptions:
-    """Dataclass holding data of options section of BD config file."""
-
-    flags: int
-    start_address: int
-    ivt_offset: int
-    initial_load_size: int
-    entrypoint_address: int
-    dcd_file_path: Optional[str] = None
-    xmcd_file_path: Optional[str] = None
-
-    @staticmethod
-    def parse(options: Dict[str, Any]) -> "ConfigOptions":
-        """Parse config options from dictionary.
-
-        :param options: Optiona sto be parsed
-        """
-        return ConfigOptions(
-            flags=options["flags"],
-            start_address=options["startAddress"],
-            ivt_offset=options["ivtOffset"],
-            initial_load_size=options["initialLoadSize"],
-            entrypoint_address=options["entryPointAddress"],
-            dcd_file_path=options.get("DCDFilePath"),
-            xmcd_file_path=options.get("XMCDFilePath"),
-        )
 
 
 class HabContainer:
@@ -65,121 +27,130 @@ class HabContainer:
 
     IVT_VERSION = 0x40
 
-    def __init__(self, binary_image: BinaryImage) -> None:
+    def __init__(self, hab_image: HabBinaryImage) -> None:
         """HAB Constructor.
 
         :param binary_image: Binary image with required segments.
         """
-        self.binary_image = binary_image
+        self.hab_image = hab_image
 
     @property
     def ivt_segment(self) -> Optional[bytes]:
         """IVT segment binary."""
-        return self._get_segment_binary(HabEnumSegments.IVT)
+        segment = self.hab_image.get_hab_segment(HabSegment.IVT)
+        return segment.binary if segment else None
 
     @property
     def bdt_segment(self) -> Optional[bytes]:
         """BDT segment binary."""
-        return self._get_segment_binary(HabEnumSegments.BDT)
+        segment = self.hab_image.get_hab_segment(HabSegment.BDT)
+        return segment.binary if segment else None
 
     @property
     def dcd_segment(self) -> Optional[bytes]:
         """DCD segment binary."""
-        return self._get_segment_binary(HabEnumSegments.DCD)
+        segment = self.hab_image.get_hab_segment(HabSegment.DCD)
+        return segment.binary if segment else None
 
     @property
     def xmcd_segment(self) -> Optional[bytes]:
         """XMCD segment binary."""
-        return self._get_segment_binary(HabEnumSegments.XMCD)
+        segment = self.hab_image.get_hab_segment(HabSegment.XMCD)
+        return segment.binary if segment else None
 
     @property
     def app_segment(self) -> Optional[bytes]:
         """APP segment binary."""
-        return self._get_segment_binary(HabEnumSegments.APP)
+        segment = self.hab_image.get_hab_segment(HabSegment.APP)
+        return segment.binary if segment else None
 
-    def _get_segment_binary(self, segment: HabEnumSegments) -> Optional[bytes]:
-        """Get segment by name.
-
-        :param segment: Segment to be found
-        """
-        seg = find_first(self.binary_image.sub_images, lambda x: x.name == segment.value)
-        return seg.binary if seg else None
+    @property
+    def csf_segment(self) -> Optional[bytes]:
+        """APP segment binary."""
+        segment = self.hab_image.get_hab_segment(HabSegment.CSF)
+        return segment.binary if segment else None
 
     @classmethod
     def load(
-        cls, bd_data: Dict[str, Any], external: List, search_paths: Optional[List[str]] = None
+        cls,
+        image_config: ImageConfig,
+        search_paths: Optional[List[str]] = None,
+        timestamp: Optional[datetime] = None,
     ) -> "HabContainer":
         """Load the HAB container object from parsed bd_data configuration.
 
-        :param bd_data: Dictionary of the command file content
-        :param external: List of external files
+        :param image_config: Image configuration
         :param search_paths: List of paths where to search for the file, defaults to None
+        :param timestamp: Signature timestamp
         """
-        options = ConfigOptions.parse(bd_data["options"])
-        bin_image = BinaryImage(name=f"HAB", size=0, pattern=BinaryPattern("zeros"))
-        # TODO: Fix lexer so the externals are parsed into bd_data
-        app_bin = BinaryImage.load_binary_image(external[0], search_paths=search_paths).export()
+        hab_image = HabBinaryImage()
         # IVT
         ivt = segments.SegIVT2(HabContainer.IVT_VERSION)
-        ivt.app_address = options.entrypoint_address
-        ivt.ivt_address = options.start_address + options.ivt_offset
-        ivt.bdt_address = options.start_address + options.ivt_offset + ivt.size
-        ivt_image = BinaryImage(
-            name=HabEnumSegments.IVT.value,
-            size=len(ivt.export()),
-            offset=0,
-            binary=ivt.export(),
-            parent=bin_image,
-        )
-        bin_image.add_image(ivt_image)
+        ivt.app_address = image_config.options.entrypoint_address
+        ivt.ivt_address = image_config.options.start_address + image_config.options.ivt_offset
+        ivt.bdt_address = ivt.ivt_address + ivt.size
+        ivt.csf_address = 0
+        hab_image.add_hab_segment(HabSegment.IVT, ivt.export())
+        ivt_image = hab_image.get_hab_segment(HabSegment.IVT)
         # BDT
-        image_len = options.initial_load_size + len(app_bin)
-        bdt = segments.SegBDT(app_start=options.start_address, app_length=image_len)
-        bdt_image = BinaryImage(
-            name=HabEnumSegments.BDT.value,
-            size=len(bdt.export()),
-            offset=ivt_image.offset + ivt.bdt_address - ivt.ivt_address,
-            binary=bdt.export(),
-            parent=bin_image,
-        )
-        bin_image.add_image(bdt_image)
+        bdt = segments.SegBDT(app_start=image_config.options.start_address)
+        hab_image.add_hab_segment(HabSegment.BDT, bdt.export())
         # DCD
-        if options.dcd_file_path is not None:
-            dcd_path = find_file(options.dcd_file_path, search_paths=search_paths)
-            dcd_bin = load_binary(dcd_path)
-            bin_image.add_image(
-                BinaryImage(
-                    name=HabEnumSegments.DCD.value,
-                    size=len(dcd_bin),
-                    offset=bdt_image.offset + len(bdt_image),
-                    binary=dcd_bin,
-                    parent=bin_image,
-                )
-            )
+        if image_config.options.dcd_file_path is not None:
+            dcd_bin = load_binary(image_config.options.dcd_file_path, search_paths=search_paths)
+            hab_image.add_hab_segment(HabSegment.DCD, dcd_bin)
+            ivt.dcd_address = ivt.ivt_address + HabBinaryImage.DCD_OFFSET
+            ivt_image.binary = ivt.export()
         # XMCD
-        if options.xmcd_file_path is not None:
-            xmcd_path = find_file(options.xmcd_file_path, search_paths=search_paths)
-            xmcd_bin = load_binary(xmcd_path)
-            bin_image.add_image(
-                BinaryImage(
-                    name=HabEnumSegments.XMCD.value,
-                    size=len(xmcd_bin),
-                    offset=ivt_image.offset + BootImgRT.XMCD_IVT_OFFSET,
-                    binary=xmcd_bin,
-                    parent=bin_image,
-                )
-            )
+        if image_config.options.xmcd_file_path is not None:
+            xmcd_bin = load_binary(image_config.options.xmcd_file_path, search_paths=search_paths)
+            hab_image.add_hab_segment(HabSegment.XMCD, xmcd_bin)
         # APP
-        bin_image.add_image(
-            BinaryImage(
-                name=HabEnumSegments.APP.value,
-                size=len(app_bin),
-                offset=options.initial_load_size - options.ivt_offset,
-                binary=app_bin,
-                parent=bin_image,
-            )
+        app_bin = BinaryImage.load_binary_image(
+            image_config.elf_file,
+            search_paths=search_paths,
         )
-        return HabContainer(binary_image=bin_image)
+        app_offset = image_config.options.initial_load_size - image_config.options.ivt_offset
+        hab_image.add_hab_segment(HabSegment.APP, app_bin.export(), offset_override=app_offset)
+
+        bdt.app_length = image_config.options.ivt_offset + len(hab_image)
+        bdt_image = hab_image.get_hab_segment(HabSegment.BDT)
+        bdt_image.binary = bdt.export()
+        # Calculate CSF offset
+        app_image = hab_image.get_hab_segment(HabSegment.APP)
+        image_len = app_offset + len(app_image) + image_config.options.ivt_offset
+        csf_offset = HabContainer._calculate_csf_offset(image_len)
+        csf_offset = csf_offset - image_config.options.ivt_offset
+
+        csf_builder = CsfBuilder(
+            image_config,
+            csf_offset=csf_offset,
+            search_paths=search_paths,
+            timestamp=timestamp,
+            hab_image=hab_image,
+        )
+        if csf_builder.is_authenticated or csf_builder.is_encrypted:
+            bdt.app_length = image_config.options.ivt_offset + csf_offset + HabBinaryImage.CSF_SIZE
+            if csf_builder.is_encrypted:
+                bdt.app_length += HabBinaryImage.KEYBLOB_SIZE
+            bdt_image.binary = bdt.export()
+            ivt.csf_address = ivt.ivt_address + csf_offset
+            ivt_image.binary = ivt.export()
+        # CSF
+        director = CsfBuildDirector(csf_builder)
+        director.build_csf()
+        return HabContainer(hab_image=hab_image)
+
+    @staticmethod
+    def _calculate_csf_offset(image_len: int) -> int:
+        """Calculate CSF offset from image length.
+
+        :param image_len: Image length
+        :return: CSF offset
+        """
+        csf_offset = image_len + (16 - (image_len % 16))
+        csf_offset = ((csf_offset + 0x1000 - 1) // 0x1000) * 0x1000
+        return csf_offset
 
     @classmethod
     def parse(cls, binary: bytes) -> "HabContainer":
@@ -187,61 +158,35 @@ class HabContainer:
 
         :param binary:Binary to be parsed
         """
-        rt = BootImgRT.parse(binary)
+        rt_img = BootImgRT.parse(binary)
         # IVT
-        bin_image = BinaryImage(name=f"HAB", size=0, pattern=BinaryPattern("zeros"))
-        ivt_image = BinaryImage(
-            name=HabEnumSegments.IVT.value,
-            size=len(rt.ivt.export()),
-            offset=rt.offset - rt.ivt_offset,
-            binary=rt.ivt.export(),
-            parent=bin_image,
-        )
-        bin_image.add_image(ivt_image)
+        hab_image = HabBinaryImage()
+        hab_image.add_hab_segment(HabSegment.IVT, rt_img.ivt.export())
         # BDT
-        if rt.bdt is not None:
-            bdt_image = BinaryImage(
-                name=HabEnumSegments.BDT.value,
-                size=len(rt.bdt.export()),
-                offset=ivt_image.offset + rt.ivt.bdt_address - rt.ivt.ivt_address,
-                binary=rt.bdt.export(),
-                parent=bin_image,
-            )
-            bin_image.add_image(bdt_image)
+        if rt_img.bdt is not None:
+            hab_image.add_hab_segment(HabSegment.BDT, rt_img.bdt.export())
         # DCD
-        if rt.dcd is not None:
-            bin_image.add_image(
-                BinaryImage(
-                    name=HabEnumSegments.DCD.value,
-                    size=len(rt.dcd.export()),
-                    offset=ivt_image.offset + rt.ivt.dcd_address - rt.ivt.ivt_address,
-                    binary=rt.dcd.export(),
-                    parent=bin_image,
-                )
-            )
+        if rt_img.dcd is not None:
+            hab_image.add_hab_segment(HabSegment.DCD, rt_img.dcd.export())
         # XMCD
-        if rt.xmcd is not None:
-            bin_image.add_image(
-                BinaryImage(
-                    name=HabEnumSegments.XMCD.value,
-                    size=len(rt.xmcd.export()),
-                    offset=ivt_image.offset + BootImgRT.XMCD_IVT_OFFSET,
-                    binary=rt.xmcd.export(),
-                    parent=bin_image,
-                )
+        if rt_img.xmcd is not None:
+            hab_image.add_hab_segment(HabSegment.XMCD, rt_img.xmcd.export())
+        # CSF
+        if rt_img.csf is not None:
+            hab_image.add_hab_segment(
+                HabSegment.CSF,
+                rt_img.csf.export(),
+                offset_override=rt_img.ivt.csf_address - rt_img.ivt.ivt_address,
             )
-        if rt.app is not None:
-            bin_image.add_image(
-                BinaryImage(
-                    name=HabEnumSegments.APP.value,
-                    size=len(rt.app.export()),
-                    offset=ivt_image.offset + rt.app_offset - rt.ivt_offset,
-                    binary=rt.app.export(),
-                    parent=bin_image,
-                )
+        # APP
+        if rt_img.app is not None:
+            hab_image.add_hab_segment(
+                HabSegment.APP,
+                rt_img.app.export(),
+                offset_override=rt_img.app_offset - rt_img.ivt_offset,
             )
-        return HabContainer(bin_image)
+        return HabContainer(hab_image)
 
     def export(self) -> bytes:
         """Export into binary."""
-        return self.binary_image.export()
+        return self.hab_image.export()

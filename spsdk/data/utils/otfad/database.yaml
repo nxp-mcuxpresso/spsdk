@@ -80,6 +80,9 @@ devices:
         The encrypted XiP can be also enabled by the BOOT_CFG pin
 
         It is recommended to set the USER_KEY5_RLOCK and OTFAD1/2_KEY_SEL_LOCK fuses for production to protect sensitive data stored in the USER_KEY5 fuse (if used) and to prevent a modification of the OTFAD key selection by malicious software.
+
+        In case blank string is used, the output is not generated. If the filename contains directory,
+        the output folder will be ignored and the full path from filename will be used.
       grouped_registers:
         - name: OTFAD_KEY
           width: 128

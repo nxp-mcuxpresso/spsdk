@@ -7,21 +7,99 @@
 <regs>
 	<register offset="0x0" width="8" name="magicNumber" reversed="False" description="Fixed to 0xA1" value="0xA1"/>
 	<register offset="0x08" width="8" name="version" reversed="False" description="Set to 1 for this implementation" value="0x1"/>
-	<register offset="0x10" width="8" name="configOption" reversed="False" description="Simplified - 0x00, Full - 0xFF - Must be 0xFF in this case" value="0xFF"/>
+	<register offset="0x10" width="8" name="configOption" reversed="False" description="Simplified - 0x00, Full - 0xFF - Must be 0xFF in this case" value="0xFF">
+		<bit_field offset="0x0" width="8" name="configOption" reset_value="0xFF" description="Config option">
+			<bit_field_value name="XMCD_SEMC_SDRAM_CONFIG_FULL" value="0x00" description="Full configuration. Must configure all fields."/>
+		</bit_field>
+	</register>
 	<register offset="0x18" width="8" name="clkMhz" reversed="False" description="Set the working frequency in the unit of MHz"/>
-	<register offset="0x20" width="32" name="sdramSizeKb" reversed="False" description="Set the memory size of SDRAM CS0 in the unit of kilobytes.Range: 4~4*1024*1024"/>
-	<register offset="0x40" width="8" name="portSize" reversed="False" description="Port size of SDRAM. 0 - 8bit, 1 - 16bit, 2 - 32bit"/>
-	<register offset="0x48" width="8" name="pinConfigPull" reversed="False" description="Pull config of the SDRAM GPIO pin. 0 - Forbidden, 1 - Pull up, 2 - Pull down"/>
-	<register offset="0x50" width="8" name="pinConfigDriveStrength" reversed="False" description="Driver config of SDRAM GPIO pin. 0 - High driver, 1 - Normal driver, Others- Invalid"/>
-	<register offset="0x58" width="8" name="muxRdy" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
-	<register offset="0x60" width="8" name="muxCsx0" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
-	<register offset="0x68" width="8" name="muxCsx1" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
-	<register offset="0x70" width="8" name="muxCsx2" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
-	<register offset="0x78" width="8" name="muxCsx3" reversed="False" description="SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM"/>
-	<register offset="0x80" width="8" name="bank" reversed="False" description="Bank numbers of SDRAM device. 0 - 4 banks, 1 - 2 banks, Others- Invalid"/>
-	<register offset="0x88" width="8" name="burstLen" reversed="False" description="Burst length.0 - 1, 1 - 2, 2 - 4, 3 - 8, Others- Invalid"/>
-	<register offset="0x90" width="8" name="columnAddrBitNum" reversed="False" description="Column address bit number.0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9 bit, 4 - 8 bit, Others- Invalid"/>
-	<register offset="0x98" width="8" name="casLatency" reversed="False" description="CAS Latency, 1 - 1, 2 - 2, 3 - 3, Others- Invalid"/>
+	<register offset="0x20" width="32" name="sdramSizeKb" reversed="False" description="Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes."/>
+	<register offset="0x40" width="8" name="portSize" reversed="False" description="Port size of SDRAM: 0 - 8-bit, 1 - 16-bit, 2 - 32-bit">
+		<bit_field offset="0x0" width="8" name="portSize" reset_value="0x00" description="Port size of SDRAM">
+			<bit_field_value name="XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT" value="0x00" description="8-bit"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_PORT_SIZE_16_BIT" value="0x01" description="16-bit"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT" value="0x02" description="32-bit"/>
+		</bit_field>
+	</register>
+	<register offset="0x48" width="8" name="pinConfigPull" reversed="False" description="Pull config of the SDRAM GPIO pin: 0 - Forbidden, 1 - Pull up, 2 - Pull down, 3 - No pull, Others - Invalid value">
+		<bit_field offset="0x0" width="8" name="pinConfigPull" reset_value="0x03" description="Pull config of the SDRAM GPIO pin">
+			<bit_field_value name="XMCD_SEMC_SDRAM_PIN_CONFIG_FORBIDDEN" value="0x00" description="Forbidden"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_PIN_CONFIG_PULL_UP" value="0x01" description="Pull up"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_PIN_CONFIG_PULL_DOWN" value="0x02" description="Pull down"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_PIN_CONFIG_NO_PULL" value="0x03" description="No pull"/>
+		</bit_field>
+	</register>
+	<register offset="0x50" width="8" name="pinConfigDriveStrength" reversed="False" description="Driver config of SDRAM GPIO pin: 0 - High driver, 1 - Normal driver, Others - Invalid value">
+		<bit_field offset="0x0" width="8" name="pinConfigDriveStrength" reset_value="0x00" description="Driver config of SDRAM GPIO pin">
+			<bit_field_value name="XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_HIGH" value="0x00" description="High driver"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_NORM" value="0x01" description="Normal driver"/>
+		</bit_field>
+	</register>
+	<register offset="0x58" width="8" name="muxRdy" reversed="False" description="SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM, select other external devices">
+		<bit_field offset="0x0" width="8" name="muxRdy" reset_value="0x01" description="SDRAM CSn device selection">
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_RDY_CS1" value="0x01" description="SDRAM CS1"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_RDY_CS2" value="0x02" description="SDRAM CS2"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_RDY_CS3" value="0x03" description="SDRAM CS3"/>
+		</bit_field>
+	</register>
+	<register offset="0x60" width="8" name="muxCsx0" reversed="False" description="SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM, select other external devices">
+		<bit_field offset="0x0" width="8" name="muxCsx0" reset_value="0x01" description="SDRAM CSn device selection">
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX0_CS1" value="0x01" description="SDRAM CS1"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX0_CS2" value="0x02" description="SDRAM CS2"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX0_CS3" value="0x03" description="SDRAM CS3"/>
+		</bit_field>
+	</register>
+	<register offset="0x68" width="8" name="muxCsx1" reversed="False" description="SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM, select other external devices">
+		<bit_field offset="0x0" width="8" name="muxCsx1" reset_value="0x01" description="SDRAM CSn device selection">
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX1_CS1" value="0x01" description="SDRAM CS1"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX1_CS2" value="0x02" description="SDRAM CS2"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX1_CS3" value="0x03" description="SDRAM CS3"/>
+		</bit_field>
+	</register>
+	<register offset="0x70" width="8" name="muxCsx2" reversed="False" description="SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM, select other external devices">
+		<bit_field offset="0x0" width="8" name="muxCsx2" reset_value="0x01" description="SDRAM CSn device selection">
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX2_CS1" value="0x01" description="SDRAM CS1"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX2_CS2" value="0x02" description="SDRAM CS2"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX2_CS3" value="0x03" description="SDRAM CS3"/>
+		</bit_field>
+	</register>
+	<register offset="0x78" width="8" name="muxCsx3" reversed="False" description="SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM, select other external devices">
+		<bit_field offset="0x0" width="8" name="muxCsx3" reset_value="0x01" description="SDRAM CSn device selection">
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX3_CS1" value="0x01" description="SDRAM CS1"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX3_CS2" value="0x02" description="SDRAM CS2"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_MUX_CSX3_CS3" value="0x03" description="SDRAM CS3"/>
+		</bit_field>
+	</register>
+	<register offset="0x80" width="8" name="bank" reversed="False" description="Bank numbers of SDRAM device: 0 - 4 banks, 1 - 2 banks, Others - Invalid value">
+		<bit_field offset="0x0" width="8" name="bank" reset_value="0x00" description="Bank numbers of SDRAM device">
+			<bit_field_value name="XMCD_SEMC_SDRAM_BANK_4" value="0x00" description="4 banks"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_BANK_2" value="0x01" description="2 banks"/>
+		</bit_field>
+	</register>
+	<register offset="0x88" width="8" name="burstLen" reversed="False" description="Burst length: 0 - 1, 1 - 2, 2 - 4, 3 - 8, Others - Invalid value">
+		<bit_field offset="0x0" width="8" name="burstLen" reset_value="0x00" description="Burst length">
+			<bit_field_value name="XMCD_SEMC_SDRAM_BURST_LEN_1" value="0x00" description="1"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_BURST_LEN_2" value="0x01" description="2"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_BURST_LEN_4" value="0x02" description="4"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_BURST_LEN_8" value="0x03" description="8"/>
+		</bit_field>
+	</register>
+	<register offset="0x90" width="8" name="columnAddrBitNum" reversed="False" description="Column address bit number: 0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9 bit, 4 - 8 bit, Others - Invalid value">
+		<bit_field offset="0x0" width="8" name="columnAddrBitNum" reset_value="0x00" description="Column address bit number">
+			<bit_field_value name="XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_12" value="0x00" description="12 bit"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_11" value="0x01" description="11 bit"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_10" value="0x02" description="10 bit"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_9" value="0x03" description="9 bit"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_8" value="0x04" description="8 bit"/>
+		</bit_field>
+	</register>
+	<register offset="0x98" width="8" name="casLatency" reversed="False" description="CAS Latency: 1 - 1, 2 - 2, 3 - 3, Others - Invalid value">
+		<bit_field offset="0x0" width="8" name="casLatency" reset_value="0x01" description="CAS Latency">
+			<bit_field_value name="XMCD_SEMC_SDRAM_CAS_LATENCY_1" value="0x01" description="1"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_CAS_LATENCY_2" value="0x02" description="2"/>
+			<bit_field_value name="XMCD_SEMC_SDRAM_CAS_LATENCY_3" value="0x03" description="3"/>
+		</bit_field>
+	</register>
 	<register offset="0xA0" width="8" name="writeRecoveryNs" reversed="False" description="Write recovery time in unit of nanosecond. This could help to meet tWR timing requirement by the SDRAM device."/>
 	<register offset="0xA8" width="8" name="refreshRecoveryNs" reversed="False" description="Refresh recovery time in unit of nanosecond. This could help to meet tRFC timing requirement by the SDRAM device."/>
 	<register offset="0xB0" width="8" name="act2readwriteNs" reversed="False" description="Act to read/write wait time in unit of nanosecond. This could help to meet tRCD timing requirement by the SDRAM device."/>
@@ -33,11 +111,11 @@
 	<register offset="0xE0" width="32" name="act2prechargeMaxNs" reversed="False" description="ACT to Precharge maximum time in unit of nanosecond. This could help to meet tRAS(max) timing requirement by the SDRAM device."/>
 	<register offset="0x100" width="32" name="refreshperiodPerrowNs" reversed="False" description="Refresh timer period in unit of nanosecond. Set to (tREF(ms) * 1000000/rows) value."/>
 	<register offset="0x120" width="32" name="modeRegister" reversed="False" description="Define the specific mode of operation of SDRAM. Set to the value required by SDRAM device."/>
-	<register offset="0x140" width="32" name="sdram0Base" reversed="False" description="Base address of SDRAM CS0. Range: 0x80000000~0xDFFFFFFF."/>
-	<register offset="0x160" width="32" name="sdram1Base" reversed="False" description="Base address of SDRAM CS1. Range: 0x80000000~0xDFFFFFFF. If CS1 is not being used, set the address to 0."/>
-	<register offset="0x180" width="32" name="sdram2Base" reversed="False" description="Base address of SDRAM CS2. Range: 0x80000000~0xDFFFFFFF. If CS2 is not being used, set the address to 0."/>
-	<register offset="0x1A0" width="32" name="sdram3Base" reversed="False" description="Base address of SDRAM CS3. Range: 0x80000000~0xDFFFFFFF. If CS3 is not being used, set the address to 0."/>
-	<register offset="0x1C0" width="32" name="sdram1SizeKb" reversed="False" description="Set the memory size of SDRAM CS1 in unit of kbytes. Range: 4~4*1024*1024"/>
-	<register offset="0x1E0" width="32" name="sdram2SizeKb" reversed="False" description="Set the memory size of SDRAM CS2 in unit of kbytes. Range: 4~4*1024*1024"/>
-	<register offset="0x200" width="32" name="sdram3SizeKb" reversed="False" description="Set the memory size of SDRAM CS3 in unit of kbytes. Range: 4~4*1024*1024"/>
+	<register offset="0x140" width="32" name="sdram0Base" reversed="False" description="Base address of SDRAM CS0. Range: 0x8000_0000~0xDFFF_FFFF."/>
+	<register offset="0x160" width="32" name="sdram1Base" reversed="False" description="Base address of SDRAM CS1. Range: 0x8000_0000~0xDFFF_FFFF. If CS1 is not being used, set the address to 0."/>
+	<register offset="0x180" width="32" name="sdram2Base" reversed="False" description="Base address of SDRAM CS2. Range: 0x8000_0000~0xDFFF_FFFF. If CS2 is not being used, set the address to 0."/>
+	<register offset="0x1A0" width="32" name="sdram3Base" reversed="False" description="Base address of SDRAM CS3. Range: 0x8000_0000~0xDFFF_FFFF. If CS3 is not being used, set the address to 0."/>
+	<register offset="0x1C0" width="32" name="sdram1SizeKb" reversed="False" description="Set the memory size of SDRAM CS1 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes."/>
+	<register offset="0x1E0" width="32" name="sdram2SizeKb" reversed="False" description="Set the memory size of SDRAM CS2 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes."/>
+	<register offset="0x200" width="32" name="sdram3SizeKb" reversed="False" description="Set the memory size of SDRAM CS3 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes."/>
 </regs>

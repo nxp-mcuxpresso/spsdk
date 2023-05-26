@@ -14,8 +14,9 @@ import yaml
 from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
+from spsdk.exceptions import SPSDKError
 from spsdk.image.xmcd.xmcd import XMCD
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.misc import load_configuration, use_working_directory
 
 
 @pytest.mark.parametrize(
@@ -108,3 +109,42 @@ def test_nxpimage_xmcd_template_cli(tmpdir, data_dir, family):
             with open(ref_template_path) as f:
                 ref_template = yaml.safe_load(f)
             assert new_template == ref_template
+
+
+@pytest.mark.parametrize(
+    "mem_type,config_type,option",
+    [
+        ("semc_sdram", "simplified", None),
+        ("semc_sdram", "full", None),
+        ("flexspi_ram", "simplified", 0),
+        ("flexspi_ram", "simplified", 1),
+        ("flexspi_ram", "full", None),
+    ],
+)
+def test_nxpimage_xmcd_export_invalid(data_dir, mem_type, config_type, option):
+    file_base_name = f"{mem_type}_{config_type}"
+    if option is not None:
+        file_base_name += f"_{option}"
+    config = os.path.join(data_dir, "xmcd", "rt116x", f"{file_base_name}.yaml")
+    mandatory_fileds = ["family", "mem_type", "config_type", "xmcd_settings"]
+    # Check mandatory fields
+    for mandatory_field in mandatory_fileds:
+        config_data = load_configuration(config)
+        config_data.pop(mandatory_field)
+        with pytest.raises(SPSDKError):
+            XMCD.load_from_config(config_data)
+    # Check invalid mem_type
+    config_data = load_configuration(config)
+    config_data["mem_type"] = "unknown"
+    with pytest.raises(SPSDKError):
+        XMCD.load_from_config(config_data)
+    # Check invalid config_type
+    config_data = load_configuration(config)
+    config_data["config_type"] = "unknown"
+    with pytest.raises(SPSDKError):
+        XMCD.load_from_config(config_data)
+    # Check unsupported family
+    config_data = load_configuration(config)
+    config_data["family"] = "rt5xx"
+    with pytest.raises(SPSDKError):
+        XMCD.load_from_config(config_data)

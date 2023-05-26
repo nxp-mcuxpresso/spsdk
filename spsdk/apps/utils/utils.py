@@ -12,7 +12,7 @@ import os
 import re
 import sys
 from functools import wraps
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import click
 import hexdump
@@ -24,6 +24,7 @@ from spsdk.sdp import interfaces as SDPInterfaceModule
 from spsdk.sdp.interfaces import SDPInterface
 from spsdk.utils.misc import (  # pylint: disable=unused-import #backward-compatibility
     find_file,
+    get_abs_path,
     load_binary,
     load_file,
     value_to_bytes,
@@ -292,7 +293,9 @@ def check_file_exists(path: str, force_overwrite: bool = False) -> bool:  # type
         raise SPSDKAppError(f"File '{path}' already exists. Use --force to overwrite it.")
 
 
-def get_key(key_source: str, expected_size: int, search_paths: Optional[List[str]] = None) -> bytes:
+def get_key(
+    key_source: Union[str, int], expected_size: int, search_paths: Optional[List[str]] = None
+) -> bytes:
     """Get the key from the command line parameter.
 
     :param key_source: File path to key file or hexadecimal value. If not specified random value is used.
@@ -303,6 +306,9 @@ def get_key(key_source: str, expected_size: int, search_paths: Optional[List[str
     """
     key = None
     assert expected_size > 0, "Invalid expected size of key"
+    if isinstance(key_source, int):
+        return value_to_bytes(key_source, byte_cnt=expected_size)
+
     if not key_source:
         logger.debug(
             f"The key source is not specified, the random value is used in size of {expected_size} B."
@@ -350,3 +356,35 @@ def store_key(file_name: str, key: bytes, reverse: bool = False) -> None:
         key.reverse()
         key = bytes(key)
     write_file(key, file_name + ".bin", mode="wb")
+
+
+def filepath_from_config(
+    config: Dict,
+    key: str,
+    default_value: str,
+    base_dir: str,
+    output_folder: str = "",
+    file_extension: str = "bin",
+) -> str:
+    """Get file path from configuration dictionary and append .bin if the value is not blank.
+
+    Function returns the output_folder + filename if the filename does not contain path.
+    In case filename contains path, return filename and append ".bin".
+    The empty string "" indicates that the user doesn't want the output.
+    :param config: Configuration dictionary
+    :param key: Name of the key
+    :param default_value: default value in case key value is not present
+    :param base_dir: base directory for path expansion
+    :param output_folder: Output folder, if blank file path from config will be used
+    :param file_extension: File extension that will be appended
+    :return: filename with appended ".bin" or blank filename ""
+    """
+    filename = config.get(key, default_value)
+    file_extension = "." + file_extension
+    if filename == "":
+        return filename
+    if not os.path.dirname(filename):
+        filename = os.path.join(output_folder, filename)
+    if not filename.endswith(file_extension):
+        filename += file_extension
+    return get_abs_path(filename, base_dir)

@@ -14,6 +14,7 @@ import click
 from click_option_group import optgroup
 
 from spsdk import SPSDK_DATA_FOLDER, SPSDKError
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroupAliasedGetCfgTemplate,
     spsdk_apps_common_options,
@@ -60,7 +61,7 @@ class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
 @spsdk_apps_common_options
 def main(log_level: int) -> None:
     """Utility for certificate generation."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level, logger=logger)
 
 
 @main.command(name="generate", no_args_is_help=True)

@@ -586,8 +586,25 @@ class ExternalMemoryAttributesValue(PropertyValueBase):
         return ", ".join(str_values)
 
 
+class FuseLock:
+    """Fuse Lock."""
+
+    def __init__(self, index: int, locked: bool) -> None:
+        """Initialize object representing information about fuse lock.
+
+        :param index: value of OTP index
+        :param locked: status of the lock, true if locked
+        """
+        self.index = index
+        self.locked = locked
+
+    def __str__(self) -> str:
+        status = "LOCKED" if self.locked else "UNLOCKED"
+        return f"  FUSE{(self.index):03d}: {status}\r\n"
+
+
 class FuseLockRegister:
-    """RAM memory regions."""
+    """Fuse Lock Register."""
 
     def __init__(self, value: int, index: int, start: int = 0) -> None:
         """Initialize object representing the OTP Controller Program Locked Status.
@@ -600,21 +617,24 @@ class FuseLockRegister:
         self.value = value
         self.index = index
         self.msg = ""
+        self.bitfields: List[FuseLock] = []
 
         shift = 0
         for _ in range(start, 32):
-            bit = (value >> shift) & 1
-            status = "LOCKED" if bit else "UNLOCKED"
-            self.msg += f"  FUSE{(index + shift):03d}: {status}\r\n"
+            locked = (value >> shift) & 1
+            self.bitfields.append(FuseLock(index + shift, bool(locked)))
             shift += 1
 
     def __str__(self) -> str:
         """Get stringified property representation."""
+        if self.bitfields:
+            for bitfield in self.bitfields:
+                self.msg += str(bitfield)
         return f"\r\n{self.msg}"
 
 
 class FuseLockedStatus(PropertyValueBase):
-    """Reserver Regions property."""
+    """Class representing FuseLocked registers."""
 
     __slots__ = ("fuses",)
 
@@ -642,6 +662,16 @@ class FuseLockedStatus(PropertyValueBase):
         for count, register in enumerate(self.fuses):
             msg += f"OTP Controller Program Locked Status {count} Register: {register}"
         return msg
+
+    def get_fuses(self) -> List[FuseLock]:
+        """Get list of fuses bitfield objects.
+
+        :return: list of FuseLockBitfield objects
+        """
+        fuses = []
+        for registers in self.fuses:
+            fuses.extend(registers.bitfields)
+        return fuses
 
 
 ########################################################################################################################

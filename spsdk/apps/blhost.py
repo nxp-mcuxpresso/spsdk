@@ -28,6 +28,7 @@ from spsdk.apps.blhost_helper import (
     parse_trust_prov_oem_key_type,
     progress_bar,
 )
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     isp_interfaces,
@@ -71,7 +72,7 @@ def main(
 ) -> int:
     """Utility for communication with the bootloader on target."""
     log_level = log_level or logging.WARNING
-    logging.basicConfig(level=log_level)
+    spsdk_logger.install(level=log_level)
 
     # print help for get-property if property tag is 0 or 'list-properties'
     if ctx.invoked_subcommand == "get-property":

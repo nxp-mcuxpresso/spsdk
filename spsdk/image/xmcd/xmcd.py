@@ -12,20 +12,20 @@ import datetime
 import logging
 import os
 from copy import deepcopy
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from crcmod.predefined import mkPredefinedCrcFun
 from ruamel.yaml.comments import CommentedMap as CM
 
 from spsdk import version as spsdk_version
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.image.segments import XMCDHeader
 from spsdk.image.segments_base import SegmentBase
 from spsdk.image.xmcd import XMCD_DATA_FOLDER, XMCD_DATABASE_FILE, XMCD_SCH_FILE
 from spsdk.utils.database import Database
+from spsdk.utils.easy_enum import Enum
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
+from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas, check_config
 
 logger = logging.getLogger(__name__)
 
@@ -33,41 +33,15 @@ logger = logging.getLogger(__name__)
 class MemoryType(Enum):
     """Support memory types Enum."""
 
-    FLEXSPI_RAM = 0
-    SEMC_SDRAM = 1
-
-    @staticmethod
-    def get_by_memory_type(type_name: str) -> "MemoryType":
-        """Get enum member by memory type as string.
-
-        :param type_name: Memory type name.
-        :raises SPSDKValueError: Unsupported memory type.
-        :return: Memory type enum member.
-        """
-        types = [mem.name for mem in MemoryType]
-        if type_name.upper() not in types:
-            raise SPSDKValueError(f"Memory type with name {type_name} does not exist")
-        return MemoryType[type_name.upper()]
+    FLEXSPI_RAM = (0, "flexspi_ram", "FlexSPI RAM")
+    SEMC_SDRAM = (1, "semc_sdram", "SEMC SDRAM")
 
 
 class ConfigurationBlockType(Enum):
     """Support configuration blocks Enum."""
 
-    SIMPLIFIED = 0
-    FULL = 1
-
-    @staticmethod
-    def get_by_config_type(type_name: str) -> "ConfigurationBlockType":
-        """Get enum member by config type as string.
-
-        :param type_name: Configuration block type name.
-        :raises SPSDKValueError: Unsupported configuration block type.
-        :return: Configuration block type enum member.
-        """
-        types = [mem.name for mem in ConfigurationBlockType]
-        if type_name.upper() not in types:
-            raise SPSDKValueError(f"Configuration type with name {type_name} does not exist")
-        return ConfigurationBlockType[type_name.upper()]
+    SIMPLIFIED = (0, "simplified", "Simplified configuration")
+    FULL = (1, "full", "Full configuration")
 
 
 class XMCD(SegmentBase):
@@ -145,8 +119,8 @@ class XMCD(SegmentBase):
         :raises SPSDKError: If given binary block size is not equal to block size in header
         """
         header = XMCDHeader.parse(binary[: XMCDHeader.SIZE])
-        self.mem_type = MemoryType(header.interface).name.lower()
-        self.config_type = ConfigurationBlockType(header.block_type).name.lower()
+        self.mem_type = MemoryType.name(header.interface)
+        self.config_type = ConfigurationBlockType.name(header.block_type)
         option_size = None
         if header.block_size != len(binary):
             raise SPSDKError("Invalid XMCD configuration size")
@@ -166,19 +140,30 @@ class XMCD(SegmentBase):
         """Load configuration file of XMCD.
 
         :param config: XMCD configuration file.
+        :raises SPSDKKeyError: If XMCD settings do not contain required key
         :return: XMCD object.
         """
+        check_config(config, XMCD.get_validation_schemas_family())
         family = config["family"]
         revision = config.get("revision", "latest")
+        mem_type = config["mem_type"]
+        config_type = config["config_type"]
+        check_config(config, XMCD.get_validation_schemas(family, mem_type, config_type, revision))
+
         xmcd_settings: Dict[str, Dict] = config["xmcd_settings"]
 
         xmcd = XMCD(family=family, revision=revision)
-        xmcd.mem_type = config["mem_type"]
-        xmcd.config_type = config["config_type"]
+        xmcd.mem_type = mem_type
+        xmcd.config_type = config_type
 
         option_size = None
         if xmcd.mem_type == "flexspi_ram" and xmcd.config_type == "simplified":
-            option_size = xmcd_settings["configOption0"]["bitfields"]["optionSize"]
+            try:
+                option_size = xmcd_settings["configOption0"]["bitfields"]["optionSize"]
+            except KeyError as exc:
+                raise SPSDKKeyError(
+                    "XMCD settings schema must contain optionSize in configOption0"
+                ) from exc
         xmcd._registers = xmcd.load_registers(
             xmcd.family, xmcd.mem_type, xmcd.config_type, xmcd.revision, option_size=option_size
         )
@@ -321,11 +306,10 @@ class XMCD(SegmentBase):
         regs.load_registers_from_xml(header_file_path)
         header_reg = regs.find_reg("header")
         block_type_bf = header_reg.find_bitfield("configurationBlockType")
-        value = ConfigurationBlockType.get_by_config_type(config_type).value
+        value = ConfigurationBlockType.get(config_type)
         block_type_bf.set_value(value)
         memory_if_bf = header_reg.find_bitfield("memoryInterface")
-        value = MemoryType.get_by_memory_type(mem_type).value
-        memory_if_bf.set_value(value)
+        memory_if_bf.set_value(MemoryType.get(mem_type))
         return regs
 
     @staticmethod

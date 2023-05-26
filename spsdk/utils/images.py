@@ -22,7 +22,6 @@ from spsdk.utils.misc import (
     align_block,
     find_file,
     format_value,
-    load_binary,
     size_fmt,
     write_file,
 )
@@ -114,6 +113,16 @@ class BinaryImage:
             assert isinstance(parent, BinaryImage)
         self.sub_images: List["BinaryImage"] = []
 
+    @property
+    def size(self) -> int:
+        """Size property."""
+        return self._size
+
+    @size.setter
+    def size(self, value: int) -> None:
+        """Size property setter."""
+        self._size = align(value, self.alignment)
+
     def add_image(self, image: "BinaryImage") -> None:
         """Add new sub image information.
 
@@ -156,7 +165,7 @@ class BinaryImage:
         """Returns aligned start address.
 
         :param alignment: The alignment value, defaults to 4.
-        :returns: Floor alignment address.
+        :return: Floor alignment address.
         """
         return math.floor(self.absolute_address / alignment) * alignment
 
@@ -164,7 +173,7 @@ class BinaryImage:
         """Returns aligned length for erasing purposes.
 
         :param alignment: The alignment value, defaults to 4.
-        :returns: Ceil alignment length.
+        :return: Ceil alignment length.
         """
         end_address = self.absolute_address + len(self)
         aligned_end = math.ceil(end_address / alignment) * alignment

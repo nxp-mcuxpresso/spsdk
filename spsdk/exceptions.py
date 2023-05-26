@@ -76,3 +76,11 @@ class SPSDKUnsupportedOperation(SPSDKError):
 
 class SPSDKSyntaxError(SyntaxError, SPSDKError):
     """SPSDK syntax error."""
+
+
+class SPSDKFileNotFoundError(FileNotFoundError, SPSDKError):
+    """SPSDK file not found error."""
+
+
+class SPSDKAttributeError(SPSDKError, AttributeError):
+    """SPSDK standard attribute error."""

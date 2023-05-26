@@ -57,7 +57,7 @@ TEST_XML_FILE = "unit_test.xml"
 
 
 def create_simple_regs():
-    """Create siple reg structure with basic cases."""
+    """Create simple reg structure with basic cases."""
     regs = Registers(TEST_DEVICE_NAME)
 
     reg1 = RegsRegister(

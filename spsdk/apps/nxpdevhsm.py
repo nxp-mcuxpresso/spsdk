@@ -15,6 +15,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import click
 
 from spsdk import SPSDK_DATA_FOLDER, SPSDKError, SPSDKValueError
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     isp_interfaces,
@@ -701,7 +702,7 @@ def get_oem_share_input(binary: str) -> bytes:
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Nxpdevhsm application is designed to create SB3 provisioning file for initial provisioning of device by OEM."""
-    logging.basicConfig(level=log_level or logging.WARNING)
+    spsdk_logger.install(level=log_level)
     return 0
 
 

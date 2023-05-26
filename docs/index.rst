@@ -23,6 +23,15 @@ Secure Provisioning SDK (SPSDK)
     usage/apis
 
 .. toctree::
+    :caption: Supported Binary Images
+    :maxdepth: 1
+
+    images/executable
+    images/secure_update
+    images/flash
+    images/bootable
+
+.. toctree::
     :caption: Application User Guides
     :maxdepth: 1
 
@@ -42,7 +51,7 @@ Secure Provisioning SDK (SPSDK)
     apps/shadowregs
     apps/trust_provisioning
 
-    apps/images
+
 
 .. toctree::
     :caption: API Development Guide
