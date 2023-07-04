@@ -12,6 +12,7 @@ map_tables:
     plain: [Plain]
     crc: [CRC]
     signed: [Signed, signed]
+    nxp_signed: ["NXP Signed", "NXP signed"]
     encrypted: ["Encrypted + Signed", encrypted]
 
 devices:
@@ -149,6 +150,7 @@ devices:
         plain: Mbi_PlainXipKw45xx
         crc: Mbi_CrcXipKw45xx
         signed: Mbi_PlainXipSignedKw45xx
+        nxp_signed: Mbi_PlainXipSignedNxpKw45xx
 
   k32w1xx:
     images:
@@ -156,6 +158,7 @@ devices:
         plain: Mbi_PlainXipKw45xx
         crc: Mbi_CrcXipKw45xx
         signed: Mbi_PlainXipSignedKw45xx
+        nxp_signed: Mbi_PlainXipSignedNxpKw45xx
 
   lpc553x:
     images:
@@ -170,3 +173,27 @@ devices:
       ram:
         plain: Mbi_PlainRamLpc55s3x
         crc: Mbi_CrcRamLpc55s3x
+
+  mcxn9xx:
+    images:
+      int_xip:
+        plain: Mbi_PlainRamMcxNx
+        crc: Mbi_CrcXipMcxNx
+        signed: Mbi_PlainXipSignedMcxNx
+      ext_xip:
+        plain: Mbi_PlainRamMcxNx
+        crc: Mbi_CrcXipMcxNx
+        signed: Mbi_PlainXipSignedMcxNx
+      ram:
+        plain: Mbi_PlainRamMcxNx
+        crc: Mbi_CrcRamMcxNx
+
+  rw61x:
+    images:
+      ext_xip:
+        crc: Mbi_CrcExtXipRw61x
+        signed: Mbi_PlainExtXipSignedRw61x
+      ram:
+        plain: Mbi_PlainRamRw61x
+        crc: Mbi_CrcRamRw61x
+        signed: Mbi_PlainSignedRamRw61x

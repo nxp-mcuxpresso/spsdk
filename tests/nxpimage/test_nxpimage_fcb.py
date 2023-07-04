@@ -32,8 +32,8 @@ def test_nxpimage_fcb_export(tmpdir, data_dir, family, mem_type):
     with use_working_directory(data_dir):
         config_file = os.path.join(data_dir, "fcb", family, f"fcb_{family}_{mem_type}.yaml")
         out_file = os.path.join(tmpdir, f"fcb_{family}_exported.bin")
-        cmd = f"bootable-image fcb export -c {config_file} {out_file}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = ["bootable-image", "fcb", "export", "-c", config_file, out_file]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(out_file)
         assert filecmp.cmp(
@@ -58,11 +58,24 @@ def test_nxpimage_fcb_parse_cli(tmpdir, data_dir, family, mem_type, binary):
     runner = CliRunner()
     with use_working_directory(data_dir):
         data_folder = os.path.join(data_dir, "fcb", family)
-        cmd = f"bootable-image fcb parse -f {family} -m {mem_type} -b {data_folder}/{binary} {tmpdir}/fcb_{family}_{mem_type}.yaml"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        binary_path = os.path.join(data_folder, binary)
+        out_config = os.path.join(tmpdir, f"fcb_{family}_{mem_type}.yaml")
+        cmd = [
+            "bootable-image",
+            "fcb",
+            "parse",
+            "-f",
+            family,
+            "-m",
+            mem_type,
+            "-b",
+            binary_path,
+            out_config,
+        ]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
 
-        assert os.path.isfile(os.path.join(tmpdir, f"fcb_{family}_{mem_type}.yaml"))
+        assert os.path.isfile(out_config)
 
 
 @pytest.mark.parametrize(
@@ -74,6 +87,7 @@ def test_nxpimage_fcb_parse_cli(tmpdir, data_dir, family, mem_type, binary):
         ("rt106x", ["flexspi_nor"]),
         ("rt117x", ["flexspi_nor"]),
         ("lpc55s3x", ["flexspi_nor"]),
+        ("rw61x", ["flexspi_nor"]),
     ],
 )
 def test_nxpimage_fcb_template_cli(tmpdir, family, mem_types):

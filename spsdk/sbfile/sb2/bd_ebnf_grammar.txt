@@ -23,7 +23,6 @@ source_value ::= STRING_LITERAL
 
 option_list ::= IDENT '=' const_expr (',' IDENT '=' const_expr )*
 
-# keyblob_block ::= KEYBLOB '(' int_const_expr ')' '{' keyblob_contents* '}'
 keyblob_block ::= KEYBLOB '(' int_const_expr ')' '{' keyblob_contents '}'
 
 keyblob_contents ::= '(' option_list* ')'
@@ -127,6 +126,11 @@ encrypt_stmt ::= ENCRYPT '(' int_const_expr ')' '{' statement* '}'
 enable_stmt ::= ENABLE AT_INT_LITERAL int_const_expr
 
 reset_stmt ::= RESET
+
+ver_check_stmt ::= VERSION_CHECK sec_or_nsec int_const_expr
+
+sec_or_nsec ::= SEC
+| NSEC
 
 const_expr ::= STRING_LITERAL
 | bool_expr

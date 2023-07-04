@@ -25,8 +25,69 @@ from spsdk.image.mbimg import DEVICE_FILE, Mbi_PlainRamLpc55s3x, Mbi_PlainXipSig
 from spsdk.utils.crypto.backend_internal import ECC, RSA, internal_backend
 from spsdk.utils.misc import load_configuration, use_working_directory
 
+mbi_basic_tests = [
+    ("mb_ram_crc.json", "lpc55xx"),
+    ("mb_ram_crc_s19.json", "lpc55xx"),
+    ("mb_ram_crc_hex.json", "lpc55xx"),
+    ("mb_xip_crc.json", "lpc55xx"),
+    ("mb_xip_crc_tz.json", "lpc55xx"),
+    ("mb_xip_crc_tz_no_preset.json", "lpc55xx"),
+    ("mb_xip_crc_hwk.json", "lpc55xx"),
+    ("mb_xip_crc_hwk_tz.json", "lpc55xx"),
+    ("mb_ram_crc.json", "lpc55s1x"),
+    ("mb_xip_crc_tz.json", "lpc55s1x"),
+    ("mb_xip_crc_tz_no_preset.json", "lpc55s1x"),
+    ("mb_xip_crc_hwk.json", "lpc55s1x"),
+    ("mb_xip_crc_hwk_tz.json", "lpc55s1x"),
+    ("mb_ram_plain.json", "rt5xx"),
+    ("mb_ram_crc.json", "rt5xx"),
+    ("mb_ram_crc_tz.json", "rt5xx"),
+    ("mb_ram_crc_tz_no_preset.json", "rt5xx"),
+    ("mb_ram_crc_hwk.json", "rt5xx"),
+    ("mb_ram_crc_hwk_tz.json", "rt5xx"),
+    ("mb_xip_crc.json", "rt5xx"),
+    ("mb_xip_crc_tz.json", "rt5xx"),
+    ("mb_xip_crc_tz_no_preset.json", "rt5xx"),
+    ("mb_xip_crc_hwk.json", "rt5xx"),
+    ("mb_xip_crc_hwk_tz.json", "rt5xx"),
+    ("mb_ram_crc.json", "lpc55s3x"),
+    ("mb_ram_crc_version.json", "lpc55s3x"),
+    ("mb_xip_crc.json", "lpc55s3x"),
+    ("mb_ext_xip_crc.json", "lpc55s3x"),
+    ("mb_ext_xip_crc_s19.json", "lpc55s3x"),
+    ("mb_ram_crc.json", "mcxn9xx"),
+    ("mb_xip_crc.json", "mcxn9xx"),
+]
+
+mbi_signed_tests = [
+    ("mb_xip_256_none.json", "lpc55s3x", None),
+    ("mb_xip_384_256.json", "lpc55s3x", None),
+    ("mb_xip_384_384.json", "lpc55s3x", None),
+    ("mb_ext_xip_signed.json", "lpc55s3x", None),
+    ("mb_xip_256_none.json", "mcxn9xx", None),
+    ("mb_xip_384_256.json", "mcxn9xx", None),
+    ("mb_xip_384_384.json", "mcxn9xx", None),
+    ("mb_xip_384_384_recovery_crctest.json", "mcxn9xx", None),
+    ("mb_xip_384_384_recovery.json", "mcxn9xx", None),
+]
+
+mbi_legacy_signed_tests = [
+    ("mb_xip_signed.json", "lpc55xx", 0),
+    ("mb_xip_signed.json", "lpc55s1x", 0),
+    ("mb_xip_signed_chain.json", "lpc55xx", 0),
+    ("mb_xip_signed_no_ks.json", "rt5xx", 0),
+    ("mb_ram_signed_no_ks.json", "rt5xx", 1),
+    ("mb_ram_signed_ks.json", "rt5xx", 2),
+]
+
+mbi_legacy_encrypted_tests = [
+    ("mb_ram_encrypted_ks.json", "rt5xx", 2),
+    ("mb_ram_encrypted_ks_binkey.json", "rt5xx", 2),
+]
+
 
 def process_config_file(config_path: str, destination: str):
+    config_path.replace("\\", "/")
     with open(config_path) as f:
         config_data = json.load(f)
     for key in config_data:
@@ -56,44 +117,11 @@ def get_signing_key(config_file) -> ECC.EccKey:
     return siging_key
 
 
-@pytest.mark.parametrize(
-    "config_file,device",
-    [
-        ("mb_ram_crc.json", "lpc55xx"),
-        ("mb_ram_crc_s19.json", "lpc55xx"),
-        ("mb_ram_crc_hex.json", "lpc55xx"),
-        ("mb_xip_crc.json", "lpc55xx"),
-        ("mb_xip_crc_tz.json", "lpc55xx"),
-        ("mb_xip_crc_tz_no_preset.json", "lpc55xx"),
-        ("mb_xip_crc_hwk.json", "lpc55xx"),
-        ("mb_xip_crc_hwk_tz.json", "lpc55xx"),
-        ("mb_ram_crc.json", "lpc55s1x"),
-        ("mb_xip_crc_tz.json", "lpc55s1x"),
-        ("mb_xip_crc_tz_no_preset.json", "lpc55s1x"),
-        ("mb_xip_crc_hwk.json", "lpc55s1x"),
-        ("mb_xip_crc_hwk_tz.json", "lpc55s1x"),
-        ("mb_ram_plain.json", "rt5xx"),
-        ("mb_ram_crc.json", "rt5xx"),
-        ("mb_ram_crc_tz.json", "rt5xx"),
-        ("mb_ram_crc_tz_no_preset.json", "rt5xx"),
-        ("mb_ram_crc_hwk.json", "rt5xx"),
-        ("mb_ram_crc_hwk_tz.json", "rt5xx"),
-        ("mb_xip_crc.json", "rt5xx"),
-        ("mb_xip_crc_tz.json", "rt5xx"),
-        ("mb_xip_crc_tz_no_preset.json", "rt5xx"),
-        ("mb_xip_crc_hwk.json", "rt5xx"),
-        ("mb_xip_crc_hwk_tz.json", "rt5xx"),
-        ("mb_ram_crc.json", "lpc55s3x"),
-        ("mb_ram_crc_version.json", "lpc55s3x"),
-        ("mb_xip_crc.json", "lpc55s3x"),
-        ("mb_ext_xip_crc.json", "lpc55s3x"),
-        ("mb_ext_xip_crc_s19.json", "lpc55s3x"),
-    ],
-)
-def test_nxpimage_mbi_basic(elftosb_data_dir, tmpdir, config_file, device):
+@pytest.mark.parametrize("config_file,family", mbi_basic_tests)
+def test_nxpimage_mbi_basic(elftosb_data_dir, tmpdir, config_file, family):
     runner = CliRunner()
     with use_working_directory(elftosb_data_dir):
-        config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{config_file}"
+        config_file = f"{elftosb_data_dir}/workspace/cfgs/{family}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
         cmd = f"mbi export {new_config}"
@@ -105,15 +133,32 @@ def test_nxpimage_mbi_basic(elftosb_data_dir, tmpdir, config_file, device):
             assert filecmp.cmp(new_binary, ref_binary)
 
 
-@pytest.mark.parametrize(
-    "config_file,device,sign_digest",
-    [
-        ("mb_xip_256_none.json", "lpc55s3x", None),
-        ("mb_xip_384_256.json", "lpc55s3x", None),
-        ("mb_xip_384_384.json", "lpc55s3x", None),
-        ("mb_ext_xip_signed.json", "lpc55s3x", None),
-    ],
-)
+@pytest.mark.parametrize("config_file,family", mbi_basic_tests)
+def test_mbi_parser_basic(tmpdir, elftosb_data_dir, family, config_file):
+    # Create new MBI file
+    mbi_data_dir = os.path.join(elftosb_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
+
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    cmd = f"mbi export {new_config}"
+    runner = CliRunner()
+    with use_working_directory(elftosb_data_dir):
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+    cmd = f"mbi parse -b {new_binary} -f {family} {tmpdir}/parsed"
+    result = runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0
+    input_image = os.path.join(elftosb_data_dir, load_configuration(config_file)["inputImageFile"])
+    parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
+    assert os.path.isfile(parsed_app)
+    if os.path.split(input_image)[1] == "bin":
+        assert filecmp.cmp(input_image, parsed_app)
+
+
+@pytest.mark.parametrize("config_file,device,sign_digest", mbi_signed_tests)
 def test_nxpimage_mbi_signed(elftosb_data_dir, tmpdir, config_file, device, sign_digest):
     runner = CliRunner()
     with use_working_directory(elftosb_data_dir):
@@ -171,6 +216,31 @@ def test_nxpimage_mbi_signed(elftosb_data_dir, tmpdir, config_file, device, sign
             )
             # validate data before signature
             assert ref_data[:-signature_length] == new_data[:-signature_length]
+
+
+@pytest.mark.parametrize("config_file,family,sign_digest", mbi_signed_tests)
+def test_mbi_parser_signed(tmpdir, elftosb_data_dir, family, config_file, sign_digest):
+    # Create new MBI file
+    mbi_data_dir = os.path.join(elftosb_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
+
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    cmd = f"mbi export {new_config}"
+    runner = CliRunner()
+    with use_working_directory(elftosb_data_dir):
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+    cmd = f"mbi parse -b {new_binary} -f {family} {tmpdir}/parsed"
+    result = runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0
+    input_image = os.path.join(elftosb_data_dir, load_configuration(config_file)["inputImageFile"])
+    parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
+    assert os.path.isfile(parsed_app)
+    if os.path.split(input_image)[1] == "bin":
+        assert filecmp.cmp(input_image, parsed_app)
 
 
 @pytest.mark.parametrize(
@@ -276,17 +346,7 @@ def test_nxpimage_mbi_cert_block_signed_invalid(
 # 0 indicates no hmac and no keystore present in output image
 # 1 indicates hmac present but no keystore
 # 2 indicates both hmac/keystore present in output image
-@pytest.mark.parametrize(
-    "config_file,device,skip_hmac_keystore",
-    [
-        ("mb_xip_signed.json", "lpc55xx", 0),
-        ("mb_xip_signed.json", "lpc55s1x", 0),
-        ("mb_xip_signed_chain.json", "lpc55xx", 0),
-        ("mb_xip_signed_no_ks.json", "rt5xx", 0),
-        ("mb_ram_signed_no_ks.json", "rt5xx", 1),
-        ("mb_ram_signed_ks.json", "rt5xx", 2),
-    ],
-)
+@pytest.mark.parametrize("config_file,device,skip_hmac_keystore", mbi_legacy_signed_tests)
 def test_nxpimage_mbi_legacy_signed(
     elftosb_data_dir, tmpdir, config_file, device, skip_hmac_keystore
 ):
@@ -348,6 +408,33 @@ def test_nxpimage_mbi_legacy_signed(
         assert ref_data[:-signature_length] == new_data[:-signature_length]
 
 
+@pytest.mark.parametrize("config_file,family,skip_hmac_keystore", mbi_legacy_signed_tests)
+def test_mbi_parser_legacy_signed(
+    tmpdir, elftosb_data_dir, family, config_file, skip_hmac_keystore
+):
+    # Create new MBI file
+    mbi_data_dir = os.path.join(elftosb_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
+
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    cmd = f"mbi export {new_config}"
+    runner = CliRunner()
+    with use_working_directory(elftosb_data_dir):
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+    cmd = f"mbi parse -b {new_binary} -f {family} {tmpdir}/parsed"
+    result = runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0
+    input_image = os.path.join(elftosb_data_dir, load_configuration(config_file)["inputImageFile"])
+    parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
+    assert os.path.isfile(parsed_app)
+    if os.path.split(input_image)[1] == "bin":
+        assert filecmp.cmp(input_image, parsed_app)
+
+
 @pytest.mark.parametrize(
     "config_file,device",
     [
@@ -365,10 +452,7 @@ def test_nxpimage_mbi_invalid_conf(elftosb_data_dir, tmpdir, config_file, device
         assert result.exit_code == 1
 
 
-@pytest.mark.parametrize(
-    "config_file,device,skip_hmac_keystore",
-    [("mb_ram_encrypted_ks.json", "rt5xx", 2), ("mb_ram_encrypted_ks_binkey.json", "rt5xx", 2)],
-)
+@pytest.mark.parametrize("config_file,device,skip_hmac_keystore", mbi_legacy_encrypted_tests)
 def test_nxpimage_mbi_legacy_encrypted(
     elftosb_data_dir, tmpdir, config_file, device, skip_hmac_keystore
 ):
@@ -430,28 +514,51 @@ def test_nxpimage_mbi_legacy_encrypted(
         assert ref_data[:-signature_length] == new_data[:-signature_length]
 
 
-def test_nxpimage_mbi_lower():
-    mbi = Mbi_PlainRamLpc55s3x(app=bytes(100), load_addr=0, firmware_version=0)
-    assert mbi.app
+@pytest.mark.parametrize("config_file,family,skip_hmac_keystore", mbi_legacy_encrypted_tests)
+def test_mbi_parser_legacy_encrypted(
+    tmpdir, elftosb_data_dir, family, config_file, skip_hmac_keystore
+):
+    # Create new MBI file
+    mbi_data_dir = os.path.join(elftosb_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
 
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    cmd = ["mbi", "export", new_config]
+    runner = CliRunner()
+    with use_working_directory(elftosb_data_dir):
+        result = runner.invoke(nxpimage.main, cmd)
+        assert result.exit_code == 0
+
+    cmd = [
+        "mbi",
+        "parse",
+        "-b",
+        new_binary,
+        "-f",
+        family,
+        "-k",
+        f"{mbi_data_dir}/keys/userkey.txt",
+        f"{tmpdir}/parsed",
+    ]
+    result = runner.invoke(nxpimage.main, cmd)
+
+    assert result.exit_code == 0
+    input_image = os.path.join(elftosb_data_dir, load_configuration(config_file)["inputImageFile"])
+    parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
+    assert os.path.isfile(parsed_app)
+    if os.path.split(input_image)[1] == "bin":
+        assert filecmp.cmp(input_image, parsed_app)
+
+
+def test_nxpimage_mbi_lower():
     mbi = Mbi_PlainRamLpc55s3x(app=bytes(100), load_addr=0, firmware_version=0)
     assert mbi.app
     assert mbi.export()
 
 
 def test_mbi_lpc55s3x_invalid():
-    mbi = Mbi_PlainXipSignedLpc55s3x(
-        app=bytes(100),
-        firmware_version=0,
-    )
-    with pytest.raises(SPSDKError):
-        mbi.validate()
-
-    mbi = Mbi_PlainXipSignedLpc55s3x(
-        app=bytes(100),
-        firmware_version=0,
-    )
-
+    mbi = Mbi_PlainXipSignedLpc55s3x(app=bytes(100), firmware_version=0)
     with pytest.raises(SPSDKError):
         mbi.validate()
 

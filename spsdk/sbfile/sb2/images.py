@@ -15,12 +15,14 @@ from typing import Iterator, List, Optional
 from spsdk import SPSDKError
 from spsdk.apps.utils import get_key
 from spsdk.crypto.loaders import load_certificate_as_bytes
+from spsdk.crypto.signature_provider import SignatureProvider
+from spsdk.exceptions import SPSDKUnsupportedOperation
 from spsdk.utils.crypto import CertBlockV2, Counter, crypto_backend
 from spsdk.utils.crypto.abstract import BaseClass
 from spsdk.utils.crypto.backend_internal import internal_backend
 from spsdk.utils.crypto.certificate import Certificate
 from spsdk.utils.crypto.common import calc_cypher_block_count
-from spsdk.utils.misc import find_first, load_binary, load_text, write_file
+from spsdk.utils.misc import find_first, load_text, write_file
 
 from . import sb_21_helper as elf2sb_helper21
 from . import sly_bd_parser as bd_parser
@@ -132,7 +134,7 @@ class BootImageV20(BaseClass):
         self._kek = kek
         # Set Flags value
         self._signed = signed
-        self._private_key_pem_data: Optional[bytes] = None
+        self._signature_provider: Optional[SignatureProvider] = None
         flags = 0x08 if self.signed else 0x04
         # Set private attributes
         self._dek: bytes = advanced_params.dek
@@ -184,17 +186,20 @@ class BootImageV20(BaseClass):
         return self._kek
 
     @property
-    def private_key_pem_data(self) -> Optional[bytes]:
-        """Return private key data for signed images, decrypted in PEM format."""
-        return self._private_key_pem_data
+    def signature_provider(self) -> Optional[SignatureProvider]:
+        """Signature provider instance to sign the final image.
 
-    @private_key_pem_data.setter
-    def private_key_pem_data(self, value: bytes) -> None:
-        """Setter to be used for signed images.
-
-        :param: key for signing the image; decrypted binary data in PEM format
+        None if not assigned yet.
         """
-        self._private_key_pem_data = value
+        return self._signature_provider
+
+    @signature_provider.setter
+    def signature_provider(self, value: SignatureProvider) -> None:
+        """Signature provider setter.
+
+        :param value: Signature provider to sign final image
+        """
+        self._signature_provider = value
 
     @property
     def signed(self) -> bool:
@@ -372,16 +377,26 @@ class BootImageV20(BaseClass):
             data += sect.export(dek=self.dek, mac=self.mac, counter=counter)
         # Add Signature data
         if self.signed:
-            private_key_pem_data = self.private_key_pem_data
-            if private_key_pem_data is None:
-                raise SPSDKError("Private key not assigned, cannot sign the image")
-            certificate_block = self.cert_block
-            if not (
-                (certificate_block is not None)
-                and certificate_block.verify_private_key(private_key_pem_data)
-            ):
-                raise SPSDKError("Invalid certificate block")
-            data += crypto_backend().rsa_sign(private_key_pem_data, data)
+            if self.signature_provider is None:
+                raise SPSDKError("Signature provider is not assigned, cannot sign the image.")
+            if self.cert_block is None:
+                raise SPSDKError("Certificate block is not assigned.")
+
+            public_key = self.cert_block.certificates[-1].public_key
+            try:
+                result = self.signature_provider.verify_public_key(public_key.dump())
+                if not result:
+                    raise SPSDKError(
+                        "Signature verification failed, public key does not match to certificate"
+                    )
+                logger.debug("The verification of private key pair integrity has been successful.")
+            except SPSDKUnsupportedOperation:
+                logger.warning(
+                    "Signature provider could not verify the integrity of private key pair."
+                )
+
+            data += self.signature_provider.sign(data)
+
         if len(data) != self.raw_size:
             raise SPSDKError("Invalid length of exported data")
         return data
@@ -495,8 +510,8 @@ class BootImageV21(BaseClass):
         :param sections: Boot sections
         """
         self._kek = kek
-        self._private_key_pem_data: Optional[
-            bytes
+        self._signature_provider: Optional[
+            SignatureProvider
         ] = None  # this should be assigned for export, not needed for parsing
         self._dek = advanced_params.dek
         self._mac = advanced_params.mac
@@ -510,7 +525,7 @@ class BootImageV21(BaseClass):
             timestamp=advanced_params.timestamp,
         )
         self._cert_block: Optional[CertBlockV2] = None
-        self._boot_sections: List[BootSectionV2] = []
+        self.boot_sections: List[BootSectionV2] = []
         # ...
         for section in sections:
             self.add_boot_section(section)
@@ -536,20 +551,20 @@ class BootImageV21(BaseClass):
         return self._kek
 
     @property
-    def private_key_pem_data(self) -> Optional[bytes]:
-        """Return binary data of private key for signing; decrypted binary data in PEM format.
+    def signature_provider(self) -> Optional[SignatureProvider]:
+        """Signature provider instance to sign the final image.
 
-        None if not assigned yet or image not signed.
+        None if not assigned yet.
         """
-        return self._private_key_pem_data
+        return self._signature_provider
 
-    @private_key_pem_data.setter
-    def private_key_pem_data(self, value: bytes) -> None:
-        """Setter.
+    @signature_provider.setter
+    def signature_provider(self, value: SignatureProvider) -> None:
+        """Signature provider setter.
 
-        :param: key for signing the image; decrypted binary data in PEM format
+        :param value: Signature provider to sign final image
         """
-        self._private_key_pem_data = value
+        self._signature_provider = value
 
     @property
     def cert_block(self) -> Optional[CertBlockV2]:
@@ -596,26 +611,26 @@ class BootImageV21(BaseClass):
                 raise SPSDKError("Certificate block is not signed")
             size += cert_blk.signature_size
         # Boot Sections
-        for boot_section in self._boot_sections:
+        for boot_section in self.boot_sections:
             size += boot_section.raw_size
         return size
 
     def __len__(self) -> int:
-        return len(self._boot_sections)
+        return len(self.boot_sections)
 
     def __getitem__(self, key: int) -> BootSectionV2:
-        return self._boot_sections[key]
+        return self.boot_sections[key]
 
     def __setitem__(self, key: int, value: BootSectionV2) -> None:
-        self._boot_sections[key] = value
+        self.boot_sections[key] = value
 
     def __iter__(self) -> Iterator[BootSectionV2]:
-        return self._boot_sections.__iter__()
+        return self.boot_sections.__iter__()
 
     def update(self) -> None:
         """Update BootImageV21."""
-        if self._boot_sections:
-            self._header.first_boot_section_id = self._boot_sections[0].uid
+        if self.boot_sections:
+            self._header.first_boot_section_id = self.boot_sections[0].uid
             # calculate first boot tag block
             data_size = self._header.SIZE + self.HEADER_MAC_SIZE + self.KEY_BLOB_SIZE
             cert_blk = self.cert_block
@@ -633,7 +648,7 @@ class BootImageV21(BaseClass):
         )
         # Get HMAC count
         self._header.max_section_mac_count = 0
-        for boot_sect in self._boot_sections:
+        for boot_sect in self.boot_sections:
             boot_sect.is_last = True  # unified with elftosb
             self._header.max_section_mac_count += boot_sect.hmac_count
         # Update certificates block header
@@ -652,7 +667,7 @@ class BootImageV21(BaseClass):
             nfo += "::::::::::::::::::::::::::::::: CERTIFICATES BLOCK ::::::::::::::::::::::::::::::::::::\n"
             nfo += self.cert_block.info()
         nfo += "::::::::::::::::::::::::::::::::::: BOOT SECTIONS ::::::::::::::::::::::::::::::::::::\n"
-        for index, section in enumerate(self._boot_sections):
+        for index, section in enumerate(self.boot_sections):
             nfo += f"[ SECTION: {index} | UID: 0x{section.uid:08X} ]\n"
             nfo += section.info()
         return nfo
@@ -665,7 +680,7 @@ class BootImageV21(BaseClass):
         """
         if not isinstance(section, BootSectionV2):
             raise SPSDKError("Section is not instance of BootSectionV2 class")
-        self._boot_sections.append(section)
+        self.boot_sections.append(section)
 
     # pylint: disable=too-many-locals
     def export(
@@ -684,12 +699,12 @@ class BootImageV21(BaseClass):
         :raises SPSDKError: Raised when there is no debug info
         """
         # validate params
-        if not self._boot_sections:
+        if not self.boot_sections:
             raise SPSDKError("At least one Boot Section must be added")
         if self.cert_block is None:
             raise SPSDKError("Certificate is not assigned")
-        if self.private_key_pem_data is None:
-            raise SPSDKError("Private key not assigned, cannot sign the image")
+        if self.signature_provider is None:
+            raise SPSDKError("Signature provider is not assigned, cannot sign the image")
         # Update internals
         if dbg_info is not None:
             dbg_info.append("[sb_file]")
@@ -710,7 +725,7 @@ class BootImageV21(BaseClass):
         if not self._header.nonce:
             raise SPSDKError("Invalid header's nonce")
         counter = Counter(self._header.nonce, calc_cypher_block_count(bs_offset))
-        for sect in self._boot_sections:
+        for sect in self.boot_sections:
             bs_data += sect.export(
                 dek=self.dek, mac=self.mac, counter=counter, dbg_info=bs_dbg_info
             )
@@ -720,7 +735,7 @@ class BootImageV21(BaseClass):
             dbg_info.append("[header]")
             dbg_info.append(signed_data.hex())
         #  Add HMAC data
-        first_bs_hmac_count = self._boot_sections[0].hmac_count
+        first_bs_hmac_count = self.boot_sections[0].hmac_count
         hmac_data = bs_data[CmdHeader.SIZE : CmdHeader.SIZE + (first_bs_hmac_count * 32) + 32]
         hmac = crypto_backend().hmac(self.mac, hmac_data)
         signed_data += hmac
@@ -742,10 +757,20 @@ class BootImageV21(BaseClass):
         # Add SHA-256 of Bootable sections if requested
         if self.header.flags & self.FLAGS_SHA_PRESENT_BIT:
             signed_data += internal_backend.hash(bs_data)
+
         # Add Signature data
-        if not self.cert_block.verify_private_key(self.private_key_pem_data):
-            raise SPSDKError("Private key does not match certificate")
-        signature = crypto_backend().rsa_sign(self.private_key_pem_data, signed_data)
+        public_key = self.cert_block.certificates[-1].public_key
+        try:
+            result = self.signature_provider.verify_public_key(public_key.dump())
+            if not result:
+                raise SPSDKError(
+                    "Signature verification failed, public key does not match to certificate"
+                )
+            logger.debug("The verification of private key pair integrity has been successful.")
+        except SPSDKUnsupportedOperation:
+            logger.warning("Signature provider could not verify the integrity of private key pair.")
+
+        signature = self.signature_provider.sign(signed_data)
         if dbg_info:
             dbg_info.append("[signature]")
             dbg_info.append(signature.hex())
@@ -859,7 +884,7 @@ class BootImageV21(BaseClass):
 def generate_SB21(  # pylint: disable=invalid-name
     bd_file_path: str,
     key_file_path: str,
-    private_key_file_path: str,
+    signature_provider: SignatureProvider,
     signing_certificate_file_paths: List[str],
     root_key_certificate_paths: List[str],
     hoh_out_path: str,
@@ -869,8 +894,7 @@ def generate_SB21(  # pylint: disable=invalid-name
 
     :param bd_file_path: path to BD file.
     :param key_file_path: path to key file.
-    :param private_key_file_path: path to private key file for signing. This key
-        relates to last certificate from signing certificate chain.
+    :param signature_provider: Signature provider to sign final image
     :param signing_certificate_file_paths: signing certificate chain.
     :param root_key_certificate_paths: paths to root key certificate(s) for
         verifying other certificates. Only 4 root key certificates are allowed,
@@ -915,7 +939,7 @@ def generate_SB21(  # pylint: disable=invalid-name
         "flags", BootImageV21.FLAGS_SHA_PRESENT_BIT | BootImageV21.FLAGS_ENCRYPTED_SIGNED_BIT
     )
     if (
-        private_key_file_path is None
+        signature_provider is None
         or signing_certificate_file_paths is None
         or root_key_certificate_paths is None
     ):
@@ -1015,7 +1039,7 @@ def generate_SB21(  # pylint: disable=invalid-name
     # We have our secure binary, now we attach to it the certificate block and
     # the private key content
     secure_binary.cert_block = cert_block
-    secure_binary.private_key_pem_data = load_binary(private_key_file_path)
+    secure_binary.signature_provider = signature_provider
 
     if hoh_out_path is None:
         hoh_out_path = os.path.join(os.getcwd(), "hash.bin")

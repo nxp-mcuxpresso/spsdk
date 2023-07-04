@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,6 +15,7 @@ import os
 from binascii import unhexlify
 
 from spsdk import SPSDKError
+from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.sbfile.sb2.commands import CmdErase, CmdLoad, CmdReset
 from spsdk.sbfile.sb2.images import BootImageV20, BootImageV21, BootSectionV2, SBV2xAdvancedParams
 from spsdk.utils.crypto import CertBlockV2, Certificate, KeyBlob, Otfad
@@ -106,8 +107,8 @@ def gen_boot_section_otfad() -> BootSectionV2:
 KEK_VALUE = unhexlify("AC701E99BD3492E419B756EADC0985B3D3D0BC0FDB6B057AA88252204C2DA732")
 DEK_VALUE = b"\xA0" * 32  # it is recommended to use random value
 MAC_VALUE = b"\x0B" * 32  # it is recommended to use random value
-with open(f"{DATA_DIR}/selfsign_privatekey_rsa2048.pem", "rb") as key_file:
-    PRIVATE_KEY_PEM_DATA = key_file.read()
+
+PRIVATE_KEY_FILE = f"{DATA_DIR}/selfsign_privatekey_rsa2048.pem"
 
 
 def gen_boot_image_20_base() -> bytes:
@@ -140,7 +141,8 @@ def gen_boot_image_20() -> bytes:
 
     # add certificate block
     boot_image.cert_block = gen_cert_block()
-    boot_image.private_key_pem_data = PRIVATE_KEY_PEM_DATA
+    signature_provider = get_signature_provider(local_file_key=PRIVATE_KEY_FILE)
+    boot_image.signature_provider = signature_provider
     # add boot sections
     boot_image.add_boot_section(boot_section)
     # print image info
@@ -167,7 +169,8 @@ def gen_boot_image_21() -> bytes:
 
     # add certificate block
     boot_image.cert_block = gen_cert_block()
-    boot_image.private_key_pem_data = PRIVATE_KEY_PEM_DATA
+    signature_provider = get_signature_provider(local_file_key=PRIVATE_KEY_FILE)
+    boot_image.signature_provider = signature_provider
     # print image info
     print(boot_image.info())
 

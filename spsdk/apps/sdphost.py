@@ -9,7 +9,6 @@
 
 import inspect
 import json
-import logging
 import sys
 from typing import Optional
 

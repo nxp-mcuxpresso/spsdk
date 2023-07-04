@@ -293,7 +293,7 @@ def generate_binary(
     if not pfr_config.revision:
         pfr_config.revision = pfr_obj.revision
     data = pfr_obj.export(add_seal=add_seal, keys=keys)
-    _store_output(data, output, "wb", msg=f"Success. (PFR binary has been generated)")
+    _store_output(data, output, "wb", msg="Success. (PFR binary has been generated)")
 
 
 @main.command(name="info", no_args_is_help=True)
@@ -321,7 +321,7 @@ def info(device: str, revision: str, area: str, output: str, open_result: bool) 
         regs_exclude=["SHA256_DIGEST"],
         fields_exclude=["FIELD"],
     )
-    _store_output(html_output, output, msg=f"Success. (PFR info HTML page has been generated)")
+    _store_output(html_output, output, msg="Success. (PFR info HTML page has been generated)")
     if open_result:  # pragma: no cover # can't test opening the html document
         click.launch(f"{output}")
 

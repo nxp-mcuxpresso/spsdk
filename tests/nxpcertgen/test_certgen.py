@@ -241,11 +241,25 @@ def test_certificate_generation_cli(tmpdir, data_dir, json, encoding):
     with use_working_directory(data_dir):
         cert_path = os.path.join(tmpdir, "cert.crt")
         if json:
-            cmd = f'generate -j {os.path.join(data_dir, "certgen_config.json")} -o {cert_path}'
+            cmd = [
+                "generate",
+                "-j",
+                f'{os.path.join(data_dir, "certgen_config.json")}',
+                "-o",
+                f"{cert_path}",
+            ]
         else:
-            cmd = f'generate -c {os.path.join(data_dir, "certgen_config.yaml")} -o {cert_path} -e {encoding}'
+            cmd = [
+                "generate",
+                "-c",
+                f'{os.path.join(data_dir, "certgen_config.yaml")}',
+                "-o",
+                cert_path,
+                "-e",
+                encoding,
+            ]
         runner = CliRunner()
-        result = runner.invoke(main, cmd.split())
+        result = runner.invoke(main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(cert_path)
 

@@ -51,6 +51,13 @@ devices:
       a1:
         data_file: nhs52s04.yaml
     latest: a1
+  mcxn9xx:
+    revisions:
+      a0:
+        data_file: mcxn9xx_a0.yaml
+      a1:
+        data_file: mcxn9xx_a1.yaml
+    latest: a0
   kw45xx:
     revisions:
       a1:

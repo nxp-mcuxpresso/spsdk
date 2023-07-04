@@ -115,6 +115,7 @@ def _print_validation_fail_reason(
     elif exc.rule == "format":
         if exc.rule_definition == "file":
             message += f"; Non-existing file: {exc.value}"
+            message += "; The file must exists even if the key is NOT used in configuration."
     elif exc.rule == "anyOf":
         message += process_nested_rule(exc, extra_formaters=extra_formaters)
     elif exc.rule == "oneOf":
@@ -290,36 +291,43 @@ class CommentedConfig:
     def _create_object_block(
         self,
         block: Dict[str, Dict[str, Any]],
-        custom_value: Optional[Dict[str, Any]] = None,
-    ) -> CMap:
+        custom_value: Optional[Union[Dict[str, Any], List[Any]]] = None,
+    ) -> Union[CMap, CSeq]:
         """Private function used to create object block with data.
 
         :param block: Source block with data
         :param custom_value:
-            Optional dictionary of properties to be exported.
-        It is recommeded to pass OrderedDict to preserve the key order.
+            Optional dictionary or List of properties to be exported.
+        It is recommended to pass OrderedDict to preserve the key order.
             - key is property ID to be exported
             - value is its value; or None if default value shall be used
-        :return: CM base configuration object
+        :return: CMap or CSeq base configuration object
         :raises SPSDKError: In case of invalid data pattern.
         """
         assert block.get("type") == "object"
         self.indent += 1
-        cfg_m = CMap()
+
         assert "properties" in block.keys()
-        key_order = (
-            self._get_schema_block_keys(block)
-            if (custom_value is None)
-            else list(custom_value.keys())
-        )
-        for key in key_order:
-            assert key in block["properties"].keys()
+
+        if "oneOf" in block["properties"].keys():
+            cfg_s = self._create_one_of_block_array(block["properties"], custom_value)  # type: ignore
+            self.indent -= 1
+            return cfg_s
+
+        cfg_m = CMap()
+        for key in self._get_schema_block_keys(block):
+            assert (
+                key in block["properties"].keys()
+            ), f"Missing key ({key}, in block properties. Block title: {block.get('title', 'Unknown')})"
+
+            # Skip the record in case that custom value key is defined,
+            # but it has None value as a mark to not use this record
+            value = custom_value.get(key, None) if custom_value else None  # type: ignore
+            if not self.export_template and value is None:
+                continue
+
             val_p: Dict = block["properties"][key]
-            if (custom_value is not None) and (custom_value[key] is not None):
-                value_to_add = custom_value[key]
-            else:
-                value_to_add = None
-            value_to_add, comment, title = self._get_schema_value(val_p, value_to_add)
+            value_to_add, comment, title = self._get_schema_value(val_p, value)
 
             cfg_m[key] = value_to_add
             p_required = self.get_property_optional_required(key, block)
@@ -352,10 +360,13 @@ class CommentedConfig:
             cfg_s = CSeq()
             if custom_value:
                 for cust_val in custom_value:
-                    value, comment, title = self._get_schema_value(val_i, cust_val)
-                    cfg_s.append(value)
-            else:
-                value, comment, title = self._get_schema_value(val_i, None)
+                    value, _, _ = self._get_schema_value(val_i, cust_val)
+                    if isinstance(value, list):
+                        cfg_s.extend(value)
+                    else:
+                        cfg_s.append(value)
+            elif self.export_template:
+                value, _, _ = self._get_schema_value(val_i, None)
                 # the template_value can be the actual list(not only one element)
                 if isinstance(value, list):
                     cfg_s.extend(value)
@@ -386,7 +397,7 @@ class CommentedConfig:
     def _create_one_of_block_array(
         self, block: Dict[str, Dict[str, Any]], custom_value: Optional[List[Any]]
     ) -> CSeq:
-        """Private function used to create oneOf block with data, and return as an array that contaisn all values.
+        """Private function used to create oneOf block with data, and return as an array that contains all values.
 
         :param block: Source block with data
         :param custom_value: custom value to fill the array
@@ -409,7 +420,7 @@ class CommentedConfig:
                         before=self._get_title_block(loc_title),
                         indent=SPSDK_YML_INDENT * (self.indent - 1),
                     )
-        else:
+        elif self.export_template:
             option_types = ",".join([str(x.get("type")) for x in one_of])
             title = f"List of possible {len(one_of)} options. Option types[{option_types}]"
             for i, option in enumerate(one_of):
@@ -443,18 +454,23 @@ class CommentedConfig:
         :raises SPSDKError: In case of invalid data pattern.
         """
         title = None
-        schema_type = block.get("type")
-        assert schema_type, f"Type not available in block: {block}"
-
-        if schema_type == "object":
-            assert (custom_value is None) or isinstance(custom_value, dict)
-            ret = self._create_object_block(block, custom_value)  # type: ignore
-        elif schema_type == "array":
-            assert (custom_value is None) or isinstance(custom_value, list)
-            ret = self._create_array_block(block, custom_value)  # type: ignore
+        if "oneOf" in block.keys():
+            ret = self._create_one_of_block_array(block, custom_value)
         else:
-            assert "template_value" in block.keys()
-            ret = custom_value if (custom_value is not None) else block.get("template_value")
+            schema_type = block.get("type")
+            if not schema_type:
+                raise SPSDKError(f"Type not available in block: {block}")
+            assert schema_type, f"Type not available in block: {block}"
+
+            if schema_type == "object":
+                assert (custom_value is None) or isinstance(custom_value, dict)
+                ret = self._create_object_block(block, custom_value)  # type: ignore
+            elif schema_type == "array":
+                assert (custom_value is None) or isinstance(custom_value, list)
+                ret = self._create_array_block(block, custom_value)  # type: ignore
+            else:
+                assert "template_value" in block.keys()
+                ret = custom_value if (custom_value is not None) else block.get("template_value")
 
         assert isinstance(ret, (CMap, CSeq, str, int, float, list)) or (ret is None)
 
@@ -529,22 +545,21 @@ class CommentedConfig:
             schemas_merger.merge(merged, copy.deepcopy(schema))
 
         # 3. Create order of individual settings
-        order_dict: Optional[Dict[str, Any]] = None
-        if self.export_template and self.values:
-            properties_for_template = self._get_schema_block_keys(merged)
-            # create ordered dict with all properties and optionally override values
-            order_dict = OrderedDict()
-            for info in block_list.values():
-                for p in info["properties"]:
-                    if p in properties_for_template:
-                        order_dict[p] = self.values.get(p, None)
-        else:
-            order_dict = self.values
+
+        order_dict: Dict[str, Any] = OrderedDict()
+        properties_for_template = self._get_schema_block_keys(merged)
+        for block in block_list.values():
+            block_properties: list = block["properties"]
+            # block_properties.sort()
+            for block_property in block_properties:
+                if block_property in properties_for_template:
+                    order_dict[block_property] = merged["properties"][block_property]
+        merged["properties"] = order_dict
 
         try:
             self.indent = 0
             # 4. Go through all individual logic blocks
-            cfg = self._create_object_block(merged, order_dict)
+            cfg = self._create_object_block(merged, self.values)
             assert isinstance(cfg, CMap)
             # 5. Add main title of configuration
             title = f"===========  {self.main_title}  ===========\n"
@@ -611,5 +626,3 @@ class ValidationSchemas:
 
 class ConfigTemplate(CommentedConfig):
     """Deprecated, kept for backward compatibility only."""
-
-    pass

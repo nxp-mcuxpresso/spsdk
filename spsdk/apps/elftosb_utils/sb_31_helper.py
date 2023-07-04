@@ -33,12 +33,14 @@ class RootOfTrustInfo:  # pylint: disable=too-few-public-methods
         check_config(data, val_schemas, search_paths=search_paths)
 
         self.config_data = data
+        self.signature_provider_cfg = data.get("signProvider")
+
         self.private_key = data.get("mainCertPrivateKeyFile") or data.get(
             "mainRootCertPrivateKeyFile"
         )
-        if not self.private_key:
+        if not self.signature_provider_cfg and not self.private_key:
             raise SPSDKError(
-                "Private key not specified (mainCertPrivateKeyFile or mainRootCertPrivateKeyFile)"
+                "One of 'mainCertPrivateKeyFile', 'mainRootCertPrivateKeyFile', 'signProvider' must be specified."
             )
         self.public_keys = find_root_certificates(data)
         data_main_cert_index = get_main_cert_index(data, search_paths=search_paths)

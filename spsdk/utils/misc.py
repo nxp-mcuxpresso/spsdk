@@ -11,11 +11,22 @@ import logging
 import math
 import os
 import re
-import sys
 import time
 from math import ceil
 from struct import pack, unpack
-from typing import Callable, Dict, Generator, Iterable, Iterator, List, Optional, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from spsdk import SPSDKError
 from spsdk.exceptions import SPSDKValueError
@@ -811,7 +822,7 @@ def load_configuration(path: str) -> dict:
     raise SPSDKError(f"Unable to load '{path}'.")
 
 
-def split_data(data: bytearray, size: int) -> Generator[bytes, None, None]:
+def split_data(data: Union[bytearray, bytes], size: int) -> Generator[bytes, None, None]:
     """Split data into chunks of size.
 
     :param bytearray data: array of bytes to be split
@@ -829,37 +840,17 @@ def get_hash(text: Union[str, bytes]) -> str:
     return hashlib.sha1(text).digest().hex()[:8]
 
 
-def import_source(source: str) -> None:
-    """Import Python source file directly.
+TS = TypeVar("TS", bound="SingletonMeta")  # pylint: disable=invalid-name
 
-    :param source: A path to python source file or existing module name
-        Accepted values are:
-        - an absolute path to py file
-        - a path to py file, relative to current working directory
-        - installed package/module name
-        and more, and more
-    :raises SPSDKError: If importing of source file failed
-    """
-    from importlib.util import (  # pylint: disable=import-outside-toplevel
-        find_spec,
-        module_from_spec,
-        spec_from_file_location,
-    )
 
-    if not os.path.isfile(source):
-        spec = find_spec(name=source)
-    else:
-        module_name = os.path.splitext(os.path.basename(source))[0]
-        spec = spec_from_file_location(name=module_name, location=source)  # type: ignore
-    if not spec:
-        raise SPSDKError(
-            f"Source '{source}' does not exist.Check if it is valid file path/module name"
-        )
+class SingletonMeta(type):
+    """Singleton metaclass."""
 
-    mod = module_from_spec(spec)
-    try:
-        sys.modules[spec.name] = mod
-        spec.loader.exec_module(mod)  # type: ignore
-        logger.debug(f"A module {source} has been imported.")
-    except Exception as e:
-        raise SPSDKError(f"Failed to load source {source}: {e}") from e
+    _instance = None
+
+    def __call__(cls: Type[TS], *args: Any, **kwargs: Any) -> TS:  # type: ignore
+        """Call dunder override."""
+        if cls._instance is None:
+            instance = super().__call__(*args, **kwargs)
+            cls._instance = instance
+        return cls._instance

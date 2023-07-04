@@ -46,6 +46,15 @@ def process_config_file(
         ("sb3_384_384.json", "lpc55s3x"),
         ("sb3_384_none.json", "lpc55s3x"),
         ("sb3_test_384_384_unencrypted.json", "lpc55s3x"),
+        ("sb3_256_256.json", "mcxn9xx"),
+        ("sb3_256_none.json", "mcxn9xx"),
+        ("sb3_384_256.json", "mcxn9xx"),
+        ("sb3_384_256_fixed_timestamp.json", "mcxn9xx"),
+        ("sb3_384_256_unencrypted.json", "mcxn9xx"),
+        ("sb3_384_384.json", "mcxn9xx"),
+        ("sb3_384_none.json", "mcxn9xx"),
+        ("sb3_384_none_keyblob.json", "mcxn9xx"),
+        ("sb3_test_384_384_unencrypted.json", "mcxn9xx"),
         ("sb3_test_384_384_unencrypted.json", "kw45xx"),
         ("sb3_384_384.json", "kw45xx"),
         ("sb3_384_none.json", "kw45xx"),
@@ -61,8 +70,8 @@ def test_elftosb_sb31(data_dir, tmpdir, config_file, device):
         ref_binary, new_binary, new_config = process_config_file(
             config_file, tmpdir, "containerOutputFile"
         )
-        cmd = f"--container-conf {new_config}"
-        result = runner.invoke(elftosb.main, cmd.split())
+        cmd = ["--container-conf", new_config]
+        result = runner.invoke(elftosb.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(new_binary)
         assert filecmp.cmp(ref_binary, new_binary, shallow=False)
@@ -77,8 +86,8 @@ def test_elftosb_sb31_notime(data_dir, tmpdir):
         ref_binary, new_binary, new_config = process_config_file(
             config_file, tmpdir, "containerOutputFile"
         )
-        cmd = f"--container-conf {new_config}"
-        result = runner.invoke(elftosb.main, cmd.split())
+        cmd = ["--container-conf", new_config]
+        result = runner.invoke(elftosb.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(new_binary)
 

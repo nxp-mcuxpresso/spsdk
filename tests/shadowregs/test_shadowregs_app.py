@@ -197,8 +197,19 @@ def test_command_line_interface_loadconfig_exe_fail(data_dir):
         '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]} '
         '-o subs_mem={"1074987040":["Exception"]}'
     )
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} loadconfig -f {filename}"
-    result = runner.invoke(main, cmd.split())
+    cmd = [
+        "-dev",
+        "rt5xx",
+        "-i",
+        "virtual",
+        "-s",
+        DebugProbeVirtual.UNIQUE_SERIAL,
+        enable_debug,
+        "loadconfig",
+        "-f",
+        filename,
+    ]
+    result = runner.invoke(main, cmd)
     assert result.exit_code == 1
 
 

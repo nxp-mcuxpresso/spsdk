@@ -36,7 +36,7 @@ def verify_base_class_features(inst: BeeBaseClass, decrypt_key: Optional[bytes] 
     inst.validate()
     # test size property and `_size()` class method returns the same number
     expected_size = inst.size
-    assert inst.__class__._size() == expected_size
+    assert inst.__class__.get_size() == expected_size
     # check export
     data = inst.export()
     assert (data is not None) and (len(data) == expected_size)

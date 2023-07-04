@@ -15,12 +15,14 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
+from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.exceptions import SPSDKError
 from spsdk.image import TrustZone, get_mbi_class
 from spsdk.image.mbimg import mbi_generate_config_templates, mbi_get_supported_families
 from spsdk.sbfile.sb2.images import generate_SB21
 from spsdk.sbfile.sb31.images import SB3_SCH_FILE, SecureBinary31
 from spsdk.utils.misc import load_configuration, write_file
+from spsdk.utils.plugins import load_plugin_from_source
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 SUPPORTED_FAMILIES = mbi_get_supported_families()
@@ -92,6 +94,7 @@ def generate_secure_binary_21(
     signing_certificate_file_paths: List[str],
     root_key_certificate_paths: List[str],
     hoh_out_path: str,
+    plugin: str,
     external_files: List[str],
 ) -> None:
     """Generate SecureBinary image from BD command file.
@@ -108,17 +111,25 @@ def generate_secure_binary_21(
     passed in signing_certificate_file_paths.
     :param hoh_out_path: output path to hash of hashes of root keys. If set to
     None, 'hash.bin' is created under working directory.
+    :param plugin: External python file containing a custom SignatureProvider implementation.
     :param external_files: external files referenced from BD file.
 
     :raises SPSDKAppError: If incorrect bf file is provided
     """
+    if plugin:
+        load_plugin_from_source(plugin)
     if output_file_path is None:
         raise SPSDKAppError("Error: no output file was specified")
+    signature_provider = (
+        get_signature_provider(local_file_key=private_key_file_path)
+        if os.path.isfile(private_key_file_path)
+        else get_signature_provider(sp_cfg=private_key_file_path)
+    )
     try:
         sb2_data = generate_SB21(
             bd_file_path=str(bd_file_path),
             key_file_path=str(key_file_path),
-            private_key_file_path=str(private_key_file_path),
+            signature_provider=signature_provider,
             signing_certificate_file_paths=[str(x) for x in signing_certificate_file_paths],
             root_key_certificate_paths=[str(x) for x in root_key_certificate_paths],
             hoh_out_path=str(hoh_out_path),
@@ -228,6 +239,12 @@ with -S/--cert arg.",
     help="Path to output hash of hashes of root keys. If argument is not \
 provided, then by default the tool creates hash.bin in the working directory.",
 )
+@click.option(
+    "--plugin",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="External python file containing a custom SignatureProvider implementation.",
+)
 @click.version_option(spsdk_version, "--version")
 @click.help_option("--help")
 @click.argument("external", type=click.Path(), nargs=-1)
@@ -244,12 +261,14 @@ def main(
     tzm_conf: str,
     config_template: str,
     hash_of_hashes: str,
+    plugin: str,
     external: List[str],
 ) -> None:
     """Tool for generating TrustZone, MasterBootImage and SecureBinary images.
 
     !!! The ELFTOSB tool is deprecated, use new NXPIMAGE tool from SPSDK for new projects !!!
     """
+    click.secho("Deprecated tool! Use npximage instead", fg="yellow")
     if command:
         if output is None:
             raise SPSDKAppError("Error: no output file was specified")
@@ -261,6 +280,7 @@ def main(
             signing_certificate_file_paths=cert,
             root_key_certificate_paths=root_key_cert,
             hoh_out_path=hash_of_hashes,
+            plugin=plugin,
             external_files=external,
         )
 

@@ -7,6 +7,8 @@
 """ Test of common crypto utilities module."""
 
 
+import os
+
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ec import SECP256R1
 
@@ -17,7 +19,10 @@ from spsdk.crypto.keys_management import (
     generate_ecc_public_key,
     generate_rsa_private_key,
     generate_rsa_public_key,
+    save_ecc_private_key,
+    save_rsa_private_key,
 )
+from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.crypto import Counter
 from spsdk.utils.crypto.common import (
@@ -73,35 +78,50 @@ def test_ecc_public_numbers_to_bytes():
 
 
 @pytest.mark.parametrize("length", [(2048), (4096)])
-def test_matching_keys_rsa(length):
-    prv_keys = []
+def test_matching_keys_rsa(tmpdir, length):
+    signature_providers = []
     pub_keys = []
     for i in range(4):
-        prv_keys.append(generate_rsa_private_key(key_size=length))
-        pub_keys.append(generate_rsa_public_key(prv_keys[i]))
+        prv_key = generate_rsa_private_key(key_size=length)
+        save_rsa_private_key(prv_key, os.path.join(tmpdir, f"key{i}.pem"))
+        signature_providers.append(PlainFileSP(os.path.join(tmpdir, f"key{i}.pem")))
+        pub_keys.append(generate_rsa_public_key(prv_key))
 
     for i in range(4):
-        assert i == get_matching_key_id(public_keys=pub_keys, private_key=prv_keys[i])
+        assert i == get_matching_key_id(
+            public_keys=pub_keys, signature_provider=signature_providers[i]
+        )
 
 
 @pytest.mark.parametrize("curve", [(curve_name) for curve_name in CurveName])
-def test_matching_keys_ecc(curve):
-    prv_keys = []
+def test_matching_keys_ecc(tmpdir, curve):
+    signature_providers = []
     pub_keys = []
     for i in range(4):
-        prv_keys.append(generate_ecc_private_key(curve_name=curve))
-        pub_keys.append(generate_ecc_public_key(prv_keys[i]))
+        prv_key = generate_ecc_private_key(curve_name=curve)
+        save_ecc_private_key(prv_key, os.path.join(tmpdir, f"key{i}.pem"))
+        signature_providers.append(PlainFileSP(os.path.join(tmpdir, f"key{i}.pem")))
+        pub_keys.append(generate_ecc_public_key(prv_key))
 
     for i in range(4):
-        assert i == get_matching_key_id(public_keys=pub_keys, private_key=prv_keys[i])
+        assert i == get_matching_key_id(
+            public_keys=pub_keys, signature_provider=signature_providers[i]
+        )
 
 
-def test_matching_keys_unmatch():
-    prv_keys = []
+def test_matching_keys_unmatch(tmpdir):
+    signature_providers = []
     pub_keys = []
     for i in range(4):
-        prv_keys.append(generate_rsa_private_key())
-        pub_keys.append(generate_rsa_public_key(prv_keys[i]))
+        prv_key = generate_rsa_private_key()
+        save_rsa_private_key(prv_key, os.path.join(tmpdir, f"key{i}.pem"))
+        signature_providers.append(PlainFileSP(os.path.join(tmpdir, f"key{i}.pem")))
+        pub_keys.append(generate_rsa_public_key(prv_key))
 
+    prv_key = generate_rsa_private_key()
+    save_rsa_private_key(prv_key, os.path.join(tmpdir, f"diff_key.pem"))
     with pytest.raises(SPSDKValueError):
-        get_matching_key_id(public_keys=pub_keys, private_key=generate_rsa_private_key())
+        get_matching_key_id(
+            public_keys=pub_keys,
+            signature_provider=PlainFileSP(os.path.join(tmpdir, f"diff_key.pem")),
+        )

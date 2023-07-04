@@ -8,54 +8,26 @@
 
 """Master Boot Image."""
 
-
+import datetime
+import logging
 import os
 from copy import deepcopy
 from inspect import isclass
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
 from Crypto.Cipher import AES
 
 from spsdk.crypto.signature_provider import SignatureProvider
-from spsdk.exceptions import SPSDKValueError
-from spsdk.image import IMG_DATA_FOLDER, MBIMG_SCH_FILE
+from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
+from spsdk.image import IMG_DATA_FOLDER, MBIMG_SCH_FILE, mbi_mixin
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeySourceType, KeyStore
-from spsdk.image.mbi_mixin import (
-    MasterBootImageManifest,
-    Mbi_ExportMixinAppCertBlockManifest,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinAppTrustZoneCertBlock,
-    Mbi_ExportMixinCrcSign,
-    Mbi_ExportMixinEccSign,
-    Mbi_ExportMixinHmacKeyStoreFinalize,
-    Mbi_ExportMixinRsaSign,
-    Mbi_ExportMixinSignDigestFinalize,
-    Mbi_Mixin,
-    Mbi_MixinApp,
-    Mbi_MixinCertBlockV2,
-    Mbi_MixinCertBlockV31,
-    Mbi_MixinCtrInitVector,
-    Mbi_MixinFwVersion,
-    Mbi_MixinHmacMandatory,
-    Mbi_MixinHwKey,
-    Mbi_MixinImageSubType,
-    Mbi_MixinIvt,
-    Mbi_MixinKeyStore,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinManifest,
-    Mbi_MixinNoSignature,
-    Mbi_MixinNXPImage,
-    Mbi_MixinRelocTable,
-    Mbi_MixinSignDigest,
-    Mbi_MixinTrustZone,
-    Mbi_MixinTrustZoneMandatory,
-    MultipleImageTable,
-)
-from spsdk.image.trustzone import TrustZone
+from spsdk.image.trustzone import TrustZone, TrustZoneType
 from spsdk.utils.crypto.cert_blocks import CertBlockV2, CertBlockV31
-from spsdk.utils.misc import align_block, get_key_by_val, load_configuration
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas, check_config
+from spsdk.utils.misc import align_block, get_key_by_val, load_configuration, write_file
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
+
+logger = logging.getLogger(__name__)
 
 PLAIN_IMAGE = (0x00, "Plain Image (either XIP or Load-to-RAM)")
 SIGNED_RAM_IMAGE = (0x01, "Plain Signed Load-to-RAM Image")
@@ -63,8 +35,11 @@ CRC_RAM_IMAGE = (0x02, "Plain CRC Load-to-RAM Image")
 ENCRYPTED_RAM_IMAGE = (0x03, "Encrypted Load-to-RAM Image")
 SIGNED_XIP_IMAGE = (0x04, "Plain Signed XIP Image")
 CRC_XIP_IMAGE = (0x05, "Plain CRC XIP Image")
+SIGNED_XIP_NXP_IMAGE = (0x08, "Plain Signed XIP Image NXP Keys")
 
 DEVICE_FILE = os.path.join(IMG_DATA_FOLDER, "database.yaml")
+
+DEBUG_TRACE_ENABLE = False
 
 
 # pylint: disable=too-many-ancestors
@@ -162,7 +137,7 @@ def mbi_generate_config_templates(family: str) -> Dict[str, str]:
         override["family"] = family
         override["outputImageExecutionTarget"] = target
         override["outputImageAuthenticationType"] = authentication
-        yaml_data = ConfigTemplate(
+        yaml_data = CommentedConfig(
             f"Master Boot Image Configuration template for {family}, {mbi_cls.IMAGE_TYPE[1]}.",
             schemas,
             override,
@@ -188,25 +163,36 @@ class MasterBootImage:
 
     IMAGE_TYPE = PLAIN_IMAGE
 
+    app: Optional[bytes]
+    app_table: Optional[mbi_mixin.MultipleImageTable]
+    collect_data: Callable[[], bytes]
+    encrypt: Any  # encrypt(self, raw_image: bytes, revert: bool = False) -> bytes
+    post_encrypt: Any  # post_encrypt(self, image: bytes, revert: bool = False) -> bytes
+    sign: Any  # sign(self, image: bytes, revert: bool = False) -> bytes
+    finalize: Any  # finalize(self, image: bytes, revert: bool = False) -> bytes
+    disassemble_image: Callable[[bytes], None]
+
     @classmethod
-    def _get_mixins(cls) -> List[Type[Mbi_Mixin]]:
+    def _get_mixins(cls) -> List[Type[mbi_mixin.Mbi_Mixin]]:
         """Get the list of Mbi Mixin classes.
 
         :return: List of Mbi_Mixins.
         """
-        return [x for x in cls.__bases__ if issubclass(x, Mbi_Mixin)]
+        return [x for x in cls.__bases__ if issubclass(x, mbi_mixin.Mbi_Mixin)]
 
     def __init__(self) -> None:
         """Initialization of MBI."""
         # Check if all needed class instance members are available (validation of class due to mixin problems)
         self.search_paths: Optional[List[str]] = None
+        self.family = "Unknown"
+        self.dek: Optional[str] = None
         for base in self._get_mixins():
             for member in base.NEEDED_MEMBERS:
                 assert hasattr(self, member)
 
     @property
     def total_len(self) -> int:
-        """Compute final application data length.
+        """Compute Master Boot Image data length.
 
         :return: Final image data length.
         """
@@ -217,11 +203,17 @@ class MasterBootImage:
 
     @property
     def app_len(self) -> int:
-        """Application data length.
+        """Compute application data length.
 
-        :return: Application data length.
+        :return: Final image data length.
         """
-        return self.total_len
+        ret = 0
+        for base in self._get_mixins():
+            mix_app_len = base.mix_app_len(self)  # type: ignore
+            if mix_app_len < 0:
+                mix_app_len = base.mix_len(self)  # type: ignore
+            ret += mix_app_len
+        return ret
 
     def load_from_config(
         self, config: Dict[str, Any], search_paths: Optional[List[str]] = None
@@ -232,14 +224,9 @@ class MasterBootImage:
         :param search_paths: List of paths where to search for the file, defaults to None
         """
         self.search_paths = search_paths
+        self.family = config.get("family", "Unknown")
         for base in self._get_mixins():
             base.mix_load_from_config(self, config)  # type: ignore
-
-    collect_data: Any  # collect_data(self) -> bytes
-    encrypt: Any  # encrypt(self, raw_image: bytes) -> bytes
-    post_encrypt: Any  # post_encrypt(self, image: bytes) -> bytes
-    sign: Any  # sign(self, image: bytes) -> bytes
-    finalize: Any  # finalize(self, image: bytes) -> bytes
 
     def export(self) -> bytes:
         """Export final bootable image.
@@ -250,24 +237,134 @@ class MasterBootImage:
         self.validate()
         # 2: Collect all input data into raw image
         raw_image = self.collect_data()
+        if DEBUG_TRACE_ENABLE:
+            write_file(raw_image, "export_1_collect.bin", mode="wb")
         # 3: Optionally encrypt the image
         encrypted_image = self.encrypt(raw_image)
+        if DEBUG_TRACE_ENABLE:
+            write_file(encrypted_image, "export_2_encrypt.bin", mode="wb")
         # 4: Optionally do some post encrypt image updates
         encrypted_image = self.post_encrypt(encrypted_image)
+        if DEBUG_TRACE_ENABLE:
+            write_file(encrypted_image, "export_3_post_encrypt.bin", mode="wb")
         # 5: Optionally sign image
         signed_image = self.sign(encrypted_image)
+        if DEBUG_TRACE_ENABLE:
+            write_file(signed_image, "export_4_signed.bin", mode="wb")
         # 6: Finalize image
         final_image = self.finalize(signed_image)
+        if DEBUG_TRACE_ENABLE:
+            write_file(final_image, "export_5_finalized.bin", mode="wb")
 
         return final_image
 
-    def parse(self, data: bytes) -> None:
+    @staticmethod
+    def parse(family: str, data: bytes, dek: Optional[str] = None) -> "MasterBootImage":
         """Parse the final image to individual fields.
 
-        :param data: Final Image in bytes.
-        :raises NotImplementedError: Derived class has to implement this method
+        :param family: Device family
+        :param data: Final Image in bytes
+        :param dek: The decryption key for encrypted images
+        :raises SPSDKParsingError: Cannot determinate the decoding class
+        :return: MBI parsed class
         """
-        raise NotImplementedError("Derived class has to implement this method.")
+        # 1: Get the right class to parse MBI
+        mbi_classes = get_mbi_classes(family)
+        image_type = mbi_mixin.Mbi_MixinIvt.get_image_type(data=data)
+        authentication = None
+        target = None
+        mbi_cls_type = None
+        for cls_info in mbi_classes.values():
+            if cls_info[0].IMAGE_TYPE[0] == image_type:
+                mbi_cls_type = cls_info[0]
+                target = cls_info[1]
+                authentication = cls_info[2]
+                logger.info(
+                    "Detected MBI image:\n"
+                    f"  Authentication:    {authentication}\n"
+                    f"  Target:            {target}"
+                )
+                break
+
+        if mbi_cls_type == None:
+            raise SPSDKParsingError("Unsupported MBI type detected.")
+
+        assert mbi_cls_type
+        mbi_cls = mbi_cls_type()
+        mbi_cls.family = family
+        mbi_cls.dek = dek
+
+        # 2: Parse individual mixins what is possible
+        # Solve the order - Wait for the mixins that depends on other and run another round
+        mixins_src = mbi_cls._get_mixins()
+        while mixins_src:
+            mixins = mixins_src.copy()
+            mixins_src.clear()
+            for mixin in mixins:
+                logger.debug(f"Parsing: Mixin {mixin.__name__}.")
+                for pre_parsed in mixin.PRE_PARSED:
+                    if hasattr(mbi_cls, pre_parsed) and getattr(mbi_cls, pre_parsed) == None:
+                        logger.debug(
+                            f"Parsing: Mixin {mixin.__name__} has to wait to parse {pre_parsed} mixin."
+                        )
+                        mixins_src.append(mixin)
+                        continue
+                mixin.mix_parse(mbi_cls, data)  # type: ignore
+
+        # 3: Revert finalize operation of image
+        image = mbi_cls.finalize(data, revert=True)
+        if DEBUG_TRACE_ENABLE:
+            write_file(image, "parse_1_revert_finalize.bin", mode="wb")
+        # 4: Revert optional sign of image
+        unsigned_image = mbi_cls.sign(image, revert=True)
+        if DEBUG_TRACE_ENABLE:
+            write_file(unsigned_image, "parse_2_revert_sign.bin", mode="wb")
+        # 5: Revert optional some post encrypt image updates
+        encrypted_image = mbi_cls.post_encrypt(unsigned_image, revert=True)
+        if DEBUG_TRACE_ENABLE:
+            write_file(encrypted_image, "parse_3_revert_post_encrypt.bin", mode="wb")
+        # 6: Revert optional encryption of the image
+        decrypted_image = mbi_cls.encrypt(encrypted_image, revert=True)
+        if DEBUG_TRACE_ENABLE:
+            write_file(decrypted_image, "parse_4_revert_encrypt.bin", mode="wb")
+        # 7: Disassembly rest of image
+        mbi_cls.disassemble_image(decrypted_image)
+
+        return mbi_cls
+
+    def create_config(self, output_folder: str) -> None:
+        """Create configuration file and its data files from the MBI class.
+
+        :param output_folder: Output folder to store the parsed data
+        """
+        cfg_values: Dict[str, Union[str, int]] = {}
+        for mixin in self._get_mixins():
+            cfg_values.update(mixin.mix_get_config(self, output_folder))  # type: ignore
+        mbi_classes = get_mbi_classes(self.family)
+        for mbi_class in mbi_classes.values():
+            if mbi_class[0].__name__ == self.__class__.__name__:
+                target = mbi_class[1]
+                authentication = mbi_class[2]
+                break
+
+        assert target and authentication
+
+        val_schemas = self.get_validation_schemas()
+        cfg_values["family"] = self.family
+        cfg_values["outputImageExecutionTarget"] = target
+        cfg_values["outputImageAuthenticationType"] = authentication
+
+        yaml_data = CommentedConfig(
+            main_title=(
+                f"Master Boot Image ({self.__class__.__name__}) recreated configuration from :"
+                f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
+            ),
+            schemas=val_schemas,
+            values=cfg_values,
+            export_template=False,
+        ).export_to_yaml()
+
+        write_file(yaml_data, os.path.join(output_folder, "mbi_config.yaml"))
 
     @classmethod
     def get_supported_families(cls) -> List[str]:
@@ -321,7 +418,11 @@ class MasterBootImage:
 # pylint: disable=invalid-name
 # pylint: disable=abstract-method
 class Mbi_PlainXip(
-    MasterBootImage, Mbi_MixinApp, Mbi_MixinIvt, Mbi_MixinTrustZone, Mbi_ExportMixinAppTrustZone
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
 ):
     """Master Boot Plain XiP Image for LPC55xxx family."""
 
@@ -338,11 +439,11 @@ class Mbi_PlainXip(
 
 class Mbi_CrcXip(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinCrcSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
 ):
     """Master Boot CRC XiP Image for LPC55xxx family."""
 
@@ -361,12 +462,12 @@ class Mbi_CrcXip(
 
 class Mbi_CrcRam(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_MixinLoadAddress,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinCrcSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
 ):
     """Master Boot CRC RAM Image for LPC55xxx family."""
 
@@ -392,12 +493,12 @@ class Mbi_CrcRam(
 
 class Mbi_SignedXip(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_MixinCertBlockV2,
-    Mbi_ExportMixinAppTrustZoneCertBlock,
-    Mbi_ExportMixinRsaSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinCertBlockV2,
+    mbi_mixin.Mbi_ExportMixinAppTrustZoneCertBlock,
+    mbi_mixin.Mbi_ExportMixinRsaSign,
 ):
     """Master Boot Signed XiP Image for LPC55xxx family."""
 
@@ -426,13 +527,13 @@ class Mbi_SignedXip(
 
 class Mbi_SignedRam(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinCertBlockV2,
-    Mbi_ExportMixinAppTrustZoneCertBlock,
-    Mbi_ExportMixinRsaSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinCertBlockV2,
+    mbi_mixin.Mbi_ExportMixinAppTrustZoneCertBlock,
+    mbi_mixin.Mbi_ExportMixinRsaSign,
 ):
     """Master Boot Signed RAM Image for LPC55xxx family."""
 
@@ -469,12 +570,12 @@ class Mbi_SignedRam(
 
 class Mbi_PlainRamRtxxx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinHwKey,
-    Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinHwKey,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
 ):
     """Master Boot Plain Image for RTxxx."""
 
@@ -501,18 +602,18 @@ class Mbi_PlainRamRtxxx(
 
 class Mbi_PlainSignedRamRtxxx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinRelocTable,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_MixinCertBlockV2,
-    Mbi_MixinHmacMandatory,
-    Mbi_MixinKeyStore,
-    Mbi_MixinHwKey,
-    Mbi_ExportMixinAppTrustZoneCertBlock,
-    Mbi_ExportMixinRsaSign,
-    Mbi_ExportMixinHmacKeyStoreFinalize,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinRelocTable,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinCertBlockV2,
+    mbi_mixin.Mbi_MixinHmacMandatory,
+    mbi_mixin.Mbi_MixinKeyStore,
+    mbi_mixin.Mbi_MixinHwKey,
+    mbi_mixin.Mbi_ExportMixinAppTrustZoneCertBlock,
+    mbi_mixin.Mbi_ExportMixinRsaSign,
+    mbi_mixin.Mbi_ExportMixinHmacKeyStoreFinalize,
 ):
     """Master Boot Plain Signed RAM Image for RTxxx family."""
 
@@ -521,7 +622,7 @@ class Mbi_PlainSignedRamRtxxx(
     def __init__(
         self,
         app: Optional[bytes] = None,
-        app_table: Optional[MultipleImageTable] = None,
+        app_table: Optional[mbi_mixin.MultipleImageTable] = None,
         trust_zone: Optional[TrustZone] = None,
         load_addr: Optional[int] = None,
         cert_block: Optional[CertBlockV2] = None,
@@ -553,26 +654,17 @@ class Mbi_PlainSignedRamRtxxx(
         self.user_hw_key_enabled = hwk
         super().__init__()
 
-    @property
-    def app_len(self) -> int:
-        """Application data length.
-
-        :return: Application data length.
-        """
-        assert self.cert_block
-        return self.get_app_length() + len(self.cert_block.export()) + len(self.tz.export())
-
 
 class Mbi_CrcRamRtxxx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinRelocTable,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_MixinHwKey,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinCrcSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinRelocTable,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinHwKey,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
 ):
     """Master Boot CRC RAM Image for RTxxx family."""
 
@@ -581,7 +673,7 @@ class Mbi_CrcRamRtxxx(
     def __init__(
         self,
         app: Optional[bytes] = None,
-        app_table: Optional[MultipleImageTable] = None,
+        app_table: Optional[mbi_mixin.MultipleImageTable] = None,
         trust_zone: Optional[TrustZone] = None,
         load_addr: Optional[int] = None,
         hwk: bool = False,
@@ -604,18 +696,18 @@ class Mbi_CrcRamRtxxx(
 
 class Mbi_EncryptedRamRtxxx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinRelocTable,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_MixinCertBlockV2,
-    Mbi_MixinHwKey,
-    Mbi_MixinKeyStore,
-    Mbi_MixinHmacMandatory,
-    Mbi_MixinCtrInitVector,
-    Mbi_ExportMixinRsaSign,
-    Mbi_ExportMixinHmacKeyStoreFinalize,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinRelocTable,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinCertBlockV2,
+    mbi_mixin.Mbi_MixinHwKey,
+    mbi_mixin.Mbi_MixinKeyStore,
+    mbi_mixin.Mbi_MixinHmacMandatory,
+    mbi_mixin.Mbi_MixinCtrInitVector,
+    mbi_mixin.Mbi_ExportMixinRsaSign,
+    mbi_mixin.Mbi_ExportMixinHmacKeyStoreFinalize,
 ):
     """Master Boot Encrypted RAM Image for RTxxx family."""
 
@@ -624,7 +716,7 @@ class Mbi_EncryptedRamRtxxx(
     def __init__(
         self,
         app: Optional[bytes] = None,
-        app_table: Optional[MultipleImageTable] = None,
+        app_table: Optional[mbi_mixin.MultipleImageTable] = None,
         trust_zone: Optional[TrustZone] = None,
         load_addr: Optional[int] = None,
         cert_block: Optional[CertBlockV2] = None,
@@ -666,43 +758,90 @@ class Mbi_EncryptedRamRtxxx(
         :return: Collected raw image.
         """
         assert self.cert_block
-        self.cert_block.alignment = 4  # type: ignore   # this value is used by elf-to-sb-gui
+        self.cert_block.alignment = 4  # type: ignore
 
         self.img_len = (
             self.total_len + self.cert_block.signature_size + 56 + 16
         )  # Encrypted IVT + IV
 
-        return self.update_ivt(
+        image = self.update_ivt(
             app_data=self.get_app_data() + self.tz.export(),
             total_len=self.img_len,
             crc_val_cert_offset=self.get_app_length(),
         )
+        return image
 
-    def encrypt(self, raw_image: bytes) -> bytes:
+    def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
+        """Disassemble image to individual parts from image.
+
+        :param image: Image.
+        """
+        # Re -parse decrypted TZ if needed
+        if self.tz.type == TrustZoneType.CUSTOM:
+            self.tz = TrustZone.from_binary(
+                family=self.family, raw_data=image[-TrustZone.get_preset_data_size(self.family) :]
+            )
+
+        tz_len = len(self.tz.export())
+        if tz_len:
+            image = image[:-tz_len]
+        if hasattr(self, "disassembly_app_data"):
+            image = self.disassembly_app_data(image)
+        self.app = self.clean_ivt(image)
+
+    def encrypt(self, image: bytes, revert: bool = False) -> bytes:
         """Encrypt image if needed.
 
-        :param raw_image: Input raw image to encrypt.
+        :param image: Input raw image to encrypt.
+        :param revert: Revert the operation if possible.
         :return: Encrypted image.
         """
+        if revert and not (self.hmac_key and self.ctr_init_vector):
+            logger.warning("Cannot parse the encrypted image without decrypting key!")
+            return image
+
         assert self.hmac_key and self.ctr_init_vector
         key = self.hmac_key
         if not self.key_store or self.key_store.key_source == KeySourceType.OTP:
             key = KeyStore.derive_enc_image_key(key)
         aes = AES.new(key, AES.MODE_CTR, initial_value=self.ctr_init_vector, nonce=bytes())
-        return aes.encrypt(raw_image + self.tz.export())
+        logger.debug(f"Encryption key: {self.hmac_key.hex()}")
+        logger.debug(f"Encryption IV: {self.ctr_init_vector.hex()}")
 
-    def post_encrypt(self, image: bytes) -> bytes:
+        if revert:
+            decrypted_data = aes.decrypt(image)
+            return decrypted_data
+
+        encrypted_data = aes.encrypt(image + self.tz.export())
+        return encrypted_data
+
+    def post_encrypt(self, image: bytes, revert: bool = False) -> bytes:
         """Optionally do some post encrypt image updates.
 
         :param image: Encrypted image.
+        :param revert: Revert the operation if possible.
         :return: Updated encrypted image.
         """
-        assert self.cert_block
+        assert self.cert_block and isinstance(self.cert_block, CertBlockV2)
+        if revert:
+            cert_blk_offset = mbi_mixin.Mbi_MixinIvt.get_cert_block_offset(image)
+            cert_blk_size = self.cert_block.expected_size
+            # Restore original part of encrypted IVT
+            org_image = image[
+                cert_blk_offset + cert_blk_size : cert_blk_offset + cert_blk_size + 56
+            ]
+            # Add rest of original encrypted image
+            org_image += image[56:cert_blk_offset]
+            # optionally add TrustZone data
+            org_image += image[cert_blk_offset + cert_blk_size + 56 + 16 :]
+            return org_image
+
         enc_ivt = self.update_ivt(
             app_data=image[: self.HMAC_OFFSET],
             total_len=self.img_len,
             crc_val_cert_offset=self.get_app_length(),
         )
+
         # Create encrypted cert block (Encrypted IVT table + IV)
         encrypted_header = image[:56] + self.ctr_init_vector
 
@@ -710,7 +849,6 @@ class Mbi_EncryptedRamRtxxx(
             len(image) + len(self.cert_block.export()) + len(encrypted_header)
         )
         enc_cert = self.cert_block.export() + encrypted_header
-
         return (
             enc_ivt
             + image[self.HMAC_OFFSET : self.get_app_length()]  # header  # encrypted image
@@ -721,11 +859,11 @@ class Mbi_EncryptedRamRtxxx(
 
 class Mbi_PlainXipRtxxx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZone,
-    Mbi_MixinHwKey,
-    Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinHwKey,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
 ):
     """Master Boot Plain XiP Image for RTxxx."""
 
@@ -746,14 +884,14 @@ class Mbi_PlainXipRtxxx(
 
 class Mbi_PlainSignedXipRtxxx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinTrustZone,
-    Mbi_MixinCertBlockV2,
-    Mbi_MixinHwKey,
-    Mbi_ExportMixinAppTrustZoneCertBlock,
-    Mbi_ExportMixinRsaSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinCertBlockV2,
+    mbi_mixin.Mbi_MixinHwKey,
+    mbi_mixin.Mbi_ExportMixinAppTrustZoneCertBlock,
+    mbi_mixin.Mbi_ExportMixinRsaSign,
 ):
     """Master Boot Plain Signed XiP Image for RTxxx family."""
 
@@ -788,13 +926,13 @@ class Mbi_PlainSignedXipRtxxx(
 
 class Mbi_CrcXipRtxxx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinTrustZone,
-    Mbi_MixinHwKey,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinCrcSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinTrustZone,
+    mbi_mixin.Mbi_MixinHwKey,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
 ):
     """Master Boot CRC XiP Image for RTxxx."""
 
@@ -826,12 +964,12 @@ class Mbi_CrcXipRtxxx(
 ########################################################################################################################
 class Mbi_PlainRamLpc55s3x(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZoneMandatory,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinFwVersion,
-    Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
 ):
     """Master Boot Plain RAM Image for LPC55s3x family."""
 
@@ -859,13 +997,13 @@ class Mbi_PlainRamLpc55s3x(
 
 class Mbi_CrcRamLpc55s3x(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZoneMandatory,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinFwVersion,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinCrcSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
 ):
     """Master Boot CRC RAM Image for LPC55s3x family."""
 
@@ -895,14 +1033,14 @@ class Mbi_CrcRamLpc55s3x(
 
 class Mbi_PlainXipSignedLpc55s3x(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinCertBlockV31,
-    Mbi_MixinManifest,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinFwVersion,
-    Mbi_ExportMixinAppCertBlockManifest,
-    Mbi_ExportMixinEccSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinCertBlockV31,
+    mbi_mixin.Mbi_MixinManifest,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppCertBlockManifest,
+    mbi_mixin.Mbi_ExportMixinEccSign,
 ):
     """Master Boot Signed XIP Image for LPC55s3x family."""
 
@@ -914,7 +1052,7 @@ class Mbi_PlainXipSignedLpc55s3x(
         firmware_version: int = 0,
         load_addr: int = 0,
         cert_block: Optional[CertBlockV31] = None,
-        manifest: Optional[MasterBootImageManifest] = None,
+        manifest: Optional[mbi_mixin.MasterBootImageManifest] = None,
         signature_provider: Optional[SignatureProvider] = None,
     ) -> None:
         """Constructor for Master Boot Signed XIP Image for LPC55s3x family.
@@ -938,13 +1076,13 @@ class Mbi_PlainXipSignedLpc55s3x(
 
 class Mbi_CrcXipLpc55s3x(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinTrustZoneMandatory,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinFwVersion,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinCrcSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
 ):
     """Master Boot CRC XiP Image for LPC55s3x family."""
 
@@ -977,12 +1115,12 @@ class Mbi_CrcXipLpc55s3x(
 ########################################################################################################################
 class Mbi_PlainXipKw45xx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinTrustZoneMandatory,
-    Mbi_MixinImageSubType,
-    Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinImageSubType,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
 ):
     """Master Boot Plain RAM Image for KW45xx/K32W1xx family."""
 
@@ -992,7 +1130,7 @@ class Mbi_PlainXipKw45xx(
         load_addr: Optional[int] = None,
         trust_zone: Optional[TrustZone] = None,
         firmware_version: int = 0,
-        image_subtype: Optional[Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx] = None,
+        image_subtype: Optional[mbi_mixin.Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx] = None,
     ) -> None:
         """Constructor for Master Boot Plain RAM Image for KW45xx/K32W1xx family.
 
@@ -1012,18 +1150,14 @@ class Mbi_PlainXipKw45xx(
 
 class Mbi_PlainXipSignedKw45xx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinCertBlockV31,
-    Mbi_MixinManifest,
-    Mbi_MixinImageSubType,
-    Mbi_MixinSignDigest,
-    Mbi_MixinNXPImage,
-    Mbi_MixinNoSignature,
-    Mbi_ExportMixinAppCertBlockManifest,
-    Mbi_ExportMixinEccSign,
-    Mbi_ExportMixinSignDigestFinalize,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinCertBlockV31,
+    mbi_mixin.Mbi_MixinManifest,
+    mbi_mixin.Mbi_MixinNoSignature,
+    mbi_mixin.Mbi_ExportMixinAppCertBlockManifest,
+    mbi_mixin.Mbi_ExportMixinEccSign,
 ):
     """Master Boot Signed XIP Image for KW45xx/K32W1xx family."""
 
@@ -1035,11 +1169,56 @@ class Mbi_PlainXipSignedKw45xx(
         load_addr: Optional[int] = None,
         firmware_version: int = 0,
         cert_block: Optional[CertBlockV31] = None,
-        manifest: Optional[MasterBootImageManifest] = None,
+        manifest: Optional[mbi_mixin.MasterBootImageManifest] = None,
         signature_provider: Optional[SignatureProvider] = None,
-        image_subtype: Optional[Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx] = None,
-        attach_sign_digest: Optional[bool] = None,
-        nxp_image: Optional[bool] = None,
+        no_signature: Optional[bool] = None,
+    ) -> None:
+        """Constructor for Master Boot Signed XIP Image for KW45xx/K32W1xx family.
+
+        :param app: Application image data, defaults to None
+        :param load_addr: Load/Execution address of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        :param cert_block: Certification block of image, defaults to None
+        :param manifest: Manifest of image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
+        :param nxp_image: If it set, the image is generated as NXP.
+        :param no_signature: If it set, the signature is not appended
+        """
+        self.app = align_block(app) if app else None
+        self.load_address = load_addr
+        self.no_signature = no_signature
+        self.firmware_version = firmware_version
+        self.cert_block = cert_block
+        self.manifest = manifest
+        self.signature_provider = signature_provider
+        super().__init__()
+
+
+class Mbi_PlainXipSignedNxpKw45xx(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinCertBlockV31,
+    mbi_mixin.Mbi_MixinManifest,
+    mbi_mixin.Mbi_MixinImageSubType,
+    mbi_mixin.Mbi_MixinNoSignature,
+    mbi_mixin.Mbi_ExportMixinAppCertBlockManifest,
+    mbi_mixin.Mbi_ExportMixinEccSign,
+):
+    """Master Boot Signed XIP Image by NXP Keys for KW45xx/K32W1xx family."""
+
+    IMAGE_TYPE = SIGNED_XIP_NXP_IMAGE
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        load_addr: Optional[int] = None,
+        firmware_version: int = 0,
+        cert_block: Optional[CertBlockV31] = None,
+        manifest: Optional[mbi_mixin.MasterBootImageManifest] = None,
+        signature_provider: Optional[SignatureProvider] = None,
+        image_subtype: Optional[mbi_mixin.Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx] = None,
         no_signature: Optional[bool] = None,
     ) -> None:
         """Constructor for Master Boot Signed XIP Image for KW45xx/K32W1xx family.
@@ -1051,8 +1230,6 @@ class Mbi_PlainXipSignedKw45xx(
         :param manifest: Manifest of image, defaults to None
         :param signature_provider: Signature provider to sign final image, defaults to None
         :param image_subtype: Selection of image subtype (MAIN/NBU), default to None(MAIN)
-        :param attach_sign_digest: Additional signature digest.
-            Possible values are: None, 'sha256' and 'sha384', defaults to None
         :param nxp_image: If it set, the image is generated as NXP.
         :param no_signature: If it set, the signature is not appended
         """
@@ -1064,21 +1241,18 @@ class Mbi_PlainXipSignedKw45xx(
         self.manifest = manifest
         self.signature_provider = signature_provider
         self.set_image_subtype(image_subtype)
-        self.attach_sign_digest = self.get_sign_digest() if attach_sign_digest else None
-        if nxp_image:
-            self.change_to_nxp_image()
         super().__init__()
 
 
 class Mbi_CrcXipKw45xx(
     MasterBootImage,
-    Mbi_MixinApp,
-    Mbi_MixinIvt,
-    Mbi_MixinLoadAddress,
-    Mbi_MixinTrustZoneMandatory,
-    Mbi_MixinImageSubType,
-    Mbi_ExportMixinAppTrustZone,
-    Mbi_ExportMixinCrcSign,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinImageSubType,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
 ):
     """Master Boot CRC XiP Image for KW45xx/K32W1xx family."""
 
@@ -1090,7 +1264,7 @@ class Mbi_CrcXipKw45xx(
         load_addr: Optional[int] = None,
         trust_zone: Optional[TrustZone] = None,
         firmware_version: int = 0,
-        image_subtype: Optional[Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx] = None,
+        image_subtype: Optional[mbi_mixin.Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx] = None,
     ) -> None:
         """Constructor for Master Boot CRC XiP Image for KW45xx/K32W1xx family.
 
@@ -1105,4 +1279,357 @@ class Mbi_CrcXipKw45xx(
         self.tz = trust_zone or TrustZone.enabled()
         self.firmware_version = firmware_version
         self.set_image_subtype(image_subtype)
+        super().__init__()
+
+
+########################################################################################################################
+# Master Boot Image Class (MCXNX)
+########################################################################################################################
+class Mbi_CrcXipMcxNx(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC XiP Image for mcxnx family."""
+
+    IMAGE_TYPE = CRC_XIP_IMAGE
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        trust_zone: Optional[TrustZone] = None,
+        firmware_version: int = 0,
+        load_addr: Optional[int] = None,
+    ) -> None:
+        """Constructor for Master Boot CRC XiP Image for mcxnx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.firmware_version = firmware_version
+        self.load_address = load_addr
+        self.app_ext_memory_align = 0x1000
+        super().__init__()
+
+
+class Mbi_PlainXipSignedMcxNx(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinCertBlockV31,
+    mbi_mixin.Mbi_MixinManifestMcxNx,
+    mbi_mixin.Mbi_MixinImageSubType,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppCertBlockManifest,
+    mbi_mixin.Mbi_ExportMixinEccSign,
+):
+    """Master Boot Signed XIP Image for mcxnx family."""
+
+    IMAGE_TYPE = SIGNED_XIP_IMAGE
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        firmware_version: int = 0,
+        cert_block: Optional[CertBlockV31] = None,
+        manifest: Optional[mbi_mixin.MasterBootImageManifestMcxNx] = None,
+        signature_provider: Optional[SignatureProvider] = None,
+        image_subtype: Optional[mbi_mixin.Mbi_MixinImageSubType.Mbi_ImageSubTypeMcxn9xx] = None,
+        load_addr: Optional[int] = None,
+    ) -> None:
+        """Constructor for Master Boot Signed XIP Image for mcxnx family.
+
+        :param app: Application image data, defaults to None
+        :param firmware_version: Firmware version of image, defaults to 0
+        :param cert_block: Certification block of image, defaults to None
+        :param manifest: Manifest of image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
+        :param image_subtype: Selection of image subtype (MAIN/RECOVERY), default to None(MAIN)
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.firmware_version = firmware_version
+        self.cert_block = cert_block
+        self.manifest = manifest
+        self.signature_provider = signature_provider
+        self.set_image_subtype(image_subtype)
+        self.load_address = load_addr
+        self.app_ext_memory_align = 0x1000
+        super().__init__()
+
+
+class Mbi_PlainRamMcxNx(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+):
+    """Master Boot Plain RAM Image for mcxnx family."""
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        trust_zone: Optional[TrustZone] = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+    ) -> None:
+        """Constructor for Master Boot Plain RAM Image for mcxnx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
+        self.firmware_version = firmware_version
+        self.app_ext_memory_align = 0x1000
+        super().__init__()
+
+
+class Mbi_CrcRamMcxNx(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC RAM Image for mcxnx family."""
+
+    IMAGE_TYPE = CRC_RAM_IMAGE
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        trust_zone: Optional[TrustZone] = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+    ) -> None:
+        """Constructor for Master Boot Signed RAM Image for mcxnx family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
+        self.firmware_version = firmware_version
+        super().__init__()
+
+
+########################################################################################################################
+# Master Boot Image Class (RW61x)
+########################################################################################################################
+class Mbi_PlainRamRw61x(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+):
+    """Master Boot Plain RAM Image for RW61x family."""
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        trust_zone: Optional[TrustZone] = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+    ) -> None:
+        """Constructor for Master Boot Plain RAM Image for RW61x family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.firmware_version = firmware_version
+        self.load_address = load_addr
+        super().__init__()
+
+
+class Mbi_CrcRamRw61x(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC RAM Image for RW61x family."""
+
+    IMAGE_TYPE = CRC_RAM_IMAGE
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        trust_zone: Optional[TrustZone] = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+    ) -> None:
+        """Constructor for Master Boot Signed RAM Image for RW61x family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
+        self.firmware_version = firmware_version
+        super().__init__()
+
+
+class Mbi_PlainSignedRamRw61x(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinCertBlockV31,
+    mbi_mixin.Mbi_MixinManifest,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppCertBlockManifest,
+    mbi_mixin.Mbi_ExportMixinEccSign,
+):
+    """Master Boot Plain Signed RAM Image for RW61x family."""
+
+    IMAGE_TYPE = SIGNED_RAM_IMAGE
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+        trust_zone: Optional[TrustZone] = None,
+        cert_block: Optional[CertBlockV31] = None,
+        manifest: Optional[mbi_mixin.MasterBootImageManifest] = None,
+        signature_provider: Optional[SignatureProvider] = None,
+    ) -> None:
+        """Constructor for Master Boot Plain Signed RAM Image for RTxxx family.
+
+        :param app: Application image data, defaults to None
+        :param load_addr: Load/Execution address in RAM of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        :param trust_zone: TrustZone object, defaults to None
+        :param cert_block: Certification block of image, defaults to None
+        :param manifest: Manifest of image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
+        """
+        self.app = align_block(app) if app else None
+        self.app_ext_memory_align = 0x1000
+
+        self.load_address = load_addr
+        self.firmware_version = firmware_version
+        self.tz = trust_zone or TrustZone.enabled()
+        self.cert_block = cert_block
+        self.manifest = manifest
+        self.signature_provider = signature_provider
+        super().__init__()
+
+
+class Mbi_PlainExtXipSignedRw61x(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinCertBlockV31,
+    mbi_mixin.Mbi_MixinManifest,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppCertBlockManifest,
+    mbi_mixin.Mbi_ExportMixinEccSign,
+):
+    """Master Boot Signed XIP Image stored in external memory for RW61x family."""
+
+    IMAGE_TYPE = SIGNED_XIP_IMAGE
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+        trust_zone: Optional[TrustZone] = None,
+        cert_block: Optional[CertBlockV31] = None,
+        manifest: Optional[mbi_mixin.MasterBootImageManifest] = None,
+        signature_provider: Optional[SignatureProvider] = None,
+    ) -> None:
+        """Constructor for Master Boot Signed XIP Image for RW61x family.
+
+        :param app: Application image data, defaults to None
+        :param load_addr: Load/Execution address of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        :param trust_zone: TrustZone object, defaults to None
+        :param cert_block: Certification block of image, defaults to None
+        :param manifest: Manifest of image, defaults to None
+        :param signature_provider: Signature provider to sign final image, defaults to None
+        """
+        self.app = align_block(app) if app else None
+        self.app_ext_memory_align = 0x1000
+        self.load_address = load_addr
+        self.firmware_version = firmware_version
+        self.tz = trust_zone or TrustZone.enabled()
+        self.cert_block = cert_block
+        self.manifest = manifest
+        self.signature_provider = signature_provider
+        super().__init__()
+
+
+class Mbi_CrcExtXipRw61x(
+    MasterBootImage,
+    mbi_mixin.Mbi_MixinApp,
+    mbi_mixin.Mbi_MixinIvt,
+    mbi_mixin.Mbi_MixinTrustZoneMandatory,
+    mbi_mixin.Mbi_MixinLoadAddress,
+    mbi_mixin.Mbi_MixinFwVersion,
+    mbi_mixin.Mbi_ExportMixinAppTrustZone,
+    mbi_mixin.Mbi_ExportMixinCrcSign,
+):
+    """Master Boot CRC XiP Image for RW61x family."""
+
+    IMAGE_TYPE = CRC_XIP_IMAGE
+
+    def __init__(
+        self,
+        app: Optional[bytes] = None,
+        trust_zone: Optional[TrustZone] = None,
+        load_addr: int = 0,
+        firmware_version: int = 0,
+    ) -> None:
+        """Constructor for Master Boot CRC XiP Image stored in external memory for RW61x family.
+
+        :param app: Application image data, defaults to None
+        :param trust_zone: TrustZone object, defaults to None
+        :param load_addr: Load/Execution address of image, defaults to 0
+        :param firmware_version: Firmware version of image, defaults to 0
+        """
+        self.app = align_block(app) if app else None
+        self.app_ext_memory_align = 0x1000
+        self.tz = trust_zone or TrustZone.enabled()
+        self.load_address = load_addr
+        self.firmware_version = firmware_version
         super().__init__()

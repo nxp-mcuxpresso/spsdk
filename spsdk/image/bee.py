@@ -57,7 +57,7 @@ class BeeBaseClass:
         return cls._FORMAT  # _FORMAT class constant must be defined in child class
 
     @classmethod
-    def _size(cls) -> int:
+    def get_size(cls) -> int:
         """:return: size of the exported binary data in bytes."""
         return calcsize(cls._struct_format())
 
@@ -67,7 +67,7 @@ class BeeBaseClass:
     @property
     def size(self) -> int:
         """:return: size of the exported binary data in bytes."""
-        return self._size()
+        return self.get_size()
 
     def info(self) -> str:
         """Info method.
@@ -101,7 +101,7 @@ class BeeBaseClass:
         :return: instance created from binary data; this method returns just `0`
         :raises SPSDKError: If size of the data is not sufficient
         """
-        if len(data) - offset < cls._size():
+        if len(data) - offset < cls.get_size():
             raise SPSDKError("Insufficient size of the data")
         return 0
 
@@ -201,7 +201,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
     SIZE = 0x100
 
     @classmethod
-    def _size(cls) -> int:
+    def get_size(cls) -> int:
         """:return: size of the exported binary data in bytes."""
         return cls.SIZE
 
@@ -460,7 +460,7 @@ class BeeRegionHeader(BeeBaseClass):
         )
 
     @classmethod
-    def _size(cls) -> int:
+    def get_size(cls) -> int:
         """:return: size of the exported binary data in bytes."""
         return cls.SIZE
 
@@ -561,7 +561,7 @@ class BeeRegionHeader(BeeBaseClass):
         if len(sw_key) != 16:
             raise SPSDKError("Invalid sw key")
         aes_ecb = AES.new(sw_key, AES.MODE_ECB)
-        decr_data = aes_ecb.decrypt(data[offset : offset + BeeKIB._size()])
+        decr_data = aes_ecb.decrypt(data[offset : offset + BeeKIB.get_size()])
         kib = BeeKIB.parse(decr_data)
         aes_cbc = AES.new(kib.kib_key, AES.MODE_CBC, kib.kib_iv)
         decr_data = aes_cbc.decrypt(

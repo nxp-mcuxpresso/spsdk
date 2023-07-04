@@ -131,6 +131,45 @@ class USBDeviceDescription(DeviceDescription):
         )
 
 
+class SDIODeviceDescription(DeviceDescription):
+    """Simple container holding information about SDIO device.
+
+    This container should be used instead of any SDIO API related objects, as
+    this container will be the same all the time compared to specific SDIO API
+    implementations.
+    """
+
+    def __init__(
+        self,
+        vid: int,
+        pid: int,
+        path: str,
+    ) -> None:
+        """Constructor.
+
+        :param vid: Vendor ID
+        :param pid: Product ID
+
+        See :py:func:`get_usb_device_name` function to getg the name from
+        VID and PID.
+        See :py:func:`convert_usb_path` function to provide a proper path string.
+        """
+        self.vid = vid
+        self.pid = pid
+        self.path = path
+
+    def info(self) -> str:
+        """Returns a formatted device description string.
+
+        :return: Text information of SDIO device.
+        """
+        return (
+            f"Vendor ID: 0x{self.vid:04x}\n"
+            f"Product ID: 0x{self.pid:04x}\n"
+            f"Path: {self.path}\n"
+        )
+
+
 class SIODeviceDescription(DeviceDescription):
     """Simple container holding information about LIBUSBSIO device.
 

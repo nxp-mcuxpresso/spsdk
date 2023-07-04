@@ -171,7 +171,7 @@ class DebugMailbox:
 
         :param func: Decorated function.
         """
-        POSSIBLE_DBGMLBX_AP_IX = [0, 2]
+        POSSIBLE_DBGMLBX_AP_IX = [0, 2, 3]
 
         @functools.wraps(func)
         def wrapper(self: "DebugMailbox", *args, **kwargs):

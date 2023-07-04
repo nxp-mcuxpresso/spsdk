@@ -4,7 +4,6 @@
     "outputImageExecutionTarget": "xip",
     "outputImageExecutionAddress": "0x08001000",
     "outputImageAuthenticationType": "signed",
-    "attachSignDigest": false,
     "trustZonePresetFile": "",
     "firmwareVersion": "0x1",
     "outputImageSubtype": "default",

@@ -17,7 +17,7 @@ from spsdk.image.hab.csf_builder import CsfBuildDirector, CsfBuilder
 from spsdk.image.hab.hab_binary_image import HabBinaryImage, HabSegment
 from spsdk.image.images import BootImgRT
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import BinaryPattern, load_binary
+from spsdk.utils.misc import load_binary
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class HabContainer:
     def parse(cls, binary: bytes) -> "HabContainer":
         """Parse existing binary into HAB container object.
 
-        :param binary:Binary to be parsed
+        :param binary: Binary to be parsed
         """
         rt_img = BootImgRT.parse(binary)
         # IVT

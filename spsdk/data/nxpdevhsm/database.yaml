@@ -6,3 +6,14 @@ devices:
     attributes:
       key_blob_offset: 0x4
       key_blob_command_position: 0
+      devbuff_base_address: 0x20008000
+  mcxn9xx:
+    attributes:
+      key_blob_offset: 0x0
+      key_blob_command_position: -1
+      devbuff_base_address: 0x20007000
+  rw61x:
+    attributes:
+      key_blob_offset: 0xF05C
+      key_blob_command_position: 0
+      devbuff_base_address: 0x20008000

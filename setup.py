@@ -5,6 +5,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import itertools
 import os
 
 from setuptools import find_packages, setup  # type: ignore
@@ -21,6 +22,14 @@ version_info = {}
 base_dir = os.path.dirname(__file__)
 with open(os.path.join(base_dir, "spsdk", "__version__.py")) as f:
     exec(f.read(), version_info)
+
+extras_require = {
+    "tp": ["pyscard==2.0.2"],
+    "examples": ["flask", "requests", "ipython", "notebook"],
+    "dk6": ["pyftdi", "pylibftdi", "ftd2xx"],
+}
+# specify all option that contains all extras
+extras_require["all"] = list(itertools.chain.from_iterable(extras_require.values()))
 
 setup(
     name="spsdk",
@@ -58,7 +67,9 @@ setup(
         "Topic :: System :: Hardware",
         "Topic :: Utilities",
     ],
-    packages=find_packages(exclude=["tests.*", "tests", "examples.*", "examples", "tools", "tools.*"]),
+    packages=find_packages(
+        exclude=["tests.*", "tests", "examples.*", "examples", "tools", "tools.*"]
+    ),
     entry_points={
         "console_scripts": [
             "elftosb=spsdk.apps.elftosb:safe_main",
@@ -78,9 +89,8 @@ setup(
             "ifr=spsdk.apps.ifr:safe_main",
             "tpconfig=spsdk.apps.tpconfig:safe_main",
             "tphost=spsdk.apps.tphost:safe_main",
+            "dk6prog=spsdk.apps.dk6prog:safe_main",
         ],
     },
-    extras_require={
-        "tp": ["pyscard==2.0.2"],
-    },
+    extras_require=extras_require,
 )

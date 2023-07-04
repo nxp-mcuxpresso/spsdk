@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,6 +13,7 @@ from typing import List
 import pytest
 
 from spsdk import SPSDKError
+from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.sbfile.sb2.commands import (
     CmdCall,
     CmdErase,
@@ -267,12 +268,12 @@ def test_sb2x_builder(
 
     if signed:
         boot_image.cert_block = gen_cert_block(data_dir, sign_bits)
-        with open(
-            os.path.join(data_dir, "sb2_x", "selfsign_privatekey_rsa" + str(sign_bits) + ".pem"),
-            "rb",
-        ) as keyf:
-            key_data = keyf.read()
-        boot_image.private_key_pem_data = key_data
+        private_key = os.path.join(
+            data_dir, "sb2_x", "selfsign_privatekey_rsa" + str(sign_bits) + ".pem"
+        )
+        signature_provider = get_signature_provider(local_file_key=private_key)
+
+        boot_image.signature_provider = signature_provider
 
     for sect in get_boot_sections(data_dir, otfad, sect_cont, load_addr):
         boot_image.add_boot_section(sect)

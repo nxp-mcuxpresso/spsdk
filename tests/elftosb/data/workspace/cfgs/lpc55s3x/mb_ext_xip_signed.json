@@ -12,7 +12,6 @@
     "signingCertificateFile": ".\\workspace\\keys_certs\\ec_secp384r1_sign_cert.pem",
     "signingCertificateConstraint": "0x25",
     "signCertData": ".\\workspace\\input_images\\testfffffff.bin",
-    "manifestSigningHashLength": 32,
     "rootCertificate0File": ".\\workspace\\keys_certs\\ec_secp384r1_cert0.pem",
     "rootCertificate1File": ".\\workspace\\keys_certs\\ec_secp384r1_cert1.pem",
     "rootCertificate2File": ".\\workspace\\keys_certs\\ec_secp384r1_cert2.pem",

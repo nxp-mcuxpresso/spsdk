@@ -2,7 +2,7 @@
 <!--
   Copyright 2023 NXP
 
-  SPDX-License-Identifier: BSD-3-Clause 
+  SPDX-License-Identifier: BSD-3-Clause
 -->
 <regs>
 	<register offset="0x0" width="8" name="magicNumber" reversed="False" description="Magic number: Fixed to 0xA1" value="0xA1"/>

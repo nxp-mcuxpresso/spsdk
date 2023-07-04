@@ -4,7 +4,7 @@
     "outputImageExecutionTarget": "xip",
     "outputImageExecutionAddress": "0x0",
     "outputImageAuthenticationType": "signed",
-    "attachSignDigest": true,
+    "manifestDigestHashAlgorithm": "sha384",
     "trustZonePresetFile": "",
     "firmwareVersion": "0x1",
     "rootCertificate0File": ".\\workspace\\keys_certs\\ec_secp384r1_cert0.pem",

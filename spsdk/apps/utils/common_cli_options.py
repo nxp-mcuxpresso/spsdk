@@ -48,6 +48,19 @@ _usb_option = click.option(
 """,
 )
 
+_sdio_option = click.option(
+    "-sd",
+    "--sdio",
+    metavar="SDIO_PATH|DEV_NAME",
+    help="""SDIO device identifier.
+
+    \b
+    Following formats are supported: device/instance path, device name.
+    device/instance path: device string; e.g. /dev/mcu-sdio.
+    Use 'nxpdevscan' utility to list connected device names.
+""",
+)
+
 _lpcusbsio_option = click.option(
     "-l",
     "--lpcusbsio",
@@ -139,9 +152,22 @@ def spsdk_apps_common_options(options: FC) -> FC:
     return options
 
 
+def spsdk_plugin_option(options: FC) -> FC:
+    """Plugin click option decorator.
+
+    :return: Click decorator
+    """
+    return click.option(
+        "--plugin",
+        required=False,
+        help="External python file/package containing a custom plugin implementation.",
+    )(options)
+
+
 def isp_interfaces(
     uart: bool = False,
     usb: bool = False,
+    sdio: bool = False,
     lpcusbsio: bool = False,
     buspal: bool = False,
     json_option: bool = True,
@@ -154,6 +180,7 @@ def isp_interfaces(
 
     :param uart: UART interface, defaults to False
     :param usb: USB interface, defaults to False
+    :param sdio: SDIO interface, defaults to False
     :param lpcusbsio: LPCUSBSIO interface, defaults to False
     :param buspal: BUSPAL interface, defaults to False
     :param json_option: add -j option, defaults to True
@@ -171,6 +198,8 @@ def isp_interfaces(
             options.append(_sdp_uart_option if is_sdp else _uart_option)
         if usb:
             options.append(_usb_option)
+        if sdio:
+            options.append(_sdio_option)
         if lpcusbsio:
             options.append(_lpcusbsio_option)
         if buspal:

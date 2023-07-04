@@ -12,6 +12,7 @@ import struct
 from typing import Any, Dict, List, Optional
 
 from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKValueError
 from spsdk.image import TZ_SCH_FILE
 from spsdk.utils.database import Database
 from spsdk.utils.easy_enum import Enum
@@ -24,9 +25,9 @@ logger = logging.getLogger(__name__)
 class TrustZoneType(Enum):
     """Enum defining various types of TrustZone types."""
 
-    ENABLED = (0x00, "TrustZone enabled with default settings")
-    CUSTOM = (0x20, "TrustZone enabled with custom settings")
-    DISABLED = (0x40, "Disabled")
+    ENABLED = (0x0, "TrustZone enabled with default settings")
+    CUSTOM = (0x1, "TrustZone enabled with custom settings")
+    DISABLED = (0x2, "Disabled")
 
 
 class TrustZone:
@@ -130,6 +131,21 @@ class TrustZone:
                     "Invalid register found in customization data:\n"
                     f"{[item for item in self.customs if item not in self.presets]}"
                 )
+
+    @classmethod
+    def get_preset_data_size(cls, family: str, revision: str = "latest") -> int:
+        """Get size of preset data in binary form.
+
+        :param family: Family description.
+        :param revision: Chip revision specification, as default, latest is used.
+        :raises SPSDKValueError: Family or revision is not supported.
+        :return: Size of TZ data.
+        """
+        database = cls.load_database()
+        file_name = database.devices.get_by_name(family).revisions.get(revision).data_file
+        if not file_name:
+            raise SPSDKValueError(f"Data file for {family} does't exist!")
+        return len(load_configuration(os.path.join(TrustZone.PRESET_DIR, file_name))) * 4
 
     @classmethod
     def get_validation_schemas_family(cls) -> List[Dict[str, Any]]:
@@ -258,17 +274,25 @@ class TrustZone:
 
     def _load_presets(self) -> dict:
         """Load default TrustZone settings for given family and revision."""
-        return load_configuration(self._get_preset_file())
+        presets = load_configuration(self._get_preset_file())
+        # Unify the values format
+        return {name: format_value(value_to_int(value), 32) for name, value in presets.items()}
 
     def _parse_raw_data(self, raw_data: bytes) -> dict:
         """Parse raw data into 'customizations' format."""
-        if len(self.presets) != len(raw_data) // 4:
+        if len(self.presets) > len(raw_data) // 4:
             raise SPSDKError(
                 "Trustzone binary file has incorrect raw_data length\n"
                 f"Expected: {len(self.presets)}, Got: {len(raw_data) // 4}"
             )
 
-        registers = struct.unpack(f"<{len(raw_data) // 4}L", raw_data)
+        if len(self.presets) != len(raw_data) // 4:
+            logger.warning(
+                "Trustzone binary file has incorrect raw_data length\n"
+                f"Expected: {len(self.presets)}, Got: {len(raw_data) // 4}"
+            )
+
+        registers = struct.unpack(f"<{len(self.presets)}L", raw_data[: len(self.presets) * 4])
         customs = {name: format_value(registers[i], 32) for i, name in enumerate(self.presets)}
         return customs
 
@@ -282,10 +306,9 @@ class TrustZone:
             raise SPSDKError("Preset data not present")
         if self.customs is None:
             raise SPSDKError("Data not present")
-        logger.info(f"{len(self.presets)} registers loaded from defaults")
-        logger.debug(self.presets)
-        logger.info(f"{len(self.customs)} modifications provided")
-        logger.debug(self.customs)
+        modifications = set(self.customs.items()) - set(self.presets.items())
+        logger.info(f"{len(modifications)} modifications provided")
+        logger.debug(str(modifications).replace(", ", "\n"))
         data = self.presets
         data.update(self.customs)
         registers = [value_to_int(item) for item in data.values()]

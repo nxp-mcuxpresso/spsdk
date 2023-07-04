@@ -73,16 +73,16 @@ image_subtype:
       description: Image subtype determine the image use in MCU (Main application or something else).
       template_value: MAIN
 
-sign_hash_len:
+digest_hash_algo:
   type: object
   title: Image Manifest Settings
   properties:
-    manifestSigningHashLength:
-      type: number
-      title: Manifest signing hash length
-      description: Optional Manifest signing hash length to create Certificate v3.1 Manifest.
-      enum: [0, 32, 48, 64]
-      template_value: 32
+    manifestDigestHashAlgorithm:
+      type: string
+      title: Manifest signing hash algorithm
+      description: Optional Manifest signing hash algorithm name to create Certificate v3.1 Manifest.
+      enum: [sha256, sha384, sha521]
+      template_value: sha256
 
 cert_prv_key:
   type: object
@@ -177,21 +177,10 @@ key_store:
   type: object
   title: Encryption Settings
   properties:
-    useKeyStore:
-      type: boolean
-      title: The Key store enabler
-      description: Enables using key store on device.
-      template_value: false
-    deviceKeySource:
-      type: string
-      title: The Key store location
-      description: "Determinate where the keystore is located. There is two options: OTP or KEYSTORE (included in Load to RAM image)."
-      enum: [OTP, Keystore]
-      template_value: OTP
     keyStoreFile:
       type: string
       title: The Key store data file
-      description: Optional KeyStore data file for included keystore (KEYSTORE source)in LoadToRam images.
+      description: Optional KeyStore data file for included keystore in LoadToRam images. If defined the KeyStore is added into MBI.
       format: optional_file
       template_value: my_key_store_data.bin
 
@@ -202,8 +191,7 @@ hmac:
     outputImageEncryptionKeyFile:
       type: string
       title: HMAC Key
-      description: The HMAC encryption key (file path).
-      format: file
+      description: The HMAC encryption key (file path). Could be defined as hex number and also as hex/binary file
       template_value: hmac_key.bin
 
 hmac_mandatory:
@@ -213,8 +201,7 @@ hmac_mandatory:
     outputImageEncryptionKeyFile:
       type: string
       title: HMAC Key
-      description: The HMAC encryption key (file path).
-      format: file
+      description: The HMAC encryption key (file path). Could be defined as hex number and also as hex/binary file
       template_value: hmac_key.bin
   required: [outputImageEncryptionKeyFile]
 
@@ -222,11 +209,10 @@ ctr_init_vector:
   type: object
   title: Encryption Settings
   properties:
-    ctr_init_vector:
+    CtrInitVector:
       type: string
       title: The output image encryption initial vector for encryption counter
-      description: The initial vector for encryption counter.
-      # format: hex
+      description: The initial vector for encryption counter. Could be defined as hex number and also as hex/binary file
       template_value: "0xc3df2316fd40b15586cb5ae49483aee2"
 
 app_table:
@@ -258,16 +244,6 @@ app_table:
             title: Enable load
             description: Enabler to load/use the image.
             template_value: true
-
-attach_sign_digest:
-  type: object
-  title: Signing Settings
-  properties:
-    attachSignDigest:
-      type: boolean
-      title: Attach Signature digest
-      description: When enabled it added additional signature digest after image (SHA256/384 depends on elliptic curve type for base signing).
-      template_value: false
 
 elliptic_curves:
   type: object
@@ -304,15 +280,6 @@ elliptic_curves:
         else:
           required: [rootCertificateEllipticCurve]
 
-nxp_image:
-  type: object
-  title: Extra Settings
-  properties:
-    isNxpImage:
-      type: boolean
-      title: NXP Image type
-      description: When is set, the image will be changed to NXP manufacture type.
-      template_value: false
 
 no_signature:
   type: object
@@ -360,7 +327,7 @@ image_type:
       type: string
       title: Type of boot image authentication
       description: Specification of final master boot image authentication.
-      enum: [Plain, CRC, Signed, Encrypted + Signed, encrypted, signed, crc]
+      enum: [Plain, CRC, Signed, Encrypted + Signed, NXP Signed, encrypted, signed, crc]
       template_value: Plain
 
   required: [outputImageExecutionTarget, outputImageAuthenticationType]

@@ -12,8 +12,6 @@ from typing import Optional
 import pytest
 
 from spsdk import SPSDKError
-from spsdk.apps.nxpimage import mbi_export
-from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.image import (
     MBIMG_SCH_FILE,
     MasterBootImage,
@@ -22,7 +20,7 @@ from spsdk.image import (
     TrustZone,
 )
 from spsdk.image.keystore import KeySourceType, KeyStore
-from spsdk.image.mbi_mixin import Mbi_MixinRelocTable
+from spsdk.image.mbi_mixin import Mbi_MixinRelocTable, SignatureProvider
 from spsdk.image.mbimg import (
     Mbi_CrcRamRtxxx,
     Mbi_CrcXip,

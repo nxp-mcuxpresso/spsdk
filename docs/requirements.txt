@@ -9,7 +9,7 @@ myst-parser
 sphinx-click>=4.2.0
 jsonschema2md
 pytablewriter
-Pillow
+Pillow<10.0.0
 docutils==0.17
 # pyscard package is a requirement for TP
 pyscard

@@ -1,7 +1,7 @@
 {
     "family": "rt118x",
     "revision": "a0",
-    "output": "ahab/cntr_signed_ctcm_cm33_img.bin",
+    "output": "ahab/ctcm_cm33_signed_img.bin",
     "image_type": "non_xip",
     "containers": [
         {

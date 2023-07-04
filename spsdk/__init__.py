@@ -53,6 +53,6 @@ try:
     config_data = load_configuration(logging_config_file)
     logging.config.dictConfig(config_data)
     print(f"Logging config loaded from {logging_config_file}")
-except SPSDKError:
+except Exception:
     # no logging config file found
     pass

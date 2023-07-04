@@ -33,8 +33,11 @@ def test_nxpimage_convert_hexbin(tmpdir, data_dir, in_file, out_file, command, r
         input_file = f"{data_dir}/utils/convert/hexbin/{in_file}"
         correct_ouput = f"{data_dir}/utils/convert/hexbin/{out_file}"
         output = f"{tmpdir}/{out_file}"
-        cmd = f"utils convert {command} -i {input_file} {'-r' if reverse else ''} {output}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = ["utils", "convert", command, "-i", input_file]
+        if reverse:
+            cmd.append("-r")
+        cmd.append(output)
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(output)
         assert filecmp.cmp(output, correct_ouput, shallow=False)
@@ -46,8 +49,8 @@ def test_nxpimage_convert_hexbin_invalid(tmpdir, data_dir, in_file):
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/hexbin/{in_file}"
         output = f"{tmpdir}/test.bin"
-        cmd = f"utils convert hex2bin -i {input_file} {output}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = ["utils", "convert", "hex2bin", "-i", input_file, output]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code != 0
 
 
@@ -133,14 +136,14 @@ def test_nxpimage_convert_bin2carr(data_dir, in_file, out_str, type, padding, en
     runner = CliRunner()
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/bin2carr/{in_file}"
-        cmd = f"utils convert bin2carr -i {input_file}"
+        cmd = ["utils", "convert", "bin2carr", "-i", f"{input_file}"]
         if type:
-            cmd += f" -t {type}"
+            cmd.extend(["-t", type])
         if padding:
-            cmd += f" -p {padding}"
+            cmd.extend(["-p", padding])
         if endian:
-            cmd += f" -e {endian}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+            cmd.extend(["-e", endian])
+        result = runner.invoke(nxpimage.main, cmd)
         if error:
             assert result.exit_code != 0
         else:
@@ -153,10 +156,22 @@ def test_nxpimage_convert_bin2carr_file(tmpdir, data_dir):
         input_file = f"{data_dir}/utils/convert/bin2carr/inc9.bin"
         correct_ouput = f"{data_dir}/utils/convert/bin2carr/inc9_uint32_t.txt"
         output = f"{tmpdir}/inc9_uint32_t.txt"
-        cmd = (
-            f"utils convert bin2carr -i {input_file} -t uint32_t -p 0xAABBCC -e little -o {output}"
-        )
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = [
+            "utils",
+            "convert",
+            "bin2carr",
+            "-i",
+            f"{input_file}",
+            "-t",
+            "uint32_t",
+            "-p",
+            "0xAABBCC",
+            "-e",
+            "little",
+            "-o",
+            f"{output}",
+        ]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(output)
         assert filecmp.cmp(output, correct_ouput, shallow=False)

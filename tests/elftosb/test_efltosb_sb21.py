@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -79,19 +79,31 @@ def test_elftosb_sb21(bd_file, legacy_sb, external, data_dir, tmpdir):
 
         out_file_path_legacy = os.path.join(data_dir, legacy_sb)
 
-        cmd = f"-c {bd_file_path} \
-            -o {out_file_path_new}\
-            -k {kek_key_path}\
-            -s {priv_key_path}\
-            -S {certificate_path}\
-            -R {root_key_certificate0_path}\
-            -R {root_key_certificate1_path}\
-            -R {root_key_certificate2_path}\
-            -R {root_key_certificate3_path}\
-            -h {hash_of_hashes_output_path}"
+        cmd = [
+            "-c",
+            bd_file_path,
+            "-o",
+            out_file_path_new,
+            "-k",
+            kek_key_path,
+            "-s",
+            priv_key_path,
+            "-S",
+            certificate_path,
+            "-R",
+            root_key_certificate0_path,
+            "-R",
+            root_key_certificate1_path,
+            "-R",
+            root_key_certificate2_path,
+            "-R",
+            root_key_certificate3_path,
+            "-h",
+            hash_of_hashes_output_path,
+        ]
         for entry in external:
-            cmd += " " + entry
-        result = runner.invoke(elftosb.main, cmd.split())
+            cmd.append(entry)
+        result = runner.invoke(elftosb.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(out_file_path_new)
 

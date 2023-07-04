@@ -50,7 +50,7 @@ from spsdk.utils.images import BinaryImage
 
 
 @click.group(name="blhost", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True, lpcusbsio=True, buspal=True)
+@isp_interfaces(uart=True, usb=True, sdio=True, lpcusbsio=True, buspal=True)
 @spsdk_apps_common_options
 @click.option(
     "-s",
@@ -63,6 +63,7 @@ def main(
     ctx: click.Context,
     port: str,
     usb: str,
+    sdio: str,
     buspal: str,
     lpcusbsio: str,
     use_json: bool,
@@ -91,6 +92,7 @@ def main(
                 module="mboot",
                 port=port,
                 usb=usb,
+                sdio=sdio,
                 timeout=timeout,
                 buspal=buspal,
                 lpcusbsio=lpcusbsio,

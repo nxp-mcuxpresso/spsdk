@@ -15,7 +15,7 @@ from click.testing import CliRunner
 from spsdk.apps import nxpimage
 from spsdk.image.ahab.ahab_container import AHABImage
 from spsdk.image.ahab.signed_msg import SignedMessage
-from spsdk.utils.misc import load_binary, use_working_directory
+from spsdk.utils.misc import load_binary, use_working_directory, write_file
 from tests.elftosb.test_elftosb_sb31 import process_config_file
 
 
@@ -44,6 +44,7 @@ def test_nxpimage_ahab_export(tmpdir, data_dir, config_file):
         ("ctcm_cm33_signed_cert.yaml"),
         ("ctcm_cm33_signed_cert_nx.yaml"),
         ("ctcm_cm33_signed_cert_sb.yaml"),
+        ("ctcm_cm33_signed_cert_nand.yaml"),
         ("ctcm_cm33_encrypted_img.yaml"),
     ],
 )
@@ -68,15 +69,27 @@ def test_nxpimage_ahab_parse_cli(tmpdir, data_dir):
         assert os.path.isfile(os.path.join(tmpdir, "parsed_config.yaml"))
 
 
-def test_nxpimage_ahab_parse(data_dir):
+@pytest.mark.parametrize(
+    "binary,image_type",
+    [
+        ("cntr_signed_ctcm_cm33_cert.bin", "xip"),
+        ("cntr_signed_ctcm_cm33_cert_nx.bin", "non_xip"),
+        ("cntr_signed_ctcm_cm33_cert_sb.bin", "serial_downloader"),
+        ("cntr_signed_ctcm_cm33_cert_nand.bin", "nand"),
+        ("cntr_encrypted_ctcm_cm33.bin", "non_xip"),
+        ("ctcm_cm33_signed_img.bin", "non_xip"),
+    ],
+)
+def test_nxpimage_ahab_parse(data_dir, binary, image_type):
     with use_working_directory(data_dir):
-        original_file = load_binary(f"{data_dir}/ahab/mxrt1180a0-ahab-container.bin")
-        ahab = AHABImage("rt118x", "a0")
+        original_file = load_binary(f"{data_dir}/ahab/{binary}")
+        ahab = AHABImage("rt118x", "a0", image_type)
         ahab.parse(original_file)
         ahab.update_fields()
         ahab.validate()
         exported_ahab = ahab.export()
         assert original_file == exported_ahab
+        assert ahab.image_type == image_type
 
 
 @pytest.mark.parametrize(

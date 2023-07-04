@@ -15,7 +15,8 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.x509 import Certificate
 
 from spsdk import SPSDKError
-from spsdk.crypto import PrivateKey, PublicKey
+from spsdk.crypto import EllipticCurvePublicKey, Encoding, PublicFormat, PublicKey
+from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.sbfile.misc import SecBootBlckSize
 
 from ...exceptions import SPSDKValueError
@@ -120,17 +121,25 @@ def ecc_public_numbers_to_bytes(
     return x_bytes + y_bytes
 
 
-def get_matching_key_id(public_keys: List[PublicKey], private_key: PrivateKey) -> int:
+def get_matching_key_id(public_keys: List[PublicKey], signature_provider: SignatureProvider) -> int:
     """Get index of public key that match to given private key.
 
     :param public_keys: List of public key used to find the match for the private key.
-    :param private_key: Private key used to try to match public key index.
+    :param signature_provider: Signature provider used to try to match public key index.
     :raises SPSDKValueError: No match found.
     :return: Index of public key.
     """
-    public_key_to_compare = private_key.public_key()
     for i, public_key in enumerate(public_keys):
-        if public_key.public_numbers() == public_key_to_compare.public_numbers():
+        if isinstance(public_key, RSAPublicKey):
+            public_key_bytes = public_key.public_bytes(
+                encoding=Encoding.DER, format=PublicFormat.PKCS1
+            )
+        if isinstance(public_key, EllipticCurvePublicKey):
+            public_key_bytes = public_key.public_bytes(
+                encoding=Encoding.PEM, format=PublicFormat.SubjectPublicKeyInfo
+            )
+
+        if signature_provider.verify_public_key(public_key_bytes):
             return i
 
     raise SPSDKValueError("There is no match of private key in given list.")

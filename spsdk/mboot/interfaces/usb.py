@@ -56,6 +56,7 @@ USB_DEVICES = {
     "RT5xx": (0x1FC9, 0x0023),
     "RT6xxM": (0x1FC9, 0x0024),
     "LPC553x": (0x1FC9, 0x0025),
+    "MCXN9xx": (0x1FC9, 0x014F),
 }
 
 
@@ -221,6 +222,11 @@ class RawHid(MBootInterface):
 
         except Exception as e:
             raise McuBootConnectionError(str(e)) from e
+
+        if _bytes_written < 0 or _bytes_written < len(raw_data):
+            raise McuBootConnectionError(
+                f"Invalid size of written bytes has been detected: {_bytes_written} != {len(raw_data)}"
+            )
 
     def read(self) -> Union[CmdResponse, bytes]:
         """Read data on the IN endpoint associated to the HID interface.

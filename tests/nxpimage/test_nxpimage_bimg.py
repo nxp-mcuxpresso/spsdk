@@ -24,6 +24,7 @@ from spsdk.utils.misc import load_configuration, use_working_directory
         ("flexspi_nor", "lpc55s3x"),
         ("flexspi_nor", "rt101x"),
         ("flexspi_nor", "rt102x"),
+        ("flexspi_nor", "rt104x"),
         ("flexspi_nor", "rt105x"),
         ("flexspi_nor", "rt106x"),
         ("flexspi_nor", "rt116x"),
@@ -40,8 +41,8 @@ def test_nxpimage_bimg_merge(tmpdir, data_dir, mem_type, family):
     with use_working_directory(data_dir):
         config_file = os.path.join(data_dir, "bootable_image", family, mem_type, "config.yaml")
         out_file = os.path.join(tmpdir, f"bimg_{family}_merged.bin")
-        cmd = f"bootable-image merge -c {config_file} {out_file}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = [f"bootable-image", "merge", "-c", config_file, out_file]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(out_file)
         assert filecmp.cmp(
@@ -59,6 +60,7 @@ def test_nxpimage_bimg_merge(tmpdir, data_dir, mem_type, family):
         ("lpc55s3x", "flexspi_nor", ["fcb", "application"]),
         ("rt101x", "flexspi_nor", ["fcb", "keyblob", "hab_container"]),
         ("rt102x", "flexspi_nor", ["fcb", "bee_header_0", "bee_header_1", "hab_container"]),
+        ("rt104x", "flexspi_nor", ["fcb", "bee_header_0", "bee_header_1", "hab_container"]),
         ("rt105x", "flexspi_nor", ["fcb", "bee_header_0", "bee_header_1", "hab_container"]),
         ("rt106x", "flexspi_nor", ["fcb", "bee_header_0", "bee_header_1", "hab_container"]),
         ("rt116x", "flexspi_nor", ["keyblob", "fcb", "keystore", "hab_container"]),
@@ -74,8 +76,19 @@ def test_nxpimage_bimg_parse_cli(tmpdir, data_dir, family, mem_type, blocks):
     runner = CliRunner()
     with use_working_directory(data_dir):
         data_folder = os.path.join(data_dir, "bootable_image", family, mem_type)
-        cmd = f"bootable-image parse -f {family} -m {mem_type} -b {data_folder}/merged_image.bin {tmpdir}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        input_binary = os.path.join(data_folder, "merged_image.bin")
+        cmd = [
+            "bootable-image",
+            "parse",
+            "-f",
+            family,
+            "-m",
+            mem_type,
+            "-b",
+            input_binary,
+            str(tmpdir),
+        ]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
 
         assert os.path.isfile(os.path.join(tmpdir, f"bootable_image_{family}_{mem_type}.yaml"))
@@ -97,6 +110,7 @@ def test_nxpimage_bimg_parse_cli(tmpdir, data_dir, family, mem_type, blocks):
         ("lpc55s3x", ["flexspi_nor"]),
         ("rt101x", ["flexspi_nor"]),
         ("rt102x", ["flexspi_nor"]),
+        ("rt104x", ["flexspi_nor"]),
         ("rt105x", ["flexspi_nor"]),
         ("rt106x", ["flexspi_nor"]),
         ("rt116x", ["flexspi_nor", "semc_nand", "flexspi_nand"]),

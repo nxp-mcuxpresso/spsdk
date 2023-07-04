@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 BIMG_CLASSES = [
     "BootableImageRtxxx",
-    "BootableImageLpc55s3x",
+    "BootableImageLpc55s3xRw61x",
     "BootableImageRt101x",
     "BootableImageRt10xx",
     "BootableImageRt11xx",
@@ -471,8 +471,8 @@ class BootableImageRtxxx(BootableImage):
         return [x for x in full_list if re.match(r"[rR][tT][\dxX]{3}$", x)]
 
 
-class BootableImageLpc55s3x(BootableImage):
-    """Bootable Image class for LPC55S3x devices."""
+class BootableImageLpc55s3xRw61x(BootableImage):
+    """Bootable Image class for LPC55S3x and Rw61x devices."""
 
     IMAGE_PATTERN = BinaryPattern("ones")
 
@@ -485,7 +485,7 @@ class BootableImageLpc55s3x(BootableImage):
         image_version: Optional[int] = None,
         application: Optional[bytes] = None,
     ) -> None:
-        """Bootable Image constructor for Lpc55s3x devices.
+        """Bootable Image constructor for Lpc55s3x and Rw61x devices.
 
         :param mem_type: Used memory type.
         :param fcb: FCB block, defaults to None
@@ -565,8 +565,12 @@ class BootableImageLpc55s3x(BootableImage):
         :return: List of families.
         """
         full_list = BootableImage.get_supported_families()
-        # filter out just LPC55S3x
-        return [x for x in full_list if re.match(r"[lL][pP][cC]55[sS]3[\dxX]$", x)]
+        # filter out just LPC55S3x and Rw61x
+        return [
+            x
+            for x in full_list
+            if re.match(r"[lL][pP][cC]55[sS]3[\dxX]$", x) or re.match(r"[rR][wW]61[\dxX]$", x)
+        ]
 
 
 class BootableImageRt101x(BootableImage):
@@ -869,7 +873,6 @@ class BootableImageRt118x(BootableImage):
         # XMCD
         offset = self.bimg_descr["xmcd_offset"]
         size = self._get_xmcd_size(binary[offset : offset + XMCDHeader.SIZE])
-        self.xmcd_obj
         if size > 0:
             self.xmcd = binary[offset:size]
             self.xmcd_obj = XMCD(self.family, self.revision)

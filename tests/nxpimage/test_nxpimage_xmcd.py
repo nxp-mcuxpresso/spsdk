@@ -42,8 +42,8 @@ def test_nxpimage_xmcd_export(tmpdir, data_dir, family, mem_type, config_type, o
             file_base_name += f"_{option}"
         config_file_path = os.path.join(data_dir, "xmcd", family, f"{file_base_name}.yaml")
         out_file = os.path.join(tmpdir, f"xmcd_{family}_{mem_type}_{config_type}_exported.bin")
-        cmd = f"bootable-image xmcd export -c {config_file_path} {out_file}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = ["bootable-image", "xmcd", "export", "-c", config_file_path, out_file]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(out_file)
         assert filecmp.cmp(
@@ -78,8 +78,17 @@ def test_nxpimage_xmcd_parse_cli(tmpdir, data_dir, family, mem_type, config_type
             file_base_name += f"_{option}"
         bin_path = os.path.join(data_folder, f"{file_base_name}.bin")
 
-        cmd = f"bootable-image xmcd parse -f {family} -b {bin_path} {output_file}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = [
+            "bootable-image",
+            "xmcd",
+            "parse",
+            "-f",
+            family,
+            "-b",
+            bin_path,
+            output_file,
+        ]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
 
         assert os.path.isfile(output_file)

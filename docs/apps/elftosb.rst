@@ -25,3 +25,5 @@ Command line interface
 .. click:: spsdk.apps.elftosb:main
     :prog: elftosb
     :nested: full
+
+

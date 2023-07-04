@@ -15,9 +15,8 @@ from struct import calcsize, pack, unpack_from
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 from Crypto.PublicKey import ECC
-from ruamel.yaml import CommentedMap as CM
 
-from spsdk import SPSDKError, crypto
+from spsdk import SPSDKError
 from spsdk.crypto import loaders
 from spsdk.crypto.loaders import load_certificate_as_bytes
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
@@ -233,6 +232,11 @@ class CertBlockV2(CertBlock):
         size += self._header.cert_table_length
         size += self.RKH_SIZE * self.RKHT_SIZE
         return misc.align(size, self.alignment)
+
+    @property
+    def expected_size(self) -> int:
+        """Expected size of binary block."""
+        return self.raw_size
 
     @property
     def image_length(self) -> int:
@@ -475,6 +479,37 @@ class CertBlockV2(CertBlock):
 
         return cert_block
 
+    def get_config(self, output_folder: str) -> Dict[str, Any]:
+        """Create configuration of Certificate V2 from object.
+
+        :param output_folder: Output folder to store possible files.
+        :return: Configuration dictionary.
+        """
+
+        def create_certificate_cfg(root_id: int, chain_id: int) -> Optional[str]:
+            if len(self._cert) <= chain_id:
+                return None
+
+            file_name = f"certificate{root_id}_depth{chain_id}.der"
+            misc.write_file(
+                self._cert[chain_id].dump(), os.path.join(output_folder, file_name), mode="wb"
+            )
+            return file_name
+
+        cfg: Dict[str, Optional[Union[str, int]]] = {}
+        cfg["imageBuildNumber"] = self.header.build_number
+        used_cert_id = self.rkh_index
+        assert used_cert_id is not None
+        cfg["mainRootCertId"] = used_cert_id
+
+        cfg[f"rootCertificate{used_cert_id}File"] = create_certificate_cfg(used_cert_id, 0)
+        for chain_ix in range(4):
+            cfg[f"chainCertificate{used_cert_id}File{chain_ix}"] = create_certificate_cfg(
+                used_cert_id, chain_ix + 1
+            )
+
+        return cfg
+
 
 ########################################################################################################################
 # Certificate Block Class for SB 3.1
@@ -632,9 +667,9 @@ class RootKeyRecord(BaseClass):
         if self.used_root_cert:
             flags |= self.used_root_cert << 8
         flags |= len(self.root_certs) << 4
-        if self.root_certs[0].curve in ["NIST P-256", "p256"]:
+        if self.root_certs[0].curve in ["NIST P-256", "p256", "secp256r1"]:
             flags |= 1 << 0
-        if self.root_certs[0].curve in ["NIST P-384", "p384"]:
+        if self.root_certs[0].curve in ["NIST P-384", "p384", "secp384r1"]:
             flags |= 1 << 1
         return flags
 
@@ -786,7 +821,7 @@ class IskCertificate(BaseClass):
         if self.user_data:
             info += f"User data:       {self.user_data.hex()}\n"
         else:
-            info += f"User data:       Not included\n"
+            info += "User data:       Not included\n"
         info += f"Type:            {isk_type}\n"
         info += f"Public Key:      {str(self.isk_cert)}\n"
         return info
@@ -797,9 +832,9 @@ class IskCertificate(BaseClass):
         if self.user_data:
             self.flags |= 1 << 31
         assert self.isk_cert
-        if self.isk_cert.curve in ["NIST P-256", "p256"]:
+        if self.isk_cert.curve in ["NIST P-256", "p256", "secp256r1"]:
             self.flags |= 1 << 0
-        if self.isk_cert.curve in ["NIST P-384", "p384"]:
+        if self.isk_cert.curve in ["NIST P-384", "p384", "secp384r1"]:
             self.flags |= 1 << 1
 
     def create_isk_signature(self, key_record_data: bytes, force: bool = False) -> None:
@@ -875,8 +910,6 @@ class CertBlockV31(CertBlock):
         user_data: Optional[bytes] = None,
     ) -> None:
         """The Constructor for Certificate block."""
-        # workaround for base MasterBootImage
-        self.signature_size = 0
         self.header = CertificateBlockHeader(version)
         self.root_key_record = RootKeyRecord(
             ca_flag=ca_flag, used_root_cert=used_root_cert, root_certs=root_certs
@@ -897,6 +930,15 @@ class CertBlockV31(CertBlock):
     def calculate(self) -> None:
         """Calculate all internal members."""
         self.root_key_record.calculate()
+
+    @property
+    def signature_size(self) -> int:
+        """Size of the signature in bytes."""
+        # signature size is same as public key data
+        if self.isk_certificate:
+            return len(self.isk_certificate.isk_public_key_data)
+
+        return len(self.root_key_record.root_public_key)
 
     @property
     def expected_size(self) -> int:
@@ -931,8 +973,6 @@ class CertBlockV31(CertBlock):
             isk_cert_data = self.isk_certificate.export()
             self.header.cert_block_size += len(isk_cert_data)
         header_data = self.header.export()
-        if len(header_data + key_record_data + isk_cert_data) != self.expected_size:
-            raise SPSDKError("Size if binary differs from expected size.")
         return header_data + key_record_data + isk_cert_data
 
     @classmethod
@@ -1057,18 +1097,15 @@ class CertBlockV31(CertBlock):
         ).export_to_yaml()
         return yaml_data
 
-    def create_config(self, data_path: str) -> str:
-        """Create configuration of the Certification block Image.
+    def get_config(self, output_folder: str) -> Dict[str, Any]:
+        """Create configuration dictionary of the Certification block Image.
 
-        :param data_path: Path to store the data files of configuration.
+        :param output_folder: Path to store the data files of configuration.
         :return: Configuration dictionary.
         """
-        cfg: Dict[str, Union[str, int]] = {}
+        cfg: Dict[str, Optional[Union[str, int]]] = {}
         cfg["mainRootCertPrivateKeyFile"] = "N/A"
-        cfg["iskSignProvider"] = "N/A"
         cfg["signingCertificatePrivateKeyFile"] = "N/A"
-        cfg["containerOutputFile"] = "N/A"
-        cfg["binaryCertificateBlock"] = "N/A"
         for i in range(self.root_key_record.number_of_certificates):
             key: Optional[ECC.EccKey] = None
             if i == self.root_key_record.used_root_cert:
@@ -1077,7 +1114,7 @@ class CertBlockV31(CertBlock):
                 if i < len(self.root_key_record.root_certs) and self.root_key_record.root_certs[i]:
                     key = convert_to_ecc_key(self.root_key_record.root_certs[i])
             if key:
-                key_file_name = os.path.join(data_path, f"rootCertificate{i}File.pub")
+                key_file_name = os.path.join(output_folder, f"rootCertificate{i}File.pub")
                 misc.write_file(key.export_key(format="PEM"), key_file_name)
                 cfg[f"rootCertificate{i}File"] = f"rootCertificate{i}File.pub"
             else:
@@ -1087,27 +1124,31 @@ class CertBlockV31(CertBlock):
 
         cfg["mainRootCertId"] = self.root_key_record.used_root_cert
         if self.isk_certificate and self.root_key_record.ca_flag == 0:
-            cfg["useIsk"] = "true"
+            cfg["useIsk"] = True
             assert self.isk_certificate.isk_cert
             key = self.isk_certificate.isk_cert
-            key_file_name = os.path.join(data_path, "signingCertificateFile.pub")
+            key_file_name = os.path.join(output_folder, "signingCertificateFile.pub")
             misc.write_file(key.export_key(format="PEM"), key_file_name)
-            cfg[f"signingCertificateFile"] = "signingCertificateFile.pub"
+            cfg["signingCertificateFile"] = "signingCertificateFile.pub"
             cfg["signingCertificateConstraint"] = self.isk_certificate.constraints
             if self.isk_certificate.user_data:
-                key_file_name = os.path.join(data_path, "isk_user_data.bin")
+                key_file_name = os.path.join(output_folder, "isk_user_data.bin")
                 misc.write_file(self.isk_certificate.user_data, key_file_name, mode="wb")
                 cfg["signCertData"] = "isk_user_data.bin"
-            else:
-                cfg["signCertData"] = "N/A"
-        else:
-            cfg["useIsk"] = "false"
-            cfg["signingCertificateFile"] = "N/A"
-            cfg["signingCertificateConstraint"] = "N/A"
-            cfg["signCertData"] = "N/A"
 
+        else:
+            cfg["useIsk"] = False
+
+        return cfg
+
+    def create_config(self, data_path: str) -> str:
+        """Create configuration of the Certification block Image.
+
+        :param data_path: Path to store the data files of configuration.
+        :return: Configuration in string.
+        """
+        cfg = self.get_config(data_path)
         val_schemas = CertBlockV31.get_validation_schemas()
-        val_schemas.append(ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)["cert_block_output"])
 
         yaml_data = CommentedConfig(
             main_title=(
@@ -1146,8 +1187,8 @@ def get_main_cert_index(config: Dict[str, Any], search_paths: Optional[List[str]
     cert_id = root_cert_id if root_cert_id is not None else cert_chain_id
     try:
         cert_id = int(cert_id)  # type: ignore[arg-type]
-    except ValueError:
-        raise SPSDKValueError(f"A certificate index is not a number: {cert_id}")
+    except ValueError as exc:
+        raise SPSDKValueError(f"A certificate index is not a number: {cert_id}") from exc
     if found_cert_id is not None and found_cert_id != cert_id:
         logger.warning("Defined certificate does not match the private key.")
     return cert_id
@@ -1162,15 +1203,16 @@ def find_main_cert_index(
     :param search_paths: List of paths where to search for the file, defaults to None
     :return: List of root certificates.
     """
-    private_key_file = config.get("mainCertPrivateKeyFile")
-    if not private_key_file:
-        return None
     try:
-        private_key_file_path = misc.find_file(private_key_file, search_paths=search_paths)
-    except SPSDKError:
-        logger.debug(f"A private key file {private_key_file} could not be found.")
+        signature_provider = get_signature_provider(
+            sp_cfg=config.get("signProvider"),
+            local_file_key=config.get("mainCertPrivateKeyFile"),
+            search_paths=search_paths,
+        )
+    except SPSDKError as exc:
+        logger.debug(f"A signature provider could not be created: {exc}")
         return None
-    private_key = crypto.load_private_key(private_key_file_path)
+
     root_certificates = find_root_certificates(config)
     public_keys = []
     for root_crt_file in root_certificates:
@@ -1180,7 +1222,7 @@ def find_main_cert_index(
         except SPSDKError:
             continue
     try:
-        idx = get_matching_key_id(public_keys, private_key)
+        idx = get_matching_key_id(public_keys, signature_provider)
         return idx
     except ValueError:
         return None

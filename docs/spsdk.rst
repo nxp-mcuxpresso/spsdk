@@ -99,8 +99,8 @@ CLI/API stability notice
 
 ``SPSDK`` is still in alpha (as noted in `PyPI <https://pypi.org/project/spsdk/>`_) and should be treated as such
 
-* Major releases are not planed in the foreseeable future
+* Major releases (2.0) is planed in the near future
 * **Minor release may break compatibility!!!**
-* Patch release will not break backward compatibility (any occurrence is threated as a bug)
+* Patch release will not break backward compatibility (any occurrence is treated as a bug)
 
 New features might be implemented in both patch and minor releases.

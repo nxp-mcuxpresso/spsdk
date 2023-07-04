@@ -23,22 +23,15 @@ from ruamel.yaml import CommentedSeq as CS
 
 from spsdk import version as spsdk_version
 from spsdk.apps.utils.utils import get_key
-from spsdk.crypto import (
-    EllipticCurvePublicKey,
-    Encoding,
-    PrivateKey,
-    PublicKey,
-    RSAPrivateKey,
-    RSAPublicKey,
-    _PrivateKeyTuple,
-)
+from spsdk.crypto import EllipticCurvePublicKey, Encoding, PublicKey, RSAPrivateKey, RSAPublicKey
 from spsdk.crypto.keys_management import (
     recreate_ecc_public_key,
     recreate_rsa_public_key,
     save_ecc_public_key,
     save_rsa_public_key,
 )
-from spsdk.crypto.loaders import extract_public_key, load_private_key, load_private_key_from_data
+from spsdk.crypto.loaders import extract_public_key
+from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.exceptions import SPSDKError, SPSDKLengthError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab import AHAB_DATABASE_FILE, AHAB_SCH_FILE
 from spsdk.image.ahab.ahab_abstract_interfaces import (
@@ -46,7 +39,7 @@ from spsdk.image.ahab.ahab_abstract_interfaces import (
     HeaderContainer,
     HeaderContainerInversed,
 )
-from spsdk.utils.crypto.common import crypto_backend, get_matching_key_id
+from spsdk.utils.crypto.common import crypto_backend, get_matching_key_id, serialize_ecc_signature
 from spsdk.utils.database import Database
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.images import BinaryImage
@@ -79,6 +72,8 @@ START_IMAGE_ADDRESS = 0x2000
 IMAGE_TYPE_XIP = "xip"
 IMAGE_TYPE_NON_XIP = "non_xip"
 IMAGE_TYPE_SERIAL_DOWNLOADER = "serial_downloader"
+IMAGE_TYPE_NAND = "nand"
+IMAGE_TYPE_NAND_OFFSETS = {0: -0x400, 0x400: 0x400}
 
 
 class AHABTags(Enum):
@@ -475,11 +470,11 @@ class ImageArrayEntry(Container):
         """
         binary_size = len(binary)
         # Just updates offsets from AHAB Image start As is feature of none xip containers
-        container_offset = (
-            parent.container_offset
-            if parent.parent.image_type in (IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER)
-            else 0
-        )
+        container_offset = 0
+        if parent.parent.image_type in (IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER):
+            container_offset = parent.container_offset
+        elif parent.parent.image_type in (IMAGE_TYPE_NAND):
+            container_offset = IMAGE_TYPE_NAND_OFFSETS[parent.container_offset]
 
         ImageArrayEntry._check_fixed_input_length(binary[offset:])
         (
@@ -495,11 +490,11 @@ class ImageArrayEntry(Container):
             ImageArrayEntry._format(), binary[offset : offset + ImageArrayEntry.fixed_length()]
         )
 
-        if image_offset + image_size - 1 > binary_size:
+        if image_offset + image_size + container_offset - 1 > binary_size:
             raise SPSDKLengthError(
                 "Container data image is out of loaded binary:"
-                f"Image entry record has end of image at 0x{hex(image_offset+image_size-1)},"
-                f" but the loaded image length has only 0x{hex(binary_size)}B size."
+                f"Image entry record has end of image at {hex(image_offset+image_size-1)},"
+                f" but the loaded image length has only {hex(binary_size)}B size."
             )
         image = binary[
             container_offset + image_offset : container_offset + image_offset + image_size
@@ -1095,7 +1090,7 @@ class SRKTable(HeaderContainerInversed):
             srk.store_public_key(os.path.join(data_path, filename))
             cfg_srks.append(filename)
 
-        ret_cfg["image_array"] = cfg_srks
+        ret_cfg["srk_array"] = cfg_srks
         return ret_cfg
 
     @staticmethod
@@ -1141,16 +1136,18 @@ class ContainerSignature(HeaderContainer):
     VERSION = 0x00
 
     def __init__(
-        self, signature_data: Optional[bytes] = None, signing_key: Optional[PrivateKey] = None
+        self,
+        signature_data: Optional[bytes] = None,
+        signature_provider: Optional[SignatureProvider] = None,
     ) -> None:
         """Class object initializer.
 
         :param signature_data: signature.
-        :param signing_key: Key use to sign the image.
+        :param signature_provider: Signature provider use to sign the image.
         """
         super().__init__(tag=self.TAG, length=-1, version=self.VERSION)
         self._signature_data = signature_data or b""
-        self._signing_key = signing_key
+        self._signature_provider = signature_provider
         self.length = len(self)
 
     def __eq__(self, other: object) -> bool:
@@ -1161,8 +1158,10 @@ class ContainerSignature(HeaderContainer):
         return False
 
     def __len__(self) -> int:
-        if (not self._signature_data or len(self._signature_data) == 0) and self._signing_key:
-            return super().__len__() + crypto_backend().sign_size(self._signing_key)
+        if (
+            not self._signature_data or len(self._signature_data) == 0
+        ) and self._signature_provider:
+            return super().__len__() + self._signature_provider.signature_length
 
         sign_data_len = len(self._signature_data)
         if sign_data_len == 0:
@@ -1197,18 +1196,17 @@ class ContainerSignature(HeaderContainer):
         :param data_to_sign: Data to be signed by store private key
         :raises SPSDKError: Missing private key or raw signature data.
         """
-        if not self._signing_key and len(self._signature_data) == 0:
+        if not self._signature_provider and len(self._signature_data) == 0:
             raise SPSDKError(
                 "The Signature container doesn't have specified the private tey to sign."
             )
 
-        if self._signing_key:
-            if isinstance(self._signing_key, RSAPrivateKey):
-                self._signature_data = crypto_backend().rsa_sign(self._signing_key, data_to_sign)  # type: ignore
-            else:
-                self._signature_data = crypto_backend().ecc_sign(
-                    self._signing_key, data_to_sign  # type: ignore
-                )
+        if self._signature_provider:
+            signature = self._signature_provider.sign(data_to_sign)
+            assert signature
+            self._signature_data = serialize_ecc_signature(
+                signature, self._signature_provider.signature_length // 2
+            )
 
     def export(self) -> bytes:
         """Export signature data that is part of Signature Block.
@@ -1276,10 +1274,13 @@ class ContainerSignature(HeaderContainer):
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: Container signature object.
         """
-        signing_key_cfg = config.get("signing_key")
-        assert signing_key_cfg
-        signing_key_path = find_file(signing_key_cfg, search_paths=search_paths)
-        return ContainerSignature(signing_key=load_private_key(signing_key_path))
+        signature_provider = get_signature_provider(
+            sp_cfg=config.get("signature_provider"),
+            local_file_key=config.get("signing_key"),
+            search_paths=search_paths,
+        )
+        assert signature_provider
+        return ContainerSignature(signature_provider=signature_provider)
 
 
 class Certificate(HeaderContainer):
@@ -1344,15 +1345,15 @@ class Certificate(HeaderContainer):
         permissions: int = 0,
         uuid: Optional[bytes] = None,
         public_key: Optional[SRKRecord] = None,
-        signing_key: Optional[PrivateKey] = None,
+        signature_provider: Optional[SignatureProvider] = None,
     ):
         """Class object initializer.
 
         :param permissions: used to indicate what a certificate can be used for.
         :param uuid: optional 128-bit unique identifier.
         :param public_key: public Key. SRK record entry describing the key.
-        :param signing_key: signing key for certificate. Signature is calculated over
-            all data from beginning of the certificate up to but not including the signature.
+        :param signature_provider: Signature provider for certificate. Signature is calculated over
+            all data from beginning of the certificate up to, but not including the signature.
         """
         tag = AHABTags.CERTIFICATE_UUID if uuid else AHABTags.CERTIFICATE_NON_UUID
         super().__init__(tag=tag, length=-1, version=self.VERSION)
@@ -1360,7 +1361,7 @@ class Certificate(HeaderContainer):
         self.signature_offset = -1
         self._uuid = uuid
         self.public_key = public_key
-        self._signing_key = signing_key
+        self._signature_provider = signature_provider
         self.signature = b""
 
     def __eq__(self, other: object) -> bool:
@@ -1390,8 +1391,8 @@ class Certificate(HeaderContainer):
         assert self.public_key
         uuid_len = len(self._uuid) if self._uuid else 0
         sign_size = (
-            crypto_backend().sign_size(self._signing_key)
-            if self._signing_key
+            self._signature_provider.signature_length
+            if self._signature_provider
             else len(self.signature)
         )
         return super().__len__() + uuid_len + len(self.public_key) + sign_size
@@ -1435,7 +1436,7 @@ class Certificate(HeaderContainer):
     def self_sign(self) -> None:
         """Sign self by the signature key and store result into _signature field."""
         assert self.public_key
-        if self._signing_key:
+        if self._signature_provider:
             data_to_sign = (
                 pack(
                     self._format(),
@@ -1448,11 +1449,14 @@ class Certificate(HeaderContainer):
                 )
                 + self.public_key.export()
             )
-            if isinstance(self._signing_key, RSAPrivateKey):
-                self.signature = crypto_backend().rsa_sign(self._signing_key, data_to_sign)  # type: ignore
+            signature = self._signature_provider.sign(data_to_sign)
+            assert signature
+
+            if isinstance(self._signature_provider, RSAPrivateKey):
+                self.signature = signature
             else:
-                self.signature = crypto_backend().ecc_sign(
-                    self._signing_key, data_to_sign  # type: ignore
+                self.signature = serialize_ecc_signature(
+                    signature, self._signature_provider.signature_length // 2
                 )
 
     def update_fields(self) -> None:
@@ -1461,14 +1465,11 @@ class Certificate(HeaderContainer):
         self.public_key.update_fields()
         self.tag = AHABTags.CERTIFICATE_UUID if self._uuid else AHABTags.CERTIFICATE_NON_UUID
         self.signature_offset = (
-            super().__len__() + len(self._uuid) if self._uuid else 0 + len(self.public_key)
+            super().__len__() + (len(self._uuid) if self._uuid else 0) + len(self.public_key)
         )
-        self.length = (
-            crypto_backend().sign_size(self._signing_key)
-            if self._signing_key
-            else len(self.signature) + self.signature_offset
-        )
-        self.self_sign()
+        self.length = len(self)
+        if not self.signature:
+            self.self_sign()
 
     def export(self) -> bytes:
         """Export container certificate object into bytes.
@@ -1492,7 +1493,7 @@ class Certificate(HeaderContainer):
         # if uuid is present, insert it into the cert data
         if self._uuid:
             cert = cert[: self.UUID_OFFSET] + self._uuid + cert[self.UUID_OFFSET :]
-
+        assert self.length == len(cert)
         return cert
 
     def validate(self) -> None:
@@ -1507,20 +1508,23 @@ class Certificate(HeaderContainer):
             raise SPSDKValueError("Certificate: Missing public key.")
         self.public_key.validate()
 
-        if not (self._signing_key and self.signature):
-            if self._signing_key is None or not isinstance(self._signing_key, _PrivateKeyTuple):
-                raise SPSDKValueError(f"Certificate: Invalid signing key. {str(self._signing_key)}")
-            if self.signature is None or len(self.signature) != crypto_backend().sign_size(
-                self._signing_key
-            ):
-                raise SPSDKValueError(f"Certificate: Missing signature. {str(self._signing_key)}")
-            if len(self.signature) != crypto_backend().sign_size(self._signing_key):
+        if not self.signature:
+            raise SPSDKValueError("Signature must be provided")
+
+        if self._signature_provider:
+            if not isinstance(self._signature_provider, SignatureProvider):
+                raise SPSDKValueError(
+                    f"Certificate: Invalid signature provider. {str(self._signature_provider)}"
+                )
+
+            if len(self.signature) != self._signature_provider.signature_length:
                 raise SPSDKValueError(
                     f"Certificate: Invalid signature length. "
-                    f"{len(self.signature)} != {crypto_backend().sign_size(self._signing_key)}"
+                    f"{len(self.signature)} != {self._signature_provider.signature_length}"
                 )
+
         expected_signature_offset = (
-            super().__len__() + len(self._uuid) if self._uuid else 0 + len(self.public_key)
+            super().__len__() + (len(self._uuid) if self._uuid else 0) + len(self.public_key)
         )
         if self.signature_offset != expected_signature_offset:
             raise SPSDKValueError(
@@ -1595,7 +1599,7 @@ class Certificate(HeaderContainer):
         filename = f"container{index}_certificate_public_key_{self.public_key.get_key_name()}.PEM"
         self.public_key.store_public_key(os.path.join(data_path, filename))
         ret_cfg["public_key"] = filename
-        ret_cfg["signing_key"] = "N/A"
+        ret_cfg["signature_provider"] = "N/A"
 
         return ret_cfg
 
@@ -1616,17 +1620,17 @@ class Certificate(HeaderContainer):
         cert_uuid = value_to_bytes(cert_uuid_raw) if cert_uuid_raw else None
         cert_public_key_path = config.get("public_key")
         assert isinstance(cert_public_key_path, str)
-        cert_signing_key_path = config.get("signing_key")
-        assert isinstance(cert_signing_key_path, str)
+        cert_signature_provider = get_signature_provider(
+            config.get("signature_provider"), config.get("signing_key"), search_paths=search_paths
+        )
         cert_public_key_path = find_file(cert_public_key_path, search_paths=search_paths)
         cert_public_key = extract_public_key(cert_public_key_path)
-        cert_signing_key = load_binary(cert_signing_key_path, search_paths=search_paths)
         cert_srk_rec = SRKRecord.create_from_key(cert_public_key)
         return Certificate(
             permissions=Certificate.create_permissions(cert_permissions_list),
             uuid=cert_uuid,
             public_key=cert_srk_rec,
-            signing_key=load_private_key_from_data(cert_signing_key),
+            signature_provider=cert_signature_provider,
         )
 
 
@@ -2080,8 +2084,8 @@ class SignatureBlock(HeaderContainer):
         if "flag_used_srk_id" in data.keys() and self.signature and self.srk_table:
             public_keys = self.srk_table.get_source_keys()
             if public_keys:
-                assert self.signature._signing_key
-                srk_pair_id = get_matching_key_id(public_keys, self.signature._signing_key)
+                assert self.signature._signature_provider
+                srk_pair_id = get_matching_key_id(public_keys, self.signature._signature_provider)
                 if srk_pair_id != data["flag_used_srk_id"]:
                     raise SPSDKValueError(
                         f"Signature Block: Configured SRK ID ({data['flag_used_srk_id']})"
@@ -2146,9 +2150,9 @@ class SignatureBlock(HeaderContainer):
         )
 
         # Container Signature
-        signing_key_cfg = config.get("signing_key")
+        srk_set = config.get("srk_set", "none")
         signature_block.signature = (
-            ContainerSignature.load_from_config(config, search_paths) if signing_key_cfg else None
+            ContainerSignature.load_from_config(config, search_paths) if srk_set != "none" else None
         )
 
         # Certificate Block
@@ -2869,7 +2873,12 @@ class AHABImage:
     The image consists of multiple AHAB containers.
     """
 
-    IMAGE_TYPES = [IMAGE_TYPE_XIP, IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER]
+    IMAGE_TYPES = [
+        IMAGE_TYPE_XIP,
+        IMAGE_TYPE_NON_XIP,
+        IMAGE_TYPE_SERIAL_DOWNLOADER,
+        IMAGE_TYPE_NAND,
+    ]
 
     def __init__(
         self,
@@ -2960,6 +2969,8 @@ class AHABImage:
             if self.image_type in (IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER):
                 # Just updates offsets from AHAB Image start As is feature of none xip containers
                 length += container.container_offset
+            elif self.image_type in (IMAGE_TYPE_NAND):
+                length += IMAGE_TYPE_NAND_OFFSETS[container.container_offset]
             lengths.append(length)
 
         return max(lengths)
@@ -3017,9 +3028,14 @@ class AHABImage:
             # Add also all data images
             for img_ix, image_entry in enumerate(container.image_array):
                 offset = image_entry.image_offset
+
                 if self.image_type in (IMAGE_TYPE_NON_XIP, IMAGE_TYPE_SERIAL_DOWNLOADER):
                     # Just updates offsets from AHAB Image start As is feature of none xip containers
                     offset += container.container_offset
+                elif self.image_type in (IMAGE_TYPE_NAND):
+                    # Just updates offsets from AHAB Image start As is feature of none xip containers
+                    offset += IMAGE_TYPE_NAND_OFFSETS[container.container_offset]
+
                 data_image = BinaryImage(
                     name=f"Container {cnt_ix} AHAB Data Image {img_ix}",
                     binary=image_entry.image,
@@ -3083,9 +3099,10 @@ class AHABImage:
 
         "config" content array of containers configurations.
 
-        :raises SPSDKValueError: if the count of AHAB containers is invalid.
         :param config: array of AHAB containers configuration dictionaries.
         :param search_paths: List of paths where to search for the file, defaults to None
+        :raises SPSDKValueError: if the count of AHAB containers is invalid.
+        :raises SPSDKParsingError: Cannot parse input binary AHAB container.
         :return: initialized AHAB Image.
         """
         containers_config: List[Dict[str, Any]] = config["containers"]
@@ -3101,7 +3118,20 @@ class AHABImage:
                 assert isinstance(binary_container, dict)
                 path = binary_container.get("path")
                 assert path
-                container = AHABContainer.parse(ahab, load_binary(path, search_paths=search_paths))
+                image_type_bck = ahab.image_type
+                ahab_bin = load_binary(path, search_paths=search_paths)
+                container = None
+                for image_type in AHABImage.IMAGE_TYPES:
+                    try:
+                        ahab.image_type = image_type
+                        container = AHABContainer.parse(ahab, ahab_bin)
+                        break
+                    except SPSDKError:
+                        pass
+                    finally:
+                        ahab.image_type = image_type_bck
+                if not container:
+                    raise SPSDKParsingError("AHAB Container parsing failed.")
             else:
                 container = AHABContainer.load_from_config(ahab, container_config["container"])
             container.container_offset = ahab.ahab_address_map[i]
@@ -3118,6 +3148,7 @@ class AHABImage:
 
         for address in self.ahab_address_map:
             try:
+                logger.debug(f"Trying to parse container at address: {hex(address)}")
                 container = AHABContainer.parse(self, binary, address)
                 self.ahab_containers.append(container)
             except SPSDKParsingError:
@@ -3218,7 +3249,7 @@ class AHABImage:
         srkh = srk_table.compute_srk_hash()
 
         if len(srkh) != fuses_count * fuses_size:
-            SPSDKError(
+            raise SPSDKError(
                 f"The SRK hash length ({len(srkh)}) doesn't fit to fuses space ({fuses_count*fuses_size})."
             )
         ret = (

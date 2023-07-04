@@ -35,20 +35,20 @@ def process_config_file(
 def test_nxpimage_cert_block_get_template(tmpdir):
     out_file = f"{tmpdir}/cert_block_template.yaml"
     runner = CliRunner()
-    cmd = f"cert-block get-template {out_file}"
-    result = runner.invoke(nxpimage.main, cmd.split())
+    cmd = ["cert-block", "get-template", out_file]
+    result = runner.invoke(nxpimage.main, cmd)
     assert result.exit_code == 0
     assert os.path.isfile(out_file)
 
 
 def test_nxpimage_cert_block_parse(elftosb_data_dir, tmpdir):
-    out_folder = tmpdir
+    out_folder = str(tmpdir)
     input_file = os.path.join(
         elftosb_data_dir, "workspace", "output_images", "lpc55s3x", "cert_384_256.bin"
     )
     runner = CliRunner()
-    cmd = f"cert-block parse -b {input_file} {out_folder}"
-    result = runner.invoke(nxpimage.main, cmd.split())
+    cmd = ["cert-block", "parse", "-b", input_file, out_folder]
+    result = runner.invoke(nxpimage.main, cmd)
     assert result.exit_code == 0
     assert os.path.isfile(os.path.join(out_folder, "cert_block_config.yaml"))
     assert os.path.isfile(os.path.join(out_folder, "rootCertificate0File.pub"))

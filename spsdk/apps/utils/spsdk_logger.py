@@ -72,7 +72,7 @@ class ColoredFormatter(logging.Formatter):
         if not self.colored:
             try:
                 record.msg = re.sub("\\x1b\[\d{1,3}m", "", record.msg)
-            except:
+            except Exception:
                 # Just ignore all exceptions on this "remove color" operation
                 pass
         return formatter.format(record)

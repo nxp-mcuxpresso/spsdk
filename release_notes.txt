@@ -7,23 +7,36 @@ configure the device, prepare, download and upload data, including security oper
 delivered in the form of a python library and command-line applications.
 
 
-Version: 1.10.1
+Version: 1.11.0
 ================
-Date: 26-May-2023
+Date: 7-July-2023
+
+ANNOUNCEMENT:
+
+Next version of spsdk (2.0) will introduce breaking changes:
+- elftosb will be replaced by nxpimage
+- nxpcertgen and nxpkeygen will be replaced by nxpcrypto
+- select appropriate family will be done using: -f/--family parameter
+- move towards options for all parameters with an exception to BLHost
+- removal of crypto backends
+- extend dedicated spsdk.crypto module - serve as the de-facto backend of SPSDK
+- module level imports via init files
 
 New features
 - nxpimage:
-    - support encrypted image hab
-    - support for RT11xx and RT10xx
-    - improve OTFAD/IEE names generation
-- add API to retrieve info about fuses
+    - enable signature providers for AHAB image and signed messages
+    - add support for rt104x in bootable-image
+- tphost/tpconfig:
+    - add possibility to check TP_RESPONSE only with NXP_PROD raw binary key
+- add support for mcxn9xx
+- add API for FuseLockedStatus
+- possibility to declare private keys with passphrase  in signature provider config
+- add checking of written data length in usb interface
+- add support for dk6 tools
 Bugfixes
 - nxpimage:
-    - fix XMCD load_from_config
-    - fix IEE template
-- fix circular dependency in signature provider import
-- fix issue with loading keys as INT
-- not enable logging when spsdk is used as a library
+    - fix offset on NAND memory in AHAB image
+- fix plugin error for signature Provider for sb21
 
 Supported devices
 =================
@@ -50,6 +63,17 @@ Python 3.8+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+1.10.1
+- nxpimage:
+    - support encrypted image hab
+    - support for RT11xx and RT10xx
+    - improve OTFAD/IEE names generation
+    - fix XMCD load_from_config
+    - fix IEE template
+- add API to retrieve info about fuses
+- fix circular dependency in signature provider import
+- fix issue with loading keys as INT
+- not enable logging when spsdk is used as a library
 1.10.0
 - blhost:
     - add new command: ele_message

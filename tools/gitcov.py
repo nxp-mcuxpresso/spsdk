@@ -159,15 +159,18 @@ def get_changed_files(
     repo_path: str,
     include_merges: bool,
     parent_branch: Optional[str] = None,
-    file_extensions: Iterable[str] = ["py"],
+    file_extensions: Optional[Iterable[str]] = None,
 ) -> Sequence[str]:
     """Get a list of changed files.
 
     :param repo_path: Path to the root of the repository
-    :param parent_branch: Git branch to compare to
     :param include_merges: Include changes done via merge-commits
+    :param parent_branch: Git branch to compare to
+    :param file_extensions: File extensions to be searched
     :return: List of changed files
     """
+    if file_extensions is None:
+        file_extensions = ["py"]
     file_extension_regex = "(" + "|".join(file_extensions) + ")"
     file_regex_str = rf"^(?P<op>[AM])\s+(?P<path>[a-zA-Z0-9_/\\]+\.{file_extension_regex})$"
     file_regex = re.compile(file_regex_str)

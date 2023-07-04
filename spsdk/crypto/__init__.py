@@ -109,7 +109,7 @@ PrivateKey = Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
 _PublicKeyTuple = (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)
 _PrivateKeyTuple = (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey)
 
-# pylint: disable=wrong-import-position # TODO: this whole module needs refactoring
+# pylint: disable=wrong-import-position
 from .certificate_management import *
 from .keys_management import *
 

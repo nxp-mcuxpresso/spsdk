@@ -20,8 +20,7 @@ from spsdk.utils.misc import load_binary
 from .commands import parse_command
 from .header import CmdTag
 
-# Absolute path, where the executable hab audit code is located.
-CPU_DATA_SUB_DIR = os.path.join(os.path.dirname(__file__), "data", "cpu_data")
+# NOTE HAB Audit log executables have been moved to spsdk/examples/data/hab_audit
 
 
 # pylint: disable=too-few-public-methods
@@ -290,7 +289,9 @@ def parse_hab_log(hab_sts: int, hab_cfg: int, hab_state: int, data: bytes) -> Li
     return result
 
 
-def hab_audit_xip_app(cpu_data: CpuData, mboot: McuBoot, read_log_only: bool) -> Optional[bytes]:
+def hab_audit_xip_app(
+    cpu_data: CpuData, mboot: McuBoot, read_log_only: bool, hab_audit_path: str
+) -> Optional[bytes]:
     """Authenticate the application in external FLASH.
 
     The function loads application into RAM and invokes its function, that authenticates the application and read the
@@ -300,6 +301,7 @@ def hab_audit_xip_app(cpu_data: CpuData, mboot: McuBoot, read_log_only: bool) ->
     :param read_log_only: true to read HAB log without invoking authentication; False to authenticate and read-log
         It is recommended to call the function firstly with parameter `True` and second time with parameter False to
         see the difference.
+    :param hab_audit_path: Path to directory with HAB audit log executables
     :return: bytes contains result of the hab log, otherwise returns None when an error occurred
     :raises SPSDKError: When flashloader is not running
     :raises SPSDKError: When given cpu data were not provided
@@ -319,12 +321,8 @@ def hab_audit_xip_app(cpu_data: CpuData, mboot: McuBoot, read_log_only: bool) ->
     evk_exec_hab_audit_base = cpu_data.base_address
     evk_exec_hab_audit_start = cpu_data.start_address
 
-    # get main directory in absolute format
-    main_dir_absolute = os.path.dirname(__file__)
-    # get hab_audit_executable bin file directory
-    exec_hab_audit_path = os.path.join(
-        os.path.dirname(main_dir_absolute), "data", "cpu_data", cpu_data_bin_dir
-    )
+    exec_hab_audit_path = os.path.join(hab_audit_path, cpu_data_bin_dir)
+
     if not os.path.isfile(exec_hab_audit_path):
         print("\nHAB logger not supported for the processor")
         return None

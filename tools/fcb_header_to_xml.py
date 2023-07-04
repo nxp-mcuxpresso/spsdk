@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 def get_struct(text: str, name: str) -> str:
     """Get sub list with structure content.
 
-    :param text_lines: Input lines with header file.
+    :param text: Input lines with header file.
     :param name: name of structure
     :raises SPSDKError: When there is invalid structure name to find
     :return: Subset of lines with structure content.
@@ -98,7 +98,7 @@ class StructMemberIter:
         )
         match = re.match(re_type_name, self.text[self.last_ix :])
         if not match:
-            raise SPSDKError()
+            raise StopIteration
         self.last_ix += match.end()
         mem_type = match.group("mem_type")
         mem_name = match.group("mem_name")

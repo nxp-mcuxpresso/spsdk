@@ -14,7 +14,7 @@ from typing import List, Optional, Tuple
 import pytest
 from bitstring import BitArray
 
-from spsdk.crypto.signature_provider import SignatureProvider
+from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.image import KeySourceType, KeyStore, TrustZone
 from spsdk.image.mbimg import (
     Mbi_CrcRamRtxxx,
@@ -22,6 +22,7 @@ from spsdk.image.mbimg import (
     Mbi_EncryptedRamRtxxx,
     Mbi_PlainSignedRamRtxxx,
     Mbi_PlainSignedXipRtxxx,
+    SignatureProvider,
 )
 from spsdk.mboot import ExtMemId, KeyProvUserKeyType, McuBoot, PropertyTag, scan_usb
 from spsdk.mboot.exceptions import McuBootConnectionError
@@ -667,10 +668,11 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
 
     # certificate + private key
     cert_block = create_cert_block(data_dir)
-    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+    priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
+    signature_provider = get_signature_provider(local_file_key=priv_key)
 
     boot_image.cert_block = cert_block
-    boot_image.private_key_pem_data = priv_key_pem_data
+    boot_image.signature_provider = signature_provider
 
     fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
     plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
@@ -752,10 +754,11 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
 
     # certificate + private key
     cert_block = create_cert_block(data_dir)
-    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+    priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
+    signature_provider = get_signature_provider(local_file_key=priv_key)
 
     boot_image.cert_block = cert_block
-    boot_image.private_key_pem_data = priv_key_pem_data
+    boot_image.signature_provider = signature_provider
 
     fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
     plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
@@ -834,10 +837,11 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
 
     # certificate + private key
     cert_block = create_cert_block(data_dir)
-    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+    priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
+    signature_provider = get_signature_provider(local_file_key=priv_key)
 
     boot_image.cert_block = cert_block
-    boot_image.private_key_pem_data = priv_key_pem_data
+    boot_image.signature_provider = signature_provider
 
     fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
     plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
@@ -917,10 +921,11 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
 
     # certificate + private key
     cert_block = create_cert_block(data_dir)
-    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+    priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
+    signature_provider = get_signature_provider(local_file_key=priv_key)
 
     boot_image.cert_block = cert_block
-    boot_image.private_key_pem_data = priv_key_pem_data
+    boot_image.signature_provider = signature_provider
 
     fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
     plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))
@@ -1051,10 +1056,11 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
 
     # certificate + private key
     cert_block = create_cert_block(data_dir)
-    priv_key_pem_data = load_binary(os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem"))
+    priv_key = os.path.join(data_dir, "keys_certs", "k0_cert0_2048.pem")
+    signature_provider = get_signature_provider(local_file_key=priv_key)
 
     boot_image.cert_block = cert_block
-    boot_image.private_key_pem_data = priv_key_pem_data
+    boot_image.signature_provider = signature_provider
 
     fcb_data = load_binary(os.path.join(data_dir, FCB_FILE_NAME))
     plain_image_data = load_binary(os.path.join(data_dir, subdir, image_name + ".bin"))

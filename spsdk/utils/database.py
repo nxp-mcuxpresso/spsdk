@@ -192,7 +192,7 @@ class Database:
         except (SPSDKValueError, SPSDKTypeError) as exc:
             if exc.description:
                 exc.description += f"File path: {self.path}"
-            raise SPSDKError("Database can not be created")
+            raise SPSDKError("Database can not be created") from exc
         self.attributes: dict = config.get("attributes", {})
 
     @classmethod

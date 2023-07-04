@@ -687,6 +687,12 @@ class CmdLoadKeyBlob(BaseCmd):
         NXP_CUST_KEK_INT_SK = 16
         NXP_CUST_KEK_EXT_SK = 17
 
+    class _KeyWrapsV2(BuiltinEnum):
+        """KeyWrap IDs used by the CmdLoadKeyBlob command for mcxnx family."""
+
+        NXP_CUST_KEK_INT_SK = 18
+        NXP_CUST_KEK_EXT_SK = 19
+
     class KeyTypes(BuiltinEnum):
         """KeyTypes for NXP_CUST_KEK_INT_SK, NXP_CUST_KEK_EXT_SK."""
 
@@ -701,7 +707,7 @@ class CmdLoadKeyBlob(BaseCmd):
         :param key_name: NXP_CUST_KEK_INT_SK or NXP_CUST_KEK_EXT_SK
         :return: integer value representing key
         """
-        key_wraps = cls._KeyWraps
+        key_wraps = cls._KeyWrapsV2 if "mcxn" in family.lower() else cls._KeyWraps
         return key_wraps[key_name.name].value
 
     def __init__(self, offset: int, data: bytes, key_wrap_id: int) -> None:

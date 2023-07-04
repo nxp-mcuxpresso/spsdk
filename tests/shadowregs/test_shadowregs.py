@@ -21,6 +21,7 @@ from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 TEST_DEV_NAME = "sh_test_dev"
 TEST_DATABASE = "test_database.yaml"
 TEST_DATABASE_BAD_COMPUTED_FUNC = "test_database_invalid_computed.yaml"
+TEST_DATABASE_INVALID_FLUSH_FUNC = "test_database_invalid_flush_func.yaml"
 
 
 def get_probe():
@@ -279,6 +280,16 @@ def test_shadow_register_crc8_hook(data_dir):
     shadowregs = SR.ShadowRegisters(None, config, TEST_DEV_NAME)
     assert shadowregs.comalg_dcfg_cc_socu_crc8(0x03020100) == 0x0302011D
     assert shadowregs.comalg_dcfg_cc_socu_crc8(0x80FFFF00) == 0x80FFFF20
+
+
+def test_shadow_register_invalid_flush_hook(data_dir):
+    """Test Shadow Registers - invalid flush hook test."""
+    config = get_config(os.path.join(data_dir, TEST_DATABASE_INVALID_FLUSH_FUNC))
+    probe = get_probe()
+    shadowregs1 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+
+    with pytest.raises(SPSDKError):
+        shadowregs1.set_register("REG1", 0x12345678)
 
 
 def test_shadow_register_enable_debug_invalid_probe():

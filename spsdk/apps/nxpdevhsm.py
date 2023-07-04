@@ -54,14 +54,7 @@ NXPDEVHSM_DATABASE_FILE: str = os.path.join(NXPDEVHSM_DATA_FOLDER, "database.yam
 class DeviceHsm:
     """Class to handle device HSM provisioning procedure."""
 
-    DEVBUFF_BASE = 0x20008000
     DEVBUFF_SIZE = 0x100
-
-    DEVBUFF_BASE0 = DEVBUFF_BASE
-    DEVBUFF_BASE1 = DEVBUFF_BASE0 + DEVBUFF_SIZE
-    DEVBUFF_BASE2 = DEVBUFF_BASE1 + DEVBUFF_SIZE
-    DEVBUFF_BASE3 = DEVBUFF_BASE2 + DEVBUFF_SIZE
-
     DEVBUFF_GEN_MASTER_SHARE_INPUT_SIZE = 16
     DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE = 48
     DEVBUFF_GEN_MASTER_ENC_MASTER_SHARE_OUTPUT_SIZE = 64
@@ -138,6 +131,14 @@ class DeviceHsm:
         self.wrapped_cust_mk_sk = bytes()
         self.final_sb = bytes()
         self.family = family
+        self.devbuff_base = value_to_int(
+            self.database.get_device_value("devbuff_base_address", self.family)
+        )
+
+    def get_devbuff_base_address(self, index: int) -> int:
+        """Get devbuff base address."""
+        assert index < 4 and index >= 0
+        return self.devbuff_base + index * self.DEVBUFF_SIZE
 
     def update_keyblob_offset(self) -> int:
         """Update keyblob offset based on family."""
@@ -364,19 +365,19 @@ class DeviceHsm:
         :raises SPSDKError: In case of any vulnerability.
         :return: Tuple with OEM generate master share outputs.
         """
-        if not self.mboot.write_memory(self.DEVBUFF_BASE0, oem_share_input):
+        if not self.mboot.write_memory(self.devbuff_base, oem_share_input):
             raise SPSDKError(
                 f"Cannot write OEM SHARE INPUT into device. Error: {self.mboot.status_string}"
             )
 
         oem_gen_master_share_res = self.mboot.tp_oem_gen_master_share(
-            self.DEVBUFF_BASE0,
+            self.devbuff_base,
             self.DEVBUFF_GEN_MASTER_SHARE_INPUT_SIZE,
-            self.DEVBUFF_BASE1,
+            self.get_devbuff_base_address(1),
             self.DEVBUFF_SIZE,
-            self.DEVBUFF_BASE2,
+            self.get_devbuff_base_address(2),
             self.DEVBUFF_SIZE,
-            self.DEVBUFF_BASE3,
+            self.get_devbuff_base_address(3),
             self.DEVBUFF_SIZE,
         )
 
@@ -394,7 +395,7 @@ class DeviceHsm:
             raise SPSDKError("OEM generate master share command has invalid results.")
 
         oem_enc_share = self.mboot.read_memory(
-            self.DEVBUFF_BASE1,
+            self.get_devbuff_base_address(1),
             self.DEVBUFF_GEN_MASTER_ENC_SHARE_OUTPUT_SIZE,
         )
         if not oem_enc_share:
@@ -404,7 +405,7 @@ class DeviceHsm:
         self.store_temp_res("ENC_OEM_SHARE.bin", oem_enc_share)
 
         oem_enc_master_share = self.mboot.read_memory(
-            self.DEVBUFF_BASE2,
+            self.get_devbuff_base_address(2),
             self.DEVBUFF_GEN_MASTER_ENC_MASTER_SHARE_OUTPUT_SIZE,
         )
         if not oem_enc_master_share:
@@ -414,7 +415,7 @@ class DeviceHsm:
         self.store_temp_res("ENC_OEM_MASTER_SHARE.bin", oem_enc_master_share)
 
         oem_cert = self.mboot.read_memory(
-            self.DEVBUFF_BASE3,
+            self.get_devbuff_base_address(3),
             self.DEVBUFF_GEN_MASTER_CUST_CERT_PUK_OUTPUT_SIZE,
         )
         if not oem_cert:
@@ -438,9 +439,9 @@ class DeviceHsm:
         hsm_gen_key_res = self.mboot.tp_hsm_gen_key(
             key_type,
             0,
-            self.DEVBUFF_BASE0,
+            self.devbuff_base,
             self.DEVBUFF_SIZE,
-            self.DEVBUFF_BASE1,
+            self.get_devbuff_base_address(1),
             self.DEVBUFF_SIZE,
         )
 
@@ -454,7 +455,7 @@ class DeviceHsm:
             raise SPSDKError("OEM generate master share command has invalid results.")
 
         prk = self.mboot.read_memory(
-            self.DEVBUFF_BASE0,
+            self.devbuff_base,
             self.DEVBUFF_HSM_GENKEY_KEYBLOB_SIZE,
         )
         if not prk:
@@ -463,7 +464,7 @@ class DeviceHsm:
             )
 
         puk = self.mboot.read_memory(
-            self.DEVBUFF_BASE1,
+            self.get_devbuff_base_address(1),
             self.DEVBUFF_HSM_GENKEY_KEYBLOB_PUK_SIZE,
         )
         if not puk:
@@ -483,7 +484,7 @@ class DeviceHsm:
         :raises SPSDKError: In case of any vulnerability.
         :return: Wrapped CUST_MK_SK by RFC3396.
         """
-        if not self.mboot.write_memory(self.DEVBUFF_BASE0, cust_mk_sk):
+        if not self.mboot.write_memory(self.devbuff_base, cust_mk_sk):
             raise SPSDKError(
                 f"Cannot write CUST_MK_SK into device. Error: {self.mboot.status_string}"
             )
@@ -491,9 +492,9 @@ class DeviceHsm:
         hsm_store_key_res = self.mboot.tp_hsm_store_key(
             TrustProvKeyType.CKDFK,
             0x01,
-            self.DEVBUFF_BASE0,
+            self.devbuff_base,
             self.DEVBUFF_CUST_MK_SK_KEY_SIZE,
-            self.DEVBUFF_BASE1,
+            self.get_devbuff_base_address(1),
             self.DEVBUFF_SIZE,
         )
 
@@ -504,7 +505,7 @@ class DeviceHsm:
             raise SPSDKError("HSM Store Key command has invalid results.")
 
         wrapped_cust_mk_sk = self.mboot.read_memory(
-            self.DEVBUFF_BASE1,
+            self.get_devbuff_base_address(1),
             self.DEVBUFF_WRAPPED_CUST_MK_SK_KEY_SIZE,
         )
 
@@ -525,20 +526,20 @@ class DeviceHsm:
         :raises SPSDKError: In case of any vulnerability.
         :return: Data blob signature (64 bytes).
         """
-        if not self.mboot.write_memory(self.DEVBUFF_BASE0, key):
+        if not self.mboot.write_memory(self.devbuff_base, key):
             raise SPSDKError(
                 f"Cannot write signing key into device. Error: {self.mboot.status_string}"
             )
-        if not self.mboot.write_memory(self.DEVBUFF_BASE1, data_to_sign):
+        if not self.mboot.write_memory(self.get_devbuff_base_address(1), data_to_sign):
             raise SPSDKError(
                 f"Cannot write Data to sign into device. Error: {self.mboot.status_string}"
             )
         hsm_gen_key_res = self.mboot.tp_hsm_enc_sign(
-            self.DEVBUFF_BASE0,
+            self.devbuff_base,
             len(key),
-            self.DEVBUFF_BASE1,
+            self.get_devbuff_base_address(1),
             len(data_to_sign),
-            self.DEVBUFF_BASE2,
+            self.get_devbuff_base_address(2),
             self.DEVBUFF_SB3_SIGNATURE_SIZE,
         )
 
@@ -549,7 +550,7 @@ class DeviceHsm:
             )
 
         signature = self.mboot.read_memory(
-            self.DEVBUFF_BASE2,
+            self.get_devbuff_base_address(2),
             self.DEVBUFF_SB3_SIGNATURE_SIZE,
         )
         if not signature:
@@ -608,12 +609,12 @@ class DeviceHsm:
         :raises SPSDKError: In case of any vulnerability.
         :return: List of encrypted command blocks on device.
         """
-        if not self.mboot.write_memory(self.DEVBUFF_BASE0, cust_fw_enc_key):
+        if not self.mboot.write_memory(self.devbuff_base, cust_fw_enc_key):
             raise SPSDKError(
                 f"Cannot write customer fw encryption key into device. Error: {self.mboot.status_string}"
             )
         self.store_temp_res("SB3_header.bin", sb3_header, "to_encrypt")
-        if not self.mboot.write_memory(self.DEVBUFF_BASE1, sb3_header):
+        if not self.mboot.write_memory(self.get_devbuff_base_address(1), sb3_header):
             raise SPSDKError(
                 f"Cannot write SB3 header into device. Error: {self.mboot.status_string}"
             )
@@ -621,7 +622,7 @@ class DeviceHsm:
         encrypted_blocks = []
         for data_cmd_block_ix, data_cmd_block in enumerate(data_cmd_blocks, start=1):
             self.store_temp_res(f"SB3_block_{data_cmd_block_ix}.bin", data_cmd_block, "to_encrypt")
-            if not self.mboot.write_memory(self.DEVBUFF_BASE2, data_cmd_block):
+            if not self.mboot.write_memory(self.get_devbuff_base_address(2), data_cmd_block):
                 raise SPSDKError(
                     f"Cannot write SB3 data block{data_cmd_block_ix} into device. "
                     f"Error: {self.mboot.status_string}"
@@ -630,13 +631,13 @@ class DeviceHsm:
                 self.family, CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_INT_SK
             )
             if not self.mboot.tp_hsm_enc_blk(
-                self.DEVBUFF_BASE0,
+                self.devbuff_base,
                 len(cust_fw_enc_key),
                 key_id,
-                self.DEVBUFF_BASE1,
+                self.get_devbuff_base_address(1),
                 len(sb3_header),
                 data_cmd_block_ix,
-                self.DEVBUFF_BASE2,
+                self.get_devbuff_base_address(2),
                 self.DEVBUFF_DATA_BLOCK_SIZE,
             ):
                 raise SPSDKError(
@@ -645,7 +646,7 @@ class DeviceHsm:
                 )
 
             encrypted_block = self.mboot.read_memory(
-                self.DEVBUFF_BASE2,
+                self.get_devbuff_base_address(2),
                 self.DEVBUFF_DATA_BLOCK_SIZE,
             )
             if not encrypted_block:
@@ -707,7 +708,7 @@ def main(log_level: int) -> int:
 
 
 @main.command(no_args_is_help=True)
-@isp_interfaces(uart=True, usb=True, lpcusbsio=True, buspal=True, json_option=False)
+@isp_interfaces(uart=True, usb=True, sdio=True, lpcusbsio=True, buspal=True, json_option=False)
 @click.option(
     "-k",
     "--key",
@@ -768,6 +769,7 @@ def main(log_level: int) -> int:
 def generate(
     port: str,
     usb: str,
+    sdio: str,
     buspal: str,
     lpcusbsio: str,
     oem_share_input: str,

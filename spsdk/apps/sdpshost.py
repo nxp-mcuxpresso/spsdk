@@ -7,7 +7,6 @@
 
 """Console script for SDPS module aka SDPSHost."""
 
-import logging
 import sys
 
 import click
@@ -18,13 +17,9 @@ from spsdk.apps.utils.common_cli_options import (
     isp_interfaces,
     spsdk_apps_common_options,
 )
-from spsdk.apps.utils.utils import catch_spsdk_error, get_interface
+from spsdk.apps.utils.utils import WARNING_MSG, catch_spsdk_error, get_interface
 from spsdk.sdp import SDPS
 from spsdk.sdp.sdps import ROM_INFO
-
-WARNING_MSG = """
-!!! THIS IS AN EXPERIMENTAL UTILITY! USE WITH CAUTION !!!
-"""
 
 
 @click.group(name="sdpshost", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -57,7 +52,6 @@ def write_file(ctx: click.Context, bin_file: click.File) -> None:
     \b
     FILE    - binary file to write
     """
-    click.echo(WARNING_MSG)
     data = bin_file.read()  # type: ignore
     with SDPS(ctx.obj["interface"], device_name=ctx.obj["name"]) as sdps:
         sdps.write_file(data)

@@ -36,6 +36,7 @@ Secure Provisioning SDK (SPSDK)
     :maxdepth: 1
 
     apps/blhost
+    apps/dk6prog
     apps/elftosb
     apps/ifr
     apps/nxpcertgen
@@ -60,12 +61,14 @@ Secure Provisioning SDK (SPSDK)
     api/crypto
     api/dat
     api/debuggers
+    api/dk6
     api/image
     api/mboot
     api/pfr
     api/sbfile
     api/sdp
     api/shadowregs
+    api/tp
     api/utils
 
 .. toctree::
@@ -74,7 +77,6 @@ Secure Provisioning SDK (SPSDK)
 
     examples/crypto
     examples/general
-    examples/dat
 
 .. toctree::
     :caption: Jupyter Examples
@@ -84,6 +86,9 @@ Secure Provisioning SDK (SPSDK)
     examples/lpc55sxx_secure_boot
     examples/lpc55sxx_secure_fw_update
     examples/kw45xx_k32w1xx
+    examples/dk6
+    examples/signature_prov
+
 
 Indices and tables
 ==================

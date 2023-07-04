@@ -43,6 +43,17 @@ def test_usb_device_description():
     assert dev.info() == formatted_output
 
 
+def test_sdio_device_description():
+    formatted_output = "Vendor ID: 0x000a\n" "Product ID: 0x0014\n" "Path: some_path\n"
+    dev = devicedescription.SDIODeviceDescription(
+        vid=10,
+        pid=20,
+        path="some_path",
+    )
+
+    assert dev.info() == formatted_output
+
+
 # Test SIO device description is done by NXPDEVSCAN tests :-)
 
 

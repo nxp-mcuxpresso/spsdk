@@ -31,9 +31,7 @@ CHECK_LIST = [
     "PYTEST",
     "GITCOV",
     "PYLINT",
-    # "PYLINT_TOOLS",  # This is covered by PYLINT
     "PYLINT_DOCS",
-    "PYLINT_ALL",
     "MYPY",
     "MYPY_TOOLS",
     "DEPENDENCIES",
@@ -175,7 +173,7 @@ def check_mypy(args: List[str], output_log: str) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_pylint(args: str, output_log: str) -> TaskResult:
+def check_pylint_all(args: str, output_log: str) -> TaskResult:
     """Call pylint with given configuration and output log."""
     cmd = f"pylint {args} -j {CPU_CNT//2 or 1}"
     with open(output_log, "w", encoding="utf-8") as f:
@@ -187,32 +185,47 @@ def check_pylint(args: str, output_log: str) -> TaskResult:
     return TaskResult(error_count=len(err_cnt), output_log=output_log)
 
 
-def check_pylint_errors(input_log: str, output_log: str) -> TaskResult:
+def check_pylint(
+    args: str,
+    output_log: str,
+    disable: Optional[List[str]] = None,
+    enable: Optional[List[str]] = None,
+) -> TaskResult:
     """Check Pylint log for errors."""
-    with open(input_log, "r", encoding="utf-8") as f:
-        errors = re.findall(r".*: [EF]\d{4}:.*", f.read())
+    cmd = f"pylint {args} -j {CPU_CNT//2 or 1}"
+    if disable:
+        cmd += f" --disable {','.join(disable)}"
+    if enable:
+        cmd += f" --enable {','.join(enable)}"
     with open(output_log, "w", encoding="utf-8") as f:
-        f.write("\n".join(errors))
+        subprocess.call(cmd.split(), stdout=f, stderr=f)
 
-    return TaskResult(error_count=len(errors), output_log=output_log)
+    with open(output_log, "r", encoding="utf-8") as f:
+        err_cnt = re.findall(r": [IRCWEF]\d{4}:", f.read())
+
+    return TaskResult(error_count=len(err_cnt), output_log=output_log)
 
 
-def check_radon(output_log: str) -> TaskResult:
+def check_radon(
+    paths: List[str],
+    output_log: str,
+    min_rank: Optional[str] = None,
+    max_rank: Optional[str] = None,
+) -> TaskResult:
     """Check the project against radon rules."""
+    cmd = "radon cc --show-complexity"
+    if min_rank:
+        cmd += f" --min {min_rank}"
+    if max_rank:
+        cmd += f" --max {max_rank}"
+    cmd += f" {' '.join(paths)}"
     with open(output_log, "w", encoding="utf-8") as f:
-        res = subprocess.call("radon cc --show-complexity spsdk".split(), stdout=f, stderr=f)
+        subprocess.call(cmd.split(), stdout=f, stderr=f)
 
-    return TaskResult(error_count=res, output_log=output_log)
+    with open(output_log, "r", encoding="utf-8") as f:
+        err_cnt = re.findall(r"[ABCDEF] \(\d{1,3}\)", f.read())
 
-
-def check_radon_errors(input_log: str, radon_type: str, output_log: str) -> TaskResult:
-    """Check radon log for records with given radon_type."""
-    with open(input_log, "r", encoding="utf-8") as f:
-        errors = re.findall(rf".* - {radon_type} .*", f.read())
-    with open(output_log, "w", encoding="utf-8") as f:
-        f.write("\n".join(errors))
-
-    return TaskResult(error_count=len(errors), output_log=output_log)
+    return TaskResult(error_count=len(err_cnt), output_log=output_log)
 
 
 def check_black(output: str = OUTPUT_FOLDER) -> TaskResult:
@@ -387,7 +400,7 @@ def main(
     logging.basicConfig(level=logging.INFO)
     output_dir = str(output) if output else OUTPUT_FOLDER
     ret = 1
-    # the baseline PYLINT_ALL, RADON_ALL, and RADON_C checkers are always just informative
+    # the baseline RADON_ALL, and RADON_C checkers are always just informative
     info_check = [x.upper() for x in list(info_check)]
     try:
         available_checks = TaskList(
@@ -403,31 +416,27 @@ def main(
                     info_only="GITCOV" in info_check,
                 ),
                 TaskInfo(
-                    "PYLINT_ALL",
+                    "PYLINT",
                     check_pylint,
                     args="spsdk examples tools codecheck.py",
-                    output_log=os.path.join(output_dir, "pylint_all.txt"),
-                    info_only=True,
-                ),
-                TaskInfo(
-                    "PYLINT",
-                    check_pylint_errors,
-                    input_log=os.path.join(output_dir, "pylint_all.txt"),
                     output_log=os.path.join(output_dir, "pylint.txt"),
-                    dependencies=["PYLINT_ALL"],
-                    inherit_failure=False,
+                    disable=[
+                        "R",
+                        "C",
+                        "W0511",
+                        "W0212",
+                        "W0237",
+                        "W0718",
+                        "W0613",
+                        "W0223",
+                        "W1401",
+                    ],
+                    enable=[],
                     info_only="PYLINT" in info_check,
                 ),
-                # This is already covered by PYLINT
-                # TaskInfo(
-                #     "PYLINT_TOOLS",
-                #     check_pylint,
-                #     args="tools codecheck.py -E",
-                #     output_log=os.path.join(output, "pylint_tools.txt"),
-                # ),
                 TaskInfo(
                     "PYLINT_DOCS",
-                    check_pylint,
+                    check_pylint_all,
                     args="spsdk --rcfile pylint-doc-rules.ini",
                     output_log=os.path.join(output_dir, "pylint_docs.txt"),
                     info_only="PYLINT_DOCS" in info_check,
@@ -459,27 +468,19 @@ def main(
                     info_only="PYDOCSTYLE" in info_check,
                 ),
                 TaskInfo(
-                    "RADON_ALL",
-                    check_radon,
-                    output_log=os.path.join(output_dir, "radon_all.txt"),
-                    info_only=True,
-                ),
-                TaskInfo(
                     "RADON_C",
-                    check_radon_errors,
-                    radon_type="C",
-                    input_log=os.path.join(output_dir, "radon_all.txt"),
+                    check_radon,
+                    paths=["spsdk"],
+                    min_rank="C",
                     output_log=os.path.join(output_dir, "radon_c.txt"),
-                    dependencies=["RADON_ALL"],
                     info_only=True,
                 ),
                 TaskInfo(
                     "RADON_D",
-                    check_radon_errors,
-                    radon_type="D",
-                    input_log=os.path.join(output_dir, "radon_all.txt"),
+                    check_radon,
+                    paths=["spsdk"],
+                    min_rank="D",
                     output_log=os.path.join(output_dir, "radon_d.txt"),
-                    dependencies=["RADON_ALL"],
                     info_only="RADON_D" in info_check,
                 ),
                 TaskInfo(

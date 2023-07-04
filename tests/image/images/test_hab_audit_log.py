@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+import os
 from unittest.mock import patch
 
 import pytest
@@ -26,6 +27,9 @@ from spsdk.utils.easy_enum import Enum
 
 # responses from rt1020 for mcu emulating
 from spsdk.utils.serial_proxy import SimpleReadSerialProxy
+from tools.clr import ROOT_DIR
+
+HAB_AUDIT_PATH = os.path.join(ROOT_DIR, "examples", "data", "hab_audit")
 
 
 class TestEnum(Enum):
@@ -80,13 +84,15 @@ def test_hab_audit_xip_app_simple(data_dir):
     ):
         with McuBoot(Uart(port="totally-legit-port")) as mboot:
             # test valid use case
-            log = hab_audit_xip_app(CpuData.MIMXRT1020, mboot, read_log_only=True)
+            log = hab_audit_xip_app(CpuData.MIMXRT1020, mboot, True, HAB_AUDIT_PATH)
             assert log[:4] != b"\xFF" * 4
 
 
 def test_hab_audit_xip_app_invalid(data_dir):
     with pytest.raises(SPSDKError, match="Flashloader is not running"):
-        hab_audit_xip_app(CpuData.MIMXRT1020, mboot=None, read_log_only=True)
+        hab_audit_xip_app(
+            CpuData.MIMXRT1020, mboot=None, read_log_only=True, hab_audit_path=HAB_AUDIT_PATH
+        )
     import os
     import re
 
@@ -105,7 +111,7 @@ def test_hab_audit_xip_app_invalid(data_dir):
             with pytest.raises(
                 SPSDKError, match="Can not read the log, because given cpu data were not provided."
             ):
-                hab_audit_xip_app(None, mboot, read_log_only=True)
+                hab_audit_xip_app(None, mboot, read_log_only=True, hab_audit_path=HAB_AUDIT_PATH)
 
 
 def test_get_hab_log_info():

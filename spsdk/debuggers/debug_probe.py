@@ -409,14 +409,14 @@ class DebugProbe:
         except NotImplementedError:
             pass
 
-    def get_ap_list(self, filter: Optional[List[int]] = None) -> Dict[int, int]:
+    def get_ap_list(self, ap_filter: Optional[List[int]] = None) -> Dict[int, int]:
         """Gets the dictionary of AP IDR's active in target.
 
-        :param filter: List of AP be scanned - otherwise all range will be used[0-255].
+        :param ap_filter: List of AP be scanned - otherwise all range will be used[0-255].
         :return: Dictionary with active AP's. Key is index of AP, value is IDR value.
         """
         ret: Dict[int, int] = {}
-        for i in filter or range(256):
+        for i in ap_filter or range(256):
             try:
                 idr = self.coresight_reg_read(
                     access_port=True,

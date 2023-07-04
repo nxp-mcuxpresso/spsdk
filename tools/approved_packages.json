@@ -3,12 +3,12 @@
         "Apache 2.0",
         "Apache-2.0",
         "Apache-2.0 license",
+        "Apache-2.0 OR BSD-3-Clause",
         "Apache License 2.0",
         "Apache License, Version 2.0",
         "Apache Software License",
         "BSD",
         "BSD (3 clause)",
-        "BSD or Apache License, Version 2.0",
         "BSD, Public Domain",
         "BSD, Public Domain, Apache",
         "BSD-3-Clause",
@@ -146,7 +146,7 @@
         },
         {
             "name": "cryptography",
-            "license": "BSD or Apache License, Version 2.0",
+            "license": "Apache-2.0 OR BSD-3-Clause",
             "home_page": "https://github.com/pyca/cryptography",
             "is_manual": false
         },
@@ -406,6 +406,24 @@
             "name": "click-command-tree",
             "license": "MIT",
             "home_page": "https://github.com/whwright/click-command-tree",
+            "is_manual": false
+        },
+        {
+            "name": "importlib-resources",
+            "license": "Apache 2.0",
+            "home_page": "https://pypi.org/project/importlib-resources/",
+            "is_manual": true
+        },
+        {
+            "name": "lark",
+            "license": "MIT",
+            "home_page": "https://github.com/lark-parser/lark",
+            "is_manual": false
+        },
+        {
+            "name": "pyreadline3",
+            "license": "BSD",
+            "home_page": "https://pypi.org/project/pyreadline3",
             "is_manual": false
         }
     ]

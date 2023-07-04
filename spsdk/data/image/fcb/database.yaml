@@ -47,3 +47,7 @@ devices:
     attributes:
       mem_types:
         flexspi_nor: rt118x_flexspi_nor.xml
+  rw61x:
+    attributes:
+      mem_types:
+        flexspi_nor: rw61x_flexspi_nor.xml

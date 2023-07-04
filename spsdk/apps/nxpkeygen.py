@@ -83,6 +83,8 @@ def get_list_of_supported_keys() -> List[str]:
 def main(log_level: int, key_type: str, path: str, password: str, force: bool) -> int:
     """NXP Key Generator Tool.
 
+    !!! The NXPKEYGEN tool is deprecated, use new NXPCRYPTO tool from SPSDK for new projects !!!
+
     \b
     PATH    - output file path, where the key pairs (private and public key) will be stored.
               Each key will be stored in separate file (.pub and .pem).

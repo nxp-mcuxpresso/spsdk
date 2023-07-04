@@ -132,10 +132,21 @@ class DebugProbePyLink(DebugProbe):
                 serial_no=self.hardware_id,
                 ip_addr=self.options.get("ip_address") if self.options else None,
             )
-            self.pylink.set_tif(pylink.enums.JLinkInterfaces.SWD)
+            if self.options.get("use_jtag") is None:
+                self.pylink.set_tif(pylink.enums.JLinkInterfaces.SWD)
+            else:
+                logger.warning(
+                    "Experimental support for JTAG on RW61x."
+                    "The implementation may have bugs and lack features."
+                )
+                self.pylink.set_speed(100)
+                self.pylink.set_tif(pylink.enums.JLinkInterfaces.JTAG)
             self.pylink.coresight_configure()
             self.pylink.set_speed(speed=value_to_int(self.options.get("frequency", 100)))
             # Power Up the system and debug and clear sticky errors
+            if self.options.get("use_jtag") is not None:
+                # Currently clear_sticky_errors has been defined only for SWD (uncleared for JTAG-DP)
+                self.coresight_reg_write(access_port=False, addr=4, data=0x50000F20)
             self.clear_sticky_errors()
             self.power_up_target()
 
@@ -231,4 +242,7 @@ class DebugProbePyLink(DebugProbe):
         if not self.disable_reinit:
             assert self.pylink
             self.pylink.coresight_configure()
+            if self.options.get("use_jtag") is not None:
+                # Currently clear_sticky_errors has been defined only for SWD (uncleared for JTAG-DP)
+                self.coresight_reg_write(access_port=False, addr=4, data=0x50000F20)
             self._reinit_target()

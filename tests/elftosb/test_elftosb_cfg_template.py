@@ -31,8 +31,8 @@ from spsdk.apps import elftosb
 def test_elftosb_cfgtmp_create(tmpdir, device):
     runner = CliRunner()
 
-    cmd = f"-Y {tmpdir} -f {device}"
-    result = runner.invoke(elftosb.main, cmd.split())
+    cmd = ["-Y", str(tmpdir), "-f", device]
+    result = runner.invoke(elftosb.main, cmd)
     assert result.exit_code == 0
     # Check at least common TrustZone Configuration file
     assert os.path.isfile(os.path.join(tmpdir, f"{device}_tz.yaml"))

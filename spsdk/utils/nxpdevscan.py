@@ -15,12 +15,14 @@ from libusbsio import LIBUSBSIO_Exception, usbsio
 from serial.tools.list_ports import comports
 
 from spsdk import SPSDKError
+from spsdk.mboot.interfaces.sdio import scan_sdio as mb_scan_sdio
 from spsdk.mboot.interfaces.uart import scan_uart as mb_scan_uart
 from spsdk.sdp import SDP
 from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.interfaces.uart import Uart as SDP_Uart
 
 from .devicedescription import (
+    SDIODeviceDescription,
     SIODeviceDescription,
     UartDeviceDescription,
     USBDeviceDescription,
@@ -33,7 +35,32 @@ NXP_USB_DEVICE_VIDS = [
     0x15A2,
 ]
 
+NXP_SDIO_DEVICE_PATHS = [
+    "/dev/mcu-sdio",
+]
+
 logger = logging.getLogger(__name__)
+
+
+def search_nxp_sdio_devices() -> List[SDIODeviceDescription]:
+    """Searches all NXP SDIO devices based on their device path.
+
+    :return: list of SDIODeviceDescription corresponding to NXP devices
+    """
+    nxp_sdio_devices = []
+
+    search_path = NXP_SDIO_DEVICE_PATHS
+
+    for path in search_path:
+        sdio_device = mb_scan_sdio(device_path=path)
+        if len(sdio_device) > 0:
+            sdio_dev = SDIODeviceDescription(
+                vid=sdio_device[0].vid, pid=sdio_device[0].pid, path=sdio_device[0].path
+            )
+            nxp_sdio_devices.append(sdio_dev)
+            continue
+
+    return nxp_sdio_devices
 
 
 def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> List[USBDeviceDescription]:

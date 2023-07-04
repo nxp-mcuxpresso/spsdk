@@ -184,6 +184,53 @@ def test_uart_device_search():
         assert dev.info() == res.info()
 
 
+# following mock functions are only for `test_sdio_device_search usage`
+class mockSdio:
+    def __init__(self, path: str = None) -> None:
+        """Initialize the SDIO interface object.
+
+        :raises McuBootConnectionError: when the path is empty
+        """
+        super().__init__()
+
+        self._opened = False
+        # Temporarily use hard code until there is a way to retrive VID/PID
+        self.vid = 0x0471
+        self.pid = 0x0209
+        self.timeout = 2000
+        if path is None:
+            raise McuBootConnectionError("No SDIO device path")
+        self.path = path
+        self.is_blocking = False
+
+
+def test_sdio_device_search():
+    """Test, that search method returns all NXP SDIO devices."""
+
+    test = mockSdio("/dev/mcu-sdio")
+    result = [
+        devicedescription.SDIODeviceDescription(0x0471, 0x0209, "/dev/mcu-sdio"),
+    ]
+    with patch("spsdk.utils.nxpdevscan.mb_scan_sdio", MagicMock(return_value=[test])):
+        devices = nds.search_nxp_sdio_devices()
+
+        assert len(devices) == len(result)
+
+        for dev, res in zip(devices, result):
+            assert dev.info() == res.info()
+
+
+def test_sdio_device_search_no_device_found():
+    """Test, that search method returns all NXP SDIO devices."""
+
+    result = [
+        devicedescription.SDIODeviceDescription(0x0471, 0x0209, ""),
+    ]
+    with patch("spsdk.utils.nxpdevscan.mb_scan_sdio", MagicMock(return_value=[])):
+        devices = nds.search_nxp_sdio_devices()
+        assert len(devices) != len(result)
+
+
 @pytest.mark.parametrize(
     "vid, pid, expected_result",
     [

@@ -326,12 +326,12 @@ class XMCD(SegmentBase):
         :param mem_type: Used memory type.
         :param config_type: Config type: either simplified or full.
         :param revision: Chip revision specification, as default, latest is used.
-        :raises SPSDKValueError: Unknown mem_type or config type
+        :raises SPSDKKeyError: Unknown mem_type or config type
         """
         try:
             block_config = XMCD.get_memory_types(family, revision)[mem_type][config_type]
-        except KeyError:
-            raise SPSDKValueError(f"Unsupported combination: {mem_type}:{config_type}")
+        except KeyError as exc:
+            raise SPSDKKeyError(f"Unsupported combination: {mem_type}:{config_type}") from exc
         block_file_path = os.path.join(XMCD_DATA_FOLDER, block_config)
         regs = Registers(family, base_endianness="little")
         regs.load_registers_from_xml(block_file_path, filter_reg=filter_reg)

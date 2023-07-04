@@ -7,10 +7,13 @@
 
 """Module with Debug Authentication Challenge (DAC) Packet."""
 
+import logging
 from struct import calcsize, pack, unpack_from
 
 from spsdk.dat.debug_credential import DebugCredential
 from spsdk.exceptions import SPSDKValueError
+
+logger = logging.getLogger(__name__)
 
 
 class DebugAuthenticationChallenge:
@@ -66,7 +69,7 @@ class DebugAuthenticationChallenge:
     def validate_against_dc(self, dc: DebugCredential) -> None:
         """Validate against Debug Credential file.
 
-        :param dc: Debug Credential class to be validate by DAC
+        :param dc: Debug Credential class to be validated by DAC
         :raises SPSDKValueError: In case of invalid configuration detected.
         """
         if self.version != dc.VERSION and self.socc not in [0x5254049C]:
@@ -81,14 +84,16 @@ class DebugAuthenticationChallenge:
             raise SPSDKValueError(
                 f"DAC Verification failed: Invalid UUID.\nDAC: {self.uuid.hex()}\nDC:  {dc.uuid.hex()}"
             )
-
-        dc_rotkh = dc.get_rotkh()
-        if dc_rotkh and not all(
-            self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
-        ):
-            raise SPSDKValueError(
-                f"DAC Verification failed: Invalid RoT Hash. \nDAC: {self.rotid_rkth_hash.hex()}\nDC:  {dc_rotkh.hex()}"
-            )
+        # RKTH is not part of challenge for RW61x devices
+        if self.socc != 0xA:
+            dc_rotkh = dc.get_rotkh()
+            if dc_rotkh and not all(
+                self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
+            ):
+                raise SPSDKValueError(
+                    f"DAC Verification failed: Invalid RoT Hash. \n"
+                    f"DAC: {self.rotid_rkth_hash.hex()}\nDC:  {dc_rotkh.hex()}"
+                )
 
     def export(self) -> bytes:
         """Exports the DebugAuthenticationChallenge into bytes."""
@@ -116,7 +121,7 @@ class DebugAuthenticationChallenge:
             format_head, data, offset
         )
         # Note: EdgeLock is always 256b SRKH - if P384 these are the first 256b of SHA384(SRKT)
-        hash_length = 48 if (socc == 4 and version_minor == 1 and version_major == 2) else 32
+        hash_length = 48 if (socc in [4, 6] and version_minor == 1 and version_major == 2) else 32
 
         format_tail = f"<{hash_length}s3L32s"
         (

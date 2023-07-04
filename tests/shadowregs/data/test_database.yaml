@@ -12,6 +12,7 @@ devices:
       address: 0x4000_0000
       inverted_regs:
         REG1: REG_INVERTED_AP
+      flush_func: rw61x_update_scratch_reg
       computed_fields:
         REG1:
           DEV_TEST_EN: comalg_dcfg_cc_socu_test_en

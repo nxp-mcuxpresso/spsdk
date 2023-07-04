@@ -10,14 +10,12 @@ import logging
 from time import sleep
 from typing import Dict, List, Optional
 
-import pylink
 import pyocd
 from pyocd.core.exceptions import Error as PyOCDError
 from pyocd.core.helpers import ConnectHelper
 from pyocd.core.session import Session
 from pyocd.coresight.dap import DPConnector
 from pyocd.probe.debug_probe import DebugProbe as PyOCDDebugProbe
-from pyocd.probe.jlink_probe import JLinkProbe
 
 from spsdk.exceptions import SPSDKError
 
@@ -60,6 +58,7 @@ class DebugProbePyOCD(DebugProbe):
         The PyOCD initialization function for SPSDK library to support various DEBUG PROBES.
         """
         super().__init__(hardware_id, options)
+        self.probe: PyOCDDebugProbe = None
 
         set_logger(logging.root.level)
 
@@ -104,7 +103,7 @@ class DebugProbePyOCD(DebugProbe):
         :raises SPSDKDebugProbeError: The PyOCD cannot establish communication with target
         """
         try:
-            self.probe: PyOCDDebugProbe = ConnectHelper.choose_probe(
+            self.probe = ConnectHelper.choose_probe(
                 blocking=False,
                 return_first=True,
                 unique_id=self.hardware_id,

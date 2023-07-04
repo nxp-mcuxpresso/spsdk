@@ -36,6 +36,9 @@ class DebugCredential:
         0x0001: "LPC550x, LPC55s0x, LPC551x, LPC55s1x, LPC552x, LPC55s2x, LPC55s6",
         0x0004: "LPC55s3",
         0x0005: "KW45xx/K32W1xx",
+        0x0006: "MCXN9xx (A0)",
+        0x0007: "MCXN9xx (A1)",
+        0x000A: "RW61x (A2)",
         0x5254049C: "i.MXRT118x",
     }
 

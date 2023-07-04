@@ -1,0 +1,225 @@
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+<regs>
+  <register offset="0x0" width="32" name="tag" reversed="False" description=" [0x000-0x003] Tag, fixed value 0x42464346UL "/>
+  <register offset="0x20" width="32" name="version" reversed="False" description=" [0x004-0x007] Version,[31:24] -'V', [23:16] - Major, [15:8] - Minor, [7:0] - bugfix "/>
+  <register offset="0x40" width="32" name="reserved0" reversed="False" description=" [0x008-0x00b] Reserved for future use "/>
+  <register offset="0x60" width="8" name="readSampleClkSrc" reversed="False" description=" [0x00c-0x00c] Read Sample Clock Source, valid value: 0/1/3 "/>
+  <register offset="0x68" width="8" name="csHoldTime" reversed="False" description=" [0x00d-0x00d] CS hold time, default value: 3 "/>
+  <register offset="0x70" width="8" name="csSetupTime" reversed="False" description=" [0x00e-0x00e] CS setup time, default value: 3 "/>
+  <register offset="0x78" width="8" name="columnAddressWidth" reversed="False" description=" [0x00f-0x00f] Column Address with, for HyperBus protocol, it is fixed to 3, For Serial NAND, need to refer to datasheet "/>
+  <register offset="0x80" width="8" name="deviceModeCfgEnable" reversed="False" description=" [0x010-0x010] Device Mode Configure enable flag, 1 - Enable, 0 - Disable "/>
+  <register offset="0x88" width="8" name="deviceModeType" reversed="False" description=" [0x011-0x011] Specify the configuration command type:Quad Enable, DPI/QPI/OPI switch, Generic configuration, etc. "/>
+  <register offset="0x90" width="16" name="waitTimeCfgCommands" reversed="False" description=" [0x012-0x013] Wait time for all configuration commands, unit: 100us, Used for DPI/QPI/OPI switch or reset command "/>
+  <register offset="0xa0" width="32" name="deviceModeSeq" reversed="False" description=" [0x014-0x017] Device mode sequence info, [7:0] - LUT sequence id, [15:8] - LUt sequence number, [31:16] Reserved ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xc0" width="32" name="deviceModeArg" reversed="False" description=" [0x018-0x01b] Argument/Parameter for device configuration "/>
+  <register offset="0xe0" width="8" name="configCmdEnable" reversed="False" description=" [0x01c-0x01c] Configure command Enable Flag, 1 - Enable, 0 - Disable "/>
+  <register offset="0xe8" width="8" name="configModeType_0" reversed="False" description=" [0x01d-0x01f] Configure Mode Type, similar as deviceModeTpe "/>
+  <register offset="0xf0" width="8" name="configModeType_1" reversed="False" description=" [0x01d-0x01f] Configure Mode Type, similar as deviceModeTpe "/>
+  <register offset="0xf8" width="8" name="configModeType_2" reversed="False" description=" [0x01d-0x01f] Configure Mode Type, similar as deviceModeTpe "/>
+  <register offset="0x100" width="32" name="configCmdSeqs_0" reversed="False" description=" [0x020-0x02b] Sequence info for Device Configuration command, similar as deviceModeSeq ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0x120" width="32" name="configCmdSeqs_1" reversed="False" description=" [0x020-0x02b] Sequence info for Device Configuration command, similar as deviceModeSeq ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0x140" width="32" name="configCmdSeqs_2" reversed="False" description=" [0x020-0x02b] Sequence info for Device Configuration command, similar as deviceModeSeq ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0x160" width="32" name="reserved1" reversed="False" description=" [0x02c-0x02f] Reserved for future use "/>
+  <register offset="0x180" width="32" name="configCmdArgs_0" reversed="False" description=" [0x030-0x03b] Arguments/Parameters for device Configuration commands "/>
+  <register offset="0x1a0" width="32" name="configCmdArgs_1" reversed="False" description=" [0x030-0x03b] Arguments/Parameters for device Configuration commands "/>
+  <register offset="0x1c0" width="32" name="configCmdArgs_2" reversed="False" description=" [0x030-0x03b] Arguments/Parameters for device Configuration commands "/>
+  <register offset="0x1e0" width="32" name="reserved2" reversed="False" description=" [0x03c-0x03f] Reserved for future use "/>
+  <register offset="0x200" width="32" name="controllerMiscOption" reversed="False" description=" [0x040-0x043] Controller Misc Options, see Misc feature bit definitions for more details "/>
+  <register offset="0x220" width="8" name="deviceType" reversed="False" description=" [0x044-0x044] Device Type:  See Flash Type Definition for more details "/>
+  <register offset="0x228" width="8" name="sflashPadType" reversed="False" description=" [0x045-0x045] Serial Flash Pad Type: 1 - Single, 2 - Dual, 4 - Quad, 8 - Octal "/>
+  <register offset="0x230" width="8" name="serialClkFreq" reversed="False" description=" [0x046-0x046] Serial Flash Frequencey, device specific definitions, See System Boot Chapter for more details "/>
+  <register offset="0x238" width="8" name="lutCustomSeqEnable" reversed="False" description=" [0x047-0x047] LUT customization Enable, it is required if the program/erase cannot be done using 1 LUT sequence, currently, only applicable to HyperFLASH "/>
+  <register offset="0x240" width="32" name="reserved3_0" reversed="False" description=" [0x048-0x04f] Reserved for future use "/>
+  <register offset="0x260" width="32" name="reserved3_1" reversed="False" description=" [0x048-0x04f] Reserved for future use "/>
+  <register offset="0x280" width="32" name="sflashA1Size" reversed="False" description=" [0x050-0x053] Size of Flash connected to A1 "/>
+  <register offset="0x2a0" width="32" name="sflashA2Size" reversed="False" description=" [0x054-0x057] Size of Flash connected to A2 "/>
+  <register offset="0x2c0" width="32" name="sflashB1Size" reversed="False" description=" [0x058-0x05b] Size of Flash connected to B1 "/>
+  <register offset="0x2e0" width="32" name="sflashB2Size" reversed="False" description=" [0x05c-0x05f] Size of Flash connected to B2 "/>
+  <register offset="0x300" width="32" name="csPadSettingOverride" reversed="False" description=" [0x060-0x063] CS pad setting override value "/>
+  <register offset="0x320" width="32" name="sclkPadSettingOverride" reversed="False" description=" [0x064-0x067] SCK pad setting override value "/>
+  <register offset="0x340" width="32" name="dataPadSettingOverride" reversed="False" description=" [0x068-0x06b] data pad setting override value "/>
+  <register offset="0x360" width="32" name="dqsPadSettingOverride" reversed="False" description=" [0x06c-0x06f] DQS pad setting override value "/>
+  <register offset="0x380" width="32" name="timeoutInMs" reversed="False" description=" [0x070-0x073] Timeout threshold for read status command "/>
+  <register offset="0x3a0" width="32" name="commandInterval" reversed="False" description=" [0x074-0x077] CS deselect interval between two commands "/>
+  <register offset="0x3c0" width="16" name="dataValidTime_0" reversed="False" description=" [0x078-0x07b] CLK edge to data valid time for PORT A and PORT B ">
+    <bit_field offset="0x0" width="8" name="time_100ps" access="RW" reset_value="0x00" description=" Data valid time, in terms of 100ps "/>
+    <bit_field offset="0x8" width="8" name="delay_cells" access="RW" reset_value="0x00" description=" Data valid time, in terms of delay cells "/>
+  </register>
+  <register offset="0x3d0" width="16" name="dataValidTime_1" reversed="False" description=" [0x078-0x07b] CLK edge to data valid time for PORT A and PORT B ">
+    <bit_field offset="0x0" width="8" name="time_100ps" access="RW" reset_value="0x00" description=" Data valid time, in terms of 100ps "/>
+    <bit_field offset="0x8" width="8" name="delay_cells" access="RW" reset_value="0x00" description=" Data valid time, in terms of delay cells "/>
+  </register>
+  <register offset="0x3e0" width="16" name="busyOffset" reversed="False" description=" [0x07c-0x07d] Busy offset, valid value: 0-31 "/>
+  <register offset="0x3f0" width="16" name="busyBitPolarity" reversed="False" description=" [0x07e-0x07f] Busy flag polarity, 0 - busy flag is 1 when flash device is busy, 1 - busy flag is 0 when flash device is busy "/>
+  <register offset="0x400" width="32" name="lookupTable_0" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x420" width="32" name="lookupTable_1" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x440" width="32" name="lookupTable_2" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x460" width="32" name="lookupTable_3" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x480" width="32" name="lookupTable_4" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x4a0" width="32" name="lookupTable_5" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x4c0" width="32" name="lookupTable_6" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x4e0" width="32" name="lookupTable_7" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x500" width="32" name="lookupTable_8" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x520" width="32" name="lookupTable_9" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x540" width="32" name="lookupTable_10" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x560" width="32" name="lookupTable_11" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x580" width="32" name="lookupTable_12" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x5a0" width="32" name="lookupTable_13" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x5c0" width="32" name="lookupTable_14" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x5e0" width="32" name="lookupTable_15" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x600" width="32" name="lookupTable_16" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x620" width="32" name="lookupTable_17" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x640" width="32" name="lookupTable_18" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x660" width="32" name="lookupTable_19" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x680" width="32" name="lookupTable_20" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x6a0" width="32" name="lookupTable_21" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x6c0" width="32" name="lookupTable_22" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x6e0" width="32" name="lookupTable_23" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x700" width="32" name="lookupTable_24" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x720" width="32" name="lookupTable_25" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x740" width="32" name="lookupTable_26" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x760" width="32" name="lookupTable_27" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x780" width="32" name="lookupTable_28" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x7a0" width="32" name="lookupTable_29" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x7c0" width="32" name="lookupTable_30" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x7e0" width="32" name="lookupTable_31" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x800" width="32" name="lookupTable_32" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x820" width="32" name="lookupTable_33" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x840" width="32" name="lookupTable_34" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x860" width="32" name="lookupTable_35" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x880" width="32" name="lookupTable_36" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x8a0" width="32" name="lookupTable_37" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x8c0" width="32" name="lookupTable_38" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x8e0" width="32" name="lookupTable_39" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x900" width="32" name="lookupTable_40" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x920" width="32" name="lookupTable_41" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x940" width="32" name="lookupTable_42" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x960" width="32" name="lookupTable_43" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x980" width="32" name="lookupTable_44" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x9a0" width="32" name="lookupTable_45" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x9c0" width="32" name="lookupTable_46" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0x9e0" width="32" name="lookupTable_47" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xa00" width="32" name="lookupTable_48" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xa20" width="32" name="lookupTable_49" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xa40" width="32" name="lookupTable_50" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xa60" width="32" name="lookupTable_51" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xa80" width="32" name="lookupTable_52" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xaa0" width="32" name="lookupTable_53" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xac0" width="32" name="lookupTable_54" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xae0" width="32" name="lookupTable_55" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xb00" width="32" name="lookupTable_56" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xb20" width="32" name="lookupTable_57" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xb40" width="32" name="lookupTable_58" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xb60" width="32" name="lookupTable_59" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xb80" width="32" name="lookupTable_60" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xba0" width="32" name="lookupTable_61" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xbc0" width="32" name="lookupTable_62" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xbe0" width="32" name="lookupTable_63" reversed="False" description=" [0x080-0x17f] Lookup table holds Flash command sequences "/>
+  <register offset="0xc00" width="32" name="lutCustomSeq_0" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xc20" width="32" name="lutCustomSeq_1" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xc40" width="32" name="lutCustomSeq_2" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xc60" width="32" name="lutCustomSeq_3" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xc80" width="32" name="lutCustomSeq_4" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xca0" width="32" name="lutCustomSeq_5" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xcc0" width="32" name="lutCustomSeq_6" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xce0" width="32" name="lutCustomSeq_7" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xd00" width="32" name="lutCustomSeq_8" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xd20" width="32" name="lutCustomSeq_9" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xd40" width="32" name="lutCustomSeq_10" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xd60" width="32" name="lutCustomSeq_11" reversed="False" description=" [0x180-0x1af] Customizable LUT Sequences ">
+    <bit_field offset="0x0" width="8" name="seqNum" access="RW" reset_value="0x00" description=" Sequence Number, valid number: 1-16 "/>
+    <bit_field offset="0x8" width="8" name="seqId" access="RW" reset_value="0x00" description=" Sequence Index, valid number: 0-15 "/>
+    <bit_field offset="0x10" width="16" name="reserved" access="RW" reset_value="0x0000" description=" Reserved "/>
+  </register>
+  <register offset="0xd80" width="32" name="reserved4_0" reversed="False" description=" [0x1b0-0x1bf] Reserved for future use "/>
+  <register offset="0xda0" width="32" name="reserved4_1" reversed="False" description=" [0x1b0-0x1bf] Reserved for future use "/>
+  <register offset="0xdc0" width="32" name="reserved4_2" reversed="False" description=" [0x1b0-0x1bf] Reserved for future use "/>
+  <register offset="0xde0" width="32" name="reserved4_3" reversed="False" description=" [0x1b0-0x1bf] Reserved for future use "/>
+  <register offset="0xe00" width="32" name="pageSize" reversed="False" description=" Page size of Serial NOR "/>
+  <register offset="0xe20" width="32" name="sectorSize" reversed="False" description=" Sector size of Serial NOR "/>
+  <register offset="0xe40" width="8" name="ipcmdSerialClkFreq" reversed="False" description=" Clock frequency for IP command "/>
+  <register offset="0xe48" width="8" name="isUniformBlockSize" reversed="False" description=" Sector/Block size is the same "/>
+  <register offset="0xe50" width="8" name="isDataOrderSwapped" reversed="False" description=" Data order (D0, D1, D2, D3) is swapped (D1,D0, D3, D2) "/>
+  <register offset="0xe58" width="8" name="reserved0_0" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xe60" width="8" name="serialNorType" reversed="False" description=" Serial NOR Flash type: 0/1/2/3 "/>
+  <register offset="0xe68" width="8" name="needExitNoCmdMode" reversed="False" description=" Need to exit NoCmd mode before other IP command "/>
+  <register offset="0xe70" width="8" name="halfClkForNonReadCmd" reversed="False" description=" Half the Serial Clock for non-read command: true/false "/>
+  <register offset="0xe78" width="8" name="needRestoreNoCmdMode" reversed="False" description=" Need to Restore NoCmd mode after IP commmand execution "/>
+  <register offset="0xe80" width="32" name="blockSize" reversed="False" description=" Block size "/>
+  <register offset="0xea0" width="32" name="flashStateCtx" reversed="False" description=" Flash State Context "/>
+  <register offset="0xec0" width="32" name="reserve2_0" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xee0" width="32" name="reserve2_1" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xf00" width="32" name="reserve2_2" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xf20" width="32" name="reserve2_3" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xf40" width="32" name="reserve2_4" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xf60" width="32" name="reserve2_5" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xf80" width="32" name="reserve2_6" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xfa0" width="32" name="reserve2_7" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xfc0" width="32" name="reserve2_8" reversed="False" description=" Reserved for future use "/>
+  <register offset="0xfe0" width="32" name="reserve2_9" reversed="False" description=" Reserved for future use "/>
+</regs>

@@ -6,7 +6,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Console script for Trust provisioning config application."""
-import logging
 import os
 import sys
 from typing import List

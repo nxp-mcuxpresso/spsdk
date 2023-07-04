@@ -115,7 +115,7 @@ def get_template(device: str, revision: str, output: str, full: bool) -> None:
     ifr_obj = ROMCFG(device=device, revision=revision)
     data = ifr_obj.get_yaml_config(not full)
     yaml_data = ConfigTemplate.convert_cm_to_yaml(data)
-    _store_output(yaml_data, output, msg=f"IFR configuration template has been created.")
+    _store_output(yaml_data, output, msg="IFR configuration template has been created.")
 
 
 @main.command(name="parse-binary", no_args_is_help=True)
@@ -184,7 +184,7 @@ def generate_binary(output: str, user_config_file: str, device: str) -> None:
     ifr_obj.set_config(ifr_config, raw=False)
 
     data = ifr_obj.export()
-    _store_output(data, output, "wb", msg=f"Success. (IFR binary has been generated)")
+    _store_output(data, output, "wb", msg="Success. (IFR binary has been generated)")
 
 
 @main.command(name="write", no_args_is_help=True)

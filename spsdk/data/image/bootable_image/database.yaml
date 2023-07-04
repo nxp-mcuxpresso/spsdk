@@ -23,6 +23,8 @@ devices:
           image_version_offset: 0x0600
           application_offset: 0x1000
           remap_align: 0x40000 # 256 KB
+  rw61x:
+    device_alias: lpc55s3x
   rt101x:
     attributes:
       mem_types:
@@ -41,6 +43,8 @@ devices:
   rt105x:
     device_alias: rt102x
   rt106x:
+    device_alias: rt102x
+  rt104x:
     device_alias: rt102x
   rt117x:
     attributes:
@@ -64,4 +68,3 @@ devices:
           fcb_offset: 0x0400
           xmcd_offset: 0x0800
           ahab_container_offset: 0x1000
-

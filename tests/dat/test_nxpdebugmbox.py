@@ -152,13 +152,17 @@ def test_generate_dc_file_lpc55s3x_384(tmpdir, data_dir):
         assert os.path.isfile(out_file)
 
 
-def test_generate_rsa_with_elf2sb(tmpdir, data_dir):
+@pytest.mark.parametrize(
+    "config",
+    ["elf2sb_config.yaml", "elf2sb_config_sp.yaml"],
+)
+def test_generate_rsa_with_elf2sb(tmpdir, data_dir, config):
     org_file = f"{tmpdir}/org.dc"
     new_file = f"{tmpdir}/new.dc"
 
     cmd1 = f"-p 1.0 gendc -c org_dck_rsa_2048.yml {org_file}"
     # keys were removed from yaml and supplied by elf2sb config
-    cmd2 = f"-p 1.0 gendc -c no_key_dck_rsa_2048.yml -e elf2sb_config.json {new_file}"
+    cmd2 = f"-p 1.0 gendc -c no_key_dck_rsa_2048.yml -e {config} {new_file}"
     with use_working_directory(data_dir):
         result = CliRunner().invoke(main, cmd1.split())
         assert result.exit_code == 0, result.output

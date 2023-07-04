@@ -322,6 +322,18 @@ class Backend(BackendClass):
         :return: True if the signature is valid
         :raises SPSDKError: Signature length is invalid
         """
+
+        def get_std_hash(key_size: int) -> str:
+            standard_hashes = {
+                "SHA256": [163, 192, 224, 233, 256],
+                "SHA384": [283, 384],
+                "SHA512": [409, 512, 521, 570, 571],
+            }
+            for k, v in standard_hashes.items():
+                if key_size in v:
+                    return k
+            raise SPSDKError(f"Unsupported key size ({key_size}), to get standard hash")
+
         if isinstance(public_key, bytes):
             processed_public_key = serialization.load_pem_public_key(public_key, default_backend())
         if isinstance(public_key, ec.EllipticCurvePublicKey):
@@ -332,7 +344,8 @@ class Backend(BackendClass):
             raise SPSDKError(
                 f"Invalid signature size: expected {2 * coordinate_size}, actual: {len(signature)}"
             )
-        hash_name = algorithm or f"sha{processed_public_key.key_size}"
+
+        hash_name = algorithm or get_std_hash(processed_public_key.key_size)
         der_signature = utils.encode_dss_signature(
             int.from_bytes(signature[:coordinate_size], byteorder="big"),
             int.from_bytes(signature[coordinate_size:], byteorder="big"),

@@ -28,7 +28,6 @@ Please check *SPSDK* examples:
 
 - :ref:`General examples`
 - :ref:`Crypto examples`
-- :ref:`Debug Credential with remote signing example`
 
 Development guides for various SPSDK modules are bellow:
 

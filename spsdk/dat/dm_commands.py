@@ -71,7 +71,8 @@ class DebugMailboxCommand:
         ret = self.dm.spin_read(self.dm.registers["RETURN"]["address"])
         logger.debug(f"-> spin_read:  {format_value(ret, 32)}")
 
-        new_protocol = bool(ret >> 31)  # bit 31 is flag in new protocol version
+        # bit 31 is flag in new protocol version
+        # new_protocol = bool(ret >> 31)
         error_indication = bool(ret >> 20) and not bool(self.resplen)
         # solve the case that response is in legacy protocol and there is some
         # unwanted bits in none expected data. In this case return valid read data.
@@ -200,6 +201,24 @@ class DebugAuthenticationResponse(DebugMailboxCommand):
     def __init__(self, dm: DebugMailbox, paramlen: int) -> None:
         """Initialize."""
         super().__init__(dm, id=17, name="DBG_AUTH_RESP", paramlen=paramlen)
+
+
+class NxpDebugAuthenticationStart(DebugMailboxCommand):
+    """Class for DebugAuthenticationStart."""
+
+    def __init__(self, dm: DebugMailbox, resplen: int = 26) -> None:
+        """Initialize."""
+        # 26 words == 104 bytes (SHA256 - 32 Bytes)
+        # 30 words == 120 bytes (SHA384 - 48 Bytes)
+        super().__init__(dm, id=18, name="NXP_DBG_AUTH_START", resplen=resplen)
+
+
+class NxpDebugAuthenticationResponse(DebugMailboxCommand):
+    """Class for DebugAuthenticationResponse."""
+
+    def __init__(self, dm: DebugMailbox, paramlen: int) -> None:
+        """Initialize."""
+        super().__init__(dm, id=19, name="NXP_DBG_AUTH_RESP", paramlen=paramlen)
 
 
 class StartDebugSessions(DebugMailboxCommand):

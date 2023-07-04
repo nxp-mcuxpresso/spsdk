@@ -241,6 +241,7 @@ def main():
         "SDP(S) Protocol",
         "Debuggers",
         "Trust Provisioning",
+        "DK6",
     ]
 
     tools_list = ["MCUXpresso SEC tool", "Mass production tools", "3rd party tools"]

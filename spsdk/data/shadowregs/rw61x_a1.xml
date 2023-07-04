@@ -1,0 +1,613 @@
+<?xml version = "1.0" ?>
+<!--
+  Copyright 2023 NXP 
+
+SPDX - License - Identifier: BSD - 3 - Clause
+-->
+<regs>
+
+	<register offset="0x3c" width="32" name="BOOT_CFG0" reversed="False" description="Boot configuration word0. Shadow register is present for this word thus SW could access the register directly to read contents." otp_index="15">
+		<bit_field offset="0x0" width="4" name="PRIMARY_BOOT_SOURCE" access="RW" reset_value="0b0000" description="Primary boot source. (a.k.a. Master boot source)">
+			<bit_field_value name="ISP_PIN_BOOT" value="0b0000" description="ISP pins will determine boot source." />
+			<bit_field_value name="FLEXSPI_BOOT" value="0b0001" description="Boot from Flex-SPI flash device using FlexSpi interface pins." />
+			<bit_field_value name="SDIO_BOOT" value="0b0011" description="Boot from SDIO(Serial) port." />
+			<bit_field_value name="SPI_BOOT" value="0b0100" description="Boot using SPI slave interface using master boot mode." />
+			<bit_field_value name="I2C_BOOT" value="0b0101" description="I2C boot mode." />
+			<bit_field_value name="UART_BOOT" value="0b0110" description="Boot using UART interface using master boot mode." />
+			<bit_field_value name="SPI_FC_BOOT" value="0b0111" description="Boot from 1-bit SPI flash device from FlexCom interface pins selected by REDUNDANT_SPI_PORT field. Only load-to-RAM images are supported in this mode." />
+			<bit_field_value name="USBHID_BOOT" value="0b1000" description="USB-HID boot mode" />
+			<bit_field_value name="ISP_MODE" value="0b1001" description="Always enter ISP mode. DEFAULT_ISP_MODE field will determine the ISP interface." />
+			<bit_field_value name="Test_MODE" value="0b1010" description="Reserved" />
+			<bit_field_value name="QSPI_FALLBACK_SPINOR_BOOT" value="0b1100" description="Boot from Octal/Quad SPI flash device using FlexSPI channel A interface pins. If image is not found check recovery boot using SPI-flash device through FlexComm." />
+		</bit_field>
+		<bit_field offset="0x4" width="3" name="DEFAULT_ISP_MODE" access="RW" reset_value="0b000" description="ISP boot mode">
+			<bit_field_value name="AUTO_ISP" value="0b000" description="Auto detect ISP mode. The RW61x/ probes the active peripheral from one of the below serial interfaces and download image from the probed peripherals:UART, I2C, SPI, USB-HID" />
+			<bit_field_value name="USB_HID_ISP" value="0b001" description="The USB HID class is used to download the image of the USB0 port" />
+			<bit_field_value name="UART_ISP" value="0b010" description="Support ISP command interface on UART port only." />
+			<bit_field_value name="SPI_ISP" value="0b011" description="Support ISP command interface on SPI port only." />
+			<bit_field_value name="I2C_ISP" value="0b100" description="Support ISP command interface on I2C port only." />
+			<bit_field_value name="DISABLE_ISP" value="0b111" description="Disable ISP fall through when proper image is not found on primary boot device. " />
+		</bit_field>
+		<bit_field offset="0x7" width="1" name="BOOT_CLK_SPEED" access="RW" reset_value="0b0" description="Defines clock speeds during boot.">
+		</bit_field>
+		<reserved_bit_field offset="0x8" width="2" name="(Reserved)" access="RW" reset_value="0b00" description="None">
+		</reserved_bit_field>
+		<bit_field offset="0xa" width="1" name="STOP_ON_FAILURE" access="RW" reset_value="0b0" description="If set, then enables GPIO Port and PIN information upon failure">
+		</bit_field>
+		<reserved_bit_field offset="0xb" width="1" name="(Reserved)" access="RW" reset_value="0b0" description="None">
+		</reserved_bit_field>
+		<bit_field offset="0xc" width="2" name="TZM_IMAGE_TYPE" access="RW" reset_value="0b00" description="TrustZone-M mode">
+			<bit_field_value name="IGNORED" value="0b00" description="Ignored" />
+			<bit_field_value name="ENFORCE_PRESET_VALUE" value="0b01" description="Enforce preset TZM data in image manifest." />
+			<bit_field_value name="ENFORCE_PRESET_VALUE" value="0b10" description="Enforce preset TZM data in image manifest." />
+			<bit_field_value name="ENFORCE_PRESET_VALUE" value="0b11" description="Enforce preset TZM data in image manifest." />
+		</bit_field>
+		<reserved_bit_field offset="0xe" width="2" name="(Reserved)" access="RW" reset_value="0b00" description="None">
+		</reserved_bit_field>
+		<bit_field offset="0x10" width="3" name="REDUNDANT_SPI_PORT" access="RW" reset_value="0b000" description="FlexComm port to use for redundant SPI flash boot. ">
+			<bit_field_value name="FC0" value="0b000" description=" Use FlexCom0 pins P0_0 (SCK), P0_1 (MISO), P0_2 (MOSI), P0_3 (SEL)" />
+			<bit_field_value name="FC1" value="0b001" description=" Use FlexCom1 pins P0_7 (SCK), P0_8 (MISO), P0_9 (MOSI), P0_10 (SEL)" />
+			<bit_field_value name="FC2" value="0b010" description=" Use FlexCom2 pins P0_14 (SCK), P0_15 (MISO), P0_16 (MOSI), P0_17 (SEL)" />
+			<bit_field_value name="FC3" value="0b011" description=" Use FlexCom3 pins P0_21 (SCK), P0_22 (MISO), P0_23 (MOSI), P0_24 (SEL)" />
+			<bit_field_value name="FC4" value="0b100" description=" Use FlexCom4 pins P0_28 (SCK), P0_29 (MISO), P0_30 (MOSI), P0_31 (SEL)" />
+			<bit_field_value name="FC5" value="0b101" description=" Use FlexCom5 pins P1_3 (SCK), P1_4 (MISO), P1_5 (MOSI), P1_6 (SEL)" />
+			<bit_field_value name="FC6" value="0b110" description=" Use FlexCom6 pins P3_25 (SCK), P3_26 (MISO), P3_27 (MOSI), P3_28 (SEL)" />
+			<bit_field_value name="FC7" value="0b111" description=" Use FlexCom7 pins P4_0 (SCK), P4_1 (MISO), P4_2 (MOSI), P4_3 (SEL)" />
+		</bit_field>
+		<bit_field offset="0x13" width="2" name="SECURE_BOOT_EN" access="RW" reset_value="0b00" description="Secure boot enable config">
+			<bit_field_value name="DISABLED" value="0b00" description="Allow non-secure images with and without CRC. Used during development. " />
+			<bit_field_value name="DISABLED" value="0b01" description="RFU" />
+			<bit_field_value name="ENABLED" value="0b10" description="Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)" />
+			<bit_field_value name="ENABLED" value="0b11" description="Secure boot is enabled. Do complete ECDSA checking of signed images. (ECDSA signed)" />
+		</bit_field>
+		<reserved_bit_field offset="0x15" width="1" name="(Reserved)" access="RW" reset_value="0b0" description="None">
+		</reserved_bit_field>
+		<bit_field offset="0x16" width="1" name="DICE_INC_OTP" access="RW" reset_value="0b0" description="Include OTP fuses area in DICE computation">
+			<bit_field_value name="NOT_INCLUDED" value="0b0" description="Not included." />
+			<bit_field_value name="INCLUDED" value="0b1" description="Included." />
+		</bit_field>
+		<bit_field offset="0x17" width="1" name="DICE_SKIP" access="RW" reset_value="0b0" description="Skip DICE computation">
+			<bit_field_value name="ENABLED" value="0b0" description="Enable DICE." />
+			<bit_field_value name="DISABLED" value="0b1" description="Disable DICE." />
+		</bit_field>
+		<bit_field offset="0x18" width="3" name="BOOT_FAIL_PORT" access="RW" reset_value="0b000" description="GPIO port number to use for indicating boot failure.  Defines GPIO port number">
+		</bit_field>
+		<bit_field offset="0x1b" width="5" name="BOOT_FAIL_PIN" access="RW" reset_value="0b00000" description="Defines GPIO pin number.">
+		</bit_field>
+	</register>
+
+	<register offset="0x40" width="32" name="BOOT_CFG1" reversed="False" description="Boot configuration word specifying FlexSPI flash devices settings." otp_index="16">
+		<bit_field offset="0x0" width="1" name="FLEXSPI_AUTO_PROBE_EN" access="RW" reset_value="0b0" description="Flash auto probe feature enable. Auto probing is enabled if the bit is 1.">
+			<bit_field_value name="FLASH_AUTO_PROBE" value="0b0" description=", Boot ROM looks for a FCB on the Flash. Boot ROM reads a 512 byte FCB into on-chip SRAM and configures the FlexSPI controller accordingly." />
+			<bit_field_value name="FCB_FROM_FLASH" value="0b1" description="the Boot ROM will perform Flash auto probe sequence using parameters from OTP fuse values for FLEXSPI_PROBE_TYPE, FLEXSPI_FLASH_TYPE, FLEXSPI_DUMMY_CYCLES, FLEXSPI_FREQUENCY" />
+		</bit_field>
+		<bit_field offset="0x1" width="3" name="FLEXSPI_PROBE_TYPE" access="RW" reset_value="0b000" description="Flash probe type">
+			<bit_field_value name="QSPI_NOR" value="0b000" description="QuadSPI NOR" />
+		</bit_field>
+		<bit_field offset="0x4" width="3" name="FLEXSPI_FLASH_TYPE" access="RW" reset_value="0b000" description="Flash type. This field affects the default configuration of the Boot ROM Flash driver (before any input from Flash itself is available)">
+			<bit_field_value name="FLEXSPI_SDR_3B" value="0b000" description="Device supports SDR and uses 3 byte addresses for read. In case of autoprobing, when generating an FCB from the SFDP information, commands for SRD operation are generated. In case of configuration from FCB, for reading of Flash memory, command 0x03 is used." />
+			<bit_field_value name="FLEXSPI_DDR_4B" value="0b001" description="Device supports DDR and uses 4 byte addresses for read. In case of autoprobing, when generating an FCB from the SFDP information, the command set for DDR operation is used. In case of configuration from FCB, for reading of Flash memory, command 0x13 is used." />
+		</bit_field>
+		<bit_field offset="0x7" width="4" name="FLEXSPI_DUMMY_CYCLES" access="RW" reset_value="0b0000" description="Dummy cycles for read command">
+			<bit_field_value name="AUTO_PROB" value="0b000" description="The dummy cycles are probed automatically." />
+		</bit_field>
+		<bit_field offset="0xb" width="3" name="FLEXSPI_FREQUENCY" access="RW" reset_value="0b000" description="Flash SPI clock frequency to use for auto probing.">
+			<bit_field_value name="FLEXSPI_100MHZ" value="0b000" description="Use a clock frequency of 100 MHz." />
+			<bit_field_value name="FLEXSPI_120MHZ" value="0b001" description="Use a clock frequency of 120 MHz" />
+			<bit_field_value name="FLEXSPI_133MHZ" value="0b010" description="Use a clock frequency of 133 MHz" />
+			<bit_field_value name="FLEXSPI_166MHZ" value="0b011" description="Use a clock frequency of 166 MHz" />
+			<bit_field_value name="FLEXSPI_200MHZ" value="0b100" description="Use a clock frequency of 200 MHz" />
+			<bit_field_value name="FLEXSPI_80MHZ" value="0b101" description="Use a clock frequency of 80 MHz" />
+			<bit_field_value name="FLEXSPI_60MHZ" value="0b110" description="Use a clock frequency of 60 MHz" />
+			<bit_field_value name="FLEXSPI_50MHZ" value="0b111" description="Use a clock frequency of 50 MHz" />
+		</bit_field>
+		<bit_field offset="0xe" width="2" name="FLEXSPI_RST_SEQ" access="RW" reset_value="0b00" description="Select the Flash reset sequence to use for regular boot.">
+			<bit_field_value name="NO_RESET_PERFORMED" value="0b00" description="Don't perform any reset." />
+			<bit_field_value name="JEDEC_RESET" value="0b01" description="The Boot ROM performs a reset sequence according to the JEDEC specification." />
+			<bit_field_value name="RESET_COMMAND" value="0b10" description="The Boot ROM sends commands for resetting the Flash. The sequence is fixed command byte 0x66 (enable reset) followed by command byte 0x99 (reset device) using SPI (single wire)." />
+			<bit_field_value name="WAKEUP_COMMAND" value="0b11" description="The Boot ROM sends a wakeup command to the Flash. The sequence is fixed command byte 0xAB using SPI (single wire). As the wakeup command is using SPI, it has to be ensured that the Flash is in a mode where it can accept SPI commands before the system is put to low-power mode." />
+		</bit_field>
+		<bit_field offset="0x10" width="4" name="FLEXSPI_RST_HOLD_TIME" access="RW" reset_value="0b0000" description="Set the time to wait after reset sequence for regular boot.">
+			<bit_field_value name="NO_DELAY" value="0b0000" description="No additional delay." />
+			<bit_field_value name="100US_DELAY" value="0b0001" description="Wait for 100 us." />
+			<bit_field_value name="500US_DELAY" value="0b0010" description="Wait for 500 us." />
+			<bit_field_value name="1MS_DELAY" value="0b0011" description="Wait for 1 ms." />
+			<bit_field_value name="10MS_DELAY" value="0b0100" description="Wait for 10 ms." />
+			<bit_field_value name="20MS_DELAY" value="0b0101" description="Wait for 20 ms." />
+			<bit_field_value name="40MS_DELAY" value="0b0110" description="Wait for 40 ms." />
+			<bit_field_value name="60MS_DELAY" value="0b0111" description="Wait for 60 ms." />
+			<bit_field_value name="80MS_DELAY" value="0b1000" description="Wait for 80 ms." />
+			<bit_field_value name="100MS_DELAY" value="0b1001" description="Wait for 100 ms." />
+			<bit_field_value name="120MS_DELAY" value="0b1010" description="Wait for 120 ms." />
+			<bit_field_value name="140MS_DELAY" value="0b1011" description="Wait for 140 ms." />
+			<bit_field_value name="160MS_DELAY" value="0b1100" description="Wait for 160 ms." />
+			<bit_field_value name="180MS_DELAY" value="0b1101" description="Wait for 180 ms." />
+			<bit_field_value name="200MS_DELAY" value="0b1110" description="Wait for 200 ms." />
+			<bit_field_value name="220MS_DELAY" value="0b1111" description="Wait for 220 ms." />
+		</bit_field>
+		<bit_field offset="0x14" width="2" name="FLEXSPI_WUP_SEQ" access="RW" reset_value="0b00" description="Select the Flash reset sequence to use for boot from low power mode.">
+			<bit_field_value name="NO_RESET_PERFORMED" value="0b00" description="Don't perform any reset." />
+			<bit_field_value name="JEDEC_RESET" value="0b01" description="The Boot ROM performs a reset sequence according to the JEDEC specification." />
+			<bit_field_value name="RESET_COMMAND" value="0b10" description="The Boot ROM sends commands for resetting the Flash. The sequence is fixed command byte 0x66 (enable reset) followed by command byte 0x99 (reset device) using SPI (single wire)." />
+			<bit_field_value name="WAKEUP_COMMAND" value="0b11" description="The Boot ROM sends a wakeup command to the Flash. The sequence is fixed command byte 0xAB using SPI (single wire). As the wakeup command is using SPI, it has to be ensured that the Flash is in a mode where it can accept SPI commands before the system is put to low-power mode." />
+		</bit_field>
+		<bit_field offset="0x16" width="4" name="FLEXSPI_WUP_HOLD_TIME" access="RW" reset_value="0b0000" description="Set the time to wait after reset sequence for boot from low power mode.">
+			<bit_field_value name="NO_DELAY" value="0b0000" description="No additional delay." />
+			<bit_field_value name="100US_DELAY" value="0b0001" description="Wait for 100 us." />
+			<bit_field_value name="500US_DELAY" value="0b0010" description="Wait for 500 us." />
+			<bit_field_value name="1MS_DELAY" value="0b0011" description="Wait for 1 ms." />
+			<bit_field_value name="10MS_DELAY" value="0b0100" description="Wait for 10 ms." />
+			<bit_field_value name="20MS_DELAY" value="0b0101" description="Wait for 20 ms." />
+			<bit_field_value name="40MS_DELAY" value="0b0110" description="Wait for 40 ms." />
+			<bit_field_value name="60MS_DELAY" value="0b0111" description="Wait for 60 ms." />
+			<bit_field_value name="80MS_DELAY" value="0b1000" description="Wait for 80 ms." />
+			<bit_field_value name="100MS_DELAY" value="0b1001" description="Wait for 100 ms." />
+			<bit_field_value name="120MS_DELAY" value="0b1010" description="Wait for 120 ms." />
+			<bit_field_value name="140MS_DELAY" value="0b1011" description="Wait for 140 ms." />
+			<bit_field_value name="160MS_DELAY" value="0b1100" description="Wait for 160 ms." />
+			<bit_field_value name="180MS_DELAY" value="0b1101" description="Wait for 180 ms." />
+			<bit_field_value name="200MS_DELAY" value="0b1110" description="Wait for 200 ms." />
+			<bit_field_value name="220MS_DELAY" value="0b1111" description="Wait for 220 ms." />
+		</bit_field>
+		<bit_field offset="0x1a" width="2" name="FLEXSPI_HOLD_TIME" access="RW" reset_value="0b00" description="Wait time before access to Serial Flash.">
+			<bit_field_value name="NO_DELAY" value="0b0000" description="No additional delay" />
+			<bit_field_value name="500US_DELAY" value="0b0001" description="Wait for 500 us." />
+			<bit_field_value name="3MS_DELAY" value="0b0010" description="Wait for 3 ms." />
+			<bit_field_value name="10MS_DELAY" value="0b0011" description="Wait for 10 ms." />
+		</bit_field>
+		<bit_field offset="0x1c" width="4" name="FLEXSPI_PWR_HOLD_TIME" access="RW" reset_value="0b0000" description="Delay after POR before accessing Quad/Octal-SPI flash devices in addition to delay defined by QSPI_HOLD TIME field.">
+			<bit_field_value name="NO_DELAY" value="0b0000" description="No additional delay." />
+			<bit_field_value name="100US_DELAY" value="0b0001" description="Wait for 100 us." />
+			<bit_field_value name="500US_DELAY" value="0b0010" description="Wait for 500 us." />
+			<bit_field_value name="1MS_DELAY" value="0b0011" description="Wait for 1 ms." />
+			<bit_field_value name="10MS_DELAY" value="0b0100" description="Wait for 10 ms." />
+			<bit_field_value name="20MS_DELAY" value="0b0101" description="Wait for 20 ms." />
+			<bit_field_value name="40MS_DELAY" value="0b0110" description="Wait for 40 ms." />
+			<bit_field_value name="60MS_DELAY" value="0b0111" description="Wait for 60 ms." />
+			<bit_field_value name="80MS_DELAY" value="0b1000" description="Wait for 80 ms." />
+			<bit_field_value name="100MS_DELAY" value="0b1001" description="Wait for 100 ms." />
+			<bit_field_value name="120MS_DELAY" value="0b1010" description="Wait for 120 ms." />
+			<bit_field_value name="140MS_DELAY" value="0b1011" description="Wait for 140 ms." />
+			<bit_field_value name="160MS_DELAY" value="0b1100" description="Wait for 160 ms." />
+			<bit_field_value name="180MS_DELAY" value="0b1101" description="Wait for 180 ms." />
+			<bit_field_value name="200MS_DELAY" value="0b1110" description="Wait for 200 ms." />
+			<bit_field_value name="220MS_DELAY" value="0b1111" description="Wait for 220 ms." />
+		</bit_field>
+	</register>
+
+	<register offset="0x44" width="32" name="BOOT_CFG2" reversed="False" description="Boot configuration word specifiying settings for flexspi image" otp_index="17">
+		<bit_field offset="0x0" width="4" name="FLEXSPI_IMAGE_SIZE" access="RW" reset_value="0b0000" description="The size of the Flash memory to use for a boot image">
+			<bit_field_value name="SIZE_OFFSET" value="0b0000" description="The size of the boot image is considered to be equal to the offset of the second image." />
+			<bit_field_value name="SIZE_1MB" value="0b0001" description="Size of remapped area is 1MByte.		" />
+			<bit_field_value name="SIZE_2MB" value="0b0010" description="Size of remapped area is 2MByte.	" />
+			<bit_field_value name="SIZE_3MB" value="0b0011" description="Size of remapped area is 3MByte.	" />
+			<bit_field_value name="SIZE_4MB" value="0b0100" description="Size of remapped area is 4MByte.	" />
+			<bit_field_value name="SIZE_5MB" value="0b0101" description="Size of remapped area is 5MByte.	" />
+			<bit_field_value name="SIZE_6MB" value="0b0110" description="Size of remapped area is 6MByte.	" />
+			<bit_field_value name="SIZE_7MB" value="0b0111" description="Size of remapped area is 7MByte.	" />
+			<bit_field_value name="SIZE_8MB" value="0b1000" description="Size of remapped area is 8MByte.	" />
+			<bit_field_value name="SIZE_9MB" value="0b1001" description="Size of remapped area is 9MByte.	" />
+			<bit_field_value name="SIZE_10MB" value="0b1010" description="Size of remapped area is 10MByte.	" />
+			<bit_field_value name="SIZE_11MB" value="0b1011" description="Size of remapped area is 11MByte.	" />
+			<bit_field_value name="SIZE_12MB" value="0b1100" description="Size of remapped area is 12MByte.	" />
+			<bit_field_value name="SIZE_256KB" value="0b1101" description="Size of remapped area is 256KByte.	" />
+			<bit_field_value name="SIZE_512KB" value="0b1110" description="Size of remapped area is 512KByte.	" />
+			<bit_field_value name="SIZE_768KB" value="0b1111" description="Size of remapped area is 768KByte." />
+		</bit_field>
+		<bit_field offset="0x4" width="7" name="FLEXSPI_DELAY_CELL_NUM" access="RW" reset_value="0b0000000" description="Delay cell numbers for Flash read sampling via DQS (either internal loopback or external DQS)">
+		</bit_field>
+		<bit_field offset="0xb" width="10" name="FLEXSPI_IMAGE_OFFSET" access="RW" reset_value="0b0000000000" description="The offset in Flash memory where the second boot image starts. The offset to the second image is X * 256 KiB.">
+		</bit_field>
+		<reserved_bit_field offset="0x15" width="11" name="(Reserved)" access="RW" reset_value="0b00000000000" description="None">
+		</reserved_bit_field>
+	</register>
+
+	<register offset="0x48" width="32" name="BOOT_CFG3" reversed="False" description="Boot configuration word3. Shadow register is present for this word thus SW could access the register directly to read contents." otp_index="18">
+		<bit_field offset="0x0" width="3" name="ROTK0_USAGE" access="RW" reset_value="0b000" description="RoT key 0 usage properties. ">
+			<bit_field_value name="DebugCA_ImageCA_FwCA_ImageKey_FwKey" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key. " />
+			<bit_field_value name="DebugCA" value="0b001" description="Usable as debug CA only." />
+			<bit_field_value name="ImageCA_FwCA" value="0b010" description="Usable as image (boot and FW) CA only." />
+			<bit_field_value name="DebugCA_ImageCA_FwCA" value="0b011" description="Usable as debug, boot and FW image CA." />
+			<bit_field_value name="ImageKey_FwKey" value="0b100" description="Usable as image key and FW update key only. " />
+			<bit_field_value name="ImageKey" value="0b101" description="Usable as boot image key only." />
+			<bit_field_value name="FwKey" value="0b110" description="Usable as FW update image key only." />
+			<bit_field_value name="Unused" value="0b111" description="Key slot is not used." />
+		</bit_field>
+		<bit_field offset="0x3" width="3" name="ROTK1_USAGE" access="RW" reset_value="0b000" description="RoT key 1 usage properties.">
+			<bit_field_value name="DebugCA_ImageCA_FwCA_ImageKey_FwKey" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key. " />
+			<bit_field_value name="DebugCA" value="0b001" description="Usable as debug CA only." />
+			<bit_field_value name="ImageCA_FwCA" value="0b010" description="Usable as image (boot and FW) CA only." />
+			<bit_field_value name="DebugCA_ImageCA_FwCA" value="0b011" description="Usable as debug, boot and FW image CA." />
+			<bit_field_value name="ImageKey_FwKey" value="0b100" description="Usable as image key and FW update key only. " />
+			<bit_field_value name="ImageKey" value="0b101" description="Usable as boot image key only." />
+			<bit_field_value name="FwKey" value="0b110" description="Usable as FW update image key only." />
+			<bit_field_value name="Unused" value="0b111" description="Key slot is not used." />
+		</bit_field>
+		<bit_field offset="0x6" width="3" name="ROTK2_USAGE" access="RW" reset_value="0b000" description="RoT key 2 usage properties.">
+			<bit_field_value name="DebugCA_ImageCA_FwCA_ImageKey_FwKey" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key. " />
+			<bit_field_value name="DebugCA" value="0b001" description="Usable as debug CA only." />
+			<bit_field_value name="ImageCA_FwCA" value="0b010" description="Usable as image (boot and FW) CA only." />
+			<bit_field_value name="DebugCA_ImageCA_FwCA" value="0b011" description="Usable as debug, boot and FW image CA." />
+			<bit_field_value name="ImageKey_FwKey" value="0b100" description="Usable as image key and FW update key only. " />
+			<bit_field_value name="ImageKey" value="0b101" description="Usable as boot image key only." />
+			<bit_field_value name="FwKey" value="0b110" description="Usable as FW update image key only." />
+			<bit_field_value name="Unused" value="0b111" description="Key slot is not used." />
+		</bit_field>
+		<bit_field offset="0x9" width="3" name="ROTK3_USAGE" access="RW" reset_value="0b000" description="RoT key 3 usage properties.">
+			<bit_field_value name="DebugCA_ImageCA_FwCA_ImageKey_FwKey" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key. " />
+			<bit_field_value name="DebugCA" value="0b001" description="Usable as debug CA only." />
+			<bit_field_value name="ImageCA_FwCA" value="0b010" description="Usable as image (boot and FW) CA only." />
+			<bit_field_value name="DebugCA_ImageCA_FwCA" value="0b011" description="Usable as debug, boot and FW image CA." />
+			<bit_field_value name="ImageKey_FwKey" value="0b100" description="Usable as image key and FW update key only. " />
+			<bit_field_value name="ImageKey" value="0b101" description="Usable as boot image key only." />
+			<bit_field_value name="FwKey" value="0b110" description="Usable as FW update image key only." />
+			<bit_field_value name="Unused" value="0b111" description="Key slot is not used." />
+		</bit_field>
+		<bit_field offset="0xc" width="2" name="ENF_CNSA" access="RW" reset_value="0b00" description="Enforce CNSA (Commercial National Security Algorithm) suite keys">
+			<bit_field_value name="P-256_KEY" value="0b00" description="ECC P-256 keys." />
+			<bit_field_value name="P-384_KEY" value="0b01" description="ECC P-384 keys." />
+			<bit_field_value name="P-384_KEY" value="0b10" description="ECC P-384 keys." />
+			<bit_field_value name="P-384_KEY" value="0b11" description="ECC P-384 keys." />
+		</bit_field>
+		<bit_field offset="0xe" width="2" name="ENABLE_CRC_CHECK" access="RW" reset_value="0b00" description="Enable CRC checks over OTP words">
+		</bit_field>
+		<bit_field offset="0x10" width="2" name="FIPS_KDF_STEN" access="RW" reset_value="0b00" description="Enable self-test for CKDF block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.">
+			<bit_field_value name="SKIP_SELF_TEEST_RUN" value="0b00" description="Self-tests run is skipped and results are not included. " />
+			<bit_field_value name="INCLUDE_SELF_TEST_RESULTS" value="0b01" description="On failure continue to boot" />
+		</bit_field>
+		<bit_field offset="0x12" width="2" name="FIPS_CMAC_STEN" access="RW" reset_value="0b00" description="Enable self-test for CMAC block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.">
+			<bit_field_value name="SKIP_SELF_TEEST_RUN" value="0b00" description="Self-tests run is skipped and results are not included. " />
+			<bit_field_value name="INCLUDE_SELF_TEST_RESULTS" value="0b01" description="On failure continue to boot" />
+		</bit_field>
+		<bit_field offset="0x14" width="2" name="FIPS_DRBG_STEN" access="RW" reset_value="0b00" description="Enable self-test for DRBG block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.">
+			<bit_field_value name="SKIP_SELF_TEEST_RUN" value="0b00" description="Self-tests run is skipped and results are not included. " />
+			<bit_field_value name="INCLUDE_SELF_TEST_RESULTS" value="0b01" description="On failure continue to boot" />
+		</bit_field>
+		<bit_field offset="0x16" width="2" name="FIPS_ECDSA_STEN" access="RW" reset_value="0b00" description="Enable self-test for ECDSA block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.">
+			<bit_field_value name="SKIP_SELF_TEEST_RUN" value="0b00" description="Self-tests run is skipped and results are not included. " />
+			<bit_field_value name="INCLUDE_SELF_TEST_RESULTS" value="0b01" description="On failure continue to boot" />
+		</bit_field>
+		<bit_field offset="0x18" width="2" name="FIPS_AES_STEN" access="RW" reset_value="0b00" description="Enable self-test for AES block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.">
+			<bit_field_value name="SKIP_SELF_TEEST_RUN" value="0b00" description="Self-tests run is skipped and results are not included. " />
+			<bit_field_value name="INCLUDE_SELF_TEST_RESULTS" value="0b01" description="On failure continue to boot" />
+		</bit_field>
+		<bit_field offset="0x1a" width="2" name="FIPS_SHA_STEN" access="RW" reset_value="0b00" description="Enable self-test for SHA2 block on power-up. Needed for FIPS certification. If this field is non-zero run self-test and log result in BOOT_STATE register.">
+			<bit_field_value name="SKIP_SELF_TEEST_RUN" value="0b00" description="Self-tests run is skipped and results are not included. " />
+			<bit_field_value name="INCLUDE_SELF_TEST_RESULTS" value="0b01" description="On failure continue to boot" />
+		</bit_field>
+		<bit_field offset="0x1c" width="2" name="SKIP_PM_SIGN_VERIFCATION" access="RW" reset_value="0b00" description="On boot-up from PM3/PM4, do not run through ECDSA signature verification of the image">
+		</bit_field>
+		<reserved_bit_field offset="0x1e" width="2" name="(Reserved)" access="RW" reset_value="0b00" description="None">
+		</reserved_bit_field>
+	</register>
+
+	<register offset="0x50" width="32" name="BOOT_CFG5" reversed="False" description=" The USB VID and PID can be customized by writing the new VID to the usbVid
+field and the new PID to the usbPid field in this OTP" otp_index="20">
+		<bit_field offset="0x0" width="16" name="USB_VID" access="RW" reset_value="0b0000000000000000" description="Value of USB VID">
+		</bit_field>
+		<bit_field offset="0x10" width="16" name="USB_PID" access="RW" reset_value="0b0000000000000000" description="Value of USB PID">
+		</bit_field>
+	</register>
+
+	<register offset="0x54" width="32" name="BOOT_CFG6" reversed="False" description=" the SDIO VID and PID can be customized by writing the new VID to the usbVid
+field and the new PID to the usbPid field in this OTP" otp_index="21">
+		<bit_field offset="0x0" width="16" name="SDIO_VID" access="RW" reset_value="0b0000000000000000" description="Value of SDIO VID">
+		</bit_field>
+		<bit_field offset="0x10" width="16" name="SDIO_PID" access="RW" reset_value="0b0000000000000000" description="Value of SDIO PID">
+		</bit_field>
+	</register>
+
+	<register offset="0x58" width="32" name="SEC_BOOT_CFG0" reversed="False" description="Root key revocation" otp_index="22">
+		<bit_field offset="0x0" width="1" name="REVOKE_ROOTKEY0" access="RW" reset_value="0b0" description="RoT Key 0 enable">
+			<bit_field_value name="ENABLED" value="0b00" description="RoT Key is enabled " />
+			<bit_field_value name="ENABLED" value="0b01" description="RoT Key is enabled" />
+			<bit_field_value name="REVOKED" value="0b10" description="RoT Key is revoked" />
+			<bit_field_value name="REVOKED" value="0b11" description="RoT Key is revoked" />
+		</bit_field>
+		<bit_field offset="0x1" width="1" name="REVOKE_ROOTKEY1" access="RW" reset_value="0b0" description="RoT Key 1 enable">
+			<bit_field_value name="ENABLED" value="0b00" description="RoT Key is enabled " />
+			<bit_field_value name="ENABLED" value="0b01" description="RoT Key is enabled" />
+			<bit_field_value name="REVOKED" value="0b10" description="RoT Key is revoked" />
+			<bit_field_value name="REVOKED" value="0b11" description="RoT Key is revoked" />
+		</bit_field>
+		<bit_field offset="0x2" width="1" name="REVOKE_ROOTKEY2" access="RW" reset_value="0b0" description="RoT Key 2 enable ">
+			<bit_field_value name="ENABLED" value="0b00" description="RoT Key is enabled " />
+			<bit_field_value name="ENABLED" value="0b01" description="RoT Key is enabled" />
+			<bit_field_value name="REVOKED" value="0b10" description="RoT Key is revoked" />
+			<bit_field_value name="REVOKED" value="0b11" description="RoT Key is revoked" />
+		</bit_field>
+		<bit_field offset="0x3" width="1" name="REVOKE_ROOTKEY3" access="RW" reset_value="0b0" description="RoT Key 3 enable ">
+			<bit_field_value name="ENABLED" value="0b00" description="RoT Key is enabled " />
+			<bit_field_value name="ENABLED" value="0b01" description="RoT Key is enabled" />
+			<bit_field_value name="REVOKED" value="0b10" description="RoT Key is revoked" />
+			<bit_field_value name="REVOKED" value="0b11" description="RoT Key is revoked" />
+		</bit_field>
+		<bit_field offset="0x4" width="1" name="FA_MODE_EN" access="RW" reset_value="0b0" description="Enable Fault Analysis mode.&amp;#10;- When set ROM checks and Erase all KEYS and IVs in KEYSTORE Flash page.&amp;#10;-Flush all temporary key registers.&amp;#10;- Issues zeroized command to PUF&amp;#10;- Blocks all HW routed OTP keys and set lock bits on those registers&amp;#10;- Enables all debug ports and waits in loop for tester.">
+		</bit_field>
+		<reserved_bit_field offset="0x5" width="11" name="(Reserved)" access="RW" reset_value="0b00000000000" description="Should be filled with zeros">
+		</reserved_bit_field>
+		<bit_field offset="0x10" width="16" name="Redundancy" access="RW" reset_value="0b0000000000000000" description="None">
+		</bit_field>
+	</register>
+
+	<register offset="0x5c" width="32" name="SEC_BOOT_CFG1" reversed="False" description="DAP Vendor Usage configurations fuse word" otp_index="23">
+		<bit_field offset="0x0" width="16" name="DAP_VENDOR_USAGE" access="RW" reset_value="0b0000000000000000" description="Lower 16-bits of Vendor Usage field in Debug Credentials defined in NXP's Debug Authentication Protocol specifications Version 1.0.  ">
+		</bit_field>
+		<bit_field offset="0x10" width="16" name="Redundancy" access="RW" reset_value="0b0000000000000000" description="The word is set in redundant mode.">
+		</bit_field>
+	</register>
+
+	<register offset="0x60" width="32" name="SEC_BOOT_CFG2" reversed="False" description="Lower 16-bits of revoke Image key configuration fuse word" otp_index="24">
+		<bit_field offset="0x0" width="16" name="REVOKE_IMG_KEY[15:0]" access="RW" reset_value="0b0000000000000000" description="Image key revocation id">
+		</bit_field>
+		<bit_field offset="0x10" width="16" name="Redundancy" access="RW" reset_value="0b0000000000000000" description="The word is set with redundant value.">
+		</bit_field>
+	</register>
+
+	<register offset="0x64" width="32" name="SEC_BOOT_CFG3" reversed="False" description="Revoke Image key configuration fuse word" otp_index="25">
+		<bit_field offset="0x0" width="16" name="REVOKE_IMG_KEY[31:16]" access="RW" reset_value="0b0000000000000000" description="Higher 16-bits of revoke Image key configuration fuse word">
+		</bit_field>
+		<bit_field offset="0x10" width="16" name="Redundancy" access="RW" reset_value="0b0000000000000000" description="The word is set with redundant value.">
+		</bit_field>
+	</register>
+
+	<register offset="0x7c" width="32" name="DCFG_CC_SOCU_NS" reversed="False" description="With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only.&amp;#10;    - In this scenario,  or easy of development, Level-I customer releases the part to always allow non-secure debug. &amp;#10;    - To allow level-2 customers to further seal the part  DCFG_CC_SOCU_NS is used.&amp;#10;    - ROM will use this word to further restrict the debug access.&amp;#10;    - Layout of this word is same as DCFG_CC_SOCU. &amp;#10;      &amp;#10;1. Pinned disabled state is assumed the highest level of restriction.  (PINNED_xxxEN = 1,  DFLT_xxxEN = 0) &amp;#10;2. Un-pinned PINNED_xxxEN = 0,  DFLT_xxxEN = 0 or 1)&amp;#10;3. Pinned enabled state is the lowest level. PINNED_xxxEN = 1,  DFLT_xxxEN =1" otp_index="31">
+		<bit_field offset="0x0" width="8" name="CRC8_NS[7:0]" access="RW" reset_value="0b00000000" description="CRC-8/ITU of upper 3 bytes (bits 8 to 31). Since these fields are security critical, they are constructed with built-in integrity protection to protect from side channel glitch attacks. The lower byte (0 to 7 bits) of these OTP words should be written with CRC-8/ITU of upper 3 bytes (bits 8 to 31). This construction makes the probability of a successful glitch attack to flip the exact control bits extremely difficult. The CRC8 calculation should be based on x8 + x2 + x + 1 polynomial. Polynomial=0x07, initial value= 0x00, XorOut=0x55">
+		</bit_field>
+		<bit_field offset="0x8" width="1" name="DFLT_NIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x9" width="1" name="DFLT_DBGEN_NS" access="RW" reset_value="0b0" description="Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xa" width="1" name="DFLT_SPNIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xb" width="1" name="DFLT_SPIDEN_NS" access="RW" reset_value="0b0" description="Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xc" width="1" name="DFLT_TAPEN_NS" access="RW" reset_value="0b0" description="Controls TAP (Test Access Point) controller used for structural integrity testing of silicon by NXP as part of Return Material Analysis (RMA)">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xd" width="1" name="DFLT_CPU1NIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of CPU1.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xe" width="1" name="DFLT_CPU1DBGEN_NS" access="RW" reset_value="0b0" description="Controls invasive debugging of CPU1.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xf" width="1" name="DFLT_CPU2NIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of CPU2.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x10" width="1" name="DFLT_CPU2DBGEN_NS" access="RW" reset_value="0b0" description="Controls invasive debugging of CPU2.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x11" width="1" name="DFLT_ISPCMDEN_NS" access="RW" reset_value="0b0" description="Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x12" width="1" name="DFLT_FACMDEN_NS" access="RW" reset_value="0b0" description="Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x13" width="1" name="PINNED_NIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x14" width="1" name="PINNED_DBGEN_NS" access="RW" reset_value="0b0" description="Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x15" width="1" name="PINNED_SPNIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x16" width="1" name="PINNED_SPIDEN_NS" access="RW" reset_value="0b0" description="Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x17" width="1" name="PINNED_TAPEN_NS" access="RW" reset_value="0b0" description="Controls TAP (Test Access Point) controller used for structural integrity testing of silicon by NXP as part of Return Material Analysis (RMA)">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x18" width="1" name="PINNED_CPU1NIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of CPU1">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x19" width="1" name="PINNED_CPU1DBGEN_NS" access="RW" reset_value="0b0" description="Controls invasive debugging of CPU1.">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1a" width="1" name="PINNED_CPU2NIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of CPU2.">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1b" width="1" name="PINNED_CPU2DBGEN_NS" access="RW" reset_value="0b0" description="Controls invasive debugging of CPU2.">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1c" width="1" name="PINNED_ISPCMDEN_NS" access="RW" reset_value="0b0" description="Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1d" width="1" name="PINNED_FACMDEN_NS" access="RW" reset_value="0b0" description="Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1e" width="1" name="FORCE_UUID_MATCH_NS" access="RW" reset_value="0b0" description="When set, debug authentication protocol only accepts &quot;Debug Credential&quot; certificates (DC) with matching UUID.">
+		</bit_field>
+		<reserved_bit_field offset="0x1f" width="1" name="(Reserved)" access="RW" reset_value="0b0" description="Reserved.">
+		</reserved_bit_field>
+	</register>
+
+	<register offset="0x84" width="32" name="DCFG_CC_SOCU" reversed="False" description="The DCFG_CC_SOCU configuration field specifies the debug access restrictions per debug domain." otp_index="33">
+		<bit_field offset="0x0" width="8" name="CRC8[7:0]" access="RW" reset_value="0b00000000" description="CRC-8/ITU of upper 3 bytes (bits 8 to 31). Since these fields are security critical, they are constructed with built-in integrity protection to protect from side channel glitch attacks. The lower byte (0 to 7 bits) of these OTP words should be written with CRC-8/ITU of upper 3 bytes (bits 8 to 31). This construction makes the probability of a successful glitch attack to flip the exact control bits extremely difficult. The CRC8 calculation should be based on x8 + x2 + x + 1 polynomial. Polynomial=0x07, initial value= 0x00, XorOut=0x55">
+		</bit_field>
+		<bit_field offset="0x8" width="1" name="DFLT_NIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x9" width="1" name="DFLT_DBGEN" access="RW" reset_value="0b0" description="Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xa" width="1" name="DFLT_SPNIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xb" width="1" name="DFLT_SPIDEN" access="RW" reset_value="0b0" description="Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xc" width="1" name="DFLT_TAPEN" access="RW" reset_value="0b0" description="Controls TAP (Test Access Point) controller used for structural integrity testing of silicon by NXP as part of Return Material Analysis (RMA)">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xd" width="1" name="DFLT_CPU1NIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of CPU1.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xe" width="1" name="DFLT_CPU1DBGEN" access="RW" reset_value="0b0" description="Controls invasive debugging of CPU1.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0xf" width="1" name="DFLT_CPU2NIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of CPU2.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x10" width="1" name="DFLT_CPU2DBGEN" access="RW" reset_value="0b0" description="Controls invasive debugging of CPU2.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x11" width="1" name="DFLT_ISPCMDEN" access="RW" reset_value="0b0" description="Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x12" width="1" name="DFLT_FACMDEN" access="RW" reset_value="0b0" description="Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication">
+			<bit_field_value name="DISABLED" value="0b0" description="Disabled." />
+			<bit_field_value name="ENABLED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x13" width="1" name="PINNED_NIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x14" width="1" name="PINNED_DBGEN" access="RW" reset_value="0b0" description="Controls invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x15" width="1" name="PINNED_SPNIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x16" width="1" name="PINNED_SPIDEN" access="RW" reset_value="0b0" description="Controls invasive debugging of TrustZone for Arm8-M defined secure domain of CPU0">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x17" width="1" name="PINNED_TAPEN" access="RW" reset_value="0b0" description="Controls TAP (Test Access Point) controller used for structural integrity testing of silicon by NXP as part of Return Material Analysis (RMA)">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x18" width="1" name="PINNED_CPU1NIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of CPU1">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x19" width="1" name="PINNED_CPU1DBGEN" access="RW" reset_value="0b0" description="Controls invasive debugging of CPU1.">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1a" width="1" name="PINNED_CPU2NIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of CPU2.">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1b" width="1" name="PINNED_CPU2DBGEN" access="RW" reset_value="0b0" description="Controls invasive debugging of CPU2.">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1c" width="1" name="PINNED_ISPCMDEN" access="RW" reset_value="0b0" description="Controls whether ISP boot flow DM-AP command (command code: 0x05) can be issued after authentication.">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1d" width="1" name="PINNED_FACMDEN" access="RW" reset_value="0b0" description="Controls whether DM-AP Set FA Mode command (command code: 0x06) can be issued after authentication">
+			<bit_field_value name="DAR_CC" value="0b0" description="Debug Authentication Response determines the state." />
+			<bit_field_value name="FIXED" value="0b1" description="Enabled." />
+		</bit_field>
+		<bit_field offset="0x1e" width="1" name="FORCE_UUID_MATCH" access="RW" reset_value="0b0" description="When set, debug authentication protocol only accepts &quot;Debug Credential&quot; certificates (DC) with matching UUID.">
+		</bit_field>
+		<reserved_bit_field offset="0x1f" width="1" name="(Reserved)" access="RW" reset_value="0b0" description="Reserved.">
+		</reserved_bit_field>
+	</register>
+
+	<register offset="0x88" width="32" name="DCFG_CC_SOCU_AP" reversed="False" description="Anti-pole (inverse) value of Debug Configuration word(DCFG_CC_SOCU). DCFG_CC_SOCU_AP should be programmed with the exact anti-pole (inverse value) value of DCFG_CC_SOCU. Any mismatch between DCFG_CC_SOCU and DCFG_CC_SOCU_AP is deemed as an attack and debug is disabled permanently" otp_index="34">
+	</register>
+
+	<register offset="0xb4" width="32" name="LIFE_CYCLE_STATE" reversed="False" description="Life cycle state of rw61x platfrom" otp_index="45">
+		<bit_field offset="0x0" width="8" name="LCS[7:0]" access="RW" reset_value="0b00000000" description="Possible values of rw61x lifecycle states">
+			<bit_field_value name="NXP_BLANK" value="0b0000_0000" description="Initial state in NXP factory" />
+			<bit_field_value name="NXP_PROVISIONED" value="0b0000_0001" description="Support ISP command interface on UART port only." />
+			<bit_field_value name="OEM_OPEN" value="0b0000_0011" description="Initial customer development state after leaving NXP manufacturing." />
+			<bit_field_value name="OEM_SECURE" value="0b0000_0111" description="Optional customer development state. Used for development of NS world code." />
+			<bit_field_value name="OEM_CLOSED" value="0b0000_1111" description="In-field application state for end-customer use." />
+			<bit_field_value name="OEM_FIELD_RETURN" value="0b0001_1111" description="Field return state." />
+			<bit_field_value name="NXP_FIELD_RETURN" value="0b0011_1111" description="NXP field return state(CQC)." />
+			<bit_field_value name="OEM_LOCKED" value="0b1100_1111" description="Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state." />
+			<bit_field_value name="SHREDDED" value="0b1111_1111" description="Bricked state to prevent device use." />
+		</bit_field>
+		<bit_field offset="0x8" width="8" name="LCS_REDUNDANT[7:0]" access="RW" reset_value="0b00000000" description="Repeat values of lifecycle state due to a security">
+			<bit_field_value name="NXP_BLANK" value="0b0000_0000" description="Initial state in NXP factory" />
+			<bit_field_value name="NXP_PROVISIONED" value="0b0000_0001" description="Support ISP command interface on UART port only." />
+			<bit_field_value name="OEM_OPEN" value="0b0000_0011" description="Initial customer development state after leaving NXP manufacturing." />
+			<bit_field_value name="OEM_SECURE" value="0b0000_0111" description="Optional customer development state. Used for development of NS world code." />
+			<bit_field_value name="OEM_CLOSED" value="0b0000_1111" description="In-field application state for end-customer use." />
+			<bit_field_value name="OEM_FIELD_RETURN" value="0b0001_1111" description="Field return state." />
+			<bit_field_value name="NXP_FIELD_RETURN" value="0b0011_1111" description="NXP field return state(CQC)." />
+			<bit_field_value name="OEM_LOCKED" value="0b1100_1111" description="Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state." />
+			<bit_field_value name="SHREDDED" value="0b1111_1111" description="Bricked state to prevent device use." />
+		</bit_field>
+		<bit_field offset="0x10" width="16" name="Redundancy" access="RW" reset_value="0b0000000000000000" description="None">
+		</bit_field>
+	</register>
+
+	<register offset="0x1a0" width="32" name="RKTH0" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="104">
+	</register>
+
+	<register offset="0x1a4" width="32" name="RKTH1" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="105">
+	</register>
+
+	<register offset="0x1a8" width="32" name="RKTH2" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="106">
+	</register>
+
+	<register offset="0x1ac" width="32" name="RKTH3" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="107">
+	</register>
+
+	<register offset="0x1b0" width="32" name="RKTH4" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="108">
+	</register>
+
+	<register offset="0x1b4" width="32" name="RKTH5" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="109">
+	</register>
+
+	<register offset="0x1b8" width="32" name="RKTH6" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="110">
+	</register>
+
+	<register offset="0x1bc" width="32" name="RKTH7" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="111">
+	</register>
+
+	<register offset="0x1c0" width="32" name="RKTH8" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="112">
+	</register>
+
+	<register offset="0x1c4" width="32" name="RKTH9" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="113">
+	</register>
+
+	<register offset="0x1c8" width="32" name="RKTH10" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="114">
+	</register>
+
+	<register offset="0x1cc" width="32" name="RKTH11" reversed="True" description="SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).&amp;#10;For i in 0..3:&amp;#10;  Let M[i] = BE(Modulus i)&amp;#10;  Let E[i] = BE(Exponent i)&amp;#10;  Let RKH[i] = SHA256( M[i] || E[i] )&amp;#10;  Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&amp;#10;Note: Documentation update needed when using blhost due to endianness issue." otp_index="115">
+	</register>
+</regs>

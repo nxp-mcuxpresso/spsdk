@@ -369,7 +369,7 @@ class RegsBitField:
         """
         try:
             val_int = self.get_enum_constant(new_val)
-        except SPSDKRegsErrorEnumNotFound as exc:
+        except SPSDKRegsErrorEnumNotFound:
             # Try to decode standard input
             try:
                 val_int = value_to_int(new_val)

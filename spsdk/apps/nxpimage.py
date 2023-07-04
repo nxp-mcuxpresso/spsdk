@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """NXP MCU Image tool."""
+import datetime
 import logging
 import os
 import sys
@@ -15,7 +16,11 @@ from typing import List, Optional
 import click
 
 from spsdk.apps.utils import spsdk_logger
-from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroup,
+    spsdk_apps_common_options,
+    spsdk_plugin_option,
+)
 from spsdk.apps.utils.utils import (
     INT,
     SPSDKAppError,
@@ -24,6 +29,7 @@ from spsdk.apps.utils.utils import (
     get_key,
     store_key,
 )
+from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.exceptions import SPSDKError
 from spsdk.image import TrustZone, get_mbi_class
 from spsdk.image.ahab.ahab_container import AHABImage
@@ -34,7 +40,11 @@ from spsdk.image.fcb.fcb import FCB
 from spsdk.image.hab.config_parser import ImageConfig
 from spsdk.image.hab.hab_container import HabContainer
 from spsdk.image.keystore import KeyStore
-from spsdk.image.mbimg import mbi_generate_config_templates, mbi_get_supported_families
+from spsdk.image.mbimg import (
+    MasterBootImage,
+    mbi_generate_config_templates,
+    mbi_get_supported_families,
+)
 from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.sbfile.sb2 import sly_bd_parser as bd_parser
 from spsdk.sbfile.sb2.commands import CmdLoad
@@ -48,14 +58,19 @@ from spsdk.utils.misc import (
     align,
     align_block,
     get_abs_path,
-    import_source,
     load_binary,
     load_configuration,
     load_text,
     value_to_int,
     write_file,
 )
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas, check_config
+from spsdk.utils.plugins import load_plugin_from_source
+from spsdk.utils.schema_validator import (
+    CommentedConfig,
+    ConfigTemplate,
+    ValidationSchemas,
+    check_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,12 +92,8 @@ def mbi_group() -> None:
 
 
 @mbi_group.command(name="export", no_args_is_help=True)
-@click.option(
-    "--plugin",
-    required=False,
-    help="External python file/package containing a custom SignatureProvider implementation.",
-)
 @click.argument("config", type=click.Path(exists=True, readable=True))
+@spsdk_plugin_option
 def mbi_export_command(
     config: str,
     plugin: str,
@@ -104,7 +115,7 @@ def mbi_export(config: str, plugin: Optional[str] = None) -> None:
     """
     config_data = load_configuration(config)
     if plugin:
-        import_source(plugin)
+        load_plugin_from_source(plugin)
     config_dir = os.path.dirname(config)
     mbi_cls = get_mbi_class(config_data)
     check_config(config_data, mbi_cls.get_validation_schemas(), search_paths=[config_dir])
@@ -116,6 +127,54 @@ def mbi_export(config: str, plugin: Optional[str] = None) -> None:
     write_file(mbi_data, mbi_output_file_path, mode="wb")
 
     click.echo(f"Success. (Master Boot Image: {mbi_output_file_path} created.)")
+
+
+@mbi_group.command(name="parse", no_args_is_help=True)
+@click.option(
+    "-f",
+    "--chip-family",
+    default="lpc55s3x",
+    type=click.Choice(mbi_get_supported_families(), case_sensitive=False),
+    required=True,
+    help="Select the chip family.",
+)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary MBI image to parse.",
+)
+@click.option(
+    "-k",
+    "--dek",
+    type=str,
+    required=False,
+    help=(
+        "Data encryption key, if it's specified, the parse method tries decrypt all encrypted images. "
+        "It could be specified as binary/HEX text file path or directly HEX string"
+    ),
+)
+@click.argument("parsed-data", type=click.Path(resolve_path=True))
+def mbi_parse_command(chip_family: str, binary: str, dek: str, parsed_data: str) -> None:
+    """Parse MBI Image into YAML configuration and binary images."""
+    mbi_parse(chip_family, binary, dek, parsed_data)
+
+
+def mbi_parse(chip_family: str, binary: str, dek: str, parsed_data: str) -> None:
+    """Parse AHAB Image into YAML configuration and binary images."""
+    if not os.path.exists(parsed_data):
+        os.makedirs(parsed_data, exist_ok=True)
+
+    mbi = MasterBootImage.parse(family=chip_family, data=load_binary(binary), dek=dek)
+
+    if not mbi:
+        click.echo(f"Failed. (MBI: {binary} parsing failed.)")
+        return
+
+    mbi.create_config(output_folder=parsed_data)
+
+    click.echo(f"Success. (MBI: {binary} has been parsed and stored into {parsed_data} )")
 
 
 @mbi_group.command(name="get-templates", no_args_is_help=True)
@@ -172,7 +231,12 @@ def sb21_group() -> None:
 @click.option(
     "-k", "--key", type=click.Path(exists=True), help="Add a key file and enable encryption."
 )
-@click.option("-s", "--pkey", type=click.Path(exists=True), help="Path to private key for signing.")
+@click.option(
+    "-s",
+    "--pkey",
+    type=str,
+    help="Path to private key or signature provider configuration used for signing.",
+)
 @click.option(
     "-S",
     "--cert",
@@ -198,6 +262,12 @@ with -S/--cert arg.",
     help="Path to output hash of hashes of root keys. If argument is not \
 provided, then by default the tool creates hash.bin in the working directory.",
 )
+@click.option(
+    "--plugin",
+    type=click.Path(exists=True, dir_okay=False),
+    required=False,
+    help="External python file containing a custom SignatureProvider implementation.",
+)
 @click.argument("external", type=click.Path(), nargs=-1)
 def sb21_export_command(
     command: str,
@@ -207,13 +277,14 @@ def sb21_export_command(
     cert: List[str],
     root_key_cert: List[str],
     hash_of_hashes: str,
+    plugin: str,
     external: List[str],
 ) -> None:
     """Generate Secure Binary v2.1 Image from configuration.
 
     EXTERNAL is a space separated list of external binary files defined in BD file
     """
-    sb21_export(command, output, key, pkey, cert, root_key_cert, hash_of_hashes, external)
+    sb21_export(command, output, key, pkey, cert, root_key_cert, hash_of_hashes, plugin, external)
 
 
 def sb21_export(
@@ -224,16 +295,25 @@ def sb21_export(
     cert: List[str],
     root_key_cert: List[str],
     hash_of_hashes: str,
+    plugin: str,
     external: List[str],
 ) -> None:
     """Generate Secure Binary v2.1 Image from configuration."""
+    if plugin:
+        load_plugin_from_source(plugin)
     if output is None:
         raise SPSDKAppError("Error: no output file was specified")
+    signature_provider = (
+        get_signature_provider(local_file_key=pkey)
+        if os.path.isfile(pkey)
+        else get_signature_provider(sp_cfg=pkey)
+    )
+
     try:
         sb2_data = generate_SB21(
             bd_file_path=command,
             key_file_path=key,
-            private_key_file_path=pkey,
+            signature_provider=signature_provider,
             signing_certificate_file_paths=cert,
             root_key_certificate_paths=root_key_cert,
             hoh_out_path=hash_of_hashes,
@@ -285,7 +365,7 @@ def sb21_parse(binary: str, key: str, parsed_data: str) -> None:
             logger.debug(f"Dumping certificate {file_name}")
             write_file(certificate.dump(), file_name, mode="wb")
 
-    for section_idx, boot_sections in enumerate(parsed_sb._boot_sections):
+    for section_idx, boot_sections in enumerate(parsed_sb.boot_sections):
         for command_idx, command in enumerate(boot_sections._commands):
             if isinstance(command, CmdLoad):
                 file_name = os.path.abspath(
@@ -726,7 +806,15 @@ def ahab_parse(chip_family: str, image_type: str, binary: str, dek: str, parsed_
 
     config = ahab_image.create_config(parsed_data)
     write_file(
-        ConfigTemplate.convert_cm_to_yaml(config),
+        CommentedConfig(
+            main_title=(
+                f"AHAB recreated configuration from :"
+                f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
+            ),
+            schemas=AHABImage.get_validation_schemas(),
+            values=config,
+            export_template=False,
+        ).export_to_yaml(),
         os.path.join(parsed_data, "parsed_config.yaml"),
     )
     click.echo(f"Success. (AHAB: {binary} has been parsed and stored into {parsed_data}.)")
@@ -1008,7 +1096,7 @@ def otfad_export(alignment: int, config: str, index: Optional[int] = None) -> No
             write_file(blhost_script, blhost_script_filename)
             click.echo(f"Created OTFAD BLHOST load fuses script:\n{blhost_script_filename}")
 
-    click.echo(f"Success. OTFAD files have been created")
+    click.echo("Success. OTFAD files have been created")
 
 
 @otfad_group.command(name="get-kek", no_args_is_help=False)
@@ -1160,7 +1248,7 @@ def iee_export(config: str) -> None:
         "Output folder contains:\n"
         "  -  Binary file that contains whole image data including "
         f"IEE key blobs data {iee_all}.\n"
-        f"\IEE memory map:\n{binary_image.draw(no_color=True)}"
+        f"IEE memory map:\n{binary_image.draw(no_color=True)}"
     )
 
     for image in binary_image.sub_images:
@@ -1179,7 +1267,7 @@ def iee_export(config: str) -> None:
         write_file(memory_map, readme_file)
         logger.info(f"Created IEE readme file:\n{readme_file}")
     else:
-        logger.info(f"Skipping generation of IEE readme file")
+        logger.info("Skipping generation of IEE readme file")
 
     if iee.database.get_device_value("has_kek_fuses", iee.family) and config_data.get(
         "generate_fuses_script"
@@ -1191,7 +1279,7 @@ def iee_export(config: str) -> None:
     else:
         logger.info("Skipping generation of IEE BLHOST load fuses script")
 
-    click.echo(f"Success. IEE files have been created")
+    click.echo("Success. IEE files have been created")
 
 
 @iee_group.command(name="get-template", no_args_is_help=True)
@@ -1939,6 +2027,7 @@ def binary_get_template(overwrite: bool, output: str) -> None:
 @click.option(
     "-i",
     "--input",
+    "input_file",
     type=click.Path(file_okay=True, dir_okay=False, resolve_path=True),
     required=True,
     help="Binary file name to be aligned.",
@@ -1946,6 +2035,7 @@ def binary_get_template(overwrite: bool, output: str) -> None:
 @click.option(
     "-o",
     "--output",
+    "output_file",
     type=click.Path(resolve_path=True),
     help="Aligned file name. If not specified, input file will be updated.",
 )
@@ -1963,33 +2053,34 @@ def binary_get_template(overwrite: bool, output: str) -> None:
     default="zeros",
     help="Pattern of used padding ('zeros', 'ones', 'rand', 'inc' or any number value).",
 )
-def binary_align_command(input: str, output: str, alignment: int, pattern: str) -> None:
+def binary_align_command(input_file: str, output_file: str, alignment: int, pattern: str) -> None:
     """Align binary file to provided alignment and padded with specified pattern."""
-    binary_align(input, output, alignment, pattern)
+    binary_align(input_file, output_file, alignment, pattern)
 
 
 def binary_align(
-    input: str, output: Optional[str] = None, alignment: int = 1, pattern: str = "zeros"
+    input_file: str, output_file: Optional[str] = None, alignment: int = 1, pattern: str = "zeros"
 ) -> None:
     """Align binary file to provided alignment and padded with specified pattern.
 
-    :param input: Input file name.
-    :param output: Output file name. If not specified, input file will be updated.
+    :param input_file: Input file name.
+    :param output_file: Output file name. If not specified, input file will be updated.
     :param alignment: Size of alignment block.
     :param pattern: Padding pattern.
 
     :raises SPSDKError: Invalid input arguments.
     """
-    if not input or not os.path.isfile(input):
+    if not input_file or not os.path.isfile(input_file):
         raise SPSDKError("Binary file alignment: Invalid input file")
     if alignment <= 0:
         raise SPSDKError("Binary file alignment: Alignment value must be 1 or greater.")
-    if not output:
-        output = input
-    binary = align_block(data=load_binary(input), alignment=alignment, padding=pattern)
-    write_file(binary, output, mode="wb")
+    if not output_file:
+        output_file = input_file
+    binary = align_block(data=load_binary(input_file), alignment=alignment, padding=pattern)
+    write_file(binary, output_file, mode="wb")
     click.echo(
-        f"The {input} file has been aligned to {len(binary)} ({hex(len(binary))}) bytes and stored into {output}"
+        f"The {input_file} file has been aligned to {len(binary)} ({hex(len(binary))}) bytes \
+            and stored into {output_file}"
     )
 
 
@@ -1997,6 +2088,7 @@ def binary_align(
 @click.option(
     "-i",
     "--input",
+    "input_file",
     type=click.Path(file_okay=True, dir_okay=False, resolve_path=True),
     required=True,
     help="Binary file name to be padded.",
@@ -2021,34 +2113,35 @@ def binary_align(
     default="zeros",
     help="Pattern of used padding ('zeros', 'ones', 'rand', 'inc' or any number value).",
 )
-def binary_pad_command(input: str, output: str, size: int, pattern: str) -> None:
+def binary_pad_command(input_file: str, output: str, size: int, pattern: str) -> None:
     """Pad binary file to provided final size with specified pattern."""
-    binary_pad(input, output, size, pattern)
+    binary_pad(input_file, output, size, pattern)
 
 
 def binary_pad(
-    input: str, output: Optional[str] = None, size: int = 1, pattern: str = "zeros"
+    input_file: str, output: Optional[str] = None, size: int = 1, pattern: str = "zeros"
 ) -> None:
     """Pad binary file to provided final size with specified pattern.
 
-    :param input: Input file name.
+    :param input_file: Input file name.
     :param output: Output file name. If not specified, input file will be updated.
     :param size: Final size of file.
     :param pattern: Padding pattern.
 
     :raises SPSDKError: Invalid input arguments.
     """
-    if not input or not os.path.isfile(input):
+    if not input_file or not os.path.isfile(input_file):
         raise SPSDKError("Binary file alignment: Invalid input file")
     if not output:
-        output = input
-    binary = load_binary(input)
+        output = input_file
+    binary = load_binary(input_file)
     if len(binary) < size:
         binary = align_block(data=binary, alignment=size, padding=pattern)
     write_file(binary, output, mode="wb")
 
     click.echo(
-        f"The {input} file has been padded to {len(binary)} ({hex(len(binary))}) byte size and stored into {output}"
+        f"The {input_file} file has been padded to {len(binary)} ({hex(len(binary))}) byte size\
+            and stored into {output}"
     )
 
 
@@ -2153,6 +2246,7 @@ def convert_bin2hex(input_file: str, reverse: bool, output: str) -> None:
 @click.option(
     "-t",
     "--type",
+    "output_type",
     type=click.Choice(["uint8_t", "uint16_t", "uint32_t", "uint64_t"]),
     default="uint8_t",
     help="The output C array type.",
@@ -2195,7 +2289,7 @@ def convert_bin2hex(input_file: str, reverse: bool, output: str) -> None:
 def convert_bin2carr(
     input_file: str,
     name: str,
-    type: str,
+    output_type: str,
     endian: str,
     padding: str,
     count_per_line: int,
@@ -2208,7 +2302,7 @@ def convert_bin2carr(
     converted to 16/32 or 64 bit unsigned types with specified endianness.
     """
     raw_binary = load_binary(input_file)
-    width = {"uint8_t": 1, "uint16_t": 2, "uint32_t": 4, "uint64_t": 8}[type]
+    width = {"uint8_t": 1, "uint16_t": 2, "uint32_t": 4, "uint64_t": 8}[output_type]
 
     if len(raw_binary) != align(len(raw_binary), width) and padding is None:
         raise SPSDKAppError("Unaligned binary image, if still to be used, define '-p' padding.")
@@ -2220,7 +2314,7 @@ def convert_bin2carr(
     count = rest_bytes // width
     name = name or os.path.splitext(os.path.basename(input_file))[0]
     index = 0
-    ret = f"const {type} {name}[{count}] = {{\n"
+    ret = f"const {output_type} {name}[{count}] = {{\n"
     while rest_bytes:
         line_cnt = min(count_per_line, rest_bytes // width)
         comment = f"// 0x{index:09_X}"

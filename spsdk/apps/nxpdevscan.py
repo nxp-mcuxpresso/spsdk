@@ -7,7 +7,6 @@
 
 """NXP USB Device Scanner."""
 
-import logging
 import sys
 from typing import IO
 
@@ -47,6 +46,13 @@ from spsdk.utils import nxpdevscan
     help="Search only for USB devices",
 )
 @optgroup.option(
+    "-sd",
+    "--sdio",
+    "scope",
+    flag_value="sdio",
+    help="Search only for SDIO devices",
+)
+@optgroup.option(
     "-p",
     "--port",
     "scope",
@@ -65,6 +71,14 @@ def main(extend_vids: str, out: IO[str], scope: str, log_level: int) -> None:
     """Utility listing all connected NXP USB and UART devices."""
     spsdk_logger.install(level=log_level)
     additional_vids = [int(vid, 16) for vid in extend_vids]
+
+    if scope in ["all", "sdio"]:
+        nxp_sdio_devices = nxpdevscan.search_nxp_sdio_devices()
+        if out.name == "<stdout>":
+            click.echo(8 * "-" + " Connected NXP SDIO Devices " + 8 * "-" + "\n", out)
+        for sdio_dev in nxp_sdio_devices:
+            click.echo(sdio_dev.info(), out)
+            click.echo("", out)
 
     if scope in ["all", "usb"]:
         nxp_usb_devices = nxpdevscan.search_nxp_usb_devices(additional_vids)

@@ -6,11 +6,11 @@ Master Boot Image (MBI)
 Master Boot Image can be used directly (e.g. by using *blhost write-memory* command) or it can be used for further processing  (e.g. used as input to Secure Binary image container).
 Image is created based on a supplied configuration file, either JSON or YAML is supported.
 
-We can divide divide into two categories based on layout. 
+We can divide into two categories based on layout.
 
 * eXecute-In-Place (XIP) images
     * Plain
-    * CRC 
+    * CRC
     * Signed
 
 * Load-to-RAM images
@@ -72,7 +72,7 @@ Sample configuration for LPC55s6x plain signed XIP image. Other sample configura
 Supported devices for MBI
 ==========================
 
-NXPIMAGE support devices from LPC55xx family (*LPC55S0x, LPC55S1x, LPC55S2x, LPC552x, LPC55S6x*), *RT5xx*, *RT6xx* and *LPC55S3x*.
+NXPIMAGE support devices from LPC55xx family (*LPC55S0x, LPC55S1x, LPC55S2x, LPC552x, LPC55S6x*), *RT5xx*, *RT6xx*, *LPC55S3x*, *MCXN9xx* and *RW61x*.
 Supported execution targets are: *Internal flash (XIP), External Flash (XIP) and Load to RAM* and image authentication types: *Plain, CRC, Signed, Encrypted and NXP Signed*.
 
 The following table shows the supported image types for each device,

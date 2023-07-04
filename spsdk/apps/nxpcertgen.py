@@ -60,7 +60,11 @@ class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
 @click.group(name="nxpcertgen", no_args_is_help=True, cls=CommandsTreeGroupAliasedGetCfgTemplate)  # type: ignore
 @spsdk_apps_common_options
 def main(log_level: int) -> None:
-    """Utility for certificate generation."""
+    """Utility for certificate generation.
+
+    !!! The NXPCERTGEN tool is deprecated, use new NXPCRYPTO tool from SPSDK for new projects !!!
+    """
+    click.secho("Deprecated tool! Use npxcrypto instead", fg="yellow")
     spsdk_logger.install(level=log_level, logger=logger)
 
 

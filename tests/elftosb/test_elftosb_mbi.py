@@ -92,6 +92,8 @@ def get_signing_key(config_file) -> ECC.EccKey:
         ("mb_xip_crc_version.json", "k32w1xx"),
         ("mb_xip_384_384_no_signature.json", "k32w1xx"),
         ("mb_ext_xip_crc_s19.json", "lpc55s3x"),
+        ("mb_ram_crc.json", "mcxn9xx"),
+        ("mb_xip_crc.json", "mcxn9xx"),
     ],
 )
 def test_elftosb_mbi_basic(data_dir, tmpdir, config_file, device):
@@ -100,8 +102,8 @@ def test_elftosb_mbi_basic(data_dir, tmpdir, config_file, device):
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, device)
 
-        cmd = f"--image-conf {new_config}"
-        result = runner.invoke(elftosb.main, cmd.split())
+        cmd = ["--image-conf", new_config]
+        result = runner.invoke(elftosb.main, cmd)
         if result.exit_code != 0:
             assert isinstance(result.exception, SPSDKUnsupportedImageType)
         else:
@@ -116,16 +118,21 @@ def test_elftosb_mbi_basic(data_dir, tmpdir, config_file, device):
         ("mb_xip_384_256.json", "lpc55s3x", None),
         ("mb_xip_384_384.json", "lpc55s3x", None),
         ("mb_ext_xip_signed.json", "lpc55s3x", None),
+        ("mb_xip_256_none.json", "mcxn9xx", None),
+        ("mb_xip_384_256.json", "mcxn9xx", None),
+        ("mb_xip_384_384.json", "mcxn9xx", None),
+        ("mb_xip_384_384_recovery_crctest.json", "mcxn9xx", None),
+        ("mb_xip_384_384_recovery.json", "mcxn9xx", None),
         ("mb_xip_256_none.json", "k32w1xx", None),
         ("mb_xip_384_256.json", "k32w1xx", None),
         ("mb_xip_384_384.json", "k32w1xx", None),
-        ("mb_xip_256_none_sd.json", "k32w1xx", "sha256"),
+        ("mb_xip_256_none_sd.json", "k32w1xx", None),
         ("mb_xip_384_256_sd.json", "k32w1xx", "sha256"),
         ("mb_xip_384_384_sd.json", "k32w1xx", "sha384"),
         ("mb_xip_256_none.json", "kw45xx", None),
         ("mb_xip_384_256.json", "kw45xx", None),
         ("mb_xip_384_384.json", "kw45xx", None),
-        ("mb_xip_256_none_sd.json", "kw45xx", "sha256"),
+        ("mb_xip_256_none_sd.json", "kw45xx", None),
         ("mb_xip_384_256_sd.json", "kw45xx", "sha256"),
         ("mb_xip_384_384_sd.json", "kw45xx", "sha384"),
     ],
@@ -136,8 +143,8 @@ def test_elftosb_mbi_signed(data_dir, tmpdir, config_file, device, sign_digest):
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, device)
 
-        cmd = f"--image-conf {new_config}"
-        result = runner.invoke(elftosb.main, cmd.split())
+        cmd = ["--image-conf", new_config]
+        result = runner.invoke(elftosb.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(new_binary)
 
@@ -210,8 +217,8 @@ def test_elftosb_mbi_legacy_signed(data_dir, tmpdir, config_file, device, skip_h
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, device)
 
-        cmd = f"--image-conf {new_config}"
-        result = runner.invoke(elftosb.main, cmd.split())
+        cmd = ["--image-conf", new_config]
+        result = runner.invoke(elftosb.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(new_binary)
 
@@ -275,8 +282,8 @@ def test_elftosb_mbi_invalid_conf(data_dir, tmpdir, config_file, device):
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
         _, _, new_config = process_config_file(config_file, tmpdir, device)
 
-        cmd = f"--image-conf {new_config}"
-        result = runner.invoke(elftosb.main, cmd.split())
+        cmd = ["--image-conf", new_config]
+        result = runner.invoke(elftosb.main, cmd)
         assert result.exit_code == 1
 
 
@@ -290,8 +297,9 @@ def test_elftosb_mbi_legacy_encrypted(data_dir, tmpdir, config_file, device, ski
         config_file = f"{data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, device)
 
-        cmd = f"--image-conf {new_config}"
-        result = runner.invoke(elftosb.main, cmd.split())
+        cmd = ["--image-conf", new_config]
+        result = runner.invoke(elftosb.main, cmd)
+        assert result.exit_code == 0
         assert os.path.isfile(new_binary)
 
         # validate file lengths

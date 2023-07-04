@@ -47,12 +47,19 @@ def test_cli_devices_global():
 
 def test_generate_cmpa(data_dir, tmpdir):
     """Test PFR CLI - Generation CMPA binary."""
-    cmd = f"generate-binary --output {tmpdir}/pnd.bin "
-    cmd += f"--user-config {data_dir}/cmpa_96mhz.json --calc-inverse "
-    cmd += f"--secret-file {data_dir}/selfsign_privatekey_rsa2048.pem "
+    cmd = [
+        "generate-binary",
+        "--output",
+        f"{tmpdir}/pnd.bin",
+        "--user-config",
+        f"{data_dir}/cmpa_96mhz.json",
+        "--calc-inverse",
+        "--secret-file",
+        f"{data_dir}/selfsign_privatekey_rsa2048.pem",
+    ]
     logging.debug(cmd)
     runner = CliRunner()
-    result = runner.invoke(cli.main, cmd.split())
+    result = runner.invoke(cli.main, cmd)
     assert result.exit_code == 0, result.output
     new_data = open(f"{tmpdir}/pnd.bin", "rb").read()
     expected = open(f"{data_dir}/CMPA_96MHz.bin", "rb").read()
@@ -99,13 +106,22 @@ def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir, tmpdir):
 
 def test_parse(data_dir, tmpdir):
     """Test PFR CLI - Parsing CMPA binary to get config."""
-    cmd = "parse-binary --device lpc55s6x --type cmpa "
-    cmd += f"--binary {data_dir}/CMPA_96MHz.bin "
-    cmd += f"--show-diff "
-    cmd += f"--output {tmpdir}/config.yml"
+    cmd = [
+        "parse-binary",
+        "--device",
+        "lpc55s6x",
+        "--type",
+        "cmpa",
+        "--binary",
+        f"{data_dir}/CMPA_96MHz.bin",
+        "--show-diff",
+        "--output",
+        f"{tmpdir}/config.yml",
+    ]
+
     logging.debug(cmd)
     runner = CliRunner()
-    result = runner.invoke(cli.main, cmd.split())
+    result = runner.invoke(cli.main, cmd)
     assert result.exit_code == 0, result.output
     new_cfg = PfrConfiguration(f"{tmpdir}/config.yml")
     expected_cfg = PfrConfiguration(f"{data_dir}/cmpa_96mhz_rotkh.yml")
@@ -114,10 +130,18 @@ def test_parse(data_dir, tmpdir):
 
 def test_user_config(tmpdir):
     """Test PFR CLI - Generation CMPA user config."""
-    cmd = f"get-template --device lpc55s6x --type cmpa --output {tmpdir}/cmpa.yml"
+    cmd = [
+        "get-template",
+        "--device",
+        "lpc55s6x",
+        "--type",
+        "cmpa",
+        "--output",
+        f"{tmpdir}/cmpa.yml",
+    ]
     logging.debug(cmd)
     runner = CliRunner()
-    result = runner.invoke(cli.main, cmd.split())
+    result = runner.invoke(cli.main, cmd)
     assert result.exit_code == 0, result.output
     # verify that the output is a valid json object
     pfr_config = PfrConfiguration(f"{tmpdir}/cmpa.yml")

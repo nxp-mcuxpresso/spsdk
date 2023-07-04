@@ -84,7 +84,7 @@ def detect_new_usb_path(
         logger.info("No changes were detected")
         return None
 
-    raise SPSDKTpError(f"USB device detected malfunctioned")
+    raise SPSDKTpError("USB device detected malfunctioned")
 
 
 def update_usb_path(tptarget: TpTargetBlHost, new_usb_path: Optional[bytes]) -> None:

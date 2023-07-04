@@ -2,7 +2,7 @@
 <!--
   Copyright 2023 NXP
 
-  SPDX-License-Identifier: BSD-3-Clause 
+  SPDX-License-Identifier: BSD-3-Clause
 -->
 <regs>
 	<register offset="0x00" width="32" name="configOption0" reversed="False" description="XMCD Configuration Option 0">

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  External Memory Configuration Data template for rt116x.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                        == General Options ==                                        
+#                                        == General Options ==
 # ----------------------------------------------------------------------------------------------------
 family: rt116x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'rt118x']
 revision: latest # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device; Possible options:['latest']

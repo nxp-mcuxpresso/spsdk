@@ -37,6 +37,33 @@ devices:
           CRC8: comalg_dcfg_cc_socu_crc8
         "SEC_BOOT_CFG[5]":
           RESERVED: comalg_do_nothing
+  rw61x:
+    revisions:
+      a1:
+        data_file: rw61x_a1.xml
+    latest: a1
+    attributes:
+      address: 0x3012_6000
+      flush_func: rw61x_update_scratch_reg
+      inverted_regs:
+        DCFG_CC_SOCU: DCFG_CC_SOCU_AP
+      computed_fields:
+        DCFG_CC_SOCU:
+          CRC8_AP[7:0]: comalg_dcfg_cc_socu_crc8
+        DCFG_CC_SOCU_NS:
+          CRC8_AP[7:0]: comalg_dcfg_cc_socu_crc8
+      grouped_registers:
+        - name: RKTH
+          width: 384
+          config_as_hexstring: true
+          reversed: true
+          description:
+            ROTKH field is compounded by 12 32-bit fields and contains Root key
+            table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four
+            SHA-256 digests computed over four OEM public keys (OEM has four
+            private-public key pairs in case one of its private keys becomes
+            compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit
+            SHA-384 digest.
 attributes:
   grouped_registers:
     - name: OTFAD_KEK_SEED

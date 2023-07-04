@@ -6,5 +6,5 @@ For those unfamiliar with the jupyter environment we recommend this tutorial fir
 
 .. note::
 
-    You should install additional development requirements using **pip install -r requirements-develop.txt** in order to run jupyter notebooks.
+    You should install additional development requirements using **pip install spsdk[examples]** in order to run jupyter notebooks.
     Users using Windows 32bit need to install rust and add MSVC target: **rustup target add i686-pc-windows-msvc**

@@ -106,6 +106,26 @@ devices:
           INVERSE_VALUE: pfr_reg_inverse_high_half
         CC_SOCU_DFLT:
           INVERSE_VALUE: pfr_reg_inverse_high_half
+  mcxn9xx:
+    revisions:
+      a0:
+        data_file: mcxn9xx_a0.xml
+    latest: a0
+    attributes:
+      address: 0x0100_4000
+      seal_start: CMPA_CMAC0
+      seal_count: 4
+      mandatory_computed_regs: 1
+      grouped_registers:
+        - name: ROTKH
+          width: 384
+          reversed: true
+          config_as_hexstring: true
+          description:
+            ROTKH field is compounded by 12 32-bit fields and contains Root key table hash.
+            For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four SHA-256 digests computed over
+            four OEM public keys (OEM has four private-public key pairs in case one of its private keys
+            becomes compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit SHA-384 digest.
 attributes:
   computed_registers:
     SHA256_DIGEST: ""

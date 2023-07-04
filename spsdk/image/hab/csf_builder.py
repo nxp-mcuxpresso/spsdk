@@ -106,7 +106,7 @@ class SecCommand(ABC):
         """
         for param, is_mandatory in cls.CONFIGURATION_PARAMS.items():
             if is_mandatory and section_data.options.get(param) is None:
-                raise SPSDKError(f"Mandatory parameter is not defined")
+                raise SPSDKError("Mandatory parameter is not defined")
 
         additional_params = list(
             set(key.lower() for key in section_data.options.keys())
@@ -122,7 +122,7 @@ class SecCommand(ABC):
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
-        "return: Parsed command instance
+        :return: Parsed command instance
         """
 
     @abstractmethod
@@ -301,7 +301,7 @@ class SecCsfInstallCsfk(SecCommand):
     def __init__(
         self,
         csfk_file_path: str,
-        certificate_format: Optional[EnumCertFormat],
+        certificate_format: Optional[EnumCertFormat] = None,
     ) -> None:
         """Install CSF class constructor.
 
@@ -316,7 +316,7 @@ class SecCsfInstallCsfk(SecCommand):
         if certificate_format == EnumCertFormat.SRK:
             raise SPSDKValueError(f"Invalid certificate format: {EnumCertFormat.SRK}")
         if certificate_format is None:
-            certificate_format == EnumCertFormat.X509
+            certificate_format = EnumCertFormat.X509
         self.certificate_format = certificate_format
 
     @staticmethod
@@ -594,12 +594,12 @@ class SecCsfAuthenticateData(SecCommand):
         self.engine = engine
         self.engine_config = engine_config
         if verification_index is None:
-            raise SPSDKValueError(f"Verification index must be defined.")
+            raise SPSDKValueError("Verification index must be defined.")
         if verification_index != self.KEY_IDX_AUT_DAT_FAST_AUTH and (
             verification_index < self.KEY_IDX_AUT_DAT_MIN
             or verification_index > self.KEY_IDX_AUT_DAT_MAX
         ):
-            raise SPSDKValueError(f"Key index must have valid value.")
+            raise SPSDKValueError("Key index must have valid value.")
         self.verification_index = verification_index
         self.private_key = private_key
         self.key_pass = key_pass
@@ -914,7 +914,7 @@ class SecInstallSecretKey(SecCommand):
         if source_index is None:
             raise SPSDKValueError("Source index must be specified")
         if source_index > 3:
-            raise SPSDKValueError(f"Source index must be equal or lower than 3")
+            raise SPSDKValueError("Source index must be equal or lower than 3")
         self.source_index = source_index
         if target_index is None:
             raise SPSDKValueError("Target index must be specified")
@@ -1023,9 +1023,9 @@ class SecDecryptData(SecCommand):
         """
         super().__init__()
         if verification_index is None:
-            raise SPSDKValueError(f"Verification index must be defined.")
+            raise SPSDKValueError("Verification index must be defined.")
         if verification_index >= 6:
-            raise SPSDKValueError(f"Verification index must be lower than 6.")
+            raise SPSDKValueError("Verification index must be lower than 6.")
         self.verification_index = verification_index
         self.engine = engine if engine is not None else EnumEngine.ANY
         self.engine_config = engine_config if engine_config is not None else 0
@@ -1034,7 +1034,7 @@ class SecDecryptData(SecCommand):
         self.mac_len = mac_len if mac_len is not None else 16
         if self.mac_len < 4 or self.mac_len > 16 or self.mac_len % 2:
             raise SPSDKValueError(
-                f"Invalid mac length. Valid options are 4, 6, 8, 10, 12, 14 and 16."
+                "Invalid mac length. Valid options are 4, 6, 8, 10, 12, 14 and 16."
             )
         self.nonce = nonce
         self._dek: Optional[bytes] = None
@@ -1168,7 +1168,8 @@ class CsfBuilder:
         :param search_paths: List of paths where to search for the file, defaults to None
         :param timestamp: Signature timestamp
         """
-        self.reset()
+        self.header: Optional[SecCsfHeader] = None
+        self.commands: List[SecCommand] = []
         self.bd_config = bd_config
         self.is_encrypted = self.bd_config.options.flags == 0x0C
         self.is_authenticated = self.bd_config.options.flags == 0x08
@@ -1181,8 +1182,8 @@ class CsfBuilder:
 
     def reset(self) -> None:
         """Reset builder into its initial state."""
-        self.header: Optional[SecCsfHeader] = None
-        self.commands: List[SecCommand] = []
+        self.header = None
+        self.commands = []
 
     def get_command(self, command_id: int, raise_exc: bool = True) -> Optional[SecCommand]:
         """Get command by command id.
@@ -1458,7 +1459,7 @@ class CsfBuilder:
         :param cert_file_path: Path to certificate file
         :return: Path to private key file
         """
-        logger.debug(f"Trying to determine the private key path.")
+        logger.debug("Trying to determine the private key path.")
         keys_dir = self._get_keys_dir(cert_file_path)
         cert_file_name = os.path.basename(cert_file_path)
         cert_file, cert_extension = os.path.splitext(cert_file_name)
@@ -1478,7 +1479,7 @@ class CsfBuilder:
         :param cert_file_path: Path to certificate file
         :return: Path to key pass file
         """
-        logger.debug(f"Trying to determine the key pass path.")
+        logger.debug("Trying to determine the key pass path.")
         keys_dir = self._get_keys_dir(cert_file_path)
         key_pass_file = os.path.join(keys_dir, "key_pass.txt")
         if not os.path.isfile(key_pass_file):

@@ -122,7 +122,7 @@ class BuspalI2C(Buspal):
                     retry_cnt -= 1
                     self._send_frame(frames, wait_for_ack, retry_cnt)
                 else:
-                    raise SPSDKError("Failed retrying reading the I2C header frame")
+                    raise SPSDKError("Failed retrying reading the I2C header frame") from error
 
     def _read_default(self, size: int) -> bytes:
         """Read 'length' amount of bytes from BUSPAL I2C device.

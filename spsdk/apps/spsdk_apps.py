@@ -20,6 +20,7 @@ from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
 
 from .blhost import main as blhost_main
+from .dk6prog import main as dk6prog_main
 from .elftosb import main as elftosb_main
 from .ifr import main as ifr_main
 from .nxpcertgen import main as nxpcertgen_main
@@ -64,6 +65,8 @@ main.add_command(pfr_main, name="pfr")
 main.add_command(sdphost_main, name="sdphost")
 main.add_command(sdpshost_main, name="sdpshost")
 main.add_command(shadowregs_main, name="shadowregs")
+main.add_command(dk6prog_main, name="dk6prog")
+
 if TP:
     main.add_command(tpconfig_main, name="tpconfig")
     main.add_command(tphost_main, name="tphost")

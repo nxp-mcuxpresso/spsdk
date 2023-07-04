@@ -39,6 +39,7 @@ def test_determine_protocol_version(protocol_version, rsa_detected, invalid):
     if invalid:
         with pytest.raises(SPSDKValueError):
             protocol = DatProtocol(protocol_version)
+            protocol.validate()
     else:
         protocol = DatProtocol(protocol_version)
         assert protocol.is_rsa() is rsa_detected

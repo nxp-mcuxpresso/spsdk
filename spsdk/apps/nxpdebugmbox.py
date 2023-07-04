@@ -26,6 +26,7 @@ from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroupAliasedGetCfgTemplate,
     spsdk_apps_common_options,
+    spsdk_plugin_option,
 )
 from spsdk.apps.utils.utils import (
     INT,
@@ -42,14 +43,8 @@ from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.debuggers.utils import PROBES, open_debug_probe, test_ahb_access
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import (
-    find_file,
-    import_source,
-    load_binary,
-    load_configuration,
-    load_text,
-    write_file,
-)
+from spsdk.utils.misc import find_file, load_binary, load_configuration, load_text, write_file
+from spsdk.utils.plugins import load_plugin_from_source
 
 logger = logging.getLogger(__name__)
 NXPDEBUGMBOX_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpdebugmbox")
@@ -97,8 +92,8 @@ class DatProtocol:
         is_rsa = protocol_version[0] == "1"
         return is_rsa
 
-    def __post_init__(self) -> None:
-        """Post init validation.
+    def validate(self) -> None:
+        """Validate protocol value.
 
         :raises SPSDKValueError: In case that protocol is using unsupported key type.
         """
@@ -172,8 +167,7 @@ def _open_debugmbox(
     "--protocol",
     "protocol",
     metavar="VERSION",
-    default="1.0",
-    help=f"Set the protocol version. Default is 1.0 (RSA). "
+    help=f"Set the protocol version. Currently this option is used for gendc and auth sub commands"
     f'Available options are: {", ".join(DatProtocol.VERSIONS)}',
     type=click.Choice(DatProtocol.VERSIONS),
 )
@@ -187,7 +181,7 @@ def _open_debugmbox(
 @click.option(
     "-n",
     "--no-reset",
-    "reset",
+    "no_reset",
     is_flag=True,
     default=True,
     help=(
@@ -218,7 +212,7 @@ def main(
     timing: float,
     serial_no: str,
     debug_probe_option: List[str],
-    reset: bool,
+    no_reset: bool,
     operation_timeout: int,
 ) -> int:
     """Tool for working with Debug Mailbox."""
@@ -234,7 +228,7 @@ def main(
 
     ctx.obj = {
         "debug_mailbox_params": DebugMailboxParams(
-            reset=reset, more_delay=timing, operation_timeout=operation_timeout
+            reset=no_reset, more_delay=timing, operation_timeout=operation_timeout
         ),
         "debug_probe_params": DebugProbeParams(
             interface=interface, serial_no=serial_no, debug_probe_user_params=probe_user_params
@@ -255,9 +249,22 @@ def main(
     is_flag=True,
     help="When used, exit debug mailbox command is not executed after debug authentication.",
 )
+@click.option(
+    "-x",
+    "--nxp-keys",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Use the ROM NXP keys to authenticate.",
+)
 @click.pass_obj
-def auth_command(pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool) -> None:
-    """Perform the Debug Authentication."""
+def auth_command(
+    pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool, nxp_keys: bool
+) -> None:
+    """Perform the Debug Authentication.
+
+    The -p protocol option must be defined in main application.
+    """
     auth(
         pass_obj["debug_probe_params"],
         pass_obj["debug_mailbox_params"],
@@ -266,6 +273,7 @@ def auth_command(pass_obj: dict, beacon: int, certificate: str, key: str, no_exi
         certificate,
         key,
         no_exit,
+        nxp_keys,
     )
 
 
@@ -277,6 +285,7 @@ def auth(
     certificate: str,
     key: str,
     no_exit: bool,
+    nxp_keys: bool,
 ) -> None:
     """Perform the Debug Authentication.
 
@@ -287,16 +296,25 @@ def auth(
     :param certificate: Path to Debug Credentials.
     :param key: Path to DCK private key.
     :param no_exit: When true, exit debug mailbox command is not executed after debug authentication.
+    :param nxp_keys: When true, Use the ROM NXP keys to authenticate.
     :raises SPSDKAppError: Raised if any error occurred.
     """
+    protocol.validate()
     try:
         logger.info("Starting Debug Authentication")
 
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             debug_cred_data = load_binary(certificate)
             debug_cred = DebugCredential.parse(debug_cred_data)
-            dac_rsp_len = 30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc == 4 else 26
-            dac_data = dm_commands.DebugAuthenticationStart(dm=mail_box, resplen=dac_rsp_len).run()
+            dac_rsp_len = 30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc in [4, 6] else 26
+            if nxp_keys:
+                dac_data = dm_commands.NxpDebugAuthenticationStart(
+                    dm=mail_box, resplen=dac_rsp_len
+                ).run()
+            else:
+                dac_data = dm_commands.DebugAuthenticationStart(
+                    dm=mail_box, resplen=dac_rsp_len
+                ).run()
             # convert List[int] to bytes
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
@@ -313,9 +331,14 @@ def auth(
             dar_data = dar.export()
             # convert bytes to List[int]
             dar_data_words = list(struct.unpack(f"<{len(dar_data) // 4}I", dar_data))
-            dar_response = dm_commands.DebugAuthenticationResponse(
-                dm=mail_box, paramlen=len(dar_data_words)
-            ).run(dar_data_words)
+            if nxp_keys:
+                dar_response = dm_commands.NxpDebugAuthenticationResponse(
+                    dm=mail_box, paramlen=len(dar_data_words)
+                ).run(dar_data_words)
+            else:
+                dar_response = dm_commands.DebugAuthenticationResponse(
+                    dm=mail_box, paramlen=len(dar_data_words)
+                ).run(dar_data_words)
             logger.debug(f"DAR response: {dar_response}")
             if not no_exit:
                 exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
@@ -423,11 +446,11 @@ def start(debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailb
 @click.pass_obj
 def exit_command(pass_obj: dict) -> None:  # pylint: disable=redefined-builtin
     """Exit DebugMailBox."""
-    exit(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
+    exit_debug_mbox(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
     click.echo("Exit Debug Mailbox succeeded")
 
 
-def exit(
+def exit_debug_mbox(
     debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailboxParams
 ) -> None:  # pylint: disable=redefined-builtin
     """Exit DebugMailBox.
@@ -532,7 +555,7 @@ def ispmode(
         raise SPSDKAppError(f"Entering into ISP mode failed: {e}") from e
 
 
-@main.command(name="blankauth", no_args_is_help=True)
+@main.command(name="token_auth", no_args_is_help=True)
 @click.option(
     "-f", "--file", type=click.Path(), required=True, help="Path to token file (string hex format)."
 )
@@ -543,19 +566,19 @@ def ispmode(
     help="When used, exit debug mailbox command is not executed after debug authentication.",
 )
 @click.pass_obj
-def blankauth_command(pass_obj: dict, file: str, no_exit: bool) -> None:
-    """Debug Authentication for Blank Device."""
-    blankauth(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], file, no_exit)
-    click.echo("Debug authentication for blank device succeeded")
+def token_auth_command(pass_obj: dict, file: str, no_exit: bool) -> None:
+    """Debug Authentication using token."""
+    token_auth(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], file, no_exit)
+    click.echo("Debug authentication using token succeeded")
 
 
-def blankauth(
+def token_auth(
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
     token_file: str,
     no_exit: bool,
 ) -> None:
-    """Debug Authentication for Blank Device.
+    """Debug Authentication using token.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
@@ -591,13 +614,15 @@ def blankauth(
                 if not ahb_access_granted:
                     raise SPSDKAppError("Access to AHB is not granted.")
 
-                logger.info(f"Debug Authentication ends {res_str}{colorama.Fore.RESET}.")
+                logger.info(
+                    f"Debug Authentication using token ends {res_str}{colorama.Fore.RESET}."
+                )
             else:
                 logger.info(
-                    "Debug Authentication ends without exit and without test of AHB access."
+                    "Debug Authentication using token ends without exit and without test of AHB access."
                 )
     except Exception as e:
-        raise SPSDKAppError(f"Debug authentication for blank device failed: {e}") from e
+        raise SPSDKAppError(f"Debug authentication using token  failed: {e}") from e
 
 
 @main.command(name="get-crp")
@@ -837,7 +862,7 @@ def get_uuid_command(pass_obj: dict) -> None:
     if uuid:
         click.echo(f"The device UUID is: {uuid.hex()}")
     else:
-        click.echo(f"The device UUID is not possible to retrieve from target.")
+        click.echo("The device UUID is not possible to retrieve from target.")
 
 
 def get_uuid(
@@ -884,7 +909,7 @@ def get_uuid(
         raise SPSDKAppError(f"Getting UUID from target failed: {e}") from e
 
     if dac.uuid == bytes(16):
-        logger.warning(f"The valid UUID is not included in DAC.")
+        logger.warning("The valid UUID is not included in DAC.")
         logger.info(f"DAC info:\n {dac.info()}")
         return None
 
@@ -915,12 +940,7 @@ def get_uuid(
     default=False,
     help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
 )
-@click.option(
-    "--plugin",
-    type=click.Path(exists=True, dir_okay=False),
-    required=False,
-    help="External python file containing a custom SignatureProvider implementation.",
-)
+@spsdk_plugin_option
 @click.argument("dc_file_path", metavar="PATH", type=click.Path(file_okay=True))
 @click.pass_obj
 def gendc_command(
@@ -932,6 +952,8 @@ def gendc_command(
     force: bool,
 ) -> None:
     """Generate debug certificate (DC).
+
+    The -p protocol option must be defined in main application.
 
     \b
     PATH    - path to dc file
@@ -965,9 +987,10 @@ def gendc(
     :param force: Force overwriting of an existing file.
     :raises SPSDKAppError: Raised if any error occurred.
     """
+    protocol.validate()
     try:
         if plugin:
-            import_source(plugin)
+            load_plugin_from_source(plugin)
         check_file_exists(dc_file_path, force)
         logger.info("Loading configuration from yml file...")
         yaml_content = load_configuration(config)
@@ -980,8 +1003,13 @@ def gendc(
             yaml_content["rot_meta"] = [
                 find_file(x, search_paths=[elf2sb_config_dir]) for x in rot_info.public_keys
             ]
-            assert rot_info.private_key
-            yaml_content["rotk"] = find_file(rot_info.private_key, search_paths=[elf2sb_config_dir])
+            assert rot_info.private_key or rot_info.signature_provider_cfg
+            if rot_info.private_key:
+                yaml_content["rotk"] = find_file(
+                    rot_info.private_key, search_paths=[elf2sb_config_dir]
+                )
+            if rot_info.signature_provider_cfg:
+                yaml_content["sign_provider"] = rot_info.signature_provider_cfg
             yaml_content["rot_id"] = rot_info.public_key_index
 
         # enforcing rot_id presence in yaml config...

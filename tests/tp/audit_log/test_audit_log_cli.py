@@ -14,13 +14,16 @@ from spsdk.apps import tphost
 
 
 def test_cli_run(data_dir):
-    cmd = (
-        f"verify --audit-log {data_dir}/tp_audit_log.db "
-        f"--audit-log-key {data_dir}/oem_log_puk.pub"
-    )
+    cmd = [
+        "verify",
+        "--audit-log",
+        f"{data_dir}/tp_audit_log.db",
+        "--audit-log-key",
+        f"{data_dir}/oem_log_puk.pub",
+    ]
 
     runner = CliRunner()
-    result = runner.invoke(tphost.main, cmd.split())
+    result = runner.invoke(tphost.main, cmd)
     assert result.exit_code == 0
 
 
@@ -37,18 +40,23 @@ def test_cli_run(data_dir):
     ],
 )
 def test_tphost_extract(data_dir, tmpdir, skip_nxp, skip_oem, cert_index, expected_count):
-    cmd = (
-        f"verify --audit-log {data_dir}/tp_audit_log.db "
-        f"--audit-log-key {data_dir}/oem_log_puk.pub --destination {tmpdir}"
-    )
+    cmd = [
+        "verify",
+        "--audit-log",
+        f"{data_dir}/tp_audit_log.db",
+        "--audit-log-key",
+        f"{data_dir}/oem_log_puk.pub",
+        "--destination",
+        str(tmpdir),
+    ]
     if skip_nxp:
-        cmd += " --skip-nxp"
+        cmd.append("--skip-nxp")
     if skip_oem:
-        cmd += " --skip-oem"
+        cmd.append("--skip-oem")
     if cert_index:
-        cmd += f" --cert-index {cert_index}"
+        cmd.extend(["--cert-index", cert_index])
 
     runner = CliRunner()
-    result = runner.invoke(tphost.main, cmd.split())
+    result = runner.invoke(tphost.main, cmd)
     assert result.exit_code == 0
     assert len(os.listdir(tmpdir)) == expected_count

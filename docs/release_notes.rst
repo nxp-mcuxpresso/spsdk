@@ -9,6 +9,41 @@ Release Notes
 =============
 
 ---------------------
+1.11.0 (7-July-2023)
+---------------------
+
+**ANNOUNCEMENT**
+
+Next version of spsdk (2.0) will introduce breaking changes:
+
+* elftosb will be replaced by nxpimage
+* nxpcertgen and nxpkeygen will be replaced by nxpcrypto
+* select appropriate family will be done using: -f/--family parameter
+* move towards options for all parameters with an exception to BLHost
+* removal of crypto backends
+* extend dedicated spsdk.crypto module - serve as the de-facto backend of SPSDK
+* module level imports via init files
+
+**New features**
+
+* :ref:`nxpimage`:
+    - enable signature providers for AHAB image and signed messages
+    - add support for rt104x in bootable-image
+* :ref:`tphost`/:ref:`tpconfig`:
+    - add possibility to check TP_RESPONSE only with NXP_PROD raw binary key
+* add support for mcxn9xx
+* add API for FuseLockedStatus
+* possibility to declare private keys with passphrase  in signature provider config
+* add checking of written data length in usb interface
+* add support for dk6 tools
+
+**Bugfixes**
+
+* :ref:`nxpimage`:
+    - fix offset on NAND memory in AHAB image
+* fix plugin error for signature Provider for sb21
+
+---------------------
 1.10.1 (26-May-2023)
 ---------------------
 
@@ -39,7 +74,7 @@ Release Notes
     - add new command: ele_message
 * :ref:`nxpdebugmbox`:
     - add command: read UUID from device
-    - update PyOCD to latest version to support CMSIS DAP FW v3
+    - update PyOCD to latest version to support MCU LINK FW v3, implementing CMSIS-DAP v2.1
 * :ref:`nxpdevhsm`:
     - USER_PCK rename to CUST_MK_SK
 * :ref:`nxpimage`:

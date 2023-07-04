@@ -258,14 +258,14 @@ def test_cmd_loadkeyblob():
     assert cmd.data == cmd_parsed.data == 10 * b"x"
 
 
-def test_cmd_loadkeyblob():
-    """Test offset, length, key_wrap, data info value, size after export and parsing of CmdLoadKeyBlob command."""
+def test_cmd_loadkeyblob_v2():
+    """Test offset, length, key_wrap, data info value, size after export and parsing of CmdLoadKeyBlob V2 command."""
     cmd = CmdLoadKeyBlob(
-        offset=100, key_wrap_id=CmdLoadKeyBlob._KeyWraps.NXP_CUST_KEK_EXT_SK.value, data=10 * b"x"
+        offset=100, key_wrap_id=CmdLoadKeyBlob._KeyWrapsV2.NXP_CUST_KEK_EXT_SK.value, data=10 * b"x"
     )
     assert cmd.address == 100
     assert cmd.length == 10
-    assert cmd.key_wrap_id == 17
+    assert cmd.key_wrap_id == 19
     assert cmd.info()
 
     data = cmd.export()

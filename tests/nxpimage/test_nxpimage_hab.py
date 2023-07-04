@@ -50,10 +50,16 @@ def test_nxpimage_hab_export(tmpdir, hab_data_dir, configuration, app_name):
     runner = CliRunner()
     with use_working_directory(tmpdir):
         output_file_path = os.path.join(tmpdir, "image_output.bin")
-        cmd = (
-            f"hab export --command {command_file_path} --output {output_file_path} {app_file_path}"
-        )
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = [
+            "hab",
+            "export",
+            "--command",
+            command_file_path,
+            "--output",
+            output_file_path,
+            app_file_path,
+        ]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(output_file_path)
         assert load_file(ref_file_path, mode="rb") == load_file(output_file_path, mode="rb")
@@ -74,8 +80,8 @@ def test_nxpimage_hab_parse(tmpdir, hab_data_dir, configuration, source_bin, seg
     source_bin_path = os.path.join(config_dir, source_bin)
     runner = CliRunner()
     with use_working_directory(tmpdir):
-        cmd = f"hab parse --binary {source_bin_path} {tmpdir}"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cmd = ["hab", "parse", "--binary", source_bin_path, str(tmpdir)]
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         for segment in segments:
             segment_file_name = f"{segment}.bin"

@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Script for the automated generation of schemas documentation for elftosb/nxpimage
 import os
+
 from typing import Any, Dict, List, Sequence
 import yaml
 

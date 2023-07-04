@@ -18,6 +18,7 @@ from spsdk.sbfile.sb2.images import BootImageV21
 from spsdk.utils.misc import use_working_directory
 
 
+@pytest.mark.parametrize("use_signature_provider", [True, False])
 @pytest.mark.parametrize(
     "bd_file,legacy_sb,external",
     [
@@ -48,15 +49,17 @@ from spsdk.utils.misc import use_working_directory
         ),
     ],
 )
-def test_nxpimage_sb21(bd_file, legacy_sb, external, elftosb_data_dir, tmpdir):
+def test_nxpimage_sb21(
+    use_signature_provider, bd_file, legacy_sb, external, elftosb_data_dir, tmpdir
+):
     runner = CliRunner()
     with use_working_directory(elftosb_data_dir):
         bd_file_path = os.path.join(elftosb_data_dir, bd_file)
         out_file_path_new = os.path.join(tmpdir, "new_elf2sb.bin")
         kek_key_path = os.path.join(elftosb_data_dir, "sb_sources/keys/SBkek_PUF.txt")
-        priv_key_path = os.path.join(
-            elftosb_data_dir, "sb_sources/keys_and_certs/k0_cert0_2048.pem"
-        )
+        pkey = os.path.join(elftosb_data_dir, "sb_sources/keys_and_certs/k0_cert0_2048.pem")
+        if use_signature_provider:
+            pkey = f"type=file;file_path={pkey}"
         certificate_path = os.path.join(
             elftosb_data_dir, "sb_sources/keys_and_certs/root_k0_signed_cert0_noca.der.cert"
         )
@@ -76,20 +79,33 @@ def test_nxpimage_sb21(bd_file, legacy_sb, external, elftosb_data_dir, tmpdir):
 
         out_file_path_legacy = os.path.join(elftosb_data_dir, legacy_sb)
 
-        cmd = f"sb21 export \
-            -c {bd_file_path} \
-            -o {out_file_path_new}\
-            -k {kek_key_path}\
-            -s {priv_key_path}\
-            -S {certificate_path}\
-            -R {root_key_certificate0_path}\
-            -R {root_key_certificate1_path}\
-            -R {root_key_certificate2_path}\
-            -R {root_key_certificate3_path}\
-            -h {hash_of_hashes_output_path}"
+        cmd = [
+            "sb21",
+            "export",
+            "-c",
+            bd_file_path,
+            "-o",
+            out_file_path_new,
+            "-k",
+            kek_key_path,
+            "-s",
+            pkey,
+            "-S",
+            certificate_path,
+            "-R",
+            root_key_certificate0_path,
+            "-R",
+            root_key_certificate1_path,
+            "-R",
+            root_key_certificate2_path,
+            "-R",
+            root_key_certificate3_path,
+            "-h",
+            hash_of_hashes_output_path,
+        ]
         for entry in external:
-            cmd += " " + entry
-        result = runner.invoke(nxpimage.main, cmd.split())
+            cmd.append(entry)
+        result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(out_file_path_new)
 
@@ -138,6 +154,63 @@ def test_nxpimage_sb21(bd_file, legacy_sb, external, elftosb_data_dir, tmpdir):
 
         for i in zip_longest(sb_new_lines, sb_old_lines, fillvalue=None):
             assert i[0] == i[1]
+
+
+def test_sb_21_invalid_signature_provider(tmpdir, elftosb_data_dir):
+    runner = CliRunner()
+    with use_working_directory(elftosb_data_dir):
+        cmd = [
+            "sb21",
+            "export",
+            "-c",
+            os.path.join(elftosb_data_dir, "sb_sources", "BD_files", "real_example1.bd"),
+            "-o",
+            os.path.join(tmpdir, "new_elf2sb.bin"),
+            "-k",
+            os.path.join(elftosb_data_dir, "sb_sources", "keys", "SBkek_PUF.txt"),
+            "-s",
+            "type=invalid_sp",
+            "-S",
+            os.path.join(
+                elftosb_data_dir,
+                "sb_sources",
+                "keys_and_certs",
+                "root_k0_signed_cert0_noca.der.cert",
+            ),
+            "-R",
+            os.path.join(
+                elftosb_data_dir,
+                "sb_sources",
+                "keys_and_certs",
+                "root_k0_signed_cert0_noca.der.cert",
+            ),
+            "-R",
+            os.path.join(
+                elftosb_data_dir,
+                "sb_sources",
+                "keys_and_certs",
+                "root_k1_signed_cert0_noca.der.cert",
+            ),
+            "-R",
+            os.path.join(
+                elftosb_data_dir,
+                "sb_sources",
+                "keys_and_certs",
+                "root_k2_signed_cert0_noca.der.cert",
+            ),
+            "-R",
+            os.path.join(
+                elftosb_data_dir,
+                "sb_sources",
+                "keys_and_certs",
+                "root_k3_signed_cert0_noca.der.cert",
+            ),
+            "-h",
+            os.path.join(tmpdir, "hash.bin"),
+        ]
+        result = runner.invoke(nxpimage.main, cmd)
+        assert result.exit_code == 1
+        assert issubclass(result.exc_info[0], SPSDKError)
 
 
 def test_sb_21_invalid_parse():

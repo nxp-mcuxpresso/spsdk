@@ -30,7 +30,7 @@ properties:
     type: string
     title: Type of image
     description: The final use of image, this setting is changing the style of offsets in final container.
-    enum: [xip, non_xip, serial_downloader]
+    enum: [xip, non_xip, serial_downloader, nand]
     template_value: xip
   output:
     type: string
@@ -120,6 +120,11 @@ properties:
                     The referenced SRK must not have been revoked.
                   format: file
                   template_value: my_signing_key.pem
+                signature_provider:
+                  type: string
+                  title: Signature Provider
+                  description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>". The signature provider could be used instead of definition of 'signing_key'.
+                  template_value: type=file;file_path=my_prv_key.pem
                 images:
                   type: array
                   title: Image array
@@ -307,6 +312,11 @@ properties:
                       description: Private key used for sign the certificate container.
                       format: file
                       template_value: my_cert_signing_key.pem
+                    signature_provider:
+                      type: string
+                      title: Signature Provider
+                      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>". The signature provider could be used instead of definition of 'signing_key'.
+                      template_value: type=file;file_path=my_prv_key.pem
                 blob:
                   type: object
                   title: Encryption blob

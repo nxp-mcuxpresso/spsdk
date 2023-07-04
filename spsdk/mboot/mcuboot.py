@@ -230,6 +230,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             logger.error(f"RX: {e}")
             if expect_response:
                 response = self._device.read()
+            else:
+                self._status_code = StatusCode.SENDING_OPERATION_CONDITION_ERROR
 
         if expect_response:
             assert isinstance(response, CmdResponse)
@@ -243,7 +245,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                 return False
 
         logger.info(f"CMD: Successfully Send {total_sent} out of {total_to_send} Bytes")
-        return True
+        return total_sent == total_to_send
 
     def _get_max_packet_size(self) -> int:
         """Get max packet size.
@@ -723,19 +725,30 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: Reset MCU")
         cmd_packet = CmdPacket(CommandTag.RESET, CommandFlag.NONE)
         ret_val = False
-        if self._process_cmd(cmd_packet).status == StatusCode.SUCCESS:
-            self.close()
-            ret_val = True
-            if reopen:
-                if not self.reopen:
-                    raise McuBootError("reopen is not supported")
-                time.sleep(timeout / 1000)
-                try:
-                    self.open()
-                except SPSDKError as e:
-                    ret_val = False
-                    if self._cmd_exception:
-                        raise McuBootConnectionError("reopen failed") from e
+        status = self._process_cmd(cmd_packet).status
+        self.close()
+        ret_val = True
+
+        if status not in [StatusCode.NO_RESPONSE, StatusCode.SUCCESS]:
+            ret_val = False
+            if self._cmd_exception:
+                raise McuBootConnectionError("Reset command failed")
+
+        if status == StatusCode.NO_RESPONSE:
+            logger.warning("Did not receive response from reset command, ignoring it")
+            self._status_code = 0
+
+        if reopen:
+            if not self.reopen:
+                raise McuBootError("reopen is not supported")
+            time.sleep(timeout / 1000)
+            try:
+                self.open()
+            except SPSDKError as e:
+                ret_val = False
+                if self._cmd_exception:
+                    raise McuBootConnectionError("reopen failed") from e
+
         return ret_val
 
     def flash_erase_all_unsecure(self) -> bool:

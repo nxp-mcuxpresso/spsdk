@@ -23,8 +23,8 @@ from jira import JIRA, Issue
 
 from spsdk.exceptions import SPSDKError
 
-JIRA_SERVER = "https://jira.sw.nxp.com"
 TICKET_REGEX = re.compile(r"(SPSDK-\d+)")
+JIRA_SERVER = "https://jira.sw.nxp.com"
 
 
 class RNParams(NamedTuple):

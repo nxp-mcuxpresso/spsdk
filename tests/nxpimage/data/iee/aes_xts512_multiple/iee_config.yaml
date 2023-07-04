@@ -44,4 +44,4 @@ key_blobs: # [Required], List of Key Blobs used by IEE, The list of definition o
     key1: "0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F" # [Required], AES-XTS key1 / AES-CTR key, AES key for the key blob, size depends on key_size
     key2: "0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F" # [Required], AES-CTR Counter value or AES-XTS key2, AES key for the key blob, size depends on key_size
     start_address: "0x30008000" # [Required], Start address of key blob data, Start address of key blob data, it should be aligned to 1 KB (1024 B)
-    end_address: "0x30026000" # [Required], End address of key blob data, End address of key blob data, it should be aligned to 1 KB (1024 B)
+    end_address: "0x30019000" # [Required], End address of key blob data, End address of key blob data, it should be aligned to 1 KB (1024 B)

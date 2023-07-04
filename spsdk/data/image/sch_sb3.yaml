@@ -34,7 +34,6 @@ sb3_description:
       title: Description
       description: Description up to 16 characters, longer will be truncated. Stored in SB3.1 manifest.
       template_value: This is description of generated SB file.
-
 sb3:
   type: object
   title: Secure Binary v3.1 Settings

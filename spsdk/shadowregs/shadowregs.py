@@ -175,7 +175,8 @@ class ShadowRegisters:
                     write_reg(self.offset, sub_reg)
             else:
                 write_reg(self.offset, reg=reg)
-
+            # execute flash function handler if defined for a platfrom
+            self.flush_func_handler()
         except SPSDKError as exc:
             raise SPSDKError(f"The set shadow register failed({str(exc)}).") from exc
 
@@ -338,6 +339,20 @@ class ShadowRegisters:
         new_val = val ^ 0xFFFFFFFF
         return new_val
 
+    def flush_func_handler(self) -> None:
+        """A function to determine and execute the flush-func handler.
+
+        :param self: Input Value.
+        :raises SPSDKError: Raises when the computing routine is not found.
+        """
+        flush_func = self.config.get_device_value("flush_func", device=self.device)
+        if flush_func:
+            if hasattr(self, flush_func):
+                method_ref = getattr(self, flush_func)
+                method_ref()
+            else:
+                raise SPSDKError(f"The '{flush_func}' function doesn't exists.")
+
     def reg_computed_fields_handler(self, val: bytes, context: Any) -> bytes:
         """Recalculate all fields for given register value.
 
@@ -408,6 +423,15 @@ class ShadowRegisters:
             return val & ~0x80000000
 
         return val | 0x80000000
+
+    def rw61x_update_scratch_reg(self) -> None:
+        """Function updates scracth register for RW61x, This enables the shadow register functionality.
+
+        :param self: Input Value.
+        """
+        addr = 0x5003B498
+        value = 0xA7C56B9E
+        self._write_shadow_reg(addr=addr, data=value, verify_mask=True)
 
     @staticmethod
     def comalg_do_nothing(val: int) -> int:
