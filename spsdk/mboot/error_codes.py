@@ -273,7 +273,7 @@ class StatusCode(Enum):
     # TrustProvisioning statuses.
     TP_SUCCESS                  = (0,     "TP_SUCCESS", "TP: SUCCESS")
     TP_GENERAL_ERROR            = (80000, "TP_GENERAL_ERROR", "TP: General error")
-    TP_MBEDTLS_ERROR            = (80001, "TP_MBEDTLS_ERROR", "TP: mBED TLS error")
+    TP_CRYPTO_ERROR             = (80001, "TP_CRYPTO_ERROR", "TP: Error during cryptographic operation")
     TP_NULLPTR_ERROR            = (80002, "TP_NULLPTR_ERROR", "TP: NULL pointer dereference or when buffer could not be allocated")
     TP_ALREADYINITIALIZED       = (80003, "TP_ALREADYINITIALIZED", "TP: Already initialized")
     TP_BUFFERSMALL              = (80004, "TP_BUFFERSMALL", "TP: Buffer is too small")
@@ -301,12 +301,15 @@ class StatusCode(Enum):
     TP_PACKET_ERROR             = (80026, "TP_PACKET_ERROR", "TP: Error during packet sending/receiving")
     TP_PACKET_DATA_ERROR        = (80027, "TP_PACKET_DATA_ERROR", "TP: Data in packet handle are invalid")
     TP_UNKNOWN_COMMAND          = (80028, "TP_UNKNOWN_COMMAND", "TP: Unknown command was received")
+    TP_SB3_FILE_ERROR           = (80029, "TP_SB3_FILE_ERROR", "TP: Error during processing SB3 file")
     # TP_CRITICAL_ERROR_START     (80100)
     TP_GENERAL_CRITICAL_ERROR       = (80101, "TP_GENERAL_CRITICAL_ERROR", "TP: Critical error")
-    TP_MBEDTLS_CRITICAL_ERROR       = (80102, "TP_MBEDTLS_CRITICAL_ERROR", "TP: Initialization or seed generation in MbedTLS failed")
+    TP_CRYPTO_CRITICAL_ERROR        = (80102, "TP_CRYPTO_CRITICAL_ERROR", "TP: Error of crypto module which prevents proper functionality")
     TP_PUF_CRITICAL_ERROR           = (80103, "TP_PUF_CRITICAL_ERROR", "TP: Initialization or start of the PUF periphery failed")
     TP_PFR_CRITICAL_ERROR           = (80104, "TP_PFR_CRITICAL_ERROR", "TP: Initialization of PFR or reading of activation code failed")
     TP_PERIPHERAL_CRITICAL_ERROR    = (80105, "TP_PERIPHERAL_CRITICAL_ERROR", "TP: Peripheral failure")
+    TP_PRINCE_CRITICAL_ERROR        = (80106, "TP_PRINCE_CRITICAL_ERROR", "TP: Error during PRINCE encryption/decryption")
+    TP_SHA_CHECK_CRITICAL_ERROR     = (80107, "TP_SHA_CHECK_CRITICAL_ERROR", "TP: SHA check verification failed")
 
 # fmt: on
 

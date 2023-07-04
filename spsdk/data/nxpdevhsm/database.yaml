@@ -6,3 +6,4 @@ devices:
     attributes:
       key_blob_offset: 0x4
       key_blob_command_position: 0
+      devbuff_base_address: 0x20008000

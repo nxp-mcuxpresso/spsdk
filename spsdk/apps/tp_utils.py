@@ -22,6 +22,7 @@ from spsdk.tp.tp_intf import TpDevInterface
 from spsdk.tp.tphost import TrustProvisioningHost
 from spsdk.tp.utils import (
     TpIntfDescription,
+    get_device_data,
     get_tp_device_class,
     get_tp_device_types,
     get_tp_target_class,
@@ -50,12 +51,15 @@ class TPBaseConfig:
         self.config_data = config_data
         self.config_dir = config_dir
 
-    def _validate(self) -> None:
-        """Validate configuration data using appropriate validation schema."""
-        schema_cfg = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+    def _validate(self, schema_members: Optional[List[str]] = None) -> None:
+        """Validate configuration data using appropriate validation schema.
 
+        :param schema_members: Explicit schema members to check (default: self.SCHEMA_MEMBERS)
+        """
+        schema_cfg = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+        schema_members_int = schema_members or self.SCHEMA_MEMBERS
         # Get this app type scheme pieces
-        sch_list = [schema_cfg[x] for x in self.SCHEMA_MEMBERS]
+        sch_list = [schema_cfg[x] for x in schema_members_int]
         # First check common settings
         check_config(
             config=self.config_data,
@@ -239,10 +243,6 @@ class TPConfigConfig(TPBaseConfig):
         "family",
         "tp_timeout",
         "device",
-        "cmpa",
-        "cfpa",
-        "sb_kek",
-        "user_kek",
         "production_quota",
         "oem_log_prk",
         "nxp_prod_cert",
@@ -272,6 +272,12 @@ class TPConfigConfig(TPBaseConfig):
         )
 
         self._validate()
+        # first we need to validate family, after that we check family-specific settings
+        if get_device_data(key="use_prov_data", family=self.family):
+            extra_checks = ["provisioning_data"]
+        else:
+            extra_checks = ["cmpa", "cfpa", "sb_kek", "user_kek"]
+        self._validate(extra_checks)
 
 
 def multiple_tp_dict(multi: Optional[List[str]]) -> Dict[str, str]:

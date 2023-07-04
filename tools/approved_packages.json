@@ -193,6 +193,12 @@
             "is_manual": true
         },
         {
+            "name": "importlib-resources",
+            "license": "MIT license",
+            "home_page": "https://github.com/python/importlib_resources",
+            "is_manual": true
+        },
+        {
             "name": "intelhex",
             "license": "BSD",
             "home_page": "https://github.com/python-intelhex/intelhex",

@@ -1,7 +1,0 @@
-# Copyright 2023 NXP
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-# OEM Provisioning firmware provided by NXP (optional)
-# if omitted, use blhost's receive-sb-file to load prov_fw beforehand
-prov_firmware:

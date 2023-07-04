@@ -10,7 +10,7 @@ family:
       title: Family name of target MCU
       description: The name of target MCU family that should be provisioned.
       type: string
-      enum: [lpc55s6x, lpc55s2x, lpc55s1x, lpc55s0x]
+      enum: [lpc55s6x, lpc55s3x, lpc55s2x, lpc55s1x, lpc55s0x]
       template_value: lpc55s6x
   required: [family]
 
@@ -198,7 +198,7 @@ target_blhost:
           title: BLHOST UART device port baudrate
           description: BLHOST UART communication speed in bits per seconds.
           template_value: 57600
-      required: [buffer_address]
+      # required: [buffer_address]
       oneOf:
         - required: [blhost_port]
         - required: [blhost_usb]
@@ -266,6 +266,18 @@ production_quota:
       template_value: 1000
   required: [production_quota]
 
+provisioning_data:
+  type: object
+  title: Trust Provisioning Configuration Settings
+  properties:
+    prov_data_path:
+      type: string
+      format: file
+      title: Provisioning Data
+      description: Provisioning Data SB3 file from DevHSM flow
+      template_value: my_prov_data.sb3
+  required: [prov_data_path]
+
 oem_log_prk:
   type: object
   title: Trust Provisioning Configuration Settings
@@ -313,6 +325,16 @@ oem_id:
       title: Number of OEM certificates to generate
       description: TODO
       template_value: 0
+    oem_id_ca_cert_address:
+      # type: number
+      title: OEM certificate with CA key flag in private key
+      description: The corresponding private key is stored in ELE with CA flag
+      template_value: 0x1004_4000
+    oem_id_rtf_cert_address:
+      # type: number
+      title: OEM certificate with RTF key flag in private key
+      description: The corresponding private key is stored in ELE with RTF flag
+      template_value: 0x1004_5000
 
     oem_id_prk_path:
       type: string
@@ -326,7 +348,7 @@ oem_id:
       items:
         type: number
       title: OEM ID addresses
-      description: List of addresses where to load OEM certificates
+      description: List of addresses where to store OEM certificates
       template_value:
         - 0x1004_0000
         - 0x1004_1000
@@ -371,6 +393,7 @@ oem_id:
 
   allOf:
     - if:
+        required: [oem_id_count]
         properties:
           oem_id_count:
             minimum: 1
@@ -378,4 +401,22 @@ oem_id:
         required:
           - oem_id_prk_path
           - oem_id_addresses
+          - oem_id_config
+    - if:
+        required: [oem_id_ca_cert_address]
+        properties:
+          oem_id_ca_cert_address:
+            minimum: 1
+      then:
+        required:
+          - oem_id_prk_path
+          - oem_id_config
+    - if:
+        required: [oem_id_rtf_cert_address]
+        properties:
+          oem_id_rtf_cert_address:
+            minimum: 1
+      then:
+        required:
+          - oem_id_prk_path
           - oem_id_config

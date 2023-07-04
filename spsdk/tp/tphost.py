@@ -24,7 +24,7 @@ from spsdk.tp.data_container import AuditLog, DataEntry, PayloadType
 from spsdk.utils.database import Database
 from spsdk.utils.misc import Timeout, value_to_int, write_file
 
-from . import TP_DATA_FOLDER, SPSDKTpError, TpDevInterface, TpTargetInterface
+from . import TP_DATABASE, SPSDKTpError, TpDevInterface, TpTargetInterface
 from .adapters.tptarget_blhost import TpTargetBlHost
 from .adapters.utils import detect_new_usb_path, get_current_usb_paths, update_usb_path
 from .data_container import AuditLogCounter, AuditLogRecord, Container
@@ -77,7 +77,7 @@ class TrustProvisioningHost:
         """
         if database is None:
             logger.debug("Looking up device in database")
-            database = Database(os.path.join(TP_DATA_FOLDER, "database.yaml"))
+            database = Database(TP_DATABASE)
         if family not in database.devices.device_names:
             raise SPSDKTpError(f"Database info missing for '{family}'")
         try:
@@ -194,7 +194,7 @@ class TrustProvisioningHost:
             loc_timeout = Timeout(timeout, "s")
 
             logger.debug("Looking up device in database")
-            database = Database(os.path.join(TP_DATA_FOLDER, "database.yaml"))
+            database = Database(TP_DATABASE)
             if family not in database.devices.device_names:
                 raise SPSDKTpError(f"Database info missing for '{family}'")
 
@@ -443,14 +443,16 @@ class TrustProvisioningHost:
         response_file: str,
         timeout: int = 60,
         challenge: Optional[bytes] = None,
-        oem_id_key_count: int = 0,
+        oem_key_flags: int = 0,
+        save_debug_data: bool = False,
     ) -> None:
         """Retrieve TP_RESPONSE from the target.
 
         :param response_file: Path where to store TP_RESPONSE
         :param timeout: The timeout of operation is seconds, defaults to 60
         :param challenge: Challenge for the response, defaults to None
-        :param oem_id_key_count: Number of OEM keys to include in the response, defaults to 0
+        :param oem_key_flags: OEM Key flags used for generating the response, defaults to 0
+        :param save_debug_data: Save transmitted data in CWD for debugging purposes
         :raises SPSDKTpError: Failure to retrieve the response
         """
         try:
@@ -467,10 +469,14 @@ class TrustProvisioningHost:
                 DataEntry(
                     payload=challenge,
                     payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND,
-                    extra=oem_id_key_count << 2,
+                    extra=oem_key_flags,
                 )
             )
             logger.info(f"TP Challenge:\n{challenge_container}")
+
+            if save_debug_data:
+                with open("x_challenge.bin", "wb") as f:
+                    f.write(challenge_container.export())
 
             tp_response = self.tptarget.prove_genuinity_challenge(
                 challenge=challenge_container.export(),
@@ -532,7 +538,6 @@ def _verify_extract_chain(
             raise SPSDKTpError(f"Log entry #{i} has an invalid signature!")
         if record.start_hash != previous_hash:
             if ALLOW_ARBITRARY_START and (i == 1):
-                # TODO: need to get confirmation on this one
                 pass
             else:
                 raise SPSDKTpError(f"Audit log chain is broken between records #{i - 1} - #{i}")

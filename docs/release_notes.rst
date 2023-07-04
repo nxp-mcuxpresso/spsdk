@@ -9,6 +9,17 @@ Release Notes
 =============
 
 ---------------------
+1.10.2 (7-July-2023)
+---------------------
+
+**New features**
+
+* :ref:`tphost`/:ref:`tpconfig`:
+    - add support for LPC55S3x
+* :ref:`nxpimage`:
+    - add possibility to define multiple regions in OTFAD in one data blob
+
+---------------------
 1.10.1 (26-May-2023)
 ---------------------
 

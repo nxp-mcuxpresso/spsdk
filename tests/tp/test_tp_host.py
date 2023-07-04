@@ -15,14 +15,36 @@ from spsdk.tp.tphost import SPSDKTpError, TrustProvisioningHost
 
 def test_tphost_check_cot(data_dir):
     cmd = (
-        f"check-cot "
-        f"--root-cer {data_dir}/nxp_glob_devattest.crt "
+        f"--root-cert {data_dir}/nxp_glob_devattest.crt "
         f"--intermediate-cert {data_dir}/lpc55_devattest.crt "
-        f"--tp-response {data_dir}/wrong_tp_response.bin "
+        f"--tp-response {data_dir}/tp_response.bin "
     )
     runner = CliRunner()
     result = runner.invoke(tphost.check_cot, cmd.split())
-    assert result != 0
+    assert "OK" in result.output
+    assert "FAILED" in result.output
+
+
+def test_tphost_check_cot_no_glob(data_dir):
+    cmd = (
+        f"--intermediate-cert {data_dir}/lpc55_devattest.crt "
+        f"--tp-response {data_dir}/tp_response.bin "
+    )
+    runner = CliRunner()
+    result = runner.invoke(tphost.check_cot, cmd.split())
+    assert "OK" in result.output
+    assert "FAILED" in result.output
+
+
+def test_tphost_check_cot_no_glob_bin(data_dir):
+    cmd = (
+        f"--intermediate-cert {data_dir}/lpc55_devattest.bin "
+        f"--tp-response {data_dir}/tp_response.bin "
+    )
+    runner = CliRunner()
+    result = runner.invoke(tphost.check_cot, cmd.split())
+    assert "OK" in result.output
+    assert "FAILED" in result.output
 
 
 def test_tphost_with_unsupported_family():

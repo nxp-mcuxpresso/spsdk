@@ -7,7 +7,7 @@ Requirements
 ------------
 
 - Make sure to have `Python 3.8+ <https://www.python.org>`_ installed (old version 2.x is not supported).
-- Create and activate a virtual environment (``venv``, ``pipenv``, etc.)
+- It is recommended to create and activate a virtual environment (``venv``, ``pipenv``, etc.) to avoid conflict with other packages
 - Upgrade PyPI to the latest version
 - Install SPSDK
 
@@ -96,7 +96,7 @@ For *SPSDK* to access connected devices using USB, it is necessary to configure 
 
 
 -------------
-macOS @ Intel
+macOS
 -------------
 
 To install *SPSDK* under *macOS* follow:
@@ -110,72 +110,6 @@ To install *SPSDK* under *macOS* follow:
     spsdk --help
 
 *SPSDK* help for command-line applications should be displayed.
-
-----------
-macOS @ M1
-----------
-
-It's recommended to use the ``pyenv`` package for Python installation. To install *SPSDK* follow those steps:
-
-1. Install ``homebrew``. *Homebrew* is a package manager for macOS located `here <https://brew.sh>`_
-
-.. code-block:: bash
-
-    $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-2. Install *pyenv*
-
-.. code-block:: bash
-
-    $ brew update
-    $ brew install pyenv
-
-3. Enable ``pyenv``, execute the following lines to set environment variables, assuming you are using ``zsh``
-
-.. code-block:: bash
-
-    $ echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zprofile
-    $ echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zprofile
-
-4. Install *Python*
-
-.. code-block:: bash
-
-    $ pyenv install 3.9.5
-
-5. Make ``pyenv`` Python global and rehash
-
-.. code-block:: bash
-
-    $ pyenv global 3.9.5
-    $ pyenv rehash
-
-Now you can use ``pip`` for package installation.
-
-6. Install *rust compiler*. To build some *SPSDK* dependencies a *rust compiler* is needed, to install it a *rustup script* could be used: https://rustup.rs.
-
-.. code-block:: bash
-
-    $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-7. Install *Python* build dependencies
-
-.. code-block:: bash
-
-    $ brew install openssl readline sqlite3 xz zlib
-
-8. Export compiler flags for ``openssl``
-
-.. code-block:: bash
-
-    $ export LDFLAGS="-L/opt/homebrew/opt/openssl@1.1/lib"
-    $ export CPPFLAGS="-I/opt/homebrew/opt/openssl@1.1/include"
-
-9. Install *SPSDK*
-
-.. code-block:: bash
-
-    $ pip install spsdk
 
 ------
 GitHub
@@ -229,12 +163,19 @@ Also you will need `swig compiler <http://www.swig.org>`_ which is a requirement
 
 .. note::
 
-    In **Mac OS** you need to install gcc, swig (http://www.swig.org), and pcsc-lite (https://pcsclite.apdu.fr/).
+    On **Mac OS** you need to install gcc, swig (http://www.swig.org), and pcsc-lite (https://pcsclite.apdu.fr/).
     (**brew install swig pcsc-lite**)
-    In **Linux** you need to install pcscd and libpcsclite-dev. (**sudo apt install pcdcs libpcsclite-dev**)
+    On **Linux** you need to install pcscd and libpcsclite-dev. (**sudo apt install pcdcs libpcsclite-dev**)
 
 .. code:: bash
 
-    $ pip install 'spsdk[tp]'
+    $ pip install spsdk[tp]
 
-This command will install SPSDK with Trust Provisioning support
+
+In case you are installing from local repository.
+
+.. code:: bash
+
+    $ pip install ".[tp]"
+
+This command will install SPSDK with Trust Provisioning support.

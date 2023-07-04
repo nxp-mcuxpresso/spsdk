@@ -1,0 +1,71 @@
+# Copyright 2021-2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# The template configuration file for TPCONFIG application
+version: 3
+
+# Target family
+family: TMP_FAMILY
+
+## Provisioning data definition
+
+# Path to Provisioning Data SB3 file from DevHSM flow
+prov_data_path:
+
+# Production quota
+production_quota: 1_000_000
+
+# Path to key for Audit log signing
+oem_log_prk_path:
+
+# Path to device family attestation certificate
+nxp_prod_cert_path:
+
+# Path to nxp_glob attestation certificate
+nxp_global_attest_puk_path:
+
+## OEM ID Certificates definitions
+
+# Number of OEM certificates to generate
+# If all are set to 0/null, rest of this section is ignored
+# number of regular OEM certificates
+oem_id_count:
+# address of cert whose corresponding private key has the ELE-CA flag set
+oem_id_ca_cert_address:
+# address of cert whose corresponding private key has the ELE-RTF flag set
+oem_id_rtf_cert_address:
+
+# Signing key path (PEM or DER encoded P-256 ECC Key)
+oem_id_prk_path:
+# Addresses where to place OEM Certificates
+oem_id_addresses:
+  - 0x1004_0000
+  - 0x1004_1000
+  - 0x1004_2000
+  - 0x1004_3000
+# Configuration of data inside OEM Certificates
+oem_id_config:
+  issuer:
+    COMMON_NAME: Big Tech Company
+    COUNTRY_NAME: CZ
+    LOCALITY_NAME: RpR
+    STREET_ADDRESS: 1. maje, 1009
+    ORGANIZATION_NAME: "BL - EP"
+    POSTAL_CODE: 756 61
+  subject:
+    COMMON_NAME: Super Tech Device
+  duration: 3650
+
+# TP Device connection definition
+
+# The examples of configuration of TP device
+tp_device: swmodel
+
+# The example of specifying configuration for TP device
+tp_device_parameter:
+  config_file:
+  id: "123456789"
+
+# Timeout configuration in seconds
+timeout: 60

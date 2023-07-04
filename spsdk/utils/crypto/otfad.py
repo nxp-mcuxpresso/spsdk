@@ -28,6 +28,7 @@ from spsdk.utils.misc import (
     find_file,
     load_binary,
     reverse_bits_in_bytes,
+    split_data,
     value_to_bytes,
     value_to_int,
 )
@@ -166,7 +167,7 @@ class KeyBlob:
         result += pack("<I", self.start_addr)
         if self.end_addr or self.key_flags:
             end_addr_with_flags = (
-                (self.end_addr & ~self._KEY_FLAG_MASK) | self.key_flags | self._END_ADDR_MASK
+                ((self.end_addr - 1) & ~self._KEY_FLAG_MASK) | self.key_flags | self._END_ADDR_MASK
             )
         else:
             end_addr_with_flags = 0
@@ -194,7 +195,10 @@ class KeyBlob:
 
     # pylint: disable=invalid-name
     def export(
-        self, kek: Union[bytes, str], iv: bytes = bytes([0xA6] * 8), byte_swap_cnt: int = 0
+        self,
+        kek: Union[bytes, str],
+        iv: bytes = bytes([0xA6] * 8),
+        byte_swap_cnt: int = 0,
     ) -> bytes:
         """Creates key wrap for the key blob.
 
@@ -270,13 +274,20 @@ class KeyBlob:
         """
         return self.contains_addr(image_start) and self.contains_addr(image_end)
 
-    def encrypt_image(self, base_address: int, data: bytes, byte_swap: bool) -> bytes:
+    def encrypt_image(
+        self,
+        base_address: int,
+        data: bytes,
+        byte_swap: bool,
+        counter_value: Optional[int] = None,
+    ) -> bytes:
         """Encrypt specified data.
 
         :param base_address: of the data in target memory; must be >= self.start_addr
         :param data: to be encrypted (e.g. plain image); base_address + len(data) must be <= self.end_addr
         :param byte_swap: this probably depends on the flash device, how bytes are organized there
                 True should be used for FLASH on EVK RT6xx; False for FLASH on EVK RT5xx
+        :param counter_value: Optional counter value, if not specified start address of keyblob will be used
         :return: encrypted data
         :raises SPSDKError: If start address is not valid
         """
@@ -289,14 +300,17 @@ class KeyBlob:
         # Support dual image boot, do not raise exception
         if not self.matches_range(base_address, base_address + data_len - 1):
             logger.warning(
-                f"Image address range is not within key blob: {hex(self.start_addr)}-{hex(self.end_addr)}."
+                f"Image address range is not within key blob: "
+                f"{hex(self.start_addr)}-{hex(self.end_addr)}."
                 " Ignore this if flash remap feature is used"
             )
-
         result = bytes()
         # SPSDK-936 change base address to start address of keyblob to allow flash remap on RT5xx/RT6xx
+        if not counter_value:
+            counter_value = self.start_addr
+
         counter = Counter(
-            self._get_ctr_nonce(), ctr_value=self.start_addr, ctr_byteorder_encoding="big"
+            self._get_ctr_nonce(), ctr_value=counter_value, ctr_byteorder_encoding="big"
         )
 
         for index in range(0, data_len, 16):
@@ -338,6 +352,8 @@ class KeyBlob:
 class Otfad:
     """OTFAD: On-the-Fly AES Decryption Module."""
 
+    OTFAD_DATA_UNIT = 0x400
+
     def __init__(self) -> None:
         """Constructor."""
         self._key_blobs: List[KeyBlob] = []
@@ -357,7 +373,7 @@ class Otfad:
         self._key_blobs.append(key_blob)
 
     def encrypt_image(self, image: bytes, base_addr: int, byte_swap: bool) -> bytes:
-        """Encrypt image.
+        """Encrypt image with all available keyblobs.
 
         :param image: plain image to be encrypted
         :param base_addr: where the image will be located in target processor
@@ -365,16 +381,21 @@ class Otfad:
                 True should be used for FLASH on EVK RT6xx; False for FLASH on EVK RT5xx
         :return: encrypted image
         """
-        image_end = base_addr + len(image) - 1
-        for key_blob in self._key_blobs:
-            if key_blob.matches_range(base_addr, image_end) and key_blob.is_encrypted:
-                return key_blob.encrypt_image(base_addr, image, byte_swap)
+        encrypted_data = bytearray(image)
+        addr = base_addr
+        for block in split_data(image, self.OTFAD_DATA_UNIT):
+            for key_blob in self._key_blobs:
+                if key_blob.matches_range(addr, addr + len(block)):
+                    logger.debug(
+                        f"Encrypting {hex(addr)}:{hex(len(block) + addr)}"
+                        f" with keyblob: \n {key_blob.info()}"
+                    )
+                    encrypted_data[
+                        addr - base_addr : len(block) + addr - base_addr
+                    ] = key_blob.encrypt_image(addr, block, byte_swap, counter_value=addr)
+            addr += len(block)
 
-        logger.debug(
-            f"The image address range {hex(base_addr)}:{hex(image_end)}"
-            "does not match to valid key blob, skipping encryption"
-        )
-        return image
+        return bytes(encrypted_data)
 
     def get_key_blobs(self) -> bytes:
         """Get key blobs.
@@ -677,7 +698,9 @@ class OtfadNxp(Otfad):
             for binary in binaries.sub_images:
                 if binary.binary:
                     binary.binary = self.encrypt_image(
-                        binary.binary, table_address + binary.absolute_address, swap_bytes
+                        binary.binary,
+                        table_address + binary.absolute_address,
+                        swap_bytes,
                     )
                 for segment in binary.sub_images:
                     if segment.binary:
@@ -801,7 +824,9 @@ class OtfadNxp(Otfad):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], config_dir: str, search_paths: Optional[List[str]] = None
+        config: Dict[str, Any],
+        config_dir: str,
+        search_paths: Optional[List[str]] = None,
     ) -> "OtfadNxp":
         """Converts the configuration option into an OTFAD image object.
 
@@ -832,11 +857,16 @@ class OtfadNxp(Otfad):
         binaries = None
         if data_blobs:
             start_address = min(
-                min([value_to_int(addr["address"]) for addr in data_blobs]), start_address
+                min([value_to_int(addr["address"]) for addr in data_blobs]),
+                start_address,
             )
             binaries = BinaryImage(
                 filepath_from_config(
-                    config, "encrypted_name", "encrypted_blobs", config_dir, config["output_folder"]
+                    config,
+                    "encrypted_name",
+                    "encrypted_blobs",
+                    config_dir,
+                    config["output_folder"],
                 ),
                 offset=start_address - table_address,
             )

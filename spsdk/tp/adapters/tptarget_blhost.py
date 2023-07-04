@@ -7,7 +7,7 @@
 """Trust provisioning - TP Target, ISP mode over BLHOST."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from spsdk.mboot import interfaces
 from spsdk.mboot.exceptions import McuBootError, StatusCode
@@ -15,9 +15,10 @@ from spsdk.mboot.interfaces.base import MBootInterface
 from spsdk.mboot.interfaces.uart import Uart
 from spsdk.mboot.interfaces.usb import RawHid
 from spsdk.mboot.mcuboot import McuBoot
-from spsdk.tp import TP_SCH_FILE, TpTargetInterface
+from spsdk.tp import TP_DATABASE, TP_SCH_FILE, TpTargetInterface
 from spsdk.tp.exceptions import SPSDKTpTargetError
 from spsdk.tp.tp_intf import TpIntfDescription
+from spsdk.utils.database import Database
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.schema_validator import ValidationSchemas
 
@@ -141,7 +142,13 @@ class TpTargetBlHost(TpTargetInterface):
 
     get_connected_interfaces = get_connected_targets
 
-    def __init__(self, descriptor: TpBlHostIntfDescription) -> None:
+    def __init__(
+        self,
+        descriptor: TpBlHostIntfDescription,
+        family: str,
+        *args: Union[int, str],
+        **kwargs: Union[int, str],
+    ) -> None:
         """Initialization of provisioned device adapter.
 
         :param descriptor: BLHOST adapter interface description.
@@ -152,18 +159,27 @@ class TpTargetBlHost(TpTargetInterface):
             raise SPSDKTpTargetError("Device is not defined.")
         self.mboot = McuBoot(descriptor.device)
 
-        # TODO Get the right pseudo index instead of memory address
         self.buffer_address = (
             value_to_int(self.descriptor.settings.get("buffer_address", 0))
             if self.descriptor.settings
             else 0
         )
-        # TODO Get the right buffer size
+        if not self.buffer_address:
+            database = Database(TP_DATABASE)
+            self.buffer_address = value_to_int(
+                database.get_device_value("buffer_address", device=family)
+            )
+
         self.buffer_size = (
-            value_to_int(self.descriptor.settings.get("buffer_size", 0x1000))
+            value_to_int(self.descriptor.settings.get("buffer_size", 0))
             if self.descriptor.settings
-            else 0x1000
+            else 0
         )
+        if not self.buffer_size:
+            database = Database(TP_DATABASE)
+            self.buffer_size = value_to_int(
+                database.get_device_value("buffer_size", device=family, default=0x1000)
+            )
 
     @property
     def uses_uart(self) -> bool:
@@ -349,6 +365,5 @@ class TpTargetBlHost(TpTargetInterface):
             if self.mboot.status_code == StatusCode.UNKNOWN_COMMAND:
                 return False
             raise
-        else:
-            # this should never happen
-            raise SPSDKTpTargetError("Check for ProvFW boot-up malfunctioned!")
+        # this should never happen
+        raise SPSDKTpTargetError("Check for ProvFW boot-up malfunctioned!")

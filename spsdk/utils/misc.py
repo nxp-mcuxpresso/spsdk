@@ -811,7 +811,7 @@ def load_configuration(path: str) -> dict:
     raise SPSDKError(f"Unable to load '{path}'.")
 
 
-def split_data(data: bytearray, size: int) -> Generator[bytes, None, None]:
+def split_data(data: Union[bytearray, bytes], size: int) -> Generator[bytes, None, None]:
     """Split data into chunks of size.
 
     :param bytearray data: array of bytes to be split

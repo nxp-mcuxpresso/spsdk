@@ -48,6 +48,11 @@ class StatusCodes(Enum):
     GENERIC_ERROR = (0x6F00, "GenericError", "Generic error")
 
     MAX_COUNTER_REACHED = (0x5501, "CounterReached", "Max provisioning counter reached")
+    COUNTER_NOT_INITIALIZED = (
+        0x5502,
+        "CounterNotInitialized",
+        "Provisioning counter is not initialized (Smart card is probably not configured)",
+    )
     VERIFICATION_ERROR = (0x6300, "VerificationError", "Public key can't be verified")
 
 
@@ -191,6 +196,32 @@ class GetProductionRemainder(SmartCardAPDU):
         return int.from_bytes(response, byteorder="big")
 
 
+class GetSealState(SmartCardAPDU):
+    """Get current card seal state."""
+
+    def __init__(self) -> None:
+        """Get current card seal state."""
+        super().__init__(cla=0x00, ins=0xCA, p1=0x01, p2=0x19)
+
+    @staticmethod
+    def format(response: bytes) -> bool:
+        """Format the `transmit` response into `bool`."""
+        return response == b"\x01"
+
+
+class GetFamily(SmartCardAPDU):
+    """Get family set in the smart card."""
+
+    def __init__(self) -> None:
+        """Get family set in the smart card."""
+        super().__init__(cla=0x00, ins=0xCA, p1=0x01, p2=0x1A)
+
+    @staticmethod
+    def format(response: bytes) -> str:
+        """Format the `transmit` response into `str`."""
+        return response.decode("utf-8")
+
+
 class Select(SmartCardAPDU):
     """APDU Select command."""
 
@@ -315,7 +346,7 @@ class DeleteTransientBuffer(SmartCardAPDU):
 class CreateFileSystem(SmartCardAPDU):
     """Create File System on applet. Turns applet into PERSONALIZATION mode."""
 
-    def __init__(self, objects_count: int = 15) -> None:
+    def __init__(self, objects_count: int = 18) -> None:
         """Create File System on applet."""
         super().__init__(cla=0x80, ins=0xE1, p1=00, p2=objects_count)
 

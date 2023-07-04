@@ -390,6 +390,7 @@ class IeeKeyBlob:
 class Iee:
     """IEE: Inline Encryption Engine."""
 
+    IEE_DATA_UNIT = 0x1000
     IEE_KEY_BLOBS_SIZE = 384
 
     def __init__(self) -> None:
@@ -411,24 +412,27 @@ class Iee:
         self._key_blobs.append(key_blob)
 
     def encrypt_image(self, image: bytes, base_addr: int) -> bytes:
-        """Encrypt image.
+        """Encrypt image with all available keyblobs.
 
         :param image: plain image to be encrypted
         :param base_addr: where the image will be located in target processor
         :return: encrypted image
         """
-        image_end = base_addr + len(image) - 1
-        for key_blob in self._key_blobs:
-            if key_blob.matches_range(base_addr, image_end):
-                logger.debug(
-                    f"Encrypting image {hex(base_addr)}:{hex(image_end)} with keyblob: \n{key_blob.info()}"
-                )
-                return key_blob.encrypt_image(base_addr, image)
+        encrypted_data = bytearray(image)
+        addr = base_addr
+        for block in split_data(image, self.IEE_DATA_UNIT):
+            for key_blob in self._key_blobs:
+                if key_blob.matches_range(addr, addr + len(block)):
+                    logger.debug(
+                        f"Encrypting {hex(addr)}:{hex(len(block) + addr)}"
+                        f" with keyblob: \n {key_blob.info()}"
+                    )
+                    encrypted_data[
+                        addr - base_addr : len(block) + addr - base_addr
+                    ] = key_blob.encrypt_image(addr, block)
+            addr += len(block)
 
-        logger.debug(
-            f"Image {hex(base_addr)}:{hex(image_end)} does not lie in any keyblob, keeping it unencrypted"
-        )
-        return image
+        return bytes(encrypted_data)
 
     def get_key_blobs(self) -> bytes:
         """Get key blobs.
@@ -726,7 +730,9 @@ class IeeNxp(Iee):
 
     @staticmethod
     def load_from_config(
-        config: Dict[str, Any], config_dir: str, search_paths: Optional[List[str]] = None
+        config: Dict[str, Any],
+        config_dir: str,
+        search_paths: Optional[List[str]] = None,
     ) -> "IeeNxp":
         """Converts the configuration option into an IEE image object.
 
@@ -744,13 +750,15 @@ class IeeNxp(Iee):
             master = MasterId[master]
         ibkek1 = get_key(
             config.get(
-                "ibkek1", "0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"
+                "ibkek1",
+                "0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
             ),
             32,
         )
         ibkek2 = get_key(
             config.get(
-                "ibkek2", "0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"
+                "ibkek2",
+                "0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F",
             ),
             32,
         )
@@ -773,7 +781,11 @@ class IeeNxp(Iee):
             )
             binaries = BinaryImage(
                 filepath_from_config(
-                    config, "encrypted_name", "encrypted_blobs", config_dir, config["output_folder"]
+                    config,
+                    "encrypted_name",
+                    "encrypted_blobs",
+                    config_dir,
+                    config["output_folder"],
                 ),
                 offset=start_address - keyblob_address,
                 alignment=IeeKeyBlob._ENCRYPTION_BLOCK_SIZE,

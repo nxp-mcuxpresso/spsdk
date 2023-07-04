@@ -29,7 +29,7 @@ from spsdk.apps.utils import (
     spsdk_logger,
 )
 from spsdk.tp import TP_DATA_FOLDER, SPSDKTpError, TpDevInterface, TrustProvisioningConfig
-from spsdk.tp.utils import get_supported_devices, scan_tp_devices
+from spsdk.tp.utils import get_device_data, get_supported_devices, scan_tp_devices
 from spsdk.utils.misc import load_text, write_file
 
 
@@ -151,7 +151,7 @@ def seal(
     "-f",
     "--family",
     type=click.Choice(get_supported_devices(), case_sensitive=False),
-    default="lpc55s6x",
+    required=True,
     help="Chip family to generate the TPConfig config for.",
 )
 @click.option(
@@ -164,10 +164,16 @@ def seal(
 # pylint: disable=unused-argument   # preparation for the future
 def get_template(family: str, output: str) -> None:
     """Command to generate tphost template of configuration YML file."""
-    template = load_text(os.path.join(TP_DATA_FOLDER, "tpconfig_cfg_template.yaml"))
+    # TODO: implement proper template generator
+    use_prov_data = get_device_data(key="use_prov_data", family=family)
+    template_name = (
+        "tpconfig_cfg_data_template.yml" if use_prov_data else "tpconfig_cfg_template.yml"
+    )
+    template = load_text(os.path.join(TP_DATA_FOLDER, template_name))
+    template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 
-    click.echo(f"The configuration template created. {output}")
+    click.echo(f"The configuration template created. {os.path.abspath(output)}")
 
 
 main.add_command(device_help)

@@ -33,7 +33,8 @@ from spsdk.apps.utils import (
 )
 from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.crypto import Encoding, ec
-from spsdk.crypto.loaders import extract_public_key, load_certificate
+from spsdk.crypto.loaders import extract_public_key, load_certificate_from_data
+from spsdk.exceptions import SPSDKError
 from spsdk.tp import TP_DATA_FOLDER, TpDevInterface, TpTargetInterface, TrustProvisioningHost
 from spsdk.tp.data_container import Container
 from spsdk.tp.data_container.payload_types import PayloadType
@@ -144,7 +145,7 @@ def load(
         scan_func=scan_tp_targets,
         print_func=click.echo,
     )
-    tp_target_instance = tp_interface.create_interface()
+    tp_target_instance = tp_interface.create_interface(family=tp_config.family)
     assert isinstance(tp_target_instance, TpTargetInterface)
 
     tp_worker = TrustProvisioningHost(tp_device_instance, tp_target_instance, click.echo)
@@ -220,7 +221,7 @@ def load_tpfw(
         scan_func=scan_tp_targets,
         print_func=click.echo,
     )
-    tp_target_instance = tp_interface.create_interface()
+    tp_target_instance = tp_interface.create_interface(family=tp_config.family)
     assert isinstance(tp_target_instance, TpTargetInterface)
 
     tp_worker = TrustProvisioningHost(
@@ -259,7 +260,9 @@ def get_template(
     output: str,
 ) -> None:
     """Command to generate tphost template of configuration YML file."""
-    template = load_text(os.path.join(TP_DATA_FOLDER, "tphost_cfg_template.yaml"))
+    template_name = "tphost_cfg_template.yaml"
+    template = load_text(os.path.join(TP_DATA_FOLDER, template_name))
+    template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 
     click.echo(f"The configuration template created. {output}")
@@ -445,6 +448,20 @@ def check_log_owner(
     help="Path where to store the TP_RESPONSE",
     required=True,
 )
+@click.option(
+    "-k",
+    "--key-flags",
+    type=INT(),
+    default=0x01,
+    help="OEM Key Flags. Default: 0x01",
+)
+@click.option(
+    "-s",
+    "--save-debug-data",
+    is_flag=True,
+    default=False,
+    help="Save the data being transferred (for debugging purposes).",
+)
 def get_tp_response(
     tp_target: str,
     tp_target_parameter: List[str],
@@ -452,6 +469,8 @@ def get_tp_response(
     timeout: int,
     config: str,
     response_file: str,
+    key_flags: int,
+    save_debug_data: bool,
 ) -> None:
     """Retrieve TP_RESPONSE from the target."""
     TPHostConfig.SCHEMA_MEMBERS = ["family", "tp_timeout", "target"]
@@ -471,7 +490,7 @@ def get_tp_response(
         scan_func=scan_tp_targets,
         print_func=click.echo,
     )
-    tp_target_instance = tp_interface.create_interface()
+    tp_target_instance = tp_interface.create_interface(family=tp_config.family)
     assert isinstance(tp_target_instance, TpTargetInterface)
 
     tp_worker = TrustProvisioningHost(
@@ -482,6 +501,8 @@ def get_tp_response(
     tp_worker.get_tp_response(
         response_file=response_file,
         timeout=tp_config.timeout,
+        oem_key_flags=key_flags,
+        save_debug_data=save_debug_data,
     )
 
 
@@ -489,9 +510,9 @@ def get_tp_response(
 @click.option(
     "-r",
     "--root-cert",
-    help="NXP Glob Root Certificate authority certificate.",  # type: ignore  # not sure what is mypy on about
+    help="NXP Glob Root Certificate authority certificate.",
     type=click.Path(exists=True, dir_okay=False),
-    required=True,
+    required=False,
 )
 @click.option(
     "-i",
@@ -517,23 +538,38 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
     Default file name for TP_RESPONSE is `x_tp_response.bin`.
     """
     overall_result = True
-    nxp_glob_puk = extract_public_key(root_cert)
-    nxp_prod_cert = load_certificate(intermediate_cert)
 
-    assert isinstance(nxp_glob_puk, ec.EllipticCurvePublicKey)
-    message = "validating NXP_PROD_CERT signature..."
+    nxp_glob_puk = extract_public_key(root_cert) if root_cert else None
+    if not nxp_glob_puk:
+        click.echo("NXP_GLOB key/cert not specified. NXP_PROD cert verification will be skipped.")
+
+    nxp_prod_cert_data = load_binary(intermediate_cert)
     try:
-        assert nxp_prod_cert.signature_hash_algorithm
-        nxp_glob_puk.verify(
-            nxp_prod_cert.signature,
-            nxp_prod_cert.tbs_certificate_bytes,
-            ec.ECDSA(nxp_prod_cert.signature_hash_algorithm),
-        )
-        message += "OK"
-    except Exception:
-        message += "FAILED!"
-        overall_result = False
-    click.echo(message)
+        nxp_prod_cert = load_certificate_from_data(nxp_prod_cert_data)
+        nxp_prod_puk = nxp_prod_cert.public_key()
+    except SPSDKError as e:
+        logging.debug(str(e))
+        if nxp_glob_puk:
+            raise SPSDKAppError(f"Unable to load NXP_PROD certificate: {str(e)}") from e
+        click.echo("Failed to load NXP_PROD as certificate, attempting to load raw public key")
+        nxp_prod_puk = reconstruct_cryptography_key(key_material=nxp_prod_cert_data)
+    assert isinstance(nxp_prod_puk, ec.EllipticCurvePublicKey)
+
+    if nxp_glob_puk:
+        assert isinstance(nxp_glob_puk, ec.EllipticCurvePublicKey)
+        message = "validating NXP_PROD_CERT signature..."
+        try:
+            assert nxp_prod_cert.signature_hash_algorithm
+            nxp_glob_puk.verify(
+                nxp_prod_cert.signature,
+                nxp_prod_cert.tbs_certificate_bytes,
+                ec.ECDSA(nxp_prod_cert.signature_hash_algorithm),
+            )
+            message += "OK"
+        except Exception:
+            message += "FAILED!"
+            overall_result = False
+        click.echo(message)
 
     message = "Parsing TP_RESPONSE data container..."
     try:
@@ -559,7 +595,6 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
 
     assert nxp_die_cert
     message = "Validating NXP_DIE_ID_Devattest_CERT signature..."
-    nxp_prod_puk = nxp_prod_cert.public_key()
     if nxp_die_cert.validate(nxp_prod_puk):  # type: ignore
         message += "OK"
     else:
