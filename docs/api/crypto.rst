@@ -16,7 +16,7 @@ Crypto module general information
 Crypto module key generation
 ------------------------------
 
-.. automodule:: spsdk.crypto.keys_management
+.. automodule:: spsdk.crypto.keys
    :members:
    :undoc-members:
    :show-inheritance:
@@ -24,7 +24,58 @@ Crypto module key generation
 Crypto module certificate generation
 --------------------------------------
 
-.. automodule:: spsdk.crypto.certificate_management
+.. automodule:: spsdk.crypto.certificate
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Crypto module symmetric encryption/decryption
+----------------------------------------------
+
+.. automodule:: spsdk.crypto.symmetric
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Crypto module CMS
+--------------------------------------
+
+.. automodule:: spsdk.crypto.cms
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Crypto module CMAC
+--------------------------------------
+
+.. automodule:: spsdk.crypto.cmac
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Crypto module HMAC
+--------------------------------------
+
+.. automodule:: spsdk.crypto.hmac
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Crypto module hash
+--------------------------------------
+
+.. automodule:: spsdk.crypto.hash
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Crypto module utils
+--------------------------------------
+
+.. automodule:: spsdk.crypto.utils
    :members:
    :undoc-members:
    :show-inheritance:
@@ -33,15 +84,31 @@ Crypto module certificate generation
 Interface for all potential signature providers
 ------------------------------------------------
 .. automodule:: spsdk.crypto.signature_provider
-   :members: SignatureProvider, PlainFileSP
+   :members: SignatureProvider, PlainFileSP, InteractivePlainFileSP
    :undoc-members:
    :show-inheritance:
 
+Crypto module OSCCA
+--------------------------------------
 
-Crypto module loading helper functions
----------------------------------------
-
-.. automodule:: spsdk.crypto.loaders
+.. automodule:: spsdk.crypto.oscca
    :members:
    :undoc-members:
    :show-inheritance:
+
+Crypto module types
+--------------------------------------
+
+.. automodule:: spsdk.crypto.types
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Crypto module RNG
+--------------------------------------
+
+.. automodule:: spsdk.crypto.rng
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

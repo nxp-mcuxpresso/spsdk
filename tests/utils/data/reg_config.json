@@ -28,9 +28,6 @@
                         "TEST_FIELD2": "computed_reg2_test_field2"
                     }
                 },
-                "ignored_registers": [
-                    "IGNORED_REG"
-                ],
                 "ignored_fields": [
                     "FIELD"
                 ],
@@ -75,9 +72,6 @@
         "computed_registers": {
             "COMPUTED_REG_GENERAL": "Hello"
         },
-        "ignored_registers": [
-            "IGNORED_REG_GENERAL"
-        ],
         "ignored_fields": [
             "FIELD_GENERAL"
         ],

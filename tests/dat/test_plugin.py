@@ -21,6 +21,7 @@ def test_nxpkeygen_plugin(tmpdir, data_dir):
         "plugin_dck_rsa_2048.yml",
         "--plugin",
         "signature_provider.py",
+        "-o",
         out_dc,
     ]
     with use_working_directory(data_dir):

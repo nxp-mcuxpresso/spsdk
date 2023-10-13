@@ -13,7 +13,7 @@ from typing import Any, Callable, Iterator, Optional, Union
 
 import click
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.mboot.commands import (
     KeyProvUserKeyType,
     TrustProvKeyType,
@@ -87,7 +87,7 @@ PROPERTIES_NAMES = {
     30: "byte-write-timeout-ms",
     31: "fuse-locked-status",
 }
-
+# TODO move to database
 KW45XX = {
     10: "verify-erase",
     20: "boot-status",

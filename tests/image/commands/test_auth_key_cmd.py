@@ -2,13 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk.image import CmdAuthData, CmdNop, EnumAuthDat, EnumEngine
+from spsdk.image.commands import EnumAuthDat
+from spsdk.image.segments import CmdAuthData, CmdNop, EnumEngine
 
 
 def test_auth_data_cmd_basic():
@@ -82,7 +83,7 @@ def test_auth_data_cmd_info():
         flags=EnumAuthDat.CLR, key_index=3, engine=EnumEngine.CSU, engine_cfg=1, location=1
     )
     cmd.append(3, 10)
-    output = cmd.info()
+    output = str(cmd)
     req_strings = [
         'Command "Authenticate Data',
         "Flag:",

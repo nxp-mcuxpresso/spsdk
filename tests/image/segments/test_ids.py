@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,7 +19,7 @@ def test_SegIDS3a_repr():
 
 def test_SegIDS3a_info():
     ids3a_seg = SegIDS3a()
-    info_msg = ids3a_seg.info()
+    info_msg = str(ids3a_seg)
     repr_strings = ["Source", "Dest", "Entry", "Size", "SCFW", "HAB", "ROM", "<Flags>"]
     for req_string in repr_strings:
         assert req_string in info_msg, f"string {req_string} is not in the output: {info_msg}"

@@ -7,8 +7,8 @@ validation and extraction.
 ## Device Configuration Data (DCD)
 
 ```python
-from spsdk.image import SegDCD
-from spsdk.image import CmdWriteData, CmdCheckData, CmdNop, EnumWriteOps,EnumCheckOps
+from spsdk.image.segments import SegDCD
+from spsdk.image.commands import CmdWriteData, CmdCheckData, CmdNop, EnumWriteOps,EnumCheckOps
 
 dcd = SegDCD(enabled=True)
 dcd.append(CmdWriteData(ops=EnumWriteOps.WRITE_VALUE, data=((0x30340004, 0x4F400005),

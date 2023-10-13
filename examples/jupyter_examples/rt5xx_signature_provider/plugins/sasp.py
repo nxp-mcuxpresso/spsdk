@@ -25,7 +25,7 @@ class SuperAwesomeSP(SignatureProvider):
 
         :param key_number: index of the key to use (rot_id from yaml config)
         """
-        self.url = f"http://127.0.0.1:5000"
+        self.url = "http://127.0.0.1:5000"
         self.key_number = key_number
 
     def sign(self, data: bytes) -> bytes:
@@ -67,6 +67,10 @@ class SuperAwesomeSP(SignatureProvider):
             response.raise_for_status()
         except requests.HTTPError as e:
             if response.text:
-                raise requests.HTTPError(f"{str(e)}; Error Message: {response.text}")
+                raise requests.HTTPError(
+                    f"{str(e)}; Error Message: {response.text}",
+                    request=e.request,
+                    response=e.response,
+                )
             else:
                 raise e

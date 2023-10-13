@@ -12,8 +12,7 @@ from typing import Union
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import (
     BinaryPattern,

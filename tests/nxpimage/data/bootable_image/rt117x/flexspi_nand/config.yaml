@@ -1,9 +1,9 @@
 # Copyright 2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ===========  Bootable Image Configuration for rt117x.  ===========
+# ===========  Bootable Image converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                        == General Options ==                                        
+#                                        == General Options ==
 # ----------------------------------------------------------------------------------------------------
 family: rt117x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x']
 revision: latest # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device; Possible options:['latest']

@@ -6,52 +6,96 @@ production deployment. The library allows the user to connect and communicate wi
 configure the device, prepare, download and upload data, including security operations. It is
 delivered in the form of a python library and command-line applications.
 
-
-Version: 1.11.0
-================
-Date: 7-July-2023
+Version: 2.0.0
+==============
+Date: 13-October-2023
 
 ANNOUNCEMENT:
 
-Next version of spsdk (2.0) will introduce breaking changes:
-- elftosb will be replaced by nxpimage
-- nxpcertgen and nxpkeygen will be replaced by nxpcrypto
-- select appropriate family will be done using: -f/--family parameter
-- move towards options for all parameters with an exception to BLHost
-- removal of crypto backends
-- extend dedicated spsdk.crypto module - serve as the de-facto backend of SPSDK
-- module level imports via init files
+Current version introduces breaking changes, which are described in details in migration guide.
 
 New features
+- blhost:
+    - dedicated plugin system
+    - check of written data length in USB Interface
+- nxpcrypto:
+    - remove dependency on PyCryptodome
+    - add rot command for calculating RoT hash
 - nxpimage:
-    - enable signature providers for AHAB image and signed messages
-    - add support for rt104x in bootable-image
-- tphost/tpconfig:
-    - add possibility to check TP_RESPONSE only with NXP_PROD raw binary key
-- add support for mcxn9xx
-- add API for FuseLockedStatus
-- possibility to declare private keys with passphrase  in signature provider config
-- add checking of written data length in usb interface
-- add support for dk6 tools
+    - distinguish between fw version and image version
+    - support YAML configuration for HAB
+    - support build RT11xx image with ECC keys
+    - support OSCCA
+    - support AHAB NAND
+    - implement HTTP Proxy Signature Provider
+    - signature provider for OSCCA
+    - add validation of signature in AHAB
+    - support OTFAD for RT1010
+    - export HAB from yaml config in bootable image
+    - revision of offsets in AHAB container
+    - command filter in SB 2.1 based on family
+    - refactor memory types for mbi
+    - add to AHAB key identifier for encrypted images
+- pfr/ifr:
+    - remove devices subcommand
+- sdpshost:
+    - connection support for iMX91 and iMX95
+- shadowregs:
+    - unify endianness
+- tool for converting JSON configuration into YAML with comments
+- support mcxa1xx
+- unify naming: RKTH/RKHT
+- remove nxpkeygen and nxpcertgen apps, replaced by :ref:`nxpcrypto`
+- remove elftosb app, replaced by :ref:`nxpcrypto`
+- positional arguments replaced by options for all parameters with an exception to :ref:`blhost`, :ref:`sdphost` and :ref:`dk6prog`
+- remove backward compatibility with command get-cfg-template, replaced fully with get-template(s)
+- unify family name within all modules
+- remove lpc55xx from family names
+
 Bugfixes
+- blhost:
+    - fix error of SPI connection
+- nxpdevhsm:
+    - add missing sdio in generate command
+- nxpele:
+    - fix generate-keyblob IEE
+    - fix issue with get-info command
 - nxpimage:
-    - fix offset on NAND memory in AHAB image
-- fix plugin error for signature Provider for sb21
+    - fix certificate block in AHAB
+    - fix signature in AHAB
+    - fix some commands for SB21
+    - fix non generated keys for AHAB parse
+    - fix RAM images for LPC55Sxx
+    - fix MBI signed for xip for MCXN9xx
+    - fix sb21 export yaml errors
+    - fix OTFAD with DUK
+    - fix wrong core ID in parse for iMX93
+    - fix binary certificate block for MBI
+    - fix manifest for mcxn9xx
+    - fix bootable image merge
+    - fix in MBI configurations
+    - fix missing parameters in MBI config in bootable-image parse
+    - fix sb21 file generation without SBKEK
+    - update list of supported MBI images for mcxn9xx
 
 Supported devices
 =================
 
-- i.MX RT1170, RT1160
-- i.MX RT1064, RT1060, RT1050, RT1020, RT1010
+- i.MX RT 1180, RT1170, RT1160
+- i.MX RT1064, RT1060, RT1050, RT1020, RT1024, RT1010, RT1015
 - i.MX RT685S, RT595S
 - LPC55S6x, LPC55S3x, LPC55S2x, LPC55S1x, LPC55S0x
+- NHS52Sxx
+- RW61x
+- MCXN9xx
+- KW45xx/K32W1xx
 
 Note: More details in devices.txt
 
 System Requirements
 ===================
 
-- Windows 10, 64-bit
+- Windows 10 and 11, 64bit
 - Ubuntu 18.04 or above, 64-bit
 - Mac OS 10.15 or above, x64, ARM64
 
@@ -63,6 +107,26 @@ Python 3.8+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+1.11.0
+- nxpimage:
+    - enable signature providers for AHAB image and signed messages
+    - add support for rt104x in bootable-image
+    - fix offset on NAND memory in AHAB image
+- tphost/tpconfig:
+    - add possibility to check TP_RESPONSE only with NXP_PROD raw binary key
+- add support for mcxn9xx
+- add API for FuseLockedStatus
+- possibility to declare private keys with passphrase in signature provider config
+- add checking of written data length in usb interface
+- add support for dk6 tools
+- fix plugin error for signature Provider for sb21
+
+1.10.2
+- tphost/tpconfig:
+    - add support for LPC55S3x
+- nxpimage:
+    - add possibility to define multiple regions in OTFAD in one data blob
+
 1.10.1
 - nxpimage:
     - support encrypted image hab

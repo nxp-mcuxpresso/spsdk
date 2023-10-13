@@ -15,6 +15,7 @@
         "LGPL-2.1",
         "MIT",
         "MIT license",
+        "MPL-2.0",
         "PSF",
         "Public Domain",
         "Public domain",
@@ -187,9 +188,21 @@
             "is_manual": false
         },
         {
+            "name": "idna",
+            "license": "BSD-3-Clause",
+            "home_page": "https://github.com/kjd/idna",
+            "is_manual": true
+        },
+        {
             "name": "importlib-metadata",
             "license": "Apache Software License",
             "home_page": "https://github.com/python/importlib_metadata",
+            "is_manual": true
+        },
+        {
+            "name": "importlib-resources",
+            "license": "MIT license",
+            "home_page": "https://github.com/python/importlib_resources",
             "is_manual": true
         },
         {
@@ -253,6 +266,12 @@
             "is_manual": false
         },
         {
+            "name": "prompt-toolkit",
+            "license": "BSD-3-Clause",
+            "home_page": "https://github.com/prompt-toolkit/python-prompt-toolkit",
+            "is_manual": true
+        },
+        {
             "name": "psutil",
             "license": "BSD",
             "home_page": "https://github.com/giampaolo/psutil",
@@ -262,12 +281,6 @@
             "name": "pycparser",
             "license": "BSD",
             "home_page": "https://github.com/eliben/pycparser",
-            "is_manual": false
-        },
-        {
-            "name": "pycryptodome",
-            "license": "BSD, Public Domain",
-            "home_page": "https://www.pycryptodome.org",
             "is_manual": false
         },
         {
@@ -293,6 +306,12 @@
             "license": "BSD-3-Clause",
             "home_page": "https://github.com/pyocd/pyocd-pemicro",
             "is_manual": false
+        },
+        {
+            "name": "pyparsing",
+            "license": "MIT license",
+            "home_page": "https://github.com/pyparsing/pyparsing",
+            "is_manual": true
         },
         {
             "name": "pypemicro",
@@ -376,6 +395,12 @@
             "name": "typing-extensions",
             "license": "PSF",
             "home_page": "https://github.com/python/typing_extensions",
+            "is_manual": true
+        },
+        {
+            "name": "urllib3",
+            "license": "MIT",
+            "home_page": "https://github.com/urllib3/urllib3",
             "is_manual": true
         },
         {

@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test Trustzone part of nxpimage app."""
+"""Test getting templates part of nxpimage app."""
 import os
 
 import pytest
@@ -16,36 +16,39 @@ from spsdk.apps import nxpimage
 
 @pytest.mark.parametrize(
     "device",
-    [("lpc55s3x")],
+    [
+        ("lpc55s3x"),
+        ("k32w1xx"),
+        ("kw45xx"),
+        ("mcxn9xx"),
+        ("rw61x"),
+    ],
 )
-def test_nxpimage_cfgtmp_create_sb3(tmpdir, device):
+def test_nxpimage_get_template_create_sb31(tmpdir, device):
     runner = CliRunner()
     file_name = os.path.join(tmpdir, "template.yml")
-    cmd = f"sb31 get-template -f {device} {file_name}"
+    cmd = f"sb31 get-template -f {device} --output {file_name}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
-    # Check at least common TrustZone Configuration file
     assert os.path.isfile(file_name)
 
 
 @pytest.mark.parametrize(
     "device",
-    [("rt118x")],
+    [("rt118x"), ("mx93")],
 )
-def test_nxpimage_cfgtmp_create_ahab(tmpdir, device):
+def test_nxpimage_get_template_ahab(tmpdir, device):
     runner = CliRunner()
     file_name = os.path.join(tmpdir, "template.yml")
-    cmd = f"ahab get-template -f {device} {file_name}"
+    cmd = f"ahab get-template -f {device} --output {file_name}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
-    # Check at least common TrustZone Configuration file
     assert os.path.isfile(file_name)
 
 
 @pytest.mark.parametrize(
     "device,revision",
     [
-        ("lpc55xx", "latest"),
         ("lpc55s0x", "latest"),
         ("lpc55s1x", "latest"),
         ("lpc55s6x", "latest"),
@@ -54,32 +57,46 @@ def test_nxpimage_cfgtmp_create_ahab(tmpdir, device):
         ("rt6xx", "latest"),
         ("rt6xx", "a0"),
         ("rt6xx", "b0"),
+        ("k32w1xx", "latest"),
+        ("kw45xx", "latest"),
+        ("mcxn9xx", "latest"),
+        ("nhs52s04", "latest"),
     ],
 )
-def test_nxpimage_cfgtmp_create_tz(tmpdir, device, revision):
+def test_nxpimage_get_template_tz(tmpdir, device, revision):
     runner = CliRunner()
     file_name = os.path.join(tmpdir, f"template_{device}_{revision}.yml")
-    cmd = f"tz get-template -f {device} -r {revision} {file_name}"
+    cmd = f"tz get-template -f {device} -r {revision} --output {file_name}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
-    # Check at least common TrustZone Configuration file
     assert os.path.isfile(file_name)
 
 
 @pytest.mark.parametrize(
     "device",
     [
-        ("lpc55xx"),
         ("lpc55s0x"),
+        ("lpc550x"),
         ("lpc55s1x"),
+        ("lpc551x"),
+        ("lpc55s2x"),
+        ("lpc552x"),
         ("lpc55s6x"),
         ("lpc55s3x"),
+        ("lpc553x"),
         ("rt5xx"),
         ("rt6xx"),
+        ("kw45xx"),
+        ("k32w1xx"),
+        ("mcxn9xx"),
+        ("nhs52sxx"),
+        ("mc56f81xxx"),
+        ("mwct20d2x"),
+        ("rw61x"),
     ],
 )
-def test_nxpimage_cfgtmp_create_mbi(tmpdir, device):
+def test_nxpimage_get_template_mbi(tmpdir, device):
     runner = CliRunner()
-    cmd = f"mbi get-templates -f {device} {tmpdir}"
+    cmd = f"mbi get-templates -f {device} --output {tmpdir}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0

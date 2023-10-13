@@ -16,11 +16,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from cryptography.hazmat.primitives.ciphers.aead import AESCCM
-from cryptography.hazmat.primitives.serialization import Encoding
-
-from spsdk.crypto import Certificate
-from spsdk.crypto.loaders import load_certificate_from_data, load_private_key_from_data
+from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.keys import PrivateKey
+from spsdk.crypto.rng import random_bytes
+from spsdk.crypto.symmetric import aes_ccm_encrypt
+from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import (
     SPSDKAttributeError,
     SPSDKError,
@@ -48,7 +48,6 @@ from spsdk.image.hab.hab_binary_image import HabBinaryImage, HabSegment
 from spsdk.image.header import Header, SegTag
 from spsdk.image.images import BootImgRT
 from spsdk.image.secret import MAC, CertificateImg, EnumAlgorithm, Signature, SrkTable
-from spsdk.utils.crypto.common import crypto_backend
 from spsdk.utils.misc import (
     BinaryPattern,
     align_block,
@@ -106,7 +105,7 @@ class SecCommand(ABC):
         """
         for param, is_mandatory in cls.CONFIGURATION_PARAMS.items():
             if is_mandatory and section_data.options.get(param) is None:
-                raise SPSDKError("Mandatory parameter is not defined")
+                raise SPSDKError(f"Mandatory parameter {param} is not defined")
 
         additional_params = list(
             set(key.lower() for key in section_data.options.keys())
@@ -117,12 +116,14 @@ class SecCommand(ABC):
 
     @staticmethod
     @abstractmethod
-    def parse(config: SectionConfig, search_paths: Optional[List[str]] = None) -> "SecCommand":
-        """Parse configuration into the command.
+    def load_from_config(
+        config: SectionConfig, search_paths: Optional[List[str]] = None
+    ) -> "SecCommand":
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
-        :return: Parsed command instance
+        :return: Loaded command instance
         """
 
     @abstractmethod
@@ -137,9 +138,9 @@ class SecCommand(ABC):
         :raises SPSDKError: If length of bytes is not as expected
         :return: Generated random bytes
         """
-        secret_key = crypto_backend().random_bytes(length)
+        secret_key = random_bytes(length)
         if length != len(secret_key):
-            raise SPSDKError(f"Invalid sectet key bytes length: {len(secret_key)}")
+            raise SPSDKError(f"Invalid secret key bytes length: {len(secret_key)}")
         return secret_key
 
 
@@ -191,8 +192,10 @@ class SecCsfHeader(SecCommand):
         self.hash_algorithm: Optional[EnumAlgorithm] = hash_algorithm
 
     @staticmethod
-    def parse(config: SectionConfig, search_paths: Optional[List[str]] = None) -> "SecCsfHeader":
-        """Parse configuration into the command.
+    def load_from_config(
+        config: SectionConfig, search_paths: Optional[List[str]] = None
+    ) -> "SecCsfHeader":
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -229,7 +232,7 @@ class SecCsfHeader(SecCommand):
 
     @staticmethod
     def _parse_version(version: Union[str, int]) -> int:
-        """Parse version from string to actiual integer.
+        """Parse version from string to actual integer.
 
         An example: "4.2" -> 0x42 -> 64
 
@@ -269,10 +272,10 @@ class SecCsfInstallSrk(SecCommand):
         self.source_index = source_index
 
     @staticmethod
-    def parse(
+    def load_from_config(
         config: SectionConfig, search_paths: Optional[List[str]] = None
     ) -> "SecCsfInstallSrk":
-        """Parse configuration into the command.
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -320,10 +323,10 @@ class SecCsfInstallCsfk(SecCommand):
         self.certificate_format = certificate_format
 
     @staticmethod
-    def parse(
+    def load_from_config(
         config: SectionConfig, search_paths: Optional[List[str]] = None
     ) -> "SecCsfInstallCsfk":
-        """Parse configuration into the command.
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -358,11 +361,10 @@ class SecCsfInstallCsfk(SecCommand):
             flags=EnumInsKey.CSF,
             tgt_index=1,
         )
-        self.cmd.certificate_format = self.certificate_format  # type: ignore
-        certificate_bin = load_binary(self.csfk_file_path)
-        certificate = load_certificate_from_data(certificate_bin)
+        self.cmd.certificate_format = self.certificate_format
+        certificate = Certificate.load(self.csfk_file_path)
         self.cmd.certificate_ref = CertificateImg(
-            version=self.version, data=certificate.public_bytes(Encoding.DER)
+            version=self.version, data=certificate.export(SPSDKEncoding.DER)
         )
 
 
@@ -397,10 +399,10 @@ class SecCsfAuthenticateCsf(SecCommand):
         self._engine: Optional[EnumEngine] = None
 
     @staticmethod
-    def parse(
+    def load_from_config(
         config: SectionConfig, search_paths: Optional[List[str]] = None
     ) -> "SecCsfAuthenticateCsf":
-        """Parse configuration into the command.
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -464,10 +466,7 @@ class SecCsfAuthenticateCsf(SecCommand):
             self.cmd.engine = self.engine
 
         assert self.private_key is not None
-        pem_private_key = load_private_key_from_data(
-            self.private_key, password=str.encode(self.key_pass) if self.key_pass else None
-        )
-        self.cmd.private_key_pem_data = pem_private_key  # type: ignore
+        self.cmd.private_key = PrivateKey.parse(self.private_key, password=self.key_pass)
 
         signature = Signature(version=self.version)
         self.cmd.signature = signature
@@ -507,16 +506,16 @@ class SecCsfInstallKey(SecCommand):
         """
         super().__init__()
         self.certificate_path = certificate_path
-        self.certificate = load_certificate_from_data(load_binary(certificate_path))
+        self.certificate = Certificate.load(certificate_path)
         self.source_index = source_index
         self.target_index = target_index
         self._version: Optional[int] = None
 
     @staticmethod
-    def parse(
+    def load_from_config(
         config: SectionConfig, search_paths: Optional[List[str]] = None
     ) -> "SecCsfInstallKey":
-        """Parse configuration into the command.
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -550,7 +549,7 @@ class SecCsfInstallKey(SecCommand):
         """Build command with given properties."""
         self.cmd: CmdInstallKey = CmdInstallKey(cert_fmt=EnumCertFormat.X509)
         self.cmd.certificate_ref = CertificateImg(
-            version=self.version, data=self.certificate.public_bytes(Encoding.DER)
+            version=self.version, data=self.certificate.export(SPSDKEncoding.DER)
         )
         self.cmd.source_index = self.source_index
         self.cmd.target_index = self.target_index
@@ -639,10 +638,10 @@ class SecCsfAuthenticateData(SecCommand):
         )
 
     @staticmethod
-    def parse(
+    def load_from_config(
         config: SectionConfig, search_paths: Optional[List[str]] = None
     ) -> "SecCsfAuthenticateData":
-        """Parse configuration into the command.
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -707,10 +706,7 @@ class SecCsfAuthenticateData(SecCommand):
         self.cmd.key_index = self.verification_index
 
         assert self.private_key is not None
-        pem_private_key = load_private_key_from_data(
-            self.private_key, password=str.encode(self.key_pass) if self.key_pass else None
-        )
-        self.cmd.private_key_pem_data = pem_private_key  # type: ignore
+        self.cmd.private_key = PrivateKey.parse(self.private_key, password=self.key_pass)
 
         signature = Signature(version=self.version)
         self.cmd.signature = signature
@@ -807,8 +803,10 @@ class SecSetEngine(SecCommand):
         self.engine_cfg = engine_cfg
 
     @staticmethod
-    def parse(config: SectionConfig, search_paths: Optional[List[str]] = None) -> "SecSetEngine":
-        """Parse configuration into the command.
+    def load_from_config(
+        config: SectionConfig, search_paths: Optional[List[str]] = None
+    ) -> "SecSetEngine":
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -859,8 +857,10 @@ class SecUnlock(SecCommand):
         self.features = features
 
     @staticmethod
-    def parse(config: SectionConfig, search_paths: Optional[List[str]] = None) -> SecCommand:
-        """Parse configuration into the command.
+    def load_from_config(
+        config: SectionConfig, search_paths: Optional[List[str]] = None
+    ) -> SecCommand:
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -922,17 +922,17 @@ class SecInstallSecretKey(SecCommand):
         self._location: Optional[int] = None
 
     @staticmethod
-    def parse(
+    def load_from_config(
         config: SectionConfig, search_paths: Optional[List[str]] = None
     ) -> "SecInstallSecretKey":
-        """Parse configuration into the command.
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
         """
         SecInstallSecretKey.check_config_section_params(config)
         reuse_dek = True if config.options.get("SecretKey_ReuseDek", 0) == 1 else False
-        length = int(config.options.get("SecretKey_Length", 128))  # type: ignore
+        length = int(config.options.get("SecretKey_Length", 128))
         if length not in [128, 192, 256]:
             raise SPSDKValueError(f"Invalid sectet key length {length}")
         key_length = length // 8
@@ -948,7 +948,7 @@ class SecInstallSecretKey(SecCommand):
             raise SPSDKError(
                 f"Loaded secret key lenght does not match the expected length: {length}"
             )
-        source_index = int(config.options.get("SecretKey_VerifyIndex", 0))  # type: ignore
+        source_index = int(config.options.get("SecretKey_VerifyIndex", 0))
         target_index = int(config.options["SecretKey_TargetIndex"])
         return SecInstallSecretKey(
             secret_key=secret_key, source_index=source_index, target_index=target_index
@@ -1055,8 +1055,13 @@ class SecDecryptData(SecCommand):
         if self.nonce is None:
             nonce_len = BootImgRT.aead_nonce_len(len(data_to_encrypt))
             self.nonce = SecDecryptData.generate_random_bytes(nonce_len)
-        aesccm = AESCCM(self.dek, tag_length=self.mac_len)
-        encr = aesccm.encrypt(self.nonce, data_to_encrypt, None)  # type: ignore
+        encr = aes_ccm_encrypt(
+            key=self.dek,
+            plain_data=data_to_encrypt,
+            nonce=self.nonce,
+            associated_data=bytes(),
+            tag_len=self.mac_len,
+        )
         if len(encr) != len(data_to_encrypt) + self.mac_len:
             raise SPSDKError("Invalid length of encrypted data")
         mac = encr[-self.mac_len :]
@@ -1089,8 +1094,10 @@ class SecDecryptData(SecCommand):
         self._blocks = value
 
     @staticmethod
-    def parse(config: SectionConfig, search_paths: Optional[List[str]] = None) -> "SecDecryptData":
-        """Parse configuration into the command.
+    def load_from_config(
+        config: SectionConfig, search_paths: Optional[List[str]] = None
+    ) -> "SecDecryptData":
+        """Load configuration into the command.
 
         :param config: Section config
         :param search_paths: List of paths where to search for the file, defaults to None
@@ -1230,7 +1237,7 @@ class CsfBuilder:
         bd_section = self.bd_config.get_section(SecCsfHeader.CMD_INDEX)
         if not bd_section:
             return
-        command = SecCsfHeader.parse(bd_section, search_paths=self.search_paths)
+        command = SecCsfHeader.load_from_config(bd_section, search_paths=self.search_paths)
         command.build_command()
         self.header = command
 
@@ -1239,7 +1246,7 @@ class CsfBuilder:
         bd_section = self.bd_config.get_section(SecCsfInstallSrk.CMD_INDEX)
         if not bd_section:
             return
-        command = SecCsfInstallSrk.parse(bd_section, search_paths=self.search_paths)
+        command = SecCsfInstallSrk.load_from_config(bd_section, search_paths=self.search_paths)
         command.build_command()
         self.append_command(command)
 
@@ -1250,7 +1257,7 @@ class CsfBuilder:
             return
 
         assert self.header is not None
-        command = SecCsfInstallCsfk.parse(bd_section, search_paths=self.search_paths)
+        command = SecCsfInstallCsfk.load_from_config(bd_section, search_paths=self.search_paths)
         command.version = self.header.version
         command.build_command()
 
@@ -1265,7 +1272,7 @@ class CsfBuilder:
         assert self.header is not None
         install_csfk: SecCsfInstallCsfk = self.get_command(SecCsfInstallCsfk.CMD_INDEX)  # type: ignore
 
-        command = SecCsfAuthenticateCsf.parse(bd_section, search_paths=self.search_paths)
+        command = SecCsfAuthenticateCsf.load_from_config(bd_section, search_paths=self.search_paths)
         if command.private_key is None:
             private_key_path = self._determine_private_key_path(install_csfk.csfk_file_path)
             if not private_key_path:
@@ -1279,8 +1286,8 @@ class CsfBuilder:
                 with open(key_pass_file) as file:
                     command.key_pass = file.readline().strip()
 
-        command.certificate = load_certificate_from_data(
-            load_binary(install_csfk.csfk_file_path, search_paths=self.search_paths)
+        command.certificate = Certificate.load(
+            find_file(install_csfk.csfk_file_path, search_paths=self.search_paths)
         )
         command.version = self.header.version
         command.engine = self.header.engine
@@ -1303,7 +1310,7 @@ class CsfBuilder:
             return
 
         assert self.header is not None
-        command = SecCsfInstallKey.parse(bd_section, search_paths=self.search_paths)
+        command = SecCsfInstallKey.load_from_config(bd_section, search_paths=self.search_paths)
         command.version = self.header.version
         command.build_command()
         self.append_command(command)
@@ -1317,7 +1324,9 @@ class CsfBuilder:
         assert self.header is not None
         install_key: SecCsfInstallKey = self.get_command(SecCsfInstallKey.CMD_INDEX)  # type: ignore
 
-        command = SecCsfAuthenticateData.parse(bd_section, search_paths=self.search_paths)
+        command = SecCsfAuthenticateData.load_from_config(
+            bd_section, search_paths=self.search_paths
+        )
         if command.private_key is None:
             private_key_path = self._determine_private_key_path(install_key.certificate_path)
             if not private_key_path:
@@ -1356,7 +1365,7 @@ class CsfBuilder:
         bd_section = self.bd_config.get_section(SecSetEngine.CMD_INDEX)
         if not bd_section:
             return
-        command = SecSetEngine.parse(bd_section, search_paths=self.search_paths)
+        command = SecSetEngine.load_from_config(bd_section, search_paths=self.search_paths)
         command.build_command()
         self.append_command(command)
 
@@ -1365,7 +1374,7 @@ class CsfBuilder:
         bd_section = self.bd_config.get_section(SecUnlock.CMD_INDEX)
         if not bd_section:
             return
-        command = SecUnlock.parse(bd_section, search_paths=self.search_paths)
+        command = SecUnlock.load_from_config(bd_section, search_paths=self.search_paths)
         command.build_command()
         self.append_command(command)
 
@@ -1383,7 +1392,7 @@ class CsfBuilder:
         if self.header.version <= 0x40:
             raise SPSDKError("The command is supported from version 0x41 onwards")
 
-        command = SecInstallSecretKey.parse(bd_section, search_paths=self.search_paths)
+        command = SecInstallSecretKey.load_from_config(bd_section, search_paths=self.search_paths)
         command.location = self.keyblob_address
         command.build_command()
         self.append_command(command)
@@ -1396,7 +1405,7 @@ class CsfBuilder:
 
         install_secret_key: SecInstallSecretKey = self.get_command(SecInstallSecretKey.CMD_INDEX)  # type: ignore
 
-        command = SecDecryptData.parse(bd_section, search_paths=self.search_paths)
+        command = SecDecryptData.load_from_config(bd_section, search_paths=self.search_paths)
         command.dek = install_secret_key.secret_key
         app = self.hab_image.get_hab_segment(HabSegment.APP)
         blocks = SecDecryptData._get_image_blocks(

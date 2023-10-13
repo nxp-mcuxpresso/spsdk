@@ -9,8 +9,9 @@
 
 from typing import Optional
 
-from spsdk import SPSDKError
-from spsdk.mboot import McuBoot, scan_usb
+from spsdk.exceptions import SPSDKError
+from spsdk.mboot.interfaces.usb import MbootUSBInterface
+from spsdk.mboot.mcuboot import McuBoot
 
 # Uncomment for printing debug messages
 # import logging
@@ -24,9 +25,9 @@ def mboot_properties(name: Optional[str] = None) -> Optional[list]:
     :return: Interface object
     """
     props = None
-    devices = scan_usb(name)
-    if devices:
-        with McuBoot(devices[0]) as mb:
+    interfaces = MbootUSBInterface.scan(device_id=name)
+    if interfaces:
+        with McuBoot(interfaces[0]) as mb:
             props = mb.get_property_list()
     return props
 

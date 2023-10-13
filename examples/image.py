@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,7 +17,8 @@ IVT, boot data, etc.
 
 import os
 
-from spsdk.image import BootImgRT, SegDCD
+from spsdk.image.images import BootImgRT
+from spsdk.image.segments import SegDCD
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
@@ -36,7 +37,7 @@ def main() -> None:
         img.add_image(data=f_bin.read())
 
     # Print image info
-    print(img.info())
+    print(str(img))
 
     # Save into file
     with open(f"{DATA_DIR}/flashloader.imx", "wb") as f:

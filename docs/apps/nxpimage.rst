@@ -3,9 +3,7 @@ User Guide - nxpimage
 =====================
 
 This user guide describes how to use *nxpimage* application. *nxpimage* is a tool for generating TrustZone,
-Master Boot Image and Secure Binary images. This tool is successor of obsolete *elftosb* application. The motivation to
-replace *elftosb* is bring clear and more usable user interface to application that is used to create various kind
-of NXP images. To keep backward compatibility as much as possible the configuration files has been kept as is.
+Master Boot Image and Secure Binary images. This tool is used to create various kind of NXP images.
 
 Refer to the chapter supported binary images for more information.
 

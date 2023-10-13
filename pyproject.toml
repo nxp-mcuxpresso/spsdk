@@ -16,7 +16,7 @@ line_length = 100
 [tool.mypy]
 disallow_untyped_defs = true
 ignore_missing_imports = true
-# warn_unused_ignores = true
+warn_unused_ignores = true
 
 [tool.pytest.ini_options]
 junit_family = "xunit1"

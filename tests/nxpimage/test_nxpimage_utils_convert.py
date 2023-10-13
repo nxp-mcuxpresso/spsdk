@@ -36,7 +36,7 @@ def test_nxpimage_convert_hexbin(tmpdir, data_dir, in_file, out_file, command, r
         cmd = ["utils", "convert", command, "-i", input_file]
         if reverse:
             cmd.append("-r")
-        cmd.append(output)
+        cmd.extend(["-o", output])
         result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(output)
@@ -49,7 +49,7 @@ def test_nxpimage_convert_hexbin_invalid(tmpdir, data_dir, in_file):
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/hexbin/{in_file}"
         output = f"{tmpdir}/test.bin"
-        cmd = ["utils", "convert", "hex2bin", "-i", input_file, output]
+        cmd = ["utils", "convert", "hex2bin", "-i", input_file, "-o", output]
         result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code != 0
 
@@ -136,7 +136,7 @@ def test_nxpimage_convert_bin2carr(data_dir, in_file, out_str, type, padding, en
     runner = CliRunner()
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/bin2carr/{in_file}"
-        cmd = ["utils", "convert", "bin2carr", "-i", f"{input_file}"]
+        cmd = ["utils", "convert", "bin2carr", "-i", input_file]
         if type:
             cmd.extend(["-t", type])
         if padding:
@@ -154,14 +154,14 @@ def test_nxpimage_convert_bin2carr_file(tmpdir, data_dir):
     runner = CliRunner()
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/bin2carr/inc9.bin"
-        correct_ouput = f"{data_dir}/utils/convert/bin2carr/inc9_uint32_t.txt"
+        correct_output = f"{data_dir}/utils/convert/bin2carr/inc9_uint32_t.txt"
         output = f"{tmpdir}/inc9_uint32_t.txt"
         cmd = [
             "utils",
             "convert",
             "bin2carr",
             "-i",
-            f"{input_file}",
+            input_file,
             "-t",
             "uint32_t",
             "-p",
@@ -169,9 +169,9 @@ def test_nxpimage_convert_bin2carr_file(tmpdir, data_dir):
             "-e",
             "little",
             "-o",
-            f"{output}",
+            output,
         ]
         result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(output)
-        assert filecmp.cmp(output, correct_ouput, shallow=False)
+        assert filecmp.cmp(output, correct_output, shallow=False)

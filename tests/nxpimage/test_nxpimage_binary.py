@@ -26,7 +26,7 @@ from spsdk.utils.misc import (
 def test_nxpimage_binary_template(tmpdir):
     runner = CliRunner()
     template_name = os.path.join(tmpdir, "binary_merge.yaml")
-    cmd = f"utils binary-image get-template {template_name}"
+    cmd = f"utils binary-image get-template --output {template_name}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
     assert os.path.isfile(template_name)
@@ -38,7 +38,7 @@ def test_nxpimage_binary_merge_with_random(tmpdir, data_dir):
     with use_working_directory(data_dir):
         merge_cfg = os.path.join("utils", "binary", "binary_merge.yaml")
         merged_file = os.path.join(tmpdir, "merged.bin")
-        cmd = f"utils binary-image merge -c {merge_cfg} {merged_file}"
+        cmd = f"utils binary-image merge -c {merge_cfg} -o {merged_file}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(merged_file)
@@ -61,7 +61,7 @@ def test_nxpimage_binary_merge(tmpdir, data_dir, config, output, result_code):
     with use_working_directory(data_dir):
         merge_cfg = os.path.join("utils", "binary", config)
         merged_file = os.path.join(tmpdir, "merged.bin")
-        cmd = f"utils binary-image merge -c {merge_cfg} {merged_file}"
+        cmd = f"utils binary-image merge -c {merge_cfg} -o {merged_file}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == result_code
         if result_code == 0:
@@ -84,7 +84,7 @@ def test_nxpimage_binary_convert_bin(tmpdir, data_dir, inputs, bin_file):
     with use_working_directory(os.path.join(data_dir, "utils", "binary", "convert")):
         out_file = os.path.join(tmpdir, bin_file)
         for input_file in inputs:
-            cmd = f"utils binary-image convert -i {input_file} -f BIN {out_file}"
+            cmd = f"utils binary-image convert -i {input_file} -f BIN -o {out_file}"
             result = runner.invoke(nxpimage.main, cmd.split())
             assert result.exit_code == 0
             assert filecmp.cmp(out_file, bin_file)
@@ -105,11 +105,11 @@ def test_nxpimage_binary_convert_s19(tmpdir, data_dir, inputs, bin_file):
         check_bin = os.path.join(tmpdir, "check.bin")
         for i, input_file in enumerate(inputs):
             files.append(os.path.join(tmpdir, f"bin_file_{i}.s19"))
-            cmd = f"utils binary-image convert -i {input_file} -f S19 {files[i]}"
+            cmd = f"utils binary-image convert -i {input_file} -f S19 -o {files[i]}"
             result = runner.invoke(nxpimage.main, cmd.split())
             assert result.exit_code == 0
 
-            cmd = f"utils binary-image convert -i {files[i]} -f BIN {check_bin}"
+            cmd = f"utils binary-image convert -i {files[i]} -f BIN -o {check_bin}"
             result = runner.invoke(nxpimage.main, cmd.split())
             assert result.exit_code == 0
             assert filecmp.cmp(check_bin, bin_file)
@@ -130,11 +130,11 @@ def test_nxpimage_binary_convert_hex(tmpdir, data_dir, inputs, bin_file):
         check_bin = os.path.join(tmpdir, "check.bin")
         for i, input_file in enumerate(inputs):
             files.append(os.path.join(tmpdir, f"bin_file_{i}.hex"))
-            cmd = f"utils binary-image convert -i {input_file} -f HEX {files[i]}"
+            cmd = f"utils binary-image convert -i {input_file} -f HEX -o {files[i]}"
             result = runner.invoke(nxpimage.main, cmd.split())
             assert result.exit_code == 0
 
-            cmd = f"utils binary-image convert -i {files[i]} -f BIN {check_bin}"
+            cmd = f"utils binary-image convert -i {files[i]} -f BIN -o {check_bin}"
             result = runner.invoke(nxpimage.main, cmd.split())
             assert result.exit_code == 0
             assert filecmp.cmp(check_bin, bin_file)

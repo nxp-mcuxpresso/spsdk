@@ -27,6 +27,7 @@ def test_binary_image_sort_sub_images():
 
     image.validate()
 
+    assert image.size == 8
     assert image.export() == b"\x00\x00\x02\x00\x04\x00\x06\x00"
 
 
@@ -114,18 +115,22 @@ def test_load_binary_image(path, data_dir):
 
 
 @pytest.mark.parametrize(
-    "path, error_msg",
+    "path,error_msg",
     [
         (
             "images/image_corrupted.s19",
             "SPSDK: Error loading file: expected crc 'D3' in record S21407F41001020100010600000200000000000000D4, but got 'D4'",
-        ),
-        ("invalid_file", "Error loading file"),
+        )
     ],
 )
-def test_load_binary_image_invalid(path, error_msg, data_dir):
+def test_load_binary_image_invalid_s19(path, error_msg, data_dir):
     with pytest.raises(SPSDKError, match=error_msg):
         BinaryImage.load_binary_image(os.path.join(data_dir, path))
+
+
+def test_load_binary_image_invalid(data_dir):
+    with pytest.raises(SPSDKError):
+        BinaryImage.load_binary_image(os.path.join(data_dir, "invalid_file"))
 
 
 def test_binary_image_load_elf(data_dir):
@@ -134,4 +139,7 @@ def test_binary_image_load_elf(data_dir):
     assert binary
     assert isinstance(binary, BinaryImage)
     assert len(binary) > 0
+    assert binary.size == 19368
     assert binary.offset == 0x8000_2000
+    binary.add_image(BinaryImage.load_binary_image(os.path.join(data_dir, "images/image.s19")))
+    assert binary.size == 582818

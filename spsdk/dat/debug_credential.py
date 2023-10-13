@@ -9,16 +9,19 @@
 
 import math
 from struct import calcsize, pack, unpack_from
-from typing import Any, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
-from spsdk import SPSDKError, crypto
-from spsdk.crypto.loaders import extract_public_key
+from typing_extensions import Self
+
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
+from spsdk.crypto.keys import PublicKeyEcc, PublicKeyRsa
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
-from spsdk.dat.utils import ecc_key_to_bytes, ecc_public_numbers_to_bytes, rsa_key_to_bytes
-from spsdk.exceptions import SPSDKValueError
+from spsdk.crypto.utils import extract_public_key
+from spsdk.dat import DAT_DC_SCH_FILE
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab.ahab_container import SRKRecord, SRKTable
-from spsdk.utils.crypto.backend_internal import internal_backend
 from spsdk.utils.misc import find_file
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
 
 
 class DebugCredential:
@@ -32,14 +35,35 @@ class DebugCredential:
     HASH_LENGTH = 32
 
     SOCC_LIST = {
-        0x0000: "i.MXRT595, i.MXRT685",
-        0x0001: "LPC550x, LPC55s0x, LPC551x, LPC55s1x, LPC552x, LPC55s2x, LPC55s6",
-        0x0004: "LPC55s3",
-        0x0005: "KW45xx/K32W1xx",
-        0x0006: "MCXN9xx (A0)",
-        0x0007: "MCXN9xx (A1)",
-        0x000A: "RW61x (A2)",
-        0x5254049C: "i.MXRT118x",
+        0x0000: [("rt5xx", "a0"), ("rt5xx", "latest"), ("rt6xx", "b0"), ("rt6xx", "latest")],
+        0x0001: [
+            ("lpc550x", "a1"),
+            ("lpc550x", "latest"),
+            ("lpc55s0x", "a1"),
+            ("lpc55s0x", "latest"),
+            ("lpc551x", "a1"),
+            ("lpc551x", "latest"),
+            ("lpc55s1x", "a1"),
+            ("lpc55s1x", "latest"),
+            ("lpc552x", "a1"),
+            ("lpc552x", "latest"),
+            ("lpc55s2x", "a1"),
+            ("lpc55s2x", "latest"),
+            ("lpc55s6x", "a1"),
+            ("lpc55s6x", "latest"),
+        ],
+        0x0004: [
+            ("lpc55s3x", "a1"),
+            ("lpc55s3x", "latest"),
+        ],
+        0x0005: [("kw45xx", "a1"), ("kw45xx", "latest"), ("k32w1xx", "a1"), ("k32w1xx", "latest")],
+        0x0006: [("mcxn9xx", "a0")],
+        0x0007: [("mcxn9xx", "a1"), ("mcxn9xx", "latest")],
+        0x000A: [("rw61x", "a2"), ("rw61x", "latest")],
+        0x4D580008: [("mx8ulp", "a0"), ("mx8ulp", "latest")],
+        0x4D58005D: [("mx93", "a0"), ("mx93", "latest")],
+        0x4D58005F: [("mx95", "a0"), ("mx95", "latest")],
+        0x5254049C: [("rt118x", "a0"), ("rt118x", "latest")],
     }
 
     def __init__(
@@ -112,9 +136,18 @@ class DebugCredential:
         :return: SOCC string representation
         """
         cls = DebugCredential._get_class(version, socc)
-        return f"{socc:{cls.SOCC_FORMAT}}, " + cls.SOCC_LIST.get(socc, "Unknown SOCC")
+        return f"{socc:{cls.SOCC_FORMAT}}, " + ", ".join(
+            [
+                item[0]
+                for item in DebugCredential.SOCC_LIST.get(socc, "Unknown SOCC")
+                if "latest" not in item
+            ]
+        )
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"DC v{self.VERSION}, {self.SOCC_LIST.get(self.socc, 'Unknown SOCC')}"
+
+    def __str__(self) -> str:
         """String representation of DebugCredential.
 
         :return: binary representation of the debug credential
@@ -157,7 +190,7 @@ class DebugCredential:
         return isinstance(other, DebugCredential) and vars(self) == vars(other)
 
     @classmethod
-    def _get_rot_meta(cls, used_root_cert: int, rot_pub_keys: List[str]) -> bytes:
+    def _get_rot_meta(cls, config: Dict[str, Any]) -> bytes:
         """Creates the RoT meta-data required by the device to corroborate.
 
         :return: binary representing the rot-meta data
@@ -193,7 +226,7 @@ class DebugCredential:
 
     @classmethod
     def _get_class(cls, version: str, socc: int) -> "Type[DebugCredential]":
-        if socc in [0x5254049C]:
+        if socc in DebugCredentialEdgeLockEnclave.SUPPORTED_SOCC:
             return _edge_lock_version_mapping[version]
         return _version_mapping[version]
 
@@ -225,10 +258,7 @@ class DebugCredential:
         dc_obj = klass(
             socc=yaml_config["socc"],
             uuid=bytes.fromhex(yaml_config["uuid"]),
-            rot_meta=klass._get_rot_meta(  # pylint: disable=protected-access
-                used_root_cert=yaml_config["rot_id"],
-                rot_pub_keys=yaml_config["rot_meta"],
-            ),
+            rot_meta=klass._get_rot_meta(config=yaml_config),  # pylint: disable=protected-access
             dck_pub=klass._get_dck(yaml_config["dck"]),  # pylint: disable=protected-access
             cc_socu=yaml_config["cc_socu"],
             cc_vu=yaml_config["cc_vu"],
@@ -241,27 +271,98 @@ class DebugCredential:
         return dc_obj
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DebugCredential":
+    def parse(cls, data: bytes) -> Self:
         """Parse the debug credential.
 
         :param data: Raw data as bytes
-        :param offset: Offset of input data
         :return: DebugCredential object
         """
-        ver = unpack_from("<2H", data, offset)
+        ver = unpack_from("<2H", data)
         version = f"{ver[0]}.{ver[1]}"
-        socc = unpack_from("<L", data, offset + 4)
+        socc = unpack_from("<L", data, 4)
         klass = cls._get_class(version, socc[0])
-        return klass.get_instance_from_challenge(data[offset:])
+        return klass.get_instance_from_challenge(data)  # type: ignore
 
     @classmethod
-    def get_instance_from_challenge(cls, data: bytes) -> "DebugCredential":
+    def get_instance_from_challenge(cls, data: bytes) -> Self:
         """Returns instance of class from DAP authentication challenge data.
 
         :return: Instance of this class.
         """
-        _, _, *rest = unpack_from(cls.FORMAT, data, 0)
+        _, _, *rest = unpack_from(cls.FORMAT, data)
         return cls(*rest)
+
+    @staticmethod
+    def get_supported_families() -> List[str]:
+        """Get all supported families for DAT.
+
+        :return: List of supported families.
+        """
+        families = []
+        for family_str in DebugCredential.SOCC_LIST.values():
+            families.extend([i[0] for i in family_str])
+        return list(set(families))
+
+    @staticmethod
+    def get_socc_by_family(family: str, revision: str = "latest") -> int:
+        """Get corresponding SOCC by family.
+
+        :param family: Family for what will be socc value selected.
+        :param revision: For a closer specify MCU family.
+        :raises SPSDKValueError: Unsupported family or revision
+        :return: SOCC value.
+        """
+        for socc, devices in DebugCredential.SOCC_LIST.items():
+            for fam, rev in devices:
+                if family == fam and revision == rev:
+                    return socc
+
+        raise SPSDKValueError(f"Unsupported family {family} or revision {revision}")
+
+    @staticmethod
+    def get_validation_schemas(
+        family: str = "lpc55s3x", revision: str = "latest"
+    ) -> List[Dict[str, Any]]:
+        """Get list of validation schemas.
+
+        :param family: Family for what will be json schema generated.
+        :param revision: For a closer specify MCU family.
+        :return: Validation list of schemas.
+        """
+        schema = ValidationSchemas.get_schema_file(DAT_DC_SCH_FILE)
+        ret = []
+        socc = DebugCredential.get_socc_by_family(family, revision)
+        schema["dc_content"]["properties"]["socc"]["template_value"] = hex(socc)
+        schema["dc_content"]["properties"]["socc"]["enum"] = list(DebugCredential.SOCC_LIST.keys())
+        ret.append(schema["dc_content"])
+        ret.append(schema["dc_signature"])
+        if socc in DebugCredentialEdgeLockEnclave.SUPPORTED_SOCC:
+            ret.append(schema["dc_srk_ca_flag"])
+        return ret
+
+    @staticmethod
+    def generate_config_template(family: str = "lpc55s3x", revision: str = "latest") -> str:
+        """Generate DC configuration template.
+
+        :param family: Family for what will be template generated.
+        :param revision: For a closer specify MCU family.
+        :return: DC file template.
+        """
+        val_schemas = DebugCredential.get_validation_schemas(family, revision)
+        schema = ValidationSchemas.get_schema_file(DAT_DC_SCH_FILE)
+        note = schema["main_note"]
+        note += "---==== Supported SOCC ====---"
+        for socc, families in DebugCredential.SOCC_LIST.items():
+            for family_str, rev in families:
+                if rev == "latest":
+                    continue
+                note += f"\n0x{socc:08X}:    {family_str} [{rev}]"
+
+        return CommentedConfig(
+            main_title=f"Debug Credential file template for {family} family.",
+            schemas=val_schemas,
+            note=note,
+        ).export_to_yaml()
 
 
 class DebugCredentialRSA(DebugCredential):
@@ -271,7 +372,7 @@ class DebugCredentialRSA(DebugCredential):
     FORMAT = FORMAT_NO_SIG + "256s"
 
     @classmethod
-    def _get_rot_meta(cls, used_root_cert: int, rot_pub_keys: List[str]) -> bytes:
+    def _get_rot_meta(cls, config: Dict[str, Any]) -> bytes:
         """Creates the RoT meta-data required by the device to corroborate.
 
         The meta-data is created by getting the public numbers (modulus and exponent)
@@ -279,12 +380,13 @@ class DebugCredentialRSA(DebugCredential):
 
         :return: binary representing the rot-meta data
         """
+        rot_pub_keys = config["rot_meta"]
         rot_meta = bytearray(128)
         for index, rot_key in enumerate(rot_pub_keys):
             rot = extract_public_key(file_path=rot_key, password=None)
-            assert isinstance(rot, crypto.RSAPublicKey)
-            data = rsa_key_to_bytes(key=rot, exp_length=3, modulus_length=None)
-            result = internal_backend.hash(data)
+            assert isinstance(rot, PublicKeyRsa)
+            data = rot.export(exp_length=3)
+            result = get_hash(data)
             rot_meta[index * 32 : (index + 1) * 32] = result
         return bytes(rot_meta)
 
@@ -295,8 +397,8 @@ class DebugCredentialRSA(DebugCredential):
         :return: binary representing the DCK key
         """
         dck_key = extract_public_key(file_path=dck_key_path)
-        assert isinstance(dck_key, crypto.RSAPublicKey)
-        return rsa_key_to_bytes(key=dck_key, exp_length=4)
+        assert isinstance(dck_key, PublicKeyRsa)
+        return dck_key.export(exp_length=4)
 
     @staticmethod
     def _get_rot_pub(rot_pub_id: int, rot_pub_keys: List[str]) -> bytes:
@@ -309,15 +411,15 @@ class DebugCredentialRSA(DebugCredential):
         """
         pub_key_path = rot_pub_keys[rot_pub_id]
         pub_key = extract_public_key(file_path=pub_key_path, password=None)
-        assert isinstance(pub_key, crypto.RSAPublicKey)
-        return rsa_key_to_bytes(key=pub_key, exp_length=4)
+        assert isinstance(pub_key, PublicKeyRsa)
+        return pub_key.export(exp_length=4)
 
     def get_rotkh(self) -> bytes:
         """Get Root Of Trust Keys Hash.
 
         :return: RoTKH in bytes
         """
-        return internal_backend.hash(data=self.rot_meta[:])
+        return get_hash(data=self.rot_meta[:])
 
 
 class DebugCredentialECC(DebugCredential):
@@ -327,25 +429,22 @@ class DebugCredentialECC(DebugCredential):
     KEY_LENGTH = 0
     CORD_LENGTH = 0
     HASH_SIZES = {32: 256, 48: 384, 66: 512}
-    CURVE: crypto.ec.EllipticCurve = crypto.ec.SECP256R1()
+    CURVE = "secp256r1"
 
     def sign(self) -> None:
         """Sign the DC data using SignatureProvider."""
         super().sign()
         if not self.signature:
             raise SPSDKError("Debug Credential Signature is not set in base class")
-        r, s = crypto.utils_cryptography.decode_dss_signature(self.signature)
-        public_numbers = crypto.EllipticCurvePublicNumbers(r, s, self.CURVE)
-        self.signature = ecc_public_numbers_to_bytes(
-            public_numbers=public_numbers, length=self.CORD_LENGTH
-        )
 
     @classmethod
-    def _get_rot_meta(cls, used_root_cert: int, rot_pub_keys: List[str]) -> bytes:
+    def _get_rot_meta(cls, config: Dict[str, Any]) -> bytes:
         """Creates the RoT meta-data required by the device to corroborate.
 
         :return: binary representing the rot-meta data
         """
+        used_root_cert = config["rot_id"]
+        rot_pub_keys = config["rot_meta"]
         ctrk_hash_table = DebugCredentialECC.create_ctrk_table(rot_pub_keys)
         flags = DebugCredentialECC.calculate_flags(used_root_cert, rot_pub_keys)
         return flags + ctrk_hash_table
@@ -357,10 +456,7 @@ class DebugCredentialECC(DebugCredential):
         :return: binary representing the DCK key
         """
         dck_key = extract_public_key(file_path=dck_key_path)
-        length = math.ceil(dck_key.key_size / 8)
-        assert isinstance(dck_key, crypto.EllipticCurvePublicKey)
-        data = ecc_key_to_bytes(dck_key, length=length)
-        return data
+        return dck_key.export()
 
     @staticmethod
     def _get_rot_pub(rot_pub_id: int, rot_pub_keys: List[str]) -> bytes:
@@ -370,12 +466,9 @@ class DebugCredentialECC(DebugCredential):
         """
         root_key = rot_pub_keys[rot_pub_id]
         root_public_key = extract_public_key(file_path=root_key, password=None)
-        length = math.ceil(root_public_key.key_size / 8)
-        assert isinstance(root_public_key, crypto.EllipticCurvePublicKey)
-        data = ecc_key_to_bytes(root_public_key, length=length)
-        return data
+        return root_public_key.export()
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of DebugCredential.
 
         :return: binary representation of the debug credential
@@ -412,10 +505,10 @@ class DebugCredentialECC(DebugCredential):
         ctrk_table = bytes()
         for pub_key_path in rot_pub_keys:
             pub_key = extract_public_key(file_path=pub_key_path, password=None)
-            assert isinstance(pub_key, crypto.EllipticCurvePublicKey)
+            assert isinstance(pub_key, PublicKeyEcc)
             hash_size = DebugCredentialECC.HASH_SIZES[math.ceil(pub_key.key_size / 8)]
-            data = ecc_key_to_bytes(key=pub_key, length=math.ceil(pub_key.key_size / 8))
-            ctrk_hash = internal_backend.hash(data=data, algorithm=f"sha{hash_size}")
+            data = pub_key.export()
+            ctrk_hash = get_hash(data=data, algorithm=EnumHashAlgorithm[f"sha{hash_size}"])
             ctrk_table += ctrk_hash
         return ctrk_table
 
@@ -469,11 +562,10 @@ class DebugCredentialECC(DebugCredential):
         return isinstance(other, DebugCredential) and other_vars == self_vars
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DebugCredential":
+    def parse(cls, data: bytes) -> Self:
         """Parse the debug credential.
 
         :param data: Raw data as bytes
-        :param offset: Offset of input data
         :return: DebugCredential object
         :raises SPSDKError: When flag is invalid
         """
@@ -496,13 +588,11 @@ class DebugCredentialECC(DebugCredential):
         if records_num > 1:
             rot_meta_len += records_num * cls.HASH_LENGTH
             ctrk_format = f"<{records_num * cls.HASH_LENGTH}s"
-            ctrk_hash_table = unpack_from(ctrk_format, data, offset=offset + calcsize(format_head))[
-                0
-            ]
+            ctrk_hash_table = unpack_from(ctrk_format, data, offset=calcsize(format_head))[0]
         rot_meta = pack("<L", flags) + ctrk_hash_table
         format_tail = f"<{cls.HASH_LENGTH * 2}s{cls.HASH_LENGTH * 2}s{cls.HASH_LENGTH * 2}s"
         rot_pub, dck_pub, signature = unpack_from(
-            format_tail, data, offset + calcsize(format_head) + len(rot_meta) - 4
+            format_tail, data, calcsize(format_head) + len(rot_meta) - 4
         )
 
         return cls(
@@ -524,17 +614,18 @@ class DebugCredentialECC(DebugCredential):
         """
         srk_records_num = self.rot_meta[0] >> 4
         if srk_records_num == 1:
-            return b""
+            key_length = 256 if len(self.rot_pub) == 64 else 384
+            return get_hash(data=self.rot_pub, algorithm=EnumHashAlgorithm[f"sha{key_length}"])
         key_length = 256 if ((len(self.rot_meta) - 4) // srk_records_num) == 32 else 384
-        return internal_backend.hash(data=self.rot_meta[4:], algorithm=f"sha{key_length}")
+        return get_hash(data=self.rot_meta[4:], algorithm=EnumHashAlgorithm[f"sha{key_length}"])
 
     @classmethod
-    def get_instance_from_challenge(cls, data: bytes) -> "DebugCredential":
+    def get_instance_from_challenge(cls, data: bytes) -> Self:
         """Returns instance of class from DAP authentication challenge data.
 
         :return: Instance of this class.
         """
-        return cls.parse(data, 0)
+        return cls.parse(data)
 
 
 class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
@@ -544,14 +635,20 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
     KEY_LENGTH = 0
     CORD_LENGTH = 0
     SOCC_FORMAT = "08X"
+    SUPPORTED_SOCC = [0x5254049C, 0x4D58005D, 0x4D580008, 0x4D58005F]
 
     @classmethod
-    def _get_rot_meta(cls, used_root_cert: int, rot_pub_keys: List[str]) -> bytes:
+    def _get_rot_meta(cls, config: Dict[str, Any]) -> bytes:
         """Creates the RoT meta-data required by the device to corroborate.
 
         :return: binary representing the rot-meta data
         """
-        srk_hash_table = DebugCredentialEdgeLockEnclave.create_srk_table(rot_pub_keys)
+        used_root_cert = config["rot_id"]
+        rot_pub_keys = config["rot_meta"]
+        flag_ca = config.get("flag_ca", False)
+        srk_hash_table = DebugCredentialEdgeLockEnclave.create_srk_table(
+            rot_pub_keys, ca_flag=flag_ca
+        )
         flags = DebugCredentialECC.calculate_flags(used_root_cert, rot_pub_keys)
         return flags + srk_hash_table
 
@@ -562,10 +659,8 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         :return: binary representing the DCK key
         """
         dck_key = extract_public_key(file_path=dck_key_path)
-        length = math.ceil(dck_key.key_size / 8)
-        assert isinstance(dck_key, crypto.EllipticCurvePublicKey)
-        data = ecc_key_to_bytes(dck_key, length=length)
-        return data
+        assert isinstance(dck_key, PublicKeyEcc)
+        return dck_key.export()
 
     @staticmethod
     def _get_rot_pub(rot_pub_id: int, rot_pub_keys: List[str]) -> bytes:
@@ -584,7 +679,7 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         srk.update_fields()
         return srk.compute_srk_hash()
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of DebugCredential.
 
         :return: binary representation of the debug credential
@@ -614,13 +709,19 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         return f"<2HL16s3L{len(self.rot_meta)}s{self.HASH_LENGTH * 2}s"
 
     @staticmethod
-    def create_srk_table(rot_pub_keys: List[str]) -> bytes:
+    def create_srk_table(rot_pub_keys: List[str], ca_flag: bool = False) -> bytes:
         """Creates ctrk table."""
         if len(rot_pub_keys) != 4:
             raise SPSDKValueError("Invalid count of Super Root keys!")
+        flags = 0
+        if ca_flag:
+            flags |= SRKRecord.FLAGS_CA_MASK
 
         srk_table = SRKTable(
-            [SRKRecord.create_from_key(extract_public_key(x)) for x in rot_pub_keys]
+            [
+                SRKRecord.create_from_key(extract_public_key(x), srk_flags=flags)
+                for x in rot_pub_keys
+            ]
         )
         srk_table.update_fields()
         srk_table.validate({})
@@ -665,11 +766,10 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         return isinstance(other, DebugCredential) and other_vars == self_vars
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DebugCredential":
+    def parse(cls, data: bytes) -> Self:
         """Parse the debug credential.
 
         :param data: Raw data as bytes
-        :param offset: Offset of input data
         :return: DebugCredential object
         :raises SPSDKError: When flag is invalid
         """
@@ -687,14 +787,12 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         if not flags & 0x8000_0000:
             raise SPSDKError("Invalid flag")
 
-        srk_table = SRKTable.parse(data, offset=offset + calcsize(format_head))
+        srk_table = SRKTable.parse(data[calcsize(format_head) :])
         srk_table.update_fields()
         srk_table.validate({})
         rot_meta = int.to_bytes(flags, 4, "little") + srk_table.export()
         format_tail = f"<{cls.HASH_LENGTH * 2}s{cls.HASH_LENGTH * 2}s"
-        dck_pub, signature = unpack_from(
-            format_tail, data, offset + calcsize(format_head) + len(srk_table)
-        )
+        dck_pub, signature = unpack_from(format_tail, data, calcsize(format_head) + len(srk_table))
 
         return cls(
             socc=socc,
@@ -709,12 +807,12 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         )
 
     @classmethod
-    def get_instance_from_challenge(cls, data: bytes) -> "DebugCredential":
+    def get_instance_from_challenge(cls, data: bytes) -> Self:
         """Returns instance of class from DAP authentication challenge data.
 
         :return: Instance of this class.
         """
-        return cls.parse(data, 0)
+        return cls.parse(data)
 
 
 class DebugCredentialRSA2048(DebugCredentialRSA):
@@ -737,7 +835,7 @@ class DebugCredentialECC256(DebugCredentialECC):
     """DebugCredential class for LPC55s3x for version 2.0 (p256)."""
 
     VERSION = "2.0"
-    CURVE = crypto.ec.SECP256R1()
+    CURVE = "secp256r1"
     HASH_LENGTH = 32
     CORD_LENGTH = 32
     KEY_LENGTH = 256
@@ -747,7 +845,7 @@ class DebugCredentialECC384(DebugCredentialECC):
     """DebugCredential class for LPC55s3x for version 2.1 (p384)."""
 
     VERSION = "2.1"
-    CURVE = crypto.ec.SECP384R1()
+    CURVE = "secp384r1"
     HASH_LENGTH = 48
     CORD_LENGTH = 48
     KEY_LENGTH = 384
@@ -757,7 +855,7 @@ class DebugCredentialECC521(DebugCredentialECC):
     """DebugCredential class for LPC55s3x for version 2.1 (p384)."""
 
     VERSION = "2.2"
-    CURVE = crypto.ec.SECP521R1()
+    CURVE = "secp521r1"
     HASH_LENGTH = 66
     CORD_LENGTH = 66
     KEY_LENGTH = 521
@@ -767,7 +865,7 @@ class DebugCredentialEdgeLockEnclaveECC256(DebugCredentialEdgeLockEnclave):
     """Debug Credential class for device using EdgeLock peripheral for ECC256 keys."""
 
     VERSION = "2.0"
-    CURVE = crypto.ec.SECP256R1()
+    CURVE = "secp256r1"
     HASH_LENGTH = 32
     CORD_LENGTH = 32
     KEY_LENGTH = 256
@@ -777,7 +875,7 @@ class DebugCredentialEdgeLockEnclaveECC384(DebugCredentialEdgeLockEnclave):
     """Debug Credential class for device using EdgeLock peripheral for ECC384 keys."""
 
     VERSION = "2.1"
-    CURVE = crypto.ec.SECP384R1()
+    CURVE = "secp384r1"
     HASH_LENGTH = 48
     CORD_LENGTH = 48
     KEY_LENGTH = 384
@@ -787,7 +885,7 @@ class DebugCredentialEdgeLockEnclaveECC521(DebugCredentialEdgeLockEnclave):
     """Debug Credential class for device using EdgeLock peripheral for ECC521 keys."""
 
     VERSION = "2.2"
-    CURVE = crypto.ec.SECP521R1()
+    CURVE = "secp521r1"
     HASH_LENGTH = 66
     CORD_LENGTH = 66
     KEY_LENGTH = 521

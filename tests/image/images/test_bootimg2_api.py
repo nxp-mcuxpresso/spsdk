@@ -2,13 +2,13 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
 
-from spsdk.image import BootImg2
+from spsdk.image.images import BootImg2
 
 
 def test_create_image_api():
@@ -28,7 +28,7 @@ def test_create_image_api():
     data = image.export()
     assert len(data) == 4000 + 140
 
-    assert image.info()
+    assert str(image)
 
 
 def test_parse_image_api(data_dir):
@@ -41,4 +41,4 @@ def test_parse_image_api(data_dir):
     assert image.offset == 0x400
     assert image.size == 478208
 
-    assert image.info()
+    assert str(image)

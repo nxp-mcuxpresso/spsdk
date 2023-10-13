@@ -10,10 +10,8 @@
 import os
 import sys
 
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-
-from spsdk.image import SrkItem, SrkTable
+from spsdk.crypto.certificate import Certificate
+from spsdk.image.secret import SrkItem, SrkTable
 
 # The path to directory with certificates
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "certificates")
@@ -30,10 +28,9 @@ def main() -> None:
     srk_table = SrkTable(version=0x40)
 
     for cert_file in cert_files:
-        with open(f"{DATA_DIR}/{cert_file}", "rb") as cert_f:
-            certificate = x509.load_pem_x509_certificate(cert_f.read(), default_backend())
-            srk_item = SrkItem.from_certificate(certificate)
-            srk_table.append(srk_item)
+        certificate = Certificate.load(f"{DATA_DIR}/{cert_file}")
+        srk_item = SrkItem.from_certificate(certificate)
+        srk_table.append(srk_item)
 
     with open(f"{DATA_DIR}/srk_fuses.bin", "wb") as f:
         f.write(srk_table.export_fuses())

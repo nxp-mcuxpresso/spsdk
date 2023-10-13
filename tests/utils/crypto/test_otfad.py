@@ -9,8 +9,8 @@ import os
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.utils.crypto import KeyBlob, Otfad
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.crypto.otfad import KeyBlob, Otfad
 from spsdk.utils.misc import align_block
 
 
@@ -39,7 +39,7 @@ def test_otfad_keyblob(data_dir):
     assert gen_blob == keyblob_bin
 
     # check that info produces non-empty text
-    assert key_blob.info()
+    assert str(key_blob)
 
     # test image encryption
     with open(os.path.join(data_dir, "boot_image.bin"), "rb") as f:
@@ -91,7 +91,7 @@ def test_otfad(data_dir):
         otfad_image = f.read()
     assert encr_image == otfad_image
 
-    otfad.info()
+    str(otfad)
 
 
 def test_oftad_invalid(data_dir):

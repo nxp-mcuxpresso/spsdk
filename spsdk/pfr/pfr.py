@@ -10,20 +10,20 @@ import copy
 import logging
 import math
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from ruamel.yaml.comments import CommentedMap as CM
 
-from spsdk import SPSDK_DATA_FOLDER, SPSDKError
+from spsdk import SPSDK_DATA_FOLDER
 from spsdk import __version__ as spsdk_version
-from spsdk.crypto import PublicKey, ec, rsa
-from spsdk.utils.crypto.abstract import BackendClass
-from spsdk.utils.crypto.backend_openssl import openssl_backend
-from spsdk.utils.crypto.rkht import RKHT
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
+from spsdk.crypto.keys import PublicKey, PublicKeyEcc, PublicKeyRsa
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.crypto.rkht import RKHT, RKHTv1, RKHTv21
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
-from spsdk.utils.misc import load_configuration, value_to_int
+from spsdk.utils.misc import BinaryPattern, load_configuration, value_to_int
 from spsdk.utils.reg_config import RegConfig
-from spsdk.utils.registers import Registers, RegsRegister
+from spsdk.utils.registers import Registers
 
 from . import PFR_DATA_FOLDER
 from .exceptions import (
@@ -222,7 +222,7 @@ class BaseConfigArea:
     ROTKH_REGISTER = "ROTKH"
     MARK = b"SEAL"
     DESCRIPTION = "Base Config Area"
-    IMAGE_PREFILL_PATTERN = 0
+    IMAGE_PREFILL_PATTERN = "0x00"
 
     def __init__(
         self,
@@ -250,7 +250,7 @@ class BaseConfigArea:
         if self.device not in self.config.devices.device_names:
             raise SPSDKError(f"Device '{self.device}' is not supported")
         self.revision = revision or (user_config.revision if user_config else "latest")
-        revisions = self.config.devices.get_by_name(self.device).revisions  # type: ignore
+        revisions = self.config.devices.get_by_name(self.device).revisions
         if not self.revision or self.revision == "latest":
             self.revision = revisions.get_latest().name
             logger.info(
@@ -259,10 +259,9 @@ class BaseConfigArea:
 
         if self.revision not in revisions.revision_names:
             raise SPSDKError(f"Invalid revision '{self.revision}' for '{self.device}'")
-        self.registers = Registers(self.device, base_endianness="little")  # type: ignore
+        self.registers = Registers(self.device, base_endianness="little")
         self.registers.load_registers_from_xml(
-            xml=self.config.get_data_file(self.device, self.revision),  # type: ignore
-            filter_reg=self.config.get_ignored_registers(self.device),
+            xml=self.config.get_data_file(self.device, self.revision),
             grouped_regs=self.config.get_grouped_registers(self.device),
         )
 
@@ -339,13 +338,14 @@ class BaseConfigArea:
         config = cls._load_config()
         return config.devices.device_names
 
-    def _get_registers(self) -> List[RegsRegister]:
-        """Get a list of all registers.
+    @property
+    def latest_revision(self) -> str:
+        """Get latest revision of device.
 
-        :return: List of PFR configuration registers.
+        :return: latest revision of device.
         """
-        exclude = self.config.get_ignored_registers(self.device)
-        return self.registers.get_registers(exclude)
+        assert isinstance(self.device, str)
+        return self.config.devices.get_by_name(self.device).revisions.get_latest().name
 
     def set_config(self, config: PfrConfiguration, raw: bool = False) -> None:
         """Apply configuration from file.
@@ -365,14 +365,16 @@ class BaseConfigArea:
             raise SPSDKPfrConfigError(
                 f"Invalid device in configuration. {self.device} != {config.device}"
             )
-        if not config.revision or config.revision in ("latest", ""):
-            config.revision = (
-                self.config.devices.get_by_name(self.device).revisions.get_latest().name
-            )
+        if not config.revision:
+            config.revision = self.latest_revision
             logger.warning(
-                f"The configuration file doesn't contains silicon revision,"
+                f"The configuration file doesn't contain silicon revision,"
                 f" the latest: '{config.revision}' has been used."
             )
+        elif config.revision == "latest":
+            config.revision = self.latest_revision
+            logger.info(f"The latest revision: '{config.revision}' has been used.")
+
         if config.revision != self.revision:
             raise SPSDKPfrConfigError(
                 f"Invalid revision in configuration. {self.revision} != {config.revision}"
@@ -386,7 +388,6 @@ class BaseConfigArea:
             raise SPSDKPfrConfigError("Missing configuration of PFR fields!")
 
         computed_regs = []
-        computed_regs.extend(self.config.get_ignored_registers(self.device))
         if not raw:
             computed_regs.extend(list(self.config.get_computed_registers(self.device).keys()))
         computed_fields = None if raw else self.config.get_computed_fields(self.device)
@@ -452,13 +453,32 @@ class BaseConfigArea:
         # detected the right algorithm and mandatory warn user about this selection because
         # it's MUST correspond to settings in eFuses!
         reg_rotkh = self.registers.find_reg("ROTKH")
-        rkht = RKHT(keys=keys, keys_cnt=4, min_keys_cnt=1)
-        rkht.validate()
+        assert self.device is not None
+        cls = self.get_cert_block_class(device=self.device)
+        rkht = cls.from_keys(keys=keys)
 
         if rkht.hash_algorithm_size > reg_rotkh.width:
             raise SPSDKPfrError("The ROTKH field is smaller than used algorithm width.")
+        return rkht.rkth().ljust(reg_rotkh.width // 8, b"\x00")
 
-        return rkht.rotkh().ljust(reg_rotkh.width // 8, b"\x00")
+    @classmethod
+    def get_cert_block_class(cls, device: str) -> Type[RKHT]:
+        """Return the seal count.
+
+        :param device: The device name, if not specified, the general value is used.
+        :return: The seal count.
+        :raises SPSDKError: When there is invalid seal count
+        """
+        config = cls._load_config()
+        cert_blocks = {
+            1: RKHTv1,
+            21: RKHTv21,
+        }
+        val = config.get_value("cert_block_version", device)
+        if val is None or val not in cert_blocks:
+            raise SPSDKError(f"Invalid certificate block version: {val}")
+
+        return cert_blocks[val]
 
     def _get_seal_start_address(self) -> int:
         """Function returns start of seal fields for the device.
@@ -488,7 +508,7 @@ class BaseConfigArea:
         :param add_seal: The export is finished in the PFR record by seal.
         :param keys: List of Keys to compute ROTKH field.
         :return: Binary block with PFR configuration(CMPA or CFPA).
-        :raises SPSDKPfrRotkhIsNotPresent: This PFR block doesn't contains ROTKH field.
+        :raises SPSDKPfrRotkhIsNotPresent: This PFR block doesn't contain ROTKH field.
         :raises SPSDKError: The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}.
         """
         if keys:
@@ -502,9 +522,11 @@ class BaseConfigArea:
                     "This device doesn't contain ROTKH register!"
                 ) from exc
 
-        data = bytearray([self.IMAGE_PREFILL_PATTERN] * self.BINARY_SIZE)
-        for reg in self._get_registers():
-            data[reg.offset : reg.offset + reg.width // 8] = reg.get_bytes_value()
+        image_info = self.registers.image_info(
+            size=self.BINARY_SIZE, pattern=BinaryPattern(self.IMAGE_PREFILL_PATTERN)
+        )
+        logger.info(image_info.draw())
+        data = bytearray(image_info.export())
 
         if add_seal:
             seal_start = self._get_seal_start_address()
@@ -520,9 +542,7 @@ class BaseConfigArea:
 
         :param data: Input binary data of PFR block.
         """
-        for reg in self.registers.get_registers(include_group_regs=False):
-            value = data[reg.offset : reg.offset + reg.width // 8]
-            reg.set_bytes_value(value)
+        self.registers.parse(data)
 
 
 class CMPA(BaseConfigArea):
@@ -544,31 +564,29 @@ class ROMCFG(BaseConfigArea):
 
     CONFIG_DIR = os.path.join(os.path.join(SPSDK_DATA_FOLDER, "ifr"))
     BINARY_SIZE = 304
-    IMAGE_PREFILL_PATTERN = 0xFF
+    IMAGE_PREFILL_PATTERN = "0xFF"
 
 
 def calc_pub_key_hash(
     public_key: PublicKey,
-    backend: BackendClass = openssl_backend,
     sha_width: int = 256,
 ) -> bytes:
     """Calculate a hash out of public key's exponent and modulus in RSA case, X/Y in EC.
 
     :param public_key: List of public keys to compute hash from.
-    :param backend: Crypto subsystem backend.
     :param sha_width: Used hash algorithm.
     :raises SPSDKError: Unsupported public key type
     :return: Computed hash.
     """
-    if isinstance(public_key, rsa.RSAPublicKey):
-        n_1 = public_key.public_numbers().e  # type: ignore # MyPy is unable to pickup the class member
+    if isinstance(public_key, PublicKeyRsa):
+        n_1 = public_key.e
         n1_len = math.ceil(n_1.bit_length() / 8)
-        n_2 = public_key.public_numbers().n  # type: ignore # MyPy is unable to pickup the class member
+        n_2 = public_key.n
         n2_len = math.ceil(n_2.bit_length() / 8)
-    elif isinstance(public_key, ec.EllipticCurvePublicKey):
-        n_1 = public_key.public_numbers().y  # type: ignore # MyPy is unable to pickup the class member
+    elif isinstance(public_key, PublicKeyEcc):
+        n_1 = public_key.y
         n1_len = sha_width // 8
-        n_2 = public_key.public_numbers().x  # type: ignore # MyPy is unable to pickup the class member
+        n_2 = public_key.x
         n2_len = sha_width // 8
     else:
         raise SPSDKError(f"Unsupported key type: {type(public_key)}")
@@ -576,4 +594,4 @@ def calc_pub_key_hash(
     n1_bytes = n_1.to_bytes(n1_len, "big")
     n2_bytes = n_2.to_bytes(n2_len, "big")
 
-    return backend.hash(n2_bytes + n1_bytes, algorithm=f"sha{sha_width}")
+    return get_hash(n2_bytes + n1_bytes, algorithm=EnumHashAlgorithm[f"sha{sha_width}"])

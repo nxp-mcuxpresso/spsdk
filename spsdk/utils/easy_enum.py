@@ -28,8 +28,7 @@ __all__ = ["Enum"]
 
 from typing import Optional, Sequence, Union
 
-from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKKeyError, SPSDKTypeError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKTypeError
 
 EnumKeyType = Union[str, int]
 
@@ -138,7 +137,7 @@ class Enum(metaclass=MetaEnum):
         :param key: enumeration tag
         :param default: value to return of tag not found; if not defined, KeyError exception will be raised
         :return: name of the corresponding enumeration tag
-        :raise SPSDKKeyError: if tag not supported and default value not provided
+        :raises SPSDKKeyError: if tag not supported and default value not provided
         """
         # pylint: disable=no-member
         for name, value, _ in cls._items_:

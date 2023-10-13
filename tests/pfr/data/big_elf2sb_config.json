@@ -11,10 +11,7 @@
     "trustZonePresetFile": "",
     "useKeyStore": false,
     "keyStoreFile": "",
-    "rootCertificate0File": "rotk0_rsa_2048.pub",
-    "rootCertificate1File": "rotk1_rsa_2048.pub",
-    "rootCertificate2File": "rotk2_rsa_2048.pub",
-    "rootCertificate3File": "rotk3_rsa_2048.pub",
+    "certBlock": "cert_block.yaml",
     "mainCertChainId": 0,
     "mainCertPrivateKeyFile": "keys_and_certs/k0_cert0_2048.pem",
     "masterBootOutputFile": "output_images/application_signed.bin"

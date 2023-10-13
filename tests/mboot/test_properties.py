@@ -163,10 +163,10 @@ def test_reserved_regions():
     )
     assert value.tag == 12
     expected_strings = [
-        f"0x30000000 - 0x30007FFF",
-        f"0x20000000 - 0x20007FFF",
-        f"0x04000000 - 0x04003FFF",
-        f"0x14000000 - 0x14001FFF",
+        "0x30000000 - 0x30007FFF",
+        "0x20000000 - 0x20007FFF",
+        "0x04000000 - 0x04003FFF",
+        "0x14000000 - 0x14001FFF",
     ]
     for expected_string in expected_strings:
         assert expected_string in str(value)

@@ -1,0 +1,15 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  Certification Block V1 template  ==========================================
+imageBuildNumber: '0x0' # [Optional], Image Build Number; If it's omitted, it will be used 0 as default value.
+chainCertificate1File0: .\sb_sources\keys_and_certs\chain_cert_0_v3.der.crt # [Optional], Chain certificate 0 for root 1; Chain certificate 0 for root certificate 1
+chainCertificate1File1: .\sb_sources\keys_and_certs\chain_cert_1_v3.der.crt # [Optional], Chain certificate 1 for root 1; Chain certificate 1 for root certificate 1
+# ----------------------------------------------------------------------------------------------------
+#                                       == Root Keys Settings ==
+# ----------------------------------------------------------------------------------------------------
+rootCertificate0File: .\sb_sources\keys_and_certs\root_k0_signed_cert0_noca.der.cert # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
+rootCertificate1File: .\sb_sources\keys_and_certs\root_cert_0_ca_v3.der.crt # [Optional], Root Certificate File 1; Root certificate file index 1.
+rootCertificate2File: .\sb_sources\keys_and_certs\root_k2_signed_cert0_noca.der.cert # [Optional], Root Certificate File 2; Root certificate file index 2.
+rootCertificate3File: .\sb_sources\keys_and_certs\root_k3_signed_cert0_noca.der.cert # [Optional], Root Certificate File 3; Root certificate file index 3.
+mainRootCertId: 1 # [Conditionally required], Main Certificate Index; Index of certificate that is used as a main. If not defined, the certificate matching private key will be selected.

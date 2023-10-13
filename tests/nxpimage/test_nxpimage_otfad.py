@@ -33,7 +33,7 @@ def test_nxpimage_otfad_export(tmpdir, data_dir, config):
     with use_working_directory(work_dir):
         config_dict = load_configuration(config)
         out_dir = os.path.join(work_dir, config_dict["output_folder"])
-        cmd = f"otfad export {config}"
+        cmd = f"otfad export -c {config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(out_dir, "encrypted_blobs.bin"))
@@ -103,6 +103,33 @@ def test_nxpimage_otfad_export(tmpdir, data_dir, config):
             "otfad_rt1180_scramble_out.bin",
             "rt118x",
         ),
+        (
+            "otfad_rt1170_scramble.yaml",
+            1,
+            [
+                "efuse-program-once 128 0xffeeddcc --no-verify",
+                "efuse-program-once 129 0xbbaa9988 --no-verify",
+                "efuse-program-once 130 0x77665544 --no-verify",
+                "efuse-program-once 131 0x33221100 --no-verify",
+                "efuse-program-once 71 0x00000001 --no-verify",
+                "efuse-program-once 132 0x78563412 --no-verify",
+                "efuse-program-once 133 0x00000072 --no-verify",
+            ],
+            "otfad_rt1170_scramble_out.bin",
+            "rt117x",
+        ),
+        (
+            "otfad_rt1010_scramble.yaml",
+            1,
+            [
+                "efuse-program-once 41 0xffeeddcc --no-verify",
+                "efuse-program-once 44 0x33221100 --no-verify",
+                "efuse-program-once 35 0x00000572 --no-verify",
+                "efuse-program-once 34 0x78563412 --no-verify",
+            ],
+            "otfad_rt1170_scramble_out.bin",
+            "rt101x",
+        ),
     ],
 )
 def test_nxpimage_otfad_export_rt11x0(
@@ -114,7 +141,7 @@ def test_nxpimage_otfad_export_rt11x0(
     with use_working_directory(work_dir):
         config_dict = load_configuration(config)
         out_dir = os.path.join(work_dir, config_dict["output_folder"])
-        cmd = f"otfad export -i {per_ix} {config}"
+        cmd = f"otfad export -i {per_ix} -c {config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(out_dir, f"otfad{per_ix}_{family}_blhost.bcf"))
@@ -212,12 +239,16 @@ def test_nxpimage_otfad_keys_blhost(omk, ok, family, results):
     [
         ("rt5xx"),
         ("rt6xx"),
+        ("rt101x"),
+        ("rt116x"),
+        ("rt117x"),
+        ("rt118x"),
     ],
 )
 def test_nxpimage_otfad_template_cli(tmpdir, family):
     runner = CliRunner()
     template = os.path.join(tmpdir, "otfad_template.yaml")
-    cmd = f"otfad get-template -f {family} {template}"
+    cmd = f"otfad get-template -f {family} --output {template}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
     assert os.path.isfile(template)
@@ -244,7 +275,7 @@ def test_iee_custom_output(tmpdir, data_dir, config):
         modified_config = os.path.join(work_dir, "modified_config.yaml")
         with open(modified_config, "w") as f:
             yaml.dump(config_dict, f)
-        cmd = f"otfad export {modified_config}"
+        cmd = f"otfad export -c {modified_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
 

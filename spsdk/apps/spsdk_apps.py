@@ -15,21 +15,19 @@ from typing import Any
 
 import click
 
-from spsdk import SPSDKError
 from spsdk import __version__ as spsdk_version
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
+from spsdk.exceptions import SPSDKError
 
 from .blhost import main as blhost_main
 from .dk6prog import main as dk6prog_main
-from .elftosb import main as elftosb_main
 from .ifr import main as ifr_main
-from .nxpcertgen import main as nxpcertgen_main
 from .nxpcrypto import main as nxpcrypto_main
 from .nxpdebugmbox import main as nxpdebugmbox_main
 from .nxpdevhsm import main as nxpdevhsm_main
 from .nxpdevscan import main as nxpdevscan_main
+from .nxpele import main as nxpele_main
 from .nxpimage import main as nxpimage_main
-from .nxpkeygen import main as nxpkeygen_main
 from .pfr import main as pfr_main
 from .sdphost import main as sdphost_main
 from .sdpshost import main as sdpshost_main
@@ -52,14 +50,12 @@ def main() -> int:
 
 
 main.add_command(blhost_main, name="blhost")
-main.add_command(elftosb_main, name="elftosb")
 main.add_command(ifr_main, name="ifr")
-main.add_command(nxpcertgen_main, name="nxpcertgen")
 main.add_command(nxpcrypto_main, name="nxpcrypto")
 main.add_command(nxpdebugmbox_main, name="nxpdebugmbox")
 main.add_command(nxpdevscan_main, name="nxpdevscan")
 main.add_command(nxpdevhsm_main, name="nxpdevhsm")
-main.add_command(nxpkeygen_main, name="nxpkeygen")
+main.add_command(nxpele_main, name="nxpele")
 main.add_command(nxpimage_main, name="nxpimage")
 main.add_command(pfr_main, name="pfr")
 main.add_command(sdphost_main, name="sdphost")

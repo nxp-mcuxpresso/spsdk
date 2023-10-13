@@ -1,0 +1,725 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# NXP nhs52sxx PFR CMPA configuration
+description:  # The CMPA configuration description.
+  device: nhs52sxx  # The NXP device name.
+  revision: a1 # The NXP device revision.
+  type: CMPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 2.0.0 # The SPSDK tool version.
+settings: # The CMPA registers configuration.
+  BOOT_CFG:  # Boot Configuration
+    bitfields:  # The register bitfields
+      DEFAULT_ISP_MODE: BOOT_CFG_DEFAULT_ISP_MODE_VALUE_0  # Offset: 4b, Width: 3b, Description: Default ISP mode:
+      # - BOOT_CFG_DEFAULT_ISP_MODE_VALUE_0, (0): Auto ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_VALUE_1, (1): Reserved
+      # - BOOT_CFG_DEFAULT_ISP_MODE_VALUE_2, (2): UART ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_VALUE_3, (3): SPI Slave ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_VALUE_4, (4): I2C Slave ISP
+      # - BOOT_CFG_DEFAULT_ISP_MODE_VALUE_7, (7): Disable ISP fall through
+      BOOT_SPEED: BOOT_CFG_BOOT_SPEED_VALUE_0 # Offset: 7b, Width: 2b, Description: Core clock:
+      # - BOOT_CFG_BOOT_SPEED_VALUE_0, (0): Defined by NMPA.SYSTEM_SPEED_CODE
+      # - BOOT_CFG_BOOT_SPEED_VALUE_1, (1): 12MHz FRO
+      # - BOOT_CFG_BOOT_SPEED_VALUE_2, (2): 32MHz FRO
+      BOOT_FAILURE_PIN: '0x00' # Offset: 24b, Width: 8b, Description: GPIO port and pin number to use for indicating failure reason. The toggle rate of the pin is used to decode the error type. [2:0] - Defines GPIO port [7:3] - Defines GPIO pin
+  SPI_FLASH_CFG: # SPI Flash Configuration
+    bitfields:  # The register bitfields
+      SPI_RECOVERY_BOOT_EN: '0x0'  # Offset: 0b, Width: 5b, Description: SPI flash recovery boot is enabled, if non-zero value is written to this field.
+  CC_SOCU_PIN: # CC_SOCU_PIN
+    bitfields:  # The register bitfields
+      NIDEN: CC_SOCU_PIN_NIDEN_USE_DAP  # Offset: 0b, Width: 1b, Description: Non Secure non-invasive debug enable
+      # - CC_SOCU_PIN_NIDEN_USE_DAP, (0): Use DAP to enable
+      # - CC_SOCU_PIN_NIDEN_FIXED_STATE, (1): Fixed state
+      DBGEN: CC_SOCU_PIN_DBGEN_USE_DAP # Offset: 1b, Width: 1b, Description: Non Secure debug enable
+      # - CC_SOCU_PIN_DBGEN_USE_DAP, (0): Use DAP to enable
+      # - CC_SOCU_PIN_DBGEN_FIXED_STATE, (1): Fixed state
+      SPNIDEN: CC_SOCU_PIN_SPNIDEN_USE_DAP # Offset: 2b, Width: 1b, Description: Secure non-invasive debug enable
+      # - CC_SOCU_PIN_SPNIDEN_USE_DAP, (0): Use DAP to enable
+      # - CC_SOCU_PIN_SPNIDEN_FIXED_STATE, (1): Fixed state
+      SPIDEN: CC_SOCU_PIN_SPIDEN_USE_DAP # Offset: 3b, Width: 1b, Description: Secure invasive debug enable
+      # - CC_SOCU_PIN_SPIDEN_USE_DAP, (0): Use DAP to enable
+      # - CC_SOCU_PIN_SPIDEN_FIXED_STATE, (1): Fixed state
+      TAPEN: CC_SOCU_PIN_TAPEN_USE_DAP # Offset: 4b, Width: 1b, Description: JTAG TAP enable
+      # - CC_SOCU_PIN_TAPEN_USE_DAP, (0): Use DAP to enable
+      # - CC_SOCU_PIN_TAPEN_FIXED_STATE, (1): Fixed state
+      ISPCMDEN: CC_SOCU_PIN_ISPCMDEN_USE_DAP # Offset: 6b, Width: 1b, Description: ISP Boot Command enable
+      # - CC_SOCU_PIN_ISPCMDEN_USE_DAP, (0): Use DAP to enable
+      # - CC_SOCU_PIN_ISPCMDEN_FIXED_STATE, (1): Fixed state
+      PMCMDEN: CC_SOCU_PIN_PMCMDEN_USE_DAP # Offset: 7b, Width: 1b, Description: Programmers Mode Command enable
+      # - CC_SOCU_PIN_PMCMDEN_USE_DAP, (0): Use DAP to enable
+      # - CC_SOCU_PIN_PMCMDEN_FIXED_STATE, (1): Fixed state
+      UUID_CHECK: '0x0' # Offset: 15b, Width: 1b, Description: Enforce UUID match during Debug authentication.
+  CC_SOCU_DFLT: # CC_SOCU_DFLT
+    bitfields:  # The register bitfields
+      NIDEN: CC_SOCU_DFLT_NIDEN_DISABLE  # Offset: 0b, Width: 1b, Description: Non Secure non-invasive debug fixed state
+      # - CC_SOCU_DFLT_NIDEN_DISABLE, (0): Disable
+      # - CC_SOCU_DFLT_NIDEN_ENABLE, (1): Enable
+      DBGEN: CC_SOCU_DFLT_DBGEN_DISABLE # Offset: 1b, Width: 1b, Description: Non Secure debug fixed state
+      # - CC_SOCU_DFLT_DBGEN_DISABLE, (0): Disable
+      # - CC_SOCU_DFLT_DBGEN_ENABLE, (1): Enable
+      SPNIDEN: CC_SOCU_DFLT_SPNIDEN_DISABLE # Offset: 2b, Width: 1b, Description: Secure non-invasive debug fixed state
+      # - CC_SOCU_DFLT_SPNIDEN_DISABLE, (0): Disable
+      # - CC_SOCU_DFLT_SPNIDEN_ENABLE, (1): Enable
+      SPIDEN: CC_SOCU_DFLT_SPIDEN_DISABLE # Offset: 3b, Width: 1b, Description: Secure invasive debug fixed state
+      # - CC_SOCU_DFLT_SPIDEN_DISABLE, (0): Disable
+      # - CC_SOCU_DFLT_SPIDEN_ENABLE, (1): Enable
+      TAPEN: CC_SOCU_DFLT_TAPEN_DISABLE # Offset: 4b, Width: 1b, Description: JTAG TAP fixed state
+      # - CC_SOCU_DFLT_TAPEN_DISABLE, (0): Disable
+      # - CC_SOCU_DFLT_TAPEN_ENABLE, (1): Enable
+      ISPCMDEN: CC_SOCU_DFLT_ISPCMDEN_DISABLE # Offset: 6b, Width: 1b, Description: ISP Boot Command fixed state
+      # - CC_SOCU_DFLT_ISPCMDEN_DISABLE, (0): Disable
+      # - CC_SOCU_DFLT_ISPCMDEN_ENABLE, (1): Enable
+      PMCMDEN: CC_SOCU_DFLT_PMCMDEN_DISABLE # Offset: 7b, Width: 1b, Description: Programmers Mode fixed state
+      # - CC_SOCU_DFLT_PMCMDEN_DISABLE, (0): Disable
+      # - CC_SOCU_DFLT_PMCMDEN_ENABLE, (1): Enable
+  VENDOR_USAGE: # VENDOR_USAGE
+    bitfields:  # The register bitfields
+      VENDOR_USAGE: '0x0000'  # Offset: 16b, Width: 16b, Description: Upper 16 bits of vendor usage field defined in DAP.
+  SECURE_BOOT_CFG: # SECURE_BOOT_CFG
+    bitfields:  # The register bitfields
+      RSA4K: SECURE_BOOT_CFG_RSA4K_RSA2048  # Offset: 0b, Width: 2b, Description: Use RSA4096 keys only.
+      # - SECURE_BOOT_CFG_RSA4K_RSA2048, (0): Allow RSA2048 and higher
+      # - SECURE_BOOT_CFG_RSA4K_RSA4096_0, (1): RSA4096 only
+      # - SECURE_BOOT_CFG_RSA4K_RSA4096_1, (2): RSA4096 only
+      # - SECURE_BOOT_CFG_RSA4K_RSA4096_2, (3): RSA4096 only
+      DICE_INC_NXP_CFG: SECURE_BOOT_CFG_DICE_INC_NXP_CFG_NOT_INCLUDE # Offset: 2b, Width: 2b, Description: Include NXP area in DICE computation.
+      # - SECURE_BOOT_CFG_DICE_INC_NXP_CFG_NOT_INCLUDE, (0): not included
+      # - SECURE_BOOT_CFG_DICE_INC_NXP_CFG_INCLUDE_0, (1): included
+      # - SECURE_BOOT_CFG_DICE_INC_NXP_CFG_INCLUDE_1, (2): included
+      # - SECURE_BOOT_CFG_DICE_INC_NXP_CFG_INCLUDE_2, (3): included
+      DICE_CUST_CFG: SECURE_BOOT_CFG_DICE_CUST_CFG_NOT_INCLUDE # Offset: 4b, Width: 2b, Description: Include Customer factory area (including keys) in DICE computation.
+      # - SECURE_BOOT_CFG_DICE_CUST_CFG_NOT_INCLUDE, (0): not included
+      # - SECURE_BOOT_CFG_DICE_CUST_CFG_INCLUDE_0, (1): included
+      # - SECURE_BOOT_CFG_DICE_CUST_CFG_INCLUDE_1, (2): included
+      # - SECURE_BOOT_CFG_DICE_CUST_CFG_INCLUDE_2, (3): included
+      SKIP_DICE: SECURE_BOOT_CFG_SKIP_DICE_ENABLE # Offset: 6b, Width: 2b, Description: Skip DICE computation
+      # - SECURE_BOOT_CFG_SKIP_DICE_ENABLE, (0): Enable DICE
+      # - SECURE_BOOT_CFG_SKIP_DICE_DISABLE_0, (1): Disable DICE
+      # - SECURE_BOOT_CFG_SKIP_DICE_DISABLE_1, (2): Disable DICE
+      # - SECURE_BOOT_CFG_SKIP_DICE_DISABLE_2, (3): Disable DICE
+      TZM_IMAGE_TYPE: SECURE_BOOT_CFG_TZM_IMAGE_TYPE_HEADER # Offset: 8b, Width: 2b, Description: TrustZone-M mode
+      # - SECURE_BOOT_CFG_TZM_IMAGE_TYPE_HEADER, (0): TZ-M image mode is taken from application image header
+      # - SECURE_BOOT_CFG_TZM_IMAGE_TYPE_DISABLED, (1): TZ-M disabled image, boots to non-secure mode
+      # - SECURE_BOOT_CFG_TZM_IMAGE_TYPE_ENABLED, (2): TZ-M enabled image, boots to secure mode
+      # - SECURE_BOOT_CFG_TZM_IMAGE_TYPE_PRESET, (3): TZ-M enabled image with TZ-M preset, boot to secure mode TZ-M pre-configured by data from application image header
+      BLOCK_SET_KEY: SECURE_BOOT_CFG_BLOCK_SET_KEY_ALLOW # Offset: 10b, Width: 2b, Description: Block PUF key code generation
+      # - SECURE_BOOT_CFG_BLOCK_SET_KEY_ALLOW, (0): Allow PUF Key Code generation
+      # - SECURE_BOOT_CFG_BLOCK_SET_KEY_DISABLE_0, (1): Disable PUF Key Code generation
+      # - SECURE_BOOT_CFG_BLOCK_SET_KEY_DISABLE_1, (2): Disable PUF Key Code generation
+      # - SECURE_BOOT_CFG_BLOCK_SET_KEY_DISABLE_2, (3): Disable PUF Key Code generation
+      DICE_INC_SEC_EPOCH: SECURE_BOOT_CFG_DICE_INC_SEC_EPOCH_NOT_INCLUDE # Offset: 14b, Width: 2b, Description: Include security EPOCH in DICE
+      # - SECURE_BOOT_CFG_DICE_INC_SEC_EPOCH_NOT_INCLUDE, (0): not included
+      # - SECURE_BOOT_CFG_DICE_INC_SEC_EPOCH_INCLUDE_0, (1): included
+      # - SECURE_BOOT_CFG_DICE_INC_SEC_EPOCH_INCLUDE_1, (2): included
+      # - SECURE_BOOT_CFG_DICE_INC_SEC_EPOCH_INCLUDE_2, (3): included
+      SKIP_BOOT_SEED: SECURE_BOOT_CFG_SKIP_BOOT_SEED_ENABLE # Offset: 16b, Width: 2b, Description: Skip boot seed computation
+      # - SECURE_BOOT_CFG_SKIP_BOOT_SEED_ENABLE, (0): Enable BOOT_SEED
+      # - SECURE_BOOT_CFG_SKIP_BOOT_SEED_DISABLE_0, (1): Disable BOOT_SEED
+      # - SECURE_BOOT_CFG_SKIP_BOOT_SEED_DISABLE_1, (2): Disable BOOT_SEED
+      # - SECURE_BOOT_CFG_SKIP_BOOT_SEED_DISABLE_2, (3): Disable BOOT_SEED
+      BOOT_SEED_INC_NXP_CFG: SECURE_BOOT_CFG_BOOT_SEED_INC_NXP_CFG_NOT_INCLUDE # Offset: 18b, Width: 2b, Description: Include NXP area in BOOT SEED computation
+      # - SECURE_BOOT_CFG_BOOT_SEED_INC_NXP_CFG_NOT_INCLUDE, (0): not included
+      # - SECURE_BOOT_CFG_BOOT_SEED_INC_NXP_CFG_INCLUDE_0, (1): included
+      # - SECURE_BOOT_CFG_BOOT_SEED_INC_NXP_CFG_INCLUDE_1, (2): included
+      # - SECURE_BOOT_CFG_BOOT_SEED_INC_NXP_CFG_INCLUDE_2, (3): included
+      BOOT_SEED_CUST_CFG: SECURE_BOOT_CFG_BOOT_SEED_CUST_CFG_NOT_INCLUDE # Offset: 20b, Width: 2b, Description: Include Customer factory area (including keys) in BOOT SEED computation.
+      # - SECURE_BOOT_CFG_BOOT_SEED_CUST_CFG_NOT_INCLUDE, (0): not included
+      # - SECURE_BOOT_CFG_BOOT_SEED_CUST_CFG_INCLUDE_0, (1): included
+      # - SECURE_BOOT_CFG_BOOT_SEED_CUST_CFG_INCLUDE_1, (2): included
+      # - SECURE_BOOT_CFG_BOOT_SEED_CUST_CFG_INCLUDE_2, (3): included
+      BOOT_SEED_INC_SEC_EPOCH: SECURE_BOOT_CFG_BOOT_SEED_INC_SEC_EPOCH_NOT_INCLUDE # Offset: 22b, Width: 2b, Description: Include security EPOCH in BOOT_SEED computation.
+      # - SECURE_BOOT_CFG_BOOT_SEED_INC_SEC_EPOCH_NOT_INCLUDE, (0): not included
+      # - SECURE_BOOT_CFG_BOOT_SEED_INC_SEC_EPOCH_INCLUDE_0, (1): included
+      # - SECURE_BOOT_CFG_BOOT_SEED_INC_SEC_EPOCH_INCLUDE_1, (2): included
+      # - SECURE_BOOT_CFG_BOOT_SEED_INC_SEC_EPOCH_INCLUDE_2, (3): included
+      SEC_BOOT_EN: SECURE_BOOT_CFG_SEC_BOOT_EN_DISABLE # Offset: 30b, Width: 2b, Description: Secure boot enable
+      # - SECURE_BOOT_CFG_SEC_BOOT_EN_DISABLE, (0): Plain image (internal flash with or without CRC)
+      # - SECURE_BOOT_CFG_SEC_BOOT_EN_ENABLE_0, (1): Boot signed images. (internal flash, RSA signed)
+      # - SECURE_BOOT_CFG_SEC_BOOT_EN_ENABLE_1, (2): Boot signed images. (internal flash, RSA signed)
+      # - SECURE_BOOT_CFG_SEC_BOOT_EN_ENABLE_2, (3): Boot signed images. (internal flash, RSA signed)
+  PRINCE_CFG: # Prince Configuration
+    bitfields:  # The register bitfields
+      GEE: '0x0'  # Offset: 1b, Width: 1b, Description: Global Encryption Enable
+      GDE: '0x0' # Offset: 5b, Width: 1b, Description: Global Decryption Enable
+      SLK: '0x0' # Offset: 9b, Width: 1b, Description: System Lock Enable
+      GLK: '0x0' # Offset: 13b, Width: 1b, Description: Global Lock Enable
+  BMAPCTX0: # Bitmap Control for Memory Context 0
+    bitfields:  # The register bitfields
+      BEN0: BMAPCTX0_BEN0_DISABLE  # Offset: 0b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN0_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN0_ENABLE, (1): Enable encryption/decryption
+      BEN1: BMAPCTX0_BEN1_DISABLE # Offset: 1b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN1_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN1_ENABLE, (1): Enable encryption/decryption
+      BEN2: BMAPCTX0_BEN2_DISABLE # Offset: 2b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN2_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN2_ENABLE, (1): Enable encryption/decryption
+      BEN3: BMAPCTX0_BEN3_DISABLE # Offset: 3b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN3_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN3_ENABLE, (1): Enable encryption/decryption
+      BEN4: BMAPCTX0_BEN4_DISABLE # Offset: 4b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN4_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN4_ENABLE, (1): Enable encryption/decryption
+      BEN5: BMAPCTX0_BEN5_DISABLE # Offset: 5b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN5_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN5_ENABLE, (1): Enable encryption/decryption
+      BEN6: BMAPCTX0_BEN6_DISABLE # Offset: 6b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN6_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN6_ENABLE, (1): Enable encryption/decryption
+      BEN7: BMAPCTX0_BEN7_DISABLE # Offset: 7b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN7_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN7_ENABLE, (1): Enable encryption/decryption
+      BEN8: BMAPCTX0_BEN8_DISABLE # Offset: 8b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN8_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN8_ENABLE, (1): Enable encryption/decryption
+      BEN9: BMAPCTX0_BEN9_DISABLE # Offset: 9b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN9_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN9_ENABLE, (1): Enable encryption/decryption
+      BEN10: BMAPCTX0_BEN10_DISABLE # Offset: 10b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN10_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN10_ENABLE, (1): Enable encryption/decryption
+      BEN11: BMAPCTX0_BEN11_DISABLE # Offset: 11b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN11_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN11_ENABLE, (1): Enable encryption/decryption
+      BEN12: BMAPCTX0_BEN12_DISABLE # Offset: 12b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN12_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN12_ENABLE, (1): Enable encryption/decryption
+      BEN13: BMAPCTX0_BEN13_DISABLE # Offset: 13b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN13_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN13_ENABLE, (1): Enable encryption/decryption
+      BEN14: BMAPCTX0_BEN14_DISABLE # Offset: 14b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN14_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN14_ENABLE, (1): Enable encryption/decryption
+      BEN15: BMAPCTX0_BEN15_DISABLE # Offset: 15b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN15_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN15_ENABLE, (1): Enable encryption/decryption
+      BEN16: BMAPCTX0_BEN16_DISABLE # Offset: 16b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN16_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN16_ENABLE, (1): Enable encryption/decryption
+      BEN17: BMAPCTX0_BEN17_DISABLE # Offset: 17b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN17_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN17_ENABLE, (1): Enable encryption/decryption
+      BEN18: BMAPCTX0_BEN18_DISABLE # Offset: 18b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN18_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN18_ENABLE, (1): Enable encryption/decryption
+      BEN19: BMAPCTX0_BEN19_DISABLE # Offset: 19b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN19_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN19_ENABLE, (1): Enable encryption/decryption
+      BEN20: BMAPCTX0_BEN20_DISABLE # Offset: 20b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN20_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN20_ENABLE, (1): Enable encryption/decryption
+      BEN21: BMAPCTX0_BEN21_DISABLE # Offset: 21b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN21_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN21_ENABLE, (1): Enable encryption/decryption
+      BEN22: BMAPCTX0_BEN22_DISABLE # Offset: 22b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN22_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN22_ENABLE, (1): Enable encryption/decryption
+      BEN23: BMAPCTX0_BEN23_DISABLE # Offset: 23b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN23_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN23_ENABLE, (1): Enable encryption/decryption
+      BEN24: BMAPCTX0_BEN24_DISABLE # Offset: 24b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN24_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN24_ENABLE, (1): Enable encryption/decryption
+      BEN25: BMAPCTX0_BEN25_DISABLE # Offset: 25b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN25_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN25_ENABLE, (1): Enable encryption/decryption
+      BEN26: BMAPCTX0_BEN26_DISABLE # Offset: 26b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN26_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN26_ENABLE, (1): Enable encryption/decryption
+      BEN27: BMAPCTX0_BEN27_DISABLE # Offset: 27b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN27_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN27_ENABLE, (1): Enable encryption/decryption
+      BEN28: BMAPCTX0_BEN28_DISABLE # Offset: 28b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN28_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN28_ENABLE, (1): Enable encryption/decryption
+      BEN29: BMAPCTX0_BEN29_DISABLE # Offset: 29b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN29_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN29_ENABLE, (1): Enable encryption/decryption
+      BEN30: BMAPCTX0_BEN30_DISABLE # Offset: 30b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN30_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN30_ENABLE, (1): Enable encryption/decryption
+      BEN31: BMAPCTX0_BEN31_DISABLE # Offset: 31b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX0_BEN31_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX0_BEN31_ENABLE, (1): Enable encryption/decryption
+  BMAPCTX1: # Bitmap Control for Memory Context 1
+    bitfields:  # The register bitfields
+      BEN0: BMAPCTX1_BEN0_DISABLE  # Offset: 0b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN0_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN0_ENABLE, (1): Enable encryption/decryption
+      BEN1: BMAPCTX1_BEN1_DISABLE # Offset: 1b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN1_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN1_ENABLE, (1): Enable encryption/decryption
+      BEN2: BMAPCTX1_BEN2_DISABLE # Offset: 2b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN2_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN2_ENABLE, (1): Enable encryption/decryption
+      BEN3: BMAPCTX1_BEN3_DISABLE # Offset: 3b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN3_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN3_ENABLE, (1): Enable encryption/decryption
+      BEN4: BMAPCTX1_BEN4_DISABLE # Offset: 4b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN4_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN4_ENABLE, (1): Enable encryption/decryption
+      BEN5: BMAPCTX1_BEN5_DISABLE # Offset: 5b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN5_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN5_ENABLE, (1): Enable encryption/decryption
+      BEN6: BMAPCTX1_BEN6_DISABLE # Offset: 6b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN6_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN6_ENABLE, (1): Enable encryption/decryption
+      BEN7: BMAPCTX1_BEN7_DISABLE # Offset: 7b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN7_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN7_ENABLE, (1): Enable encryption/decryption
+      BEN8: BMAPCTX1_BEN8_DISABLE # Offset: 8b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN8_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN8_ENABLE, (1): Enable encryption/decryption
+      BEN9: BMAPCTX1_BEN9_DISABLE # Offset: 9b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN9_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN9_ENABLE, (1): Enable encryption/decryption
+      BEN10: BMAPCTX1_BEN10_DISABLE # Offset: 10b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN10_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN10_ENABLE, (1): Enable encryption/decryption
+      BEN11: BMAPCTX1_BEN11_DISABLE # Offset: 11b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN11_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN11_ENABLE, (1): Enable encryption/decryption
+      BEN12: BMAPCTX1_BEN12_DISABLE # Offset: 12b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN12_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN12_ENABLE, (1): Enable encryption/decryption
+      BEN13: BMAPCTX1_BEN13_DISABLE # Offset: 13b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN13_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN13_ENABLE, (1): Enable encryption/decryption
+      BEN14: BMAPCTX1_BEN14_DISABLE # Offset: 14b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN14_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN14_ENABLE, (1): Enable encryption/decryption
+      BEN15: BMAPCTX1_BEN15_DISABLE # Offset: 15b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN15_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN15_ENABLE, (1): Enable encryption/decryption
+      BEN16: BMAPCTX1_BEN16_DISABLE # Offset: 16b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN16_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN16_ENABLE, (1): Enable encryption/decryption
+      BEN17: BMAPCTX1_BEN17_DISABLE # Offset: 17b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN17_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN17_ENABLE, (1): Enable encryption/decryption
+      BEN18: BMAPCTX1_BEN18_DISABLE # Offset: 18b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN18_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN18_ENABLE, (1): Enable encryption/decryption
+      BEN19: BMAPCTX1_BEN19_DISABLE # Offset: 19b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN19_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN19_ENABLE, (1): Enable encryption/decryption
+      BEN20: BMAPCTX1_BEN20_DISABLE # Offset: 20b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN20_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN20_ENABLE, (1): Enable encryption/decryption
+      BEN21: BMAPCTX1_BEN21_DISABLE # Offset: 21b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN21_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN21_ENABLE, (1): Enable encryption/decryption
+      BEN22: BMAPCTX1_BEN22_DISABLE # Offset: 22b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN22_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN22_ENABLE, (1): Enable encryption/decryption
+      BEN23: BMAPCTX1_BEN23_DISABLE # Offset: 23b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN23_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN23_ENABLE, (1): Enable encryption/decryption
+      BEN24: BMAPCTX1_BEN24_DISABLE # Offset: 24b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN24_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN24_ENABLE, (1): Enable encryption/decryption
+      BEN25: BMAPCTX1_BEN25_DISABLE # Offset: 25b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN25_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN25_ENABLE, (1): Enable encryption/decryption
+      BEN26: BMAPCTX1_BEN26_DISABLE # Offset: 26b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN26_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN26_ENABLE, (1): Enable encryption/decryption
+      BEN27: BMAPCTX1_BEN27_DISABLE # Offset: 27b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN27_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN27_ENABLE, (1): Enable encryption/decryption
+      BEN28: BMAPCTX1_BEN28_DISABLE # Offset: 28b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN28_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN28_ENABLE, (1): Enable encryption/decryption
+      BEN29: BMAPCTX1_BEN29_DISABLE # Offset: 29b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN29_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN29_ENABLE, (1): Enable encryption/decryption
+      BEN30: BMAPCTX1_BEN30_DISABLE # Offset: 30b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN30_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN30_ENABLE, (1): Enable encryption/decryption
+      BEN31: BMAPCTX1_BEN31_DISABLE # Offset: 31b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX1_BEN31_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX1_BEN31_ENABLE, (1): Enable encryption/decryption
+  BMAPCTX2: # Bitmap Control for Memory Context 2
+    bitfields:  # The register bitfields
+      BEN0: BMAPCTX2_BEN0_DISABLE  # Offset: 0b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN0_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN0_ENABLE, (1): Enable encryption/decryption
+      BEN1: BMAPCTX2_BEN1_DISABLE # Offset: 1b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN1_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN1_ENABLE, (1): Enable encryption/decryption
+      BEN2: BMAPCTX2_BEN2_DISABLE # Offset: 2b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN2_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN2_ENABLE, (1): Enable encryption/decryption
+      BEN3: BMAPCTX2_BEN3_DISABLE # Offset: 3b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN3_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN3_ENABLE, (1): Enable encryption/decryption
+      BEN4: BMAPCTX2_BEN4_DISABLE # Offset: 4b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN4_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN4_ENABLE, (1): Enable encryption/decryption
+      BEN5: BMAPCTX2_BEN5_DISABLE # Offset: 5b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN5_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN5_ENABLE, (1): Enable encryption/decryption
+      BEN6: BMAPCTX2_BEN6_DISABLE # Offset: 6b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN6_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN6_ENABLE, (1): Enable encryption/decryption
+      BEN7: BMAPCTX2_BEN7_DISABLE # Offset: 7b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN7_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN7_ENABLE, (1): Enable encryption/decryption
+      BEN8: BMAPCTX2_BEN8_DISABLE # Offset: 8b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN8_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN8_ENABLE, (1): Enable encryption/decryption
+      BEN9: BMAPCTX2_BEN9_DISABLE # Offset: 9b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN9_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN9_ENABLE, (1): Enable encryption/decryption
+      BEN10: BMAPCTX2_BEN10_DISABLE # Offset: 10b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN10_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN10_ENABLE, (1): Enable encryption/decryption
+      BEN11: BMAPCTX2_BEN11_DISABLE # Offset: 11b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN11_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN11_ENABLE, (1): Enable encryption/decryption
+      BEN12: BMAPCTX2_BEN12_DISABLE # Offset: 12b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN12_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN12_ENABLE, (1): Enable encryption/decryption
+      BEN13: BMAPCTX2_BEN13_DISABLE # Offset: 13b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN13_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN13_ENABLE, (1): Enable encryption/decryption
+      BEN14: BMAPCTX2_BEN14_DISABLE # Offset: 14b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN14_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN14_ENABLE, (1): Enable encryption/decryption
+      BEN15: BMAPCTX2_BEN15_DISABLE # Offset: 15b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN15_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN15_ENABLE, (1): Enable encryption/decryption
+      BEN16: BMAPCTX2_BEN16_DISABLE # Offset: 16b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN16_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN16_ENABLE, (1): Enable encryption/decryption
+      BEN17: BMAPCTX2_BEN17_DISABLE # Offset: 17b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN17_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN17_ENABLE, (1): Enable encryption/decryption
+      BEN18: BMAPCTX2_BEN18_DISABLE # Offset: 18b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN18_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN18_ENABLE, (1): Enable encryption/decryption
+      BEN19: BMAPCTX2_BEN19_DISABLE # Offset: 19b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN19_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN19_ENABLE, (1): Enable encryption/decryption
+      BEN20: BMAPCTX2_BEN20_DISABLE # Offset: 20b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN20_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN20_ENABLE, (1): Enable encryption/decryption
+      BEN21: BMAPCTX2_BEN21_DISABLE # Offset: 21b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN21_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN21_ENABLE, (1): Enable encryption/decryption
+      BEN22: BMAPCTX2_BEN22_DISABLE # Offset: 22b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN22_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN22_ENABLE, (1): Enable encryption/decryption
+      BEN23: BMAPCTX2_BEN23_DISABLE # Offset: 23b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN23_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN23_ENABLE, (1): Enable encryption/decryption
+      BEN24: BMAPCTX2_BEN24_DISABLE # Offset: 24b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN24_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN24_ENABLE, (1): Enable encryption/decryption
+      BEN25: BMAPCTX2_BEN25_DISABLE # Offset: 25b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN25_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN25_ENABLE, (1): Enable encryption/decryption
+      BEN26: BMAPCTX2_BEN26_DISABLE # Offset: 26b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN26_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN26_ENABLE, (1): Enable encryption/decryption
+      BEN27: BMAPCTX2_BEN27_DISABLE # Offset: 27b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN27_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN27_ENABLE, (1): Enable encryption/decryption
+      BEN28: BMAPCTX2_BEN28_DISABLE # Offset: 28b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN28_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN28_ENABLE, (1): Enable encryption/decryption
+      BEN29: BMAPCTX2_BEN29_DISABLE # Offset: 29b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN29_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN29_ENABLE, (1): Enable encryption/decryption
+      BEN30: BMAPCTX2_BEN30_DISABLE # Offset: 30b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN30_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN30_ENABLE, (1): Enable encryption/decryption
+      BEN31: BMAPCTX2_BEN31_DISABLE # Offset: 31b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX2_BEN31_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX2_BEN31_ENABLE, (1): Enable encryption/decryption
+  BMAPCTX3: # Bitmap Control for Memory Context 3
+    bitfields:  # The register bitfields
+      BEN0: BMAPCTX3_BEN0_DISABLE  # Offset: 0b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN0_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN0_ENABLE, (1): Enable encryption/decryption
+      BEN1: BMAPCTX3_BEN1_DISABLE # Offset: 1b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN1_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN1_ENABLE, (1): Enable encryption/decryption
+      BEN2: BMAPCTX3_BEN2_DISABLE # Offset: 2b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN2_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN2_ENABLE, (1): Enable encryption/decryption
+      BEN3: BMAPCTX3_BEN3_DISABLE # Offset: 3b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN3_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN3_ENABLE, (1): Enable encryption/decryption
+      BEN4: BMAPCTX3_BEN4_DISABLE # Offset: 4b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN4_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN4_ENABLE, (1): Enable encryption/decryption
+      BEN5: BMAPCTX3_BEN5_DISABLE # Offset: 5b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN5_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN5_ENABLE, (1): Enable encryption/decryption
+      BEN6: BMAPCTX3_BEN6_DISABLE # Offset: 6b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN6_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN6_ENABLE, (1): Enable encryption/decryption
+      BEN7: BMAPCTX3_BEN7_DISABLE # Offset: 7b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN7_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN7_ENABLE, (1): Enable encryption/decryption
+      BEN8: BMAPCTX3_BEN8_DISABLE # Offset: 8b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN8_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN8_ENABLE, (1): Enable encryption/decryption
+      BEN9: BMAPCTX3_BEN9_DISABLE # Offset: 9b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN9_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN9_ENABLE, (1): Enable encryption/decryption
+      BEN10: BMAPCTX3_BEN10_DISABLE # Offset: 10b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN10_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN10_ENABLE, (1): Enable encryption/decryption
+      BEN11: BMAPCTX3_BEN11_DISABLE # Offset: 11b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN11_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN11_ENABLE, (1): Enable encryption/decryption
+      BEN12: BMAPCTX3_BEN12_DISABLE # Offset: 12b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN12_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN12_ENABLE, (1): Enable encryption/decryption
+      BEN13: BMAPCTX3_BEN13_DISABLE # Offset: 13b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN13_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN13_ENABLE, (1): Enable encryption/decryption
+      BEN14: BMAPCTX3_BEN14_DISABLE # Offset: 14b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN14_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN14_ENABLE, (1): Enable encryption/decryption
+      BEN15: BMAPCTX3_BEN15_DISABLE # Offset: 15b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN15_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN15_ENABLE, (1): Enable encryption/decryption
+      BEN16: BMAPCTX3_BEN16_DISABLE # Offset: 16b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN16_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN16_ENABLE, (1): Enable encryption/decryption
+      BEN17: BMAPCTX3_BEN17_DISABLE # Offset: 17b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN17_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN17_ENABLE, (1): Enable encryption/decryption
+      BEN18: BMAPCTX3_BEN18_DISABLE # Offset: 18b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN18_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN18_ENABLE, (1): Enable encryption/decryption
+      BEN19: BMAPCTX3_BEN19_DISABLE # Offset: 19b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN19_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN19_ENABLE, (1): Enable encryption/decryption
+      BEN20: BMAPCTX3_BEN20_DISABLE # Offset: 20b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN20_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN20_ENABLE, (1): Enable encryption/decryption
+      BEN21: BMAPCTX3_BEN21_DISABLE # Offset: 21b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN21_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN21_ENABLE, (1): Enable encryption/decryption
+      BEN22: BMAPCTX3_BEN22_DISABLE # Offset: 22b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN22_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN22_ENABLE, (1): Enable encryption/decryption
+      BEN23: BMAPCTX3_BEN23_DISABLE # Offset: 23b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN23_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN23_ENABLE, (1): Enable encryption/decryption
+      BEN24: BMAPCTX3_BEN24_DISABLE # Offset: 24b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN24_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN24_ENABLE, (1): Enable encryption/decryption
+      BEN25: BMAPCTX3_BEN25_DISABLE # Offset: 25b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN25_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN25_ENABLE, (1): Enable encryption/decryption
+      BEN26: BMAPCTX3_BEN26_DISABLE # Offset: 26b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN26_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN26_ENABLE, (1): Enable encryption/decryption
+      BEN27: BMAPCTX3_BEN27_DISABLE # Offset: 27b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN27_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN27_ENABLE, (1): Enable encryption/decryption
+      BEN28: BMAPCTX3_BEN28_DISABLE # Offset: 28b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN28_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN28_ENABLE, (1): Enable encryption/decryption
+      BEN29: BMAPCTX3_BEN29_DISABLE # Offset: 29b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN29_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN29_ENABLE, (1): Enable encryption/decryption
+      BEN30: BMAPCTX3_BEN30_DISABLE # Offset: 30b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN30_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN30_ENABLE, (1): Enable encryption/decryption
+      BEN31: BMAPCTX3_BEN31_DISABLE # Offset: 31b, Width: 1b, Description: Block enable for encryption/decryption
+      # - BMAPCTX3_BEN31_DISABLE, (0): Disable encryption/decryption
+      # - BMAPCTX3_BEN31_ENABLE, (1): Enable encryption/decryption
+  BLE_UNIQUE_ADDRESS0: # Bits 31 downto 0 of the BLE Unique Address to be used when BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5
+    value: 0x12345678  # The value width: 32b
+  BLE_UNIQUE_ADDRESS1: # BLE_UNIQUE_ADDRESS part 2
+    bitfields:  # The register bitfields
+      BLE_UNIQUE_ADDRESS_47_32: '0x0000'  # Offset: 0b, Width: 16b, Description: Bits 47 downto 32 of the BLE Unique Address to be used when BLE_UNIQUE_ADDRESS_VALID field is equal to 0xC3A5
+      BLE_UNIQUE_ADDRESS_VALID: '0x0000' # Offset: 16b, Width: 16b, Description: Use 48-bit value from BLE_UNIQUE_ADDRESS field as BLE address when this field is equal to 0xC3A5. If this field is different from 0xC3A5, check BLE_DEFAULT_ADDRESS_VALID field in NMPA to know which address to use.
+  FLASH_REMAP_SIZE: # This 32-bit register contains the size of the image to remap, in bytes.
+    value: 0x12345678  # The value width: 32b
+  FLASH_REMAP_OFFSET: # This 32-bit register contains the offset by which the image is to be remapped.
+    value: 0x12345678  # The value width: 32b
+  ROTKH: # ROTKH field is compounded by 8 32-bit fields and contains Root key table hash
+    value: 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f  # The value width: 256b
+  CUSTOMER_DEFINED0: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED1: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED2: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED3: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED4: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED5: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED6: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED7: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED8: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED9: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED10: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED11: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED12: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED13: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED14: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED15: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED16: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED17: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED18: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED19: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED20: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED21: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED22: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED23: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED24: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED25: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED26: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED27: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED28: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED29: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED30: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED31: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED32: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED33: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED34: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED35: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED36: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED37: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED38: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED39: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED40: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED41: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED42: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED43: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED44: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED45: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED46: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED47: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED48: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED49: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED50: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED51: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED52: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED53: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED54: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED55: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED56: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED57: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED58: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED59: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED60: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED61: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED62: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED63: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED64: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED65: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED66: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED67: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED68: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED69: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED70: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED71: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED72: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED73: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED74: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED75: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED76: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED77: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED78: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED79: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED80: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED81: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED82: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED83: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED84: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED85: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED86: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED87: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b

@@ -462,12 +462,36 @@
     </bit_field>
     <bit_field offset="3" width="3" name="RoTK1_Usage" access="RO" reset_value="0" description="RoTK1_Usage">
       <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK1_Usage(x)"/>
+      <bit_field_value name="USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="IMG_BOOT_AND_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="IMG_KEY_AND_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
     </bit_field>
     <bit_field offset="6" width="3" name="RoTK2_Usage" access="RO" reset_value="0" description="RoTK2_Usage">
       <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK2_Usage(x)"/>
+      <bit_field_value name="USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="IMG_BOOT_AND_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="IMG_KEY_AND_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
     </bit_field>
     <bit_field offset="9" width="3" name="RoTK3_Usage" access="RO" reset_value="0" description="RoTK3_Usage">
       <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK3_Usage(x)"/>
+      <bit_field_value name="USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="IMG_BOOT_AND_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="IMG_KEY_AND_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
     </bit_field>
     <reserved_bit_field offset="12" width="20" reset_value="0"/>
   </register>
@@ -661,7 +685,7 @@
   </register>
   <register offset="0x90" width="32" name="IPED0_START" description="IPED region 0 Start">
     <alias type="CMSIS" value="CMPA.IPED0_START"/>
-    <bit_field offset="0" width="2" name="ENABLE_REG0" access="RO" reset_value="0" description="ENABLE_REG0">
+    <bit_field offset="0" width="2" name="ENABLE_REG0" access="RO" reset_value="0" description="Enable IPED region 0 settings during boot">
       <alias type="CMSIS" value="FLASH_CMPA_IPED0_START_ENABLE_REG0(x)"/>
       <bit_field_value name="DISABLED" value="0b00" description="Region is disabled"/>
       <bit_field_value name="ENABLED" value="0b01" description="Region is enabled"/>
@@ -669,20 +693,22 @@
       <bit_field_value name="ENABLED_AND_LOCKED_1" value="0b11" description="Region is enabled and locked"/>
     </bit_field>
     <reserved_bit_field offset="2" width="6" reset_value="0"/>
-    <bit_field offset="8" width="24" name="IPED_REG0_START_ADDR" access="RO" reset_value="0" description="IPED_REG0_START_ADDR">
+    <bit_field offset="8" width="24" name="IPED_REG0_START_ADDR" access="RO" reset_value="0" description="Upper 24-bits of IPED region 0 decryption start address for FlexSPI boot. Lower address bits are always 0">
       <alias type="CMSIS" value="FLASH_CMPA_IPED0_START_IPED_REG0_START_ADDR(x)"/>
+      <alias type="CONFIG_PREPROCESS" value="SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."/>
     </bit_field>
   </register>
   <register offset="0x94" width="32" name="IPED0_END" description="IPED region 0 End">
     <alias type="CMSIS" value="CMPA.IPED0_END"/>
     <reserved_bit_field offset="0" width="8" reset_value="0"/>
-    <bit_field offset="8" width="24" name="IPED_REG0_END_ADDR" access="RO" reset_value="0" description="IPED_REG0_END_ADDR">
+    <bit_field offset="8" width="24" name="IPED_REG0_END_ADDR" access="RO" reset_value="0" description="Upper 24-bits of IPED region 0 decryption end address for FlexSPI boot. Lower address bits are always 0">
       <alias type="CMSIS" value="FLASH_CMPA_IPED0_END_IPED_REG0_END_ADDR(x)"/>
+      <alias type="CONFIG_PREPROCESS" value="SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."/>
     </bit_field>
   </register>
   <register offset="0x98" width="32" name="IPED1_START" description="IPED region 1 Start">
     <alias type="CMSIS" value="CMPA.IPED1_START"/>
-    <bit_field offset="0" width="2" name="ENABLE_REG1" access="RO" reset_value="0" description="ENABLE_REG1">
+    <bit_field offset="0" width="2" name="ENABLE_REG1" access="RO" reset_value="0" description="Enable IPED region 1 settings during boot">
       <alias type="CMSIS" value="FLASH_CMPA_IPED1_START_ENABLE_REG1(x)"/>
       <bit_field_value name="DISABLED" value="0b00" description="Region is disabled"/>
       <bit_field_value name="ENABLED" value="0b01" description="Region is enabled"/>
@@ -690,21 +716,23 @@
       <bit_field_value name="ENABLED_AND_LOCKED_1" value="0b11" description="Region is enabled and locked"/>
     </bit_field>
     <reserved_bit_field offset="2" width="6" reset_value="0"/>
-    <bit_field offset="8" width="24" name="IPED_REG1_START_ADDR" access="RO" reset_value="0" description="IPED_REG1_START_ADDR">
+    <bit_field offset="8" width="24" name="IPED_REG1_START_ADDR" access="RO" reset_value="0" description="Upper 24-bits of IPED region 1 decryption start address for FlexSPI boot. Lower address bits are always 0">
       <alias type="CMSIS" value="FLASH_CMPA_IPED1_START_IPED_REG1_START_ADDR(x)"/>
+      <alias type="CONFIG_PREPROCESS" value="SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."/>
     </bit_field>
   </register>
   <register offset="0x9C" width="32" name="IPED1_END" description="IPED region 1 End">
     <alias type="CMSIS" value="CMPA.IPED1_END"/>
     <reserved_bit_field offset="0" width="8" reset_value="0"/>
-    <bit_field offset="8" width="24" name="IPED_REG1_END_ADDR" access="RO" reset_value="0" description="IPED_REG1_END_ADDR">
+    <bit_field offset="8" width="24" name="IPED_REG1_END_ADDR" access="RO" reset_value="0" description="Upper 24-bits of IPED region 1 decryption end address for FlexSPI boot. Lower address bits are always 0">
       <alias type="CMSIS" value="FLASH_CMPA_IPED1_END_IPED_REG1_END_ADDR(x)"/>
       <alias type="id" value="IPED_REG01_END_ADDR"/>
+      <alias type="CONFIG_PREPROCESS" value="SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."/>
     </bit_field>
   </register>
   <register offset="0xA0" width="32" name="IPED2_START" description="IPED region 2 Start">
     <alias type="CMSIS" value="CMPA.IPED2_START"/>
-    <bit_field offset="0" width="2" name="ENABLE_REG2" access="RO" reset_value="0" description="ENABLE_REG2">
+    <bit_field offset="0" width="2" name="ENABLE_REG2" access="RO" reset_value="0" description="Enable IPED region 2 settings during boot">
       <alias type="CMSIS" value="FLASH_CMPA_IPED2_START_ENABLE_REG2(x)"/>
       <bit_field_value name="DISABLED" value="0b00" description="Region is disabled"/>
       <bit_field_value name="ENABLED" value="0b01" description="Region is enabled"/>
@@ -712,20 +740,22 @@
       <bit_field_value name="ENABLED_AND_LOCKED_1" value="0b11" description="Region is enabled and locked"/>
     </bit_field>
     <reserved_bit_field offset="2" width="6" reset_value="0"/>
-    <bit_field offset="8" width="24" name="IPED_REG2_START_ADDR" access="RO" reset_value="0" description="IPED_REG2_START_ADDR">
+    <bit_field offset="8" width="24" name="IPED_REG2_START_ADDR" access="RO" reset_value="0" description="Upper 24-bits of IPED region 2 decryption start address for FlexSPI boot. Lower address bits are always 0">
       <alias type="CMSIS" value="FLASH_CMPA_IPED2_START_IPED_REG2_START_ADDR(x)"/>
+      <alias type="CONFIG_PREPROCESS" value="SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."/>
     </bit_field>
   </register>
   <register offset="0xA4" width="32" name="IPED2_END" description="IPED region 2 End">
     <alias type="CMSIS" value="CMPA.IPED2_END"/>
     <reserved_bit_field offset="0" width="8" reset_value="0"/>
-    <bit_field offset="8" width="24" name="IPED_REG2_END_ADDR" access="RO" reset_value="0" description="IPED_REG2_END_ADDR">
+    <bit_field offset="8" width="24" name="IPED_REG2_END_ADDR" access="RO" reset_value="0" description="Upper 24-bits of IPED region 2 decryption end address for FlexSPI boot. Lower address bits are always 0">
       <alias type="CMSIS" value="FLASH_CMPA_IPED2_END_IPED_REG2_END_ADDR(x)"/>
+      <alias type="CONFIG_PREPROCESS" value="SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."/>
     </bit_field>
   </register>
   <register offset="0xA8" width="32" name="IPED3_START" description="IPED region 3 Start">
     <alias type="CMSIS" value="CMPA.IPED3_START"/>
-    <bit_field offset="0" width="2" name="ENABLE_REG3" access="RO" reset_value="0" description="ENABLE_REG3">
+    <bit_field offset="0" width="2" name="ENABLE_REG3" access="RO" reset_value="0" description="Enable IPED region 3 settings during boot">
       <alias type="CMSIS" value="FLASH_CMPA_IPED3_START_ENABLE_REG3(x)"/>
       <bit_field_value name="DISABLED" value="0b00" description="Region is disabled"/>
       <bit_field_value name="ENABLED" value="0b01" description="Region is enabled"/>
@@ -733,15 +763,17 @@
       <bit_field_value name="ENABLED_AND_LOCKED_1" value="0b11" description="Region is enabled and locked"/>
     </bit_field>
     <reserved_bit_field offset="2" width="6" reset_value="0"/>
-    <bit_field offset="8" width="24" name="IPED_REG3_START_ADDR" access="RO" reset_value="0" description="IPED_REG3_START_ADDR">
+    <bit_field offset="8" width="24" name="IPED_REG3_START_ADDR" access="RO" reset_value="0" description="Upper 24-bits of IPED region 3 decryption start address for FlexSPI boot. Lower address bits are always 0">
       <alias type="CMSIS" value="FLASH_CMPA_IPED3_START_IPED_REG3_START_ADDR(x)"/>
+      <alias type="CONFIG_PREPROCESS" value="SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."/>
     </bit_field>
   </register>
   <register offset="0xAC" width="32" name="IPED3_END" description="IPED region 3 End">
     <alias type="CMSIS" value="CMPA.IPED3_END"/>
     <reserved_bit_field offset="0" width="8" reset_value="0"/>
-    <bit_field offset="8" width="24" name="IPED_REG3_END_ADDR" access="RO" reset_value="0" description="IPED_REG3_END_ADDR">
+    <bit_field offset="8" width="24" name="IPED_REG3_END_ADDR" access="RO" reset_value="0" description="Upper 24-bits of IPED region 3 decryption end address for FlexSPI boot. Lower address bits are always 0">
       <alias type="CMSIS" value="FLASH_CMPA_IPED3_END_IPED_REG3_END_ADDR(x)"/>
+      <alias type="CONFIG_PREPROCESS" value="SHIFT_RIGHT:COUNT=8;DESC=ROM only uses upper 24bits to address IPED region. In config file use full 32b address."/>
     </bit_field>
   </register>
   <register offset="0xB0" width="32" name="QUICK_SET_GPIO_0" description="Quick Set to Drive GPIO 0 port pins high">

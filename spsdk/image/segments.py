@@ -13,14 +13,16 @@ from datetime import datetime
 from struct import calcsize, pack, unpack_from
 from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
-from spsdk import SPSDKError
+from typing_extensions import Self
+
 from spsdk.exceptions import (
     SPSDKCorruptedException,
+    SPSDKError,
     SPSDKParsingError,
     SPSDKSyntaxError,
     SPSDKValueError,
 )
-from spsdk.utils.misc import DebugInfo, align, align_block, extend_block, size_fmt
+from spsdk.utils.misc import align, align_block, extend_block, size_fmt
 
 from .bee import BEE_ENCR_BLOCK_SIZE, BeeRegionHeader
 from .commands import (
@@ -37,7 +39,7 @@ from .commands import (
     parse_command,
 )
 from .header import Header, Header2, SegTag
-from .secret import MAC, BaseClass
+from .secret import MAC, BaseSecretClass
 
 logger = logging.getLogger(__name__)
 TEST = True
@@ -89,7 +91,10 @@ class BaseSegment(ABC):
     def __eq__(self, other: object) -> bool:
         return isinstance(other, self.__class__) and vars(other) == vars(self)
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"Base segment class: {self.__class__.__name__}"
+
+    def __str__(self) -> str:
         """String representation of the BaseSegment.
 
         :raises NotImplementedError: Derived class has to implement this method
@@ -104,7 +109,7 @@ class BaseSegment(ABC):
         raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
-    def parse(cls, data: bytes) -> "BaseSegment":
+    def parse(cls, data: bytes) -> Self:
         """Parse interfaces.
 
         :raises NotImplementedError: Derived class has to implement this method
@@ -150,10 +155,9 @@ class AbstractFCB(BaseSegment):
         """Return length (in bytes) of the exported data including padding (if any)."""
         return super().space if self.enabled else 0
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary representation (serialization).
 
-        :param dbg_info: instance allowing to debug output
         :return: binary representation
         :raises NotImplementedError: Derived class has to implement this method
         """
@@ -182,7 +186,7 @@ class SegFCB(AbstractFCB, ABC):
         self.firmware_info_table = None
         self.config_block = None
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form."""
         data = pack(
             "<Is2I2HI",
@@ -233,22 +237,19 @@ class PaddingFCB(AbstractFCB):
         """Return size of the exported data in bytes."""
         return self._size if self.enabled else 0
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Return text description of the instance."""
         return f"PaddingFCB: {self.size} bytes"
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: instance allowing to debug output format
         :return: binary representation
         """
         if not self.enabled:
             return b""
 
-        result = self._padding_byte * self._size + self._padding_export()
-        dbg_info.append_section(f"FCB-padding: {len(result)} bytes")
-        return result
+        return self._padding_byte * self._size + self._padding_export()
 
 
 # pylint: disable=too-many-instance-attributes
@@ -375,10 +376,9 @@ class FlexSPIConfBlockFCB(AbstractFCB):
         """Export FCB header info binary form."""
         return self.TAG + self.version[::-1] + b"\x00\x00\x00\x00"
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export into binary form.
 
-        :param dbg_info: instance allowing to debug output
         :return: binary representation used in the bootable image
         """
         if not self.enabled:
@@ -443,22 +443,19 @@ class FlexSPIConfBlockFCB(AbstractFCB):
             + self.reserved_padding2
         )
 
-        dbg_info.append_binary_section("FCB", data)
-
         if self.padding_len > 0:
             data += self._padding_export()
-            dbg_info.append_section(f"FCB-padding: {self.padding_len} bytes")
 
         return data
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the FlexSPIConfBlockFCB."""
         if not self.enabled:
             return " No FCB\n\n"
         return f" Length: {self.size} bytes\n\n"
 
     @classmethod
-    def parse(cls, data: bytes) -> "FlexSPIConfBlockFCB":
+    def parse(cls, data: bytes) -> Self:
         """Parse binary data and creates instance of the class.
 
         :param data: data to be parsed
@@ -477,7 +474,7 @@ class FlexSPIConfBlockFCB(AbstractFCB):
         ):
             raise SPSDKError("Invalid version number format")
 
-        result = FlexSPIConfBlockFCB()
+        result = cls()
         if len(data) < result.size:
             raise SPSDKError("Insufficient data length")
 
@@ -580,11 +577,14 @@ class SegBEE(BaseSegment):
         """
         self._regions.append(region)
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"BEE Segment, {len(self._regions)} regions"
+
+    def __str__(self) -> str:
         """:return: test description of the instance."""
         result = f"BEE Segment, with {len(self._regions)} regions\n"
         for region in self._regions:
-            result += region.info()
+            result += str(region)
         return result
 
     def update(self) -> None:
@@ -606,44 +606,38 @@ class SegBEE(BaseSegment):
                 f"Totally {total_facs} FAC regions, but only {self.max_facs} supported"
             )
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Serialization to binary representation.
 
-        :param dbg_info: instance allowing to provide debug info about exported data
         :return: binary representation of the region (serialization).
         """
         self.update()
         self.validate()
         result = b""
-        for index, region in enumerate(self._regions):
-            dbg_info.append_section(f"BEE Region {index}")
-            result += region.export(dbg_info=dbg_info)
+        for region in self._regions:
+            result += region.export()
         if self.padding_len:
             result += self._padding_export()
-            if self.size == 0:
-                dbg_info.append_section(f"BEE-padding {self.padding_len} bytes")
 
         return result
 
     @classmethod
-    def parse(
-        cls, data: bytes, offset: int = 0, decrypt_keys: Optional[List[bytes]] = None
-    ) -> "SegBEE":
+    def parse(cls, data: bytes, decrypt_keys: Optional[List[bytes]] = None) -> Self:
         """De-serialization.
 
         :param data: binary data to be parsed
-        :param offset: to start parsing the data
         :param decrypt_keys: list of SW_GP keys used to decrypt EKIB
                 The number of keys must match number of regions to be parsed
         :return: instance created from binary data
         """
         regions: List[BeeRegionHeader] = []
+        offset = 0
         if decrypt_keys:
             for sw_gp_key in decrypt_keys:
-                region = BeeRegionHeader.parse(data, offset, sw_gp_key)
+                region = BeeRegionHeader.parse(data[offset:], sw_gp_key)
                 regions.append(region)
                 offset += region.size
-        return SegBEE(regions)
+        return cls(regions)
 
     def encrypt_data(self, start_addr: int, data: bytes) -> bytes:
         """Encrypt image data located in any PRDB block.
@@ -716,7 +710,7 @@ class SegIVT2(BaseSegment):
             f" DCD:0x{self.dcd_address:X}, APP:0x{self.app_address:X}, CSF:0x{self.csf_address:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegIVT2."""
         return (
             f" Format version   : {_format_ivt_item(self.version, digit_count=2)}\n"
@@ -768,13 +762,13 @@ class SegIVT2(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegIVT2":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of IVT2 segment
         :return: SegIVT2 object
         """
-        header = Header.parse(data, 0, SegTag.IVT2)
+        header = Header.parse(data, SegTag.IVT2)
         obj = cls(header.param)
         # Parse IVT items
         (
@@ -833,7 +827,7 @@ class SegBDT(BaseSegment):
             f", Plugin: {self.plugin}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegBDT."""
         return (
             f" Start      : 0x{self.app_start:08X}\n"
@@ -852,7 +846,7 @@ class SegBDT(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegBDT":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of BDT segment
@@ -891,7 +885,7 @@ class SegAPP(BaseSegment):
     def __repr__(self) -> str:
         return f"APP <LEN: {self.size} Bytes>"
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegAPP."""
         return f" Size: {self.size} Bytes\n\n"
 
@@ -980,11 +974,11 @@ class SegDCD(BaseSegment):
     def __iter__(self) -> Iterator:
         return self._commands.__iter__()
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegDCD."""
         msg = ""
         for cmd in self._commands:
-            msg += cmd.info() + "\n"
+            msg += str(cmd) + "\n"
         return msg
 
     def append(self, cmd: CmdBase) -> None:
@@ -1071,19 +1065,19 @@ class SegDCD(BaseSegment):
         return SegDcdBuilder().build(text)
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegDCD":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of DCD segment
         :raises SPSDKCorruptedException: Exception caused by corrupted data
         :return: SegDCD object
         """
-        header = Header.parse(data, 0, SegTag.DCD)
+        header = Header.parse(data, SegTag.DCD)
         index = header.size
         obj = cls(header.param, True)
         while index < header.length:
             try:
-                cmd_obj = parse_command(data, index)
+                cmd_obj = parse_command(data[index:])
             except ValueError as exc:
                 raise SPSDKCorruptedException("Unknown command at position: " + hex(index)) from exc
 
@@ -1251,7 +1245,7 @@ class SegCSF(BaseSegment):
         # additional command data: keys and certificates; these data are stored after the commands
         #   - key is an offset of the data section in segment
         #   - value is an instance of the data section
-        self._cmd_data: Dict[int, BaseClass] = {}
+        self._cmd_data: Dict[int, BaseSecretClass] = {}
         # this allows to export segment, that was parsed, but certificate and private keys are not available
         self.no_signature_updates = False
 
@@ -1304,19 +1298,19 @@ class SegCSF(BaseSegment):
     def __iter__(self) -> Iterator[CmdBase]:
         return self.commands.__iter__()
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegCSF."""
         msg = ""
         msg += f"CSF Version        : {hex(self.version)}\n"
         msg += f"Number of commands : {len(self.commands)}\n"
         for cmd in self.commands:
-            msg += cmd.info() + "\n"
+            msg += str(cmd) + "\n"
 
         # certificates and signatures
         msg += "[CMD-DATA]\n"
         for offset, cmd_data in self._cmd_data.items():
             msg += f"- OFFSET : {offset}\n"
-            msg += cmd_data.info()
+            msg += str(cmd_data)
 
         return msg
 
@@ -1347,7 +1341,7 @@ class SegCSF(BaseSegment):
 
         """
         cur_ofs = self._header.length
-        new_cmd_data: Dict[int, BaseClass] = {}
+        new_cmd_data: Dict[int, BaseSecretClass] = {}
         for cmd in filter(lambda c: c.needs_cmd_data_reference, self.commands):
             key = cmd.cmd_data_reference
             if key is not None:
@@ -1359,18 +1353,15 @@ class SegCSF(BaseSegment):
 
         self._cmd_data = new_cmd_data
 
-    def _export_base(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def _export_base(self) -> bytes:
         """Export base part of the CSF section (header and commands) without keys and signatures.
 
-        :param dbg_info: optional instance allowing to produce debug information about exported data
         :return: exported binary data
         """
         self.update(True)
         data = self._header.export()
-        dbg_info.append_binary_section("header", data)
         for command in self.commands:
-            dbg_info.append_section(f"COMMAND: {CmdTag.desc(command.tag)}")
-            cmd_data = command.export(dbg_info)
+            cmd_data = command.export()
             data += cmd_data
         return data
 
@@ -1397,21 +1388,18 @@ class SegCSF(BaseSegment):
                         if len(data) != 0:
                             raise SPSDKError("Invalid length of data")
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export segment as bytes array (serialization).
 
-        :param dbg_info: optional list of strings to produce debug information about exported data
         :return: bytes
         """
         data = b""
         if self.enabled:
-            data = self._export_base(dbg_info)
-            dbg_info.append_section("CSF-DATA: CERTIFICATES and SIGNATURES")
+            data = self._export_base()
             cmd_data_by_offset = sorted(self._cmd_data.items(), key=lambda t: str(t[0]).zfill(8))
             for offset, cmd_data in cmd_data_by_offset:
                 data = extend_block(data, offset)
-                dbg_info.append_section(f"CMD-DATA: {type(cmd_data).__name__}")
-                data += cmd_data.export(dbg_info=dbg_info)
+                data += cmd_data.export()
             # padding
             data += self._padding_export()
 
@@ -1430,32 +1418,31 @@ class SegCSF(BaseSegment):
             raise SPSDKError("Invalid cmd")
         if self._cmd_data.get(cmd.cmd_data_offset) is not None:
             raise SPSDKError("Invalid cmd's data")
-        result = cmd.parse_cmd_data(data, cmd.cmd_data_offset)
+        result = cmd.parse_cmd_data(data[cmd.cmd_data_offset :])
         self._cmd_data[cmd.cmd_data_offset] = result
 
         return result
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SegCSF":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of CSF segment
-        :param offset: to start parsing the data
         :raises SPSDKCorruptedException: When there is unknown command
         :raises SPSDKCorruptedException: When command can not be parsed
         :return: SegCSF instance
         """
-        header = Header.parse(data, offset, SegTag.CSF)
+        header = Header.parse(data, SegTag.CSF)
         index = header.size
         obj = cls(header.param, True)
         obj.no_signature_updates = True
         while index < header.length:
             try:
-                cmd_obj = parse_command(data, offset + index)
+                cmd_obj = parse_command(data[index:])
                 obj.append_command(cmd_obj)
             except ValueError as exc:
                 raise SPSDKCorruptedException(
-                    "Failed to parse command at position: " + hex(offset + index)
+                    "Failed to parse command at position: " + hex(index)
                 ) from exc
             index += cmd_obj.size
 
@@ -1507,7 +1494,10 @@ class XMCDHeader:
             self.tag << 4 + self.version,
         )
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"XMCD Header, Instance: {self.instance}"
+
+    def __str__(self) -> str:
         """String representation of the XMCD Header."""
         msg = ""
         msg += f" Interface:   {'FlexSPI' if self.interface == 0 else 'SEMC'}\n"
@@ -1522,7 +1512,7 @@ class XMCDHeader:
         return self.block_size - self.SIZE
 
     @classmethod
-    def parse(cls, data: bytes) -> "XMCDHeader":
+    def parse(cls, data: bytes) -> Self:
         """Parse XMCD Header from binary data."""
         size_low, type_size, interface_instance, tag_ver = unpack_from(cls.FORMAT, data)
         tag = (tag_ver & 0xF0) >> 4
@@ -1536,7 +1526,7 @@ class XMCDHeader:
         block_type = (type_size & 0xF0) >> 4
         block_size = (type_size & 0x0F) << 8
         block_size += size_low
-        return XMCDHeader(
+        return cls(
             interface=interface, instance=instance, block_type=block_type, block_size=block_size
         )
 
@@ -1562,7 +1552,7 @@ class SegXMCD(BaseSegment):
         return self.header.export() + self.config_data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegXMCD":
+    def parse(cls, data: bytes) -> Self:
         """Parse XMCD from binary data."""
         header = XMCDHeader.parse(data)
         if header.block_size != len(data):
@@ -1570,11 +1560,14 @@ class SegXMCD(BaseSegment):
                 f"Invalid length of data {len(data)}. Length must be equal to header value {header.block_size}"
             )
         config_data = data[header.SIZE : header.block_size]
-        return SegXMCD(header=header, config_data=config_data)
+        return cls(header=header, config_data=config_data)
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return "XMCD Segment"
+
+    def __str__(self) -> str:
         """String representation of the XMCD Segment."""
-        return self.header.info()
+        return str(self.header)
 
 
 ########################################################################################################################
@@ -1619,7 +1612,7 @@ class SegIVT3a(BaseSegment):
             f" DCD:0x{self.dcd_address:X}, CSF:0x{self.csf_address:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegIVT3a."""
         return (
             f" Format version   : {_format_ivt_item(self.version, digit_count=2)}\n"
@@ -1661,13 +1654,13 @@ class SegIVT3a(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegIVT3a":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of IVT3a segment
         :return: SegIVT3a object
         """
-        header = Header.parse(data, 0, SegTag.IVT3)
+        header = Header.parse(data, SegTag.IVT3)
         obj = cls(header.param)
 
         (
@@ -1726,7 +1719,7 @@ class SegIVT3b(BaseSegment):
             f" DCD:0x{self.dcd_address:X}, CSF:0x{self.csf_address:X}, SCD:0x{self.scd_address:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegIVT3b."""
         return (
             f" IVT start address: {_format_ivt_item(self.ivt_address)}\n"
@@ -1770,13 +1763,13 @@ class SegIVT3b(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegIVT3b":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of IVT3b segment
         :return: SegIVT3b object
         """
-        header = Header.parse(data, 0, SegTag.IVT2)
+        header = Header.parse(data, SegTag.IVT2)
         obj = cls(header.param)
 
         (
@@ -1824,7 +1817,7 @@ class SegIDS3a(BaseSegment):
             f" SCFW:0x{self.scfw_flags:X}, ROM:0x{self.rom_flags:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegIDS3a."""
         return (
             f" Source: 0x{self.image_source:08X}\n"
@@ -1858,7 +1851,7 @@ class SegIDS3a(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegIDS3a":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of IDS3a segment
@@ -1911,13 +1904,13 @@ class SegBDS3a(BaseSegment):
             f" FLAG: 0x{self.boot_data_flag:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegBDS3a."""
         msg = f" IMAGES: {self.images_count}\n"
         msg += f" DFLAGS: 0x{self.boot_data_flag:08X}\n\n"
         for i in range(self.images_count):
             msg += f" IMAGE[{i}] \n"
-            msg += self.images[i].info()
+            msg += str(self.images[i])
         return msg
 
     def export(self) -> bytes:
@@ -1940,7 +1933,7 @@ class SegBDS3a(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegBDS3a":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of BDS3a segment
@@ -1986,7 +1979,7 @@ class SegIDS3b(BaseSegment):
             f" ENTRY:0x{self.image_entry:X}, SIZE:{self.image_size}B, FLAGS:0x{self.flags:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegIDS3b."""
         return (
             f" Source: 0x{self.image_source:08X}\n"
@@ -2015,7 +2008,7 @@ class SegIDS3b(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegIDS3b":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of IDS3b segment
@@ -2068,19 +2061,19 @@ class SegBDS3b(BaseSegment):
     def __repr__(self) -> str:
         return f"BDS3b <IMAGES: {self.images_count}, SIZE: {self.boot_data_size}B, FLAG: 0x{self.boot_data_flag:X}>"
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegBDS3b."""
         msg = f" IMAGES: {self.images_count}\n"
         msg += f" DFLAGS: 0x{self.boot_data_flag:08X}\n\n"
         for i in range(self.images_count):
             msg += f" IMAGE[{i}] \n"
-            msg += self.images[i].info()
+            msg += str(self.images[i])
         if self.scd.image_source != 0:
             msg += " SCD:\n"
-            msg += self.scd.info()
+            msg += str(self.scd)
         if self.csf.image_source != 0:
             msg += " CSF:\n"
-            msg += self.csf.info()
+            msg += str(self.csf)
 
         return msg
 
@@ -2109,7 +2102,7 @@ class SegBDS3b(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegBDS3b":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of BDS3b segment
@@ -2171,7 +2164,7 @@ class SegBIM(BaseSegment):
             f" ENTRY:0x{self.entry_address:X}, FLAGS:0x{self.hab_flags:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegBIM."""
         crlf = "/n"  # this must be done in this way due to limitation of f-string and
         # and using backslash in f-string expression
@@ -2207,7 +2200,7 @@ class SegBIM(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegBIM":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of BootImage segment
@@ -2268,7 +2261,7 @@ class SegSIGB(BaseSegment):
             + " BLOB:0x{self.blob_offset:X}, SIG:0x{self.signature_offset:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegSIGB."""
         return (
             f" SRK Table Offset:   0x{self.srk_table_offset:X}\n"
@@ -2296,13 +2289,13 @@ class SegSIGB(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegSIGB":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of SignatureBlock segment
         :return: SegSigBlk object
         """
-        header = Header2.parse(data, 0, SegTag.SIGB)
+        header = Header2.parse(data, SegTag.SIGB)
         obj = cls(header.param)
 
         (
@@ -2365,7 +2358,7 @@ class SegBIC1(BaseSegment):
             + " COUNT:{self.images_count}, SBO:0x{self.sig_blk_offset:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of the SegBIC1."""
         msg = (
             f" Flags:        0x{self.flags:08X}\n"
@@ -2377,9 +2370,9 @@ class SegBIC1(BaseSegment):
         )
         for i in range(self.images_count):
             msg += f" IMAGE[{i}] \n"
-            msg += self.images[i].info()
+            msg += str(self.images[i])
         msg += " [ Signature Block Header ]\n"
-        msg += self.sig_blk_hdr.info()
+        msg += str(self.sig_blk_hdr)
         msg += "\n"
         return msg
 
@@ -2412,13 +2405,13 @@ class SegBIC1(BaseSegment):
         return data
 
     @classmethod
-    def parse(cls, data: bytes) -> "SegBIC1":
+    def parse(cls, data: bytes) -> Self:
         """Parse segment from bytes array.
 
         :param data: The bytes array of BIC1 segment
         :return: SegBIC1 object
         """
-        header = Header2.parse(data, 0, SegTag.BIC1)
+        header = Header2.parse(data, SegTag.BIC1)
         offset = header.size
         obj = cls(header.param)
 

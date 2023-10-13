@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,10 +10,9 @@ import os
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.image import parse
+from spsdk.exceptions import SPSDKError
 from spsdk.image.commands import CmdWriteData, EnumWriteOps
-from spsdk.image.images import BootImgBase, BootImgRT
+from spsdk.image.images import BootImgBase, BootImgRT, parse
 from spsdk.image.secret import SrkItem, SrkTable
 from spsdk.image.segments import SegCSF, SegDCD
 

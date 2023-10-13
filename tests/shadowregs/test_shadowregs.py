@@ -6,17 +6,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for shadow registers support API."""
 import os
+from copy import copy
 
 import pytest
+import yaml
+from click.testing import CliRunner
 
 import spsdk.shadowregs.shadowregs as SR
 import spsdk.utils.registers as REGS
+from spsdk.apps.shadowregs import main
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound
+from spsdk.utils.misc import use_working_directory
 from spsdk.utils.reg_config import RegConfig
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
-
-# from spsdk.utils.misc import use_working_directory
 
 TEST_DEV_NAME = "sh_test_dev"
 TEST_DATABASE = "test_database.yaml"
@@ -71,7 +74,7 @@ def test_shadowreg_set_get_reg(data_dir):
     shadowregs.set_register("REG_BIG_REV", test_val)
 
     assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x00004321.to_bytes(4, "big")
+    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, "big")
     assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
@@ -145,6 +148,8 @@ def test_shadowreg_yml(data_dir, tmpdir):
     for i in range(32):
         test_val[i] = i
 
+    test_val_rev = copy(test_val)
+    test_val_rev.reverse()
     shadowregs.set_register("REG1", 0x12345678)
     shadowregs.set_register("REG2", 0x4321)
     shadowregs.set_register("REG_INVERTED_AP", 0xA5A5A5A5)
@@ -152,7 +157,7 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs.set_register("REG_BIG_REV", test_val)
 
     assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x00004321.to_bytes(4, "big")
+    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, "big")
     assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
@@ -167,10 +172,10 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs_load_raw.sets_all_registers(verify=True)
 
     assert shadowregs_load_raw.get_register("REG1") == 0x12345678.to_bytes(4, "big")
-    assert shadowregs_load_raw.get_register("REG2") == 0x00004321.to_bytes(4, "big")
+    assert shadowregs_load_raw.get_register("REG2") == 0x4321.to_bytes(2, "big")
     assert shadowregs_load_raw.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
     assert shadowregs_load_raw.get_register("REG_BIG") == test_val
-    assert shadowregs_load_raw.get_register("REG_BIG_REV") == test_val
+    assert shadowregs_load_raw.get_register("REG_BIG_REV") == test_val_rev
 
     probe.clear()
 
@@ -179,7 +184,7 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs_load.sets_all_registers(verify=True)
 
     assert shadowregs_load.get_register("REG1") == b"\x92\x34\x56\x56"
-    assert shadowregs_load.get_register("REG2") == b"\x00\x00\x03!"
+    assert shadowregs_load.get_register("REG2") == b"\x03!"
     assert shadowregs_load.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
     assert shadowregs_load.get_register("REG_BIG") == test_val
     assert shadowregs_load.get_register("REG_BIG_REV") == test_val
@@ -191,7 +196,7 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs_load2.sets_all_registers(verify=True)
 
     assert shadowregs_load2.get_register("REG1") == b"\x92\x34\x56\x56"
-    assert shadowregs_load2.get_register("REG2") == b"\x00\x00\x03!"
+    assert shadowregs_load2.get_register("REG2") == b"\x03!"
     assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
     assert shadowregs_load2.get_register("REG_BIG") == test_val
     assert shadowregs_load2.get_register("REG_BIG_REV") == test_val
@@ -201,7 +206,7 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs_load2.sets_all_registers(verify=False)
 
     assert shadowregs_load2.get_register("REG1") == b"\x92\x34\x56\x56"
-    assert shadowregs_load2.get_register("REG2") == b"\x00\x00\x03!"
+    assert shadowregs_load2.get_register("REG2") == b"\x03!"
     assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
     assert shadowregs_load2.get_register("REG_BIG") == test_val
     assert shadowregs_load2.get_register("REG_BIG_REV") == test_val
@@ -239,7 +244,7 @@ def test_shadowreg_yml_invalid_computed(tmpdir, data_dir):
     shadowregs.set_register("REG_BIG_REV", test_val)
 
     assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x00004321.to_bytes(4, "big")
+    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, "big")
     assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
@@ -336,3 +341,20 @@ def test_shadow_register_enable_debug_probe_exceptions():
         probe.mem_read_cause_exception()  # To fail test connection function
         probe.ap_write_cause_exception()  # To fail write to debug mailbox
         assert not SR.enable_debug(probe)
+
+
+def test_generate_template(tmpdir):
+    template = "template.yaml"
+    family = "rt6xx"
+    with use_working_directory(tmpdir):
+        runner = CliRunner()
+        result = runner.invoke(main, f"--family {family} get-template --output {template}")
+        assert result.exit_code == 0
+        assert os.path.isfile(template)
+        result = runner.invoke(
+            main, f"--family {family} get-template --output {template} --raw --force"
+        )
+        assert result.exit_code == 0
+        assert os.path.isfile(template)
+        with open(template) as f:
+            assert yaml.safe_load(f)

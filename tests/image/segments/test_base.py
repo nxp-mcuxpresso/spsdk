@@ -2,13 +2,13 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.image.segments import BaseSegment
 
 
@@ -17,7 +17,7 @@ def test_base_exceptions():
 
     base = BaseSegment()
     with pytest.raises(NotImplementedError):
-        base.info()
+        str(base)
     with pytest.raises(NotImplementedError):
         base.export()
     with pytest.raises(NotImplementedError):

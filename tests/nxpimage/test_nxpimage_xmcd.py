@@ -15,7 +15,7 @@ from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
-from spsdk.image.xmcd.xmcd import XMCD
+from spsdk.image.xmcd.xmcd import XMCD, MemoryType
 from spsdk.utils.misc import load_configuration, use_working_directory
 
 
@@ -42,7 +42,7 @@ def test_nxpimage_xmcd_export(tmpdir, data_dir, family, mem_type, config_type, o
             file_base_name += f"_{option}"
         config_file_path = os.path.join(data_dir, "xmcd", family, f"{file_base_name}.yaml")
         out_file = os.path.join(tmpdir, f"xmcd_{family}_{mem_type}_{config_type}_exported.bin")
-        cmd = ["bootable-image", "xmcd", "export", "-c", config_file_path, out_file]
+        cmd = ["bootable-image", "xmcd", "export", "-c", config_file_path, "-o", out_file]
         result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(out_file)
@@ -86,6 +86,7 @@ def test_nxpimage_xmcd_parse_cli(tmpdir, data_dir, family, mem_type, config_type
             family,
             "-b",
             bin_path,
+            "-o",
             output_file,
         ]
         result = runner.invoke(nxpimage.main, cmd)
@@ -96,18 +97,18 @@ def test_nxpimage_xmcd_parse_cli(tmpdir, data_dir, family, mem_type, config_type
 
 @pytest.mark.parametrize(
     "family",
-    ["rt117x", "rt116x"],
+    ["rt117x", "rt116x", "rt118x"],
 )
 def test_nxpimage_xmcd_template_cli(tmpdir, data_dir, family):
     templates_folder = os.path.join(data_dir, "xmcd", family, "templates")
     runner = CliRunner()
-    cmd = f"bootable-image xmcd get-templates -f {family} {tmpdir}"
+    cmd = f"bootable-image xmcd get-templates -f {family} --output {tmpdir}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
 
     mem_types = XMCD.get_supported_memory_types(family)
     for mem_type in mem_types:
-        config_types = XMCD.get_supported_configuration_types(family, mem_type)
+        config_types = XMCD.get_supported_configuration_types(family, MemoryType.get(mem_type))
         for config_type in config_types:
             template_name = f"xmcd_{family}_{mem_type}_{config_type}.yaml"
             new_template_path = os.path.join(tmpdir, template_name)
@@ -135,9 +136,9 @@ def test_nxpimage_xmcd_export_invalid(data_dir, mem_type, config_type, option):
     if option is not None:
         file_base_name += f"_{option}"
     config = os.path.join(data_dir, "xmcd", "rt116x", f"{file_base_name}.yaml")
-    mandatory_fileds = ["family", "mem_type", "config_type", "xmcd_settings"]
+    mandatory_fields = ["family", "mem_type", "config_type", "xmcd_settings"]
     # Check mandatory fields
-    for mandatory_field in mandatory_fileds:
+    for mandatory_field in mandatory_fields:
         config_data = load_configuration(config)
         config_data.pop(mandatory_field)
         with pytest.raises(SPSDKError):

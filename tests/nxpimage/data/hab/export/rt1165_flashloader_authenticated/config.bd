@@ -80,7 +80,7 @@ section (SEC_SET_ENGINE;
 
 section (SEC_UNLOCK;
     Unlock_Engine = "SNVS",
-    Unlock_features = "ZMK WRITE"
+    Unlock_Features = "ZMK WRITE"
     )
 {
 }

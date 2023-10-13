@@ -15,17 +15,12 @@ from typing import Any, Dict, List, Optional, Union
 
 from crcmod.predefined import mkPredefinedCrcFun
 
-from spsdk import SPSDKError
 from spsdk import version as spsdk_version
 from spsdk.apps.utils.utils import filepath_from_config, get_key
-from spsdk.exceptions import SPSDKValueError
-from spsdk.utils.crypto import (
-    IEE_DATA_FOLDER,
-    IEE_DATABASE_FILE,
-    IEE_SCH_FILE,
-    Counter,
-    crypto_backend,
-)
+from spsdk.crypto.rng import random_bytes
+from spsdk.crypto.symmetric import Counter, aes_ctr_encrypt, aes_xts_encrypt
+from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.utils.crypto import IEE_DATA_FOLDER, IEE_DATABASE_FILE, IEE_SCH_FILE
 from spsdk.utils.database import Database
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.images import BinaryImage
@@ -37,7 +32,7 @@ from spsdk.utils.misc import (
     value_to_int,
 )
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +138,7 @@ class IeeKeyBlobAttribute:
     def export(self) -> bytes:
         """Export binary representation of KeyBlobAttribute.
 
-        :rtype: serialized binary data
+        :return: serialized binary data
         """
         return pack(self._FORMAT, self.lock, self.key_attribute, self.aes_mode, 0)
 
@@ -220,9 +215,9 @@ class IeeKeyBlob:
         self.attributes = attributes
 
         if key1 is None:
-            key1 = crypto_backend().random_bytes(self.attributes.key1_size)
+            key1 = random_bytes(self.attributes.key1_size)
         if key2 is None:
-            key2 = crypto_backend().random_bytes(self.attributes.key2_size)
+            key2 = random_bytes(self.attributes.key2_size)
 
         key1 = value_to_bytes(key1, byte_cnt=self.attributes.key1_size)
         key2 = value_to_bytes(key2, byte_cnt=self.attributes.key2_size)
@@ -249,7 +244,7 @@ class IeeKeyBlob:
 
         self.crc_fill = crc
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text info about the instance."""
         msg = ""
         msg += f"KEY 1:        {self.key1.hex()}\n"
@@ -307,7 +302,7 @@ class IeeKeyBlob:
         for block in split_data(bytearray(data), self._IEE_ENCR_BLOCK_SIZE_XTS):
             tweak = self.calculate_tweak(current_start, self.master)
 
-            encrypted_block = crypto_backend().aes_xts_encrypt(
+            encrypted_block = aes_xts_encrypt(
                 key1 + key2,
                 block,
                 tweak,
@@ -334,7 +329,7 @@ class IeeKeyBlob:
         counter = Counter(nonce, ctr_value=base_address >> 4, ctr_byteorder_encoding="big")
 
         for block in split_data(bytearray(data), self._ENCRYPTION_BLOCK_SIZE):
-            encrypted_block = crypto_backend().aes_ctr_encrypt(
+            encrypted_block = aes_ctr_encrypt(
                 key,
                 block,
                 counter.value,
@@ -425,7 +420,7 @@ class Iee:
                 if key_blob.matches_range(addr, addr + len(block)):
                     logger.debug(
                         f"Encrypting {hex(addr)}:{hex(len(block) + addr)}"
-                        f" with keyblob: \n {key_blob.info()}"
+                        f" with keyblob: \n {str(key_blob)}"
                     )
                     encrypted_data[
                         addr - base_addr : len(block) + addr - base_addr
@@ -467,7 +462,7 @@ class Iee:
         logger.debug(f"IBKEK2 {' '.join(f'{b:02x}' for b in ibkek2)}")
 
         tweak = IeeKeyBlob.calculate_tweak(keyblob_address)
-        return crypto_backend().aes_xts_encrypt(
+        return aes_xts_encrypt(
             ibkek1 + ibkek2,
             plain_key_blobs,
             tweak,
@@ -594,30 +589,30 @@ class IeeNxp(Iee):
         ret += f"# OTP IBKEK1: {self.ibkek1.hex()}\n\n"
         for reg in fuses.find_reg("USER_KEY1").sub_regs:
             ret += f"# {reg.name} fuse.\n"
-            ret += f"efuse-program-once {hex(reg.offset)} 0x{reg.get_bytes_value().hex()} --no-verify\n"
+            ret += f"efuse-program-once {hex(reg.offset)} 0x{reg.get_hex_value(raw=True)} --no-verify\n"
 
         ret += f"\n\n# OTP IBKEK2: {self.ibkek2.hex()}\n\n"
         for reg in fuses.find_reg("USER_KEY2").sub_regs:
             ret += f"# {reg.name} fuse.\n"
-            ret += f"efuse-program-once {hex(reg.offset)} 0x{reg.get_bytes_value().hex()} --no-verify\n"
+            ret += f"efuse-program-once {hex(reg.offset)} 0x{reg.get_hex_value(raw=True)} --no-verify\n"
 
         ret += f"\n\n# {load_iee.name} fuse.\n"
         for bitfield in load_iee.get_bitfields():
             ret += f"#   {bitfield.name}: {bitfield.get_enum_value()}\n"
-        ret += f"efuse-program-once {hex(load_iee.offset)} 0x{load_iee.get_bytes_value().hex()} --no-verify\n"
+        ret += f"efuse-program-once {hex(load_iee.offset)} 0x{load_iee.get_hex_value(raw=True)} --no-verify\n"
 
         ret += f"\n\n# {encrypt_engine.name} fuse.\n"
         for bitfield in encrypt_engine.get_bitfields():
             ret += f"#   {bitfield.name}: {bitfield.get_enum_value()}\n"
         ret += (
             f"efuse-program-once {hex(encrypt_engine.offset)} "
-            f"0x{encrypt_engine.get_bytes_value().hex()} --no-verify\n"
+            f"0x{encrypt_engine.get_hex_value(raw=True)} --no-verify\n"
         )
 
         ret += f"\n\n# {ibkek_lock.name} fuse.\n"
         for bitfield in ibkek_lock.get_bitfields():
             ret += f"#   {bitfield.name}: {bitfield.get_enum_value()}\n"
-        ret += f"efuse-program-once {hex(ibkek_lock.offset)} 0x{ibkek_lock.get_bytes_value().hex()} --no-verify\n"
+        ret += f"efuse-program-once {hex(ibkek_lock.offset)} 0x{ibkek_lock.get_hex_value(raw=True)} --no-verify\n"
 
         ret += f"\n\n# {boot_cfg.name} fuse.\n"
         ret += "WARNING!! Check SRM and set all desired bitfields for boot configuration"
@@ -625,7 +620,7 @@ class IeeNxp(Iee):
             ret += f"#   {bitfield.name}: {bitfield.get_enum_value()}\n"
         ret += (
             f"# efuse-program-once {hex(boot_cfg.offset)} "
-            f"0x{boot_cfg.get_bytes_value().hex()} --no-verify\n"
+            f"0x{boot_cfg.get_hex_value(raw=True)} --no-verify\n"
         )
 
         return ret
@@ -722,7 +717,7 @@ class IeeNxp(Iee):
             )
             title = f"IEE: Inline Encryption Engine Configuration template for {family}."
 
-            yaml_data = ConfigTemplate(title, val_schemas, note=template_note).export_to_yaml()
+            yaml_data = CommentedConfig(title, val_schemas, note=template_note).export_to_yaml()
 
             return {f"{family}_iee": yaml_data}
 

@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-certificate_v2:
+certificate_v1:
   type: object
-  title: Certificate V2 Settings
+  title: Certificate V1 Settings
   properties:
     imageBuildNumber:
       type: [number, string]
@@ -113,82 +113,172 @@ certificate_v2:
       format: optional_file
       template_value: chain_certificate3_depth3.pem
 
-
-certificate_v31:
+certificate_v21:
   type: object
-  title: ISK Certificate Settings
+  title: ISK (Image signing key) Certificate Settings
   properties:
-    binaryCertificateBlock:
-      type: string
-      title: Binary Certificate
-      description: Optionally the certificate could be defined as a pre-generated binary block.
-        In case that is defined, all other configuration for certification block must be deleted ('useIsk', 'mainRootCertPrivateKeyFile', 'signingCertificateFile', 'signingCertificateConstraint', 'signCertData')
-        In case that ISK is defined, certicate block must be deleted
-      format: file
-      template_value: my_isk_cert.bin
     useIsk:
       type: boolean
       title: Use ISK for signature certification
-      description: Enable ISK type of signature certification. Don't use when 'binaryCertificateBlock' is defined
+      description: Enable ISK type of signature certification.
       template_value: false
-    mainRootCertPrivateKeyFile:
-      type: string
-      title: Main root Certification Private Key
-      description: Path to Main root Certification Private Key. Don't use when 'binaryCertificateBlock' is defined
-      format: file
-      template_value: main_cert_prv_key.pem
+
     signingCertificateFile:
       type: string
-      title: Signing Certificate
-      description: Path to Signing Certificate. Don't use when 'binaryCertificateBlock' is defined
+      title: ISK public key
+      description: Path to ISK public key.
       format: file
       template_value: sign_cert.pem
+      skip_in_template: true
+    iskPublicKey:
+      type: string
+      title: ISK public key
+      description: Path to ISK public key.
+      format: file
+      template_value: sign_cert.pem
+
     signingCertificateConstraint:
       type: [string, number]
-      title: Signing certificate constrain
-      description: Signing certificate constrain number. Don't use when 'binaryCertificateBlock' is defined
+      title: ISK certificate constraint
+      description: Constraint is certificate version, compared with monotonic counter in fuses.
       format: number
       default: 0
       template_value: 0
+      skip_in_template: true
+    iskCertificateConstraint:
+      type: [string, number]
+      title: ISK certificate constraint
+      description: Constraint is certificate version, compared with monotonic counter in fuses.
+      format: number
+      default: 0
+      template_value: 0
+
     signCertData:
       type: string
-      title: Signing Certificate data
-      description: Path to Signing Certificate data. Don't use when 'binaryCertificateBlock' is defined
+      title: ISK certificate user data
+      description: Path to user data.
       format: optional_file
-      template_value: sign_cert.bin
-    signingCertificatePrivateKeyFile:
-      id: "#signingCertificatePrivateKeyFile"
+      template_value: user_cert_data.bin
+      skip_in_template: true
+    iskCertData:
       type: string
-      title: ISK Certificate private key
-      description: ISK Certificate private key used to sign certificate. It can be replaced by signProvider key.
+      title: ISK certificate user data
+      description: Path to user data.
+      format: optional_file
+      template_value: user_cert_data.bin
+
+    mainRootCertPrivateKeyFile:
+      type: string
+      title: Main root Certification Private Key
+      description: Path to Main root Certification Private Key.
       format: file
-      template_value: isk_prv_key.pem
-    iskSignProvider:
+      template_value: main_cert_prv_key.pem
+      skip_in_template: true
+    signPrivateKey:
       type: string
-      title: ISK Signature Provider
+      title: Main root Certification Private Key
+      description: Path to Main root Certification Private Key.
+      format: file
+      template_value: main_cert_prv_key.pem
+
+    signProvider:
+      type: string
+      title: Signature Provider
       description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
-      template_value: type=file;file_path=my_isk_prv_key.pem
+      template_value: type=file;file_path=root_prv_key.pem
+  required: [useIsk]
+  allOf: # Global all of group - this is main concatenation group for all sub rules
+    - if:
+        properties:
+          useIsk:
+            const: True
+      then:
+        allOf:
+          - oneOf:
+              - required: [signingCertificateFile]
+              - required: [iskPublicKey]
+        oneOf:
+          - allOf:
+              - oneOf:
+                  - required: [mainRootCertPrivateKeyFile]
+                  - required: [signPrivateKey]
+              - not:
+                  required: [signProvider]
+          - allOf:
+              - required: [signProvider]
+              - not:
+                  oneOf:
+                    - required: [mainRootCertPrivateKeyFile]
+                    - required: [signPrivateKey]
+
+certificate_vx:
+  type: object
+  title: ISK Certificate Settings
+  properties:
+    useIsk:
+      type: boolean
+      title: Use ISK for signature certification
+      description: Enable ISK type of signature certification. Unused when 'binaryCertificateBlock' is defined
+      template_value: false
+
+    signingCertificateFile:
+      type: string
+      title: ISK public key
+      description: Path to ISK public key.
+      format: file
+      template_value: sign_cert.pem
+      skip_in_template: true
+    iskPublicKey:
+      type: string
+      title: ISK public key
+      description: Path to ISK public key.
+      format: file
+      template_value: sign_cert.pem
+
+    mainRootCertPrivateKeyFile:
+      type: string
+      title: Main root Certification Private Key
+      description: Path to Main root Certification Private Key.
+      format: file
+      template_value: main_cert_prv_key.pem
+      skip_in_template: true
+    signPrivateKey:
+      type: string
+      title: Main root Certification Private Key
+      description: Path to Main root Certification Private Key.
+      format: file
+      template_value: main_cert_prv_key.pem
+
+    signProvider:
+      type: string
+      title: Signature Provider
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+      template_value: type=file;file_path=root_prv_key.pem
+  required: [useIsk]
 
   allOf: # Global all of group - this is main concatenation group for all sub rules
-    - oneOf:
-        - required: [binaryCertificateBlock]
-        - required: [useIsk]
-          if:
-            properties:
-              useIsk:
-                const: True
-          then:
-            required: [signingCertificateFile]
-            oneOf:
-              - allOf:
-                - required: [mainRootCertPrivateKeyFile]
-                - not:
-                    required: [signProvider]
-              - allOf:
-                - required: [signProvider]
-                - not:
-                    required: [mainRootCertPrivateKeyFile]
-
+    - if:
+        properties:
+          useIsk:
+            const: True
+      then:
+        allOf:
+          - oneOf:
+              - required: [signingCertificateFile]
+              - required: [iskPublicKey]
+        oneOf:
+          - allOf:
+              - oneOf:
+                  - required: [mainRootCertPrivateKeyFile]
+                  - required: [signPrivateKey]
+              - not:
+                  required: [signProvider]
+          - allOf:
+              - required: [signProvider]
+              - not:
+                  oneOf:
+                    - required: [mainRootCertPrivateKeyFile]
+                    - required: [signPrivateKey]
 
 cert_block_output:
   type: object
@@ -199,7 +289,7 @@ cert_block_output:
       title: cert block filename
       description: Generated cert block filename.
       template_value: cert_block.bin
-  required: [cert_block_output]
+  required: [containerOutputFile]
 
 certificate_root_keys:
   type: object

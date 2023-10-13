@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,8 @@ import os
 
 import pytest
 
-from spsdk.image import CmdCheckData, CmdNop, CmdWriteData, EnumCheckOps, EnumWriteOps, SegDCD
+from spsdk.image.commands import CmdCheckData, CmdNop, CmdWriteData, EnumCheckOps, EnumWriteOps
+from spsdk.image.segments import SegDCD
 
 
 @pytest.fixture(scope="module")

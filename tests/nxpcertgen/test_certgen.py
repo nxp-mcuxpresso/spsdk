@@ -14,34 +14,23 @@ import pytest
 import yaml
 from click.testing import CliRunner
 
-from spsdk import SPSDKError
 from spsdk.apps.nxpcertgen import main
-from spsdk.crypto import (
+from spsdk.crypto.certificate import (
     Certificate,
-    Encoding,
-    ExtensionOID,
-    NameOID,
-    generate_certificate,
-    generate_rsa_private_key,
-    generate_rsa_public_key,
-    is_ca_flag_set,
-    load_certificate,
-    load_private_key,
-    load_public_key,
-    save_crypto_item,
-    save_rsa_private_key,
-    save_rsa_public_key,
+    SPSDKExtensionOID,
+    SPSDKNameOID,
+    generate_name,
     validate_ca_flag_in_cert_chain,
-    validate_certificate,
     validate_certificate_chain,
 )
-from spsdk.crypto.certificate_management import generate_name
-from spsdk.crypto.loaders import _get_encoding_type
+from spsdk.crypto.keys import PrivateKeyRsa, PublicKey
+from spsdk.crypto.types import SPSDKEncoding
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import load_binary, use_working_directory
 
 
 def get_certificate(data_dir, cert_file_name: str) -> Certificate:
-    cert = load_certificate(path.join(data_dir, cert_file_name))
+    cert = Certificate.load(path.join(data_dir, cert_file_name))
     return cert
 
 
@@ -51,10 +40,10 @@ def get_certificates(data_dir, cert_file_names: List[str]) -> List[Certificate]:
 
 
 def keys_generation(data_dir):
-    priv_key = generate_rsa_private_key()
-    pub_key = generate_rsa_public_key(priv_key)
-    save_rsa_private_key(priv_key, path.join(data_dir, "priv.pem"))
-    save_rsa_public_key(pub_key, path.join(data_dir, "pub.pem"))
+    priv_key = PrivateKeyRsa()
+    pub_key = priv_key.get_public_key()
+    priv_key.save(path.join(data_dir, "priv.pem"))
+    pub_key.save(path.join(data_dir, "pub.pem"))
 
 
 @pytest.mark.parametrize(
@@ -74,23 +63,23 @@ def keys_generation(data_dir):
 def test_is_cert(data_dir, file_name, expect_cer):
     cert_path = path.join(data_dir, file_name)
     if expect_cer:
-        load_certificate(cert_path)
+        Certificate.load(cert_path)
     else:
         with pytest.raises(SPSDKError):
-            load_certificate(cert_path)
+            Certificate.load(cert_path)
 
 
 @pytest.mark.parametrize(
     "file_name, password, expect_priv_key",
-    [("CA1_sha256_2048_65537_v3_ca_key.pem", b"test", True), ("ca.pem", b"test", False)],
+    [("CA1_sha256_2048_65537_v3_ca_key.pem", "test", True), ("ca.pem", "test", False)],
 )
 def test_is_key_priv(data_dir, file_name, password, expect_priv_key):
     key_path = path.join(data_dir, file_name)
     if expect_priv_key:
-        load_private_key(key_path, password)
+        PrivateKeyRsa.load(key_path, password=password)
     else:
         with pytest.raises(SPSDKError):
-            load_private_key(key_path, password)
+            PrivateKeyRsa.load(key_path, password=password)
 
 
 @pytest.mark.parametrize(
@@ -110,29 +99,29 @@ def test_is_key_priv(data_dir, file_name, password, expect_priv_key):
 def test_is_key_pub(data_dir, file_name, expect_pub_key):
     key_path = path.join(data_dir, file_name)
     if expect_pub_key:
-        load_public_key(key_path)
+        PublicKey.load(key_path)
     else:
         with pytest.raises(SPSDKError):
-            load_public_key(key_path)
+            PublicKey.load(key_path)
 
 
 @pytest.mark.parametrize(
     "file_name, expected_encoding",
     [
-        ("ca.pem", Encoding.PEM),
-        ("pub.pem", Encoding.PEM),
-        ("priv.pem", Encoding.PEM),
-        ("CA1_key.der", Encoding.DER),
-        ("ca1_crt.der", Encoding.DER),
-        ("ca_key.pem", Encoding.PEM),
-        ("NXPEnterpriseCA4.crt", Encoding.PEM),
-        ("NXPInternalPolicyCAG2.crt", Encoding.PEM),
-        ("NXPROOTCAG2.crt", Encoding.PEM),
+        ("ca.pem", SPSDKEncoding.PEM),
+        ("pub.pem", SPSDKEncoding.PEM),
+        ("priv.pem", SPSDKEncoding.PEM),
+        ("CA1_key.der", SPSDKEncoding.DER),
+        ("ca1_crt.der", SPSDKEncoding.DER),
+        ("ca_key.pem", SPSDKEncoding.PEM),
+        ("NXPEnterpriseCA4.crt", SPSDKEncoding.PEM),
+        ("NXPInternalPolicyCAG2.crt", SPSDKEncoding.PEM),
+        ("NXPROOTCAG2.crt", SPSDKEncoding.PEM),
     ],
 )
 def test_get_encoding_type(data_dir, file_name, expected_encoding):
     file = path.join(data_dir, file_name)
-    assert _get_encoding_type(load_binary(file)) == expected_encoding
+    assert SPSDKEncoding.get_file_encodings(load_binary(file)) == expected_encoding
 
 
 def test_validate_cert(data_dir):
@@ -141,9 +130,9 @@ def test_validate_cert(data_dir):
     nxp_enterprise = get_certificate(data_dir, "NXPEnterpriseCA4.crt")
     satyr = get_certificate(data_dir, "satyr.crt")
 
-    assert validate_certificate(nxp_enterprise, nxp_international)
-    assert validate_certificate(nxp_international, nxp_ca)
-    assert validate_certificate(satyr, nxp_enterprise)
+    assert nxp_international.validate_subject(nxp_enterprise)
+    assert nxp_ca.validate_subject(nxp_international)
+    assert nxp_enterprise.validate_subject(satyr)
 
 
 def test_validate_invalid_cert(data_dir):
@@ -152,9 +141,9 @@ def test_validate_invalid_cert(data_dir):
     nxp_enterprise = get_certificate(data_dir, "NXPEnterpriseCA4.crt")
     satyr = get_certificate(data_dir, "satyr.crt")
 
-    assert not validate_certificate(satyr, nxp_ca)
-    assert not validate_certificate(nxp_enterprise, nxp_ca)
-    assert not validate_certificate(satyr, nxp_international)
+    assert not nxp_ca.validate_subject(satyr)
+    assert not nxp_ca.validate_subject(nxp_enterprise)
+    assert not nxp_international.validate_subject(satyr)
 
 
 def test_certificate_chain_verification(data_dir):
@@ -181,9 +170,9 @@ def test_certificate_chain_verification_error(data_dir):
 
 def test_is_ca_flag_set(data_dir):
     ca_certificate = get_certificate(data_dir, "ca.pem")
-    assert is_ca_flag_set(ca_certificate)
+    assert ca_certificate.ca
     no_ca_certificate = get_certificate(data_dir, "img.pem")
-    assert not is_ca_flag_set(no_ca_certificate)
+    assert not no_ca_certificate.ca
 
 
 def test_validate_ca_flag_in_cert_chain(data_dir):
@@ -196,10 +185,10 @@ def test_validate_ca_flag_in_cert_chain(data_dir):
 
 
 def test_certificate_generation(tmpdir):
-    ca_priv_key = generate_rsa_private_key()
-    save_rsa_private_key(ca_priv_key, path.join(tmpdir, "ca_private_key.pem"))
-    ca_pub_key = generate_rsa_public_key(ca_priv_key)
-    save_rsa_public_key(ca_pub_key, path.join(tmpdir, "ca_pub_key.pem"))
+    ca_priv_key = PrivateKeyRsa.generate_key()
+    ca_priv_key.save(path.join(tmpdir, "ca_private_key.pem"))
+    ca_pub_key = ca_priv_key.get_public_key()
+    ca_pub_key.save(path.join(tmpdir, "ca_pub_key.pem"))
     assert path.isfile(path.join(tmpdir, "ca_private_key.pem"))
     assert path.isfile(path.join(tmpdir, "ca_pub_key.pem"))
 
@@ -211,8 +200,8 @@ def test_certificate_generation(tmpdir):
         """
     )
     subject = issuer = generate_name(data)
-    ca_cert = generate_certificate(subject, issuer, ca_pub_key, ca_priv_key, if_ca=True)
-    save_crypto_item(ca_cert, path.join(tmpdir, "ca_cert.pem"))
+    ca_cert = Certificate.generate_certificate(subject, issuer, ca_pub_key, ca_priv_key, if_ca=True)
+    ca_cert.save(path.join(tmpdir, "ca_cert.pem"))
     assert path.isfile(path.join(tmpdir, "ca_cert.pem"))
 
     data = yaml.safe_load(
@@ -226,8 +215,10 @@ def test_certificate_generation(tmpdir):
         """
     )
     subject = issuer = generate_name(data)
-    ca_cert = generate_certificate(subject, issuer, ca_pub_key, ca_priv_key, if_ca=True)
-    save_crypto_item(ca_cert, path.join(tmpdir, "ca_cert_1.pem"))
+    ca_cert1 = Certificate.generate_certificate(
+        subject, issuer, ca_pub_key, ca_priv_key, if_ca=True
+    )
+    ca_cert1.save(path.join(tmpdir, "ca_cert_1.pem"))
     assert path.isfile(path.join(tmpdir, "ca_cert_1.pem"))
 
 
@@ -240,34 +231,31 @@ def test_certificate_generation_invalid():
 def test_certificate_generation_cli(tmpdir, data_dir, json, encoding):
     with use_working_directory(data_dir):
         cert_path = os.path.join(tmpdir, "cert.crt")
-        if json:
-            cmd = [
-                "generate",
-                "-j",
-                f'{os.path.join(data_dir, "certgen_config.json")}',
-                "-o",
-                f"{cert_path}",
-            ]
-        else:
-            cmd = [
-                "generate",
-                "-c",
-                f'{os.path.join(data_dir, "certgen_config.yaml")}',
-                "-o",
-                cert_path,
-                "-e",
-                encoding,
-            ]
+        cmd = [
+            "generate",
+            "-c",
+            os.path.join(data_dir, f"certgen_config.{'json' if json else 'yaml'}"),
+            "-o",
+            cert_path,
+            "-e",
+            encoding,
+        ]
         runner = CliRunner()
         result = runner.invoke(main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(cert_path)
 
-    generated_cert = load_certificate(cert_path)
-    assert isinstance(generated_cert, Certificate)
-    assert generated_cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == "ONE"
-    assert generated_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME).pop(0).value == "TWO"
-    assert generated_cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS).value.ca
+    generated_cert = Certificate.load(cert_path)
+    assert (
+        generated_cert.issuer.get_attributes_for_oid(SPSDKNameOID.COMMON_NAME).pop(0).value == "ONE"
+    )
+    assert (
+        generated_cert.subject.get_attributes_for_oid(SPSDKNameOID.COMMON_NAME).pop(0).value
+        == "TWO"
+    )
+    assert generated_cert.extensions.get_extension_for_oid(
+        SPSDKExtensionOID.BASIC_CONSTRAINTS
+    ).value.ca
     assert generated_cert.serial_number == 777
 
 
@@ -280,7 +268,7 @@ def test_generate_template(tmpdir):
     template = "template.yaml"
     with use_working_directory(tmpdir):
         runner = CliRunner()
-        result = runner.invoke(main, f"get-template {template}")
+        result = runner.invoke(main, f"get-template -o {template}")
         assert result.exit_code == 0
         assert os.path.isfile(template)
         with open(template) as f:

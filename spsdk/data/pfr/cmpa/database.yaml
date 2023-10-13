@@ -12,6 +12,7 @@ devices:
     latest: 1b
     attributes:
       address: 0x9_E400
+      cert_block_version: 1
   lpc551x:
     revisions:
       a:
@@ -19,6 +20,7 @@ devices:
     latest: a
     attributes:
       address: 0x3_E400
+      cert_block_version: 1
   lpc55s1x:
     revisions:
       a:
@@ -26,6 +28,7 @@ devices:
     latest: a
     attributes:
       address: 0x3_E400
+      cert_block_version: 1
   lpc550x:
     revisions:
       a:
@@ -33,6 +36,7 @@ devices:
     latest: a
     attributes:
       address: 0x3_E400
+      cert_block_version: 1
   lpc55s0x:
     revisions:
       a:
@@ -40,6 +44,7 @@ devices:
     latest: a
     attributes:
       address: 0x3_E400
+      cert_block_version: 1
   lpc55s2x:
     revisions:
       1a:
@@ -49,6 +54,7 @@ devices:
     latest: 1b
     attributes:
       address: 0x9_E400
+      cert_block_version: 1
   lpc552x:
     revisions:
       1a:
@@ -58,6 +64,7 @@ devices:
     latest: 1b
     attributes:
       address: 0x9_E400
+      cert_block_version: 1
   lpc55s3x:
     revisions:
       0a:
@@ -67,6 +74,7 @@ devices:
     latest: 1a
     attributes:
       address: 0x3_E200
+      cert_block_version: 21
       seal_start: CMPA_CMAC0
       seal_count: 4
       mandatory_computed_regs: 1
@@ -75,6 +83,7 @@ devices:
           width: 384
           config_as_hexstring: true
           reversed: true
+          alternative_widths: [256]
           description:
             ROTKH field is compounded by 12 32-bit fields and contains Root key
             table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four
@@ -91,6 +100,7 @@ devices:
     latest: 1a
     attributes:
       address: 0x3_E200
+      cert_block_version: 21
       seal_start: CMPA_CRC32
       seal_count: 1
       mandatory_computed_regs: 1
@@ -101,6 +111,7 @@ devices:
     latest: a1
     attributes:
       address: 0x10_4000
+      cert_block_version: 1
       computed_fields:
         CC_SOCU_PIN:
           INVERSE_VALUE: pfr_reg_inverse_high_half
@@ -110,9 +121,12 @@ devices:
     revisions:
       a0:
         data_file: mcxn9xx_a0.xml
-    latest: a0
+      a1:
+        data_file: mcxn9xx_a1.xml
+    latest: a1
     attributes:
       address: 0x0100_4000
+      cert_block_version: 21
       seal_start: CMPA_CMAC0
       seal_count: 4
       mandatory_computed_regs: 1
@@ -121,11 +135,33 @@ devices:
           width: 384
           reversed: true
           config_as_hexstring: true
+          alternative_widths: [256]
           description:
             ROTKH field is compounded by 12 32-bit fields and contains Root key table hash.
-            For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four SHA-256 digests computed over
-            four OEM public keys (OEM has four private-public key pairs in case one of its private keys
-            becomes compromised) or in case that ECC P-384 keys are used, RKTH is 48-bit SHA-384 digest.
+            Root of Trust Key Hash is SHA256 or SHA384 of RoTK public. Hash algorithm is selected
+            based on RoTK EC type (secp256r1 -> SHA256 or secp384r1 -> SHA384).
+            Same RoTKs and RoTKTH values are shared between debug authentication, SB3.1 firmware updates
+            container and signed boot image based on CMPA.RoTKx_Usage.
+        - name: CUST_MK_SK_KEY_BLOB
+          width: 384
+          reversed: false
+          config_as_hexstring: true
+          description: CUST_MK_SK key blob.
+            CUST_MK_SK is stored in form of RFC3394 blob and it is used by bootloader to decrypt SB3.1 encryption key during processing of SB file by bootloader.
+            CUST_MK_SK is generated during device provisioning process by HSM_KEY_GEN (random key) or by HSM_STORE_KEY (user defined key) commands.
+            To store this key into CMPA, SB_STORE_KEY command should be used.
+  mcxa1xx:
+    revisions:
+      a0:
+        data_file: mcxa1xx_a0.xml
+    latest: a0
+    attributes:
+      address: 0x100_0000
+      computed_fields:
+        CC_SOCU_PIN:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
+        CC_SOCU_DFLT:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
 attributes:
   computed_registers:
     SHA256_DIGEST: ""

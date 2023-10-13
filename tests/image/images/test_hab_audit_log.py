@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.image.hab_audit_log import (
     CpuData,
     check_reserved_regions,
@@ -19,11 +19,12 @@ from spsdk.image.hab_audit_log import (
     hab_audit_xip_app,
     parse_hab_log,
 )
-from spsdk.mboot import McuBoot
 
 # from spsdk.utils.serial_proxy import SerialProxy
-from spsdk.mboot.interfaces import Uart
+from spsdk.mboot.interfaces.uart import MbootUARTInterface
+from spsdk.mboot.mcuboot import McuBoot
 from spsdk.utils.easy_enum import Enum
+from spsdk.utils.interfaces.device.serial_device import SerialDevice
 
 # responses from rt1020 for mcu emulating
 from spsdk.utils.serial_proxy import SimpleReadSerialProxy
@@ -72,7 +73,7 @@ def test_hab_audit_xip_app_simple(data_dir):
     with open(captured_log) as f:
         text_data = f.read()
 
-    matches = re.finditer(f"<(?P<data>[ 0-9a-z]*)>", text_data, re.MULTILINE)
+    matches = re.finditer("<(?P<data>[ 0-9a-z]*)>", text_data, re.MULTILINE)
 
     bin_data = bytes()
     for match in matches:
@@ -80,9 +81,10 @@ def test_hab_audit_xip_app_simple(data_dir):
         bin_data += bytes(int(value, 16) for value in found.split(" "))
 
     with patch(
-        "spsdk.mboot.interfaces.uart.Serial", SimpleReadSerialProxy.init_data_proxy(bin_data)
+        "spsdk.utils.interfaces.device.serial_device.Serial",
+        SimpleReadSerialProxy.init_data_proxy(bin_data),
     ):
-        with McuBoot(Uart(port="totally-legit-port")) as mboot:
+        with McuBoot((MbootUARTInterface(SerialDevice(port="totally-legit-port")))) as mboot:
             # test valid use case
             log = hab_audit_xip_app(CpuData.MIMXRT1020, mboot, True, HAB_AUDIT_PATH)
             assert log[:4] != b"\xFF" * 4
@@ -100,14 +102,15 @@ def test_hab_audit_xip_app_invalid(data_dir):
     with open(captured_log) as f:
         text_data = f.read()
     bin_data = bytes()
-    matches = re.finditer(f"<(?P<data>[ 0-9a-z]*)>", text_data, re.MULTILINE)
+    matches = re.finditer("<(?P<data>[ 0-9a-z]*)>", text_data, re.MULTILINE)
     for match in matches:
         found = match.group("data")
         bin_data += bytes(int(value, 16) for value in found.split(" "))
     with patch(
-        "spsdk.mboot.interfaces.uart.Serial", SimpleReadSerialProxy.init_data_proxy(bin_data)
+        "spsdk.utils.interfaces.device.serial_device.Serial",
+        SimpleReadSerialProxy.init_data_proxy(bin_data),
     ):
-        with McuBoot(Uart(port="totally-legit-port")) as mboot:
+        with McuBoot(MbootUARTInterface(SerialDevice(port="totally-legit-port"))) as mboot:
             with pytest.raises(
                 SPSDKError, match="Can not read the log, because given cpu data were not provided."
             ):

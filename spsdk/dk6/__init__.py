@@ -4,4 +4,4 @@
 # Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Top-level package for dk6_tools."""
+"""Support for programming DK6 devices."""

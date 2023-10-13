@@ -15,8 +15,7 @@ from typing import (  # pylint: disable=unused-import  # Type is necessary for M
 )
 
 from spsdk.exceptions import SPSDKError
-from spsdk.mboot.interfaces.buspal_i2c import I2cModeCommand
-from spsdk.mboot.interfaces.buspal_spi import SpiModeCommand
+from spsdk.mboot.interfaces.buspal import I2cModeCommand, SpiModeCommand
 
 from .serial_proxy import SerialProxy
 

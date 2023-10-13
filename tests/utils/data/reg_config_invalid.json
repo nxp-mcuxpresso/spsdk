@@ -28,9 +28,6 @@
                         "TEST_FIELD2": "computed_reg2_test_field2"
                     }
                 },
-                "ignored_registers": [
-                    "IGNORED_REG"
-                ],
                 "ignored_fields": [
                     "FIELD"
                 ],

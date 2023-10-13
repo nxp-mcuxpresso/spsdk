@@ -22,28 +22,28 @@
     </bit_field>
     <bit_field offset="24" width="2" name="IMG_UPD" access="RO" reset_value="0" description="Image_updated">
       <alias type="CMSIS" value="IMG_UPD"/>
-      <bit_field_value name="IMG_UPD_0" value="0b00" description="No action"/>
-      <bit_field_value name="IMG_UPD_1" value="0b01" description="Update image 0 CMAC"/>
-      <bit_field_value name="IMG_UPD_2" value="0b10" description="Update image 1 CMAC"/>
-      <bit_field_value name="IMG_UPD_3" value="0b11" description="Update SBL Image CMAC"/>
+      <bit_field_value name="NOTHING_CHANGED" value="0b00" description="No action"/>
+      <bit_field_value name="IMAGE0_CMAC_UPDATE" value="0b01" description="Update image 0 CMAC"/>
+      <bit_field_value name="IMAGE1_CMAC_UPDATE" value="0b10" description="Update image 1 CMAC"/>
+      <bit_field_value name="SBL_IMG_CMAC_UPDATE" value="0b11" description="Update SBL Image CMAC"/>
     </bit_field>
     <reserved_bit_field offset="26" width="1" reset_value="0"/>
     <bit_field offset="27" width="3" name="CMPA_UPD" access="RO" reset_value="0" description="CMPA page updated through ROM API. Thus compute CMAC on sub-sequent boot. This field is checked only in OEM_OPEN (0x3)  LC state.">
       <alias type="CMSIS" value="CFPA_CMAC_UPD_CMPA_UPD(x)"/>
-      <bit_field_value name="CMAC_UPD_CMPA_UPD_NO_ACTION" value="0b000" description="No action"/>
-      <bit_field_value name="CMAC_UPD_CMPA_UPD_RESERVED_0" value="0b001" description="Combination is ignored."/>
-      <bit_field_value name="CMAC_UPD_CMPA_UPD_UPDATE_IN_CMPA" value="0b010" description="Update CMAC field in CMPA page. "/>
-      <bit_field_value name="CMAC_UPD_CMPA_UPD_TO_OEM_SECURE" value="0b011" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_SECURE (0x7)"/>
-      <bit_field_value name="CMAC_UPD_CMPA_UPD_RESERVED_1" value="0b100" description="Combination is ignored."/>
-      <bit_field_value name="CMAC_UPD_CMPA_UPD_TO_OEM_CLOSED" value="0b101" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_CLOSED (0xF)."/>
-      <bit_field_value name="CMAC_UPD_CMPA_UPD_TO_OEM_LOCKED" value="0b110" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_LOCKED (0xCF)."/>
-      <bit_field_value name="CMAC_UPD_CMPA_UPD_RESERVED_2" value="0b111" description="Combination is ignored."/>
+      <bit_field_value name="NO_ACTION" value="0b000" description="No action"/>
+      <bit_field_value name="RESERVED_0b001" value="0b001" description="Combination is ignored."/>
+      <bit_field_value name="UPDATE_IN_CMPA" value="0b010" description="Update CMAC field in CMPA page. "/>
+      <bit_field_value name="TO_OEM_SECURE" value="0b011" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_SECURE (0x7)"/>
+      <bit_field_value name="RESERVED_0b100" value="0b100" description="Combination is ignored."/>
+      <bit_field_value name="TO_OEM_CLOSED" value="0b101" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_CLOSED (0xF)."/>
+      <bit_field_value name="TO_OEM_LOCKED" value="0b110" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_LOCKED (0xCF)."/>
+      <bit_field_value name="RESERVED_0b111" value="0b111" description="Combination is ignored."/>
     </bit_field>
     <reserved_bit_field offset="30" width="1" reset_value="0"/>
     <bit_field offset="31" width="1" name="DICE_UPD" access="RO" reset_value="0" description="Update DICE certificate during next boot.">
       <alias type="CMSIS" value="DICE_UPD"/>
-      <bit_field_value name="DICE_UPD_0" value="0b0" description="No action"/>
-      <bit_field_value name="DICE_UPD_1" value="0b1" description="Generate certificate. "/>
+      <bit_field_value name="NO_ACTION" value="0b0" description="No action"/>
+      <bit_field_value name="GENERATE_CERTIFICATE" value="0b1" description="Generate certificate. "/>
     </bit_field>
   </register>
   <register name="Secure_FW_Version" offset="0x8" width="32" description="Description of Secure_FW_Version register">
@@ -64,31 +64,31 @@
   <register name="SECBOOT_FLAGS" offset="0x14" width="32" description="Description of SECBOOT_FLAGS register">
     <bit_field offset="0" width="2" name="RoTK0_EN" access="RO" reset_value="0" description="Root of Trust Key 0 Enable">
       <alias type="CMSIS" value="ROTKH_REVOKE_RoTK0_EN(x)"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_ENABLED_0" value="0b00" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_ENABLED_1" value="0b01" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_KEY_REVOKED_0" value="0b10" description="Key Revoked"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK0_EN_KEY_REVOKED_1" value="0b11" description="Key Revoked"/>
+      <bit_field_value name="ENABLED_0" value="0b00" description="Enabled"/>
+      <bit_field_value name="ENABLED_1" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_2" value="0b10" description="Key Revoked"/>
+      <bit_field_value name="REVOKED_3" value="0b11" description="Key Revoked"/>
     </bit_field>
     <bit_field offset="2" width="2" name="RoTK1_EN" access="RO" reset_value="0" description="Root of Trust Key 1 Enable">
       <alias type="CMSIS" value="ROTKH_REVOKE_RoTK1_EN(x)"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_ENABLED_0" value="0b00" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_ENABLED_1" value="0b01" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_KEY_REVOKED_0" value="0b10" description="Key Revoked"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK1_EN_KEY_REVOKED_1" value="0b11" description="Key Revoked"/>
+      <bit_field_value name="ENABLED_0" value="0b00" description="Enabled"/>
+      <bit_field_value name="ENABLED_1" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_2" value="0b10" description="Key Revoked"/>
+      <bit_field_value name="REVOKED_3" value="0b11" description="Key Revoked"/>
     </bit_field>
     <bit_field offset="4" width="2" name="RoTK2_EN" access="RO" reset_value="0" description="Root of Trust Key 2 Enable">
       <alias type="CMSIS" value="ROTKH_REVOKE_RoTK2_EN(x)"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_ENABLED_0" value="0b00" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_ENABLED_1" value="0b01" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_KEY_REVOKED_0" value="0b10" description="Key Revoked"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK2_EN_KEY_REVOKED_1" value="0b11" description="Key Revoked"/>
+      <bit_field_value name="ENABLED_0" value="0b00" description="Enabled"/>
+      <bit_field_value name="ENABLED_1" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_2" value="0b10" description="Key Revoked"/>
+      <bit_field_value name="REVOKED_3" value="0b11" description="Key Revoked"/>
     </bit_field>
     <bit_field offset="6" width="2" name="RoTK3_EN" access="RO" reset_value="0" description="Root of Trust Key 3 Enable">
       <alias type="CMSIS" value="ROTKH_REVOKE_RoTK3_EN(x)"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_ENABLED_0" value="0b00" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_ENABLED_1" value="0b01" description="Enabled"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_KEY_REVOKED_0" value="0b10" description="Key Revoked"/>
-      <bit_field_value name="ROTKH_REVOKE_RoTK3_EN_KEY_REVOKED_1" value="0b11" description="Key Revoked"/>
+      <bit_field_value name="ENABLED_0" value="0b00" description="Enabled"/>
+      <bit_field_value name="ENABLED_1" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_2" value="0b10" description="Key Revoked"/>
+      <bit_field_value name="REVOKED_3" value="0b11" description="Key Revoked"/>
     </bit_field>
     <reserved_bit_field offset="8" width="20" reset_value="0"/>
     <bit_field offset="28" width="4" name="OEM_RETURN_ERASE_DONE" access="RO" reset_value="0" description="OEM_RETURN_ERASE_DONE">
@@ -107,7 +107,7 @@
       <alias type="CMSIS" value="LP_VECTOR_ADDR"/>
     </bit_field>
   </register>
-  <register name="VENDOR_USAGE" offset="0x20" width="32" description="Vendor Usage">
+  <register name="DBG_REVOKE_VU" offset="0x20" width="32" description="Debug Revoke Vendor Usage">
     <bit_field offset="0" width="16" name="VENDOR_USAGE" access="RO" reset_value="0" description="Debug Vendor Usage">
     </bit_field>
     <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value">
@@ -117,60 +117,60 @@
     <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_NIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_NIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_NIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="1" width="1" name="DBGEN" access="RO" reset_value="0" description="Non-secure Debug Enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_DBGEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DBGEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DBGEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="2" width="1" name="SPNIDEN" access="RO" reset_value="0" description="Secure Non-invasive Debug Enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_SPNIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPNIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPNIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="3" width="1" name="SPIDEN" access="RO" reset_value="0" description="Secure Invasive Debug Enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_SPIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_SPIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <reserved_bit_field offset="4" width="1" reset_value="0"/>
     <bit_field offset="5" width="1" name="DSP_DBGEN" access="RO" reset_value="0" description="DSP Debug Enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_DSP_DBGEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RO" reset_value="0" description="ISP Boot Command Enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="7" width="1" name="FA_CMD_EN" access="RO" reset_value="0" description="FA Command Enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_FA_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="8" width="1" name="ME_CMD_EN" access="RO" reset_value="0" description="Flash Mass Erase Command Enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="9" width="1" name="CPU1_NIDEN" access="RO" reset_value="0" description="Second CM33 debug enable">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_CPU1_NIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_CPU1_NIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_CPU1_NIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
     </bit_field>
     <bit_field offset="10" width="1" name="CPU1_DBGEN" access="RO" reset_value="0" description="Second CM33 debug">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_CPU1_DBGEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_CPU1_DBGEN_USE_DAP" value="0b0" description="Disable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_CPU1_DBGEN_FIXED_STATE" value="0b1" description="Enabled"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Disable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Enabled"/>
     </bit_field>
     <reserved_bit_field offset="11" width="4" reset_value="0"/>
     <bit_field offset="15" width="1" name="UUID_CHECK" access="RO" reset_value="0" description="UUID Check">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_UUID_CHECK(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_UUID_CHECK_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_UUID_CHECK_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value of Bits [15:0]">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_INVERSE_VALUE(x)"/>
@@ -180,54 +180,54 @@
     <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT"/>
     <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Fixed State">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_NIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_NIDEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_NIDEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="1" width="1" name="DBGEN" access="RO" reset_value="0" description="Non-secure Debug Fixed State">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_DBGEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DBGEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DBGEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="2" width="1" name="SPNIDEN" access="RO" reset_value="0" description="Secure Non-invasive Debug Fixed State">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_SPNIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPNIDEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPNIDEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="3" width="1" name="SPIDEN" access="RO" reset_value="0" description="Secure Invasive Debug Fixed State">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_SPIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPIDEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_SPIDEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <reserved_bit_field offset="4" width="1" reset_value="0"/>
     <bit_field offset="5" width="1" name="DSP_DBGEN" access="RO" reset_value="0" description="DSP Debug Fixed State">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RO" reset_value="0" description="ISP Boot Command Fixed State">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="7" width="1" name="FA_CMD_EN" access="RO" reset_value="0" description="FA Command Fixed State">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="8" width="1" name="ME_CMD_EN" access="RO" reset_value="0" description="Flash Mass Erase Command Fixed State">
       <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="9" width="1" name="CPU1_NIDEN" access="RO" reset_value="0" description="Second CM33 debug enable">
-      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_CPU1_NIDEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_CPU1_NIDEN_DISABLED" value="0b0" description="Disable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_CPU1_NIDEN_ENABLED" value="0b1" description="Enabled"/>
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_CPU1_NIDEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disable"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <bit_field offset="10" width="1" name="CPU1_DBGEN" access="RO" reset_value="0" description="Second CM33 debug">
-      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_CPU1_DBGEN(x)"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_CPU1_DBGEN_DISABLED" value="0b0" description="Disable"/>
-      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_CPU1_DBGEN_ENABLED" value="0b1" description="Enabled"/>
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_CPU1_DBGEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disable"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <reserved_bit_field offset="11" width="5" reset_value="0"/>
     <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value">
@@ -726,49 +726,49 @@
     <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 1 CMAC 3">
     </bit_field>
   </register>
-  <register name="DICE Certificate" offset="0x100" width="1152" description="DICE Certificate register">
+  <register name="DICE_Certificate" offset="0x100" width="1152" description="DICE Certificate register">
     <alias type="CMSIS" value="DICE"/>
     <bit_field offset="0" width="1152" name="FIELD" access="RO" reset_value="0" description="DICE Certificate register">
     </bit_field>
   </register>
-  <register name="IPED_GCM_AAD_CTX0" offset="0x190" width="32" description="Additional Authentiction Data for IPED context 0">
+  <register name="IPED_GCM_AAD_CTX0" offset="0x190" width="32" description="Additional Authentication Data for IPED context 0">
     <alias type="CMSIS" value="IPED_GCM_AAD_CTX0"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentiction Data for IPED context 0">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 0">
     </bit_field>
   </register>
-  <register name="IPED_GCM_AAD_CTX1" offset="0x194" width="32" description="Additional Authentiction Data for IPED context 1">
+  <register name="IPED_GCM_AAD_CTX1" offset="0x194" width="32" description="Additional Authentication Data for IPED context 1">
     <alias type="CMSIS" value="IPED_GCM_AAD_CTX1"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentiction Data for IPED context 1">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 1">
     </bit_field>
   </register>
-  <register name="IPED_GCM_AAD_CTX2" offset="0x198" width="32" description="Additional Authentiction Data for IPED context 2">
+  <register name="IPED_GCM_AAD_CTX2" offset="0x198" width="32" description="Additional Authentication Data for IPED context 2">
     <alias type="CMSIS" value="IPED_GCM_AAD_CTX2"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentiction Data for IPED context 2">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 2">
     </bit_field>
   </register>
-  <register name="IPED_GCM_AAD_CTX3" offset="0x19c" width="32" description="Additional Authentiction Data for IPED context 3">
+  <register name="IPED_GCM_AAD_CTX3" offset="0x19c" width="32" description="Additional Authentication Data for IPED context 3">
     <alias type="CMSIS" value="IPED_GCM_AAD_CTX3"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentiction Data for IPED context 3">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 3">
     </bit_field>
   </register>
-  <register name="IPED_GCM_AAD_CTX4" offset="0x1a0" width="32" description="Additional Authentiction Data for IPED context 4">
+  <register name="IPED_GCM_AAD_CTX4" offset="0x1a0" width="32" description="Additional Authentication Data for IPED context 4">
     <alias type="CMSIS" value="IPED_GCM_AAD_CTX4"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentiction Data for IPED context 4">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 4">
     </bit_field>
   </register>
-  <register name="IPED_GCM_AAD_CTX5" offset="0x1a4" width="32" description="Additional Authentiction Data for IPED context 5">
+  <register name="IPED_GCM_AAD_CTX5" offset="0x1a4" width="32" description="Additional Authentication Data for IPED context 5">
     <alias type="CMSIS" value="IPED_GCM_AAD_CTX5"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentiction Data for IPED context 5">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 5">
     </bit_field>
   </register>
-  <register name="IPED_GCM_AAD_CTX6" offset="0x1a8" width="32" description="Additional Authentiction Data for IPED context 6">
+  <register name="IPED_GCM_AAD_CTX6" offset="0x1a8" width="32" description="Additional Authentication Data for IPED context 6">
     <alias type="CMSIS" value="IPED_GCM_AAD_CTX6"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentiction Data for IPED context 6">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 6">
     </bit_field>
   </register>
-  <register name="IPED_GCM_AAD_CTX7" offset="0x1ac" width="32" description="Additional Authentiction Data for IPED context 7">
+  <register name="IPED_GCM_AAD_CTX7" offset="0x1ac" width="32" description="Additional Authentication Data for IPED context 7">
     <alias type="CMSIS" value="IPED_GCM_AAD_CTX7"/>
-    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentiction Data for IPED context 7">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 7">
     </bit_field>
   </register>
   <register name="CFPA_CRC32" offset="0x1ec" width="32" description="CFPA _CRC[31:0] used during low-power wake.">

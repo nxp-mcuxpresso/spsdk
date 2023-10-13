@@ -15,37 +15,17 @@ from typing import Optional, Sequence, Tuple
 
 import pytest
 from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.serialization import (
-    NoEncryption,
-    PrivateFormat,
-    load_pem_private_key,
-)
 
-from spsdk.crypto import (
-    Encoding,
-    generate_certificate,
-    generate_rsa_private_key,
-    generate_rsa_public_key,
-    save_crypto_item,
-    save_rsa_private_key,
-)
-from spsdk.image import (
-    MAC,
-    BeeFacRegion,
-    BeeKIB,
-    BeeProtectRegionBlock,
-    BeeRegionHeader,
-    BootImgRT,
-    FlexSPIConfBlockFCB,
-    PaddingFCB,
-    SrkItem,
-    SrkTable,
-    hab_audit_log,
-)
-from spsdk.mboot import ExtMemId, McuBoot, PropertyTag
-from spsdk.mboot import scan_usb as mboot_scan_usb
+from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.keys import PrivateKeyRsa
+from spsdk.crypto.types import SPSDKEncoding
+from spsdk.image import hab_audit_log
+from spsdk.image.bee import BeeFacRegion, BeeKIB, BeeProtectRegionBlock, BeeRegionHeader
+from spsdk.image.images import BootImgRT, FlexSPIConfBlockFCB, PaddingFCB
+from spsdk.image.secret import MAC, SrkItem, SrkTable
 from spsdk.mboot.exceptions import McuBootConnectionError
+from spsdk.mboot.interfaces.usb import MbootUSBInterface
+from spsdk.mboot.mcuboot import ExtMemId, McuBoot, PropertyTag
 from spsdk.sbfile.sb1 import (
     BootSectionV1,
     CmdErase,
@@ -55,11 +35,11 @@ from spsdk.sbfile.sb1 import (
     SecureBootFlagsV1,
     SecureBootV1,
 )
-from spsdk.sdp import SDP, ResponseValue, SdpCommandError, StatusCode
-from spsdk.sdp import scan_usb as sdp_scan_usb
+from spsdk.sdp.interfaces.usb import SdpUSBInterface
+from spsdk.sdp.sdp import SDP, ResponseValue, SdpCommandError, StatusCode
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo, align, align_block, load_binary
-from tests.misc import compare_bin_files, write_dbg_log
+from spsdk.utils.misc import align, align_block, load_binary
+from tests.misc import compare_bin_files
 
 # ############################## EXECUTION PARAMETERS ##############################
 # Flag allowing to switch between testing expected image content and generating an output image
@@ -83,7 +63,7 @@ CERT_SUBDIR = "crts"
 # name of the data sub-directory with SRK hashes
 SRK_SUBDIR = "srk"
 # private key password (used to store or load key from disk)
-PRIV_KEY_PASSWORD = b"SWTestTeam"
+PRIV_KEY_PASSWORD = "SWTestTeam"
 # name of the sub-directory with debug logs for generation of the output
 DEBUG_LOG_SUBDIR = "debug_logs"
 # name of the sub-directory with processor specific files; it is also used as ID of the test processor
@@ -249,10 +229,9 @@ def srk_table4(cpu_params: CpuParams) -> SrkTable:
     """
     result = SrkTable()
     for cert_prefix in ["SRK1", "SRK2", "SRK3", "SRK4"]:
-        cert_data = load_binary(
+        certificate = Certificate.load(
             os.path.join(cpu_params.cert_data_dir, cert_prefix + "_sha256_2048_65537_v3_ca_crt.pem")
         )
-        certificate = x509.load_pem_x509_certificate(cert_data, default_backend())
         result.append(SrkItem.from_certificate(certificate))
     return result
 
@@ -299,31 +278,25 @@ def _to_authenticated_image(
         assert boot_img.decrypted_app_data == app_data
     csf_prefix = "CSF" + str(srk_key_index + 1) + "_1_sha256_2048_65537_v3_usr_"
     img_prefix = "IMG" + str(srk_key_index + 1) + "_1_sha256_2048_65537_v3_usr_"
-    csf_priv_key = load_pem_private_key(
-        load_binary(os.path.join(cpu_params.keys_data_dir, csf_prefix + "key.pem")),
+    csf_priv_key = PrivateKeyRsa.load(
+        os.path.join(cpu_params.keys_data_dir, csf_prefix + "key.pem"),
         password=PRIV_KEY_PASSWORD,
-        backend=default_backend(),
     )
-    img_priv_key = load_pem_private_key(
-        load_binary(os.path.join(cpu_params.keys_data_dir, img_prefix + "key.pem")),
+    img_priv_key = PrivateKeyRsa.load(
+        os.path.join(cpu_params.keys_data_dir, img_prefix + "key.pem"),
         password=PRIV_KEY_PASSWORD,
-        backend=default_backend(),
     )
-    csf_priv_key_data = csf_priv_key.private_bytes(
-        encoding=Encoding.PEM, format=PrivateFormat.PKCS8, encryption_algorithm=NoEncryption()
-    )
-    img_priv_key_data = img_priv_key.private_bytes(
-        encoding=Encoding.PEM, format=PrivateFormat.PKCS8, encryption_algorithm=NoEncryption()
-    )
+    assert isinstance(csf_priv_key, PrivateKeyRsa)
+    assert isinstance(img_priv_key, PrivateKeyRsa)
     if dek is None:
         boot_img.add_csf_standard_auth(
             CSF_VERSION,
             srk_table4(cpu_params),
             srk_key_index,
             load_binary(os.path.join(cpu_params.cert_data_dir, csf_prefix + "crt.pem")),
-            csf_priv_key_data,
+            csf_priv_key,
             load_binary(os.path.join(cpu_params.cert_data_dir, img_prefix + "crt.pem")),
-            img_priv_key_data,
+            img_priv_key,
         )
     else:
         boot_img.add_csf_encrypted(
@@ -331,9 +304,9 @@ def _to_authenticated_image(
             srk_table4(cpu_params),
             srk_key_index,
             load_binary(os.path.join(cpu_params.cert_data_dir, csf_prefix + "crt.pem")),
-            csf_priv_key_data,
+            csf_priv_key,
             load_binary(os.path.join(cpu_params.cert_data_dir, img_prefix + "crt.pem")),
-            img_priv_key_data,
+            img_priv_key,
         )
 
 
@@ -345,7 +318,7 @@ def init_flashloader(cpu_params: CpuParams) -> McuBoot:
     :return: McuBoot instance to communicate with flash-loader
     :raises McuBootConnectionError: if connection cannot be established
     """
-    devs = mboot_scan_usb(
+    devs = MbootUSBInterface.scan_usb(
         cpu_params.com_processor_name
     )  # check whether flashloader is already running
     if len(devs) == 0:
@@ -354,7 +327,7 @@ def init_flashloader(cpu_params: CpuParams) -> McuBoot:
             load_binary(os.path.join(cpu_params.data_dir, "ivt_flashloader.bin"))
         )
 
-        devs = sdp_scan_usb(cpu_params.com_processor_name)
+        devs = SdpUSBInterface.scan_usb(cpu_params.com_processor_name)
         if len(devs) != 1:
             raise McuBootConnectionError("Cannot connect to ROM bootloader")
 
@@ -389,7 +362,7 @@ def init_flashloader(cpu_params: CpuParams) -> McuBoot:
         for _ in range(10):  # wait 10 sec until flash-loader is inited
             sleep(1)
             # Scan for MCU-BOOT device
-            devs = mboot_scan_usb(cpu_params.com_processor_name)
+            devs = MbootUSBInterface.scan_usb(cpu_params.com_processor_name)
             if len(devs) == 1:
                 break
 
@@ -615,14 +588,12 @@ def write_image(
     :param otpmk_bee_regions: optional list of BEE regions for BEE OTPMK encryption
     """
     path = os.path.join(cpu_params.data_dir, OUTPUT_IMAGES_SUBDIR, image_file_name)
-    debug_info = DebugInfo()
     # use zulu datetime for test purposes only, to produce stable output; remove the parameter for production
     zulu = datetime(year=2020, month=4, day=8, hour=5, minute=54, second=33, tzinfo=timezone.utc)
-    img_data = img.export(dbg_info=debug_info, zulu=zulu)
+    img_data = img.export(zulu=zulu)
     assert len(img_data) == img.size
-    write_dbg_log(cpu_params.data_dir, image_file_name, debug_info.lines, TEST_IMG_CONTENT)
     if TEST_IMG_CONTENT:
-        assert img.info()  # quick check info prints non-empty output
+        assert str(img)  # quick check info prints non-empty output
         compare_bin_files(path, img_data)
         # compare no-padding
         if (
@@ -669,25 +640,19 @@ def write_sb(cpu_params: CpuParams, image_file_name: str, img: SecureBootV1) -> 
     :param img: image instance to be written
     """
     path = os.path.join(cpu_params.data_dir, OUTPUT_IMAGES_SUBDIR, image_file_name)
-    dbg_info = DebugInfo()
     img_data = img.export(
-        dbg_info=dbg_info,
         # use the following parameters only for unit test
         header_padding8=b"\xdb\x00\x76\x7a\xf4\x81\x0b\x86",
         auth_padding=b"\x36\x72\xf4\x99\x92\x05\x34\xd2\xd5\x17\xa0\xf7",
     )
-    write_dbg_log(cpu_params.data_dir, image_file_name, dbg_info.lines, TEST_IMG_CONTENT)
     if TEST_IMG_CONTENT:
-        assert img.info()  # quick check info prints non-empty output
+        assert str(img)  # quick check info prints non-empty output
         compare_bin_files(path, img_data)
-        img = SecureBootV1.parse(b"0" + img_data, 1)
-        dbg_info2 = DebugInfo()
+        img = SecureBootV1.parse((b"0" + img_data)[1:])
         img_data2 = img.export(
-            dbg_info=dbg_info2,
             header_padding8=b"\xdb\x00\x76\x7a\xf4\x81\x0b\x86",
             auth_padding=b"\x36\x72\xf4\x99\x92\x05\x34\xd2\xd5\x17\xa0\xf7",
         )
-        assert dbg_info.lines == dbg_info2.lines
         assert img_data == img_data2
     else:
         with open(path, "wb") as f:
@@ -895,23 +860,18 @@ def test_generate_csf_img(
     out_name = cert_name_prefix + str(srk_key_index) + "_" + str(cert_index) + base_key_name + "usr"
     out_key_path = os.path.join(cpu_params.keys_data_dir, out_name + "_key")
     # generate private key
-    gen_priv_key = generate_rsa_private_key(key_size=key_size)
-    save_rsa_private_key(
-        gen_priv_key, out_key_path + ".pem", password=PRIV_KEY_PASSWORD, encoding=Encoding.PEM
-    )
-    save_rsa_private_key(
-        gen_priv_key, out_key_path + ".der", password=PRIV_KEY_PASSWORD, encoding=Encoding.DER
-    )
+    gen_priv_key = PrivateKeyRsa.generate_key(key_size=key_size)
+    gen_priv_key.save(out_key_path + ".pem", password=PRIV_KEY_PASSWORD, encoding=SPSDKEncoding.PEM)
+    gen_priv_key.save(out_key_path + ".der", password=PRIV_KEY_PASSWORD, encoding=SPSDKEncoding.DER)
     # generate public key
-    gen_pub_key = generate_rsa_public_key(gen_priv_key)
+    gen_pub_key = gen_priv_key.get_public_key()
     # load private key of the issuer (SRK)
-    srk_priv_key = load_pem_private_key(
-        load_binary(os.path.join(cpu_params.keys_data_dir, srk_name + "_key.pem")),
+    srk_priv_key = PrivateKeyRsa.load(
+        os.path.join(cpu_params.keys_data_dir, srk_name + "_key.pem"),
         password=PRIV_KEY_PASSWORD,
-        backend=default_backend(),
     )
     # generate certificate
-    gen_cert = generate_certificate(
+    gen_cert = Certificate.generate_certificate(
         x509_common_name(out_name),
         x509_common_name(srk_name),
         gen_pub_key,
@@ -920,12 +880,8 @@ def test_generate_csf_img(
         if_ca=False,
         duration=3560,
     )
-    save_crypto_item(
-        gen_cert, os.path.join(cpu_params.cert_data_dir, out_name + "_crt.pem"), Encoding.PEM
-    )
-    save_crypto_item(
-        gen_cert, os.path.join(cpu_params.cert_data_dir, out_name + "_crt.der"), Encoding.DER
-    )
+    gen_cert.save(os.path.join(cpu_params.cert_data_dir, out_name + "_crt.pem"), SPSDKEncoding.PEM)
+    gen_cert.save(os.path.join(cpu_params.cert_data_dir, out_name + "_crt.der"), SPSDKEncoding.DER)
 
 
 # ####################################################################################
@@ -945,7 +901,7 @@ def test_hab_encrypted(cpu_params: CpuParams) -> None:
     app_data = load_binary(os.path.join(cpu_params.data_dir, image_name + ".bin"))
     # Encryption params (nonce + dek): use only for test purpose, for production use None
     nonce = bytes.fromhex("24eb311ce02a61d74cad460739")
-    dek = load_binary(os.path.join(cpu_params.rt10xx_data_dir, f"hab_dek.bin"))
+    dek = load_binary(os.path.join(cpu_params.rt10xx_data_dir, "hab_dek.bin"))
     #
     boot_img = BootImgRT(tgt_address)
     _to_authenticated_image(cpu_params, boot_img, app_data, srk_key_index, -1, dek, nonce)

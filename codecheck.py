@@ -101,7 +101,7 @@ def check_results(tasks: List[TaskInfo], output: str = "reports") -> int:
     return ret
 
 
-def check_pytest(output: str = OUTPUT_FOLDER) -> TaskResult:
+def check_pytest(output: str = OUTPUT_FOLDER, disable_xdist: bool = False) -> TaskResult:
     """Get the code coverage."""
     output_folder = os.path.join(output, "htmlcov")
     output_xml = os.path.join(output, "coverage.xml")
@@ -111,8 +111,9 @@ def check_pytest(output: str = OUTPUT_FOLDER) -> TaskResult:
     if os.path.isdir(output_folder):
         shutil.rmtree(output_folder, ignore_errors=True)
 
+    parallel = "" if disable_xdist else f"-n {CPU_CNT//2 or 1}"
     args = (
-        f"pytest -n {CPU_CNT//2 or 1} tests --cov spsdk --cov-branch --junit-xml {junit_report}"
+        f"pytest {parallel} tests --cov spsdk --cov-branch --junit-xml {junit_report}"
         f" --cov-report term --cov-report html:{output_folder} --cov-report xml:{output_xml}"
     )
     with open(output_log, "w", encoding="utf-8") as f:
@@ -240,6 +241,11 @@ def check_black(output: str = OUTPUT_FOLDER) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
+def fix_black() -> None:
+    """Fix the project by black formatter rules."""
+    subprocess.call("black spsdk examples tests".split())
+
+
 def check_isort(output: str = OUTPUT_FOLDER) -> TaskResult:
     """Check the project against isort imports formatter rules."""
     output_log = os.path.join(output, "isort.txt")
@@ -252,6 +258,11 @@ def check_isort(output: str = OUTPUT_FOLDER) -> TaskResult:
             res = len(f.read().splitlines())
 
     return TaskResult(error_count=res, output_log=output_log)
+
+
+def fix_isort() -> None:
+    """Fix the project by isort imports formatter rules."""
+    subprocess.call("isort spsdk examples tests".split())
 
 
 def check_copyright_year(output: str = OUTPUT_FOLDER) -> TaskResult:
@@ -296,7 +307,7 @@ def check_py_file_headers(output: str = OUTPUT_FOLDER) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def fix_copyight_year() -> None:
+def fix_copyright_year() -> None:
     """Find all changed files and fix the copyright year in them."""
     changed_files = gitcov.get_changed_files(
         repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
@@ -316,7 +327,12 @@ def fix_py_file_headers() -> None:
 def fix_found_problems(checks: TaskList, silence: int = 0, run_check_again: bool = True) -> None:
     """Fix the failed checks automatically is possible."""
     re_checks = TaskList()
-    fixers = {"COPYRIGHT": fix_copyight_year, "PY_HEADERS": fix_py_file_headers}
+    fixers = {
+        "BLACK": fix_black,
+        "COPYRIGHT": fix_copyright_year,
+        "ISORT": fix_isort,
+        "PY_HEADERS": fix_py_file_headers,
+    }
     for check in checks:
         if check.name not in fixers:
             continue
@@ -384,6 +400,15 @@ def fix_found_problems(checks: TaskList, silence: int = 0, run_check_again: bool
     default=False,
     help="Fix the problems automatically if possible.",
 )
+@click.option(
+    "--disable-xdist",
+    is_flag=True,
+    default=False,
+    help=(
+        "Disable parallel pytest execution (using pytest-xdist). "
+        "This is useful on Linux machines with lower CPU count."
+    ),
+)
 def main(
     check: List[str],
     info_check: List[str],
@@ -391,6 +416,7 @@ def main(
     silence: int,
     output: click.Path,
     fix: bool,
+    disable_xdist: bool,
 ) -> None:
     """Simple tool to check the SPSDK development rules.
 
@@ -406,7 +432,11 @@ def main(
         available_checks = TaskList(
             [
                 TaskInfo(
-                    "PYTEST", check_pytest, output=output_dir, info_only="PYTEST" in info_check
+                    "PYTEST",
+                    check_pytest,
+                    output=output_dir,
+                    disable_xdist=disable_xdist,
+                    info_only="PYTEST" in info_check,
                 ),
                 TaskInfo(
                     "GITCOV",
@@ -534,7 +564,7 @@ def main(
             print_results(checks)
             click.echo(f"Overall time: {round(runner.process_time, 1)} second(s).")
             click.echo(
-                f"Overall result: {(colorama.Fore.GREEN+'PASS') if ret == 0 else (colorama.Fore.RED+'FAILED')}."
+                f"Overall result: {(colorama.Fore.GREEN+'PASS') if ret == 0 else (colorama.Fore.RED+'FAILED')}. {colorama.Fore.RESET}"
             )
 
         if fix:

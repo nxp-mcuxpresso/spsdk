@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022 NXP
+# Copyright 2022-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # Script for generation of table
@@ -13,7 +13,7 @@ import yaml
 from pytablewriter import RstGridTableWriter
 
 from spsdk.exceptions import SPSDKValueError
-from spsdk.image.mbimg import DEVICE_FILE
+from spsdk.image.mbi.mbi import DEVICE_FILE
 from spsdk.utils.misc import get_key_by_val
 
 TARGET = 0

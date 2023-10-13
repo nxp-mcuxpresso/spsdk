@@ -85,7 +85,7 @@ class SerialProxy:
         logger.debug(f"I responded with: '{segment!r}'")
         return segment
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text information about the interface."""
         return self.__class__.__name__
 

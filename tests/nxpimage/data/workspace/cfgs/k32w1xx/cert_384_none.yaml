@@ -1,0 +1,51 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  Certification Block V21 template  =========================================
+
+# ======================================================================================================================
+#                                   == ISK (Image signing key) Certificate Settings ==
+# ======================================================================================================================
+# ------------------------------===== Use ISK for signature certification [Required] =====------------------------------
+# Description: Enable ISK type of signature certification.
+useIsk: false
+# ---------------------------------===== ISK public key [Conditionally required] =====----------------------------------
+# Description: Path to ISK public key.
+# iskPublicKey: sign_cert.pem
+# ----------------------------------===== ISK certificate constraint [Optional] =====-----------------------------------
+# Description: Constraint is certificate version, compared with monotonic counter in fuses.
+# iskCertificateConstraint: 0
+# -----------------------------------===== ISK certificate user data [Optional] =====-----------------------------------
+# Description: Path to user data.
+# iskCertData: user_cert_data.bin
+# -----------------------===== Main root Certification Private Key [Conditionally required] =====-----------------------
+# Description: Path to Main root Certification Private Key.
+# signPrivateKey: main_cert_prv_key.pem
+# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+# signProvider: type=file;file_path=root_prv_key.pem
+# ======================================================================================================================
+#                                                == Root Keys Settings ==
+# ======================================================================================================================
+# -----------------------------===== Root Certificate File 0 [Conditionally required] =====-----------------------------
+# Description: Root certificate file index 0.
+rootCertificate0File: .\workspace\keys_certs\ec_secp384r1_cert0.pem
+# ------------------------------------===== Root Certificate File 1 [Optional] =====------------------------------------
+# Description: Root certificate file index 1.
+rootCertificate1File: .\workspace\keys_certs\ec_secp384r1_cert0.pem
+# ------------------------------------===== Root Certificate File 2 [Optional] =====------------------------------------
+# Description: Root certificate file index 2.
+rootCertificate2File: .\workspace\keys_certs\ec_secp384r1_cert0.pem
+# ------------------------------------===== Root Certificate File 3 [Optional] =====------------------------------------
+# Description: Root certificate file index 3.
+rootCertificate3File: .\workspace\keys_certs\ec_secp384r1_cert0.pem
+# -----------------------------===== Main Certificate Index [Conditionally required] =====------------------------------
+# Description: Index of certificate that is used as a main. If not defined, the certificate matching private key will be
+# selected.
+mainRootCertId: 0
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# --------------------------------------===== cert block filename [Required] =====--------------------------------------
+# Description: Generated cert block filename.
+containerOutputFile: cert_block.bin

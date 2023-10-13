@@ -7,11 +7,12 @@
 """ Tests for registers utility."""
 
 import os
+from typing import Any, Dict
 
 import pytest
 from ruamel.yaml import YAML
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.exceptions import (
     SPSDKRegsError,
     SPSDKRegsErrorBitfieldNotFound,
@@ -19,7 +20,13 @@ from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
-from spsdk.utils.misc import use_working_directory, value_to_int
+from spsdk.utils.misc import (
+    load_configuration,
+    load_text,
+    use_working_directory,
+    value_to_bytes,
+    value_to_int,
+)
 from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
 TEST_DEVICE_NAME = "TestDevice1"
@@ -594,7 +601,7 @@ def test_bitfield_enums_invalid_name():
     parent_reg.add_bitfield(bitfield)
     bitfield.add_enum(RegsEnum(f"{TEST_ENUM_NAME}", 0, f"{TEST_ENUM_DESCR}", TEST_BITFIELD_WIDTH))
     with pytest.raises(SPSDKError):
-        bitfield.set_enum_value(f"Invalid Enum name")
+        bitfield.set_enum_value("Invalid Enum name")
 
 
 def test_registers_xml(data_dir, tmpdir):
@@ -671,10 +678,10 @@ def test_basic_grouped_register(data_dir):
     assert reg.width == 4 * 32
 
     reg.set_value("0x01020304_11121314_21222324_31323334")
-    assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
-    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
-    assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
-    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x31323334"
+    assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x31323334"
+    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x21222324"
+    assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x11121314"
+    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x01020304"
     assert regs.find_reg("TestRegA0", include_group_regs=True).reverse == False
     assert regs.find_reg("TestRegA1", include_group_regs=True).reverse == False
     assert regs.find_reg("TestRegA2", include_group_regs=True).reverse == False
@@ -695,10 +702,10 @@ def test_basic_grouped_register_reversed_value(data_dir):
     assert reg.width == 4 * 32
 
     reg.set_value("0x01020304_11121314_21222324_31323334")
-    assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
-    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
-    assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
-    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x31323334"
+    assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x04030201"
+    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x14131211"
+    assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x24232221"
+    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x34333231"
     assert regs.find_reg("TestRegA", include_group_regs=True).reverse == True
     assert regs.find_reg("TestRegA0", include_group_regs=True).reverse == False
     assert regs.find_reg("TestRegA1", include_group_regs=True).reverse == False
@@ -707,11 +714,11 @@ def test_basic_grouped_register_reversed_value(data_dir):
 
     assert reg.get_hex_value() == "0x01020304111213142122232431323334"
     assert (
-        reg.get_bytes_value(reverse_off=True)
-        == b"\x01\x02\x03\x04\x11\x12\x13\x14\x21\x22\x23\x24\x31\x32\x33\x34"
+        reg.get_bytes_value() == b"\x01\x02\x03\x04\x11\x12\x13\x14\x21\x22\x23\x24\x31\x32\x33\x34"
     )
     assert (
-        reg.get_bytes_value() == b"\x34\x33\x32\x31\x24\x23\x22\x21\x14\x13\x12\x11\x04\x03\x02\x01"
+        reg.get_bytes_value(raw=True)
+        == b"\x34\x33\x32\x31\x24\x23\x22\x21\x14\x13\x12\x11\x04\x03\x02\x01"
     )
 
 
@@ -741,16 +748,14 @@ def test_load_grouped_register_value(data_dir):
 
     group = [{"name": "TestRegA"}]
     regs.load_registers_from_xml(data_dir + "/grp_regs.xml", grouped_regs=group)
-    yaml = YAML()
-    with open(data_dir + "/group_reg.yml", "r") as yml_file:
-        data = yaml.load(yml_file)
+    data = load_configuration(data_dir + "/group_reg.yml")
     regs.load_yml_config(data)
     reg = regs.find_reg("TestRegA")
     assert reg.get_hex_value() == "0x01020304111213142122232431323334"
-    assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
-    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
-    assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
-    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x31323334"
+    assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x31323334"
+    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x21222324"
+    assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x11121314"
+    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x01020304"
 
 
 def test_load_grouped_register_value_compatibility(data_dir):
@@ -765,10 +770,10 @@ def test_load_grouped_register_value_compatibility(data_dir):
     regs.load_yml_config(data)
     reg = regs.find_reg("TestRegA")
     assert reg.get_hex_value() == "0x01020304111213142122232431323334"
-    assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x01020304"
-    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x11121314"
-    assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x21222324"
-    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x31323334"
+    assert regs.find_reg("TestRegA0", include_group_regs=True).get_hex_value() == "0x31323334"
+    assert regs.find_reg("TestRegA1", include_group_regs=True).get_hex_value() == "0x21222324"
+    assert regs.find_reg("TestRegA2", include_group_regs=True).get_hex_value() == "0x11121314"
+    assert regs.find_reg("TestRegA3", include_group_regs=True).get_hex_value() == "0x01020304"
 
 
 def test_create_yml():
@@ -826,3 +831,196 @@ def test_create_yml_ignored_fields():
     assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
     assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == "0x1E"
     assert TEST_BITFIELD_NAME + "_2" not in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
+
+
+REG0 = 0x00112233  # ADDR 0
+REG1 = 0x44556677  # ADDR 4
+REG2 = 0x8899AABB  # ADDR 8
+REG3 = 0xCCDDEEFF  # ADDR C
+
+REG0_REVERSED = 0x33221100  # ADDR 0
+REG1_REVERSED = 0x77665544  # ADDR 4
+REG2_REVERSED = 0xBBAA9988  # ADDR 8
+REG3_REVERSED = 0xFFEEDDCC  # ADDR C
+
+REG = 0xCCDDEEFF8899AABB4455667700112233
+REG_REV_ORDER = 0x00112233445566778899AABBCCDDEEFF
+REG_REVERSED_REGS = 0x3322110077665544BBAA9988FFEEDDCC
+REG_REV_ORDER_REVERSED_REGS = 0xFFEEDDCCBBAA99887766554433221100
+
+REG_REVERSED = 0x3322110077665544BBAA9988FFEEDDCC
+REG_REV_ORDER_REVERSED = 0xFFEEDDCCBBAA99887766554433221100
+REG_REVERSED_REGS_REVERSED = 0x00112233445566778899AABBCCDDEEFF
+REG_REV_ORDER_REVERSED_REGS_REVERSED = 0xCCDDEEFF8899AABB4455667700112233
+
+REGS_GRP = {
+    "name": "REG",
+    "width": 256,
+    "description": "Test REGS",
+}
+
+REGS_REV_ORDER_GRP = {
+    "name": "REG",
+    "width": 256,
+    "reverse_subregs_order": True,
+    "description": "Test REGS reversed order",
+}
+REGS_REVERSED_GRP = {
+    "name": "REG",
+    "width": 256,
+    "reversed": True,
+    "description": "Test REGS reversed bytes",
+}
+
+REGS_REV_ORDER_REVERSED_GRP = {
+    "name": "REG",
+    "width": 256,
+    "reversed": True,
+    "reverse_subregs_order": True,
+    "description": "Test REGS reversed order, reversed bytes",
+}
+
+
+@pytest.mark.parametrize(
+    "xml,reg_list,reg_list_raw,group,reg_group_val",
+    [
+        (
+            "test_regs.xml",
+            {"REG0": REG0, "REG1": REG1, "REG2": REG2, "REG3": REG3},
+            {"REG0": REG0, "REG1": REG1, "REG2": REG2, "REG3": REG3},
+            REGS_GRP,
+            REG,
+        ),
+        (
+            "test_regs.xml",
+            {"REG7": REG0, "REG6": REG1, "REG5": REG2, "REG4": REG3},
+            {"REG7": REG0, "REG6": REG1, "REG5": REG2, "REG4": REG3},
+            REGS_REV_ORDER_GRP,
+            REG,
+        ),
+        (
+            "test_regs.xml",
+            {
+                "REG7": REG0_REVERSED,
+                "REG6": REG1_REVERSED,
+                "REG5": REG2_REVERSED,
+                "REG4": REG3_REVERSED,
+            },
+            {"REG0": REG0, "REG1": REG1, "REG2": REG2, "REG3": REG3},
+            REGS_REVERSED_GRP,
+            REG,
+        ),
+        (
+            "test_regs.xml",
+            {
+                "REG0": REG0_REVERSED,
+                "REG1": REG1_REVERSED,
+                "REG2": REG2_REVERSED,
+                "REG3": REG3_REVERSED,
+            },
+            {"REG7": REG0, "REG6": REG1, "REG5": REG2, "REG4": REG3},
+            REGS_REV_ORDER_REVERSED_GRP,
+            REG,
+        ),
+        # Reversed single register array
+        (
+            "test_regs_reversed.xml",
+            {"REG0": REG0, "REG1": REG1, "REG2": REG2, "REG3": REG3},
+            {
+                "REG0": REG0_REVERSED,
+                "REG1": REG1_REVERSED,
+                "REG2": REG2_REVERSED,
+                "REG3": REG3_REVERSED,
+            },
+            REGS_GRP,
+            REG,
+        ),
+        (
+            "test_regs_reversed.xml",
+            {"REG7": REG0, "REG6": REG1, "REG5": REG2, "REG4": REG3},
+            {
+                "REG7": REG0_REVERSED,
+                "REG6": REG1_REVERSED,
+                "REG5": REG2_REVERSED,
+                "REG4": REG3_REVERSED,
+            },
+            REGS_REV_ORDER_GRP,
+            REG,
+        ),
+        (
+            "test_regs_reversed.xml",
+            {
+                "REG7": REG0_REVERSED,
+                "REG6": REG1_REVERSED,
+                "REG5": REG2_REVERSED,
+                "REG4": REG3_REVERSED,
+            },
+            {
+                "REG0": REG0_REVERSED,
+                "REG1": REG1_REVERSED,
+                "REG2": REG2_REVERSED,
+                "REG3": REG3_REVERSED,
+            },
+            REGS_REVERSED_GRP,
+            REG,
+        ),
+        (
+            "test_regs_reversed.xml",
+            {
+                "REG0": REG0_REVERSED,
+                "REG1": REG1_REVERSED,
+                "REG2": REG2_REVERSED,
+                "REG3": REG3_REVERSED,
+            },
+            {
+                "REG7": REG0_REVERSED,
+                "REG6": REG1_REVERSED,
+                "REG5": REG2_REVERSED,
+                "REG4": REG3_REVERSED,
+            },
+            REGS_REV_ORDER_REVERSED_GRP,
+            REG,
+        ),
+    ],
+)
+def test_regs(
+    data_dir: str,
+    xml: str,
+    reg_list: Dict[str, int],
+    reg_list_raw: Dict[str, int],
+    group: Dict[str, Any],
+    reg_group_val: int,
+):
+    regs = Registers("Test device", "little")
+    regs.load_registers_from_xml(os.path.join(data_dir, xml), grouped_regs=[group])
+
+    grp_reg = regs.find_reg(group["name"], True)
+    sub_regs = regs.find_reg(group["name"], True).sub_regs
+
+    # None Raw test
+    grp_reg.set_value(reg_group_val)
+    assert reg_group_val == grp_reg.get_value()
+
+    for reg in sub_regs:
+        if reg.name in reg_list:
+            reg_val = reg.get_bytes_value().hex()
+            excepted_val = value_to_bytes(
+                reg_list[reg.name], byte_cnt=4, endianness=regs.base_endianness
+            ).hex()
+            assert reg_val == excepted_val
+
+    regs.reset_values()
+
+    # Raw test
+    grp_reg.set_value(reg_group_val, raw=True)
+    assert reg_group_val == grp_reg.get_value(raw=True)
+
+    for reg in sub_regs:
+        if reg.name in reg_list_raw:
+            reg_val = reg.get_bytes_value().hex()
+            excepted_val = value_to_bytes(
+                reg_list_raw[reg.name], byte_cnt=4, endianness=regs.base_endianness
+            ).hex()
+            assert reg_val == excepted_val
+
+    regs.reset_values()

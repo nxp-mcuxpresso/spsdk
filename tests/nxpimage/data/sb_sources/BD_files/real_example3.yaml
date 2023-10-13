@@ -1,0 +1,127 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+---
+rootCertificate0File: ..\keys_and_certs\root_k0_signed_cert0_noca.der.cert # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
+rootCertificate1File: ..\keys_and_certs\root_k1_signed_cert0_noca.der.cert # [Optional], Root Certificate File 1; Root certificate file index 1.
+rootCertificate2File: ..\keys_and_certs\root_k2_signed_cert0_noca.der.cert # [Optional], Root Certificate File 2; Root certificate file index 2.
+rootCertificate3File: ..\keys_and_certs\root_k3_signed_cert0_noca.der.cert # [Optional], Root Certificate File 3; Root certificate file index 3.
+mainCertPrivateKeyFile: ..\keys_and_certs\k0_cert0_2048.pem # [Conditionally required], Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+mainRootCertId: 0 # [Conditionally required], Main Certificate Index; Index of certificate that is used as a main. If not defined, the certificate matching private key will be selected.
+containerOutputFile: output.sb
+containerKeyBlobEncryptionKey: ..\keys\SBkek_PUF.txt
+
+{% set buildNumber = 0 %}
+{% set loadAddress = 0x1000188 %}
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+options: # [Optional], SB2.1 Options; An options block contains zero or more name/value pairs and the option settings that assign values to global options used by the nxpimage to control the generation of the output file.
+    flags: 8 # [Optional], SB2.1 flags; For SB2.1 use only 0x8 encrypted + signed.
+    buildNumber: {{buildNumber + 1}} # [Optional], SB2.1 build number; Build number.
+    productVersion: 1.00.00 # [Optional], Product version; Version string as "xxx.yyy.zzz".
+    componentVersion: 1.00.00 # [Optional], Component version string as "xxx.yyy.zzz".
+    secureBinaryVersion: "2.1" # [Optional], SB Version; Used to specify version of SB2 file.
+sections: # [Required], SB2.1 Sections; Secure Binary v2.1 section blocks
+    - section_id: 0 # [Optional], Section ID; ID of the section
+      commands: # [Optional], SB2.1 Commands; Secure Binary v2.1 commands block, list of all possible options - Modify it according to your application
+          - version_check: # [Required], Check firmware version; Used to execute check of provided counter value with value stored in specified monotonous counter in device. If values are not same, SB file is rejected.
+                ver_type: 0 # [Required], Version type; 0 for non secure, 1 for secure.
+                fw_version: 44988 # [Required], FW version to be checked.
+          - version_check: # [Required], Check firmware version; Used to execute check of provided counter value with value stored in specified monotonous counter in device. If values are not same, SB file is rejected.
+                ver_type: 1 # [Required], Version type; 0 for non secure, 1 for secure.
+                fw_version: 1 # [Required], FW version to be checked.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: fuse # [Optional], Memory ID; ID of memory block to be loaded.
+                pattern: 1 # [Optional], Value for fuse programming; Fill the 32bit integer value of fuse to be programmed.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: fuse # [Optional], Memory ID; ID of memory block to be loaded.
+                values: "00000001" # [Optional], Binary values delimited by comma to be loaded.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: fuse # [Optional], Memory ID; ID of memory block to be loaded.
+                values: aabbccdd # [Optional], Binary values delimited by comma to be loaded.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: ifr # [Optional], Memory ID; ID of memory block to be loaded.
+                values: aabbccdd # [Optional], Binary values delimited by comma to be loaded.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: 4 # [Optional], Memory ID; ID of memory block to be loaded.
+                values: aabbccdd # [Optional], Binary values delimited by comma to be loaded.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: 4 # [Optional], Memory ID; ID of memory block to be loaded.
+                values: aabbccdd # [Optional], Binary values delimited by comma to be loaded.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: fuse # [Optional], Memory ID; ID of memory block to be loaded.
+                values: 8899aabbccddeeff # [Optional], Binary values delimited by comma to be loaded.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: fuse # [Optional], Memory ID; ID of memory block to be loaded.
+                pattern: 1 # [Optional], Value for fuse programming; Fill the 32bit integer value of fuse to be programmed.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: fuse # [Optional], Memory ID; ID of memory block to be loaded.
+                pattern: 4294967295 # [Optional], Value for fuse programming; Fill the 32bit integer value of fuse to be programmed.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: {{loadAddress}} # [Required], Address of memory block to be loaded.
+                load_opt: fuse # [Optional], Memory ID; ID of memory block to be loaded.
+                pattern: 43707 # [Optional], Value for fuse programming; Fill the 32bit integer value of fuse to be programmed.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: 134218120 # [Required], Address of memory block to be loaded.
+                load_opt: 288 # [Optional], Memory ID; ID of memory block to be loaded.
+                values: aabbccdd # [Optional], Binary values delimited by comma to be loaded.
+          - fill: # [Required], Fill memory; Used for filling of the memory range by repeated pattern.
+                address: 1097728 # [Required], Address of memory block to be filled.
+                pattern: 3243257943 # [Required], Pattern which will be used to fill memory.
+          - fill: # [Required], Fill memory; Used for filling of the memory range by repeated pattern.
+                address: 1097732 # [Required], Address of memory block to be filled.
+                pattern: 536870912 # [Required], Pattern which will be used to fill memory.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: 134218120 # [Required], Address of memory block to be loaded.
+                load_opt: sdcard # [Optional], Memory ID; ID of memory block to be loaded.
+                values: aabbccdd # [Optional], Binary values delimited by comma to be loaded.
+          - enable: # [Required], Configure memory; initialization of external memories using a parameter block that was previously loaded to RAM.
+                address: 1097728 # [Required], Address; Configuration address.
+                mem_opt: 9 # [Optional], Memory ID; ID of memory block to be configured.
+          - enable: # [Required], Configure memory; initialization of external memories using a parameter block that was previously loaded to RAM.
+                address: 1097728 # [Required], Address; Configuration address.
+                mem_opt: 288 # [Optional], Memory ID; ID of memory block to be configured.
+          - enable: # [Required], Configure memory; initialization of external memories using a parameter block that was previously loaded to RAM.
+                address: 1097728 # [Required], Address; Configuration address.
+                mem_opt: sdcard # [Optional], Memory ID; ID of memory block to be configured.
+          - erase: # [Required], Erase; Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+                address: 134221824 # [Required], Address of memory block to be erased.
+                length: 25764 # [Optional], Size of memory block to be erased.
+          - erase: # [Required], Erase; Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+                address: 0 # [Required], Address of memory block to be erased.
+                flags: 2 # [Optional], Flags; For erase all, flags=1, for erase unsecure all -> 2
+          - erase: # [Required], Erase; Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+                address: 0 # [Required], Address of memory block to be erased.
+                mem_opt: 8 # [Optional], Memory ID; ID of memory block to be erased.
+                flags: 1 # [Optional], Flags; For erase all, flags=1, for erase unsecure all -> 2
+          - erase: # [Required], Erase; Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+                address: 134221824 # [Required], Address of memory block to be erased.
+                length: 25764 # [Optional], Size of memory block to be erased.
+                mem_opt: 288 # [Optional], Memory ID; ID of memory block to be erased.
+          - erase: # [Required], Erase; Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+                address: 134221824 # [Required], Address of memory block to be erased.
+                length: 25764 # [Optional], Size of memory block to be erased.
+                mem_opt: sdcard # [Optional], Memory ID; ID of memory block to be erased.
+          - erase: # [Required], Erase; Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+                address: 134221824 # [Required], Address of memory block to be erased.
+                length: 25764 # [Optional], Size of memory block to be erased.
+                mem_opt: mmccard # [Optional], Memory ID; ID of memory block to be erased.
+          - load: # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                address: 134221824 # [Required], Address of memory block to be loaded.
+                file: ../output_images/application_signed.bin # [Optional], Binary file to be loaded.
+          - jump: # [Required], Jump to address; The jump command produces the ROM_JUMP_CMD command. Optionally set SP and call argument.
+                address: 4294901760 # [Required], Address; Jump to fixed address.
+          - jump: # [Required], Jump to address; The jump command produces the ROM_JUMP_CMD command. Optionally set SP and call argument.
+                address: 4096 # [Required], Address; Jump to fixed address.
+                spreg: 536874496 # [Optional], Stack pointer value; Sets the stack pointer before jumping.
+                argument: 1515870810 # [Optional], Call argument; Argument to the function being jumped to.

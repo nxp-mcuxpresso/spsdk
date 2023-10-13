@@ -1,0 +1,311 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# NXP lpc55s6x PFR CMPA configuration
+description:  # The CMPA configuration description.
+  device: lpc55s6x  # The NXP device name.
+  revision: 1b # The NXP device revision.
+  type: CMPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 2.0.0 # The SPSDK tool version.
+settings: # The CMPA registers configuration.
+  BOOT_CFG:  # Boot Configuration
+    bitfields:  # The register bitfields
+      DEFAULT_ISP_MODE: AUTO_ISP  # Offset: 4b, Width: 3b, Description: Default ISP mode:
+      # - AUTO_ISP, (0): Auto ISP
+      # - USB_HID_ISP, (1): USB_HID_ISP
+      # - UART_ISP, (2): UART ISP
+      # - SPI_ISP, (3): SPI Slave ISP
+      # - I2C_ISP, (4): I2C Slave ISP
+      # - DISABLE, (7): Disable ISP fall through
+      BOOT_SPEED: SYSTEM_SPEED_CODE # Offset: 7b, Width: 2b, Description: Core clock:
+      # - SYSTEM_SPEED_CODE, (0): Defined by NMPA.SYSTEM_SPEED_CODE
+      # - FRO_96MHZ, (1): 96MHz FRO
+      # - FRO_48MHZ, (2): 48MHz FRO
+      USB_SPEED: USB_SPEED_0 # Offset: 9b, Width: 2b, Description: Defines which USB module is used for ISP:
+      # - USB_SPEED_0, (0): Defined by NMPA.USBCFG.USB_SPEED
+      # - USB_FS, (1): USB FS module used for ISP
+      # - USB_HS, (2): USB HS module used for ISP
+      # - USB_SPEED_1, (3): Defined by NMPA.USBCFG.USB_SPEED
+      BOOT_FAILURE_PIN: '0x00' # Offset: 24b, Width: 8b, Description: GPIO port and pin number to use for indicating failure reason. The toggle rate of the pin is used to decode the error type. [2:0] - Defines GPIO port [7:3] - Defines GPIO pin
+  SPI_FLASH_CFG: # SPI Flash Configuration
+    bitfields:  # The register bitfields
+      SPI_RECOVERY_BOOT_EN: '0x0'  # Offset: 0b, Width: 5b, Description: SPI flash recovery boot is enabled, if non-zero value is written to this field.
+  USB_ID: # USB Identifiers
+    bitfields:  # The register bitfields
+      USB_VENDOR_ID: '0x0000'  # Offset: 0b, Width: 16b, Description: USB Vendor ID
+      USB_PRODUCT_ID: '0x0000' # Offset: 16b, Width: 16b, Description: USB Product ID
+  SDIO_CFG: # SDIO Configuration
+    value: 0x12345678  # The value width: 32b
+  DCFG_CC_SOCU_PIN: # Device Configuration Credential Constraints for SoC specific Use Pinned. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.
+    bitfields:  # The register bitfields
+      NIDEN: USE_DAP  # Offset: 0b, Width: 1b, Description: Non Secure non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      DBGEN: USE_DAP # Offset: 1b, Width: 1b, Description: Non Secure debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPNIDEN: USE_DAP # Offset: 2b, Width: 1b, Description: Secure non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPIDEN: USE_DAP # Offset: 3b, Width: 1b, Description: Secure invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      TAPEN: USE_DAP # Offset: 4b, Width: 1b, Description: JTAG TAP enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      CPU1_DBGEN: USE_DAP # Offset: 5b, Width: 1b, Description: CPU1 (Micro cortex M33) invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      ISP_CMD_EN: USE_DAP # Offset: 6b, Width: 1b, Description: ISP Boot Command enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      FA_ME_CMD_EN: USE_DAP # Offset: 7b, Width: 1b, Description: Fault Analysis/Mass Erase Command enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      CPU1_NIDEN: USE_DAP # Offset: 9b, Width: 1b, Description: CPU1 (Micro cortex M33) non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      UUID_CHECK: DISABLED # Offset: 15b, Width: 1b, Description: Enforce UUID match during Debug authentication.
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+  DCFG_CC_SOCU_DFLT: # Device Configuration Credential Constraints for SoC specific Use Debug Filter. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.
+    bitfields:  # The register bitfields
+      NIDEN: DISABLED  # Offset: 0b, Width: 1b, Description: Non Secure non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      DBGEN: DISABLED # Offset: 1b, Width: 1b, Description: Non Secure debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPNIDEN: DISABLED # Offset: 2b, Width: 1b, Description: Secure non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPIDEN: DISABLED # Offset: 3b, Width: 1b, Description: Secure invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      TAPEN: DISABLED # Offset: 4b, Width: 1b, Description: JTAG TAP fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      CPU1_DBGEN: DISABLED # Offset: 5b, Width: 1b, Description: CPU1 (Micro cortex M33) invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      ISP_CMD_EN: DISABLED # Offset: 6b, Width: 1b, Description: ISP Boot Command fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      FA_ME_CMD_EN: DISABLED # Offset: 7b, Width: 1b, Description: Fault Analysis/Mass Erase Command fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      CPU1_NIDEN: DISABLED # Offset: 9b, Width: 1b, Description: CPU1 (Micro cortex M33) non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+  VENDOR_USAGE: # Vendor Usage
+    bitfields:  # The register bitfields
+      VENDOR_USAGE: '0x0000'  # Offset: 16b, Width: 16b, Description: Upper 16 bits of vendor usage field defined in DAP. Lower 16-bits come from customer field area.
+  SECURE_BOOT_CFG: # Secure boot configuration
+    bitfields:  # The register bitfields
+      RSA4K: RSA2048  # Offset: 0b, Width: 2b, Description: Use RSA4096 keys only.
+      # - RSA2048, (0): Allow RSA2048 and higher
+      # - RSA4096_0, (1): RSA4096 only
+      # - RSA4096_1, (2): RSA4096 only
+      # - RSA4096_2, (3): RSA4096 only
+      DICE_INC_NXP_CFG: NOT_INCLUDE # Offset: 2b, Width: 2b, Description: Include NXP area in DICE computation.
+      # - NOT_INCLUDE, (0): not included
+      # - INCLUDE_0, (1): included
+      # - INCLUDE_1, (2): included
+      # - INCLUDE_2, (3): included
+      DICE_CUST_CFG: NOT_INCLUDE # Offset: 4b, Width: 2b, Description: Include Customer factory area (including keys) in DICE computation.
+      # - NOT_INCLUDE, (0): not included
+      # - INCLUDE_0, (1): included
+      # - INCLUDE_1, (2): included
+      # - INCLUDE_2, (3): included
+      SKIP_DICE: ENABLE # Offset: 6b, Width: 2b, Description: Skip DICE computation
+      # - ENABLE, (0): Enable DICE
+      # - DISABLE_0, (1): Disable DICE
+      # - DISABLE_1, (2): Disable DICE
+      # - DISABLE_2, (3): Disable DICE
+      TZM_IMAGE_TYPE: HEADER # Offset: 8b, Width: 2b, Description: TrustZone-M mode
+      # - HEADER, (0): TZ-M image mode is taken from application image header
+      # - DISABLED, (1): TZ-M disabled image, boots to non-secure mode
+      # - ENABLED, (2): TZ-M enabled image, boots to secure mode
+      # - PRESET, (3): TZ-M enabled image with TZ-M preset, boot to secure mode TZ-M pre-configured by data from application image header
+      BLOCK_SET_KEY: ALLOW # Offset: 10b, Width: 2b, Description: Block PUF key code generation
+      # - ALLOW, (0): Allow PUF Key Code generation
+      # - DISABLE_0, (1): Disable PUF Key Code generation
+      # - DISABLE_1, (2): Disable PUF Key Code generation
+      # - DISABLE_2, (3): Disable PUF Key Code generation
+      BLOCK_ENROLL: ALLOW # Offset: 12b, Width: 2b, Description: Block PUF enrollement
+      # - ALLOW, (0): Allow PUF enroll operation
+      # - DISABLE_0, (1): Disable PUF enroll operation
+      # - DISABLE_1, (2): Disable PUF enroll operation
+      # - DISABLE_2, (3): Disable PUF enroll operation
+      DICE_INC_SEC_EPOCH: '0x0' # Offset: 14b, Width: 2b, Description: Include security EPOCH in DICE
+      SEC_BOOT_EN: DISABLE # Offset: 30b, Width: 2b, Description: Secure boot enable
+      # - DISABLE, (0): Plain image (internal flash with or without CRC)
+      # - ENABLE_0, (1): Boot signed images. (internal flash, RSA signed)
+      # - ENABLE_1, (2): Boot signed images. (internal flash, RSA signed)
+      # - ENABLE_2, (3): Boot signed images. (internal flash, RSA signed)
+  PRINCE_BASE_ADDR: # Prince Base Address
+    bitfields:  # The register bitfields
+      ADDR0_PRG: '0x0'  # Offset: 0b, Width: 4b, Description: Programmable portion of the base address of region 0
+      ADDR1_PRG: '0x0' # Offset: 4b, Width: 4b, Description: Programmable portion of the base address of region 1
+      ADDR2_PRG: '0x0' # Offset: 8b, Width: 4b, Description: Programmable portion of the base address of region 2
+      LOCK_REG0: UNLOCK # Offset: 18b, Width: 2b, Description: Lock PRINCE region0 settings
+      # - UNLOCK, (0): Region is not locked
+      # - LOCK_0, (1): Region is locked
+      # - LOCK_1, (2): Region is locked
+      # - LOCK_2, (3): Region is locked
+      LOCK_REG1: UNLOCK # Offset: 20b, Width: 2b, Description: Lock PRINCE region1 settings
+      # - UNLOCK, (0): Region is not locked
+      # - LOCK_0, (1): Region is locked
+      # - LOCK_1, (2): Region is locked
+      # - LOCK_2, (3): Region is locked
+      REG0_ERASE_CHECK_EN: DISABLE # Offset: 24b, Width: 2b, Description: For PRINCE region0 enable checking whether all encrypted pages are erased together
+      # - DISABLE, (0): Region is disabled
+      # - ENABLE_0, (1): Region is enabled
+      # - ENABLE_1, (2): Region is enabled
+      # - ENABLE_2, (3): Region is enabled
+      REG1_ERASE_CHECK_EN: DISABLE # Offset: 26b, Width: 2b, Description: For PRINCE region1 enable checking whether all encrypted pages are erased together
+      # - DISABLE, (0): Region is disabled
+      # - ENABLE_0, (1): Region is enabled
+      # - ENABLE_1, (2): Region is enabled
+      # - ENABLE_2, (3): Region is enabled
+      REG2_ERASE_CHECK_EN: DISABLE # Offset: 28b, Width: 2b, Description: For PRINCE region2 enable checking whether all encrypted pages are erased together
+      # - DISABLE, (0): Region is disabled
+      # - ENABLE_0, (1): Region is enabled
+      # - ENABLE_1, (2): Region is enabled
+      # - ENABLE_2, (3): Region is enabled
+  PRINCE_SR_0: # Region 0, sub-region enable
+    value: 0x12345678  # The value width: 32b
+  PRINCE_SR_1: # Region 1, sub-region enable
+    value: 0x12345678  # The value width: 32b
+  PRINCE_SR_2: # Region 2, sub-region enable
+    value: 0x12345678  # The value width: 32b
+  XTAL_32KHZ_CAPABANK_TRIM: # Xtal 32kHz capabank triming.
+    bitfields:  # The register bitfields
+      TRIM_VALID: NOT_TRIM  # Offset: 0b, Width: 1b, Description: XTAL 32kHz capa bank trimmings
+      # - NOT_TRIM, (0): Capa Bank trimmings not valid. Default trimmings value are used
+      # - VALID, (1): Capa Bank trimmings valid
+      XTAL_LOAD_CAP_IEC_PF_X100: '0x00' # Offset: 1b, Width: 10b, Description: Load capacitance, pF x 100. For example, 6pF becomes 600.
+      PCB_XIN_PARA_CAP_PF_X100: '0x00' # Offset: 11b, Width: 10b, Description: PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600.
+      PCB_XOUT_PARA_CAP_PF_X100: '0x00' # Offset: 21b, Width: 10b, Description: PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600.
+  XTAL_16MHZ_CAPABANK_TRIM: # Xtal 16MHz capabank triming.
+    bitfields:  # The register bitfields
+      TRIM_VALID: NOT_TRIM  # Offset: 0b, Width: 1b, Description: XTAL 16MHz capa bank trimmings
+      # - NOT_TRIM, (0): Capa Bank trimmings not valid. Default trimmings value are used
+      # - VALID, (1): Capa Bank trimmings valid
+      XTAL_LOAD_CAP_IEC_PF_X100: '0x00' # Offset: 1b, Width: 10b, Description: Load capacitance, pF x 100. For example, 6pF becomes 600.
+      PCB_XIN_PARA_CAP_PF_X100: '0x00' # Offset: 11b, Width: 10b, Description: PCB XIN parasitic capacitance, pF x 100. For example, 6pF becomes 600.
+      PCB_XOUT_PARA_CAP_PF_X100: '0x00' # Offset: 21b, Width: 10b, Description: PCB XOUT parasitic capacitance, pF x 100. For example, 6pF becomes 600.
+  ROTKH: # ROTKH field is compounded by 8 32-bit fields and contains Root key table hash
+    value: 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f  # The value width: 256b
+  CUSTOMER_DEFINED0: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED1: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED2: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED3: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED4: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED5: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED6: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED7: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED8: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED9: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED10: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED11: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED12: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED13: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED14: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED15: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED16: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED17: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED18: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED19: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED20: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED21: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED22: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED23: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED24: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED25: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED26: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED27: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED28: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED29: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED30: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED31: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED32: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED33: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED34: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED35: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED36: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED37: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED38: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED39: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED40: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED41: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED42: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED43: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED44: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED45: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED46: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED47: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED48: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED49: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED50: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED51: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED52: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED53: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED54: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED55: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b

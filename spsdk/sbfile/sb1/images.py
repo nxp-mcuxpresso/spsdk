@@ -10,10 +10,13 @@
 from datetime import datetime
 from typing import List, Optional, Sequence
 
-from spsdk import SPSDKError
-from spsdk.utils.crypto import crypto_backend
-from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.misc import DebugInfo, align
+from typing_extensions import Self
+
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
+from spsdk.crypto.rng import random_bytes
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.abstract import BaseClass
+from spsdk.utils.misc import align
 
 from ..misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
 from .headers import BootSectionHeaderV1, SectionHeaderItemV1, SecureBootHeaderV1
@@ -54,8 +57,8 @@ class SecureBootV1(BaseClass):
         :param timestamp: datetime of the file creation, use None for current date/time
             Fixed value should be used only for regression testing to generate same results
         """
-        self._dek = dek if dek else crypto_backend().random_bytes(32)
-        self._mac = mac if mac else crypto_backend().random_bytes(32)
+        self._dek = dek if dek else random_bytes(32)
+        self._mac = mac if mac else random_bytes(32)
         self._header = SecureBootHeaderV1(
             version=version,
             product_version=product_version,
@@ -68,9 +71,6 @@ class SecureBootV1(BaseClass):
         self._sections_hdr_table: List[SectionHeaderItemV1] = []
         self._sections: List[BootSectionV1] = []
         self._signature = None
-
-    def __str__(self) -> str:
-        return self.info()
 
     @property
     def first_boot_section_id(self) -> int:
@@ -94,19 +94,22 @@ class SecureBootV1(BaseClass):
         result += 32  # authentication
         return result
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"Secure Boot 1, {len(self._sections)} sections"
+
+    def __str__(self) -> str:
         """Return text info about the instance, multi-line string."""
         result = "[SB]\n"
         result += "[SB-header]\n"
-        result += self._header.info()
+        result += str(self._header)
         result += "[Sections-Header-Table]\n"
         for sect_hdr in self._sections_hdr_table:
             result += "[Section-Header]\n"
-            result += sect_hdr.info()
+            result += str(sect_hdr)
         result += "[Sections]\n"
         for sect in self._sections:
             result += "[Section]\n"
-            result += sect.info()
+            result += str(sect)
         return result
 
     @property
@@ -163,78 +166,69 @@ class SecureBootV1(BaseClass):
         self,
         header_padding8: Optional[bytes] = None,
         auth_padding: Optional[bytes] = None,
-        dbg_info: DebugInfo = DebugInfo.disabled(),
     ) -> bytes:
         """Serialization to binary form.
 
         :param header_padding8: optional header padding, 8-bytes; recommended to use None to apply random value
         :param auth_padding: optional padding used after authentication; recommended to use None to apply random value
-        :param dbg_info: instance allowing to debug generated output
         :return: serialize the instance into binary data
         :raises SPSDKError: Invalid section data
         :raises SPSDKError: Invalid padding length
         """
         self.update()
         self.validate()
-        dbg_info.append_section("SB-FILE-1.x")
-        data = self._header.export(padding8=header_padding8, dbg_info=dbg_info)
+        data = self._header.export(padding8=header_padding8)
         # header table
-        dbg_info.append_section("Sections-Header-Table")
         for sect_hdr in self._sections_hdr_table:
             sect_hdr_data = sect_hdr.export()
-            dbg_info.append_binary_data("Section-Header-Item", sect_hdr_data)
             data += sect_hdr_data
         # sections
-        dbg_info.append_section("Sections")
         for sect in self._sections:
-            sect_data = sect.export(dbg_info)
+            sect_data = sect.export()
             if len(sect_data) != sect.size:
                 raise SPSDKError("Invalid section data")
             data += sect_data
         # authentication: SHA1
-        auth_code = crypto_backend().hash(data, "sha1")
-        dbg_info.append_binary_section("SHA1", auth_code)
+        auth_code = get_hash(data, EnumHashAlgorithm.SHA1)
         data += auth_code
         # padding
         padding_len = align(len(auth_code), SecBootBlckSize.BLOCK_SIZE) - len(auth_code)
         if auth_padding is None:
-            auth_padding = crypto_backend().random_bytes(padding_len)
+            auth_padding = random_bytes(padding_len)
         if padding_len != len(auth_padding):
             raise SPSDKError("Invalid padding length")
         data += auth_padding
-        dbg_info.append_binary_section("padding", auth_padding)
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SecureBootV1":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary data into the instance (deserialization).
 
         :param data: given binary data to be converted
-        :param offset: to start parsing the data
         :return: converted instance
         :raises SPSDKError: raised when digest does not match
         :raises SPSDKError: Raised when section is invalid
         """
-        obj = SecureBootV1()
-        cur_pos = offset
-        obj._header = SecureBootHeaderV1.parse(data, cur_pos)
+        obj = cls()
+        cur_pos = 0
+        obj._header = SecureBootHeaderV1.parse(data)
         cur_pos += obj._header.size
         # sections header table
         for _ in range(obj._header.section_count):
-            sect_header = SectionHeaderItemV1.parse(data, cur_pos)
+            sect_header = SectionHeaderItemV1.parse(data[cur_pos:])
             obj._sections_hdr_table.append(sect_header)
             cur_pos += sect_header.size
         # sections
-        new_pos = offset + obj._header.first_boot_tag_block * SecBootBlckSize.BLOCK_SIZE
+        new_pos = obj._header.first_boot_tag_block * SecBootBlckSize.BLOCK_SIZE
         if new_pos < cur_pos:
             raise SPSDKError("Invalid section")
         cur_pos = new_pos
         for _ in range(obj._header.section_count):
-            boot_sect = BootSectionV1.parse(data, cur_pos)
+            boot_sect = BootSectionV1.parse(data[cur_pos:])
             obj.append(boot_sect)
             cur_pos += boot_sect.size
         # authentication code
-        sha1_auth = crypto_backend().hash(data[offset:cur_pos], "sha1")
+        sha1_auth = get_hash(data[:cur_pos], EnumHashAlgorithm.SHA1)
         if sha1_auth != data[cur_pos : cur_pos + len(sha1_auth)]:
             raise SPSDKError("Authentication failure: digest does not match")
         # done

@@ -7,10 +7,13 @@
 
 import logging
 from struct import pack
+from typing import List, Optional, Union
 
-from spsdk.exceptions import SPSDKError
+from typing_extensions import Self
+
 from spsdk.mboot.commands import (
     CmdPacket,
+    CmdResponse,
     CommandTag,
     KeyProvOperation,
     ResponseTag,
@@ -19,8 +22,10 @@ from spsdk.mboot.commands import (
 )
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootDataAbortError
-from spsdk.mboot.interfaces import MBootInterface
 from spsdk.mboot.memories import ExtMemId
+from spsdk.utils.interfaces.commands import CmdResponseBase
+from spsdk.utils.interfaces.device.base import DeviceBase
+from tests.mboot.device_config import DevConfig
 
 
 ########################################################################################################################
@@ -273,7 +278,7 @@ def cmd_trust_provisioning(*args, index, fail_step, **kwargs):
 ########################################################################################################################
 # Virtual Device Class
 ########################################################################################################################
-class VirtualDevice(MBootInterface):
+class VirtualDevice(DeviceBase):
     CMD = {
         CommandTag.NO_COMMAND: cmd_no_command,
         CommandTag.FLASH_ERASE_ALL: cmd_flash_erase_all,
@@ -299,17 +304,9 @@ class VirtualDevice(MBootInterface):
         CommandTag.TRUST_PROVISIONING: cmd_trust_provisioning,
     }
 
-    @property
-    def is_opened(self):
-        return self._opened
-
-    @property
-    def need_data_split(self) -> bool:
-        return self._need_data_split
-
-    def __init__(self, config, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, config: DevConfig, **kwargs):
         self._opened = False
+        self._timeout = 0
         self._dev_conf = config
         self._cmd_tag = 0
         self._cmd_params = []
@@ -318,13 +315,20 @@ class VirtualDevice(MBootInterface):
         self._need_data_split = True
         self.fail_step = None
 
+    @property
+    def is_opened(self):
+        return self._opened
+
     def open(self):
         self._opened = True
 
     def close(self):
         self._opened = False
 
-    def read(self, timeout=1000):
+    def __str__(self):
+        return "Virtual Device"
+
+    def read(self, length: int):
         if self._dev_conf.valid_cmd(self._cmd_tag):
             cmd, raw_data = self.CMD[self._cmd_tag](
                 *self._cmd_params,
@@ -341,18 +345,77 @@ class VirtualDevice(MBootInterface):
         logging.debug(f"RAW-IN [{len(raw_data)}]: " + ", ".join(f"{b:02X}" for b in raw_data))
         return parse_cmd_response(raw_data) if cmd else raw_data
 
-    def write(self, packet):
-        if isinstance(packet, CmdPacket):
-            self._cmd_tag = packet.header.tag
-            self._cmd_params = packet.params
-            self._response_index = 0
-            raw_data = packet.to_bytes()
-        elif isinstance(packet, (bytes, bytearray)):
-            self._cmd_data = packet
-            raw_data = packet
-        else:
-            raise SPSDKError("Not valid packet type !")
-        logging.debug(f"RAW-OUT[{len(raw_data)}]: " + ", ".join(f"{b:02X}" for b in raw_data))
+    def write(self, data: bytes):
+        logging.debug(f"RAW-OUT[{len(data)}]: " + ", ".join(f"{b:02X}" for b in data))
 
-    def info(self):
-        return "Virtual Device"
+    @property
+    def timeout(self) -> int:
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value) -> None:
+        self._timeout = value
+
+
+class VirtualMbootInterface:
+    def __init__(self, device: VirtualDevice) -> None:
+        """Initialize the MBootInterface object.
+
+        :param device: he device instance
+        """
+        self.device: VirtualDevice = device
+
+    def open(self) -> None:
+        """Open the interface."""
+        self.device.open()
+
+    def close(self) -> None:
+        """Close the interface."""
+        self.device.close()
+
+    @property
+    def is_opened(self) -> bool:
+        """Indicates whether interface is open."""
+        return self.device.is_opened
+
+    @property
+    def need_data_split(self) -> bool:
+        return self.device._need_data_split
+
+    @need_data_split.setter
+    def need_data_split(self, value) -> None:
+        self.device._need_data_split = value
+
+    @classmethod
+    def scan(
+        cls,
+        params: str,
+        timeout: int,
+        extra_params: Optional[str] = None,
+    ) -> List[Self]:
+        """Scan method."""
+        pass  # not used
+
+    def read(self, length: Optional[int] = None) -> Union[CmdResponseBase, bytes]:
+        return self.device.read(length or 0)
+
+    def write_data(self, data: bytes) -> None:
+        """Encapsulate data into frames and send them to device.
+
+        :param data: Data to be sent
+        """
+        self.device._cmd_data = data
+        self.device.write(data)
+
+    def write_command(self, packet: CmdPacket) -> None:
+        """Encapsulate command into frames and send them to device.
+
+        :param packet: Command packet object to be sent
+        """
+        data = packet.to_bytes(padding=False)
+        if not data:
+            raise AttributeError("Incorrect packet type")
+        self.device._cmd_tag = packet.header.tag
+        self.device._cmd_params = packet.params
+        self.device._response_index = 0
+        self.device.write(data)

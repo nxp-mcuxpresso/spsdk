@@ -6,9 +6,11 @@ SPSDK allows user to install additional plugins and integrate them with SPSDK fu
 
 The table bellow shows the list of support plugin types with associated package entrypoints, cokiecutter templates and base class they are derived from.
 
-| Plugin             | Entrypoint     | Template name                    | Base class                       |
-|:-------------------|:---------------|:---------------------------------|----------------------------------|
-| Signature Provider | spsdk.sp       | cookiecutter-spsdk-sp-plugin.zip | spsdk.crypto.SignatureProvider   |
+| Plugin                 | Entrypoint             | Template name                                  | Base class                                    |
+|:-----------------------|:-----------------------|:-----------------------------------------------|-----------------------------------------------|
+| Signature Provider     | spsdk.sp               | cookiecutter-spsdk-sp-plugin.zip               | spsdk.crypto.SignatureProvider                |
+| Mboot Device Interface | spsdk.device.interface | cookiecutter-spsdk-device-interface-plugin.zip | spsdk.mboot.protocol.base.MbootProtocolBase   |
+| SDP Device Interface   | spsdk.device.interface | cookiecutter-spsdk-device-interface-plugin.zip | spsdk.sdp.protocol.base.SDPProtocolBase       |
 
 ## Plugin implementation
 

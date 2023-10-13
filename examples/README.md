@@ -5,8 +5,8 @@
 - [image.py](image.py) - create a simple bootable image (i.MX-RT).
 - [image_dcd.py](image_dcd.py) - create a simple bootable image with DCD data.
 - [image_srk.py](image_srk.py) - create fuses file (SRK) from certificates.
-- [lpc55xx.py](lpc55xx.py) - create a Secure Boot image for LPC55xx and download it to the target.
-- [lpc55xx_tz_pfr.py](lpc55xx_tz_pfr.py) - create custom TrustZone and Protected Flash Region data for LPC55xx.
+- [lpc55s6x.py](lpc55s6x.py) - create a Secure Boot image for LPC55s6x and download it to the target.
+- [lpc55s6x_tz_pfr.py](lpc55s6x_tz_pfr.py) - create custom TrustZone and Protected Flash Region data for LPC55xx.
 - [mboot.py](mboot.py) - read properties from the target’s bootloader.
 - [sbfile.py](sbfile.py) - create a Secure Boot (SB) images.
 - [sdp.py](sdp.py) - read memory using SDP.

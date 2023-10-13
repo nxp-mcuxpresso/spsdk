@@ -122,7 +122,7 @@ class DependenciesList(List[DependencyInfo]):
 
             packages_info = output.split("---")
 
-        except BaseException as exc:  # pylint: disable=broad-except
+        except Exception as exc:  # pylint: disable=broad-except
             print(f"Some package(s) from {packages} has not been found: {str(exc)}")
 
         ret = []

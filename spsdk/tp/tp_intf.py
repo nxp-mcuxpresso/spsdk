@@ -56,10 +56,12 @@ class TpIntfDescription:
         """Return the ID hash of the interface."""
         raise NotImplementedError()
 
-    def create_interface(self) -> Union["TpDevInterface", "TpTargetInterface"]:
+    def create_interface(
+        self, *args: Union[int, str], **kwargs: Union[int, str]
+    ) -> Union["TpDevInterface", "TpTargetInterface"]:
         """Return TP Device or Target associated with this descriptor."""
         assert self.intf
-        return self.intf(self)
+        return self.intf(self, *args, **kwargs)
 
 
 class TpInterface:

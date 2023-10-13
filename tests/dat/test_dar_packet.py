@@ -12,10 +12,10 @@ import os
 import pytest
 import yaml
 
-from spsdk import SPSDKError
-from spsdk.dat import DebugAuthenticationChallenge as DAC
+from spsdk.dat.dac_packet import DebugAuthenticationChallenge as DAC
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
 from spsdk.dat.debug_credential import DebugCredential as DC
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import load_binary, use_working_directory
 
 
@@ -26,7 +26,7 @@ from spsdk.utils.misc import load_binary, use_working_directory
         ("new_dck_secp256.yml", "sample_dac_ecc.bin", "2.0", "new_dck_secp256r1.pem", 316),
     ],
 )
-def test_dar_packet_rsa(
+def test_dar_packet_rsa_ecc(
     data_dir, yml_file_name, version, dck_key_file, expected_length, dac_bin_file
 ):
     with use_working_directory(data_dir):
@@ -46,7 +46,7 @@ def test_dar_packet_rsa(
         dar_bytes = dar.export()
         assert len(dar_bytes) == expected_length
         assert isinstance(dar_bytes, bytes)
-        assert "Authentication Beacon" in dar.info()
+        assert "Authentication Beacon" in str(dar)
 
 
 @pytest.mark.parametrize(
@@ -63,6 +63,7 @@ def test_dar_packet_lpc55s3x_256(data_dir, yml_file_name, version, file_key, exp
             yaml_config = yaml.safe_load(f)
         dc = DC.create_from_yaml_config(version=version, yaml_config=yaml_config)
         dc.sign()
+
         dar = DebugAuthenticateResponse.create(
             version=version,
             dc=dc,
@@ -73,7 +74,7 @@ def test_dar_packet_lpc55s3x_256(data_dir, yml_file_name, version, file_key, exp
         dar_bytes = dar.export()
         assert len(dar_bytes) == expected_length
         assert isinstance(dar_bytes, bytes)
-        assert "Authentication Beacon" in dar.info()
+        assert "Authentication Beacon" in str(dar)
 
 
 def test_dar_packet_no_signature_provider(data_dir):

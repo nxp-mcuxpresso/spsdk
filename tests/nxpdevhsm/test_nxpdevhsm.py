@@ -6,24 +6,30 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Test some testable functionality of nxpdevhsm application."""
+import os
+
 import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import nxpdevhsm
-from spsdk.apps.nxpdevhsm import DeviceHsm
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError
+from spsdk.sbfile.devhsm.utils import get_devhsm_class
 from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
+from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sb31.images import SecureBinary31Commands
+from spsdk.sbfile.sbx.devhsm import DevHsmSBx
+from spsdk.sbfile.sbx.images import SecureBinaryXType
 from spsdk.utils.misc import load_binary, use_working_directory
 
 
 def test_nxpdevhsm_run_generate(data_dir, tmpdir):
     runner = CliRunner()
     with use_working_directory(data_dir):
-        cmd = f"generate -p COMx -f lpc55s3x -k test_bin.bin -o test_bin.bin {tmpdir}/bootable_images/cust_mk_sk.sb"
+        cmd = f"generate -p COMx -f lpc55s3x -k test_bin.bin -i test_bin.bin -o {tmpdir}/bootable_images/cust_mk_sk.sb"
         result = runner.invoke(nxpdevhsm.main, cmd.split())
         assert result.exit_code == 1
-        assert "COMx" in result.exception.description
+        assert "Selected 'uart' device not found." == result.exception.description
 
 
 @pytest.mark.parametrize(
@@ -37,7 +43,7 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
     """Test loading commands from SB3.1 config file."""
 
     with use_working_directory(data_dir):
-        devhsm = DeviceHsm(
+        devhsm = DevHsmSB31(
             mboot=None,
             cust_mk_sk=b"abcd",
             oem_share_input=b"abcd",
@@ -49,7 +55,7 @@ def test_load_commands(data_dir, config, n_cmds, nf_cmds):
         assert len(cmds) == n_cmds
 
         sb3_data = SecureBinary31Commands(
-            family="lpc55s3x", curve_name="secp256r1", is_encrypted=False
+            family="lpc55s3x", hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
         )
         sb3_data.add_command(
             CmdLoadKeyBlob(
@@ -73,7 +79,7 @@ def test_load_commands_with_keyblob4(data_dir):
 
     with use_working_directory(data_dir):
         with pytest.raises(SPSDKError):
-            devhsm = DeviceHsm(
+            devhsm = DevHsmSB31(
                 mboot=None,
                 cust_mk_sk=b"abcd",
                 oem_share_input=b"abcd",
@@ -82,3 +88,52 @@ def test_load_commands_with_keyblob4(data_dir):
                 family="lpc55s3x",
             )
             devhsm.get_cmd_from_config()
+
+
+@pytest.mark.parametrize(
+    "family,expected_cls",
+    [
+        ("lpc55s3x", DevHsmSB31),
+        ("mc56f81xxx", DevHsmSBx),
+    ],
+)
+def test_devhsm_factory(family, expected_cls):
+    """Test nxpdevhsm factory method."""
+    devhsm_cls = get_devhsm_class(family)
+    assert devhsm_cls == expected_cls
+
+
+def test_sbx_devhsm(data_dir):
+    with use_working_directory(data_dir):
+        devhsm = DevHsmSBx(
+            mboot=None,
+            cust_mk_sk=None,
+            oem_share_input=b"abcd",
+            info_print=None,
+            container_conf="cfg_sbx_load.yaml",
+            family="lpc55s3x",
+        )
+
+    assert "ERASE: Address=0x00000000, Length=4096, Memory ID=0\n" in str(devhsm.sbx.sb_commands)
+    assert devhsm.sbx.image_type == SecureBinaryXType.OEM_PROVISIONING
+    assert not devhsm.sbx.isk_signed
+    assert devhsm.sbx.sb_header.block_size == 292
+
+
+@pytest.mark.parametrize(
+    "family",
+    [
+        ("lpc55s3x"),
+        ("mc56f81xxx"),
+        ("mcxn9xx"),
+        ("mwct20d2x"),
+        ("rw61x"),
+    ],
+)
+def test_nxpdevhsm_get_template(tmpdir, family):
+    """Test NXPDEVHSM CLI - Generation IF user config."""
+    cmd = ["get-template", "-f", family, "--output", f"{tmpdir}/devhsm.yml"]
+    runner = CliRunner()
+    result = runner.invoke(nxpdevhsm.main, cmd)
+    assert result.exit_code == 0, result.output
+    assert os.path.isfile(f"{tmpdir}/devhsm.yml")

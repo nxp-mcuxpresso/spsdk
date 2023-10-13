@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import yaml
 from voluptuous import ALLOW_EXTRA, All, Any, Optional, Required, Schema
 
-from spsdk.mboot import CommandTag, ExtMemId, PeripheryTag, PropertyTag, Version
+from spsdk.mboot.memories import ExtMemId
+from spsdk.mboot.properties import CommandTag, PeripheryTag, PropertyTag, Version
 
 ########################################################################################################################
 # Validator schema for configuration file

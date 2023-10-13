@@ -40,7 +40,7 @@ from .git_operations import get_changed_files, get_number_of_commits
     help="Branch to compare HEAD to",
     show_default=True,
 )
-@click.option("-a", "--all-files", is_flag=True, help="Check pydocstyle for all files in spsdk")  # type: ignore
+@click.option("-a", "--all-files", is_flag=True, help="Check pydocstyle for all files in spsdk")
 @click.option(
     "-v", "--verbose", "log_level", flag_value=logging.INFO, help="Display more verbose output"
 )

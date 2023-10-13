@@ -1,0 +1,73 @@
+# Copyright 2021-2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+data:
+  cfpa_path: y_cfpa.bin
+  cmpa_path: y_cmpa.bin
+  family: lpc55s6x
+  nxp_global_attest_puk_path: y_nxp_glob_attest_puk.pub
+  nxp_prod_attest_puk_path: y_nxp_prod_devattest_puk.pem
+  nxp_prod_card_prk_path: y_nxp_prod_card_prk.pem
+  nxp_prod_cert_path: y_nxp_prod_cert.der.crt
+  oem_cert_0_addr: 268697600
+  oem_cert_0_path: x_oem_cert_0.crt
+  oem_cert_1_addr: 268701696
+  oem_cert_1_path: x_oem_cert_1.crt
+  oem_cert_2_addr: 268705792
+  oem_cert_2_path: x_oem_cert_2.crt
+  oem_cert_3_addr: 268709888
+  oem_cert_3_path: x_oem_cert_3.crt
+  oem_id_config:
+    duration: 3650
+    issuer:
+      COMMON_NAME: Big Tech Company
+      COUNTRY_NAME: CZ
+      LOCALITY_NAME: RpR
+      ORGANIZATION_NAME: BL - EP
+      POSTAL_CODE: 756 61
+      STREET_ADDRESS: 1. maje, 1009
+    serial_number: 1234567890
+    subject:
+      COMMON_NAME: dev-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-BB
+  oem_id_count: 4
+  oem_id_meta:
+    coord_len: 32
+    pub_x: 257
+    pub_y: 289
+    scn_length: 35
+    scn_offset: 195
+    sig_length: 71
+    sig_offset: 354
+    tbs_length: 335
+    tbs_offset: 4
+    total: 425
+  oem_id_prk_path: y_oem_id_prk.pem
+  oem_id_template: y_oem_id_template.der.crt
+  oem_log_prk_path: y_oem_log_prk.pem
+  oem_key_flags: 16
+  production_quota: 999999
+  production_counter: 1
+  running_hash: !!binary |
+    gRZclS7jtJp5G5NNrXi9x0dJcOCrl/8q8MU4VMB5Oh8=
+  sb_kek_path: y_sb_kek.txt
+  tp_flags: 0
+  user_kek_path: y_user_kek.txt
+description: TP Device Model
+do_encryption: true
+do_wrapping: false
+edh_private_path: x_edh_private.pem
+edh_public_path: x_edh_public.pem
+id: "123456789"
+is_ready: true
+name: card1
+prov_enc_const: 0102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f00
+prov_kwk_const: 0102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f00
+prov_mac_const: 0102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f00
+reuse_edh_keys: true
+reuse_oem_cert: false
+reuse_ses_keys: false
+tp_ses_enc_path: x_tp_ses_enc.txt
+tp_ses_kwk_path: x_tp_ses_kwk.txt
+tp_ses_mac_path: x_tp_ses_mac.txt
+use_aes_ctr: true

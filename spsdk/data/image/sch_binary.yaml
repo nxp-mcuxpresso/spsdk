@@ -15,23 +15,21 @@ properties:
     description: The overall size of merged image.
     format: number
     template_value: 1024
-
   pattern:
     title: Pattern defined as number or special values
     description: The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc
-    type: [string, number]
     template_value: zeros
     oneOf:
       - type: [string, number]
-        title: Pattern defined as number
-        description: The pattern that will be used to fill up gaps between defined regions.
         format: number
-        template_value: 0x55
       - type: string
-        title: Predefined patterns
-        description: The pattern that will be used to fill up gaps between defined regions.
         enum: [rand, zeros, ones, inc]
-        template_value: rand
+  alignment:
+    type: [string, number]
+    title: Regions alignment
+    description: The region alignment that will be used in case that offset is not specified.
+    format: number
+    template_value: 1
   regions:
     type: array
     title: Array of defined binary regions
@@ -45,7 +43,7 @@ properties:
             binary_file:
               type: object
               title: Binary file
-              required: [path, offset]
+              required: [path]
               properties:
                 name:
                   type: string
@@ -62,6 +60,7 @@ properties:
                   type: [string, number]
                   title: Offset of image
                   description: The offset of image to be merge on. The offset could be also negative - for example to 'erase' security bit from address.
+                    In case that offset definition is omitted, the block will be placed after previous one with defined alignment.
                   format: number
                   template_value: 1024
         - type: object
@@ -70,7 +69,7 @@ properties:
             binary_block:
               type: object
               title: Binary block
-              required: [pattern, size, offset]
+              required: [pattern, size]
               properties:
                 name:
                   type: string
@@ -86,24 +85,16 @@ properties:
                 offset:
                   type: [string, number]
                   title: Offset of binary block
-                  description: The offset of binary block to be merge on.
+                  description: The offset of binary block to be merge on. The offset could be also negative - for example to 'erase' security bit from address.
+                    In case that offset definition is omitted, the block will be placed after previous one with defined alignment.
                   format: number
                   template_value: 1024
                 pattern:
                   title: Pattern defined as number or special values
                   description: The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc
-                  type: [string, number]
                   template_value: zeros
                   oneOf:
                     - type: [string, number]
-                      title: Pattern defined as number
-                      description: The pattern that will be used to fill up gaps between defined regions.
                       format: number
-                      template_value: 0x55
                     - type: string
-                      title: Predefined patterns
-                      description: The pattern that will be used to fill up gaps between defined regions.
                       enum: [rand, zeros, ones, inc]
-                      template_value: rand
-
-required: [pattern]

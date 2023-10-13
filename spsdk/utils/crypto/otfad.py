@@ -14,12 +14,12 @@ from struct import pack
 from typing import Any, Dict, List, Optional, Union
 
 from crcmod.predefined import mkPredefinedCrcFun
-from cryptography.hazmat.primitives.keywrap import aes_key_wrap
 
-from spsdk import SPSDKError
 from spsdk import version as spsdk_version
 from spsdk.apps.utils.utils import filepath_from_config, get_key
-from spsdk.exceptions import SPSDKValueError
+from spsdk.crypto.rng import random_bytes
+from spsdk.crypto.symmetric import Counter, aes_ctr_encrypt, aes_key_wrap
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.database import Database
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound
 from spsdk.utils.images import BinaryImage
@@ -32,9 +32,9 @@ from spsdk.utils.misc import (
     value_to_int,
 )
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
 
-from . import OTFAD_DATA_FOLDER, OTFAD_DATABASE_FILE, OTFAD_SCH_FILE, Counter, crypto_backend
+from . import OTFAD_DATA_FOLDER, OTFAD_DATABASE_FILE, OTFAD_SCH_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -120,9 +120,9 @@ class KeyBlob:
         :raises SPSDKError: When key_flags exceeds mask
         """
         if key is None:
-            key = crypto_backend().random_bytes(self.KEY_SIZE)
+            key = random_bytes(self.KEY_SIZE)
         if counter_iv is None:
-            counter_iv = crypto_backend().random_bytes(self.CTR_SIZE)
+            counter_iv = random_bytes(self.CTR_SIZE)
         if (len(key) != self.KEY_SIZE) and (len(counter_iv) != self.CTR_SIZE):
             raise SPSDKError("Invalid key")
         if start_addr < 0 or start_addr > end_addr or end_addr > 0xFFFFFFFF:
@@ -143,7 +143,7 @@ class KeyBlob:
         self.zero_fill = zero_fill
         self.crc_fill = crc
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text info about the instance."""
         msg = ""
         msg += f"Key:        {self.key.hex()}\n"
@@ -178,7 +178,7 @@ class KeyBlob:
                 raise SPSDKError("Invalid value")
             result += self.zero_fill
         else:
-            result += crypto_backend().random_bytes(4)
+            result += random_bytes(4)
         # CRC is not used, use random value
         if self.crc_fill:
             if len(self.crc_fill) != 4:
@@ -323,7 +323,7 @@ class KeyBlob:
             else:
                 data_2_encr = data[index : index + 16]
             # encrypt
-            encr_data = crypto_backend().aes_ctr_encrypt(self.key, data_2_encr, counter.value)
+            encr_data = aes_ctr_encrypt(self.key, data_2_encr, counter.value)
             # fix byte order in result
             if byte_swap:
                 result += encr_data[-9:-17:-1] + encr_data[-1:-9:-1]  # swap 8 bytes + swap 8 bytes
@@ -364,6 +364,10 @@ class Otfad:
         self._key_blobs.remove(self._key_blobs[index])
         self._key_blobs.insert(index, value)
 
+    def __len__(self) -> int:
+        """Count of keyblobs."""
+        return len(self._key_blobs)
+
     def add_key_blob(self, key_blob: KeyBlob) -> None:
         """Add key for specified address range.
 
@@ -387,7 +391,7 @@ class Otfad:
                 if key_blob.matches_range(addr, addr + len(block)):
                     logger.debug(
                         f"Encrypting {hex(addr)}:{hex(len(block) + addr)}"
-                        f" with keyblob: \n {key_blob.info()}"
+                        f" with keyblob: \n {str(key_blob)}"
                     )
                     encrypted_data[
                         addr - base_addr : len(block) + addr - base_addr
@@ -460,12 +464,12 @@ class Otfad:
             result, 256
         )  # this is for compatibility with elftosb, probably need FLASH sector size
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text info about the instance."""
         msg = "Key-Blob\n"
         for index, key_blob in enumerate(self._key_blobs):
             msg += f"Key-Blob {str(index)}:\n"
-            msg += key_blob.info()
+            msg += str(key_blob)
         return msg
 
 
@@ -569,15 +573,15 @@ class OtfadNxp(Otfad):
             f"# Chip: {family}\n\n"
         )
 
-        ret += f"# OTP MASTER KEY(Big Endian): {reg_omk.get_hex_value()}\n\n"
+        ret += f"# OTP MASTER KEY(Big Endian): 0x{reg_omk.get_bytes_value(raw=False).hex()}\n\n"
         for reg in reg_omk.sub_regs:
             ret += f"# {reg.name} fuse.\n"
-            ret += f"efuse-program-once {reg.offset} 0x{reg.get_bytes_value().hex()} --no-verify\n"
+            ret += f"efuse-program-once {reg.offset} 0x{reg.get_bytes_value(raw=True).hex()} --no-verify\n"
 
-        ret += f"\n# OTFAD KEK SEED (Big Endian): {reg_oks.get_hex_value()}\n\n"
+        ret += f"\n# OTFAD KEK SEED (Big Endian): 0x{reg_oks.get_bytes_value(raw=True).hex()}\n\n"
         for reg in reg_oks.sub_regs:
             ret += f"# {reg.name} fuse.\n"
-            ret += f"efuse-program-once {reg.offset} 0x{reg.get_bytes_value().hex()} --no-verify\n"
+            ret += f"efuse-program-once {reg.offset} 0x{reg.get_bytes_value(raw=True).hex()} --no-verify\n"
 
         return ret
 
@@ -631,15 +635,21 @@ class OtfadNxp(Otfad):
             logger.debug(f"Bitfield for OTFAD ENABLE not found for {self.family}")
 
         if scramble_enabled:
+            scramble_key = self.database.get_device_value("otfad_scramble_key", self.family)
+            scramble_align = self.database.get_device_value(
+                "otfad_scramble_align_bitfield", self.family
+            )
+            scramble_align_standalone = self.database.get_device_value(
+                "otfad_scramble_align_fuse_standalone", self.family
+            )
             otfad_cfg.find_bitfield(
                 self.database.get_device_value("otfad_scramble_enable_bitfield", self.family)
             ).set_value(1)
-            otfad_cfg.find_bitfield(
-                self.database.get_device_value("otfad_scramble_align_bitfield", self.family)
-            ).set_value(self.key_scramble_align)
-            fuses.find_reg(
-                self.database.get_device_value("otfad_scramble_key", self.family)
-            ).set_value(self.key_scramble_mask)
+            if scramble_align_standalone:
+                fuses.find_reg(scramble_align).set_value(self.key_scramble_align)
+            else:
+                otfad_cfg.find_bitfield(scramble_align).set_value(self.key_scramble_align)
+            fuses.find_reg(scramble_key).set_value(self.key_scramble_mask)
 
         ret = (
             f"# BLHOST OTFAD{index} KEK fuses programming script\n"
@@ -650,19 +660,24 @@ class OtfadNxp(Otfad):
         ret += f"# OTP KEK (Big Endian): {self.kek.hex()}\n\n"
         for reg in fuses.find_reg(otfad_key_fuse).sub_regs:
             ret += f"# {reg.name} fuse.\n"
-            ret += f"efuse-program-once {reg.offset} 0x{reg.get_bytes_value().hex()} --no-verify\n"
+            ret += f"efuse-program-once {reg.offset} 0x{reg.get_bytes_value(raw=True).hex()} --no-verify\n"
 
         ret += f"\n\n# {otfad_cfg.name} fuse.\n"
         for bitfield in otfad_cfg.get_bitfields():
             ret += f"#   {bitfield.name}: {bitfield.get_enum_value()}\n"
-        ret += f"efuse-program-once {otfad_cfg.offset} 0x{otfad_cfg.get_bytes_value().hex()} --no-verify\n"
+        ret += f"efuse-program-once {otfad_cfg.offset} 0x{otfad_cfg.get_bytes_value(raw=True).hex()} --no-verify\n"
 
         if scramble_enabled:
-            scramble = fuses.find_reg(
-                self.database.get_device_value("otfad_scramble_key", self.family)
-            )
+            scramble = fuses.find_reg(scramble_key)
             ret += f"\n# {scramble.name} fuse.\n"
-            ret += f"efuse-program-once {scramble.offset} 0x{scramble.get_bytes_value().hex()} --no-verify\n"
+            ret += f"efuse-program-once {scramble.offset} 0x{scramble.get_bytes_value(raw=True).hex()} --no-verify\n"
+            if scramble_align_standalone:
+                scramble_align = fuses.find_reg(scramble_align)
+                ret += f"\n# {scramble_align.name} fuse.\n"
+                ret += (
+                    f"efuse-program-once {scramble_align.offset}"
+                    f" 0x{scramble_align.get_bytes_value(raw=True).hex()} --no-verify\n"
+                )
 
         return ret
 
@@ -814,7 +829,7 @@ class OtfadNxp(Otfad):
             )
             title = f"On-The-Fly AES decryption Configuration template for {family}."
 
-            yaml_data = ConfigTemplate(title, val_schemas, note=template_note).export_to_yaml()
+            yaml_data = CommentedConfig(title, val_schemas, note=template_note).export_to_yaml()
 
             return {f"{family}_otfad": yaml_data}
 
@@ -873,6 +888,8 @@ class OtfadNxp(Otfad):
                     binary=data,
                 )
                 binaries.add_image(binary)
+        else:
+            logger.warning("The OTFAD configuration has NOT any data blobs records!")
 
         otfad = OtfadNxp(
             family=family,

@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from crcmod.predefined import mkPredefinedCrcFun
 from ruamel.yaml.comments import CommentedMap as CM
+from typing_extensions import Self
 
 from spsdk import version as spsdk_version
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
@@ -25,7 +26,7 @@ from spsdk.image.xmcd import XMCD_DATA_FOLDER, XMCD_DATABASE_FILE, XMCD_SCH_FILE
 from spsdk.utils.database import Database
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas, check_config
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
 
 logger = logging.getLogger(__name__)
 
@@ -47,43 +48,51 @@ class ConfigurationBlockType(Enum):
 class XMCD(SegmentBase):
     """XMCD (External Memory Configuration Data)."""
 
-    def __init__(self, family: str, revision: str = "latest") -> None:
+    def __init__(
+        self,
+        family: str,
+        mem_type: MemoryType,
+        config_type: ConfigurationBlockType,
+        revision: str = "latest",
+    ) -> None:
         """XMCD Constructor.
 
         :param family: Chip family.
-        :param config_block_type: Configuration block type: simplified | full.
+        :param config_type: Configuration block type: simplified | full.
         :param revision: Optional Chip family revision.
         :raises SPSDKValueError: Unsupported family.
         """
         super().__init__(family, revision)
-        self._mem_type: Optional[str] = None
-        self._config_type: Optional[str] = None
+        self.mem_type: MemoryType = mem_type
+        self.config_type: ConfigurationBlockType = config_type
         self._registers: Registers = Registers(family, base_endianness="little")
 
     @property
-    def mem_type(self) -> str:
+    def mem_type(self) -> MemoryType:
         """Memory type."""
-        return self._mem_type or "Unknown"
+        return self._mem_type
 
     @mem_type.setter
-    def mem_type(self, value: str) -> None:
+    def mem_type(self, value: MemoryType) -> None:
         """Memory type setter.
 
         :param value: Value to be set.
         :raises SPSDKValueError: If givem memory type is not supported
         """
         mem_types = XMCD.get_supported_memory_types(self.family, self.revision)
-        if value not in mem_types:
-            raise SPSDKValueError(f"Unsupported memory type:{value} not in {mem_types}")
+        if MemoryType.name(value) not in mem_types:
+            raise SPSDKValueError(
+                f"Unsupported memory type:{MemoryType.name(value)} not in {mem_types}"
+            )
         self._mem_type = value
 
     @property
-    def config_type(self) -> str:
+    def config_type(self) -> ConfigurationBlockType:
         """Configuration type. It can be either simplified or full."""
-        return self._config_type or "Unknown"
+        return self._config_type
 
     @config_type.setter
-    def config_type(self, value: str) -> None:
+    def config_type(self, value: ConfigurationBlockType) -> None:
         """Configuration type setter.
 
         :param value: Value to be set.
@@ -92,9 +101,9 @@ class XMCD(SegmentBase):
         supported_config_types = XMCD.get_supported_configuration_types(
             self.family, self.mem_type, self.revision
         )
-        if value not in supported_config_types:
+        if ConfigurationBlockType.name(value) not in supported_config_types:
             raise SPSDKValueError(
-                f"Unsupported config type:{value} not in {supported_config_types}"
+                f"Unsupported config type:{ConfigurationBlockType.name(value)} not in {supported_config_types}"
             )
         self._config_type = value
 
@@ -105,6 +114,7 @@ class XMCD(SegmentBase):
 
     @registers.setter
     def registers(self, value: Registers) -> None:
+        """Registers of segment."""
         self._registers = value
 
     @staticmethod
@@ -112,28 +122,41 @@ class XMCD(SegmentBase):
         """Get the devices database."""
         return Database(XMCD_DATABASE_FILE)
 
-    def parse(self, binary: bytes) -> None:
+    @classmethod
+    def parse(
+        cls, binary: bytes, offset: int = 0, family: str = "Unknown", revision: str = "latest"
+    ) -> Self:
         """Parse binary block into XMCD object.
 
         :param binary: binary image.
+        :param offset: Offset of XMCD in binary image.
+        :param family: Chip family.
+        :param revision: Optional Chip family revision.
         :raises SPSDKError: If given binary block size is not equal to block size in header
         """
+        binary = binary[offset:]
         header = XMCDHeader.parse(binary[: XMCDHeader.SIZE])
-        self.mem_type = MemoryType.name(header.interface)
-        self.config_type = ConfigurationBlockType.name(header.block_type)
-        option_size = None
-        if header.block_size != len(binary):
-            raise SPSDKError("Invalid XMCD configuration size")
-        if self.mem_type == "flexspi_ram" and self.config_type == "simplified":
-            if header.block_size - XMCDHeader.SIZE not in [4, 8]:
-                raise SPSDKError("Invalid XMCD configuration size")
-            option_size = 0 if len(binary[XMCDHeader.SIZE :]) == 4 else 1
-        self.registers = self.load_registers(
-            self.family, self.mem_type, self.config_type, self.revision, option_size=option_size
+        mem_type = MemoryType.from_int(header.interface)
+        config_type = ConfigurationBlockType.from_int(header.block_type)
+        filter_reg = None
+        # Flexspi simplified confgiruation may contain one or two configOption words
+        if (
+            mem_type == MemoryType.FLEXSPI_RAM
+            and config_type == ConfigurationBlockType.SIMPLIFIED
+            and len(binary) == 8
+        ):
+            filter_reg = ["configOption1"]
+        registers = cls.load_registers(
+            family, mem_type, config_type, revision, filter_reg=filter_reg
         )
-        super().parse(binary)
-        crc = self.calculate_crc(binary)
+        registers.parse(binary)
+        crc = cls.calculate_crc(binary)
         logger.info(f"CRC value: {crc!r}")
+
+        xmcd = cls(family=family, mem_type=mem_type, config_type=config_type, revision=revision)
+        xmcd.registers = registers
+        xmcd._validate()
+        return xmcd
 
     @staticmethod
     def load_from_config(config: Dict) -> "XMCD":
@@ -146,36 +169,61 @@ class XMCD(SegmentBase):
         check_config(config, XMCD.get_validation_schemas_family())
         family = config["family"]
         revision = config.get("revision", "latest")
-        mem_type = config["mem_type"]
-        config_type = config["config_type"]
+        mem_type = MemoryType.from_int(MemoryType[config["mem_type"]])
+        config_type = ConfigurationBlockType.from_int(ConfigurationBlockType[config["config_type"]])
         check_config(config, XMCD.get_validation_schemas(family, mem_type, config_type, revision))
 
         xmcd_settings: Dict[str, Dict] = config["xmcd_settings"]
 
-        xmcd = XMCD(family=family, revision=revision)
-        xmcd.mem_type = mem_type
-        xmcd.config_type = config_type
+        xmcd = XMCD(family=family, mem_type=mem_type, config_type=config_type, revision=revision)
 
-        option_size = None
-        if xmcd.mem_type == "flexspi_ram" and xmcd.config_type == "simplified":
-            try:
-                option_size = xmcd_settings["configOption0"]["bitfields"]["optionSize"]
-            except KeyError as exc:
-                raise SPSDKKeyError(
-                    "XMCD settings schema must contain optionSize in configOption0"
-                ) from exc
-        xmcd._registers = xmcd.load_registers(
-            xmcd.family, xmcd.mem_type, xmcd.config_type, xmcd.revision, option_size=option_size
+        filter_reg = None
+        if (
+            xmcd.mem_type == MemoryType.FLEXSPI_RAM
+            and xmcd.config_type == ConfigurationBlockType.SIMPLIFIED
+        ):
+            # Simplified flexspi_ram can contain one or two option words
+            config_options = {"configOption0", "configOption1"}
+            filter_reg = list(config_options - set(xmcd_settings.keys()))
+        xmcd.registers = xmcd.load_registers(
+            xmcd.family, xmcd.mem_type, xmcd.config_type, xmcd.revision, filter_reg=filter_reg
         )
         xmcd.registers.load_yml_config(xmcd_settings)
+        xmcd._validate()
         return xmcd
 
-    def calculate_crc(self, data: bytes) -> bytes:
+    def _validate(self) -> None:
+        """Validate the register values."""
+        block_size = (
+            self.registers.find_reg("header").find_bitfield("configurationBlockSize").get_value()
+        )
+        if block_size != len(self.export()):
+            raise SPSDKError(
+                "The configurationBlockSize bit field is not matching the size of XMCD"
+            )
+
+        if (
+            self.mem_type == MemoryType.FLEXSPI_RAM
+            and self.config_type == ConfigurationBlockType.SIMPLIFIED
+        ):
+            config_option_regs = [
+                reg for reg in self.registers.get_reg_names() if reg.startswith("configOption")
+            ]
+            option_size = (
+                self.registers.find_reg("configOption0").find_bitfield("optionSize").get_value()
+            )
+            if option_size != len(config_option_regs) - 1:
+                raise SPSDKError(
+                    "Option size in configOption0 does not match the number of registers."
+                )
+
+    @classmethod
+    def calculate_crc(cls, data: bytes) -> bytes:
         """Calculate XMCD CRC value.
 
         :param data: Data to be used for calculation.
         """
-        crc = mkPredefinedCrcFun("crc-32-mpeg")(data)
+        crc: int = mkPredefinedCrcFun("crc-32-mpeg")(data)
         crc_bytes = crc.to_bytes(4, "little")
         if len(crc_bytes) < 5:
             crc_bytes = crc_bytes.ljust(5, b"\0")
@@ -190,8 +238,8 @@ class XMCD(SegmentBase):
         config = CM()
         config["family"] = self.family
         config["revision"] = self.revision
-        config["mem_type"] = self.mem_type or "Unknown"
-        config["config_type"] = self.config_type or "Unknown"
+        config["mem_type"] = MemoryType.name(self.mem_type)
+        config["config_type"] = ConfigurationBlockType.name(self.config_type)
         if len(self.registers.get_registers()) == 0:
             raise SPSDKError(
                 "Registers are not loaded. Load the configuration or parse binary first."
@@ -202,14 +250,14 @@ class XMCD(SegmentBase):
             f"Created: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}.\n"
             f"NXP SPSDK version: {spsdk_version}"
         )
-        return ConfigTemplate.convert_cm_to_yaml(config)
+        return CommentedConfig.convert_cm_to_yaml(config)
 
     @classmethod
     def get_validation_schemas(
         cls,
         family: str,
-        mem_type: str,
-        config_type: str,
+        mem_type: MemoryType,
+        config_type: ConfigurationBlockType,
         revision: str = "latest",
     ) -> List[Dict[str, Any]]:
         """Create the validation schema.
@@ -250,7 +298,10 @@ class XMCD(SegmentBase):
 
     @staticmethod
     def generate_config_template(
-        family: str, mem_type: str, config_type: str, revision: str = "latest"
+        family: str,
+        mem_type: MemoryType,
+        config_type: ConfigurationBlockType,
+        revision: str = "latest",
     ) -> str:
         """Generate configuration for selected family.
 
@@ -267,10 +318,10 @@ class XMCD(SegmentBase):
         override = {}
         override["family"] = family
         override["revision"] = revision
-        override["mem_type"] = mem_type
-        override["config_type"] = config_type
+        override["mem_type"] = MemoryType.name(mem_type)
+        override["config_type"] = ConfigurationBlockType.name(config_type)
 
-        ret = ConfigTemplate(
+        ret = CommentedConfig(
             f"External Memory Configuration Data template for {family}.",
             schemas,
             override,
@@ -280,18 +331,18 @@ class XMCD(SegmentBase):
 
     @classmethod
     def get_supported_configuration_types(
-        cls, family: str, mem_type: str, revision: str = "latest"
+        cls, family: str, mem_type: MemoryType, revision: str = "latest"
     ) -> List[str]:
         """Return list of supported memory interfaces.
 
         :return: List of supported family interfaces.
         """
         mem_types = cls.get_memory_types(family, revision)
-        return list(mem_types[mem_type].keys())
+        return list(mem_types[MemoryType.name(mem_type)].keys())
 
     @staticmethod
     def _load_header_registers(
-        family: str, mem_type: str, config_type: str, revision: str
+        family: str, mem_type: MemoryType, config_type: ConfigurationBlockType, revision: str
     ) -> Registers:
         """Load header registers of segment.
 
@@ -306,17 +357,16 @@ class XMCD(SegmentBase):
         regs.load_registers_from_xml(header_file_path)
         header_reg = regs.find_reg("header")
         block_type_bf = header_reg.find_bitfield("configurationBlockType")
-        value = ConfigurationBlockType.get(config_type)
-        block_type_bf.set_value(value)
+        block_type_bf.set_value(config_type)
         memory_if_bf = header_reg.find_bitfield("memoryInterface")
-        memory_if_bf.set_value(MemoryType.get(mem_type))
+        memory_if_bf.set_value(mem_type)
         return regs
 
     @staticmethod
     def _load_block_registers(
         family: str,
-        mem_type: str,
-        config_type: str,
+        mem_type: MemoryType,
+        config_type: ConfigurationBlockType,
         revision: str,
         filter_reg: Optional[List[str]] = None,
     ) -> Registers:
@@ -326,12 +376,17 @@ class XMCD(SegmentBase):
         :param mem_type: Used memory type.
         :param config_type: Config type: either simplified or full.
         :param revision: Chip revision specification, as default, latest is used.
+        :param filter_reg: List of register names that should be filtered out.
         :raises SPSDKKeyError: Unknown mem_type or config type
         """
+        mem_type_name = MemoryType.name(mem_type)
+        config_type_name = ConfigurationBlockType.name(config_type)
         try:
-            block_config = XMCD.get_memory_types(family, revision)[mem_type][config_type]
+            block_config = XMCD.get_memory_types(family, revision)[mem_type_name][config_type_name]
         except KeyError as exc:
-            raise SPSDKKeyError(f"Unsupported combination: {mem_type}:{config_type}") from exc
+            raise SPSDKKeyError(
+                f"Unsupported combination: {mem_type_name}:{config_type_name}"
+            ) from exc
         block_file_path = os.path.join(XMCD_DATA_FOLDER, block_config)
         regs = Registers(family, base_endianness="little")
         regs.load_registers_from_xml(block_file_path, filter_reg=filter_reg)
@@ -340,10 +395,10 @@ class XMCD(SegmentBase):
     @staticmethod
     def load_registers(
         family: str,
-        mem_type: str,
-        config_type: str,
+        mem_type: MemoryType,
+        config_type: ConfigurationBlockType,
         revision: str,
-        option_size: Optional[int] = None,
+        filter_reg: Optional[List[str]] = None,
     ) -> Registers:
         """Load all registers of segment.
 
@@ -351,25 +406,30 @@ class XMCD(SegmentBase):
         :param mem_type: Used memory type.
         :param config_type: Config type: either simplified or full.
         :param revision: Chip revision specification, as default, latest is used.
-        :param option_size: Number of configuration words to be loaded.
+        :param filter_reg: List of register names that should be filtered out.
 
         :raises SPSDKValueError: If option_size has invalid value(only 0 or 1 are allowed)
         """
         regs = XMCD._load_header_registers(family, mem_type, config_type, revision)
-        filter_reg = []
-        if mem_type == "flexspi_ram" and config_type == "simplified":
-            if option_size is not None and option_size > 1:
-                raise SPSDKValueError("Option size can be either 0 or 1")
-            if option_size == 0:
-                filter_reg = ["configOption1"]
         block_regs = XMCD._load_block_registers(
             family, mem_type, config_type, revision, filter_reg=filter_reg
         )
         for block_reg in block_regs.get_registers():
-            block_reg.offset += XMCDHeader.SIZE * 8
+            block_reg.offset += XMCDHeader.SIZE
             regs.add_register(block_reg)
         header_reg = regs.find_reg("header")
         config_block_size = header_reg.find_bitfield("configurationBlockSize")
-        image_len = len(regs.image_info())
-        config_block_size.set_value(image_len)
+        config_block_size.set_value(len(regs.image_info()))
         return regs
+
+    def __repr__(self) -> str:
+        return f"XMCD Segment, memory type: {self.mem_type}"
+
+    def __str__(self) -> str:
+        return (
+            "XMCD Segment:\n"
+            f" Family:           {self.family}\n"
+            f" Revision:         {self.revision}\n"
+            f" Memory type:      {self.mem_type}\n"
+            f" Config type:      {self.config_type}\n"
+        )

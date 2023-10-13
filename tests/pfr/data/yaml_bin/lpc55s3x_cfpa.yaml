@@ -1,0 +1,173 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# NXP lpc55s3x PFR CFPA configuration
+description:  # The CFPA configuration description.
+  device: lpc55s3x  # The NXP device name.
+  revision: 1a # The NXP device revision.
+  type: CFPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 2.0.0 # The SPSDK tool version.
+settings: # The CFPA registers configuration.
+  HEADER:  # Header
+    value: 0x12345678  # The value width: 32b
+  CFPA_PAGE_VERSION: # CFPA Page Version. Write '0xFFFF_FFFF' to auto increment current CFPA page version value (by ROM).
+    value: 0x12345678  # The value width: 32b
+  S_FW_Version: # Secure Firmware Version (Monotonic counter)
+    value: 0x12345678  # The value width: 32b
+  NS_FW_Version: # Non-Secure Firmware Version (Monotonic counter)
+    value: 0x12345678  # The value width: 32b
+  IMAGE_KEY_REVOKE: # Image Key Revocation ID (Monotonic counter)
+    value: 0x12345678  # The value width: 32b
+  MCTR_INT_IV_CTR0: # Erase count for internal Prince region 0 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.
+    value: 0x12345678  # The value width: 32b
+  MCTR_INT_IV_CTR1: # Erase count for internal Prince region 1 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.
+    value: 0x12345678  # The value width: 32b
+  MCTR_INT_IV_CTR2: # Erase count for internal Prince region 2 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.
+    value: 0x12345678  # The value width: 32b
+  IPED_IV_CTR0: # Erase count for external Prince region 0 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.
+    value: 0x12345678  # The value width: 32b
+  IPED_IV_CTR1: # Erase count for external Prince region 1 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.
+    value: 0x12345678  # The value width: 32b
+  IPED_IV_CTR2: # Erase count for external Prince region 2 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.
+    value: 0x12345678  # The value width: 32b
+  IPED_IV_CTR3: # Erase count for external Prince region 3 (Monotonic counter). Write '0' to reset the counter; write '0xFFFF_FFFF' to avoid any change.
+    value: 0x12345678  # The value width: 32b
+  MCTR_CUST_CTR0: # Customer defined Monotonic counter 0.
+    value: 0x12345678  # The value width: 32b
+  MCTR_CUST_CTR1: # Customer defined Monotonic counter 1.
+    value: 0x12345678  # The value width: 32b
+  MCTR_CUST_CTR2: # Customer defined Monotonic counter 2.
+    value: 0x12345678  # The value width: 32b
+  MCTR_CUST_CTR3: # Customer defined Monotonic counter 3.
+    value: 0x12345678  # The value width: 32b
+  MCTR_CUST_CTR4: # Customer defined Monotonic counter 4.
+    value: 0x12345678  # The value width: 32b
+  MCTR_CUST_CTR5: # Customer defined Monotonic counter 5.
+    value: 0x12345678  # The value width: 32b
+  MCTR_CUST_CTR6: # Customer defined Monotonic counter 6.
+    value: 0x12345678  # The value width: 32b
+  MCTR_CUST_CTR7: # Customer defined Monotonic counter 7.
+    value: 0x12345678  # The value width: 32b
+  ROTKH_REVOKE: # Root of Trust Key Hash Revoke
+    bitfields:  # The register bitfields
+      RoTK0_EN: ENABLED_0  # Offset: 0b, Width: 2b, Description: Root of Trust Key 0 Enable
+      # - ENABLED_0, (0): Enabled
+      # - ENABLED_1, (1): Enabled
+      # - KEY_REVOKED_0, (2): Key Revoked
+      # - KEY_REVOKED_1, (3): Key Revoked
+      RoTK1_EN: ENABLED_0 # Offset: 2b, Width: 2b, Description: Root of Trust Key 1 Enable
+      # - ENABLED_0, (0): Enabled
+      # - ENABLED_1, (1): Enabled
+      # - KEY_REVOKED_0, (2): Key Revoked
+      # - KEY_REVOKED_1, (3): Key Revoked
+      RoTK2_EN: ENABLED_0 # Offset: 4b, Width: 2b, Description: Root of Trust Key 2 Enable
+      # - ENABLED_0, (0): Enabled
+      # - ENABLED_1, (1): Enabled
+      # - KEY_REVOKED_0, (2): Key Revoked
+      # - KEY_REVOKED_1, (3): Key Revoked
+      RoTK3_EN: ENABLED_0 # Offset: 6b, Width: 2b, Description: Root of Trust Key 3 Enable
+      # - ENABLED_0, (0): Enabled
+      # - ENABLED_1, (1): Enabled
+      # - KEY_REVOKED_0, (2): Key Revoked
+      # - KEY_REVOKED_1, (3): Key Revoked
+      DICE_SKIP_CSR: GENERATE_CSR # Offset: 16b, Width: 2b, Description: DICE Skip CSR
+      # - GENERATE_CSR, (0): Generate CSR
+      # - SKIP_CSR, (1): Skip CSR
+  VENDOR_USAGE: # Vendor Usage
+    bitfields:  # The register bitfields
+      DBG_VENDOR_USAGE: '0x0000'  # Offset: 0b, Width: 16b, Description: Debug Vendor Usage
+  DCFG_CC_SOCU_NS_PIN: # Device Configuration Credential Constraints for SoC specific Use Pinned. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.
+    bitfields:  # The register bitfields
+      NIDEN: USE_DAP  # Offset: 0b, Width: 1b, Description: Non-secure Non-invasive Debug Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      DBGEN: USE_DAP # Offset: 1b, Width: 1b, Description: Non-secure Debug Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPNIDEN: USE_DAP # Offset: 2b, Width: 1b, Description: Secure Non-invasive Debug Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPIDEN: USE_DAP # Offset: 3b, Width: 1b, Description: Secure Invasive Debug Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      ISP_CMD_EN: USE_DAP # Offset: 6b, Width: 1b, Description: ISP Boot Command Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      FA_CMD_EN: USE_DAP # Offset: 7b, Width: 1b, Description: FA Command Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      ME_CMD_EN: USE_DAP # Offset: 8b, Width: 1b, Description: Flash Mass Erase Command Enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      UUID_CHECK: DISABLED # Offset: 15b, Width: 1b, Description: Enforce UUID match during debug authentication.
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+  DCFG_CC_SOCU_NS_DFLT: # Device Configuration Credential Constraints for SoC specific Use Debug Filter. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction.
+    bitfields:  # The register bitfields
+      NIDEN: DISABLED  # Offset: 0b, Width: 1b, Description: Non-secure Non-invasive Debug Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      DBGEN: DISABLED # Offset: 1b, Width: 1b, Description: Non-secure Debug Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPNIDEN: DISABLED # Offset: 2b, Width: 1b, Description: Secure Non-invasive Debug Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPIDEN: DISABLED # Offset: 3b, Width: 1b, Description: Secure Invasive Debug Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      ISP_CMD_EN: DISABLED # Offset: 6b, Width: 1b, Description: ISP Boot Command Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      FA_CMD_EN: DISABLED # Offset: 7b, Width: 1b, Description: FA Command Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      ME_CMD_EN: DISABLED # Offset: 8b, Width: 1b, Description: Flash Mass Erase Command Fixed State
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+  ENABLE_FA_MODE: # Enable FA Mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.
+    value: 0x12345678  # The value width: 32b
+  CMPA_PROG_IN_PROGRESS: # CMPA Page Programming On Going. Set this field to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.
+    value: 0x12345678  # The value width: 32b
+  CMAC_UPD: # CMAC Update
+    bitfields:  # The register bitfields
+      IMG_UPD: NOTHING_CHANGED  # Offset: 0b, Width: 2b, Description: Image Updated
+      # - NOTHING_CHANGED, (0): Nothing changed
+      # - IMAGE0_CMAC_UPDATE, (1): Update image 0 CMAC
+      # - IMAGE1_CMAC_UPDATE, (2): Update image 1 CMAC
+      # - BOTH_IMG_CMAC_UPDATE, (3): Update CMAC for both images
+      CMPA_UPD: NO_ACTION # Offset: 2b, Width: 3b, Description: CMPA page updated through ROM API. Thus compute CMAC on sub-sequent boot. This field is checked only in OEM_OPEN (0x3) LC state.
+      # - NO_ACTION, (0): No action
+      # - RESERVED_0, (1): Combination is ignored.
+      # - UPDATE_IN_CMPA, (2): Update CMAC field in CMPA page.
+      # - TO_OEM_SECURE, (3): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_SECURE (0x7).
+      # - RESERVED_1, (4): Combination is ignored.
+      # - TO_OEM_CLOSED, (5): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_CLOSED (0xF).
+      # - TO_OEM_LOCKED, (6): Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_LOCKED (0xCF).
+      # - RESERVED_2, (7): Combination is ignored.
+  IMG0_CMAC0: # Image 0 CMAC 0
+    value: 0x12345678  # The value width: 32b
+  IMG0_CMAC1: # Image 0 CMAC 1
+    value: 0x12345678  # The value width: 32b
+  IMG0_CMAC2: # Image 0 CMAC 2
+    value: 0x12345678  # The value width: 32b
+  IMG0_CMAC3: # Image 0 CMAC 3
+    value: 0x12345678  # The value width: 32b
+  IMG1_CMAC0: # Image 1 CMAC 0
+    value: 0x12345678  # The value width: 32b
+  IMG1_CMAC1: # Image 1 CMAC 1
+    value: 0x12345678  # The value width: 32b
+  IMG1_CMAC2: # Image 1 CMAC 2
+    value: 0x12345678  # The value width: 32b
+  IMG1_CMAC3: # Image 1 CMAC 3
+    value: 0x12345678  # The value width: 32b
+  CFPA_CRC32: # CFPA CRC32
+    value: 0x12345678  # The value width: 32b
+  CFPA0_CMAC0: # CFPA0 CMAC 0
+    value: 0x12345678  # The value width: 32b
+  CFPA0_CMAC1: # CFPA0 CMAC 1
+    value: 0x12345678  # The value width: 32b
+  CFPA0_CMAC2: # CFPA0 CMAC 2
+    value: 0x12345678  # The value width: 32b
+  CFPA0_CMAC3: # CFPA0 CMAC 3
+    value: 0x12345678  # The value width: 32b

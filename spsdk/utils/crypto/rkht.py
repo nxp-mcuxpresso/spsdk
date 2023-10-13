@@ -9,20 +9,16 @@
 
 import logging
 import math
-from typing import List, Optional, Union
+from abc import abstractmethod
+from typing import List, Optional, Sequence, Union
 
-from spsdk.crypto import (
-    Certificate,
-    EllipticCurvePublicKey,
-    PrivateKey,
-    PublicKey,
-    RSAPublicKey,
-    _PrivateKeyTuple,
-    _PublicKeyTuple,
-)
-from spsdk.crypto.loaders import extract_public_key, extract_public_key_from_data
+from typing_extensions import Self
+
+from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_length
+from spsdk.crypto.keys import PrivateKey, PublicKey, PublicKeyEcc, PublicKeyRsa
+from spsdk.crypto.utils import extract_public_key, extract_public_key_from_data
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.crypto.common import crypto_backend
 
 logger = logging.getLogger(__name__)
 
@@ -30,83 +26,84 @@ logger = logging.getLogger(__name__)
 class RKHT:
     """Root Key Hash Table class."""
 
-    def __init__(
-        self,
-        keys: Optional[List] = None,
-        keys_cnt: int = 4,
-        min_keys_cnt: int = 4,
-        password: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
-    ) -> None:
+    def __init__(self, rkh_list: List[bytes]) -> None:
         """Initialization of Root Key Hash Table class.
 
-        :param keys: List of source of root keys (The public keys could get also from private key
-            or certificates), defaults to None
-        :param password: Optional password to open secured private keys, defaults to None.
+        :param rkh_list: List of Root Key Hashes
+        """
+        if len(rkh_list) > 4:
+            raise SPSDKError("Number of Root Key Hashes can not be larger than 4.")
+        self.rkh_list = rkh_list
+
+    @classmethod
+    def from_keys(
+        cls,
+        keys: Sequence[Union[str, bytes, bytearray, PublicKey, PrivateKey, Certificate]],
+        password: Optional[str] = None,
+        search_paths: Optional[List[str]] = None,
+    ) -> Self:
+        """Create RKHT from list of keys.
+
+        :param keys: List of public keys/certificates/private keys/bytes
+        :param password: Optional password to open secured private keys, defaults to None
         :param search_paths: List of paths where to search for the file, defaults to None
         """
-        self.keys_cnt = keys_cnt
-        self.min_keys_cnt = min_keys_cnt
-        self.rotk = (
-            [RKHT.convert_key(x, password, search_paths=search_paths) for x in keys] if keys else []
+        public_keys = (
+            [cls.convert_key(x, password, search_paths=search_paths) for x in keys] if keys else []
         )
+        if not all(isinstance(x, type(public_keys[0])) for x in public_keys):
+            raise SPSDKError("RKHT must contains all keys of a same instances.")
+        if not all(
+            cls._get_hash_algorithm(x) == cls._get_hash_algorithm(public_keys[0])
+            for x in public_keys
+        ):
+            raise SPSDKError("RKHT must have same hash algorithm for all keys.")
+
+        rotk_hashes = [cls._calc_key_hash(key) for key in public_keys]
+        return cls(rotk_hashes)
+
+    @abstractmethod
+    def rkth(self) -> bytes:
+        """Root Key Table Hash.
+
+        :return: Hash of hashes of public keys.
+        """
 
     @staticmethod
-    def _hash_algorithm_output_size(key: PublicKey) -> int:
-        """Get Hash algorithm output size for the key.
+    def _get_hash_algorithm(key: PublicKey) -> EnumHashAlgorithm:
+        """Get hash algorithm output size for the key.
 
         :param key: Key to get hash.
         :raises SPSDKError: Invalid kye type.
         :return: Size in bits of hash.
         """
-        if isinstance(key, EllipticCurvePublicKey):
-            return key.key_size
+        if isinstance(key, PublicKeyEcc):
+            return EnumHashAlgorithm[f"sha{key.key_size}"]
 
-        if isinstance(key, RSAPublicKey):
+        if isinstance(key, PublicKeyRsa):
             # In case of RSA keys, hash is always SHA-256, regardless of the key length
-            return 256
+            return EnumHashAlgorithm.SHA256
 
-        raise SPSDKError("RKHT: Unsupported key type to load.")
-
-    @staticmethod
-    def _hash_algorithm(key: PublicKey) -> str:
-        """Get Hash algorithm name for the key.
-
-        :param key: Key to get hash.
-        :raises SPSDKError: Invalid kye type.
-        :return: Name of hash algorithm.
-        """
-        return f"sha{RKHT._hash_algorithm_output_size(key)}"
+        raise SPSDKError("Unsupported key type to load.")
 
     @property
-    def hash_algorithm(self) -> str:
-        """Used HASH algorithm name."""
-        assert len(self.rotk) > 0
-        return RKHT._hash_algorithm(self.rotk[0])
+    def hash_algorithm(self) -> EnumHashAlgorithm:
+        """Used hash algorithm name."""
+        if not len(self.rkh_list) > 0:
+            raise SPSDKError("Unknown hash algorighm name. No root key hashes.")
+        return EnumHashAlgorithm[f"sha{self.hash_algorithm_size}"]
 
     @property
     def hash_algorithm_size(self) -> int:
-        """Used HASH algorithm size in bytes."""
-        assert len(self.rotk) > 0
-        return RKHT._hash_algorithm_output_size(self.rotk[0])
-
-    def validate(self) -> None:
-        """Validate the RKHT object."""
-        if len(self.rotk) == 0:
-            raise SPSDKError("RKHT is missing input public keys.")
-
-        if self.keys_cnt >= len(self.rotk) < self.min_keys_cnt:
-            raise SPSDKError(f"RKHT: Invalid key count: ({len(self.rotk)}).")
-
-        if not all(isinstance(x, type(self.rotk[0])) for x in self.rotk):
-            raise SPSDKError("RKHT must contains all keys same instances.")
-        if not all(RKHT._hash_algorithm(x) == self.hash_algorithm for x in self.rotk):
-            raise SPSDKError("RKHT must have same hash algorithm for all keys.")
+        """Used hash algorithm size in bites."""
+        if not len(self.rkh_list) > 0:
+            raise SPSDKError("Unknown hash algorithm size. No public keys provided.")
+        return len(self.rkh_list[0]) * 8
 
     @staticmethod
-    def calc_key_hash(
+    def _calc_key_hash(
         public_key: PublicKey,
-        sha_width: int = 256,
+        algorithm: Optional[EnumHashAlgorithm] = None,
     ) -> bytes:
         """Calculate a hash out of public key's exponent and modulus in RSA case, X/Y in EC.
 
@@ -115,54 +112,25 @@ class RKHT:
         :raises SPSDKError: Unsupported public key type
         :return: Computed hash.
         """
-        if isinstance(public_key, RSAPublicKey):
-            n_1: int = public_key.public_numbers().e  # type: ignore # MyPy is unable to pickup the class member
+        n_1 = 0
+        n_2 = 0
+        if isinstance(public_key, PublicKeyRsa):
+            n_1 = public_key.e
             n1_len = math.ceil(n_1.bit_length() / 8)
-            n_2: int = public_key.public_numbers().n  # type: ignore # MyPy is unable to pickup the class member
+            n_2 = public_key.n
             n2_len = math.ceil(n_2.bit_length() / 8)
-        elif isinstance(public_key, EllipticCurvePublicKey):
-            n_1: int = public_key.public_numbers().y  # type: ignore # MyPy is unable to pickup the class member
-            n1_len = sha_width // 8
-            n_2: int = public_key.public_numbers().x  # type: ignore # MyPy is unable to pickup the class member
-            n2_len = sha_width // 8
+        elif isinstance(public_key, PublicKeyEcc):
+            n_1 = public_key.y
+            n_2 = public_key.x
+            n1_len = n2_len = public_key.coordinate_size
         else:
             raise SPSDKError(f"Unsupported key type: {type(public_key)}")
 
         n1_bytes = n_1.to_bytes(n1_len, "big")
         n2_bytes = n_2.to_bytes(n2_len, "big")
 
-        return crypto_backend().hash(n2_bytes + n1_bytes, algorithm=f"sha{sha_width}")
-
-    def key_hashes(self) -> List[bytes]:
-        """List of individual key hashes.
-
-        :return: List of individual key hashes.
-        """
-        ret = []
-        for i in range(self.keys_cnt):
-            if i < len(self.rotk) and self.rotk[i]:
-                ret.append(
-                    RKHT.calc_key_hash(self.rotk[i], RKHT._hash_algorithm_output_size(self.rotk[i]))
-                )
-            else:
-                ret.append(bytes(RKHT._hash_algorithm_output_size(self.rotk[0]) // 8))
-        return ret
-
-    def rotkh(self) -> bytes:
-        """Root of Key Table hash.
-
-        :return: Hash of Hashes of public key.
-        """
-        rotkh = crypto_backend().hash(bytearray().join(self.key_hashes()), self.hash_algorithm)
-        logger.info(f"ROTKH: {rotkh.hex()}")
-        return rotkh
-
-    def add_key(self, key: PublicKey) -> None:
-        """Add additional public key.
-
-        :param key: Root of Trust public key.
-        """
-        self.rotk.append(key)
+        algorithm = algorithm or RKHT._get_hash_algorithm(public_key)
+        return get_hash(n2_bytes + n1_bytes, algorithm=algorithm)
 
     @staticmethod
     def convert_key(
@@ -179,16 +147,14 @@ class RKHT:
         :raises SPSDKError: Invalid kye type.
         :return: Public Key object.
         """
-        if isinstance(key, _PublicKeyTuple):
+        if isinstance(key, PublicKey):
             return key
 
-        if isinstance(key, _PrivateKeyTuple):
-            return key.public_key()
+        if isinstance(key, PrivateKey):
+            return key.get_public_key()
 
         if isinstance(key, Certificate):
-            public_key = key.public_key()
-            assert isinstance(public_key, _PublicKeyTuple)
-            return public_key
+            return key.get_public_key()
 
         if isinstance(key, str):
             return extract_public_key(key, password, search_paths=search_paths)
@@ -197,3 +163,124 @@ class RKHT:
             return extract_public_key_from_data(key, password)
 
         raise SPSDKError("RKHT: Unsupported key to load.")
+
+
+class RKHTv1(RKHT):
+    """Root Key Hash Table class for cert block v1."""
+
+    RKHT_SIZE = 4
+    RKH_SIZE = 32
+
+    def __init__(
+        self,
+        rkh_list: List[bytes],
+    ) -> None:
+        """Initialization of Root Key Hash Table class.
+
+        :param rkh_list: List of Root Key Hashes
+        """
+        for key_hash in rkh_list:
+            if len(key_hash) != self.RKH_SIZE:
+                raise SPSDKError(f"Invalid key hash size: {len(key_hash)}")
+        super().__init__(rkh_list)
+
+    @property
+    def hash_algorithm(self) -> EnumHashAlgorithm:
+        """Used Hash algorithm name."""
+        return EnumHashAlgorithm.SHA256
+
+    def export(self) -> bytes:
+        """Export RKHT as bytes."""
+        rotk_table = b""
+        for i in range(self.RKHT_SIZE):
+            if i < len(self.rkh_list) and self.rkh_list[i]:
+                rotk_table += self.rkh_list[i]
+            else:
+                rotk_table += bytes(self.RKH_SIZE)
+        if len(rotk_table) != self.RKH_SIZE * self.RKHT_SIZE:
+            raise SPSDKError("Invalid length of data.")
+        return rotk_table
+
+    @classmethod
+    def parse(cls, rkht: bytes) -> Self:
+        """Parse Root Key Hash Table into RKHTv1 object.
+
+        :param rkht: Valid RKHT table
+        """
+        rotkh_len = len(rkht) // cls.RKHT_SIZE
+        offset = 0
+        key_hashes = []
+        for _ in range(cls.RKHT_SIZE):
+            key_hashes.append(rkht[offset : offset + rotkh_len])
+            offset += rotkh_len
+        return cls(key_hashes)
+
+    def rkth(self) -> bytes:
+        """Root Key Table Hash.
+
+        :return: Hash of Hashes of public key.
+        """
+        rotkh = get_hash(self.export(), self.hash_algorithm)
+        return rotkh
+
+    def set_rkh(self, index: int, rkh: bytes) -> None:
+        """Set Root Key Hash with index.
+
+        :param index: Index in the hash table
+        :param rkh: Root Key Hash to be set
+        """
+        if index > 3:
+            raise SPSDKError("Key hash can not be larger than 3.")
+        if self.rkh_list and len(rkh) != len(self.rkh_list[0]):
+            raise SPSDKError("Root Key Hash must be the same size as other hashes.")
+        # fill the gap with zeros if the keys are not consecutive
+        for idx in range(index + 1):
+            if len(self.rkh_list) < idx + 1:
+                self.rkh_list.append(bytes(self.RKH_SIZE))
+        assert len(self.rkh_list) <= 4
+        self.rkh_list[index] = rkh
+
+
+class RKHTv21(RKHT):
+    """Root Key Hash Table class for cert block v2.1."""
+
+    def export(self) -> bytes:
+        """Export RKHT as bytes."""
+        hash_table = bytes()
+        if len(self.rkh_list) > 1:
+            hash_table = bytearray().join(self.rkh_list)
+        return hash_table
+
+    @classmethod
+    def parse(cls, rkht: bytes, hash_algorithm: EnumHashAlgorithm) -> Self:
+        """Parse Root Key Hash Table into RKHTv21 object.
+
+        :param rkht: Valid RKHT table
+        :param hash_algorithm: Hash algorithm to be used
+        """
+        rkh_len = get_hash_length(hash_algorithm)
+        if len(rkht) % rkh_len != 0:
+            raise SPSDKError(
+                f"The length of Root Key Hash Table does not match the hash algorithm {hash_algorithm}"
+            )
+        offset = 0
+        rkh_list = []
+        rkht_size = len(rkht) // rkh_len
+        for _ in range(rkht_size):
+            rkh_list.append(rkht[offset : offset + rkh_len])
+            offset += rkh_len
+        return cls(rkh_list)
+
+    def rkth(self) -> bytes:
+        """Root Key Table Hash.
+
+        :return: Hash of Hashes of public key.
+        """
+        if not self.rkh_list:
+            logger.debug("RKHT has no records.")
+            return bytes()
+        if len(self.rkh_list) == 1:
+            rotkh = self.rkh_list[0]
+        else:
+            rotkh = get_hash(self.export(), self.hash_algorithm)
+        return rotkh

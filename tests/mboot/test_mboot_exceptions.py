@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk import SPSDKError
-from spsdk.mboot import McuBootCommandError, McuBootConnectionError, McuBootError
+from spsdk.exceptions import SPSDKError
+from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, McuBootError
 
 
 def raise_and_catch(raising_exc, catching_exc) -> bool:

@@ -10,7 +10,7 @@
 import logging
 from struct import calcsize, pack, unpack_from
 
-from spsdk.dat.debug_credential import DebugCredential
+from spsdk.dat.debug_credential import DebugCredential, DebugCredentialEdgeLockEnclave
 from spsdk.exceptions import SPSDKValueError
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,10 @@ class DebugAuthenticationChallenge:
         self.cc_vu = cc_vu
         self.challenge = challenge
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"DAC v{self.version}, SOCC: {DebugCredential.get_socc_description(self.version, self.socc)}"
+
+    def __str__(self) -> str:
         """String representation of DebugCredential."""
         msg = f"Version                : {self.version}\n"
         msg += f"SOCC                   : {DebugCredential.get_socc_description(self.version, self.socc)}\n"
@@ -72,7 +75,10 @@ class DebugAuthenticationChallenge:
         :param dc: Debug Credential class to be validated by DAC
         :raises SPSDKValueError: In case of invalid configuration detected.
         """
-        if self.version != dc.VERSION and self.socc not in [0x5254049C]:
+        if (
+            self.version != dc.VERSION
+            and self.socc not in DebugCredentialEdgeLockEnclave.SUPPORTED_SOCC
+        ):
             raise SPSDKValueError(
                 f"DAC Verification failed: Invalid protocol version.\nDAC: {self.version}\nDC:  {dc.VERSION}"
             )
@@ -84,14 +90,22 @@ class DebugAuthenticationChallenge:
             raise SPSDKValueError(
                 f"DAC Verification failed: Invalid UUID.\nDAC: {self.uuid.hex()}\nDC:  {dc.uuid.hex()}"
             )
-        # RKTH is not part of challenge for RW61x devices
-        if self.socc != 0xA:
-            dc_rotkh = dc.get_rotkh()
-            if dc_rotkh and not all(
-                self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
-            ):
+        dc_rotkh = dc.get_rotkh()
+        if dc_rotkh and not all(
+            self.rotid_rkth_hash[x] == dc_rotkh[x] for x in range(len(self.rotid_rkth_hash))
+        ):
+            if self.socc == 0xA:
+                # For RW61x_A2 this is expected because RKTH is not part of the challenge
+                return
+            if self.socc == 0x4:
+                logger.warning(
+                    "The DAC(Debug Authentication Challenge) RKTH doesn't match with DC(Debug Credential)."
+                    "For RW61x devices, this is correct behaviour. For LPC55S3x it indicates incorrect DC file,"
+                    "and needs to be fixed."
+                )
+            else:
                 raise SPSDKValueError(
-                    f"DAC Verification failed: Invalid RoT Hash. \n"
+                    f"DAC Verification failed: Invalid RKTH.\n"
                     f"DAC: {self.rotid_rkth_hash.hex()}\nDC:  {dc_rotkh.hex()}"
                 )
 
@@ -109,16 +123,15 @@ class DebugAuthenticationChallenge:
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DebugAuthenticationChallenge":
+    def parse(cls, data: bytes) -> "DebugAuthenticationChallenge":
         """Parse the data into a DebugAuthenticationChallenge.
 
         :param data: Raw data as bytes
-        :param offset: Offset within the input data
         :return: DebugAuthenticationChallenge object
         """
         format_head = "<2HL16sL"
         version_major, version_minor, socc, uuid, rotid_rkh_revocation = unpack_from(
-            format_head, data, offset
+            format_head, data
         )
         # Note: EdgeLock is always 256b SRKH - if P384 these are the first 256b of SHA384(SRKT)
         hash_length = 48 if (socc in [4, 6] and version_minor == 1 and version_major == 2) else 32
@@ -130,7 +143,7 @@ class DebugAuthenticationChallenge:
             cc_soc_default,
             cc_vu,
             challenge,
-        ) = unpack_from(format_tail, data, offset + calcsize(format_head))
+        ) = unpack_from(format_tail, data, calcsize(format_head))
         return cls(
             version=f"{version_major}.{version_minor}",
             socc=socc,

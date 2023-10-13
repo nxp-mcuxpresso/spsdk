@@ -11,9 +11,8 @@ import logging
 from time import sleep
 from typing import Any, Dict, no_type_check
 
-from spsdk import SPSDKError
 from spsdk.debuggers.debug_probe import DebugProbe
-from spsdk.exceptions import SPSDKIOError
+from spsdk.exceptions import SPSDKError, SPSDKIOError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import Timeout
 
@@ -171,7 +170,7 @@ class DebugMailbox:
 
         :param func: Decorated function.
         """
-        POSSIBLE_DBGMLBX_AP_IX = [0, 2, 3]
+        POSSIBLE_DBGMLBX_AP_IX = [0, 1, 2, 3, 8]
 
         @functools.wraps(func)
         def wrapper(self: "DebugMailbox", *args, **kwargs):

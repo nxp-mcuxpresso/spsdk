@@ -10,14 +10,22 @@
 import filecmp
 import os
 
+import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import ifr
 
 
-def test_ifr_user_config(tmpdir):
+@pytest.mark.parametrize(
+    "family",
+    [
+        ("kw45xx"),
+        ("k32w1xx"),
+    ],
+)
+def test_ifr_user_config(tmpdir, family):
     """Test IF CLI - Generation IF user config."""
-    cmd = ["get-template", "-d", "kw45xx", "--output", f"{tmpdir}/ifr.yml"]
+    cmd = ["get-template", "-f", family, "--output", f"{tmpdir}/ifr.yml"]
     runner = CliRunner()
     result = runner.invoke(ifr.main, cmd)
     assert result.exit_code == 0, result.output
@@ -27,7 +35,7 @@ def test_ifr_user_config(tmpdir):
 def test_roundtrip(data_dir, tmpdir):
     parse_cmd = [
         "parse-binary",
-        "-d",
+        "-f",
         "kw45xx",
         "--binary",
         f"{data_dir}/ref.bin",
@@ -38,16 +46,8 @@ def test_roundtrip(data_dir, tmpdir):
     result = runner.invoke(ifr.main, parse_cmd)
     assert result.exit_code == 0
 
-    generate_cmd = [
-        "generate-binary",
-        "-d",
-        "kw45xx",
-        "--user-config",
-        f"{tmpdir}/ref.yaml",
-        "--output",
-        f"{tmpdir}/new.bin",
-    ]
-    result = runner.invoke(ifr.main, generate_cmd)
+    generate_cmd = f"generate-binary -f kw45xx --config {tmpdir}/ref.yaml --output {tmpdir}/new.bin"
+    result = runner.invoke(ifr.main, generate_cmd.split())
     assert result.exit_code == 0
 
     assert filecmp.cmp(f"{data_dir}/ref.bin", f"{tmpdir}/new.bin")

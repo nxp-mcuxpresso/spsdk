@@ -1,0 +1,220 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+sbx_family:
+  type: object
+  title: Basic Settings
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      enum:
+        - mc56f81xxx
+        - mwct20d2x
+      template_value: mc56f81xxx
+  required: [family]
+
+sbx_output:
+  type: object
+  title: Basic Settings
+  properties:
+    containerOutputFile:
+      type: string
+      title: SBx filename
+      description: Generated SBx container filename.
+      template_value: my_new.sbx
+  required: [containerOutputFile]
+
+sbx_description:
+  type: object
+  title: Secure Binary X Settings
+  properties:
+    description:
+      type: string
+      title: Description
+      description: Description up to 16 characters, longer will be truncated. Stored in SBx manifest.
+      template_value: This is description of generated SB file.
+
+sbx:
+  type: object
+  title: Secure Binary X Settings
+  properties:
+    image_type:
+      type: string
+      title: image type
+      description: SecureBinaryXType
+      enum: ["NXP_PROVISIONING", "OEM_PROVISIONING", "OEM"]
+      template_value: "OEM_PROVISIONING"
+
+sbx_test:
+  type: object
+  title: Secure Binary X Testing Settings
+  properties:
+    isEncrypted:
+      type: boolean
+      title: Enable NXP Container encryption
+      description: If false, generated SBx.1 blocks are not encrypted, only for testing, ROM won't accept unencrypted SBx.1 file. If option is missing, SBx.1 file is automatically encrypted.
+      template_value: true
+    timestamp:
+      type: [string, number]
+      title: SBx file force timestamp
+      description: For testing purposes. This option can override real timestamp of SBx file.
+      format: number
+      template_value: 1234567890
+
+signing_cert_prv_key:
+  type: object
+  title: Certificate Settings
+  properties:
+    signingCertificatePrivateKeyFile:
+      id: "#signingCertificatePrivateKeyFile"
+      type: string
+      title: ISK Certificate private key
+      description: ISK Certificate private key used to sign certificate. It can be replaced by signProvider key. Only valid for OEM and NXP_PROVISIONING image types
+      template_value: isk_prv_key.pem
+
+signature_provider:
+  type: object
+  title: Certificate Settings
+  properties:
+    signProvider:
+      type: string
+      title: Signature Provider
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+      template_value: type=file;file_path=my_prv_key.pem
+
+  if:
+    properties:
+      image_type:
+        enum: ["NXP_PROVISIONING", "OEM"]
+  then:
+    oneOf:
+      - allOf:
+        - required: [signingCertificatePrivateKeyFile]
+        - not:
+            required: [signProvider]
+      - allOf:
+        - required: [signProvider]
+        - not:
+            required: [signingCertificatePrivateKeyFile]
+
+sbx_commands:
+  type: object
+  title: Secure Binary X Commands Settings
+  required: [commands]
+  properties:
+    commands:
+      type: array
+      title: SBx Commands
+      description: Secure Binary X commands block, list of all possible options - Modify it according to your application
+      items:
+        oneOf:
+          - type: object
+            required: [erase]
+            properties:
+              erase:
+                type: object
+                title: Erase
+                description: Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+                properties:
+                  address:
+                    type: [string, number]
+                    title: Address
+                    description: Address of memory block to be erased.
+                    format: number
+                    template_value: 0x0
+                  size:
+                    type: [string, number]
+                    title: Size
+                    description: Size of memory block to be erased.
+                    format: number
+                    template_value: 4096
+                  memoryId:
+                    type: [string, number]
+                    title: Memory ID
+                    description: ID of memory block to be erased.
+                    format: number
+                    template_value: 0
+                required: [address, size]
+
+          - type: object
+            required: [load]
+            properties:
+              load:
+                type: object
+                title: Load
+                description: If set, then the data to write immediately follows the range header. The length field contains the actual data length
+                properties:
+                  address:
+                    type: [string, number]
+                    title: Address
+                    description: Address of memory block to be loaded.
+                    format: number
+                    template_value: 0x0
+                  memoryId:
+                    type: [string, number]
+                    title: Memory ID
+                    description: ID of memory block to be loaded.
+                    format: number
+                    template_value: 0
+                  file:
+                    type: string
+                    title: Binary file.
+                    description: Binary file to be loaded.
+                    format: file
+                    template_value: my_binary.bin
+                  values:
+                    type: string
+                    title: Binary values.
+                    description: Binary values delimited by comma to be loaded.
+                    template_value: 0x1234, 0x5678, 0, 12345678
+                required: [address]
+
+          - type: object
+            required: [execute]
+            properties:
+              execute:
+                type: object
+                title: Execute
+                description: Address is the jump-to address. No further processing of SB after jump, ROM do not expect to return.
+                properties:
+                  address:
+                    type: [string, number]
+                    title: Address
+                    description: Jump-to address to start execute code.
+                    format: number
+                    template_value: 0x0
+                required: [address]
+
+          - type: object
+            required: [programIFR]
+            properties:
+              programIFR:
+                type: object
+                title: Program IFR
+                description: The startAddress will be the address into the IFR region, length will be in number of bytes to write to IFR region. The data to write to IFR region at the given address will immediately follow the header
+                properties:
+                  address:
+                    type: [string, number]
+                    title: Address
+                    description: Address of IFR region to be programmed.
+                    format: number
+                    template_value: 0x0
+                  file:
+                    type: string
+                    title: Binary file
+                    description: Binary file to be programmed.
+                    format: file
+                    template_value: my_binary.bin
+                required: [address, file]
+
+          - type: object
+            required: [reset]
+            properties:
+              reset:
+                type: boolean
+                title: Reset
+                description: Resets the target
+                template_value: true

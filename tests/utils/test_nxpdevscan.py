@@ -15,7 +15,8 @@ from serial.tools.list_ports_common import ListPortInfo
 
 import spsdk.utils.devicedescription as devicedescription
 import spsdk.utils.nxpdevscan as nds
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
+from spsdk.mboot.exceptions import McuBootConnectionError
 
 
 def test_usb_device_search():
@@ -67,7 +68,7 @@ def test_usb_device_search():
         assert len(devices) == len(result)
 
         for dev, res in zip(devices, result):
-            assert dev.info() == res.info()
+            assert str(dev) == str(res)
 
 
 def test_usb_device_search_extended():
@@ -137,23 +138,25 @@ def test_usb_device_search_extended():
         assert len(devices) == len(result)
 
         for dev, res in zip(devices, result):
-            assert dev.info() == res.info()
+            assert str(dev) == str(res)
 
 
 # following mock functions are only for `test_uart_device_search usage`
-def mock_mb_scan_uart(port, *args, **kwargs):
+
+
+def mock_mb_scan_uart(port, timeout: int = 0):
     return True if port == "COM1" else False
 
 
 def mock_sdp_read_status(self, *args, **kwargs):
     print("inside mock_sdp_read_status")
-    retval = 1 if self._device.device.port == "COM5" else None
+    retval = 1 if self._interface.device._device.port == "COM5" else None
     return retval
 
 
 def mock_sdp_uart_init(self, port: str = None, timeout: int = 5000, baudrate: int = 115200):
-    self.device = Serial(port=None, timeout=timeout / 1000, baudrate=baudrate)
-    self.device.port = port
+    self._device = Serial(port=None, timeout=timeout / 1000, baudrate=baudrate)
+    self._device.port = port
     self.expect_status = True
 
 
@@ -164,9 +167,9 @@ list_port_info_mock = [
 ]
 
 
-@patch("spsdk.utils.nxpdevscan.mb_scan_uart", mock_mb_scan_uart)
+@patch("spsdk.utils.nxpdevscan.MbootUARTInterface.scan", mock_mb_scan_uart)
 @patch("spsdk.utils.nxpdevscan.SDP.read_status", mock_sdp_read_status)
-@patch("spsdk.utils.nxpdevscan.SDP_Uart.__init__", mock_sdp_uart_init)
+@patch("spsdk.utils.interfaces.device.serial_device.SerialDevice.__init__", mock_sdp_uart_init)
 @patch("spsdk.utils.nxpdevscan.comports", MagicMock(return_value=list_port_info_mock))
 def test_uart_device_search():
     """Test, that search method returns all NXP Uart devices."""
@@ -181,7 +184,7 @@ def test_uart_device_search():
     assert len(devices) == len(result)
 
     for dev, res in zip(devices, result):
-        assert dev.info() == res.info()
+        assert str(dev) == str(res)
 
 
 # following mock functions are only for `test_sdio_device_search usage`
@@ -193,15 +196,19 @@ class mockSdio:
         """
         super().__init__()
 
-        self._opened = False
-        # Temporarily use hard code until there is a way to retrive VID/PID
-        self.vid = 0x0471
-        self.pid = 0x0209
-        self.timeout = 2000
-        if path is None:
-            raise McuBootConnectionError("No SDIO device path")
-        self.path = path
-        self.is_blocking = False
+        class SdioDevice:
+            def __init__(self, _path) -> None:
+                self._opened = False
+                # Temporarily use hard code until there is a way to retrive VID/PID
+                self.vid = 0x0471
+                self.pid = 0x0209
+                self.timeout = 2000
+                if path is None:
+                    raise McuBootConnectionError("No SDIO device path")
+                self.path = _path
+                self.is_blocking = False
+
+        self.device = SdioDevice(path)
 
 
 def test_sdio_device_search():
@@ -211,13 +218,13 @@ def test_sdio_device_search():
     result = [
         devicedescription.SDIODeviceDescription(0x0471, 0x0209, "/dev/mcu-sdio"),
     ]
-    with patch("spsdk.utils.nxpdevscan.mb_scan_sdio", MagicMock(return_value=[test])):
+    with patch("spsdk.utils.nxpdevscan.MbootSdioInterface.scan", MagicMock(return_value=[test])):
         devices = nds.search_nxp_sdio_devices()
 
         assert len(devices) == len(result)
 
         for dev, res in zip(devices, result):
-            assert dev.info() == res.info()
+            assert str(dev) == str(res)
 
 
 def test_sdio_device_search_no_device_found():
@@ -226,7 +233,7 @@ def test_sdio_device_search_no_device_found():
     result = [
         devicedescription.SDIODeviceDescription(0x0471, 0x0209, ""),
     ]
-    with patch("spsdk.utils.nxpdevscan.mb_scan_sdio", MagicMock(return_value=[])):
+    with patch("spsdk.utils.nxpdevscan.MbootSdioInterface.scan", MagicMock(return_value=[])):
         devices = nds.search_nxp_sdio_devices()
         assert len(devices) != len(result)
 
@@ -325,17 +332,17 @@ def test_sio_device_search():
         with patch("platform.system", MagicMock(return_value="Windows")):
             devices = nds.search_libusbsio_devices()
             assert len(devices) == 1
-            assert devices[0].info() == get_return(PATH_BY_SYSTEM["win"])
+            assert str(devices[0]) == get_return(PATH_BY_SYSTEM["win"])
 
         with patch("platform.system", MagicMock(return_value="Linux")):
             devices = nds.search_libusbsio_devices()
             assert len(devices) == 1
-            assert devices[0].info() == get_return(PATH_BY_SYSTEM["linux"])
+            assert str(devices[0]) == get_return(PATH_BY_SYSTEM["linux"])
 
     with patch("platform.system", MagicMock(return_value="Darwin")):
         devices = nds.search_libusbsio_devices()
         assert len(devices) == 1
-        assert devices[0].info() == get_return(PATH_BY_SYSTEM["darwin"])
+        assert str(devices[0]) == get_return(PATH_BY_SYSTEM["darwin"])
 
 
 def mock_libusbsio_GetNumPorts(self, vidpids=None):

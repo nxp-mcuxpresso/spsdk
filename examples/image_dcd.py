@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,14 @@
 
 from os import mkdir, path
 
-from spsdk.image import CmdCheckData, CmdNop, CmdWriteData, EnumCheckOps, EnumWriteOps, SegDCD
+from spsdk.image.segments import (
+    CmdCheckData,
+    CmdNop,
+    CmdWriteData,
+    EnumCheckOps,
+    EnumWriteOps,
+    SegDCD,
+)
 
 TEMP_DIR = path.join(path.dirname(path.abspath(__file__)), "temp")
 
@@ -100,7 +107,7 @@ def main() -> None:
 
     # All DCD objects contain same data, therefore must be same
     print(dcd_01 == dcd_02 == dcd_03)
-    print(dcd_01.info())
+    print(str(dcd_01))
 
     # Create temp directory if doesn't exist
     mkdir(TEMP_DIR)

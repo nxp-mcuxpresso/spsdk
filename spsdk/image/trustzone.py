@@ -11,13 +11,12 @@ import os
 import struct
 from typing import Any, Dict, List, Optional
 
-from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image import TZ_SCH_FILE
 from spsdk.utils.database import Database
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import format_value, load_configuration, value_to_int
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +214,7 @@ class TrustZone:
             override["family"] = family
             override["revision"] = revision
 
-            yaml_data = ConfigTemplate(
+            yaml_data = CommentedConfig(
                 f"Trust Zone Configuration template for {family}.",
                 schemas,
                 override,
@@ -223,6 +222,9 @@ class TrustZone:
             ret[f"{family}_tz"] = yaml_data
 
         return ret
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     def __str__(self) -> str:
         return f"<TrustZone: type: {self.type} ({TrustZoneType.desc(self.type)})"

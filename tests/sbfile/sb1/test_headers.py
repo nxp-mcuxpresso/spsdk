@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.misc import BcdVersion3, SecBootBlckSize
 from spsdk.sbfile.sb1.headers import (
     BootSectionHeaderV1,
@@ -50,9 +50,9 @@ def test_secure_boot_header_v1():
     data = header.export()
     assert len(data) == header.size
 
-    header_parsed = SecureBootHeaderV1.parse(b"\xFF" + data, 1)
-    s1 = header.info().split("\n")
-    s2 = header_parsed.info().split("\n")
+    header_parsed = SecureBootHeaderV1.parse((b"\xFF" + data)[1:])
+    s1 = str(header).split("\n")
+    s2 = str(header_parsed).split("\n")
     assert len(s1) == len(s2)
     for index, line in enumerate(s1):
         assert line == s2[index]
@@ -70,10 +70,10 @@ def test_section_header_item():
     data = header.export()
     assert len(data) == header.size
 
-    header_parsed = SectionHeaderItemV1.parse(b"\xFF" + data, 1)
+    header_parsed = SectionHeaderItemV1.parse((b"\xFF" + data)[1:])
     assert header == header_parsed
 
-    assert header.info()
+    assert str(header)
 
 
 def test_insufficient_size():

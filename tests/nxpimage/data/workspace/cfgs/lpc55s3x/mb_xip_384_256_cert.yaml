@@ -1,0 +1,24 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Master Boot Image converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+# ----------------------------------------------------------------------------------------------------
+family: lpc55s3x  # [Required], MCU family name; Possible options:['lpc553x', 'lpc55s3x']
+outputImageExecutionTarget: xip # [Required], Application target; Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence; Possible options:['Internal flash (XIP)', 'External flash (XIP)', 'Internal Flash (XIP)', 'External Flash (XIP)', 'RAM', 'ram', 'xip']
+outputImageAuthenticationType: signed # [Required], Type of boot image authentication; Specification of final master boot image authentication; Possible options:['Plain', 'CRC', 'Signed', 'Encrypted + Signed', 'NXP Signed', 'encrypted', 'signed', 'crc']
+masterBootOutputFile: .\workspace\output_images\lpc55s3x\mb_xip_384_256.bin # [Required], Master Boot Image name; The file for Master Boot Image result file.
+inputImageFile: .\workspace\input_images\normal_boot.bin # [Required], Plain application image; The input application image to by modified to Master Boot Image.
+imageVersion: '0x1' # [Optional], Firmware version; Version of application image firmware.
+firmwareVersion: '0x1'
+outputImageExecutionAddress: '0x0' # [Required], Loading address of application; Application loading address in RAM if not XiP, otherwise address of load in XiP.
+# ----------------------------------------------------------------------------------------------------
+#                                    == ISK Certificate Settings ==
+# ----------------------------------------------------------------------------------------------------
+certBlock: .\workspace\output_images\lpc55s3x\cert_384_256.bin # [Conditionally required], Binary Certificate; Optionally the certificate could be defined as a pre-generated binary block. In case that is defined, all other configuration for certification block must be deleted ('useIsk', 'mainRootCertPrivateKeyFile', 'signingCertificateFile', 'signingCertificateConstraint', 'signCertData') In case that ISK is defined, certificate block must be deleted
+signPrivateKey: .\workspace\keys_certs\ec_pk_secp256r1_sign_cert.pem # [Optional], ISK Certificate private key used to sign certificate. It can be replaced by signProvider key.
+# ----------------------------------------------------------------------------------------------------
+#                                      == Trust Zone Settings ==
+# ----------------------------------------------------------------------------------------------------
+trustZonePresetFile: '' # [Optional], TrustZone Customization file; If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,6 +11,7 @@
 from struct import pack, unpack_from
 
 from spsdk.utils.easy_enum import Enum
+from spsdk.utils.interfaces.commands import CmdPacketBase, CmdResponseBase
 
 
 ########################################################################################################################
@@ -57,7 +58,7 @@ class ResponseValue(Enum):
 ########################################################################################################################
 
 
-class CmdPacket:
+class CmdPacket(CmdPacketBase):
     """Class representing a command packet to be sent to device."""
 
     FORMAT = ">HIB2IB"
@@ -79,21 +80,18 @@ class CmdPacket:
         self.value = value
 
     def __str__(self) -> str:
-        return "<" + self.info() + ">"
-
-    def info(self) -> str:
         """String representation of the command packet."""
         return (
             f"Tag={CommandTag.get(self.tag, f'0x{self.tag:04X}')}, Address=0x{self.address:04X},"
             f" Format={self.format}, Count={self.count}, Value=0x{self.value:08X}"
         )
 
-    def to_bytes(self) -> bytes:
+    def to_bytes(self, padding: bool = True) -> bytes:
         """Return command packet as bytes."""
         return pack(self.FORMAT, self.tag, self.address, self.format, self.count, self.value, 0)
 
 
-class CmdResponse:
+class CmdResponse(CmdResponseBase):
     """Response on the previously issued command."""
 
     @property
@@ -111,8 +109,5 @@ class CmdResponse:
         self.raw_data = raw_data
 
     def __str__(self) -> str:
-        return "<" + self.info() + ">"
-
-    def info(self) -> str:
         """Return stringified information about the command response."""
         return f"Response: {ResponseValue.get(self.value, f'0x{self.value:08X}')}"

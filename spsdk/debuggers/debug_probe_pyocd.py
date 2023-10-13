@@ -12,19 +12,19 @@ from typing import Dict, List, Optional
 
 import pyocd
 from pyocd.core.exceptions import Error as PyOCDError
+from pyocd.core.exceptions import ProbeError
 from pyocd.core.helpers import ConnectHelper
 from pyocd.core.session import Session
 from pyocd.coresight.dap import DPConnector
 from pyocd.probe.debug_probe import DebugProbe as PyOCDDebugProbe
 
-from spsdk.exceptions import SPSDKError
-
-from .debug_probe import (
+from spsdk.debuggers.debug_probe import (
     DebugProbe,
     SPSDKDebugProbeError,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
 )
+from spsdk.exceptions import SPSDKError
 
 TRACE_ENABLE = True
 logger = logging.getLogger(__name__)
@@ -81,9 +81,14 @@ class DebugProbePyOCD(DebugProbe):
         from .utils import DebugProbes, ProbeDescription
 
         probes = DebugProbes()
-        connected_probes: List[PyOCDDebugProbe] = ConnectHelper.get_all_connected_probes(
-            blocking=False, unique_id=hardware_id
-        )
+        try:
+            connected_probes: List[PyOCDDebugProbe] = ConnectHelper.get_all_connected_probes(
+                blocking=False, unique_id=hardware_id
+            )
+        except ProbeError as exc:
+            logger.debug(f"Probing connected probes over PyOCD failed: {str(exc)}")
+            connected_probes = []
+
         for probe in connected_probes:
             probes.append(
                 ProbeDescription("PyOCD", probe.unique_id, probe.description, DebugProbePyOCD)
@@ -111,7 +116,14 @@ class DebugProbePyOCD(DebugProbe):
 
             self.probe.session = Session(self.probe)
             self.probe.open()
-            self.probe.connect(pyocd.probe.debug_probe.DebugProbe.Protocol.SWD)
+            if self.options.get("use_jtag") is None:
+                self.probe.connect(pyocd.probe.debug_probe.DebugProbe.Protocol.SWD)
+            else:
+                logger.warning(
+                    "Experimental support for JTAG on RW61x."
+                    "The implementation may have bugs and lack features."
+                )
+                self.probe.connect(pyocd.probe.debug_probe.DebugProbe.Protocol.JTAG)
             # Do reset sequence to switch to used protocol
             connector = DPConnector(self.probe)
             connector.connect()
@@ -129,7 +141,8 @@ class DebugProbePyOCD(DebugProbe):
         The PyLink closing function for SPSDK library to support various DEBUG PROBES.
         """
         if self.probe:
-            self.probe.close()
+            if self.probe.is_open:
+                self.probe.close()
             self.probe = None
 
     def assert_reset_line(self, assert_reset: bool = False) -> None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,14 +15,14 @@ def test_boot_section_v1():
     assert sect.flags == SecureBootFlagsV1.ROM_SECTION_BOOTABLE
     assert sect.bootable
     assert not sect.rom_last_tag
-    assert sect.info()
+    assert str(sect)
     assert sect.cmd_size == 0
     assert len(sect.commands) == 0
     sect.append(CmdNop())
     assert len(sect.commands) == 1
     sect.append(CmdNop())
     assert len(sect.commands) == 2
-    assert sect.info()
+    assert str(sect)
     data = sect.export()
     assert len(data) == sect.size
     parsed_sect = BootSectionV1.parse(data)

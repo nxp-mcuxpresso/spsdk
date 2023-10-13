@@ -8,9 +8,12 @@
 """Tests for `dk6_tools` package."""
 import platform
 
+import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import dk6prog
+
+pytest.importorskip("pyftdi")
 
 
 def test_cli():

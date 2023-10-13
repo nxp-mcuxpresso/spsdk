@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
+
+  <register offset="41" width="32" name="SW_GP23" access="W" reversed="True" description="SW_GP2[127:96]"/>
+  <register offset="42" width="32" name="SW_GP22" access="W" reversed="True" description="SW_GP2[95:64]"/>
+  <register offset="43" width="32" name="SW_GP21" access="W" reversed="True" description="SW_GP2[63:32]"/>
+  <register offset="44" width="32" name="SW_GP20" access="W" reversed="True" description="SW_GP2[31:0]"/>
+
+  <register offset="34" width="32" name="OTFAD_KEY_SCRAMBLE" access="W" reversed="True" description="Key scramble data value for key blob unwrap"/>
+
+
+  <register offset="35" width="32" name="OTFAD_CFG" access="W" reversed="True" description="OTFAD Configuration">
+    <bit_field offset="13" width="1" name="OTFAD_DISABLE_OVERRIDE" access="W" reset_value="0" description="Disable OTFAD as if not present">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="11" width="1" name="RESTRICT_OTFAD_IPS" access="W" reset_value="0" description="Blocks access to the OTFAD CTXn.">
+      <bit_field_value name="FULL" value="0b0" description="Full access"/>
+      <bit_field_value name="RESTRICTED" value="0b1" description="Restricted Access"/>
+    </bit_field>
+    <bit_field offset="10" width="1" name="ENB_OTFAD_KEY_SCRAMBLE" access="W" reset_value="0" description="OTFAD Key Scrambling enable.">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="9" width="1" name="OTFAD_KEY_BLOB_EN" access="W" reset_value="0" description="OTFAD keyblob enable">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="OTFAD_ENABLE" access="W" reset_value="0" description="OTFAD enable.">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="0" width="8" name="OTFAD_SCRAMBLE_ALIGN" access="W" reset_value="0" description="OTFAD_SCRAMBLE_ALIGN[7:0]">
+      <bit_field_value name="DISABLE" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLE" value="0b1" description="Enabled"/>
+    </bit_field>
+  </register>
+
+
+
+  <register offset="6" width="32" name="BOOT_CFG" access="W" reversed="True" description="Boot configuration">
+    <bit_field offset="13" width="1" name="OTFAD1_KEY_SEL" access="W" reset_value="0" description="OTFAD1 key selection.">
+      <bit_field_value name="USER_KEY5" value="0b0" description="0 - From Key selected by OTFAD_KEY_SEL0"/>
+      <bit_field_value name="PUF" value="0b1" description="1 - From FUSE_SW_GPR2[127:0]"/>
+    </bit_field>
+
+    <bit_field offset="12" width="1" name="OTFAD0_KEY_SEL" access="W" reset_value="0" description="OTFAD0 key selection.">
+      <bit_field_value name="USER_KEY5" value="0b0" description="0 - SNVS master key[127:0]"/>
+      <bit_field_value name="PUF" value="0b1" description="1 - SNVS master key[255:128]"/>
+    </bit_field>
+  </register>
+
+</regs:peripheral>

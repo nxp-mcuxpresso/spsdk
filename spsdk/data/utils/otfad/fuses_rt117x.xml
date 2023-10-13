@@ -1,16 +1,15 @@
 <?xml version="1.0"?>
 <!--
   Copyright 2023 NXP
-
   SPDX-License-Identifier: BSD-3-Clause
 -->
 <regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
 
-  <register offset="0x80" width="32" name="OTFAD_KEY3" access="W" reversed="False" description="OTFAD1_KEY[127:96]"/>
-  <register offset="0x81" width="32" name="OTFAD_KEY2" access="W" reversed="False" description="OTFAD1_KEY[95:64]"/>
-  <register offset="0x82" width="32" name="OTFAD_KEY1" access="W" reversed="False" description="OTFAD1_KEY[63:32]"/>
-  <register offset="0x83" width="32" name="OTFAD_KEY0" access="W" reversed="False" description="OTFAD1_KEY[31:0]"/>
+  <register offset="0x80" width="32" name="OTFAD_KEY3" access="W" reversed="True" description="OTFAD1_KEY[127:96]"/>
+  <register offset="0x81" width="32" name="OTFAD_KEY2" access="W" reversed="True" description="OTFAD1_KEY[95:64]"/>
+  <register offset="0x82" width="32" name="OTFAD_KEY1" access="W" reversed="True" description="OTFAD1_KEY[63:32]"/>
+  <register offset="0x83" width="32" name="OTFAD_KEY0" access="W" reversed="True" description="OTFAD1_KEY[31:0]"/>
 
   <register offset="0x84" width="32" name="OTFAD1_KEY_SCRAMBLE" access="W" reversed="True" description="OTFAD1 Key Scramble mask"/>
   <register offset="0x85" width="32" name="OTFAD1_SCRAMBLE_ALIGN" access="W" reversed="True" description="OTFAD1 Key Scramble align"/>
@@ -25,7 +24,7 @@
   </register>
 
   <register offset="0x0e" width="32" name="SEC_CONFIG" access="W" reversed="True" description="OTFAD Configuration">
-    <bit_field offset="4" width="1" name="OTFAD1_KEY_SEL" access="W" reset_value="0" description="Blocks access to the OTFAD2 CTXn.">
+    <bit_field offset="4" width="1" name="OTFAD1_KEY_SEL" access="W" reset_value="0" description="OTFAD1 key selection.">
       <bit_field_value name="USER_KEY5" value="0b0" description="select USER_KEY5 as OTFAD1 key"/>
       <bit_field_value name="PUF" value="0b1" description="select PUF key[1] as OTFAD1 key"/>
     </bit_field>
@@ -33,7 +32,7 @@
       <bit_field_value name="DISABLE" value="0b0" description="software change OTFAD1 key selection allowed"/>
       <bit_field_value name="ENABLE" value="0b1" description="software change OTFAD1 key selection not allowed"/>
     </bit_field>
-    <bit_field offset="6" width="1" name="OTFAD2_KEY_SEL" access="W" reset_value="0" description="Blocks access to the OTFAD2 CTXn.">
+    <bit_field offset="6" width="1" name="OTFAD2_KEY_SEL" access="W" reset_value="0" description="OTFAD2 key selection.">
       <bit_field_value name="USER_KEY5" value="0b0" description="select USER_KEY5 as OTFAD2 key"/>
       <bit_field_value name="PUF" value="0b1" description="select PUF key[1] as OTFAD1 key"/>
     </bit_field>

@@ -10,6 +10,7 @@ devices:
     latest: x0
     attributes:
       address: 0x4000_0000
+      read_address: 0x4000_0000
       inverted_regs:
         REG1: REG_INVERTED_AP
       flush_func: rw61x_update_scratch_reg

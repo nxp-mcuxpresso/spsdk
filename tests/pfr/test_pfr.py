@@ -10,41 +10,35 @@ import filecmp
 import os
 
 import pytest
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from ruamel.yaml import YAML
 
-from spsdk import SPSDKError
-from spsdk.crypto.loaders import extract_public_keys
-from spsdk.pfr import (
+from spsdk.crypto.keys import PrivateKeyRsa
+from spsdk.crypto.utils import extract_public_keys
+from spsdk.exceptions import SPSDKError
+from spsdk.pfr.pfr import (
     CFPA,
     CMPA,
+    BaseConfigArea,
     PfrConfiguration,
     SPSDKPfrConfigError,
     SPSDKPfrConfigReadError,
-    SPSDKPfrError,
     SPSDKPfrRotkhIsNotPresent,
 )
-from spsdk.pfr.pfr import BaseConfigArea
 from spsdk.utils.misc import load_file
 
 
 def test_generate_cmpa(data_dir):
     """Test PFR tool - Generating CMPA binary."""
     binary = load_file(os.path.join(data_dir, "CMPA_96MHz.bin"), mode="rb")
-    key = load_pem_private_key(
-        load_file(os.path.join(data_dir, "selfsign_privatekey_rsa2048.pem"), mode="rb"),
-        password=None,
-        backend=default_backend(),
-    )
+    key = PrivateKeyRsa.load(os.path.join(data_dir, "selfsign_privatekey_rsa2048.pem"))
 
     pfr_cfg_json = PfrConfiguration(os.path.join(data_dir, "cmpa_96mhz.json"))
     cmpa_json = CMPA("lpc55s6x", user_config=pfr_cfg_json)
-    assert binary == cmpa_json.export(add_seal=False, keys=[key.public_key()])
+    assert binary == cmpa_json.export(add_seal=False, keys=[key.get_public_key()])
 
     pfr_cfg_yml = PfrConfiguration(os.path.join(data_dir, "cmpa_96mhz.yml"))
     cmpa_yml = CMPA("lpc55s6x", user_config=pfr_cfg_yml)
-    assert binary == cmpa_yml.export(add_seal=False, keys=[key.public_key()])
+    assert binary == cmpa_yml.export(add_seal=False, keys=[key.get_public_key()])
 
 
 def test_generate_cfpa(data_dir):
@@ -64,6 +58,7 @@ def test_supported_devices():
     """Test PFR tool - Getting supported devices."""
     cfpa_devices = CFPA.devices()
     cmpa_devices = CMPA.devices()
+    cmpa_devices.remove("mcxa1xx")
     assert sorted(cmpa_devices) == sorted(cfpa_devices)
 
 
@@ -106,7 +101,7 @@ def test_config_cfpa(data_dir):
 
     assert config != config2
 
-    cfpa2 = CFPA("lpc55s6x", user_config=PfrConfiguration(config2))
+    cfpa2 = CFPA("lpc55s6x")
     cfpa2.parse(bytes(512))  # Parse 512-bytes of empty CFPA page content
     cfpa2_pfr_cfg = PfrConfiguration(
         data_dir + "/cfpa_after_reset.yml"
@@ -138,31 +133,31 @@ def test_config_cmpa_yml(tmpdir):
     yaml.indent(sequence=4, offset=2)
     cmpa = CMPA("lpc55s6x")
     config = cmpa.get_yaml_config(exclude_computed=True)
-    with open(tmpdir + "/config.yml", "w") as yml_file:
+    with open(os.path.join(tmpdir, "config.yml"), "w") as yml_file:
         yaml.dump(config, yml_file)
 
     config2 = cmpa.get_yaml_config(exclude_computed=False)
-    with open(tmpdir + "/config2.yml", "w") as yml_file:
+    with open(os.path.join(tmpdir, "config2.yml"), "w") as yml_file:
         yaml.dump(config2, yml_file)
 
-    assert not filecmp.cmp(tmpdir + "/config.yml", tmpdir + "/config2.yml")
+    assert not filecmp.cmp(os.path.join(tmpdir, "config.yml"), os.path.join(tmpdir, "config2.yml"))
 
     cmpa2 = CMPA("lpc55s6x")
-    cmpa2_pfr_cfg = PfrConfiguration(tmpdir + "/config.yml")
+    cmpa2_pfr_cfg = PfrConfiguration(os.path.join(tmpdir, "config.yml"))
     cmpa2.set_config(cmpa2_pfr_cfg)
     out_config = cmpa2.get_yaml_config(exclude_computed=True)
-    with open(tmpdir + "/out_config.yml", "w") as yml_file:
+    with open(os.path.join(tmpdir, "out_config.yml"), "w") as yml_file:
         yaml.dump(out_config, yml_file)
 
-    assert filecmp.cmp(tmpdir + "/config.yml", tmpdir + "/out_config.yml")
+    assert filecmp.cmp(os.path.join(tmpdir, "config.yml"), os.path.join(tmpdir, "out_config.yml"))
 
-    cmpa2_pfr_cfg = PfrConfiguration(tmpdir + "/config2.yml")
+    cmpa2_pfr_cfg = PfrConfiguration(str(tmpdir) + "/config2.yml")
     cmpa2.set_config(cmpa2_pfr_cfg, raw=True)
     out_config2 = cmpa2.get_yaml_config(exclude_computed=False)
-    with open(tmpdir + "/out_config2.yml", "w") as yml_file:
+    with open(os.path.join(tmpdir, "out_config2.yml"), "w") as yml_file:
         yaml.dump(out_config2, yml_file)
 
-    assert filecmp.cmp(tmpdir + "/config2.yml", tmpdir + "/out_config2.yml")
+    assert filecmp.cmp(os.path.join(tmpdir, "config2.yml"), os.path.join(tmpdir, "out_config2.yml"))
 
 
 def test_load_config():
@@ -409,7 +404,7 @@ def test_lpc55s3x_binary_ec256(data_dir):
 
 def test_lpc55s3x_binary_ec384(data_dir):
     """Test silicon LPC55S3x ECC384. Binary generation/ROTKH computation"""
-    cfpa = CMPA("lpc55s3x")
+    cmpa = CMPA("lpc55s3x")
     keys_path = [
         data_dir + "/ec_secp384r1_cert0.pem",
         data_dir + "/ec_secp384r1_cert1.pem",
@@ -417,7 +412,7 @@ def test_lpc55s3x_binary_ec384(data_dir):
         data_dir + "/ec_secp384r1_cert3.pem",
     ]
 
-    data = cfpa.export(keys=extract_public_keys(keys_path, password=None))
+    data = cmpa.export(keys=extract_public_keys(keys_path, password=None))
 
     assert len(data) == 512
     with open(data_dir + "/lpc55s3x_CMPA_384.bin", "rb") as binary:
@@ -434,7 +429,7 @@ def test_invalid_key_size(data_dir):
         data_dir + "/ec_secp384r1_cert3.pem",
     ]
 
-    with pytest.raises(SPSDKPfrError):
+    with pytest.raises(SPSDKError):
         cfpa.export(keys=extract_public_keys(keys_path, password=None))
 
 

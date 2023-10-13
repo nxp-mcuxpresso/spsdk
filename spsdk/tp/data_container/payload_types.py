@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module holding all supported Payload types."""
@@ -32,6 +32,8 @@ class PayloadType(Enum):
     CUST_PROD_CFPA_DATA_SECRET  = (0x20C3, "CUST_PROD_CFPA_DATA_SECRET", "CUST_PROD_CFPA_DATA_SECRET")
     CUST_PROD_CMPA_DATA_SECRET  = (0x20C4, "CUST_PROD_CMPA_DATA_SECRET", "CUST_PROD_CMPA_DATA_SECRET")
 
+    CUST_PROD_PROV_DATA         = (0x20C8, "CUST_PROD_PROV_DATA", "CUST_PROD_PROV_DATA")
+
     OEM_PROD_COUNTER            = (0x20D1, "CUST_PROD_COUNTER", "CUST_PROD_COUNTER")
 
     OEM_TP_LOG_HASH             = (0x20D2, "OEM_TP_LOG_HASH", "OEM_TP_LOG_HASH")
@@ -43,3 +45,5 @@ class PayloadType(Enum):
     NXP_DIE_ID_AUTH_CERT        = (0xF0F0, "NXP_DIE_ID_AUTH_CERT", "NXP_DIE_ID_AUTH_CERT")
     NXP_DIE_ECID_ID_UID         = (0x0F0F, "NXP_DIE_ECID_ID_UID", "NXP_DIE_ECID_ID_UID")
     NXP_DIE_RFC4122v4_ID_UUID   = (0x9696, "NXP_DIE_RFC4122v4_ID_UUID", "NXP_DIE_RFC4122v4_ID_UUID")
+
+    WPC_DIE_ID_AUTH_PUK         = (0xABAB, "WPC_DIE_ID_PUK", "Public key for WPC Qi Authentication")

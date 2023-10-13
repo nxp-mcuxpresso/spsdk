@@ -44,7 +44,7 @@ def test_command_line_interface_getreg(cmd):
 def test_command_line_interface_printregs_no_probe_exe():
     """Test for printregs execution menu options."""
     runner = CliRunner()
-    cmd = "-dev rt5xx -i virtual printregs"
+    cmd = "-f rt5xx -i virtual printregs"
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 1
@@ -53,7 +53,7 @@ def test_command_line_interface_printregs_no_probe_exe():
 def test_command_line_interface_invalid_device():
     """Test for reset execution menu options."""
     runner = CliRunner()
-    cmd = "-dev invalid -i virtual reset"
+    cmd = "-f invalid -i virtual reset"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code != 0
 
@@ -62,7 +62,7 @@ def test_command_line_interface_printregs_exe_fail():
     """Test for printregs execution menu options."""
     runner = CliRunner()
     disable_debug = "-o mem_read_exp=1"
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {disable_debug} printregs"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {disable_debug} printregs"
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 1
@@ -72,7 +72,7 @@ def test_command_line_interface_printregs_exe():
     """Test for printregs execution menu options."""
     runner = CliRunner()
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} printregs"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} printregs"
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 0
@@ -82,7 +82,7 @@ def test_command_line_interface_printregs_r_exe():
     """Test for printregs rich execution menu options."""
     runner = CliRunner()
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} printregs -r"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} printregs -r"
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 0
@@ -94,7 +94,7 @@ def test_command_line_interface_setreg_exe():
     """Test for printregs execution menu options."""
     runner = CliRunner()
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug}"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug}"
     cmd += " setreg -r DCFG_CC_SOCU -v 12345678"
     result = runner.invoke(main, cmd.split())
 
@@ -105,7 +105,7 @@ def test_command_line_interface_getreg_exe():
     """Test for printregs execution menu options."""
     runner = CliRunner()
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} getreg -r DCFG_CC_SOCU"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} getreg -r DCFG_CC_SOCU"
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 0
@@ -117,14 +117,14 @@ def test_command_line_interface_saveloadconfig_r_exe(tmpdir):
     # create path in TMP DIR
     filename = os.path.join(tmpdir, "SR_COV_TEST.yml")
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -f {filename} -r"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -o {filename} -r"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 0
     # check if the file really exists
     assert os.path.isfile(filename)
 
     # Try to load the generated file
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} loadconfig -f {filename} -r"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} loadconfig -c {filename} -r"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 0
 
@@ -134,7 +134,7 @@ def test_command_line_interface_saveloadconfig_exe(tmpdir):
     runner = CliRunner()
     filename = os.path.join(tmpdir, "SR_COV_TEST.yml")
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -f {filename}"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -o {filename}"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 0
 
@@ -142,7 +142,7 @@ def test_command_line_interface_saveloadconfig_exe(tmpdir):
     assert os.path.isfile(filename)
 
     # Try to load the generated file
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} loadconfig -f {filename}"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} loadconfig -c {filename}"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 0
 
@@ -151,7 +151,7 @@ def test_command_line_interface_reset_exe():
     """Test for reset execution menu options."""
     runner = CliRunner()
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} reset"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} reset"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 0
 
@@ -160,7 +160,7 @@ def test_command_line_interface_logger():
     """Test for reset execution menu options."""
     runner = CliRunner()
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} -vv reset"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} -vv reset"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 0
 
@@ -169,7 +169,7 @@ def test_command_line_interface_invalid_o_param():
     """Test for reset execution menu options."""
     runner = CliRunner()
     enable_debug = "-o subs_ap"
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} -vv reset"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} -vv reset"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 1
 
@@ -183,7 +183,7 @@ def test_command_line_interface_saveconfig_exe_fail(tmpdir):
         '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]} '
         '-o subs_mem={"1074987040":["Exception"]}'
     )
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -f {filename}"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -o {filename}"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 1
 
@@ -198,7 +198,7 @@ def test_command_line_interface_loadconfig_exe_fail(data_dir):
         '-o subs_mem={"1074987040":["Exception"]}'
     )
     cmd = [
-        "-dev",
+        "-f",
         "rt5xx",
         "-i",
         "virtual",
@@ -206,7 +206,7 @@ def test_command_line_interface_loadconfig_exe_fail(data_dir):
         DebugProbeVirtual.UNIQUE_SERIAL,
         enable_debug,
         "loadconfig",
-        "-f",
+        "-c",
         filename,
     ]
     result = runner.invoke(main, cmd)
@@ -220,7 +220,7 @@ def test_command_line_interface_printregs_exe_fail1():
         '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]} '
         '-o subs_mem={"1074987040":["Exception"]}'
     )
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} printregs"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} printregs"
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 1
@@ -233,7 +233,7 @@ def test_command_line_interface_setreg_exe_fail():
         '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]} '
         '-o subs_mem={"1074987040":["Exception"]}'
     )
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug}"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug}"
     cmd += " setreg -r CUST_WR_RD_LOCK0 -v 12345678"
     result = runner.invoke(main, cmd.split())
 
@@ -247,7 +247,7 @@ def test_command_line_interface_getreg_exe_fail():
         '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]} '
         '-o subs_mem={"1074987040":["Exception"]}'
     )
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} getreg -r CUST_WR_RD_LOCK0"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} getreg -r CUST_WR_RD_LOCK0"
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 1
@@ -256,7 +256,7 @@ def test_command_line_interface_getreg_exe_fail():
 def test_command_line_interface_generate_html(tmpdir):
     """Test for info execution menu options."""
     runner = CliRunner()
-    cmd = f"-dev rt5xx info -o {tmpdir}/imxrt_info.html"
+    cmd = f"-f rt5xx info -o {tmpdir}/imxrt_info.html"
     result = runner.invoke(main, cmd.split())
 
     assert result.exit_code == 0, result.output
@@ -269,7 +269,7 @@ def test_command_line_interface_fuse_script_exe(tmpdir):
     # create path in TMP DIR
     filename = os.path.join(tmpdir, "SR_COV_TEST.yml")
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-dev rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -f {filename} -r"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -o {filename} -r"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 0
     # check if the file really exists
@@ -277,8 +277,25 @@ def test_command_line_interface_fuse_script_exe(tmpdir):
 
     # Try create BLHOST script
     script_file = os.path.join(tmpdir, "blhost_script.bsf")
-    cmd = f"-dev rt5xx fuses-script -c {filename} {script_file}"
+    cmd = f"-f rt5xx fuses-script -c {filename} -o {script_file}"
     result = runner.invoke(main, cmd.split())
     assert result.exit_code == 0
     # check if the file really exists
     assert os.path.isfile(script_file)
+
+
+@pytest.mark.parametrize(
+    "family",
+    [
+        ("rt5xx"),
+        ("rt6xx"),
+        ("rw61x"),
+    ],
+)
+def test_command_line_get_template(tmpdir, family):
+    """Test for get template in shadowregs."""
+    cmd = f"--family {family} get-template --output {tmpdir}/shadowregs.yml"
+    runner = CliRunner()
+    result = runner.invoke(main, cmd.split())
+    assert result.exit_code == 0
+    assert os.path.isfile(f"{tmpdir}/shadowregs.yml")

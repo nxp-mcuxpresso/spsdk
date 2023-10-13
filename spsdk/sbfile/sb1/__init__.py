@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module implementing SBFile version 1."""
-
-from spsdk.mboot import ExtMemId
-
 from ..misc import BcdVersion3
 from ..sb2 import commands
 from ..sb2.commands import (
@@ -28,6 +25,8 @@ from .images import SecureBootV1
 from .sections import BootSectionV1
 
 __all__ = [
+    # modules
+    "commands",
     # main classes
     "SecureBootV1",
     "BootSectionV1",
@@ -45,5 +44,4 @@ __all__ = [
     # helper classes and enums
     "SecureBootFlagsV1",
     "BcdVersion3",
-    "ExtMemId",
 ]

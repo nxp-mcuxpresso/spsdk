@@ -1,0 +1,31 @@
+<?xml version="1.0" ?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+<regs>
+	<register offset="0x00" width="32" name="REG0" reversed="True" description="REG test reversed" otp_index="104">
+	</register>
+
+	<register offset="0x04" width="32" name="REG1" reversed="True" description="REG test reversed" otp_index="105">
+	</register>
+
+	<register offset="0x08" width="32" name="REG2" reversed="True" description="REG test reversed" otp_index="106">
+	</register>
+
+	<register offset="0x0c" width="32" name="REG3" reversed="True" description="REG test reversed" otp_index="107">
+	</register>
+
+	<register offset="0x10" width="32" name="REG4" reversed="True" description="REG test reversed" otp_index="108">
+	</register>
+
+	<register offset="0x14" width="32" name="REG5" reversed="True" description="REG test reversed" otp_index="109">
+	</register>
+
+	<register offset="0x18" width="32" name="REG6" reversed="True" description="REG test reversed" otp_index="110">
+	</register>
+
+	<register offset="0x1c" width="32" name="REG7" reversed="True" description="REG test reversed" otp_index="111">
+	</register>
+</regs>

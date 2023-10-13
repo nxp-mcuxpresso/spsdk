@@ -1,28 +1,38 @@
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020 NXP
-# Author: Libor Ukropec
+# Copyright 2020-2023 NXP
+# Author: Libor Ukropec, Marek Vitula
 #
-# Runtime hook as a workaround for pkg_resources entrypoints.
+# Runtime hook as a workaround for importlib entrypoints.
 #
 from typing import Any
+import importlib_metadata
+from importlib_metadata import EntryPoint
+
 ep_packages = {{packages}}
 
 if ep_packages:
-    import pkg_resources
-    default_iter_entry_points = pkg_resources.iter_entry_points
+    default_iter_entry_points = importlib_metadata.entry_points
 
-    def hook_iter_entry_points(group: str, name: str=None) -> Any:
-        """ Override pkg_resources.iter_entry_points with custom entries.
-        See pkg_resources.iter_entry_points
+    def hook_iter_entry_points(**params):
+        """ Override importlib_metadata.entry_points with custom entries.
+        See importlib_metadata.entry_points
         """
-        if group in ep_packages and ep_packages[group]:
-            eps = ep_packages[group]
-            for ep in eps:
-                parsedEp = pkg_resources.EntryPoint.parse(ep)
-                parsedEp.dist = pkg_resources.Distribution()
-                yield parsedEp
-        else:
-            return default_iter_entry_points(group, name)
+        asked_group = None
+        if params:
+            asked_group = params.get("group")
 
-    pkg_resources.iter_entry_points = hook_iter_entry_points
+        if asked_group in ep_packages:
+            for group, entry_point_strings in ep_packages.items():
+                for entry_point_string in entry_point_strings:
+                    name, value = entry_point_string.split("=")
+                    entry_point = EntryPoint(
+                        group=group.strip(),
+                        name=name.strip(),
+                        value=value.strip()
+                    )
+                    yield entry_point
+        else:
+            yield from default_iter_entry_points(**params)  # Yield from the original generator
+
+    importlib_metadata.entry_points = hook_iter_entry_points

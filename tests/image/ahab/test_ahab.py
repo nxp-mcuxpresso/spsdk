@@ -9,6 +9,8 @@ import copy
 
 import pytest
 
+from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.ele.ele_message import KeyBlobEncryptionAlgorithm
 from spsdk.exceptions import SPSDKLengthError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer
 from spsdk.image.ahab.ahab_container import (
@@ -33,7 +35,7 @@ def container_head() -> HeaderContainer:
 def srk_record():
     return SRKRecord(
         signing_algorithm="rsa",
-        hash_type="sha256",
+        hash_type=EnumHashAlgorithm.SHA256,
         key_size=0x05,
         srk_flags=0,
         crypto_param1=bytes.fromhex(5 * "5511"),
@@ -183,7 +185,7 @@ def test_container_head_check_head():
         TAG = 0x01
         VERSION = 0x03
 
-    TestHeadContainer(tag=0x01, length=0x05, version=0x03)._check_container_head(
+    TestHeadContainer(tag=0x01, length=0x05, version=0x03).check_container_head(
         b"\x03\x05\x00\x01\x99"
     )
 
@@ -191,17 +193,32 @@ def test_container_head_check_head():
         TAG = [0x01, 0x06]
         VERSION = 0x03
 
-    TestHeadContainer2(tag=0x01, length=0x05, version=0x03)._check_container_head(
+    TestHeadContainer2(tag=0x01, length=0x05, version=0x03).check_container_head(
         b"\x03\x05\x00\x01\x99"
     )
 
     head = TestHeadContainer(tag=0x01, length=0x05, version=0x03)
 
     with pytest.raises(SPSDKParsingError):
-        head._check_container_head(b"\x03\x05\x00\x10\x99")
+        head.check_container_head(b"\x03\x05\x00\x10\x99")
 
     with pytest.raises(SPSDKParsingError):
-        head._check_container_head(b"\x04\x05\x00\x01\x99")
+        head.check_container_head(b"\x04\x05\x00\x01\x99")
 
     with pytest.raises(SPSDKLengthError):
-        head._check_container_head(b"\x04\x06\x00\x01\x99")
+        head.check_container_head(b"\x04\x06\x00\x01\x99")
+
+
+def test_keyblob():
+    keyblob = (
+        b"\x00H\x00\x81\x01\x10\x03\x00\xfe\xda\x04v\xb3s\xcb\x8bE"
+        + b"\xdc\x06(I\x8a\xd3\xe0\xf0\x86\xbf\xdc\xea\xeds-H\xb8"
+        + b"\x94v\xe7\xc7\xae\x07\xca\xce;\x93Z\xcd\x0ff\x0c\xec{"
+        + b'\xa6KMg\x97\x0e\xb3](]b"\xdd`\x16\xdb\xe5\x94*\x01\xea'
+    )
+    blob = Blob().parse(keyblob)
+    assert blob.algorithm == KeyBlobEncryptionAlgorithm.AES_CBC
+    assert blob.mode == 0
+    assert blob.flags == 1
+
+    blob.export() == keyblob

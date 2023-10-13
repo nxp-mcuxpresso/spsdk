@@ -1,0 +1,399 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# NXP lpc55s6x PFR CFPA configuration
+description:  # The CFPA configuration description.
+  device: lpc55s6x  # The NXP device name.
+  revision: 1b # The NXP device revision.
+  type: CFPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 2.0.0 # The SPSDK tool version.
+settings: # The CFPA registers configuration.
+  HEADER:  # Header
+    value: 0x12345678  # The value width: 32b
+  VERSION: # Version
+    value: 0x12345678  # The value width: 32b
+  S_FW_Version: # Secure firmware version (Monotonic counter)
+    value: 0x12345678  # The value width: 32b
+  NS_FW_Version: # Non-Secure firmware version (Monotonic counter)
+    value: 0x12345678  # The value width: 32b
+  IMAGE_KEY_REVOKE: # Image key revocation ID (Monotonic counter)
+    value: 0x12345678  # The value width: 32b
+  ROTKH_REVOKE: # Root of Trust Key Hash Revoke
+    bitfields:  # The register bitfields
+      RoTK0_EN: INVALID  # Offset: 0b, Width: 2b, Description: RoT Key 0 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK1_EN: INVALID # Offset: 2b, Width: 2b, Description: RoT Key 1 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK2_EN: INVALID # Offset: 4b, Width: 2b, Description: RoT Key 2 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+      RoTK3_EN: INVALID # Offset: 6b, Width: 2b, Description: RoT Key 3 enable.
+      # - INVALID, (0): Invalid
+      # - ENABLED, (1): Enabled
+      # - REVOKED_0, (2): Key revoked
+      # - REVOKED_1, (3): Key revoked
+  VENDOR_USAGE: # Vendor Usage
+    bitfields:  # The register bitfields
+      DBG_VENDOR_USAGE: '0x0000'  # Offset: 0b, Width: 16b, Description: Debug Vendor Usage
+  DCFG_CC_SOCU_NS_PIN: # Device Configuration Credential Constraints for SoC specific Use Pinned. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.
+    bitfields:  # The register bitfields
+      NIDEN: USE_DAP  # Offset: 0b, Width: 1b, Description: Non Secure non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      DBGEN: USE_DAP # Offset: 1b, Width: 1b, Description: Non Secure debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPNIDEN: USE_DAP # Offset: 2b, Width: 1b, Description: Secure non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      SPIDEN: USE_DAP # Offset: 3b, Width: 1b, Description: Secure invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      TAPEN: USE_DAP # Offset: 4b, Width: 1b, Description: JTAG TAP enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      CPU1_DBGEN: USE_DAP # Offset: 5b, Width: 1b, Description: CPU1 (Micro cortex M33) invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      ISP_CMD_EN: USE_DAP # Offset: 6b, Width: 1b, Description: ISP Boot Command enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      FA_ME_CMD_EN: USE_DAP # Offset: 7b, Width: 1b, Description: Fault Analysis/Mass Erase Command enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      CPU1_NIDEN: USE_DAP # Offset: 9b, Width: 1b, Description: CPU1 (Micro cortex M33) non-invasive debug enable
+      # - USE_DAP, (0): Use DAP to enable
+      # - FIXED_STATE, (1): Fixed state
+      UUID_CHECK: DISABLED # Offset: 15b, Width: 1b, Description: Enforce UUID match during Debug authentication.
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+  DCFG_CC_SOCU_NS_DFLT: # Device Configuration Credential Constraints for SoC specific Use Debug Filter. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.
+    bitfields:  # The register bitfields
+      NIDEN: DISABLED  # Offset: 0b, Width: 1b, Description: Non Secure non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      DBGEN: DISABLED # Offset: 1b, Width: 1b, Description: Non Secure debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPNIDEN: DISABLED # Offset: 2b, Width: 1b, Description: Secure non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      SPIDEN: DISABLED # Offset: 3b, Width: 1b, Description: Secure invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      TAPEN: DISABLED # Offset: 4b, Width: 1b, Description: JTAG TAP fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      CPU1_DBGEN: DISABLED # Offset: 5b, Width: 1b, Description: CPU1 (Micro cortex M33) invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      ISP_CMD_EN: DISABLED # Offset: 6b, Width: 1b, Description: ISP Boot Command fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      FA_ME_CMD_EN: DISABLED # Offset: 7b, Width: 1b, Description: Fault Analysis/Mass Erase Command fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+      CPU1_NIDEN: DISABLED # Offset: 9b, Width: 1b, Description: CPU1 (Micro cortex M33) non-invasive debug fixed state
+      # - DISABLED, (0): Disabled
+      # - ENABLED, (1): Enabled
+  ENABLE_FA_MODE: # Enable FA mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.
+    value: 0x12345678  # The value width: 32b
+  CMPA_PROG_IN_PROGRESS: # CMPA Page programming on going. This field shall be set to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE0: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_HEADER0: # Header.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE1: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_HEADER1: # Header.
+    bitfields:  # The register bitfields
+      TYPE: '0x0'  # Offset: 0b, Width: 2b, Description: Type.
+      INDEX: '0x0' # Offset: 8b, Width: 4b, Description: Index.
+      SIZE: '0x0' # Offset: 24b, Width: 6b, Description: Size.
+  PRINCE_REGION0_IV_BODY0: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE2: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY1: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE3: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY2: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE4: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY3: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE5: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY4: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE6: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY5: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE7: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY6: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE8: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY7: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE9: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY8: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE10: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY9: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE11: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY10: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE12: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_BODY11: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION0_IV_CODE13: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE0: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_HEADER0: # Header.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE1: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_HEADER1: # Header.
+    bitfields:  # The register bitfields
+      TYPE: '0x0'  # Offset: 0b, Width: 2b, Description: Type.
+      INDEX: '0x0' # Offset: 8b, Width: 4b, Description: Index.
+      SIZE: '0x0' # Offset: 24b, Width: 6b, Description: Size.
+  PRINCE_REGION1_IV_BODY0: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE2: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY1: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE3: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY2: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE4: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY3: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE5: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY4: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE6: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY5: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE7: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY6: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE8: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY7: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE9: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY8: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE10: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY9: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE11: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY10: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE12: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_BODY11: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION1_IV_CODE13: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE0: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_HEADER0: # Header.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE1: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_HEADER1: # Header.
+    bitfields:  # The register bitfields
+      TYPE: '0x0'  # Offset: 0b, Width: 2b, Description: Type.
+      INDEX: '0x0' # Offset: 8b, Width: 4b, Description: Index.
+      SIZE: '0x0' # Offset: 24b, Width: 6b, Description: Size.
+  PRINCE_REGION2_IV_BODY0: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE2: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY1: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE3: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY2: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE4: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY3: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE5: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY4: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE6: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY5: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE7: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY6: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE8: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY7: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE9: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY8: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE10: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY9: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE11: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY10: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE12: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_BODY11: # Field.
+    value: 0x12345678  # The value width: 32b
+  PRINCE_REGION2_IV_CODE13: # Field.
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED0: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED1: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED2: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED3: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED4: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED5: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED6: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED7: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED8: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED9: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED10: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED11: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED12: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED13: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED14: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED15: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED16: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED17: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED18: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED19: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED20: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED21: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED22: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED23: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED24: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED25: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED26: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED27: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED28: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED29: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED30: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED31: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED32: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED33: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED34: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED35: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED36: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED37: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED38: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED39: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED40: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED41: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED42: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED43: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED44: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED45: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED46: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED47: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED48: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED49: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED50: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED51: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED52: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED53: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED54: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED55: # Customer Defined (Programmable through ROM API)
+    value: 0x12345678  # The value width: 32b

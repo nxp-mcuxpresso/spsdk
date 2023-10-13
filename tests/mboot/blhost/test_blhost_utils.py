@@ -19,6 +19,7 @@ from spsdk.apps.blhost_helper import (
     parse_trust_prov_wrapping_key_type,
 )
 from spsdk.utils.images import BinaryImage
+from spsdk.utils.interfaces.device.usbsio_device import UsbSioDevice
 
 
 @pytest.mark.parametrize(
@@ -181,3 +182,16 @@ def test_parse_tp_prov_key_type(input_value, expected_output):
 def test_parse_tp_prov_wrapping_key_type(input_value, expected_output):
     actual = parse_trust_prov_wrapping_key_type(input_value)
     assert actual == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_value, expected_value",
+    [
+        ("i2c", "i2c"),
+        ("i2c0,0x10", "i2c0,0x10"),
+        ("usb,ISA0AQIR,i2c,16,1600", "i2c,16,1600"),
+        ("nonsense", ""),
+    ],
+)
+def test_usbsio_param_parser(input_value: str, expected_value):
+    assert UsbSioDevice.get_interface_cfg(input_value, "i2c") == expected_value

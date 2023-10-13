@@ -11,7 +11,7 @@ import io
 from io import SEEK_CUR
 from typing import Optional, Union
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.registers import value_to_int
 
 from .header import Header
@@ -81,7 +81,7 @@ def read_raw_segment(
 ) -> bytes:
     """Read raw segment."""
     hrdata = read_raw_data(buffer, Header.SIZE, index)
-    length = Header.parse(hrdata, 0, segment_tag).length - Header.SIZE
+    length = Header.parse(hrdata, segment_tag).length - Header.SIZE
     return hrdata + read_raw_data(buffer, length)
 
 

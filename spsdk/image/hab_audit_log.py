@@ -12,8 +12,8 @@ from enum import Enum as PyEnum
 from struct import unpack_from
 from typing import List, Optional, Type
 
-from spsdk import SPSDKError
-from spsdk.mboot import McuBoot, PropertyTag
+from spsdk.exceptions import SPSDKError
+from spsdk.mboot.mcuboot import McuBoot, PropertyTag
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import load_binary
 
@@ -279,9 +279,9 @@ def parse_hab_log(hab_sts: int, hab_cfg: int, hab_state: int, data: bytes) -> Li
         if length > 8:
             result.append(f"Data:    {data[offset + 8:offset + length].hex().upper()}")
             try:
-                cmd = parse_command(data, offset + 8)
+                cmd = parse_command(data[offset + 8 :])
                 result.append(f"Cmd :    {CmdTag.desc(cmd.tag)}")
-                result.append(cmd.info())
+                result.append(str(cmd))
             except ValueError:
                 pass
 

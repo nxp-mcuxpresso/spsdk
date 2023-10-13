@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """File including helping functions."""
 import functools
 
-from spsdk import SPSDKError
-from spsdk.utils.crypto.backend_internal import internal_backend
+from spsdk.crypto.cmac import cmac
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.easy_enum import Enum
 
 
@@ -108,9 +108,9 @@ def _derive_key(
         key_length=key_length,
     )
 
-    result = internal_backend.cmac(data=derivation_data(iteration=1), key=key)
+    result = cmac(data=derivation_data(iteration=1), key=key)
     if key_length == 256:
-        result += internal_backend.cmac(data=derivation_data(iteration=2), key=key)
+        result += cmac(data=derivation_data(iteration=2), key=key)
     return result
 
 

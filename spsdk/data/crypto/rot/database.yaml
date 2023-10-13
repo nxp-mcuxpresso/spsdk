@@ -1,0 +1,86 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+devices:
+  rt5xx:
+    attributes:
+      rot_type: "cert_block_1"
+  rt6xx:
+    attributes:
+      rot_type: "cert_block_1"
+  lpc55s6x:
+    attributes:
+      rot_type: "cert_block_1"
+  lpc551x:
+    attributes:
+      rot_type: "cert_block_1"
+  lpc55s1x:
+    attributes:
+      rot_type: "cert_block_1"
+  lpc550x:
+    attributes:
+      rot_type: "cert_block_1"
+  lpc55s0x:
+    attributes:
+      rot_type: "cert_block_1"
+  lpc55s2x:
+    attributes:
+      rot_type: "cert_block_1"
+  lpc552x:
+    attributes:
+      rot_type: "cert_block_1"
+  lpc55s3x:
+    attributes:
+      rot_type: "cert_block_21"
+  lpc553x:
+    attributes:
+      rot_type: "cert_block_21"
+  nhs52sxx:
+    attributes:
+      rot_type: "cert_block_1"
+  mcxn9xx:
+    attributes:
+      rot_type: "cert_block_21"
+  rw61x:
+    attributes:
+      rot_type: "cert_block_21"
+  kw45xx:
+    attributes:
+      rot_type: "cert_block_21"
+  k32w1xx:
+    attributes:
+      rot_type: "cert_block_21"
+  rt118x:
+    attributes:
+      rot_type: "srk_table_ahab"
+  mx93:
+    attributes:
+      rot_type: "srk_table_ahab"
+  mx8ulp:
+    attributes:
+      rot_type: "srk_table_ahab"
+  rt101x:
+    attributes:
+      rot_type: "srk_table_hab"
+  rt102x:
+    attributes:
+      rot_type: "srk_table_hab"
+  rt105x:
+    attributes:
+      rot_type: "srk_table_hab"
+  rt106x:
+    attributes:
+      rot_type: "srk_table_hab"
+  rt116x:
+    attributes:
+      rot_type: "srk_table_hab"
+  rt117x:
+    attributes:
+      rot_type: "srk_table_hab"
+  mc56f81xxx:
+    attributes:
+      rot_type: "cert_block_x"
+  mwct20d2x:
+    attributes:
+      rot_type: "cert_block_x"

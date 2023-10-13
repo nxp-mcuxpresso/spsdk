@@ -11,30 +11,102 @@ import datetime
 import logging
 import os
 import re
+from abc import abstractmethod
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, Union
 
-from Crypto.PublicKey import ECC
+from typing_extensions import Self
 
-from spsdk import SPSDKError
-from spsdk.crypto import loaders
-from spsdk.crypto.loaders import load_certificate_as_bytes
+from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
+from spsdk.crypto.keys import PrivateKeyRsa, PublicKeyEcc
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
-from spsdk.exceptions import SPSDKValueError
-from spsdk.utils import misc
+from spsdk.crypto.types import SPSDKEncoding
+from spsdk.crypto.utils import extract_public_key, extract_public_key_from_data, get_matching_key_id
+from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation, SPSDKValueError
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.crypto import CRYPTO_SCH_FILE
+from spsdk.utils.crypto.rkht import RKHTv1, RKHTv21
+from spsdk.utils.crypto.rot import DATABASE_FILE as ROT_DATABASE_FILE
+from spsdk.utils.database import Database
+from spsdk.utils.misc import (
+    align,
+    align_block,
+    find_file,
+    load_binary,
+    load_configuration,
+    value_to_int,
+    write_file,
+)
 from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
-
-from .abstract import BaseClass
-from .backend_internal import internal_backend
-from .certificate import Certificate
-from .common import crypto_backend, get_matching_key_id
 
 logger = logging.getLogger(__name__)
 
 
 class CertBlock(BaseClass):
     """Common general class for various CertBlocks."""
+
+    @classmethod
+    @abstractmethod
+    def get_supported_families(cls) -> List[str]:
+        """Get supported families for certification block."""
+
+    @classmethod
+    @abstractmethod
+    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+        """Create the list of validation schemas.
+
+        :return: List of validation schemas.
+        """
+
+    @staticmethod
+    @abstractmethod
+    def generate_config_template() -> str:
+        """Generate configuration for certification block."""
+
+    @classmethod
+    @abstractmethod
+    def from_config(
+        cls,
+        config: Dict[str, Any],
+        search_paths: Optional[List[str]] = None,
+    ) -> Self:
+        """Creates an instance of cert block from configuration."""
+
+    @classmethod
+    def get_cert_block_class(cls, family: str) -> Type["CertBlock"]:
+        """Get certification block class by family name.
+
+        :param family: Chip family
+        :raises SPSDKError: No certification block class found for given family
+        """
+        for cert_block_class in cls.get_cert_block_classes():
+            if family in cert_block_class.get_supported_families():
+                return cert_block_class
+        raise SPSDKError(f"Family '{family}' is not supported in any certification block.")
+
+    @classmethod
+    def get_all_supported_families(cls) -> List[str]:
+        """Get supported families for all certification blocks."""
+        families = []
+        for cert_block_class in cls.get_cert_block_classes():
+            families.extend(cert_block_class.get_supported_families())
+        return families
+
+    @classmethod
+    def get_cert_block_classes(cls) -> List[Type["CertBlock"]]:
+        """Get list of all cert block classes."""
+        return CertBlock.__subclasses__()
+
+    @classmethod
+    def load_rot_database(cls) -> Database:
+        """Load data from TZ config file."""
+        return Database(ROT_DATABASE_FILE)
+
+    @property
+    def rkth(self) -> bytes:
+        """Root Key Table Hash 32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
+        return bytes()
 
 
 ########################################################################################################################
@@ -64,12 +136,12 @@ class CertBlockHeader(BaseClass):
         self.cert_count = 0
         self.cert_table_length = 0
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         nfo = f"CertBlockHeader: V={self.version}, F={self.flags}, BN={self.build_number}, IL={self.image_length}, "
         nfo += f"CC={self.cert_count}, CTL={self.cert_table_length}"
         return nfo
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Info of the certificate header in text form."""
         nfo = str()
         nfo += f" CB Version:           {self.version}\n"
@@ -97,15 +169,14 @@ class CertBlockHeader(BaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CertBlockHeader":
+    def parse(cls, data: bytes) -> Self:
         """Deserialize object from bytes array.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data (default: 0)
         :return: Certificate Header instance
         :raises SPSDKError: Unexpected size or signature of data
         """
-        if cls.SIZE > len(data) - offset:
+        if cls.SIZE > len(data):
             raise SPSDKError("Incorrect size")
         (
             signature,
@@ -117,7 +188,7 @@ class CertBlockHeader(BaseClass):
             image_length,
             cert_count,
             cert_table_length,
-        ) = unpack_from(cls.FORMAT, data, offset)
+        ) = unpack_from(cls.FORMAT, data)
         if signature != cls.SIGNATURE:
             raise SPSDKError("Incorrect signature")
         if length != cls.SIZE:
@@ -136,16 +207,11 @@ class CertBlockHeader(BaseClass):
 ########################################################################################################################
 # Certificate Block Class
 ########################################################################################################################
-class CertBlockV2(CertBlock):
+class CertBlockV1(CertBlock):
     """Certificate block.
 
-    Shared for SB file and for MasterBootImage
+    Shared for SB file 2.1 and for MasterBootImage using RSA keys.
     """
-
-    # size of the hash in bytes (single item in RKH table)
-    RKH_SIZE = 32
-    # number of hashes in RKH table (number of table entries)
-    RKHT_SIZE = 4
 
     # default size alignment
     DEFAULT_ALIGNMENT = 16
@@ -158,26 +224,21 @@ class CertBlockV2(CertBlock):
     @property
     def rkh(self) -> List[bytes]:
         """List of root keys hashes (SHA-256), each hash as 32 bytes."""
-        return self._root_key_hashes
+        return self._rkht.rkh_list
 
     @property
-    def rkht(self) -> bytes:
-        """32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
-        data = bytes()
-        for rkh in self._root_key_hashes:
-            data += rkh
-        if len(data) != self.RKH_SIZE * self.RKHT_SIZE:
-            raise SPSDKError("Invalid length of data")
-        return internal_backend.hash(data)
+    def rkth(self) -> bytes:
+        """Root Key Table Hash 32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
+        return self._rkht.rkth()
 
     @property
-    def rkht_fuses(self) -> List[int]:
+    def rkth_fuses(self) -> List[int]:
         """List of RKHT fuses, ordered from highest bit to lowest.
 
         Note: Returned values are in format that should be passed for blhost
         """
         result = []
-        rkht = self.rkht
+        rkht = self.rkth
         while rkht:
             fuse = int.from_bytes(rkht[:4], byteorder="little")
             result.append(fuse)
@@ -201,10 +262,10 @@ class CertBlockV2(CertBlock):
 
     @property
     def rkh_index(self) -> Optional[int]:
-        """Index of the hash that matches the certificate; None if does not match."""
+        """Index of the Root Key Hash that matches the certificate; None if does not match."""
         if self._cert:
-            rkh = self._cert[0].public_key_hash
-            for index, value in enumerate(self._root_key_hashes):
+            rkh = self._cert[0].public_key_hash()
+            for index, value in enumerate(self.rkh):
                 if rkh == value:
                     return index
         return None
@@ -230,8 +291,8 @@ class CertBlockV2(CertBlock):
         """Aligned size of the certificate block."""
         size = CertBlockHeader.SIZE
         size += self._header.cert_table_length
-        size += self.RKH_SIZE * self.RKHT_SIZE
-        return misc.align(size, self.alignment)
+        size += self._rkht.RKH_SIZE * self._rkht.RKHT_SIZE
+        return align(size, self.alignment)
 
     @property
     def expected_size(self) -> int:
@@ -262,18 +323,15 @@ class CertBlockV2(CertBlock):
         :param build_number: of the certificate
         """
         self._header = CertBlockHeader(version, flags, build_number)
-        self._root_key_hashes = [b"\x00" * self.RKH_SIZE for _ in range(self.RKHT_SIZE)]
+        self._rkht: RKHTv1 = RKHTv1([])
         self._cert: List[Certificate] = []
         self._alignment = self.DEFAULT_ALIGNMENT
-
-    def __str__(self) -> str:
-        return str(self._header)
 
     def __len__(self) -> int:
         return len(self._cert)
 
     def set_root_key_hash(self, index: int, key_hash: Union[bytes, bytearray, Certificate]) -> None:
-        """Add Root Key Hash into RKH at specified index.
+        """Add Root Key Hash into RKHT.
 
         Note: Multiple root public keys are supported to allow for key revocation.
 
@@ -284,13 +342,11 @@ class CertBlockV2(CertBlock):
         :raises SPSDKError: When there is invalid length of key hash
         """
         if isinstance(key_hash, Certificate):
-            key_hash = key_hash.public_key_hash
+            key_hash = get_hash(key_hash.get_public_key().export())
         assert isinstance(key_hash, (bytes, bytearray))
-        if index < 0 or index >= self.RKHT_SIZE:
-            raise SPSDKError("Invalid index of root key hash in the table")
-        if len(key_hash) != self.RKH_SIZE:
+        if len(key_hash) != self._rkht.RKH_SIZE:
             raise SPSDKError("Invalid length of key hash")
-        self._root_key_hashes[index] = bytes(key_hash)
+        self._rkht.set_rkh(index, bytes(key_hash))
 
     def add_certificate(self, cert: Union[bytes, Certificate]) -> None:
         """Add certificate.
@@ -301,41 +357,44 @@ class CertBlockV2(CertBlock):
         :raises SPSDKError: If certificate cannot be added
         """
         if isinstance(cert, bytes):
-            cert_obj = Certificate(cert)
+            cert_obj = Certificate.parse(cert)
         elif isinstance(cert, Certificate):
             cert_obj = cert
         else:
             raise SPSDKError("Invalid parameter type (cert)")
-        if cert_obj.version != "v3":
-            raise SPSDKError("Expected certificate v3 but received: " + cert_obj.version)
+        if cert_obj.version.name != "v3":
+            raise SPSDKError("Expected certificate v3 but received: " + cert_obj.version.name)
         if self._cert:  # chain certificate?
             last_cert = self._cert[-1]  # verify that it is signed by parent key
-            if not cert_obj.verify(last_cert.public_key_modulus, last_cert.public_key_exponent):
+            if not cert_obj.validate(last_cert):
                 raise SPSDKError("Chain certificate cannot be verified using parent public key")
         else:  # root certificate
-            if cert_obj.self_signed == "no":
-                raise SPSDKError(f"Root certificate must be self-signed.\n{cert_obj.info()}")
+            if not cert_obj.self_signed:
+                raise SPSDKError(f"Root certificate must be self-signed.\n{str(cert_obj)}")
         self._cert.append(cert_obj)
         self._header.cert_count += 1
         self._header.cert_table_length += cert_obj.raw_size + 4
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return str(self._header)
+
+    def __str__(self) -> str:
         """Text info about certificate block."""
-        nfo = self.header.info()
+        nfo = str(self.header)
         nfo += " Public Root Keys Hash e.g. RKH (SHA256):\n"
         rkh_index = self.rkh_index
-        for index, root_key in enumerate(self._root_key_hashes):
+        for index, root_key in enumerate(self._rkht.rkh_list):
             nfo += (
                 f"  {index}) {root_key.hex().upper()} {'<- Used' if index == rkh_index else ''}\n"
             )
-        rkht = self.rkht
-        nfo += f" RKHT (SHA256): {rkht.hex().upper()}\n"
-        for index, fuse in enumerate(self.rkht_fuses):
-            bit_ofs = (len(rkht) - 4 * index) * 8
-            nfo += f"  - RKHT fuse [{bit_ofs:03}:{bit_ofs - 31:03}]: {fuse:08X}\n"
+        rkth = self.rkth
+        nfo += f" RKTH (SHA256): {rkth.hex().upper()}\n"
+        for index, fuse in enumerate(self.rkth_fuses):
+            bit_ofs = (len(rkth) - 4 * index) * 8
+            nfo += f"  - RKTH fuse [{bit_ofs:03}:{bit_ofs - 31:03}]: {fuse:08X}\n"
         for index, cert in enumerate(self._cert):
             nfo += " Root Certificate:\n" if index == 0 else f" Certificate {index}:\n"
-            nfo += cert.info()
+            nfo += str(cert)
         return nfo
 
     def verify_data(self, signature: bytes, data: bytes) -> bool:
@@ -346,24 +405,21 @@ class CertBlockV2(CertBlock):
         :return: True if the data signature can be confirmed using the certificate; False otherwise
         """
         cert = self._cert[-1]
-        return crypto_backend().rsa_verify(
-            cert.public_key_modulus, cert.public_key_exponent, signature, data
-        )
+        pub_key = cert.get_public_key()
+        return pub_key.verify_signature(signature=signature, data=data)
 
-    def verify_private_key(self, private_key_pem_data: bytes) -> bool:
+    def verify_private_key(self, private_key: PrivateKeyRsa) -> bool:
         """Verify that given private key matches the public certificate.
 
-        :param private_key_pem_data: to be tested; decrypted binary data in PEM format
+        :param private_key: to be tested
         :return: True if yes; False otherwise
         """
-        signature = crypto_backend().rsa_sign(private_key_pem_data, bytes())
         cert = self.certificates[-1]  # last certificate
-        return crypto_backend().rsa_verify(
-            cert.public_key_modulus, cert.public_key_exponent, signature, bytes()
-        )
+        pub_key = cert.get_public_key()
+        return private_key.verify_public_key(pub_key)
 
     def export(self) -> bytes:
-        """Serialize Certificate Block V2 object."""
+        """Serialize Certificate Block V1 object."""
         # At least one certificate must be used
         if not self._cert:
             raise SPSDKError("At least one certificate must be used")
@@ -381,36 +437,32 @@ class CertBlockV2(CertBlock):
         for cert in self._cert:
             data += pack("<I", cert.raw_size)
             data += cert.export()
-        for key in self._root_key_hashes:
-            data += bytes(key)
-        data = misc.align_block(data, self.alignment)
+        data += self._rkht.export()
+        data = align_block(data, self.alignment)
         if len(data) != self.raw_size:
             raise SPSDKError("Invalid length of data")
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CertBlockV2":
-        """Deserialize CertBlockV2 from binary file.
+    def parse(cls, data: bytes) -> Self:
+        """Deserialize CertBlockV1 from binary file.
 
         :param data: Binary data
-        :param offset: Offset within the data, where the Certificate block begins, defaults to 0
         :return: Certificate Block instance
         :raises SPSDKError: Length of the data doesn't match Certificate Block length
         """
-        header = CertBlockHeader.parse(data, offset)
-        offset += CertBlockHeader.SIZE
-        if (len(data) - offset) < (header.cert_table_length + (cls.RKHT_SIZE * cls.RKH_SIZE)):
+        header = CertBlockHeader.parse(data)
+        offset = CertBlockHeader.SIZE
+        if len(data) < (header.cert_table_length + (RKHTv1.RKHT_SIZE * RKHTv1.RKH_SIZE)):
             raise SPSDKError("Length of the data doesn't match Certificate Block length")
         obj = cls(version=header.version, flags=header.flags, build_number=header.build_number)
-        for i in range(header.cert_count):
+        for _ in range(header.cert_count):
             cert_len = unpack_from("<I", data, offset)[0]
             offset += 4
-            cert_obj = Certificate(data[offset : offset + cert_len])
+            cert_obj = Certificate.parse(data[offset : offset + cert_len])
             obj.add_certificate(cert_obj)
             offset += cert_len
-        for i in range(cls.RKHT_SIZE):
-            obj.set_root_key_hash(i, data[offset : offset + cls.RKH_SIZE])
-            offset += cls.RKH_SIZE
+        obj._rkht = RKHTv1.parse(data[offset : offset + (RKHTv1.RKH_SIZE * RKHTv1.RKHT_SIZE)])
         return obj
 
     @classmethod
@@ -421,22 +473,44 @@ class CertBlockV2(CertBlock):
         """
         sch_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
         return [
-            sch_cfg["certificate_v2"],
+            sch_cfg["certificate_v1"],
             sch_cfg["certificate_root_keys"],
         ]
 
+    @staticmethod
+    def generate_config_template() -> str:
+        """Generate configuration for certification block v1."""
+        val_schemas = CertBlockV1.get_validation_schemas()
+        val_schemas.append(ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)["cert_block_output"])
+        yaml_data = CommentedConfig(
+            "Certification Block V1 template",
+            val_schemas,
+        ).export_to_yaml()
+        return yaml_data
+
     @classmethod
     def from_config(
-        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
-    ) -> "CertBlockV2":
-        """Creates an instance of CertBlockV2 from configuration.
+        cls,
+        config: Dict[str, Any],
+        search_paths: Optional[List[str]] = None,
+    ) -> "CertBlockV1":
+        """Creates an instance of CertBlockV1 from configuration.
 
         :param config: Input standard configuration.
         :param search_paths: List of paths where to search for the file, defaults to None
-        :return: Instance of CertBlockV2
-        :raises SPSDKError: Invalid certificates detected.
+        :return: Instance of CertBlockV1
+        :raises SPSDKError: Invalid certificates detected, Invalid configuration.
         """
-        image_build_number = misc.value_to_int(config.get("imageBuildNumber", 0))
+        if not isinstance(config, Dict):
+            raise SPSDKError("Configuration cannot be parsed")
+        cert_block = config.get("certBlock")
+        if cert_block:
+            try:
+                return cls.parse(load_binary(cert_block, search_paths))
+            except (SPSDKError, TypeError):
+                return cls.from_config(load_configuration(cert_block, search_paths), search_paths)
+
+        image_build_number = value_to_int(config.get("imageBuildNumber", 0))
         root_certificates: List[List[str]] = [[] for _ in range(4)]
         # TODO we need to read the whole chain from the dict for a given
         # selection based on mainCertPrivateKeyFile!!!
@@ -456,13 +530,13 @@ class CertBlockV2(CertBlock):
         for key in keys:
             root_certificates[main_cert_chain_id].append(config[key])
 
-        cert_block = CertBlockV2(build_number=image_build_number)
+        cert_block = CertBlockV1(build_number=image_build_number)
 
         # add whole certificate chain used for image signing
         for cert_path in root_certificates[main_cert_chain_id]:
-            cert_data = load_certificate_as_bytes(
-                misc.find_file(str(cert_path), search_paths=search_paths)
-            )
+            cert_data = Certificate.load(
+                find_file(str(cert_path), search_paths=search_paths)
+            ).export(SPSDKEncoding.DER)
             cert_block.add_certificate(cert_data)
         # set root key hash of each root certificate
         empty_rec = False
@@ -470,10 +544,10 @@ class CertBlockV2(CertBlock):
             if cert_path_list[0]:
                 if empty_rec:
                     raise SPSDKError("There are gaps in rootCertificateXFile definition")
-                cert_data = load_certificate_as_bytes(
-                    misc.find_file(str(cert_path_list[0]), search_paths=search_paths)
-                )
-                cert_block.set_root_key_hash(cert_idx, Certificate(cert_data))
+                cert_data = Certificate.load(
+                    find_file(str(cert_path_list[0]), search_paths=search_paths)
+                ).export(SPSDKEncoding.DER)
+                cert_block.set_root_key_hash(cert_idx, Certificate.parse(cert_data))
             else:
                 empty_rec = True
 
@@ -491,9 +565,7 @@ class CertBlockV2(CertBlock):
                 return None
 
             file_name = f"certificate{root_id}_depth{chain_id}.der"
-            misc.write_file(
-                self._cert[chain_id].dump(), os.path.join(output_folder, file_name), mode="wb"
-            )
+            self._cert[chain_id].save(os.path.join(output_folder, file_name))
             return file_name
 
         cfg: Dict[str, Optional[Union[str, int]]] = {}
@@ -510,32 +582,35 @@ class CertBlockV2(CertBlock):
 
         return cfg
 
+    @classmethod
+    def get_supported_families(cls) -> List[str]:
+        """Get list of supported families."""
+        database = cls.load_rot_database()
+        return [
+            family
+            for family in database.devices.device_names
+            if database.get_device_value("rot_type", family) == "cert_block_1"
+        ]
+
 
 ########################################################################################################################
 # Certificate Block Class for SB 3.1
 ########################################################################################################################
-def get_ecc_key_bytes(key: ECC.EccKey) -> bytes:
-    """Function to get ECC Key pointQ as bytes."""
-    point_x = key.pointQ.x.to_bytes(block_size=key.pointQ.size_in_bytes())  # type: ignore
-    point_y = key.pointQ.y.to_bytes(block_size=key.pointQ.size_in_bytes())  # type: ignore
-    return point_x + point_y
 
 
-def convert_to_ecc_key(key: Union[ECC.EccKey, bytes]) -> ECC.EccKey:
+def convert_to_ecc_key(key: Union[PublicKeyEcc, bytes]) -> PublicKeyEcc:
     """Convert key into EccKey instance."""
-    if isinstance(key, ECC.EccKey):
+    if isinstance(key, PublicKeyEcc):
         return key
     try:
-        return ECC.import_key(key)
+        pub_key = extract_public_key_from_data(key)
+        if not isinstance(pub_key, PublicKeyEcc):
+            raise SPSDKError("Not ECC key")
+        return pub_key
     except Exception:
         pass
     # Just recreate public key from the parsed data
-    coordinate_length = len(key) // 2
-    coor_x = int.from_bytes(key[:coordinate_length], byteorder="big")
-    coor_y = int.from_bytes(key[coordinate_length:], byteorder="big")
-    curve = "secp256r1" if coordinate_length == 32 else "secp384r1"
-    ecc_point = ECC.EccPoint(coor_x, coor_y, curve)
-    return ECC.EccKey(curve=curve, point=ecc_point)
+    return PublicKeyEcc.parse(key)
 
 
 class CertificateBlockHeader(BaseClass):
@@ -553,12 +628,6 @@ class CertificateBlockHeader(BaseClass):
         self.format_version = format_version
         self.cert_block_size = 0
 
-    def info(self) -> str:
-        """Get info of Certificate block header."""
-        info = f"Format version:              {self.format_version}\n"
-        info += f"Certificate block size:      {self.cert_block_size}\n"
-        return info
-
     def export(self) -> bytes:
         """Export Certificate block header as bytes array."""
         major_format_version, minor_format_version = [
@@ -574,23 +643,22 @@ class CertificateBlockHeader(BaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CertificateBlockHeader":
+    def parse(cls, data: bytes) -> Self:
         """Parse Certificate block header from bytes array.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data (default: 0)
         :raises SPSDKError: Raised when SIZE is bigger than length of the data without offset
         :raises SPSDKError: Raised when magic is not equal MAGIC
         :return: CertificateBlockHeader
         """
-        if cls.SIZE > len(data) - offset:
+        if cls.SIZE > len(data):
             raise SPSDKError("SIZE is bigger than length of the data without offset")
         (
             magic,
             minor_format_version,
             major_format_version,
             cert_block_size,
-        ) = unpack_from(cls.FORMAT, data, offset)
+        ) = unpack_from(cls.FORMAT, data)
 
         if magic != cls.MAGIC:
             raise SPSDKError("Magic is not same!")
@@ -603,6 +671,15 @@ class CertificateBlockHeader(BaseClass):
         """Length of the Certificate block header."""
         return calcsize(self.FORMAT)
 
+    def __repr__(self) -> str:
+        return f"Cert block header {self.format_version}"
+
+    def __str__(self) -> str:
+        """Get info of Certificate block header."""
+        info = f"Format version:              {self.format_version}\n"
+        info += f"Certificate block size:      {self.cert_block_size}\n"
+        return info
+
 
 class RootKeyRecord(BaseClass):
     """Create Root key record."""
@@ -612,7 +689,7 @@ class RootKeyRecord(BaseClass):
     def __init__(
         self,
         ca_flag: bool,
-        root_certs: Optional[Union[Sequence[ECC.EccKey], Sequence[bytes]]] = None,
+        root_certs: Optional[Union[Sequence[PublicKeyEcc], Sequence[bytes]]] = None,
         used_root_cert: int = 0,
     ) -> None:
         """Constructor for Root key record.
@@ -623,11 +700,10 @@ class RootKeyRecord(BaseClass):
         """
         self.ca_flag = ca_flag
         self.root_certs_input = root_certs
-        self.root_certs: List[ECC.EccKey] = []
+        self.root_certs: List[PublicKeyEcc] = []
         self.used_root_cert = used_root_cert
         self.flags = 0
-        self.ctrk_hash_table = b""
-        self.rotkth = b""
+        self._rkht = RKHTv21([])
         self.root_public_key = b""
 
     @property
@@ -639,11 +715,15 @@ class RootKeyRecord(BaseClass):
     def expected_size(self) -> int:
         """Get expected binary block size."""
         # the '4' means 4 bytes for flags
-        return 4 + len(self.ctrk_hash_table) + len(self.root_public_key)
+        return 4 + len(self._rkht.export()) + len(self.root_public_key)
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        cert_type = {0x1: "secp256r1", 0x2: "secp384r1"}[self.flags & 0xF]
+        return f"Cert Block: Root Key Record - ({cert_type})"
+
+    def __str__(self) -> str:
         """Get info of Root key record."""
-        cert_type = {0x1: "NIST P-256", 0x2: "NIST P-384"}[self.flags & 0xF]
+        cert_type = {0x1: "secp256r1", 0x2: "secp384r1"}[self.flags & 0xF]
         info = ""
         info += f"Flags:           {hex(self.flags)}\n"
         info += f"  - CA:          {bool(self.ca_flag)}, ISK Certificate is {'not ' if self.ca_flag else ''}mandatory\n"
@@ -652,8 +732,8 @@ class RootKeyRecord(BaseClass):
         info += f"  - Cert. type:  {cert_type}\n"
         if self.root_certs:
             info += f"Root certs:      {self.root_certs}\n"
-        if self.ctrk_hash_table:
-            info += f"CTRK Hash table: {self.ctrk_hash_table.hex()}\n"
+        if self._rkht.rkh_list:
+            info += f"CTRK Hash table: {self._rkht.export().hex()}\n"
         if self.root_public_key:
             info += f"Root public key: {str(convert_to_ecc_key(self.root_public_key))}\n"
 
@@ -676,80 +756,67 @@ class RootKeyRecord(BaseClass):
     def _create_root_public_key(self) -> bytes:
         """Function to create root public key."""
         root_key = self.root_certs[self.used_root_cert]
-        root_key_data = get_ecc_key_bytes(root_key)
+        root_key_data = root_key.export()
         return root_key_data
-
-    def _create_ctrk_hash_table(self) -> bytes:
-        """Function to create ctrk hash table."""
-        ctrk_hash_table = bytes()
-        if len(self.root_certs) > 1:
-            for key in self.root_certs:
-                data_to_hash = get_ecc_key_bytes(key)
-                ctrk_hash = internal_backend.hash(
-                    data=data_to_hash, algorithm=self.get_hash_algorithm(self.flags)
-                )
-                ctrk_hash_table += ctrk_hash
-        return ctrk_hash_table
-
-    def _calculate_rotkth(self) -> bytes:
-        return internal_backend.hash(
-            data=self.ctrk_hash_table, algorithm=self.get_hash_algorithm(self.flags)
-        )
 
     def calculate(self) -> None:
         """Calculate all internal members.
 
-        :raises SPSDKError: The RoT certificates inputs are missing.
+        :raises SPSDKError: The RKHT certificates inputs are missing.
         """
         # pylint: disable=invalid-name
         if not self.root_certs_input:
             raise SPSDKError("Root Key Record: The root of trust certificates are not specified.")
         self.root_certs = [convert_to_ecc_key(cert) for cert in self.root_certs_input]
         self.flags = self._calculate_flags()
-        self.ctrk_hash_table = self._create_ctrk_hash_table()
-        self.rotkth = self._calculate_rotkth()
+        self._rkht = RKHTv21.from_keys(keys=self.root_certs)
+        if self._rkht.hash_algorithm != self.get_hash_algorithm(self.flags):
+            raise SPSDKError("Hash algorithm does not match the key size.")
         self.root_public_key = self._create_root_public_key()
 
     def export(self) -> bytes:
         """Export Root key record as bytes array."""
         data = bytes()
         data += pack("<L", self.flags)
-        data += self.ctrk_hash_table
+        data += self._rkht.export()
         data += self.root_public_key
         assert len(data) == self.expected_size
         return data
 
     @staticmethod
-    def get_hash_algorithm(flags: int) -> str:
+    def get_hash_algorithm(flags: int) -> EnumHashAlgorithm:
         """Get CTRK table hash algorithm.
 
         :param flags: Root Key Record flags
         :return: Name of hash algorithm
         """
-        return {1: "sha256", 2: "sha384"}[flags & 0xF]
+        return {1: EnumHashAlgorithm.SHA256, 2: EnumHashAlgorithm.SHA384}[flags & 0xF]
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "RootKeyRecord":
+    def parse(cls, data: bytes) -> Self:
         """Parse Root key record from bytes array.
 
         :param data:  Input data as bytes array
-        :param offset: The offset of input data
         :return: Root key record object
         """
-        (flags,) = unpack_from("<L", data, offset=offset)
+        (flags,) = unpack_from("<L", data)
         ca_flag = flags & 0x80000000
         used_rot_ix = (flags & 0xF00) >> 8
         number_of_hashes = (flags & 0xF0) >> 4
-        rotkh_len = {0x1: 32, 0x2: 48}[flags & 0xF]
-        root_key_record = RootKeyRecord(ca_flag=ca_flag, root_certs=[], used_root_cert=used_rot_ix)
+        rotkh_len = {0x0: 32, 0x1: 32, 0x2: 48}[flags & 0xF]
+        root_key_record = cls(ca_flag=ca_flag, root_certs=[], used_root_cert=used_rot_ix)
         root_key_record.flags = flags
-        offset += 4  # move offset just after FLAGS
+        offset = 4  # move offset just after FLAGS
         if number_of_hashes > 1:
-            root_key_record.ctrk_hash_table = data[offset : offset + rotkh_len * number_of_hashes]
-            offset += rotkh_len * number_of_hashes
-        root_key_record._calculate_rotkth()
+            rkht_len = rotkh_len * number_of_hashes
+            rkht = data[offset : offset + rkht_len]
+            offset += rkht_len
         root_key_record.root_public_key = data[offset : offset + rotkh_len * 2]
-
+        root_key_record._rkht = (
+            RKHTv21.parse(rkht, cls.get_hash_algorithm(flags))
+            if number_of_hashes > 1
+            else RKHTv21([get_hash(root_key_record.root_public_key, cls.get_hash_algorithm(flags))])
+        )
         return root_key_record
 
 
@@ -760,8 +827,9 @@ class IskCertificate(BaseClass):
         self,
         constraints: int = 0,
         signature_provider: Optional[SignatureProvider] = None,
-        isk_cert: Optional[Union[ECC.EccKey, bytes]] = None,
+        isk_cert: Optional[Union[PublicKeyEcc, bytes]] = None,
         user_data: Optional[bytes] = None,
+        offset_present: bool = True,
     ) -> None:
         """Constructor for ISK certificate.
 
@@ -771,6 +839,7 @@ class IskCertificate(BaseClass):
         :param user_data: User data
         """
         self.flags = 0
+        self.offset_present = offset_present
         self.constraints = constraints
         self.signature_provider = signature_provider
         self.isk_cert = convert_to_ecc_key(isk_cert) if isk_cert else None
@@ -779,16 +848,17 @@ class IskCertificate(BaseClass):
         self.coordinate_length = (
             self.signature_provider.signature_length // 2 if self.signature_provider else 0
         )
-        self.isk_public_key_data = get_ecc_key_bytes(self.isk_cert) if self.isk_cert else bytes()
+        self.isk_public_key_data = self.isk_cert.export() if self.isk_cert else bytes()
 
         self._calculate_flags()
 
     @property
     def signature_offset(self) -> int:
         """Signature offset inside the ISK Certificate."""
-        signature_offset = calcsize("<3L") + len(self.user_data)
+        offset = calcsize("<3L") if self.offset_present else calcsize("<2L")
+        signature_offset = offset + len(self.user_data)
         if self.isk_cert:
-            signature_offset += 2 * self.isk_cert.pointQ.size_in_bytes()
+            signature_offset += 2 * self.isk_cert.coordinate_size
 
         return signature_offset
 
@@ -799,13 +869,12 @@ class IskCertificate(BaseClass):
             self.signature_provider.signature_length if self.signature_provider else 0
         )
         pub_key_len = (
-            self.isk_cert.pointQ.size_in_bytes() * 2
-            if self.isk_cert
-            else len(self.isk_public_key_data)
+            self.isk_cert.coordinate_size * 2 if self.isk_cert else len(self.isk_public_key_data)
         )
 
+        offset = 4 if self.offset_present else 0
         return (
-            4  #  signature offset
+            offset  #  signature offset
             + 4  # constraints
             + 4  # flags
             + pub_key_len  # isk public key coordinates
@@ -813,9 +882,13 @@ class IskCertificate(BaseClass):
             + sign_len  # isk blob signature
         )
 
-    def info(self) -> str:
-        """Get info of ISK certificate."""
-        isk_type = {0x1: "NIST P-256", 0x2: "NIST P-384"}[self.flags & 0xF]
+    def __repr__(self) -> str:
+        isk_type = {0: "secp256r1", 1: "secp256r1", 2: "secp384r1"}[self.flags & 0xF]
+        return f"ISK Certificate, {isk_type}"
+
+    def __str__(self) -> str:
+        """Get info about ISK certificate."""
+        isk_type = {0: "secp256r1", 1: "secp256r1", 2: "secp384r1"}[self.flags & 0xF]
         info = ""
         info += f"Constraints:     {self.constraints}\n"
         if self.user_data:
@@ -832,9 +905,9 @@ class IskCertificate(BaseClass):
         if self.user_data:
             self.flags |= 1 << 31
         assert self.isk_cert
-        if self.isk_cert.curve in ["NIST P-256", "p256", "secp256r1"]:
+        if self.isk_cert.curve == "secp256r1":
             self.flags |= 1 << 0
-        if self.isk_cert.curve in ["NIST P-384", "p384", "secp384r1"]:
+        if self.isk_cert.curve == "secp384r1":
             self.flags |= 1 << 1
 
     def create_isk_signature(self, key_record_data: bytes, force: bool = False) -> None:
@@ -847,7 +920,12 @@ class IskCertificate(BaseClass):
             return
         if not self.signature_provider:
             raise SPSDKError("ISK Certificate: The signature provider is not specified.")
-        data = key_record_data + pack("<3L", self.signature_offset, self.constraints, self.flags)
+        if self.offset_present:
+            data = key_record_data + pack(
+                "<3L", self.signature_offset, self.constraints, self.flags
+            )
+        else:
+            data = key_record_data + pack("<2L", self.constraints, self.flags)
         data += self.isk_public_key_data + self.user_data
         self.signature = self.signature_provider.sign(data)
 
@@ -855,7 +933,10 @@ class IskCertificate(BaseClass):
         """Export ISK certificate as bytes array."""
         if not self.signature:
             raise SPSDKError("Signature is not set.")
-        data = pack("<3L", self.signature_offset, self.constraints, self.flags)
+        if self.offset_present:
+            data = pack("<3L", self.signature_offset, self.constraints, self.flags)
+        else:
+            data = pack("<2L", self.constraints, self.flags)
         data += self.isk_public_key_data
         if self.user_data:
             data += self.user_data
@@ -865,48 +946,55 @@ class IskCertificate(BaseClass):
         return data
 
     @classmethod
-    def parse(  # type: ignore
-        cls, data: bytes, signature_size: int, offset: int = 0
-    ) -> "IskCertificate":
+    def parse(cls, data: bytes, signature_size: int) -> Self:  # type: ignore # pylint: disable=arguments-differ
         """Parse ISK certificate from bytes array.This operation is not supported.
 
         :param data:  Input data as bytes array
         :param signature_size: The signature size of ISK block
-        :param offset: The offset of input data
         :raises NotImplementedError: This operation is not supported
         """
-        (signature_offset, constraints, isk_flags) = unpack_from("<3L", data, offset)
-        signature_offset += offset
+        (signature_offset, constraints, isk_flags) = unpack_from("<3L", data)
+        header_word_cnt = 3
+        if signature_offset & 0xFFFF == 0x4D43:  # This means that certificate has no offset
+            (constraints, isk_flags) = unpack_from("<2L", data)
+            signature_offset = 72
+            header_word_cnt = 2
         user_data_flag = bool(isk_flags & 0x80000000)
-        isk_pub_key_length = {0x1: 32, 0x2: 48}[isk_flags & 0xF]
-        offset += 3 * 4
+        isk_pub_key_length = {0x0: 32, 0x1: 32, 0x2: 48}[isk_flags & 0xF]
+        offset = header_word_cnt * 4
         isk_pub_key_bytes = data[offset : offset + isk_pub_key_length * 2]
         offset += isk_pub_key_length * 2
         user_data = data[offset:signature_offset] if user_data_flag else None
         signature = data[signature_offset : signature_offset + signature_size]
-
-        certificate = IskCertificate(
-            constraints=constraints, isk_cert=isk_pub_key_bytes, user_data=user_data
+        offset_present = header_word_cnt == 3
+        certificate = cls(
+            constraints=constraints,
+            isk_cert=isk_pub_key_bytes,
+            user_data=user_data,
+            offset_present=offset_present,
         )
         certificate.signature = signature
         return certificate
 
 
-class CertBlockV31(CertBlock):
-    """Create Certificate block version 3.1."""
+class CertBlockV21(CertBlock):
+    """Create Certificate block version 2.1.
+
+    Used for SB 3.1 and MBI using ECC keys.
+    """
 
     MAGIC = b"chdr"
     FORMAT_VERSION = "2.1"
 
     def __init__(
         self,
-        root_certs: Optional[Union[Sequence[ECC.EccKey], Sequence[bytes]]] = None,
+        root_certs: Optional[Union[Sequence[PublicKeyEcc], Sequence[bytes]]] = None,
         ca_flag: bool = False,
         version: str = "2.1",
         used_root_cert: int = 0,
         constraints: int = 0,
         signature_provider: Optional[SignatureProvider] = None,
-        isk_cert: Optional[Union[ECC.EccKey, bytes]] = None,
+        isk_cert: Optional[Union[PublicKeyEcc, bytes]] = None,
         user_data: Optional[bytes] = None,
     ) -> None:
         """The Constructor for Certificate block."""
@@ -950,21 +1038,23 @@ class CertBlockV31(CertBlock):
         return expected_size
 
     @property
-    def rkht(self) -> bytes:
-        """32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
-        return self.root_key_record.rotkth
+    def rkth(self) -> bytes:
+        """Root Key Table Hash 32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
+        return self.root_key_record._rkht.rkth()
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"Cert block 2.1, Size:{self.expected_size}B"
+
+    def __str__(self) -> str:
         """Get info of Certificate block."""
-        msg = f"HEADER:\n{self.header.info()}\n"
-        msg += f"ROOT KEY RECORD:\n{self.root_key_record.info()}\n"
+        msg = f"HEADER:\n{str(self.header)}\n"
+        msg += f"ROOT KEY RECORD:\n{str(self.root_key_record)}\n"
         if self.isk_certificate:
-            msg += f"ISK Certificate:\n{self.isk_certificate.info()}\n"
+            msg += f"ISK Certificate:\n{str(self.isk_certificate)}\n"
         return msg
 
     def export(self) -> bytes:
         """Export Certificate block as bytes array."""
-        logger.info(f"RoTKTH: {self.root_key_record.rotkth.hex()}")
         key_record_data = self.root_key_record.export()
         self.header.cert_block_size = self.header.SIZE + len(key_record_data)
         isk_cert_data = bytes()
@@ -976,27 +1066,26 @@ class CertBlockV31(CertBlock):
         return header_data + key_record_data + isk_cert_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CertBlockV31":
+    def parse(cls, data: bytes) -> Self:
         """Parse Certificate block from bytes array.This operation is not supported.
 
         :param data:  Input data as bytes array
-        :param offset: The offset of input data
         :raises SPSDKError: Magic do not match
         """
         # CertificateBlockHeader
-        cert_header = CertificateBlockHeader.parse(data, offset)
-        offset += len(cert_header)
+        cert_header = CertificateBlockHeader.parse(data)
+        offset = len(cert_header)
         # RootKeyRecord
-        root_key_record = RootKeyRecord.parse(data, offset)
+        root_key_record = RootKeyRecord.parse(data[offset:])
         offset += root_key_record.expected_size
         # IskCertificate
         isk_certificate = None
         if root_key_record.ca_flag == 0:
             isk_certificate = IskCertificate.parse(
-                data, len(root_key_record.root_public_key), offset
+                data[offset:], len(root_key_record.root_public_key)
             )
-        # Certification Block V3.1
-        cert_block = CertBlockV31()
+        # Certification Block V2.1
+        cert_block = cls()
         cert_block.header = cert_header
         cert_block.root_key_record = root_key_record
         cert_block.isk_certificate = isk_certificate
@@ -1009,22 +1098,27 @@ class CertBlockV31(CertBlock):
         :return: List of validation schemas.
         """
         sch_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
-        return [sch_cfg["certificate_v31"], sch_cfg["certificate_root_keys"]]
+        return [sch_cfg["certificate_v21"], sch_cfg["certificate_root_keys"]]
 
     @classmethod
     def from_config(
         cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
-    ) -> "CertBlockV31":
-        """Creates an instance of CertBlockV31 from configuration.
+    ) -> "CertBlockV21":
+        """Creates an instance of CertBlockV21 from configuration.
 
         :param config: Input standard configuration.
         :param search_paths: List of paths where to search for the file, defaults to None
-        :return: Instance of CertBlockV3.1
-        :raises SPSDKError: If found gap in certificates from config file.
+        :return: Instance of CertBlockV21
+        :raises SPSDKError: If found gap in certificates from config file. Invalid configuration.
         """
-        binary_block = config.get("binaryCertificateBlock")
-        if binary_block:
-            return CertBlockV31.parse(misc.load_binary(binary_block, search_paths))
+        if not isinstance(config, Dict):
+            raise SPSDKError("Configuration cannot be parsed")
+        cert_block = config.get("certBlock")
+        if cert_block:
+            try:
+                return cls.parse(load_binary(cert_block, search_paths))
+            except (SPSDKError, TypeError):
+                return cls.from_config(load_configuration(cert_block, search_paths), search_paths)
 
         root_certificates = find_root_certificates(config)
         main_root_cert_id = get_main_cert_index(config, search_paths=search_paths)
@@ -1036,34 +1130,37 @@ class CertBlockV31(CertBlock):
                 f"Main root certificate with id {main_root_cert_id} does not exist"
             ) from e
 
-        main_root_private_key_file = config.get("mainRootCertPrivateKeyFile")
-        signature_provider = config.get("iskSignProvider")
-        use_isk = config.get("useIsk", False)
-        isk_certificate = config.get("signingCertificateFile")
-        isk_constraint = misc.value_to_int(config.get("signingCertificateConstraint", "0"))
-        isk_sign_data_path = config.get("signCertData")
-
         root_certs = [
-            misc.load_binary(cert_file, search_paths=search_paths)
-            for cert_file in root_certificates
+            load_binary(cert_file, search_paths=search_paths) for cert_file in root_certificates
         ]
+
         user_data = None
         signature_provider = None
         isk_cert = None
 
+        use_isk = config.get("useIsk", False)
         if use_isk:
-            assert isk_certificate and (main_root_private_key_file or signature_provider)
-            if isk_sign_data_path:
-                user_data = misc.load_binary(isk_sign_data_path, search_paths=search_paths)
+            main_root_private_key_file = config.get(
+                "signPrivateKey", config.get("mainRootCertPrivateKeyFile")
+            )
+            signature_provider_config = config.get("signProvider")
             signature_provider = get_signature_provider(
-                signature_provider,
+                signature_provider_config,
                 main_root_private_key_file,
                 search_paths=search_paths,
-                mode="deterministic-rfc6979",
             )
-            isk_cert = misc.load_binary(isk_certificate, search_paths=search_paths)
 
-        cert_block = CertBlockV31(
+            isk_public_key = config.get("iskPublicKey", config.get("signingCertificateFile"))
+            isk_cert = load_binary(isk_public_key, search_paths=search_paths)
+
+            isk_sign_data_path = config.get("iskCertData", config.get("signCertData"))
+            if isk_sign_data_path:
+                user_data = load_binary(isk_sign_data_path, search_paths=search_paths)
+
+        isk_constraint = value_to_int(
+            config.get("iskCertificateConstraint", config.get("signingCertificateConstraint", "0"))
+        )
+        cert_block = cls(
             root_certs=root_certs,
             used_root_cert=main_root_cert_id,
             user_data=user_data,
@@ -1082,17 +1179,17 @@ class CertBlockV31(CertBlock):
         :raises SPSDKError: Invalid configuration of certification block class members.
         """
         self.header.parse(self.header.export())
-        if self.isk_certificate:
+        if self.isk_certificate and not self.isk_certificate.signature:
             if not isinstance(self.isk_certificate.signature_provider, SignatureProvider):
                 raise SPSDKError("Invalid ISK certificate.")
 
     @staticmethod
     def generate_config_template() -> str:
-        """Generate configuration for certification block v31."""
-        val_schemas = CertBlockV31.get_validation_schemas()
+        """Generate configuration for certification block v21."""
+        val_schemas = CertBlockV21.get_validation_schemas()
         val_schemas.append(ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)["cert_block_output"])
         yaml_data = CommentedConfig(
-            "Certification Block V31 template",
+            "Certification Block V21 template",
             val_schemas,
         ).export_to_yaml()
         return yaml_data
@@ -1107,7 +1204,7 @@ class CertBlockV31(CertBlock):
         cfg["mainRootCertPrivateKeyFile"] = "N/A"
         cfg["signingCertificatePrivateKeyFile"] = "N/A"
         for i in range(self.root_key_record.number_of_certificates):
-            key: Optional[ECC.EccKey] = None
+            key: Optional[PublicKeyEcc] = None
             if i == self.root_key_record.used_root_cert:
                 key = convert_to_ecc_key(self.root_key_record.root_public_key)
             else:
@@ -1115,7 +1212,7 @@ class CertBlockV31(CertBlock):
                     key = convert_to_ecc_key(self.root_key_record.root_certs[i])
             if key:
                 key_file_name = os.path.join(output_folder, f"rootCertificate{i}File.pub")
-                misc.write_file(key.export_key(format="PEM"), key_file_name)
+                key.save(key_file_name)
                 cfg[f"rootCertificate{i}File"] = f"rootCertificate{i}File.pub"
             else:
                 cfg[
@@ -1128,12 +1225,12 @@ class CertBlockV31(CertBlock):
             assert self.isk_certificate.isk_cert
             key = self.isk_certificate.isk_cert
             key_file_name = os.path.join(output_folder, "signingCertificateFile.pub")
-            misc.write_file(key.export_key(format="PEM"), key_file_name)
+            key.save(key_file_name)
             cfg["signingCertificateFile"] = "signingCertificateFile.pub"
             cfg["signingCertificateConstraint"] = self.isk_certificate.constraints
             if self.isk_certificate.user_data:
                 key_file_name = os.path.join(output_folder, "isk_user_data.bin")
-                misc.write_file(self.isk_certificate.user_data, key_file_name, mode="wb")
+                write_file(self.isk_certificate.user_data, key_file_name, mode="wb")
                 cfg["signCertData"] = "isk_user_data.bin"
 
         else:
@@ -1148,11 +1245,11 @@ class CertBlockV31(CertBlock):
         :return: Configuration in string.
         """
         cfg = self.get_config(data_path)
-        val_schemas = CertBlockV31.get_validation_schemas()
+        val_schemas = CertBlockV21.get_validation_schemas()
 
         yaml_data = CommentedConfig(
             main_title=(
-                "Certification block v3.1 recreated configuration from :"
+                "Certification block v2.1 recreated configuration from :"
                 f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
             ),
             schemas=val_schemas,
@@ -1160,13 +1257,176 @@ class CertBlockV31(CertBlock):
         ).export_to_yaml()
         return yaml_data
 
+    @classmethod
+    def get_supported_families(cls) -> List[str]:
+        """Get list of supported families."""
+        database = cls.load_rot_database()
+        return [
+            family
+            for family in database.devices.device_names
+            if database.get_device_value("rot_type", family) == "cert_block_21"
+        ]
+
+
+class CertBlockVx(CertBlock):
+    """Create Certificate block for MC56xx."""
+
+    ISK_CERT_HASH_LENGTH = 16  # [0:127]
+
+    def __init__(
+        self,
+        signature_provider: Optional[SignatureProvider] = None,
+        isk_cert: Optional[Union[PublicKeyEcc, bytes]] = None,
+    ) -> None:
+        """The Constructor for Certificate block."""
+        self.isk_certificate = None
+        self.isk_cert_hash = bytes(self.ISK_CERT_HASH_LENGTH)
+        self.constraints = (1 << 16) + 0x4D43  # Constraints are hardcoded now
+
+        if signature_provider and isk_cert:
+            self.isk_certificate = IskCertificate(
+                constraints=self.constraints,
+                signature_provider=signature_provider,
+                isk_cert=isk_cert,
+                user_data=None,
+                offset_present=False,
+            )
+            self.isk_certificate.flags = 0  # flags should be 0 for Vx block
+
+    @property
+    def expected_size(self) -> int:
+        """Expected size of binary block."""
+        expected_size = 0
+        if self.isk_certificate:
+            expected_size += self.isk_certificate.expected_size
+        return expected_size
+
+    def __repr__(self) -> str:
+        return "CertificateBlockVx"
+
+    def __str__(self) -> str:
+        """Get info of Certificate block."""
+        msg = "Certificate block version x\n"
+        if self.isk_certificate:
+            msg += f"ISK Certificate:\n{str(self.isk_certificate)}\n"
+        return msg
+
+    def export(self) -> bytes:
+        """Export Certificate block as bytes array."""
+        isk_cert_data = bytes()
+        if self.isk_certificate:
+            self.isk_certificate.create_isk_signature(b"")
+            isk_cert_data = self.isk_certificate.export()
+            self.isk_cert_hash = get_hash(isk_cert_data)[: self.ISK_CERT_HASH_LENGTH]
+        return isk_cert_data + self.isk_cert_hash
+
+    @classmethod
+    def parse(cls, data: bytes) -> "Self":
+        """Parse Certificate block from bytes array.This operation is not supported.
+
+        :param data:  Input data as bytes array
+        :raises SPSDKError: Magic do not match
+        """
+        # IskCertificate
+        isk_certificate = IskCertificate.parse(data[: -cls.ISK_CERT_HASH_LENGTH], 64)
+        isk_certificate.flags = 0  # flags should be 0 for MC56xx
+        # Certification Block
+        cert_block = cls()
+        cert_block.isk_certificate = isk_certificate
+        cert_block.isk_cert_hash = data[cls.ISK_CERT_HASH_LENGTH :]
+        return cert_block
+
+    @classmethod
+    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+        """Create the list of validation schemas.
+
+        :return: List of validation schemas.
+        """
+        sch_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
+        return [sch_cfg["certificate_vx"]]
+
+    @classmethod
+    def from_config(
+        cls, config: Dict[str, Any], search_paths: Optional[List[str]] = None
+    ) -> "CertBlockVx":
+        """Creates an instance of CertBlockVx from configuration.
+
+        :param config: Input standard configuration.
+        :param search_paths: List of paths where to search for the file, defaults to None
+        :return: CertBlockVx
+        :raises SPSDKError: If found gap in certificates from config file. Invalid configuration.
+        """
+        if not isinstance(config, Dict):
+            raise SPSDKError("Configuration cannot be parsed")
+        cert_block = config.get("certBlock")
+        if cert_block:
+            try:
+                return cls.parse(load_binary(cert_block, search_paths))
+            except Exception:
+                return cls.from_config(load_configuration(cert_block, search_paths), search_paths)
+
+        main_root_private_key_file = config.get(
+            "signPrivateKey", config.get("mainRootCertPrivateKeyFile")
+        )
+        signature_provider = config.get("signProvider", config.get("iskSignProvider"))
+        use_isk = config.get("useIsk", False)
+        isk_certificate = config.get("iskPublicKey", config.get("signingCertificateFile"))
+
+        isk_cert = None
+
+        if use_isk:
+            assert isk_certificate and (main_root_private_key_file or signature_provider)
+            signature_provider = get_signature_provider(
+                signature_provider,
+                main_root_private_key_file,
+                search_paths=search_paths,
+            )
+            isk_cert = load_binary(isk_certificate, search_paths=search_paths)
+
+        cert_block = cls(
+            signature_provider=signature_provider,
+            isk_cert=isk_cert,
+        )
+
+        return cert_block
+
+    def validate(self) -> None:
+        """Validate the settings of class members.
+
+        :raises SPSDKError: Invalid configuration of certification block class members.
+        """
+        if self.isk_certificate and not self.isk_certificate.signature:
+            if not isinstance(self.isk_certificate.signature_provider, SignatureProvider):
+                raise SPSDKError("Invalid ISK certificate.")
+
+    @staticmethod
+    def generate_config_template() -> str:
+        """Generate configuration for certification block vX."""
+        val_schemas = CertBlockVx.get_validation_schemas()
+        val_schemas.append(ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)["cert_block_output"])
+        yaml_data = CommentedConfig(
+            "Certification Block for MC56xx template",
+            val_schemas,
+        ).export_to_yaml()
+        return yaml_data
+
+    @classmethod
+    def get_supported_families(cls) -> List[str]:
+        """Get list of supported families."""
+        database = cls.load_rot_database()
+        return [
+            family
+            for family in database.devices.device_names
+            if database.get_device_value("rot_type", family) == "cert_block_x"
+        ]
+
 
 def get_main_cert_index(config: Dict[str, Any], search_paths: Optional[List[str]] = None) -> int:
     """Gets main certificate index from configuration.
 
     :param config: Input standard configuration.
     :param search_paths: List of paths where to search for the file, defaults to None
-    :return: Instance of CertBlockV2
+    :return: Certificate index
     :raises SPSDKError: If invalid configuration is provided.
     :raises SPSDKError: If correct certificate could not be identified.
     :raises SPSDKValueError: If certificate is not of correct type.
@@ -1181,12 +1441,11 @@ def get_main_cert_index(config: Dict[str, Any], search_paths: Optional[List[str]
     if root_cert_id is None and cert_chain_id is None:
         if found_cert_id is not None:
             return found_cert_id
-        else:
-            raise SPSDKError("Certificate could not be found")
+        raise SPSDKError("Certificate could not be found")
     # root_cert_id may be 0 which is falsy value, therefore 'or' cannot be used
     cert_id = root_cert_id if root_cert_id is not None else cert_chain_id
     try:
-        cert_id = int(cert_id)  # type: ignore[arg-type]
+        cert_id = int(cert_id)
     except ValueError as exc:
         raise SPSDKValueError(f"A certificate index is not a number: {cert_id}") from exc
     if found_cert_id is not None and found_cert_id != cert_id:
@@ -1212,19 +1471,19 @@ def find_main_cert_index(
     except SPSDKError as exc:
         logger.debug(f"A signature provider could not be created: {exc}")
         return None
-
     root_certificates = find_root_certificates(config)
     public_keys = []
     for root_crt_file in root_certificates:
         try:
-            public_key = loaders.extract_public_key(root_crt_file, search_paths=search_paths)
+            public_key = extract_public_key(root_crt_file, search_paths=search_paths)
             public_keys.append(public_key)
         except SPSDKError:
             continue
     try:
         idx = get_matching_key_id(public_keys, signature_provider)
         return idx
-    except ValueError:
+    except (SPSDKValueError, SPSDKUnsupportedOperation) as exc:
+        logger.debug(f"Main cert index could not be found: {exc}")
         return None
 
 

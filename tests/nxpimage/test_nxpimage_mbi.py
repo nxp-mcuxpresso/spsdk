@@ -5,9 +5,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Test Trustzone part of nxpimage app."""
+"""Test MBI part of nxpimage app."""
 import filecmp
-import json
 import os
 import shutil
 
@@ -15,81 +14,89 @@ import commentjson as json
 import pytest
 import yaml
 from click.testing import CliRunner
+from crcmod.predefined import mkPredefinedCrcFun
 
-from spsdk import SPSDKError
 from spsdk.apps import nxpimage
+from spsdk.crypto.hash import get_hash
+from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
+from spsdk.exceptions import SPSDKError
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeyStore
-from spsdk.image.mbi_mixin import Mbi_MixinHmac
-from spsdk.image.mbimg import DEVICE_FILE, Mbi_PlainRamLpc55s3x, Mbi_PlainXipSignedLpc55s3x
-from spsdk.utils.crypto.backend_internal import ECC, RSA, internal_backend
-from spsdk.utils.misc import load_configuration, use_working_directory
+from spsdk.image.mbi.mbi import DEVICE_FILE, create_mbi_class, get_mbi_class
+from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestMcxNx, Mbi_MixinHmac, Mbi_MixinIvt
+from spsdk.utils.crypto.cert_blocks import CertBlockV21, CertBlockVx
+from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 
 mbi_basic_tests = [
-    ("mb_ram_crc.json", "lpc55xx"),
-    ("mb_ram_crc_s19.json", "lpc55xx"),
-    ("mb_ram_crc_hex.json", "lpc55xx"),
-    ("mb_xip_crc.json", "lpc55xx"),
-    ("mb_xip_crc_tz.json", "lpc55xx"),
-    ("mb_xip_crc_tz_no_preset.json", "lpc55xx"),
-    ("mb_xip_crc_hwk.json", "lpc55xx"),
-    ("mb_xip_crc_hwk_tz.json", "lpc55xx"),
-    ("mb_ram_crc.json", "lpc55s1x"),
-    ("mb_xip_crc_tz.json", "lpc55s1x"),
-    ("mb_xip_crc_tz_no_preset.json", "lpc55s1x"),
-    ("mb_xip_crc_hwk.json", "lpc55s1x"),
-    ("mb_xip_crc_hwk_tz.json", "lpc55s1x"),
-    ("mb_ram_plain.json", "rt5xx"),
-    ("mb_ram_crc.json", "rt5xx"),
-    ("mb_ram_crc_tz.json", "rt5xx"),
-    ("mb_ram_crc_tz_no_preset.json", "rt5xx"),
-    ("mb_ram_crc_hwk.json", "rt5xx"),
-    ("mb_ram_crc_hwk_tz.json", "rt5xx"),
-    ("mb_xip_crc.json", "rt5xx"),
-    ("mb_xip_crc_tz.json", "rt5xx"),
-    ("mb_xip_crc_tz_no_preset.json", "rt5xx"),
-    ("mb_xip_crc_hwk.json", "rt5xx"),
-    ("mb_xip_crc_hwk_tz.json", "rt5xx"),
-    ("mb_ram_crc.json", "lpc55s3x"),
-    ("mb_ram_crc_version.json", "lpc55s3x"),
-    ("mb_xip_crc.json", "lpc55s3x"),
-    ("mb_ext_xip_crc.json", "lpc55s3x"),
-    ("mb_ext_xip_crc_s19.json", "lpc55s3x"),
-    ("mb_ram_crc.json", "mcxn9xx"),
-    ("mb_xip_crc.json", "mcxn9xx"),
+    ("mb_ram_crc.yaml", "lpc55s6x"),
+    ("mb_ram_crc_s19.yaml", "lpc55s6x"),
+    ("mb_ram_crc_hex.yaml", "lpc55s6x"),
+    ("mb_xip_crc.yaml", "lpc55s6x"),
+    ("mb_xip_crc_tz.yaml", "lpc55s6x"),
+    ("mb_xip_crc_tz_no_preset.yaml", "lpc55s6x"),
+    ("mb_xip_crc_hwk.yaml", "lpc55s6x"),
+    ("mb_xip_crc_hwk_tz.yaml", "lpc55s6x"),
+    ("mb_ram_crc.yaml", "lpc55s1x"),
+    ("mb_xip_crc_tz.yaml", "lpc55s1x"),
+    ("mb_xip_crc_tz_no_preset.yaml", "lpc55s1x"),
+    ("mb_xip_crc_hwk.yaml", "lpc55s1x"),
+    ("mb_xip_crc_hwk_tz.yaml", "lpc55s1x"),
+    ("mb_ram_plain.yaml", "rt5xx"),
+    ("mb_ram_crc.yaml", "rt5xx"),
+    ("mb_ram_crc_tz.yaml", "rt5xx"),
+    ("mb_ram_crc_tz_no_preset.yaml", "rt5xx"),
+    ("mb_ram_crc_hwk.yaml", "rt5xx"),
+    ("mb_ram_crc_hwk_tz.yaml", "rt5xx"),
+    ("mb_xip_crc.yaml", "rt5xx"),
+    ("mb_xip_crc_tz.yaml", "rt5xx"),
+    ("mb_xip_crc_tz_no_preset.yaml", "rt5xx"),
+    ("mb_xip_crc_hwk.yaml", "rt5xx"),
+    ("mb_xip_crc_hwk_tz.yaml", "rt5xx"),
+    ("mb_ram_crc.yaml", "lpc55s3x"),
+    ("mb_ram_crc_version.yaml", "lpc55s3x"),
+    ("mb_xip_crc.yaml", "lpc55s3x"),
+    ("mb_ext_xip_crc.yaml", "lpc55s3x"),
+    ("mb_ext_xip_crc_s19.yaml", "lpc55s3x"),
+    ("mb_ram_crc.yaml", "mcxn9xx"),
+    ("mb_xip_crc.yaml", "mcxn9xx"),
+    ("mb_xip_crc_nbu.yaml", "kw45xx"),
+    ("mb_xip_crc_version.yaml", "kw45xx"),
+    ("mb_xip_crc_nbu.yaml", "k32w1xx"),
+    ("mb_xip_crc_version.yaml", "k32w1xx"),
 ]
 
 mbi_signed_tests = [
-    ("mb_xip_256_none.json", "lpc55s3x", None),
-    ("mb_xip_384_256.json", "lpc55s3x", None),
-    ("mb_xip_384_384.json", "lpc55s3x", None),
-    ("mb_ext_xip_signed.json", "lpc55s3x", None),
-    ("mb_xip_256_none.json", "mcxn9xx", None),
-    ("mb_xip_384_256.json", "mcxn9xx", None),
-    ("mb_xip_384_384.json", "mcxn9xx", None),
-    ("mb_xip_384_384_recovery_crctest.json", "mcxn9xx", None),
-    ("mb_xip_384_384_recovery.json", "mcxn9xx", None),
+    ("mb_xip_256_none.yaml", "lpc55s3x", None),
+    ("mb_xip_256_none_no_tz.yaml", "lpc55s3x", None),
+    ("mb_xip_384_256.yaml", "lpc55s3x", None),
+    ("mb_xip_384_384.yaml", "lpc55s3x", None),
+    ("mb_ext_xip_signed.yaml", "lpc55s3x", None),
+    ("mb_xip_256_none.yaml", "mcxn9xx", None),
+    ("mb_xip_256_none_no_tz.yaml", "mcxn9xx", None),
+    ("mb_xip_384_256.yaml", "mcxn9xx", None),
+    ("mb_xip_384_384.yaml", "mcxn9xx", None),
+    ("mb_xip_384_384_recovery_crctest.yaml", "mcxn9xx", None),
+    ("mb_xip_384_384_recovery.yaml", "mcxn9xx", None),
 ]
 
 mbi_legacy_signed_tests = [
-    ("mb_xip_signed.json", "lpc55xx", 0),
-    ("mb_xip_signed.json", "lpc55s1x", 0),
-    ("mb_xip_signed_chain.json", "lpc55xx", 0),
-    ("mb_xip_signed_no_ks.json", "rt5xx", 0),
-    ("mb_ram_signed_no_ks.json", "rt5xx", 1),
-    ("mb_ram_signed_ks.json", "rt5xx", 2),
+    ("mb_xip_signed.yaml", "lpc55s6x", 0),
+    ("mb_xip_signed.yaml", "lpc55s1x", 0),
+    ("mb_xip_signed_chain.yaml", "lpc55s6x", 0),
+    ("mb_xip_signed_no_ks.yaml", "rt5xx", 0),
+    ("mb_ram_signed_no_ks.yaml", "rt5xx", 1),
+    ("mb_ram_signed_ks.yaml", "rt5xx", 2),
 ]
 
 mbi_legacy_encrypted_tests = [
-    ("mb_ram_encrypted_ks.json", "rt5xx", 2),
-    ("mb_ram_encrypted_ks_binkey.json", "rt5xx", 2),
+    ("mb_ram_encrypted_ks.yaml", "rt5xx", 2),
+    ("mb_ram_encrypted_ks_binkey.yaml", "rt5xx", 2),
 ]
 
 
 def process_config_file(config_path: str, destination: str):
     config_path.replace("\\", "/")
-    with open(config_path) as f:
-        config_data = json.load(f)
+    config_data = load_configuration(config_path)
     for key in config_data:
         if isinstance(config_data[key], str):
             config_data[key] = config_data[key].replace("\\", "/")
@@ -104,27 +111,46 @@ def process_config_file(config_path: str, destination: str):
     return ref_binary, new_binary, new_config
 
 
-def get_signing_key(config_file) -> ECC.EccKey:
-    with open(config_file) as f:
-        config_data = json.load(f)
-    private_key_file = (
-        config_data["signingCertificatePrivateKeyFile"]
-        if config_data.get("useIsk", True) or "" in config_data
-        else config_data["mainRootCertPrivateKeyFile"]
+def get_main_root_key(config_file) -> PrivateKeyEcc:
+    config_data = load_configuration(config_file)
+    private_key_file = config_data.get(
+        "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
     )
-    with open(private_key_file.replace("\\", "/"), "rb") as f:
-        siging_key = ECC.import_key(f.read())
-    return siging_key
+    return PrivateKeyEcc.load(private_key_file.replace("\\", "/"))
+
+
+def get_signing_key(config_file) -> PrivateKeyEcc:
+    config_data = load_configuration(config_file)
+    private_key_file = config_data.get(
+        "signPrivateKey",
+        config_data.get(
+            "mainRootCertPrivateKeyFile",
+            config_data.get("signingCertificatePrivateKeyFile"),
+        ),
+    )
+    if not private_key_file:
+        private_key_file = config_data.get("signProvider").split("=")[2]
+    return PrivateKeyEcc.load(private_key_file.replace("\\", "/"))
+
+
+def get_isk_key(config_file) -> PrivateKeyEcc:
+    config_data = load_configuration(config_file)
+    private_key_file = config_data.get(
+        "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
+    )
+    if not private_key_file:
+        private_key_file = config_data.get("signProvider").split("=")[2]
+    return PrivateKeyEcc.load(private_key_file.replace("\\", "/"))
 
 
 @pytest.mark.parametrize("config_file,family", mbi_basic_tests)
-def test_nxpimage_mbi_basic(elftosb_data_dir, tmpdir, config_file, family):
+def test_nxpimage_mbi_basic(nxpimage_data_dir, tmpdir, config_file, family):
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        config_file = f"{elftosb_data_dir}/workspace/cfgs/{family}/{config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{family}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
-        cmd = f"mbi export {new_config}"
+        cmd = f"mbi export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         if result.exit_code != 0:
             assert isinstance(result.exception, SPSDKUnsupportedImageType)
@@ -134,24 +160,24 @@ def test_nxpimage_mbi_basic(elftosb_data_dir, tmpdir, config_file, family):
 
 
 @pytest.mark.parametrize("config_file,family", mbi_basic_tests)
-def test_mbi_parser_basic(tmpdir, elftosb_data_dir, family, config_file):
+def test_mbi_parser_basic(tmpdir, nxpimage_data_dir, family, config_file):
     # Create new MBI file
-    mbi_data_dir = os.path.join(elftosb_data_dir, "workspace")
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
 
     ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
-    cmd = f"mbi export {new_config}"
+    cmd = f"mbi export -c {new_config}"
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
+    with use_working_directory(nxpimage_data_dir):
         result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        assert result.exit_code == 0, str(result.exception)
 
-    cmd = f"mbi parse -b {new_binary} -f {family} {tmpdir}/parsed"
+    cmd = f"mbi parse -b {new_binary} -f {family} -o {tmpdir}/parsed"
     result = runner.invoke(nxpimage.main, cmd.split())
 
     assert result.exit_code == 0
-    input_image = os.path.join(elftosb_data_dir, load_configuration(config_file)["inputImageFile"])
+    input_image = os.path.join(nxpimage_data_dir, load_configuration(config_file)["inputImageFile"])
     parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
     assert os.path.isfile(parsed_app)
     if os.path.split(input_image)[1] == "bin":
@@ -159,84 +185,223 @@ def test_mbi_parser_basic(tmpdir, elftosb_data_dir, family, config_file):
 
 
 @pytest.mark.parametrize("config_file,device,sign_digest", mbi_signed_tests)
-def test_nxpimage_mbi_signed(elftosb_data_dir, tmpdir, config_file, device, sign_digest):
+def test_nxpimage_mbi_signed(nxpimage_data_dir, tmpdir, config_file, device, sign_digest):
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
-        cmd = f"mbi export {new_config}"
+        cmd = f"mbi export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        assert result.exit_code == 0, str(result.exception)
         assert os.path.isfile(new_binary)
 
         # validate file lengths
-        with open(ref_binary, "rb") as f:
-            ref_data = f.read()
-        with open(new_binary, "rb") as f:
-            new_data = f.read()
+        ref_data = load_binary(ref_binary)
+        new_data = load_binary(new_binary)
         assert len(ref_data) == len(new_data)
 
         # validate signatures
-
         signing_key = get_signing_key(config_file=config_file)
-        signature_length = 2 * signing_key.pointQ.size_in_bytes()
+        signature_length = signing_key.signature_size
+        mbi_cls = get_mbi_class(load_configuration(new_config))
+        parsed_mbi = mbi_cls.parse(family=device, data=new_data)
+        assert hasattr(parsed_mbi, "cert_block")
+        cert_block_v3: CertBlockV21 = parsed_mbi.cert_block
+        cert_offset = Mbi_MixinIvt.get_cert_block_offset(new_data)
+
         if sign_digest:
             sign_offset = 32 if sign_digest and sign_digest == "sha256" else 48
-            assert internal_backend.ecc_verify(
-                signing_key,
+            assert signing_key.get_public_key().verify_signature(
                 new_data[-(signature_length + sign_offset) : -sign_offset],
                 new_data[: -(signature_length + sign_offset)],
             )
-            assert internal_backend.ecc_verify(
-                signing_key,
+            assert signing_key.get_public_key().verify_signature(
                 ref_data[-(signature_length + sign_offset) : -sign_offset],
                 ref_data[: -(signature_length + sign_offset)],
             )
-            # validate data before signature
+            ref_data = ref_data[:-sign_offset]
+            new_data = new_data[:-sign_offset]
+
+        assert signing_key.get_public_key().verify_signature(
+            ref_data[-signature_length:], ref_data[:-signature_length]
+        )
+        assert signing_key.get_public_key().verify_signature(
+            new_data[-signature_length:], new_data[:-signature_length]
+        )
+        ref_data = ref_data[:-signature_length]
+        new_data = new_data[:-signature_length]
+
+        if hasattr(parsed_mbi, "manifest") and isinstance(
+            parsed_mbi.manifest, MasterBootImageManifestMcxNx
+        ):
+            # Check CRC
             assert (
-                ref_data[: -(signature_length + sign_offset)]
-                == new_data[: -(signature_length + sign_offset)]
-            )
-            # validate signature digest
-            assert (
-                internal_backend.hash(new_data[:-sign_offset], sign_digest)
-                == new_data[-sign_offset:]
+                mkPredefinedCrcFun("crc-32-mpeg")(ref_data[:-4]).to_bytes(4, "little")
+                == ref_data[-4:]
             )
             assert (
-                internal_backend.hash(ref_data[:-sign_offset], sign_digest)
-                == ref_data[-sign_offset:]
+                mkPredefinedCrcFun("crc-32-mpeg")(new_data[:-4]).to_bytes(4, "little")
+                == new_data[-4:]
             )
+            # Remove CRC
+            ref_data = ref_data[:-4]
+            new_data = new_data[:-4]
+
+        # And check the data part
+        if cert_block_v3.isk_certificate:
+            isk_sign_offset = (
+                cert_offset
+                + cert_block_v3.expected_size
+                - cert_block_v3.isk_certificate.expected_size
+                + cert_block_v3.isk_certificate.signature_offset
+            )
+            isk_end_of_signature = isk_sign_offset + len(cert_block_v3.isk_certificate.signature)
+            assert ref_data[:isk_sign_offset] == new_data[:isk_sign_offset]
+            assert ref_data[isk_end_of_signature:] == new_data[isk_end_of_signature:]
+
+            # Validate ISK signature
+
+            # with binary cert block with don't have access to root private key
+            # reconstruct the root public key from cert block
+            isk_key = PublicKeyEcc.recreate_from_data(cert_block_v3.root_key_record.root_public_key)
+            isk_offset = (
+                cert_offset
+                + cert_block_v3.expected_size
+                - cert_block_v3.isk_certificate.expected_size
+            )
+            assert isk_key.verify_signature(
+                cert_block_v3.isk_certificate.signature,
+                new_data[
+                    cert_offset + 12 : isk_offset + cert_block_v3.isk_certificate.signature_offset
+                ],
+            )
+
         else:
-            assert internal_backend.ecc_verify(
-                signing_key, new_data[-signature_length:], new_data[:-signature_length]
-            )
-            assert internal_backend.ecc_verify(
-                signing_key, ref_data[-signature_length:], ref_data[:-signature_length]
-            )
             # validate data before signature
             assert ref_data[:-signature_length] == new_data[:-signature_length]
 
 
+@pytest.mark.parametrize("config_file,device", [("mb_xip.yaml", "mc56xx")])
+def test_nxpimage_mbi_signed_vx(nxpimage_data_dir, tmpdir, config_file, device):
+    runner = CliRunner()
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+        cmd = f"mbi export -c {new_config}"
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0, str(result.exception)
+        assert os.path.isfile(new_binary)
+
+        # validate file lengths
+        ref_data = load_binary(ref_binary)
+        new_data = load_binary(new_binary)
+        assert len(ref_data) == len(new_data)
+
+        # validate signatures
+        signing_key = get_main_root_key(config_file=config_file)
+        signature_length = signing_key.signature_size
+        mbi_cls = get_mbi_class(load_configuration(new_config))
+        parsed_mbi = mbi_cls.parse(family="mc56f81xxx", data=new_data)
+        assert hasattr(parsed_mbi, "cert_block")
+        cert_block: CertBlockVx = parsed_mbi.cert_block
+
+        SIGN_DIGEST_OFFSET = 0x360
+        SIGN_DIGEST_LENGTH = 32
+        BCA_OFFSET = 0x3C0
+        APP_OFFSET = 0x0C00
+        SIGN_OFFSET = 0x380
+        IMG_FCB_OFFSET = 0x400
+        IMG_FCB_SIZE = 16
+        IMG_ISK_OFFSET = IMG_FCB_OFFSET + IMG_FCB_SIZE
+
+        assert signing_key.get_public_key().verify_signature(
+            ref_data[SIGN_OFFSET : (SIGN_OFFSET + signature_length)],
+            ref_data[SIGN_DIGEST_OFFSET : (SIGN_DIGEST_OFFSET + SIGN_DIGEST_LENGTH)],
+        )
+        assert signing_key.get_public_key().verify_signature(
+            new_data[SIGN_OFFSET : (SIGN_OFFSET + signature_length)],
+            new_data[SIGN_DIGEST_OFFSET : (SIGN_DIGEST_OFFSET + SIGN_DIGEST_LENGTH)],
+        )
+
+        # Validate ISK signature
+        isk_key = get_isk_key(config_file=config_file)
+
+        assert isk_key.get_public_key().verify_signature(
+            cert_block.isk_certificate.signature,
+            new_data[IMG_ISK_OFFSET : IMG_ISK_OFFSET + cert_block.isk_certificate.signature_offset],
+        )
+
+        isk_hash = get_hash(
+            new_data[
+                IMG_ISK_OFFSET : IMG_ISK_OFFSET + cert_block.isk_certificate.signature_offset + 64
+            ]
+        )
+        assert (
+            isk_hash[:16]
+            == new_data[
+                IMG_ISK_OFFSET
+                + cert_block.isk_certificate.signature_offset
+                + 64 : IMG_ISK_OFFSET
+                + cert_block.isk_certificate.signature_offset
+                + 64
+                + 16
+            ]
+        )
+
+        assert new_data[:SIGN_OFFSET] == ref_data[:SIGN_OFFSET]
+        assert (
+            new_data[BCA_OFFSET : IMG_FCB_OFFSET + IMG_FCB_SIZE]
+            == ref_data[BCA_OFFSET : IMG_FCB_OFFSET + IMG_FCB_SIZE]
+        )
+        assert new_data[APP_OFFSET:] == ref_data[APP_OFFSET:]
+
+
 @pytest.mark.parametrize("config_file,family,sign_digest", mbi_signed_tests)
-def test_mbi_parser_signed(tmpdir, elftosb_data_dir, family, config_file, sign_digest):
+def test_mbi_parser_signed(tmpdir, nxpimage_data_dir, family, config_file, sign_digest):
     # Create new MBI file
-    mbi_data_dir = os.path.join(elftosb_data_dir, "workspace")
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
 
     ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
-    cmd = f"mbi export {new_config}"
+    cmd = f"mbi export -c {new_config}"
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
+    with use_working_directory(nxpimage_data_dir):
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
 
-    cmd = f"mbi parse -b {new_binary} -f {family} {tmpdir}/parsed"
+    cmd = f"mbi parse -b {new_binary} -f {family} -o {tmpdir}/parsed"
     result = runner.invoke(nxpimage.main, cmd.split())
 
     assert result.exit_code == 0
-    input_image = os.path.join(elftosb_data_dir, load_configuration(config_file)["inputImageFile"])
+    input_image = os.path.join(nxpimage_data_dir, load_configuration(config_file)["inputImageFile"])
+    parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
+    assert os.path.isfile(parsed_app)
+    if os.path.split(input_image)[1] == "bin":
+        assert filecmp.cmp(input_image, parsed_app)
+
+
+@pytest.mark.parametrize("config_file,family,sign_digest", mbi_signed_tests)
+def test_mbi_parser_signed(tmpdir, nxpimage_data_dir, family, config_file, sign_digest):
+    # Create new MBI file
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
+    config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
+
+    ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+    cmd = f"mbi export -c {new_config}"
+    runner = CliRunner()
+    with use_working_directory(nxpimage_data_dir):
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0, str(result.exception)
+
+    cmd = f"mbi parse -b {new_binary} -f {family} -o {tmpdir}/parsed"
+    result = runner.invoke(nxpimage.main, cmd.split())
+
+    assert result.exit_code == 0
+    input_image = os.path.join(nxpimage_data_dir, load_configuration(config_file)["inputImageFile"])
     parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
     assert os.path.isfile(parsed_app)
     if os.path.split(input_image)[1] == "bin":
@@ -246,17 +411,17 @@ def test_mbi_parser_signed(tmpdir, elftosb_data_dir, family, config_file, sign_d
 @pytest.mark.parametrize(
     "mbi_config_file,cert_block_config_file,device",
     [
-        ("mb_xip_384_256_cert.json", "cert_384_256.json", "lpc55s3x"),
-        ("mb_xip_384_384_cert.json", "cert_384_384.json", "lpc55s3x"),
+        ("mb_xip_384_256_cert.yaml", "cert_384_256.yaml", "lpc55s3x"),
+        ("mb_xip_384_384_cert.yaml", "cert_384_384.yaml", "lpc55s3x"),
     ],
 )
 def test_nxpimage_mbi_cert_block_signed(
-    elftosb_data_dir, tmpdir, mbi_config_file, cert_block_config_file, device
+    nxpimage_data_dir, tmpdir, mbi_config_file, cert_block_config_file, device
 ):
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        cert_config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{cert_block_config_file}"
-        mbi_config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{mbi_config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        cert_config_file = f"{nxpimage_data_dir}/workspace/cfgs/cert_block/{cert_block_config_file}"
+        mbi_config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{mbi_config_file}"
         mbi_ref_binary, mbi_new_binary, mbi_new_config = process_config_file(
             mbi_config_file, tmpdir
         )
@@ -264,59 +429,56 @@ def test_nxpimage_mbi_cert_block_signed(
             cert_config_file, tmpdir
         )
 
-        cmd = f"cert-block export {cert_new_config}"
+        cmd = f"cert-block export -f {device} -c {cert_new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        assert result.exit_code == 0, str(result.stdout) + str(result.exception)
         assert os.path.isfile(cert_new_binary)
 
         # validate cert file file lengths
-        with open(cert_ref_binary, "rb") as f:
-            cert_ref_data = f.read()
-        with open(cert_new_binary, "rb") as f:
-            cert_new_data = f.read()
+        cert_ref_data = load_binary(cert_ref_binary)
+        cert_new_data = load_binary(cert_new_binary)
         assert len(cert_ref_data) == len(cert_new_data)
-        assert cert_ref_data == cert_new_data
+        isk_key = get_isk_key(cert_new_config)
+        length_to_compare = len(cert_new_data) - isk_key.signature_size
 
-        cmd = f"mbi export {mbi_new_config}"
+        assert cert_ref_data[:length_to_compare] == cert_new_data[:length_to_compare]
+
+        cmd = f"mbi export -c {mbi_new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        assert result.exit_code == 0, str(result.stdout) + str(result.exception)
         assert os.path.isfile(mbi_new_binary)
 
         # validate file lengths
-        with open(mbi_ref_binary, "rb") as f:
-            mbi_ref_data = f.read()
-        with open(mbi_new_binary, "rb") as f:
-            mbi_new_data = f.read()
+        mbi_ref_data = load_binary(mbi_ref_binary)
+        mbi_new_data = load_binary(mbi_new_binary)
         assert len(mbi_ref_data) == len(mbi_new_data)
 
         # validate signatures
 
         signing_key = get_signing_key(config_file=mbi_config_file)
-        signature_length = 2 * signing_key.pointQ.size_in_bytes()
+        signature_length = signing_key.signature_size
 
-        assert internal_backend.ecc_verify(
-            signing_key, mbi_new_data[-signature_length:], mbi_new_data[:-signature_length]
+        assert signing_key.get_public_key().verify_signature(
+            mbi_new_data[-signature_length:], mbi_new_data[:-signature_length]
         )
-        assert internal_backend.ecc_verify(
-            signing_key, mbi_ref_data[-signature_length:], mbi_ref_data[:-signature_length]
+        assert signing_key.get_public_key().verify_signature(
+            mbi_ref_data[-signature_length:], mbi_ref_data[:-signature_length]
         )
-        # validate data before signature
-        assert mbi_ref_data[:-signature_length] == mbi_new_data[:-signature_length]
 
 
 @pytest.mark.parametrize(
     "mbi_config_file,cert_block_config_file,device",
     [
-        ("mb_xip_384_256_cert_invalid.json", "cert_384_256.json", "lpc55s3x"),
+        ("mb_xip_384_256_cert_invalid.json", "cert_384_256.yaml", "lpc55s3x"),
     ],
 )
 def test_nxpimage_mbi_cert_block_signed_invalid(
-    elftosb_data_dir, tmpdir, mbi_config_file, cert_block_config_file, device
+    nxpimage_data_dir, tmpdir, mbi_config_file, cert_block_config_file, device
 ):
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        cert_config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{cert_block_config_file}"
-        mbi_config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{mbi_config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        cert_config_file = f"{nxpimage_data_dir}/workspace/cfgs/cert_block/{cert_block_config_file}"
+        mbi_config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{mbi_config_file}"
         mbi_ref_binary, mbi_new_binary, mbi_new_config = process_config_file(
             mbi_config_file, tmpdir
         )
@@ -324,20 +486,21 @@ def test_nxpimage_mbi_cert_block_signed_invalid(
             cert_config_file, tmpdir
         )
 
-        cmd = f"cert-block export {cert_new_config}"
+        cmd = f"cert-block export -f {device} -c {cert_new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(cert_new_binary)
 
         # validate cert file file lengths
-        with open(cert_ref_binary, "rb") as f:
-            cert_ref_data = f.read()
-        with open(cert_new_binary, "rb") as f:
-            cert_new_data = f.read()
+        cert_ref_data = load_binary(cert_ref_binary)
+        cert_new_data = load_binary(cert_new_binary)
         assert len(cert_ref_data) == len(cert_new_data)
-        assert cert_ref_data == cert_new_data
+        isk_key = get_isk_key(cert_new_config)
+        length_to_compare = len(cert_new_data) - isk_key.signature_size
 
-        cmd = f"mbi export {mbi_new_config}"
+        assert cert_ref_data[:length_to_compare] == cert_new_data[:length_to_compare]
+
+        cmd = f"mbi export -c {mbi_new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code != 0
 
@@ -348,16 +511,16 @@ def test_nxpimage_mbi_cert_block_signed_invalid(
 # 2 indicates both hmac/keystore present in output image
 @pytest.mark.parametrize("config_file,device,skip_hmac_keystore", mbi_legacy_signed_tests)
 def test_nxpimage_mbi_legacy_signed(
-    elftosb_data_dir, tmpdir, config_file, device, skip_hmac_keystore
+    nxpimage_data_dir, tmpdir, config_file, device, skip_hmac_keystore
 ):
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
-        cmd = f"mbi export {new_config}"
+        cmd = f"mbi export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        assert result.exit_code == 0, str(result.exception)
         assert os.path.isfile(new_binary)
 
         # validate file lengths
@@ -371,14 +534,11 @@ def test_nxpimage_mbi_legacy_signed(
         with open(new_config, "r") as f:
             config_data = json.load(f)
 
-        signing_certificate_file_path = config_data["mainCertPrivateKeyFile"]
-        with open(signing_certificate_file_path, "rb") as f:
-            cert = f.read()
-            signing_key = RSA.import_key(cert)
-
-        modulus = signing_key.n
-        exponent = signing_key.e
-        signature_length = int(len(f"{modulus:x}") / 2)
+        signing_certificate_file_path = config_data.get(
+            "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
+        )
+        signing_key = PrivateKeyRsa.load(signing_certificate_file_path)
+        signature_length = signing_key.signature_size
         hmac_start = 0
         hmac_end = 0
         # skip_hmac_keystore
@@ -391,15 +551,11 @@ def test_nxpimage_mbi_legacy_signed(
             gap_len += KeyStore.KEY_STORE_SIZE if skip_hmac_keystore == 2 else 0
             hmac_end = hmac_start + gap_len
 
-        assert internal_backend.rsa_verify(
-            modulus,
-            exponent,
+        assert signing_key.get_public_key().verify_signature(
             new_data[-signature_length:],
             new_data[:hmac_start] + new_data[hmac_end:-signature_length],
         )
-        assert internal_backend.rsa_verify(
-            modulus,
-            exponent,
+        assert signing_key.get_public_key().verify_signature(
             ref_data[-signature_length:],
             ref_data[:hmac_start] + ref_data[hmac_end:-signature_length],
         )
@@ -410,25 +566,25 @@ def test_nxpimage_mbi_legacy_signed(
 
 @pytest.mark.parametrize("config_file,family,skip_hmac_keystore", mbi_legacy_signed_tests)
 def test_mbi_parser_legacy_signed(
-    tmpdir, elftosb_data_dir, family, config_file, skip_hmac_keystore
+    tmpdir, nxpimage_data_dir, family, config_file, skip_hmac_keystore
 ):
     # Create new MBI file
-    mbi_data_dir = os.path.join(elftosb_data_dir, "workspace")
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
 
     ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
-    cmd = f"mbi export {new_config}"
+    cmd = f"mbi export -c {new_config}"
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
+    with use_working_directory(nxpimage_data_dir):
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
 
-    cmd = f"mbi parse -b {new_binary} -f {family} {tmpdir}/parsed"
+    cmd = f"mbi parse -b {new_binary} -f {family} -o {tmpdir}/parsed"
     result = runner.invoke(nxpimage.main, cmd.split())
 
     assert result.exit_code == 0
-    input_image = os.path.join(elftosb_data_dir, load_configuration(config_file)["inputImageFile"])
+    input_image = os.path.join(nxpimage_data_dir, load_configuration(config_file)["inputImageFile"])
     parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
     assert os.path.isfile(parsed_app)
     if os.path.split(input_image)[1] == "bin":
@@ -438,32 +594,32 @@ def test_mbi_parser_legacy_signed(
 @pytest.mark.parametrize(
     "config_file,device",
     [
-        ("mb_xip_signed_cert_gap.json", "lpc55xx"),
+        ("mb_xip_signed_cert_gap.yaml", "lpc55s6x"),
     ],
 )
-def test_nxpimage_mbi_invalid_conf(elftosb_data_dir, tmpdir, config_file, device):
+def test_nxpimage_mbi_invalid_conf(nxpimage_data_dir, tmpdir, config_file, device):
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         _, _, new_config = process_config_file(config_file, tmpdir)
 
-        cmd = f"mbi export {new_config}"
+        cmd = f"mbi export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 1
 
 
 @pytest.mark.parametrize("config_file,device,skip_hmac_keystore", mbi_legacy_encrypted_tests)
 def test_nxpimage_mbi_legacy_encrypted(
-    elftosb_data_dir, tmpdir, config_file, device, skip_hmac_keystore
+    nxpimage_data_dir, tmpdir, config_file, device, skip_hmac_keystore
 ):
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
-        cmd = f"mbi export {new_config}"
+        cmd = f"mbi export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        assert result.exit_code == 0, str(result.exception)
         assert os.path.isfile(new_binary)
 
         # validate file lengths
@@ -477,14 +633,12 @@ def test_nxpimage_mbi_legacy_encrypted(
         with open(new_config, "r") as f:
             config_data = json.load(f)
 
-        signing_certificate_file_path = config_data["mainCertPrivateKeyFile"]
-        with open(signing_certificate_file_path, "rb") as f:
-            cert = f.read()
-            signing_key = RSA.import_key(cert)
+        signing_certificate_file_path = config_data.get(
+            "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
+        )
+        signing_key = PrivateKeyRsa.load(signing_certificate_file_path)
 
-        modulus = signing_key.n
-        exponent = signing_key.e
-        signature_length = int(len(f"{modulus:x}") / 2)
+        signature_length = signing_key.signature_size
         hmac_start = 0
         hmac_end = 0
         # skip_hmac_keystore
@@ -497,15 +651,11 @@ def test_nxpimage_mbi_legacy_encrypted(
             gap_len += KeyStore.KEY_STORE_SIZE if skip_hmac_keystore == 2 else 0
             hmac_end = hmac_start + gap_len
 
-        assert internal_backend.rsa_verify(
-            modulus,
-            exponent,
+        assert signing_key.get_public_key().verify_signature(
             new_data[-signature_length:],
             new_data[:hmac_start] + new_data[hmac_end:-signature_length],
         )
-        assert internal_backend.rsa_verify(
-            modulus,
-            exponent,
+        assert signing_key.get_public_key().verify_signature(
             ref_data[-signature_length:],
             ref_data[:hmac_start] + ref_data[hmac_end:-signature_length],
         )
@@ -516,17 +666,17 @@ def test_nxpimage_mbi_legacy_encrypted(
 
 @pytest.mark.parametrize("config_file,family,skip_hmac_keystore", mbi_legacy_encrypted_tests)
 def test_mbi_parser_legacy_encrypted(
-    tmpdir, elftosb_data_dir, family, config_file, skip_hmac_keystore
+    tmpdir, nxpimage_data_dir, family, config_file, skip_hmac_keystore
 ):
     # Create new MBI file
-    mbi_data_dir = os.path.join(elftosb_data_dir, "workspace")
+    mbi_data_dir = os.path.join(nxpimage_data_dir, "workspace")
     config_file = os.path.join(mbi_data_dir, "cfgs", family, config_file)
 
     ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
 
-    cmd = ["mbi", "export", new_config]
+    cmd = ["mbi", "export", "-c", new_config]
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
+    with use_working_directory(nxpimage_data_dir):
         result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
 
@@ -539,12 +689,13 @@ def test_mbi_parser_legacy_encrypted(
         family,
         "-k",
         f"{mbi_data_dir}/keys/userkey.txt",
+        "-o",
         f"{tmpdir}/parsed",
     ]
     result = runner.invoke(nxpimage.main, cmd)
 
     assert result.exit_code == 0
-    input_image = os.path.join(elftosb_data_dir, load_configuration(config_file)["inputImageFile"])
+    input_image = os.path.join(nxpimage_data_dir, load_configuration(config_file)["inputImageFile"])
     parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
     assert os.path.isfile(parsed_app)
     if os.path.split(input_image)[1] == "bin":
@@ -552,13 +703,15 @@ def test_mbi_parser_legacy_encrypted(
 
 
 def test_nxpimage_mbi_lower():
-    mbi = Mbi_PlainRamLpc55s3x(app=bytes(100), load_addr=0, firmware_version=0)
+    mbi = create_mbi_class("Mbi_PlainRamLpc55s3x")(
+        app=bytes(100), load_address=0, firmware_version=0
+    )
     assert mbi.app
     assert mbi.export()
 
 
 def test_mbi_lpc55s3x_invalid():
-    mbi = Mbi_PlainXipSignedLpc55s3x(app=bytes(100), firmware_version=0)
+    mbi = create_mbi_class("Mbi_PlainXipSignedLpc55s3x")(app=bytes(100), firmware_version=0)
     with pytest.raises(SPSDKError):
         mbi.validate()
 
@@ -566,7 +719,6 @@ def test_mbi_lpc55s3x_invalid():
 @pytest.mark.parametrize(
     "family",
     [
-        "lpc55xx",
         "lpc55s0x",
         "lpc550x",
         "lpc55s1x",
@@ -581,11 +733,15 @@ def test_mbi_lpc55s3x_invalid():
         "kw45xx",
         "k32w1xx",
         "lpc553x",
+        "mc56f81xxx",
+        "mwct20d2x",
+        "mcxn9xx",
+        "rw61x",
     ],
 )
 def test_mbi_get_templates(tmpdir, family):
     runner = CliRunner()
-    cmd = f"mbi get-templates -f {family} {tmpdir}"
+    cmd = f"mbi get-templates -f {family} --output {tmpdir}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
     device_data = load_configuration(path=DEVICE_FILE)
@@ -601,52 +757,42 @@ def test_mbi_get_templates(tmpdir, family):
     [
         (
             "lpc55s3x",
-            "ext_xip_signed_lpc55s3x.yml",
-            ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
-        ),
-        (
-            "lpc553x",
-            "ext_xip_signed_lpc55s3x.yml",
+            "ext_xip_signed_lpc55s3x.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
         (
             "rt5xx",
-            "ext_xip_signed_rtxxxx.yml",
+            "ext_xip_signed_rtxxxx.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "rt6xx",
-            "ext_xip_signed_rtxxxx.yml",
-            ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
-        ),
-        (
-            "lpc550x",
-            "int_xip_signed_xip.yml",
-            ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
-        ),
-        (
-            "lpc551x",
-            "int_xip_signed_xip.yml",
+            "ext_xip_signed_rtxxxx.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "lpc55s2x",
-            "int_xip_signed_xip.yml",
+            "int_xip_signed_xip.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "nhs52sxx",
-            "int_xip_signed_xip.yml",
+            "int_xip_signed_xip.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "kw45xx",
-            "int_xip_signed_kw45xx.yml",
+            "int_xip_signed_kw45xx.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
         (
             "k32w1xx",
-            "int_xip_signed_kw45xx.yml",
+            "int_xip_signed_kw45xx.yaml",
+            ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
+        ),
+        (
+            "mc56f81xxx",
+            "mc56f81xxx_int_xip_signed.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
     ],
@@ -662,14 +808,16 @@ def test_mbi_export_sign_provider(tmpdir, data_dir, family, template_name, keys_
         shutil.copyfile(key_file_path, os.path.join(tmpdir, key_file_name))
     test_app_path = os.path.join(mbi_data_dir, config["inputImageFile"])
     shutil.copyfile(test_app_path, os.path.join(tmpdir, config["inputImageFile"]))
+    cert_block = os.path.join(mbi_data_dir, config["certBlock"])
+    shutil.copyfile(cert_block, os.path.join(tmpdir, config["certBlock"]))
     tmp_config = os.path.join(tmpdir, "config.yaml")
     with open(tmp_config, "w") as file:
         yaml.dump(config, file)
 
     runner = CliRunner()
-    cmd = f"mbi export {tmp_config}"
+    cmd = f"mbi export -c {tmp_config}"
     result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    assert result.exit_code == 0, str(result.exception)
     file_path = os.path.join(tmpdir, config["masterBootOutputFile"])
     assert os.path.isfile(file_path)
 
@@ -679,52 +827,52 @@ def test_mbi_export_sign_provider(tmpdir, data_dir, family, template_name, keys_
     [
         (
             "lpc55s3x",
-            "ext_xip_signed_lpc55s3x_invalid.yml",
+            "ext_xip_signed_lpc55s3x_invalid.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
         (
             "lpc553x",
-            "ext_xip_signed_lpc55s3x_invalid.yml",
+            "ext_xip_signed_lpc55s3x_invalid.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
         (
             "rt5xx",
-            "ext_xip_signed_rtxxxx_invalid.yml",
+            "ext_xip_signed_rtxxxx_invalid.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "rt6xx",
-            "ext_xip_signed_rtxxxx_invalid.yml",
+            "ext_xip_signed_rtxxxx_invalid.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "lpc550x",
-            "int_xip_signed_xip_invalid.yml",
+            "int_xip_signed_xip_invalid.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "lpc551x",
-            "int_xip_signed_xip_invalid.yml",
+            "int_xip_signed_xip_invalid.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "lpc55s2x",
-            "int_xip_signed_xip_invalid.yml",
+            "int_xip_signed_xip_invalid.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "nhs52sxx",
-            "int_xip_signed_xip_invalid.yml",
+            "int_xip_signed_xip_invalid.yaml",
             ["k0_cert0_2048.pem", "root_k0_signed_cert0_noca.der.cert"],
         ),
         (
             "kw45xx",
-            "int_xip_signed_kw45xx_invalid.yml",
+            "int_xip_signed_kw45xx_invalid.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
         (
             "k32w1xx",
-            "int_xip_signed_kw45xx_invalid.yml",
+            "int_xip_signed_kw45xx_invalid.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
     ],
@@ -742,11 +890,68 @@ def test_mbi_export_sign_provider_invalid_configuration(
         shutil.copyfile(key_file_path, os.path.join(tmpdir, key_file_name))
     test_app_path = os.path.join(mbi_data_dir, config["inputImageFile"])
     shutil.copyfile(test_app_path, os.path.join(tmpdir, config["inputImageFile"]))
+    cert_block = os.path.join(mbi_data_dir, config["certBlock"])
+    shutil.copyfile(cert_block, os.path.join(tmpdir, config["certBlock"]))
     tmp_config = os.path.join(tmpdir, "config.yaml")
     with open(tmp_config, "w") as file:
         yaml.dump(config, file)
 
     runner = CliRunner()
-    cmd = f"mbi export {tmp_config}"
+    cmd = f"mbi export -c {tmp_config}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code != 0
+
+
+@pytest.mark.parametrize(
+    "plugin,main_root_cert_id,sign_provider,exit_code",
+    [
+        (None, 0, "type=file;file_path=k0_cert0_2048.pem", 0),
+        (None, None, "type=file;file_path=k0_cert0_2048.pem", 0),
+        ("file_no_verify.py", 0, "type=file_no_verify;file_path=k0_cert0_2048.pem", 0),
+        ("file_no_verify.py", None, "type=file_no_verify;file_path=k0_cert0_2048.pem", 1),
+        (None, None, "type=file;file_path=k2_cert0_2048.pem", 1),
+        (None, 0, "type=file;file_path=k2_cert0_2048.pem", 1),
+    ],
+)
+def test_mbi_signature_provider(
+    data_dir, tmpdir, plugin, main_root_cert_id, sign_provider, exit_code
+):
+    # Copy all required files
+    keys_to_copy = [
+        "root_k0_signed_cert0_noca.der.cert",
+        "root_k1_signed_cert0_noca.der.cert",
+        "k0_cert0_2048.pem",
+        "k1_cert0_2048.pem",
+        "k2_cert0_2048.pem",
+    ]
+    shutil.copyfile(
+        os.path.join(data_dir, "mbi", "test_application.bin"),
+        os.path.join(tmpdir, "test_application.bin"),
+    )
+    for key in keys_to_copy:
+        shutil.copyfile(
+            os.path.join(data_dir, "mbi", "keys_and_certs", key), os.path.join(tmpdir, key)
+        )
+    # Prepare configuration
+    config_data = load_configuration(os.path.join(data_dir, "mbi", "ext_xip_signed_rt5xx.yaml"))
+    if sign_provider:
+        config_data["signProvider"] = sign_provider
+    config_file = os.path.join(tmpdir, "ext_xip_signed_rt5xx.yaml")
+    with open(config_file, "w") as fp:
+        yaml.dump(config_data, fp)
+
+    cert_config_data = load_configuration(os.path.join(data_dir, "mbi", config_data["certBlock"]))
+    if sign_provider:
+        cert_config_data["signProvider"] = sign_provider
+    if main_root_cert_id is not None:
+        cert_config_data["mainRootCertId"] = main_root_cert_id
+    cert_config_file = os.path.join(tmpdir, config_data["certBlock"])
+    with open(cert_config_file, "w") as fp:
+        yaml.dump(cert_config_data, fp)
+    cmd = f"mbi export -c {config_file}"
+    if plugin:
+        plugin_path = os.path.join(data_dir, "mbi", "signature_providers", plugin)
+        cmd = " ".join([cmd, f"--plugin {plugin_path}"])
+    runner = CliRunner()
+    result = runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == exit_code

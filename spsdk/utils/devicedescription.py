@@ -13,8 +13,8 @@ from typing import Dict, List, Optional, Tuple, Union
 
 from libusbsio.libusbsio import LIBUSBSIO
 
-from spsdk.mboot.interfaces.usb import USB_DEVICES as MB_USB_DEVICES
-from spsdk.sdp.interfaces.usb import USB_DEVICES as SDP_USB_DEVICES
+from spsdk.mboot.interfaces.usb import MbootUSBInterface
+from spsdk.sdp.interfaces.usb import SdpUSBInterface
 from spsdk.utils.misc import get_hash
 
 # for backward-compatibility
@@ -38,12 +38,8 @@ class DeviceDescription(ABC):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({vars(self)})"
 
-    def __str__(self) -> str:
-        """Should return the string from info function."""
-        return self.info()
-
     @abstractmethod  # pragma: no cover
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Shall return a string describing the device, e.g. Name: <name>; ID: <id>."""
 
 
@@ -66,7 +62,7 @@ class UartDeviceDescription(DeviceDescription):
         self.name = name or "Unknown port"
         self.dev_type = dev_type or "Unknown device type"
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Returns a formatted device description string.
 
         :return: Text information about UART device.
@@ -115,7 +111,7 @@ class USBDeviceDescription(DeviceDescription):
         self.serial = serial
         self.path_hash = get_hash(original_path) if original_path else "N/A"
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Returns a formatted device description string.
 
         :return: Text information of USB device.
@@ -158,7 +154,7 @@ class SDIODeviceDescription(DeviceDescription):
         self.pid = pid
         self.path = path
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Returns a formatted device description string.
 
         :return: Text information of SDIO device.
@@ -192,7 +188,7 @@ class SIODeviceDescription(DeviceDescription):
         self.release_number = self._info.release_number
         self.path_hash = get_hash(self._info.path)
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Returns a formatted device description string.
 
         :return: Text description of SIO device.
@@ -230,11 +226,11 @@ def get_usb_device_name(
     """
     nxp_device_names = []
     if device_names is None:
-        for dname, vid_pid in MB_USB_DEVICES.items():
+        for dname, vid_pid in MbootUSBInterface.usb_devices.items():
             if vid_pid[0] == vid and vid_pid[1] == pid:
                 nxp_device_names.append(dname)
 
-        for dname, vid_pid in SDP_USB_DEVICES.items():
+        for dname, vid_pid in SdpUSBInterface.usb_devices.items():
             if vid_pid[0] == vid and vid_pid[1] == pid:
                 nxp_device_names.append(dname)
     else:

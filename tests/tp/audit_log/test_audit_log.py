@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from spsdk.tp import SPSDKTpError
 from spsdk.tp.data_container import AuditLog, AuditLogCounter, AuditLogRecord
+from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tphost import TrustProvisioningHost
 
 

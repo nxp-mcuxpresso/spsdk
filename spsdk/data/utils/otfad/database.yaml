@@ -10,8 +10,8 @@ devices:
       grouped_registers:
         - name: OTP_MASTER_KEY
           width: 256
-          reverse_subregs_order: True
           config_as_hexstring: true
+          reverse_subregs_order: True
           description: OTP MASTER KEY.
         - name: OTFAD_KEK_SEED
           width: 128
@@ -26,8 +26,8 @@ devices:
       grouped_registers:
         - name: OTP_MASTER_KEY
           width: 256
-          reverse_subregs_order: True
           config_as_hexstring: true
+          reverse_subregs_order: True
           description: OTP MASTER KEY.
         - name: OTFAD_KEK_SEED
           width: 128
@@ -70,6 +70,9 @@ devices:
       peripheral_list: ["1", "2"]
       supports_key_scrambling: True
       additional_template: ["otfad_scramble"]
+      otfad_scramble_align_fuse_standalone: True
+      otfad_scramble_enable_bitfield: "OTFAD{index}_SCRAMBLE_ENABLE"
+      otfad_scramble_align_bitfield: "OTFAD{index}_SCRAMBLE_ALIGN"
       additional_template_text: |
         Is important to use physical addresses (non-secure) in settings of OTFAD to proper run the decryption on device.
 
@@ -93,6 +96,31 @@ devices:
   rt116x:
     device_alias: rt117x
 
+  rt101x:
+    latest: a0
+    attributes:
+      reg_fuses: fuses_rt101x.xml
+      keyblob_byte_swap_cnt: 0
+      sb_21_supported: False
+      has_kek_fuses: True
+      peripheral_list: ["1"]
+      supports_key_scrambling: True
+      additional_template: ["otfad_scramble"]
+      additional_template_text: |
+        When using OTFAD XIP, the core clock must operate at a higher frequency than the FlexSPI clock
+        otherwise, OTFAD operation may become unreliable.
+
+        In case blank string is used, the output is not generated. If the filename contains directory,
+        the output folder will be ignored and the full path from filename will be used.
+      otfad_key_fuse: "SW_GP2"
+      otfad_scramble_key: "OTFAD_KEY_SCRAMBLE"
+      otfad_scramble_enable_bitfield: "ENB_OTFAD_KEY_SCRAMBLE"
+      grouped_registers:
+        - name: SW_GP2
+          width: 128
+          reverse_subregs_order: True
+          config_as_hexstring: true
+          description: General purpose SW key.
 # default values for all devices
 attributes:
   key_blob_rec_size: 64
@@ -112,3 +140,4 @@ attributes:
   otfad_scramble_enable_bitfield: "OTFAD_SCRAMBLE_ENABLE"
   otfad_scramble_align_bitfield: "OTFAD_SCRAMBLE_ALIGN"
   otfad_scramble_key: "OTFAD{index}_KEY_SCRAMBLE"
+  otfad_scramble_align_fuse_standalone: False

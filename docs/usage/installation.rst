@@ -154,17 +154,24 @@ To bundle SPSDK applications into executables run the following line:
     $ pyinstaller --clean --noconfirm apps.spec
 
 
+.. note::
+    It is possible to define custom SPSDK_DATA_FOLDER location using environment variable
+    with the name SPSDK_DATA_FOLDER or SPSDK_DATA_FOLDER_version.
+    Where the version is SPSDK version with underscores.
+    SPSDK_DATA_FOLDER_version has priority over SPSDK_DATA_FOLDER.
+    E.g.: SPSDK_DATA_FOLDER_2_0_0
+
+
 -------------------
 Trust Provisioning
 -------------------
 
 Extra dependencies must be installed in order to use Trust Provisioning.
-Also you will need `swig compiler <http://www.swig.org>`_ which is a requirement for pyscard
 
 .. note::
 
-    On **Mac OS** you need to install gcc, swig (http://www.swig.org), and pcsc-lite (https://pcsclite.apdu.fr/).
-    (**brew install swig pcsc-lite**)
+    On **Mac OS** you need to install gcc and pcsc-lite (https://pcsclite.apdu.fr/).
+    (**brew install pcsc-lite**)
     On **Linux** you need to install pcscd and libpcsclite-dev. (**sudo apt install pcdcs libpcsclite-dev**)
 
 .. code:: bash

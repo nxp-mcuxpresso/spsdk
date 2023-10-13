@@ -8,9 +8,10 @@
 import contextlib
 import os
 import sqlite3
-from typing import Iterator, List, NamedTuple, Optional, Tuple, Union
+from typing import Iterator, List, NamedTuple, Optional, Tuple
 
-from spsdk.utils.crypto.backend_openssl import ec, openssl_backend
+from spsdk.crypto.hash import get_hash
+from spsdk.crypto.keys import PublicKeyEcc
 
 from ..exceptions import SPSDKTpError
 from .data_container import Container
@@ -196,17 +197,16 @@ class AuditLogRecord(NamedTuple):
             data_to_hash += oem_cert or bytes()
         data_to_hash += self.prod_counter
         data_to_hash += self.start_hash
-        return openssl_backend.hash(data_to_hash)
+        return get_hash(data_to_hash)
 
-    def is_valid(self, key: Union[ec.EllipticCurvePublicKey, bytes]) -> bool:
+    def is_valid(self, key: PublicKeyEcc) -> bool:
         """Check if record is valid.
 
         :param key: PEM-encoded public key or public key object
         :return: True if signature checks out
         """
         new_hash = self.new_hash()
-        return openssl_backend.ecc_verify(
-            public_key=key,
+        return key.verify_signature(
             signature=self.signature,
             data=new_hash,
         )

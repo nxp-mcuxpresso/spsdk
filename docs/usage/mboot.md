@@ -6,69 +6,69 @@ This is a user guide for `mboot` module API.
 ## MBoot: Basic usage
 
 * Import `mboot` module from `spsdk`
-* Use `mboot.scan_usb()` function for getting list of connected devices  
+* Use `mboot.MbootUSBInterface.scan()` class method for getting list of connected devices
 * Select single device from all connected and create `McuBoot` instance over this device
 * Start with open connection and finish with close connection
 
 ```python
 from spsdk import mboot
 
-devices = mboot.scan_usb()
-if devices:
-    mb = mboot.McuBoot(devices[0])
+interfaces = mboot.MbootUSBInterface.scan()
+if interfaces:
+    mb = mboot.McuBoot(interfaces[0])
     mb.open()
     # read 1000 bytes from address 0
     data = mb.read_memory(0, 1000)
     if data is None:
-        print(mboot.StatusCode.desc(mb.status_code, f"Unknown Error: 0x{mb.status_code:08X}"))
+        print(mboot.mcuboot.StatusCode.desc(mb.status_code, f"Unknown Error: 0x{mb.status_code:08X}"))
         mb.close()
         exit()
     # your code
     mb.close()
 ```
 
-## MBoot: Skipping open/close call  
+## MBoot: Skipping open/close call
 
 `McuBoot` class is supporting `with` statement what can make the code cleaner and much more readable.
 
 ```python
 from spsdk import mboot
 
-devices = mboot.scan_usb()
-if devices:
-    with mboot.McuBoot(devices[0]) as mb:
+interfaces = mboot.MbootUSBInterface.scan()
+if interfaces:
+    with mboot.McuBoot(interfaces[0]) as mb:
         # read 1000 bytes from address 0
         data = mb.read_memory(0, 1000)
         if data is None:
-            print(mboot.StatusCode.desc(mb.status_code, f"Unknown Error: 0x{mb.status_code:08X}"))
+            print(mboot.mcuboot.StatusCode.desc(mb.status_code, f"Unknown Error: 0x{mb.status_code:08X}"))
             exit()
         # your code
 ```
 
 ## MBoot: Propagating command error as exception
 
-By default is command error propagated by return value which must be processed individually for every command. In many 
-use-cases is code execution interrupted if any command finish with error. Therefore you have the option to enable the 
+By default is command error propagated by return value which must be processed individually for every command. In many
+use-cases is code execution interrupted if any command finish with error. Therefore you have the option to enable the
 exception also for command error.
 
 ```python
 from spsdk import mboot
 
-devices = mboot.scan_usb()
-if devices:
+interfaces = mboot.MbootUSBInterface.scan()
+if interfaces:
     try:
-        with mboot.McuBoot(devices[0], True) as mb:
+        with mboot.McuBoot(interfaces[0], True) as mb:
             # read 1000 bytes from address 0
             data = mb.read_memory(0, 1000)
             # your code
-    except mboot.McuBootError as e:
+    except mboot.mcuboot.McuBootError as e:
         print(str(e))
 ```
 
 ## MBoot: Logger
 
-MBoot module implement a logging functionality for intuitive debugging of communication interfaces. All what you need 
-to do is just add line `import logging` into your code and set logging level to `DEBUG` or `INFO` with line 
+MBoot module implement a logging functionality for intuitive debugging of communication interfaces. All what you need
+to do is just add line `import logging` into your code and set logging level to `DEBUG` or `INFO` with line
 `logging.basicConfig(level=logging.DEBUG)`
 
 ```python

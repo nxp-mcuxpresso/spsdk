@@ -1,0 +1,17 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Master Boot Image converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==                                        
+# ----------------------------------------------------------------------------------------------------
+family: lpc55s3x  # [Required], MCU family name; Possible options:['lpc553x', 'lpc55s3x']
+outputImageExecutionTarget: xip # [Required], Application target; Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence; Possible options:['Internal flash (XIP)', 'External flash (XIP)', 'Internal Flash (XIP)', 'External Flash (XIP)', 'RAM', 'ram', 'xip']
+outputImageAuthenticationType: crc # [Required], Type of boot image authentication; Specification of final master boot image authentication; Possible options:['Plain', 'CRC', 'Signed', 'Encrypted + Signed', 'NXP Signed', 'encrypted', 'signed', 'crc']
+masterBootOutputFile: .\workspace\output_images\lpc55s3x\mb_xip_crc.bin # [Required], Master Boot Image name; The file for Master Boot Image result file.
+inputImageFile: .\workspace\input_images\normal_boot.bin # [Required], Plain application image; The input application image to by modified to Master Boot Image.
+outputImageExecutionAddress: '0' # [Required], Loading address of application; Application loading address in RAM if not XiP, otherwise address of load in XiP.
+# ----------------------------------------------------------------------------------------------------
+#                                      == Trust Zone Settings ==                                      
+# ----------------------------------------------------------------------------------------------------
+trustZonePresetFile: .\workspace\trustzone\lpc55s3x\tztest_a1.bin # [Optional], TrustZone Customization file; If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.

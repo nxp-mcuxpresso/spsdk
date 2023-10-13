@@ -2,13 +2,13 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Exceptions used in the MBoot module."""
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 
 from .error_codes import StatusCode
 

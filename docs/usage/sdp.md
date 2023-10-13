@@ -6,69 +6,72 @@ This is a user guide for `sdp` module API.
 ## SDP: Basic usage
 
 * Import `sdp` module from `spsdk`
-* Use `sdp.scan_usb()` function for getting list of connected devices  
+* Use `sdp.SdpUSBInterface.scan()` class method for getting list of connected devices
 * Select single device from all connected and create `SDP` instance over this device
 * Start with open connection and finish with close connection
 
 ```python
 from spsdk import sdp
+from spsdk.sdp.error_codes import StatusCode
 
-devices = sdp.scan_usb()
-if devices:
-    sd = sdp.SDP(devices[0])
+interfaces = sdp.SdpUSBInterface.scan()
+if interfaces:
+    sd = sdp.SDP(interfaces[0])
     sd.open()
-    # read 1000 bytes from address 0
-    data = sd.read(0, 1000)
+    # read 10 bytes from address 0
+    data = sd.read(0, 10)
     if data is None:
-        print(sdp.StatusCode.desc(sd.status_code, f"Unknown Error: 0x{sd.status_code:08X}"))
+        print(StatusCode.desc(sd.status_code, f"Unknown Error: 0x{sd.status_code:08X}"))
         sd.close()
         exit()
     # your code
     sd.close()
 ```
 
-## SDP: Skipping open/close call  
+## SDP: Skipping open/close call
 
 `SDP` class is supporting `with` statement what can make the code cleaner and much more readable.
 
 ```python
 from spsdk import sdp
+from spsdk.sdp.error_codes import StatusCode
 
-devices = sdp.scan_usb()
-if devices:
-    with sdp.SDP(devices[0]) as sd:
-        # read 1000 bytes from address 0
-        data = sd.read(0, 1000)
+interfaces = sdp.SdpUSBInterface.scan()
+if interfaces:
+    with sdp.SDP(interfaces[0]) as sd:
+        # read 10 bytes from address 0
+        data = sd.read(0, 10)
         if data is None:
-            print(sdp.StatusCode.desc(sd.status_code, f"Unknown Error: 0x{sd.status_code:08X}"))
+            print(StatusCode.desc(sd.status_code, f"Unknown Error: 0x{sd.status_code:08X}"))
             exit()
         # your code
 ```
 
 ## SDP: Propagating command error as exception
 
-By default is command error propagated by return value which must be processed individually for every command. In many 
-use-cases is code execution interrupted if any command finish with error. Therefore you have the option to enable the 
+By default is command error propagated by return value which must be processed individually for every command. In many
+use-cases is code execution interrupted if any command finish with error. Therefore you have the option to enable the
 exception also for command error.
 
 ```python
 from spsdk import sdp
+from spsdk.sdp.exceptions import SdpError
 
-devices = sdp.scan_usb()
-if devices:
+interfaces = sdp.SdpUSBInterface.scan()
+if interfaces:
     try:
-        with sdp.SDP(devices[0], True) as sd:
-            # read 1000 bytes from address 0
-            data = sd.read(0, 1000)
+        with sdp.SDP(interfaces[0], True) as sd:
+            # read 10 bytes from address 0
+            data = sd.read(0, 10)
             # your code
-    except sdp.SdpError as e:
+    except SdpError as e:
         print(str(e))
 ```
 
 ## SDP: Logger
 
-SDP module implement a logging functionality for intuitive debugging of communication interfaces. All what you need 
-to do is just add line `import logging` into your code and set logging level to `DEBUG` or `INFO` with line 
+SDP module implement a logging functionality for intuitive debugging of communication interfaces. All what you need
+to do is just add line `import logging` into your code and set logging level to `DEBUG` or `INFO` with line
 `logging.basicConfig(level=logging.DEBUG)`
 
 ```python

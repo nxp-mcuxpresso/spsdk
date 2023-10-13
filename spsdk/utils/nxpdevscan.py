@@ -14,12 +14,13 @@ from typing import List, Optional
 from libusbsio import LIBUSBSIO_Exception, usbsio
 from serial.tools.list_ports import comports
 
-from spsdk import SPSDKError
-from spsdk.mboot.interfaces.sdio import scan_sdio as mb_scan_sdio
-from spsdk.mboot.interfaces.uart import scan_uart as mb_scan_uart
-from spsdk.sdp import SDP
+from spsdk.exceptions import SPSDKError
+from spsdk.mboot.interfaces.sdio import MbootSdioInterface
+from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.sdp.exceptions import SdpConnectionError
-from spsdk.sdp.interfaces.uart import Uart as SDP_Uart
+from spsdk.sdp.interfaces.uart import SdpUARTInterface
+from spsdk.sdp.sdp import SDP
+from spsdk.utils.interfaces.device.serial_device import SerialDevice
 
 from .devicedescription import (
     SDIODeviceDescription,
@@ -52,10 +53,12 @@ def search_nxp_sdio_devices() -> List[SDIODeviceDescription]:
     search_path = NXP_SDIO_DEVICE_PATHS
 
     for path in search_path:
-        sdio_device = mb_scan_sdio(device_path=path)
+        sdio_device = MbootSdioInterface.scan(device_path=path)
         if len(sdio_device) > 0:
             sdio_dev = SDIODeviceDescription(
-                vid=sdio_device[0].vid, pid=sdio_device[0].pid, path=sdio_device[0].path
+                vid=sdio_device[0].device.vid,
+                pid=sdio_device[0].device.pid,
+                path=sdio_device[0].device.path,
             )
             nxp_sdio_devices.append(sdio_dev)
             continue
@@ -119,7 +122,7 @@ def search_nxp_uart_devices() -> List[UartDeviceDescription]:
 
     # Iterate over every com port we have and check, whether mboot or sdp responds
     for port in ports:
-        if mb_scan_uart(port=port, timeout=50):
+        if MbootUARTInterface.scan(port=port, timeout=50):
             uart_dev = UartDeviceDescription(name=port, dev_type="mboot device")
             retval.append(uart_dev)
             continue
@@ -131,7 +134,8 @@ def search_nxp_uart_devices() -> List[UartDeviceDescription]:
         # So we create an SDP interface and try to read the status code. If
         # we get a response, we are connected to an SDP device.
         try:
-            sdp_com = SDP(SDP_Uart(port=port, timeout=50))
+            device = SerialDevice(port=port, timeout=50)
+            sdp_com = SDP(SdpUARTInterface(device))
             if sdp_com.read_status() is not None:
                 uart_dev = UartDeviceDescription(name=port, dev_type="SDP device")
                 retval.append(uart_dev)

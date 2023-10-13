@@ -14,6 +14,7 @@ from copy import deepcopy
 from typing import Any, Dict, List
 
 from ruamel.yaml.comments import CommentedMap as CM
+from typing_extensions import Self
 
 from spsdk import version as spsdk_version
 from spsdk.exceptions import SPSDKError, SPSDKValueError
@@ -21,7 +22,7 @@ from spsdk.image.fcb import FCB_DATA_FOLDER, FCB_DATABASE_FILE, FCB_SCH_FILE
 from spsdk.image.segments_base import SegmentBase
 from spsdk.utils.database import Database
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
 
 
 class FCB(SegmentBase):
@@ -55,6 +56,28 @@ class FCB(SegmentBase):
         """Registers of segment."""
         return self._registers
 
+    @classmethod
+    def parse(
+        cls,
+        binary: bytes,
+        offset: int = 0,
+        family: str = "Unknown",
+        mem_type: str = "Unknown",
+        revision: str = "latest",
+    ) -> Self:
+        """Parse binary block into FCB object.
+
+        :param binary: binary image.
+        :param offset: Offset of FCB in binary image.
+        :param family: Chip family.
+        :param mem_type: Used memory type.
+        :param revision: Optional Chip family revision.
+        :raises SPSDKError: If given binary block size is not equal to block size in header
+        """
+        fcb = cls(family=family, mem_type=mem_type, revision=revision)
+        fcb.registers.parse(binary[offset:])
+        return fcb
+
     @staticmethod
     def load_from_config(config: Dict) -> "FCB":
         """Load configuration file of FCB.
@@ -85,7 +108,7 @@ class FCB(SegmentBase):
             f"Created: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}.\n"
             f"NXP SPSDK version: {spsdk_version}"
         )
-        return ConfigTemplate.convert_cm_to_yaml(config)
+        return CommentedConfig.convert_cm_to_yaml(config)
 
     @classmethod
     def get_validation_schemas(
@@ -144,10 +167,21 @@ class FCB(SegmentBase):
             override["revision"] = revision
             override["type"] = mem_type
 
-            ret = ConfigTemplate(
+            ret = CommentedConfig(
                 f"Flash Configuration Block template for {family}.",
                 schemas,
                 override,
             ).export_to_yaml()
 
         return ret
+
+    def __repr__(self) -> str:
+        return f"FCB Segment, memory type: {self.mem_type}"
+
+    def __str__(self) -> str:
+        return (
+            "FCB Segment:\n"
+            f" Family:           {self.family}\n"
+            f" Revision:         {self.revision}\n"
+            f" Memory type:      {self.mem_type}\n"
+        )

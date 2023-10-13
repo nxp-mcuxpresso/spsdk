@@ -10,14 +10,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import spsdk.utils.devicedescription as devicedescription
-from spsdk.mboot.interfaces.usb import USB_DEVICES as MB_USB_DEVICES
+from spsdk.mboot.interfaces.usb import MbootUSBInterface
 
 
 def test_uart_device_description():
     formatted_output = "Port: some name\nType: some type"
     dev = devicedescription.UartDeviceDescription(name="some name", dev_type="some type")
 
-    assert dev.info() == formatted_output
+    assert str(dev) == formatted_output
 
 
 def test_usb_device_description():
@@ -40,7 +40,7 @@ def test_usb_device_description():
         serial="12345678",
     )
 
-    assert dev.info() == formatted_output
+    assert str(dev) == formatted_output
 
 
 def test_sdio_device_description():
@@ -51,7 +51,7 @@ def test_sdio_device_description():
         path="some_path",
     )
 
-    assert dev.info() == formatted_output
+    assert str(dev) == formatted_output
 
 
 # Test SIO device description is done by NXPDEVSCAN tests :-)
@@ -79,7 +79,7 @@ def test_repr():
         (0x1FC9, 0x0135, ["IMXRT", "MXRT60"]),
     ],
 )
-def test_get_device_name(vid, pid, expected_result):
+def test_get_device_name2(vid, pid, expected_result):
     """Verify search works and returns appropriate name based on VID/PID"""
     assert devicedescription.get_usb_device_name(vid, pid) == expected_result
 
@@ -94,7 +94,10 @@ def test_get_device_name(vid, pid, expected_result):
 )
 def test_get_device_name(vid, pid, expected_result):
     """Verify search works and returns appropriate name based on VID/PID"""
-    assert devicedescription.get_usb_device_name(vid, pid, MB_USB_DEVICES) == expected_result
+    assert (
+        devicedescription.get_usb_device_name(vid, pid, MbootUSBInterface.usb_devices)
+        == expected_result
+    )
 
 
 def test_path_conversion():

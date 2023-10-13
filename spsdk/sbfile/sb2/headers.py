@@ -11,10 +11,12 @@ from datetime import datetime
 from struct import calcsize, pack, unpack_from
 from typing import Optional
 
-from spsdk import SPSDKError
+from typing_extensions import Self
+
+from spsdk.crypto.rng import random_bytes
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.misc import BcdVersion3, pack_timestamp, unpack_timestamp
-from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.crypto.common import crypto_backend
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import swap16
 
 
@@ -70,14 +72,14 @@ class ImageHeaderV2(BaseClass):
         self.component_version: BcdVersion3 = BcdVersion3.to_version(component_version)
         self.build_number = build_number
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Header: v{self.version}, {self.image_blocks}"
 
     def flags_desc(self) -> str:
         """Return flag description."""
         return "Signed" if self.flags == 0x8 else "Unsigned"
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Get info of Header as string."""
         nfo = str()
         nfo += f" Version:              {self.version}\n"
@@ -113,7 +115,7 @@ class ImageHeaderV2(BaseClass):
         product_version_words = [swap16(v) for v in self.product_version.nums]
         component_version_words = [swap16(v) for v in self.product_version.nums]
         if padding is None:
-            padding = crypto_backend().random_bytes(8)
+            padding = random_bytes(8)
         else:
             if len(padding) != 8:
                 raise SPSDKError("Invalid length of padding")
@@ -162,15 +164,14 @@ class ImageHeaderV2(BaseClass):
 
     # pylint: disable=too-many-locals
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "ImageHeaderV2":
+    def parse(cls, data: bytes) -> Self:
         """Deserialization from binary form.
 
         :param data: binary representation
-        :param offset: to start parsing data
         :return: parsed instance of the header
         :raises SPSDKError: Unable to parse data
         """
-        if cls.SIZE > len(data) - offset:
+        if cls.SIZE > len(data):
             raise SPSDKError("Insufficient amount of data")
         (
             nonce,
@@ -208,7 +209,7 @@ class ImageHeaderV2(BaseClass):
             build_number,
             # padding1
             _,
-        ) = unpack_from(cls.FORMAT, data, offset)
+        ) = unpack_from(cls.FORMAT, data)
 
         # check header signature 1
         if signature1 != cls.SIGNATURE1:

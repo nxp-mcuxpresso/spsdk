@@ -9,10 +9,13 @@ import os
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.rng import random_bytes
+from spsdk.crypto.symmetric import Counter
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.commands import CmdErase, CmdLoad, CmdReset
 from spsdk.sbfile.sb2.sections import BootSectionV2, CertSectionV2
-from spsdk.utils.crypto import CertBlockV2, Certificate, Counter, crypto_backend
+from spsdk.utils.crypto.cert_blocks import CertBlockV1
 
 
 def test_boot_section_v2():
@@ -25,9 +28,9 @@ def test_boot_section_v2():
     assert boot_section.hmac_count == 1
     assert boot_section.raw_size == 144
 
-    dek = crypto_backend().random_bytes(32)
-    mac = crypto_backend().random_bytes(32)
-    nonce = crypto_backend().random_bytes(16)
+    dek = random_bytes(32)
+    mac = random_bytes(32)
+    nonce = random_bytes(16)
     data = boot_section.export(dek, mac, Counter(nonce))
     assert data
     assert BootSectionV2.parse(data, 0, False, dek, mac, Counter(nonce))
@@ -46,9 +49,7 @@ def test_boot_section_v2():
         BootSectionV2.parse(data=data, offset=0, plain_sect=False, dek=dek, mac=mac, counter=5)
 
     with pytest.raises(SPSDKError):
-        assert BootSectionV2.parse(
-            data, 0, False, dek, crypto_backend().random_bytes(32), Counter(nonce)
-        )
+        assert BootSectionV2.parse(data, 0, False, dek, random_bytes(32), Counter(nonce))
 
 
 def test_boot_section_v2_invalid_export():
@@ -57,14 +58,14 @@ def test_boot_section_v2_invalid_export():
     )
     dek = 32
     mac = 4
-    nonce = crypto_backend().random_bytes(16)
+    nonce = random_bytes(16)
     with pytest.raises(SPSDKError, match="Invalid type of dek, should be bytes"):
         boot_section.export(dek, mac, Counter(nonce))
-    dek = crypto_backend().random_bytes(32)
+    dek = random_bytes(32)
     with pytest.raises(SPSDKError, match="Invalid type of mac, should be bytes"):
         boot_section.export(dek, mac, Counter(nonce))
     counter = 5
-    mac = crypto_backend().random_bytes(32)
+    mac = random_bytes(32)
     with pytest.raises(SPSDKError, match="Invalid type of counter"):
         boot_section.export(dek, mac, counter)
 
@@ -80,13 +81,10 @@ def test_boot_section_v2_hmac_count():
     assert b_section.uid == 2
 
 
-def _create_cert_block_v2(data_dir: str) -> CertBlockV2:
-    with open(os.path.join(data_dir, "selfsign_v3.der.crt"), "rb") as f:
-        cert_data = f.read()
-
-    cb = CertBlockV2()
-    cert_obj = Certificate(cert_data)
-    cb.set_root_key_hash(0, cert_obj.public_key_hash)
+def _create_cert_block_v1(data_dir: str) -> CertBlockV1:
+    cb = CertBlockV1()
+    cert_obj = Certificate.load(os.path.join(data_dir, "selfsign_v3.der.crt"))
+    cb.set_root_key_hash(0, cert_obj.public_key_hash())
     cb.add_certificate(cert_obj)
     return cb
 
@@ -95,30 +93,30 @@ def test_certificate_section_v2(data_dir: str) -> None:
     with pytest.raises(AssertionError):
         CertSectionV2(None)
 
-    cs = CertSectionV2(_create_cert_block_v2(data_dir))
-    dek = crypto_backend().random_bytes(32)
-    mac = crypto_backend().random_bytes(32)
-    nonce = crypto_backend().random_bytes(16)
+    cs = CertSectionV2(_create_cert_block_v1(data_dir))
+    dek = random_bytes(32)
+    mac = random_bytes(32)
+    nonce = random_bytes(16)
     data = cs.export(dek, mac, Counter(nonce))
     assert data
     assert CertSectionV2.parse(data, 0, dek, mac, Counter(nonce))
 
     with pytest.raises(SPSDKError):
-        CertSectionV2.parse(data, 0, dek, crypto_backend().random_bytes(32), Counter(nonce))
+        CertSectionV2.parse(data, 0, dek, random_bytes(32), Counter(nonce))
 
 
 def test_invalid_export_cert_section_v2(data_dir):
-    cs = CertSectionV2(_create_cert_block_v2(data_dir))
-    dek = crypto_backend().random_bytes(16)
-    mac = crypto_backend().random_bytes(16)
-    nonce = crypto_backend().random_bytes(16)
+    cs = CertSectionV2(_create_cert_block_v1(data_dir))
+    dek = random_bytes(16)
+    mac = random_bytes(16)
+    nonce = random_bytes(16)
     cs.HMAC_SIZE = 137
     with pytest.raises(SPSDKError, match="Invalid size"):
         cs.export(dek, mac, Counter(nonce))
 
 
 def test_certificate_block_v2(data_dir):
-    _create_cert_block_v2(data_dir)
+    _create_cert_block_v1(data_dir)
 
 
 def test_invalid_parse_cert_section_v2(data_dir):
@@ -131,10 +129,10 @@ def test_invalid_parse_cert_section_v2(data_dir):
 
 
 def test_invalid_header_hmac(data_dir):
-    cs = CertSectionV2(_create_cert_block_v2(data_dir))
-    dek = crypto_backend().random_bytes(32)
-    mac = crypto_backend().random_bytes(32)
-    nonce = crypto_backend().random_bytes(16)
+    cs = CertSectionV2(_create_cert_block_v1(data_dir))
+    dek = random_bytes(32)
+    mac = random_bytes(32)
+    nonce = random_bytes(16)
     valid_data = cs.export(dek, mac, Counter(nonce))
     invalid_data = valid_data
     invalid_data = bytearray(invalid_data)
@@ -144,38 +142,38 @@ def test_invalid_header_hmac(data_dir):
 
 
 def test_invalid_header_tag(data_dir):
-    cs = CertSectionV2(_create_cert_block_v2(data_dir))
+    cs = CertSectionV2(_create_cert_block_v1(data_dir))
     cs._header.tag += 1
-    dek = crypto_backend().random_bytes(32)
-    mac = crypto_backend().random_bytes(32)
-    nonce = crypto_backend().random_bytes(16)
+    dek = random_bytes(32)
+    mac = random_bytes(32)
+    nonce = random_bytes(16)
     valid_data = cs.export(dek, mac, Counter(nonce))
     with pytest.raises(SPSDKError, match="TAG"):
         CertSectionV2.parse(data=valid_data, mac=mac, dek=dek, counter=Counter(nonce))
 
 
 def test_invalid_header_flag(data_dir):
-    cs = CertSectionV2(_create_cert_block_v2(data_dir))
+    cs = CertSectionV2(_create_cert_block_v1(data_dir))
     cs._header.flags += 1
-    dek = crypto_backend().random_bytes(32)
-    mac = crypto_backend().random_bytes(32)
-    nonce = crypto_backend().random_bytes(16)
+    dek = random_bytes(32)
+    mac = random_bytes(32)
+    nonce = random_bytes(16)
     valid_data = cs.export(dek, mac, Counter(nonce))
     with pytest.raises(SPSDKError, match="FLAGS"):
         CertSectionV2.parse(data=valid_data, mac=mac, dek=dek, counter=Counter(nonce))
 
 
-def test_invalid_header_flag(data_dir):
-    cs = CertSectionV2(_create_cert_block_v2(data_dir))
+def test_invalid_header_flag2(data_dir):
+    cs = CertSectionV2(_create_cert_block_v1(data_dir))
     cs._header.address += 1
-    dek = crypto_backend().random_bytes(32)
-    mac = crypto_backend().random_bytes(32)
-    nonce = crypto_backend().random_bytes(16)
+    dek = random_bytes(32)
+    mac = random_bytes(32)
+    nonce = random_bytes(16)
     valid_data = cs.export(dek, mac, Counter(nonce))
     with pytest.raises(SPSDKError, match="Mark"):
         CertSectionV2.parse(data=valid_data, mac=mac, dek=dek, counter=Counter(nonce))
 
 
 def test_cert_section(data_dir):
-    cs = CertSectionV2(_create_cert_block_v2(data_dir))
-    assert "CertSectionV2: Length=1296" == cs.__str__()
+    cs = CertSectionV2(_create_cert_block_v1(data_dir))
+    assert "CertSectionV2: Length=1296" == repr(cs)

@@ -6,19 +6,22 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from struct import pack
+from typing import List, Optional
 
 import pytest
+from typing_extensions import Self
 
 from spsdk.sdp.commands import CmdResponse, CommandTag, ResponseValue
 from spsdk.sdp.error_codes import StatusCode
 from spsdk.sdp.exceptions import SdpError
-from spsdk.sdp.interfaces.base import SDPInterface
 from spsdk.sdp.sdp import SDP, CmdPacket
+from spsdk.utils.interfaces.device.base import DeviceBase
 
 
-class VirtualDevice(SDPInterface):
-    def __init__(self, respond_sequence: list):
+class VirtualDevice(DeviceBase):
+    def __init__(self, respond_sequence):
         self.respond_sequence = respond_sequence
+        self._timeout = 0
 
     @property
     def is_opened(self):
@@ -30,27 +33,74 @@ class VirtualDevice(SDPInterface):
     def close(self):
         pass
 
-    def read(self, timeout=1000):
+    def read(self, length: int):
         return self.respond_sequence.pop(0)
 
-    def write(self, packet):
+    def write(self, data):
         pass
 
-    def conf(self, config: dict) -> None:
-        pass
-
-    def info(self):
+    def __str__(self):
         return "VirtualDevice"
+
+    @property
+    def timeout(self) -> int:
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value) -> None:
+        self._timeout = value
+
+
+class VirtualSDPInterface:
+    def __init__(self, device: VirtualDevice) -> None:
+        self.device = device
+
+    def open(self) -> None:
+        """Open the interface."""
+        self.device.open()
+
+    def close(self) -> None:
+        """Close the interface."""
+        self.device.close()
+
+    @property
+    def is_opened(self) -> bool:
+        """Indicates whether interface is open."""
+        return self.device.is_opened
+
+    @classmethod
+    def scan(
+        cls,
+        params: str,
+        timeout: int,
+        extra_params: Optional[str] = None,
+    ) -> List[Self]:
+        """Scan method."""
+        pass  # not used
+
+    def read(self, length: Optional[int] = None):
+        return self.device.read(length or 0)
+
+    def write_data(self, data):
+        self.device.write(data)
+
+    def write_command(self, packet: CmdPacket):
+        data = packet.to_bytes()
+        if not data:
+            raise AttributeError("Incorrect packet type")
+        self.device.write(data)
 
 
 def test_sdp_hab_locked():
     """Test send data returns TRUE if HAB locked"""
     sdp = SDP(
-        VirtualDevice(
-            respond_sequence=[
-                CmdResponse(True, pack(">I", ResponseValue.LOCKED)),
-                CmdResponse(True, pack(">I", ResponseValue.HAB_SUCCESS)),
-            ]
+        VirtualSDPInterface(
+            VirtualDevice(
+                respond_sequence=[
+                    CmdResponse(True, pack(">I", ResponseValue.LOCKED)),
+                    CmdResponse(True, pack(">I", ResponseValue.HAB_SUCCESS)),
+                ]
+            )
         )
     )
     assert sdp.is_opened
@@ -62,12 +112,14 @@ def test_sdp_hab_locked():
 def test_sdp_read_hab_locked():
     """Test `read` returns None if HAB locked"""
     sdp = SDP(
-        VirtualDevice(
-            respond_sequence=[
-                CmdResponse(True, pack(">I", ResponseValue.LOCKED)),
-                CmdResponse(False, b"0000"),
-                CmdResponse(True, pack(">I", ResponseValue.HAB_SUCCESS)),
-            ]
+        VirtualSDPInterface(
+            VirtualDevice(
+                respond_sequence=[
+                    CmdResponse(True, pack(">I", ResponseValue.LOCKED)),
+                    CmdResponse(False, b"0000"),
+                    CmdResponse(True, pack(">I", ResponseValue.HAB_SUCCESS)),
+                ]
+            )
         )
     )
     assert sdp.is_opened
@@ -78,7 +130,11 @@ def test_sdp_read_hab_locked():
 
 def test_sdp_jump_and_run_hab_locked():
     """Test `jump_and_run` returns False if HAB locked (even the operation works)"""
-    sdp = SDP(VirtualDevice(respond_sequence=[CmdResponse(True, pack(">I", ResponseValue.LOCKED))]))
+    sdp = SDP(
+        VirtualSDPInterface(
+            VirtualDevice(respond_sequence=[CmdResponse(True, pack(">I", ResponseValue.LOCKED))])
+        )
+    )
     assert sdp.is_opened
     assert sdp.jump_and_run(0x20000000)
     assert sdp.status_code == StatusCode.HAB_IS_LOCKED
@@ -91,27 +147,27 @@ def test_sdp_send_data_errors():
         CmdResponse(True, pack(">I", 0x12345678)),
     ]
 
-    sdp = SDP(VirtualDevice(respond_sequence=error_response.copy()))
+    sdp = SDP(VirtualSDPInterface(VirtualDevice(respond_sequence=error_response.copy())))
 
-    sdp._device.respond_sequence = error_response.copy()
+    sdp._interface.device.respond_sequence = error_response.copy()
     assert not sdp._send_data(CmdPacket(CommandTag.WRITE_DCD, 0, 0, 0), b"")
     assert sdp.status_code == StatusCode.WRITE_DCD_FAILURE
 
-    sdp._device.respond_sequence = error_response.copy()
+    sdp._interface.device.respond_sequence = error_response.copy()
     assert not sdp._send_data(CmdPacket(CommandTag.WRITE_CSF, 0, 0, 0), b"")
     assert sdp.status_code == StatusCode.WRITE_CSF_FAILURE
 
-    sdp._device.respond_sequence = error_response.copy()
+    sdp._interface.device.respond_sequence = error_response.copy()
     assert not sdp._send_data(CmdPacket(CommandTag.WRITE_FILE, 0, 0, 0), b"")
     assert sdp.status_code == StatusCode.WRITE_IMAGE_FAILURE
 
-    sdp._device.respond_sequence = error_response.copy()
+    sdp._interface.device.respond_sequence = error_response.copy()
     assert not sdp._send_data(CmdPacket(CommandTag.WRITE_DCD, 0, 0, 0), b"")
     assert sdp.status_code == StatusCode.WRITE_DCD_FAILURE
 
 
 def test_sdp_read_args_errors():
-    sdp = SDP(VirtualDevice([]))
+    sdp = SDP(VirtualSDPInterface(VirtualDevice([])))
     with pytest.raises(SdpError, match="Invalid data format"):
         sdp.read_safe(address=0, length=2, data_format=2)
 

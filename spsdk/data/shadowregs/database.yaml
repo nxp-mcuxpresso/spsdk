@@ -44,6 +44,7 @@ devices:
     latest: a1
     attributes:
       address: 0x3012_6000
+      read_address: 0x4000_A000 # The rw61x is using different address for shadow registers read operations
       flush_func: rw61x_update_scratch_reg
       inverted_regs:
         DCFG_CC_SOCU: DCFG_CC_SOCU_AP
@@ -56,7 +57,8 @@ devices:
         - name: RKTH
           width: 384
           config_as_hexstring: true
-          reversed: true
+          reverse_subregs_order: true
+          alternative_widths: [256]
           description:
             ROTKH field is compounded by 12 32-bit fields and contains Root key
             table hash. For ECC P-256 keys RKTH is a 32-bit SHA-256 digest of four
@@ -68,14 +70,13 @@ attributes:
   grouped_registers:
     - name: OTFAD_KEK_SEED
       width: 128
-      reverse: 1
+      reversed: True
       config_as_hexstring: True
       description: When OTP key store is used (USE_PUF = 0), this 128-bit user
         programmed value is used to derive OTFAD_KEK.&#10;&#10;OTFAD_KEK[127:0] =
         AES_ENCRYPT (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0]);
     - name: OTP_MASTER_KEY
       width: 256
-      reverse_subregs_order: True
       config_as_hexstring: True
       description: Master Key used to derive different usage keys (HMAC_KEY,
         ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). &#10;&#10;- ENC_BOOT_HMAC_KEY[127:0] =
@@ -90,9 +91,10 @@ attributes:
         (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0]);
     - name: RKTH
       width: 256
-      reverse: 1
+      reverse_subregs_order: True
       config_as_hexstring: True
-      description: "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||
+      description:
+        "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||
         exponent).&#10;For i in 0..3:&#10;  Let M[i] = BE(Modulus i)&#10;  Let
         E[i] = BE(Exponent i)&#10;  Let RKH[i] = SHA256( M[i] || E[i] )&#10;  Let
         RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )&#10;Note:

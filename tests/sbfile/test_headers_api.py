@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.crypto.rng import random_bytes
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.headers import ImageHeaderV2
-from spsdk.utils.crypto.backend_internal import internal_backend
 
 
 def test_image_header_v2():
@@ -28,14 +28,14 @@ def test_image_header_v2():
     assert str(header.component_version) == "1.0.0"
     assert header.build_number == 0
 
-    assert header.info()  # test info prints any non-empty output
+    assert str(header)  # test info prints any non-empty output
 
     with pytest.raises(SPSDKError):
         _ = header.export()
     with pytest.raises(SPSDKError):
         _ = header.export()
 
-    header.nonce = internal_backend.random_bytes(16)
+    header.nonce = random_bytes(16)
     data = header.export()
     assert len(data) == ImageHeaderV2.SIZE
 

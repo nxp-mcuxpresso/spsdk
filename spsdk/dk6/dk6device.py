@@ -9,7 +9,7 @@ import logging
 from types import TracebackType
 from typing import Callable, Dict, List, Optional, Type, Union
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.easy_enum import Enum
 
 from .commands import (

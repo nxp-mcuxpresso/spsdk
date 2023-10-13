@@ -38,12 +38,12 @@ def test_nxpimage_bee(tmpdir, data_dir, case, config, reference, engines):
     with use_working_directory(work_dir):
         config_dict = load_configuration(config)
         out_dir = os.path.join(work_dir, config_dict["output_folder"])
-        cmd = f"bee export {config}"
+        cmd = f"bee export -c {config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(out_dir, "encrypted.bin"))
         for engine in engines:
-            assert os.path.isfile(os.path.join(out_dir, f"{engine}_bee_ehdr.bin"))
+            assert os.path.isfile(os.path.join(out_dir, f"bee_ehdr{engine}.bin"))
         if reference:
             encrypted_image_enc = load_binary(reference)
             encrypted_nxpimage = load_binary(os.path.join(out_dir, "encrypted.bin"))
@@ -62,15 +62,24 @@ def test_nxpimage_bee_overlap(tmpdir, data_dir, case, config):
     shutil.copytree(os.path.join(data_dir, "bee", case), work_dir)
     shutil.copy(os.path.join(data_dir, "bee", INPUT_BINARY), work_dir)
     with use_working_directory(work_dir):
-        cmd = f"bee export {config}"
+        cmd = f"bee export -c {config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code != 0
 
 
-def test_nxpimage_bee_template_cli(tmpdir):
+@pytest.mark.parametrize(
+    "family",
+    [
+        ("rt101x"),
+        ("rt102x"),
+        ("rt105x"),
+        ("rt106x"),
+    ],
+)
+def test_nxpimage_bee_template_cli(tmpdir, family):
     runner = CliRunner()
     template = os.path.join(tmpdir, "bee_template.yaml")
-    cmd = f"bee get-template {template}"
+    cmd = f"bee get-template -f {family} -o {template}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
     assert os.path.isfile(template)

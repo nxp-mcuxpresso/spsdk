@@ -1,0 +1,187 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+---
+dc_content:
+  required:
+    - socc
+    - uuid
+    - cc_socu
+    - cc_vu
+    - cc_beacon
+    - rot_meta
+    - rot_id
+    - dck
+
+  type: object
+  title: Debug Credential Content
+  properties:
+    socc:
+      type: integer
+      title: Device SoC Class
+      description:
+        A unique identifier for a set of SoCs that require no SoC-specific differentiation in
+        their debug authentication. The main usage is to allow a different set of debug
+        domains and options to be negotiated between the device configuration and
+        credentials. A class can contain just a single revision of a single SoC model, if the
+        granularity of debug control warrants it.
+      enum: []  # Place holder that will be fill up in runtime
+      template_value: 6
+    uuid:
+      type: string
+      title: Device UUID
+      description: 128-bit IETF RFC4122 compliant non-sequential Universally Unique Identifier (UUID)
+      format: hex_value
+      template_value: "00000000000000000000000000000000"
+    cc_socu:
+      type: [string, integer]
+      title: SoC Usage
+      description:
+        A CC (constraint) value that is a bit mask, and whose bits are used in an
+        SoCC-specific manner. These bits are typically used for controlling which debug
+        domains are accessed via the authentication protocol, but device-specific debug
+        options can be managed in this way also.
+      format: number
+      template_value: "0x0FFF"
+    cc_vu:
+      type: [string, integer]
+      title: Vendor Usage
+      description:
+        A CC (constraint) value that is opaque to the debug authentication protocol itself but
+        which can be leveraged by vendors in product-specific ways.
+      format: number
+      template_value: 0
+    cc_beacon:
+      type: [string, integer]
+      title: Credential Beacon
+      description:
+        A value that is passed through the authentication protocol, which is not interpreted
+        by the protocol but is instead made visible to the application being debugged. A
+        credential beacon is associated with a DC and is therefore vendor/RoT-signed. An
+        authentication beacon is provided and signed by the debugger during the
+        authentication process.
+      format: number
+      template_value: 0
+    rot_meta:
+      type: array
+      title: RoT meta-data
+      description:
+        The RoT meta-data required by the device to corroborate; the ROTID sent in the
+        DAC, the field in this DC, and any additional RoT state that is not stored within the
+        device. This allows different RoT identification, management and revocation
+        solutions to be handled.
+      minItems: 1
+      maxItems: 4
+      items:
+        type: string
+        format: file
+        template_value:
+          - ./rotk0.pub
+          - ./rotk1.pub
+          - ./rotk2.pub
+          - ./rotk3.pub
+
+    rot_id:
+      type: integer
+      title: RoT Identifier
+      description:
+        RoTID allows the debugger to infer which RoT public key(s) are acceptable to the
+        device. If the debugger cannot or does not provide such a credential, the
+        authentication process will fail.
+      minimum: 0
+      maximum: 100
+      template_value: 0
+
+    dck:
+      type: string
+      title: Debug Credential Key
+      description:
+        A user-owned key pair. The public part of the key is associated with a DC, the
+        private part is held by the user and used to produce signatures during
+        authentication.
+      format: file
+      template_value: dck.pub
+
+dc_signature:
+  oneOf:
+    - required: [sign_provider]
+    - required: [rotk]
+
+  type: object
+  title: Debug Credential Signature part
+  properties:
+    rotk:
+      type: string
+      title: RoT signature private key
+      description:
+        Private key for for the RoT meta chosen by rot_id to sign the image.
+      format: file
+      template_value: rotk0.pem
+
+    sign_provider:
+      type: string
+      title: Signature Provider
+      description:
+        Private key for for the RoT meta chosen by rot_id to sign the image.
+      template_value: type=sasp;key_number=0
+
+dc_srk_ca_flag:
+  type: object
+  title: Debug Credential Signature part
+  properties:
+    flag_ca:
+        type: boolean
+        title: CA Flag
+        description: CA Flag is used by AHAB to indicate if the SRK is allowed to sign other keys
+        template_value: false
+
+main_note:
+  "\nDebug credential file has following binary structure:\n
+  ============================================\n
+  ============================================\n
+  ===              Version                 ===\n
+  ============================================\n
+  ===             Soc Class                ===\n
+  ============================================\n
+  ===                UUID                  ===\n
+  ============================================\n
+  ===    RoT Meta SHA256 of following:     ===\n
+  ===          RoT Key0 SHA256             ===\n
+  ===          RoT Key1 SHA256             ===\n
+  ===          RoT Key2 SHA256             ===\n
+  ===          RoT Key3 SHA256             ===\n
+  ============================================\n
+  ===        Debugger Key DCK (Pub):       ===\n
+  ===                                      ===\n
+  ============================================\n
+  ===              CC SOCU                 ===\n
+  ============================================\n
+  ===               CC VU                  ===\n
+  ============================================\n
+  ===                 CB                   ===\n
+  ============================================\n
+  ===            RoT Key (pub)             ===\n
+  ===                                      ===\n
+  ============================================\n
+  ============================================\n
+  ===       Signature of all block         ===\n
+  ===  SHA256 of whole block => Sign(RoTK) ===\n
+  ============================================\n
+  ============================================\n
+  \n\n
+  ============================================\n
+                Debug Credential Signature\n
+  ============================================\n
+  There are two ways how sign the final DC data blob.\n
+  \n
+  1. In case that you is available private pair for rot_meta with index rot_id just use first simple style\n
+     to use it by rotk key. As a second way to do same is use sign_provider (or signProvider - both are accepted) option with 'type=file'.\n
+  \n
+  2. For case that Debug Credential files are generated in untrusted environment (without access to RoT private keys),\n
+     there is option to use plugin (example how to create own plugin is in: ./SPSDK/examples/dat/hsm/). The plugin\n
+     has simple interface that allows handle DC data blob into plugin with index of RoT meta public key to get back signed\n
+     DC image.\n
+  \n
+     Those options are exclusive, so only one option could be used to sign the DC.\n
+  \n
+  "

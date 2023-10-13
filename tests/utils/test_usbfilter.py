@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from spsdk.mboot.interfaces.usb import USB_DEVICES
+from spsdk.mboot.interfaces.usb import MbootUSBInterface
 from spsdk.utils.usbfilter import NXPUSBDeviceFilter, USBDeviceFilter
 
 common_use_cases = [
@@ -199,7 +199,9 @@ def test_usb_match_linux_nxp(filter_usb_id: str, vid: str, pid: str, path: str, 
 )
 def test_device_name_win(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
     with patch("platform.system", MagicMock(return_value="Windows")):
-        usb_filter = NXPUSBDeviceFilter(usb_id=filter_usb_id, nxp_device_names=USB_DEVICES)
+        usb_filter = NXPUSBDeviceFilter(
+            usb_id=filter_usb_id, nxp_device_names=MbootUSBInterface.usb_devices
+        )
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
 
         assert usb_filter.compare(g_virtual_hid_device) == expected
@@ -211,7 +213,9 @@ def test_device_name_win(filter_usb_id: str, vid: str, pid: str, path: str, expe
 )
 def test_device_name_mac(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
     with patch("platform.system", MagicMock(return_value="Darwin")):
-        usb_filter = NXPUSBDeviceFilter(usb_id=filter_usb_id, nxp_device_names=USB_DEVICES)
+        usb_filter = NXPUSBDeviceFilter(
+            usb_id=filter_usb_id, nxp_device_names=MbootUSBInterface.usb_devices
+        )
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
 
         assert usb_filter.compare(g_virtual_hid_device) == expected
@@ -223,7 +227,9 @@ def test_device_name_mac(filter_usb_id: str, vid: str, pid: str, path: str, expe
 )
 def test_device_name_linux(filter_usb_id: str, vid: str, pid: str, path: str, expected: bool):
     with patch("platform.system", MagicMock(return_value="Linux")):
-        usb_filter = NXPUSBDeviceFilter(usb_id=filter_usb_id, nxp_device_names=USB_DEVICES)
+        usb_filter = NXPUSBDeviceFilter(
+            usb_id=filter_usb_id, nxp_device_names=MbootUSBInterface.usb_devices
+        )
         g_virtual_hid_device = {"vendor_id": int(vid, 0), "product_id": int(pid, 0), "path": path}
 
         assert usb_filter.compare(g_virtual_hid_device) == expected

@@ -6,105 +6,145 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Test SecureBinary part of nxpimage app."""
-import filecmp
 import json
 import os
-from typing import Dict, Union
 
 import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
-from spsdk.utils.misc import use_working_directory
+from spsdk.crypto.keys import PrivateKeyEcc
+from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Header
+from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 
 
 def process_config_file(config_path: str, destination: str):
-    with open(config_path) as f:
-        config_data: Dict[str, Union[str, int]] = json.load(f)
+    config_data = load_configuration(config_path)
     for key in config_data:
         if isinstance(config_data[key], str):
             config_data[key] = config_data[key].replace("\\", "/")
-    ref_binary = config_data.get("containerOutputFile") or config_data.get("containerOutputFile")
+    ref_binary = config_data.get("containerOutputFile")
     new_binary = f"{destination}/{os.path.basename(ref_binary)}"
     new_config = f"{destination}/{os.path.basename(config_path)}"
-    config_data["containerOutputFile"] = new_binary
-    # It doesn't matter that there will be both keys in this temporary config
     config_data["containerOutputFile"] = new_binary
     with open(new_config, "w") as f:
         json.dump(config_data, f, indent=2)
     return ref_binary, new_binary, new_config
 
 
+def get_signing_key(config_file) -> PrivateKeyEcc:
+    config_data = load_configuration(config_file)
+    private_key_file = config_data.get(
+        "signPrivateKey",
+        config_data.get(
+            "mainRootCertPrivateKeyFile",
+            config_data.get("signingCertificatePrivateKeyFile"),
+        ),
+    )
+    if not private_key_file:
+        private_key_file = config_data.get("signProvider").split("=")[2]
+    return PrivateKeyEcc.load(private_key_file.replace("\\", "/"))
+
+
+def get_isk_key(config_file) -> PrivateKeyEcc:
+    config_data = load_configuration(config_file)
+    private_key_file = config_data.get(
+        "signPrivateKey", config_data.get("mainRootCertPrivateKeyFile")
+    )
+    if not private_key_file:
+        private_key_file = config_data.get("signProvider").split("=")[2]
+    return PrivateKeyEcc.load(private_key_file.replace("\\", "/"))
+
+
 @pytest.mark.parametrize(
     "config_file,device",
     [
-        ("sb3_256_256.json", "lpc55s3x"),
-        ("sb3_256_none.json", "lpc55s3x"),
-        ("sb3_256_none_ernad.json", "lpc55s3x"),
-        ("sb3_384_256.json", "lpc55s3x"),
-        ("sb3_384_256_fixed_timestamp.json", "lpc55s3x"),
-        ("sb3_384_256_unencrypted.json", "lpc55s3x"),
-        ("sb3_384_384.json", "lpc55s3x"),
-        ("sb3_384_none.json", "lpc55s3x"),
-        ("sb3_test_384_384_unencrypted.json", "lpc55s3x"),
+        ("sb3_256_256.yaml", "lpc55s3x"),
+        ("sb3_256_none.yaml", "lpc55s3x"),
+        ("sb3_256_none_ernad.yaml", "lpc55s3x"),
+        ("sb3_384_256.yaml", "lpc55s3x"),
+        ("sb3_384_256_fixed_timestamp.yaml", "lpc55s3x"),
+        ("sb3_384_256_unencrypted.yaml", "lpc55s3x"),
+        ("sb3_384_384.yaml", "lpc55s3x"),
+        ("sb3_384_none.yaml", "lpc55s3x"),
+        ("sb3_test_384_384_unencrypted.yaml", "lpc55s3x"),
+        ("sb3_256_256.yaml", "mcxn9xx"),
+        ("sb3_256_none.yaml", "mcxn9xx"),
+        ("sb3_384_256.yaml", "mcxn9xx"),
+        ("sb3_384_256_fixed_timestamp.yaml", "mcxn9xx"),
+        ("sb3_384_256_unencrypted.yaml", "mcxn9xx"),
+        ("sb3_384_384.yaml", "mcxn9xx"),
+        ("sb3_384_none.yaml", "mcxn9xx"),
+        ("sb3_384_none_keyblob.yaml", "mcxn9xx"),
+        ("sb3_test_384_384_unencrypted.yaml", "mcxn9xx"),
+        ("sb3_test_384_384_unencrypted.yaml", "kw45xx"),
+        ("sb3_384_384.yaml", "kw45xx"),
+        ("sb3_384_none.yaml", "kw45xx"),
+        ("sb3_test_384_384_unencrypted.yaml", "k32w1xx"),
+        ("sb3_384_384.yaml", "k32w1xx"),
+        ("sb3_384_none.yaml", "k32w1xx"),
     ],
 )
-def test_nxpimage_sb31(elftosb_data_dir, tmpdir, config_file, device):
+def test_nxpimage_sb31(nxpimage_data_dir, tmpdir, config_file, device):
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
-        cmd = f"sb31 export {new_config}"
+        cmd = f"sb31 export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        assert result.exit_code == 0, str(result.exception)
         assert os.path.isfile(new_binary)
-        assert filecmp.cmp(ref_binary, new_binary, shallow=False)
 
-
-@pytest.mark.parametrize(
-    "sb31_cfg,cert_block_cfg,device",
-    [
-        ("sb3_256_256.json", "cert_256_256.json", "lpc55s3x"),
-        ("sb3_384_256.json", "cert_384_256.json", "lpc55s3x"),
-        ("sb3_384_384.json", "cert_384_384.json", "lpc55s3x"),
-    ],
-)
-def test_nxpimage_sb31_cert_block(elftosb_data_dir, tmpdir, sb31_cfg, cert_block_cfg, device):
-    runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        cert_cfg_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{cert_block_cfg}"
-        sb31_cfg_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{sb31_cfg}"
-        cert_ref_binary, cert_new_binary, cert_new_config = process_config_file(
-            cert_cfg_file, tmpdir
+        sb31 = SecureBinary31.load_from_config(
+            config=load_configuration(config_file),
+            search_paths=[f"{nxpimage_data_dir}/workspace/cfgs/{device}", str(tmpdir)],
         )
-        sb31_ref_binary, sb31_new_binary, sb31_new_config = process_config_file(
-            sb31_cfg_file, tmpdir
+
+        # Validate data part
+        signature_offset = (
+            SecureBinary31Header.HEADER_SIZE
+            + len(sb31.sb_commands.final_hash)
+            + sb31.cert_block.expected_size
         )
-        # Generate and verify certification block
-        cmd = f"cert-block export {cert_new_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
-        assert os.path.isfile(cert_new_binary)
-        assert filecmp.cmp(cert_ref_binary, cert_new_binary, shallow=False)
+        header_part_size = signature_offset
+        data_blocks_offset = (
+            SecureBinary31Header.HEADER_SIZE
+            + len(sb31.sb_commands.final_hash)
+            + sb31.cert_block.expected_size
+            + sb31.signature_provider.signature_length
+        )
+        if sb31.cert_block.isk_certificate:
+            header_part_size -= len(sb31.cert_block.isk_certificate.signature)
 
-        # Generate and verify SB31 with certification block
-        cmd = f"sb31 export {sb31_new_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
-        assert os.path.isfile(sb31_new_binary)
-        assert filecmp.cmp(sb31_ref_binary, sb31_new_binary, shallow=False)
+        ref_data = load_binary(ref_binary)
+        new_data = load_binary(new_binary)
+        assert ref_data[:header_part_size], new_data[:header_part_size]
+        assert ref_data[data_blocks_offset:], new_data[data_blocks_offset:]
+        signing_key = get_signing_key(config_file)
+
+        # Validate signature
+        assert signing_key.get_public_key().verify_signature(
+            new_data[signature_offset:data_blocks_offset],
+            new_data[:signature_offset],
+        )
+        assert signing_key.get_public_key().verify_signature(
+            ref_data[signature_offset:data_blocks_offset],
+            ref_data[:signature_offset],
+        )
+
+        # ISK signature won't be checked - is already checked in MBI tests
 
 
-def test_nxpimage_sb31_notime(elftosb_data_dir, tmpdir):
-    config_file = "sb3_256_256.json"
+def test_nxpimage_sb31_notime(nxpimage_data_dir, tmpdir):
+    config_file = "sb3_256_256.yaml"
     device = "lpc55s3x"
     runner = CliRunner()
-    with use_working_directory(elftosb_data_dir):
-        config_file = f"{elftosb_data_dir}/workspace/cfgs/{device}/{config_file}"
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
-        cmd = f"sb31 export {new_config}"
+        cmd = f"sb31 export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        assert result.exit_code == 0, str(result.exception)
         assert os.path.isfile(new_binary)
 
         # Since there's a new timestamp, compare only portions of files

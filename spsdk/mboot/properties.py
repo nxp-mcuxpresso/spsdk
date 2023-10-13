@@ -84,11 +84,11 @@ class Version:
     def __ge__(self, obj: "Version") -> bool:
         return self.to_int(True) >= obj.to_int(True)
 
-    def __str__(self) -> str:
-        return self.to_str()
-
     def __repr__(self) -> str:
         return f"<Version(mark={self.mark}, major={self.major}, minor={self.minor}, fixation={self.fixation})>"
+
+    def __str__(self) -> str:
+        return self.to_str()
 
     def from_int(self, value: int) -> None:
         """Parse version data from raw int value.
@@ -475,7 +475,7 @@ class AvailableCommandsValue(PropertyValueBase):
         """List of tags representing Available commands."""
         return [
             tag_value  # type: ignore
-            for _, tag_value, _ in CommandTag  # type: ignore
+            for _, tag_value, _ in CommandTag
             if tag_value > 0 and (1 << tag_value - 1) & self.value  # type: ignore
         ]
 
@@ -495,7 +495,7 @@ class AvailableCommandsValue(PropertyValueBase):
         """Get stringified property representation."""
         return [
             name  # type: ignore
-            for name, value, _ in CommandTag  # type: ignore
+            for name, value, _ in CommandTag
             if value > 0 and (1 << value - 1) & self.value  # type: ignore
         ]
 
@@ -827,9 +827,9 @@ def parse_property_value(
     cls = properties_dict[property_tag]["class"]  # type: ignore
     kwargs: dict = properties_dict[property_tag]["kwargs"]  # type: ignore
     if "mem_id" in kwargs:
-        kwargs["mem_id"] = ext_mem_id  # type: ignore
+        kwargs["mem_id"] = ext_mem_id
     obj = cls(property_tag, raw_values, **kwargs)  # type: ignore
     if family:
         obj.name = PROPERTY_TAG_OVERRIDE[family].name(property_tag)
         obj.desc = PROPERTY_TAG_OVERRIDE[family].desc(property_tag)
-    return obj  # type: ignore
+    return obj

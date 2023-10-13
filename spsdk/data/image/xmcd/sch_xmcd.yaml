@@ -30,8 +30,9 @@ xmcd_family_rev:
       description: Specify type of configuration used by XMCD description.
       enum: [full, simplified]
       template_value: simplified
-    
+
   required: [family, mem_type, config_type]
+
 xmcd:
   type: object
   properties:

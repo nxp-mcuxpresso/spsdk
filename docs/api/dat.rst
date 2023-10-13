@@ -50,10 +50,3 @@ Module with commands for Debug Mailbox
    :undoc-members:
    :show-inheritance:
 
-
-Module with common utils for DAT module
-----------------------------------------
-.. automodule:: spsdk.dat.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:

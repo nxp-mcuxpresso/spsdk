@@ -10,8 +10,8 @@ import time
 from enum import Enum
 from typing import List, Union
 
-from spsdk import SPSDKError
 from spsdk.dk6.serial_device import SerialDevice
+from spsdk.exceptions import SPSDKError
 
 logger = logging.getLogger(__name__)
 
@@ -103,13 +103,13 @@ class DriverInterface:
 
         logger.info(f"Initializing backend {backend}")
         if self.backend == Backend.PYFTDI:
-            from pyftdi import ftdi
+            from pyftdi import ftdi  # pylint: disable=import-error
 
             self.driver = ftdi.Ftdi()
             self.dev = None
 
         elif self.backend == Backend.PYLIBFTDI:
-            from pylibftdi import Device, Driver
+            from pylibftdi import Device, Driver  # pylint: disable=import-error
 
             self.dev = Device()
             self.driver = Driver()
@@ -121,7 +121,7 @@ class DriverInterface:
         """Send a sequence that goes to ISP mode using FTDI bitbang device."""
         logger.info("Sending bitbang sequence to ISP mode")
         if self.backend == Backend.PYFTDI:
-            from pyftdi import ftdi
+            from pyftdi import ftdi  # pylint: disable=import-error
 
             url = generate_pyftdi_url(device_id)
 
@@ -132,7 +132,7 @@ class DriverInterface:
                 time.sleep(ins[2] / 1000)
 
         elif self.backend == Backend.FTD2xx:
-            import ftd2xx as ftd
+            import ftd2xx as ftd  # pylint: disable=import-error
 
             if self.dev is None:
                 logger.info("Initializing serial first before ISP bitbang for D2XX backend")
@@ -168,7 +168,7 @@ class DriverInterface:
                 devices_info.append(device_info)
 
         elif self.backend == Backend.FTD2xx:
-            import ftd2xx as ftd
+            import ftd2xx as ftd  # pylint: disable=import-error
 
             device_count = ftd.createDeviceInfoList()
             for n in range(device_count):
@@ -222,7 +222,7 @@ class DriverInterface:
             return
 
         if self.backend == Backend.PYFTDI:
-            import pyftdi.serialext
+            import pyftdi.serialext  # pylint: disable=import-error
 
             timeout //= 1000
             url = generate_pyftdi_url(device_id)
@@ -234,13 +234,13 @@ class DriverInterface:
             self.initialized = True
 
         elif self.backend == Backend.PYLIBFTDI:
-            from pylibftdi import Device
+            from pylibftdi import Device  # pylint: disable=import-error
 
             self.dev = Device(device_id=device_id)
             self.initialized = True
 
         elif self.backend == Backend.FTD2xx:
-            import ftd2xx as ftd
+            import ftd2xx as ftd  # pylint: disable=import-error
 
             try:
                 device_id_int = int(device_id)

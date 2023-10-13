@@ -13,6 +13,7 @@ Secure Provisioning SDK (SPSDK)
 
     spsdk.rst
     release_notes.rst
+    migration_guide.rst
 
 .. toctree::
     :caption: Usage
@@ -37,15 +38,13 @@ Secure Provisioning SDK (SPSDK)
 
     apps/blhost
     apps/dk6prog
-    apps/elftosb
     apps/ifr
-    apps/nxpcertgen
     apps/nxpcrypto
     apps/nxpdebugmbox
     apps/nxpdevhsm
     apps/nxpdevscan
+    apps/nxpele
     apps/nxpimage
-    apps/nxpkeygen
     apps/pfr
     apps/sdphost
     apps/sdpshost
@@ -62,6 +61,7 @@ Secure Provisioning SDK (SPSDK)
     api/dat
     api/debuggers
     api/dk6
+    api/ele_msg
     api/image
     api/mboot
     api/pfr
@@ -77,6 +77,7 @@ Secure Provisioning SDK (SPSDK)
 
     examples/crypto
     examples/general
+    examples/signature_prov
 
 .. toctree::
     :caption: Jupyter Examples
@@ -87,7 +88,7 @@ Secure Provisioning SDK (SPSDK)
     examples/lpc55sxx_secure_fw_update
     examples/kw45xx_k32w1xx
     examples/dk6
-    examples/signature_prov
+    examples/signature_provider
 
 
 Indices and tables

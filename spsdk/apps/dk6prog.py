@@ -15,10 +15,9 @@ import colorama
 import hexdump
 import prettytable
 
-from spsdk import SPSDKError
 from spsdk.apps.blhost_helper import progress_bar
 from spsdk.apps.utils import spsdk_logger
-from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
+from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
 from spsdk.apps.utils.utils import (
     INT,
     WARNING_MSG,
@@ -29,6 +28,7 @@ from spsdk.apps.utils.utils import (
 from spsdk.dk6.commands import MemoryAccessValues, MemoryId, MemoryType
 from spsdk.dk6.dk6device import DK6Device, DK6Memory
 from spsdk.dk6.driver import Backend, DriverInterface
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import value_to_int
 
 MEMORY_IDS = {
@@ -154,7 +154,7 @@ def get_default_backend() -> Backend:
     return backend
 
 
-@click.group(name="dk6prog", chain=True, no_args_is_help=True)
+@click.group(name="dk6prog", chain=True, no_args_is_help=True, cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 @click.option(
     "-d",
@@ -235,6 +235,8 @@ def isp(ctx: click.Context) -> None:
     """Issues ISP sequence as defined in Driver interface."""
     interface: DriverInterface = ctx.obj["interface"]
     device_id: str = ctx.obj["device_id"]
+    if not device_id:
+        raise SPSDKError("You have to specify DEVICE ID")
     interface.go_to_isp(device_id)
 
 

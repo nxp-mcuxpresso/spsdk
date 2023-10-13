@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk.mboot.mcuboot import PropertyTag, _clamp_down_memory_id
+from spsdk.mboot.mcuboot import McuBoot, PropertyTag, _clamp_down_memory_id
 
 
-def test_data_splitting(mcuboot):
+def test_data_splitting(mcuboot: McuBoot):
     """Test splitting data in MBOOT.
 
     If the underlying device requires a data slitting (such as UART does; indicating by INTERFACE.need_data_split)
@@ -20,14 +20,14 @@ def test_data_splitting(mcuboot):
     max_packet_size = mcuboot.get_property(PropertyTag.MAX_PACKET_SIZE)[0]
 
     # No splitting required (USB for example)
-    mcuboot._device._need_data_split = False
+    mcuboot._interface.need_data_split = False
 
     data_in = bytes(4 * max_packet_size)
     data_out = mcuboot._split_data(data_in)
     assert len(data_out) == 1
     assert len(data_out[0]) == 4 * max_packet_size
 
-    mcuboot._device._need_data_split = True
+    mcuboot._interface.need_data_split = True
 
     data_in = bytes(4 * max_packet_size)
     # data size is aligned to MAX_PACKET_SIZE

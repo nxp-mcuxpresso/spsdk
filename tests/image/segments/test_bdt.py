@@ -2,14 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.image import SegBDT, SegIVT2
+from spsdk.exceptions import SPSDKError
+from spsdk.image.segments import SegBDT, SegIVT2
 
 
 def test_bdt_export_parse():
@@ -51,7 +51,7 @@ def test_bdt_info():
     bdt.app_length = 40
     bdt.plugin = 1
 
-    output = bdt.info()
+    output = str(bdt)
     info_strings = ["Start", "App Length", "Plugin"]
     for info_string in info_strings:
         assert info_string in output, f"string {info_string} is not in the output: {output}"
@@ -62,7 +62,7 @@ def test_bdt_info():
     bdt1.app_length = 40777777
     bdt1.plugin = 1
 
-    output = bdt1.info()
+    output = str(bdt1)
     info_strings = ["Start", "App Length", "Plugin"]
     for info_string in info_strings:
         assert info_string in output, f"string {info_string} is not in the output: {output}"

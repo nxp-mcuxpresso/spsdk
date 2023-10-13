@@ -12,10 +12,10 @@ import logging
 from struct import pack
 from typing import Mapping, Tuple
 
+from spsdk.sdp.interfaces import SDPDeviceTypes
 from spsdk.utils.misc import swap32
 
 from .exceptions import SdpConnectionError
-from .interfaces import SDPInterface
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,9 @@ ROM_INFO = {
     "MX28": {"no_cmd": False, "hid_ep1": False, "hid_pack_size": 1024},
     "MX815": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
     "MX865": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
+    "MX91": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
     "MX93": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
+    "MX95": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
 }
 
 BLTC_DOWNLOAD_FW = 2
@@ -42,13 +44,13 @@ class SDPS:
         """Get name."""
         return self.__name
 
-    def __init__(self, device: SDPInterface, device_name: str) -> None:
+    def __init__(self, interface: SDPDeviceTypes, device_name: str) -> None:
         """Initialize SDPS object.
 
         :param device: USB device
         :param device_name: target platform name used to determine ROM settings
         """
-        self._device = device
+        self._interface = interface
         self.__name: str = device_name
 
     def __enter__(self) -> "SDPS":
@@ -60,13 +62,13 @@ class SDPS:
 
     def open(self) -> None:
         """Connect to i.MX device."""
-        if not self._device.is_opened:
-            logger.info(f"Connect: {self._device.info()}")
-            self._device.open()
+        if not self.is_opened:
+            logger.info(f"Connect: {str(self._interface)}")
+            self._interface.open()
 
     def close(self) -> None:
         """Disconnect i.MX device."""
-        self._device.close()
+        self._interface.close()
 
     @property
     def is_opened(self) -> bool:
@@ -74,7 +76,7 @@ class SDPS:
 
         :return: True if device is open, False if it's closed
         """
-        return self._device.is_opened
+        return self._interface.is_opened
 
     def write_file(self, data: bytes) -> None:
         """Write data to the target.
@@ -85,7 +87,7 @@ class SDPS:
         _format = "<3IB2xbI11x"
 
         try:
-            self._device.conf(
+            self._interface.configure(
                 {
                     "hid_ep1": ROM_INFO[self.name]["hid_ep1"],
                     "pack_size": ROM_INFO[self.name]["hid_pack_size"],
@@ -106,9 +108,9 @@ class SDPS:
                     f" flags=0x{CBW_HOST_TO_DEVICE_DIR:08X},"
                     f" length={len(cmd_packet)})"
                 )
-                self._device.write(cmd_packet)
+                self._interface.device.write(cmd_packet)
 
-            self._device.write(data)
+            self._interface.device.write(data)
 
         except Exception as exc:
             logger.info("RX-CMD: Timeout Error")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,11 +11,12 @@ from abc import abstractmethod
 from typing import Mapping, Optional
 
 from crcmod.predefined import mkPredefinedCrcFun
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import cmac, hashes, hmac
-from cryptography.hazmat.primitives.ciphers import algorithms
 
-from spsdk.utils.crypto.backend_openssl import openssl_backend
+from spsdk.crypto.cmac import cmac, cmac_validate
+from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.crypto.hmac import hmac, hmac_validate
+from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
+from spsdk.crypto.utils import extract_public_key_from_data
 from spsdk.utils.easy_enum import Enum
 
 from ..exceptions import SPSDKTpError
@@ -60,47 +61,31 @@ class AES_CMAC(AuthenticationProvider):
     @classmethod
     def sign(cls, data: bytes, key: bytes) -> bytes:
         """Generate CMAC authentication code."""
-        cipher = cmac.CMAC(algorithm=algorithms.AES(key))
-        cipher.update(data=data)
-        return cipher.finalize()
+        return cmac(key=key, data=data)
 
     @classmethod
     def validate(cls, data: bytes, signature: bytes, key: bytes) -> bool:
         """Validate CMAC authentication code."""
-        cipher = cmac.CMAC(algorithm=algorithms.AES(key))
-        cipher.update(data=data)
-        try:
-            cipher.verify(signature=signature)
-            return True
-        except InvalidSignature:
-            return False
+        return cmac_validate(key=key, data=data, signature=signature)
 
 
 # pylint: disable=invalid-name
 class _HMAC(AuthenticationProvider):
     """Base for HMAC Authenticators."""
 
-    HASHER: Optional[hashes.HashAlgorithm] = None
+    HASHER: Optional[EnumHashAlgorithm] = None
 
     @classmethod
     def sign(cls, data: bytes, key: bytes) -> bytes:
         """Generate hash authentication code."""
         assert cls.HASHER
-        hasher = hmac.HMAC(key=key, algorithm=cls.HASHER)
-        hasher.update(data)
-        return hasher.finalize()
+        return hmac(key=key, data=data, algorithm=cls.HASHER)
 
     @classmethod
     def validate(cls, data: bytes, signature: bytes, key: bytes) -> bool:
         """Validate hash authentication code."""
         assert cls.HASHER
-        hasher = hmac.HMAC(key=key, algorithm=cls.HASHER)
-        hasher.update(data)
-        try:
-            hasher.verify(signature=signature)
-            return True
-        except InvalidSignature:
-            return False
+        return hmac_validate(key=key, data=data, signature=signature, algorithm=cls.HASHER)
 
 
 # pylint: disable=invalid-name
@@ -109,7 +94,7 @@ class HMAC_256(_HMAC):
 
     TYPE = AuthenticationType.HMAC_256
     DATA_LEN = 32
-    HASHER = hashes.SHA256()
+    HASHER = EnumHashAlgorithm.SHA256
 
 
 # pylint: disable=invalid-name
@@ -154,12 +139,17 @@ class ECDSA_256(AuthenticationProvider):
     @classmethod
     def sign(cls, data: bytes, key: bytes) -> bytes:
         """Generate ECDSA signature."""
-        return openssl_backend.ecc_sign(key, data)
+        return PrivateKeyEcc.parse(key).sign(data=data)
 
     @classmethod
     def validate(cls, data: bytes, signature: bytes, key: bytes) -> bool:
         """Validate ECDSA signature."""
-        return openssl_backend.ecc_verify(key, signature, data)
+        pub_key = extract_public_key_from_data(key)
+        assert isinstance(pub_key, PublicKeyEcc)
+        return pub_key.verify_signature(
+            signature=signature,
+            data=data,
+        )
 
 
 _AUTHENTICATORS: Mapping[int, AuthenticationProvider] = {

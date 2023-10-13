@@ -41,13 +41,12 @@ sb3:
     containerKeyBlobEncryptionKey:
       type: string
       title: Part Common Key
-      description: Path to PCK/NPK key in plain hex string format.
-      format: optional_file
+      description: Path to PCK/NPK 256 or 128 bit key in plain hex string format or path to binary file or hex string.
       template_value: my_pck.txt
     isNxpContainer:
       type: boolean
       title: Enable NXP Container format
-      description: Internal usage only, used for generating SB files with NXP content e.g. provisioning firmware, sentinel firmware...
+      description: Internal usage only, used for generating SB files with NXP content e.g. provisioning firmware, etc...
       template_value: false
     kdkAccessRights:
       type: number
@@ -65,18 +64,21 @@ sb3:
 sb3_test:
   type: object
   title: Secure Binary v3.1 Testing Settings
+  skip_in_template: true
   properties:
     isEncrypted:
       type: boolean
       title: Enable NXP Container encryption
       description: If false, generated SB3.1 blocks are not encrypted, only for testing, ROM won't accept unencrypted SB3.1 file. If option is missing, SB3.1 file is automatically encrypted.
       template_value: true
+      skip_in_template: true
     timestamp:
       type: [string, number]
       title: SB3 file force timestamp
       description: For testing purposes. This option can override real timestamp of SB3 file.
       format: number
       template_value: 1234567890
+      skip_in_template: true
 
 sb3_commands:
   type: object
@@ -411,7 +413,7 @@ sb3_commands:
               checkFwVersion:
                 type: object
                 title: Check firmware version
-                description: Used to execute check of provided counter value with value stored in specified monotonous counter in device. If values are not same, SB file is rejected.
+                description: Checks FW version value specified in command for specified counter ID. FW version value in command must be greater than value programmed in OTP to be accepted, otherwise rollback is detected and receive SB fails
                 properties:
                   value:
                     type: [string, number]

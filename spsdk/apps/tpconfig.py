@@ -21,18 +21,24 @@ from spsdk.apps.tp_utils import (
     process_tp_inputs,
     tp_device_options,
 )
-from spsdk.apps.utils import (
-    CommandsTreeGroupAliasedGetCfgTemplate,
-    catch_spsdk_error,
+from spsdk.apps.utils import spsdk_logger
+from spsdk.apps.utils.common_cli_options import (
+    CommandsTreeGroup,
     spsdk_apps_common_options,
-    spsdk_logger,
+    spsdk_config_option,
+    spsdk_family_option,
+    spsdk_output_option,
 )
-from spsdk.tp import TP_DATA_FOLDER, SPSDKTpError, TpDevInterface, TrustProvisioningConfig
-from spsdk.tp.utils import get_supported_devices, scan_tp_devices
+from spsdk.apps.utils.utils import catch_spsdk_error
+from spsdk.tp import TP_DATA_FOLDER
+from spsdk.tp.exceptions import SPSDKTpError
+from spsdk.tp.tp_intf import TpDevInterface
+from spsdk.tp.tpconfig import TrustProvisioningConfig
+from spsdk.tp.utils import get_device_data, get_supported_devices, scan_tp_devices
 from spsdk.utils.misc import load_text, write_file
 
 
-@click.group(name="tpconfig", cls=CommandsTreeGroupAliasedGetCfgTemplate)
+@click.group(name="tpconfig", cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Application for configuration of trusted device."""
@@ -48,12 +54,8 @@ def main(log_level: int) -> int:
     type=click.IntRange(0, 600, clamp=True),
     help="The target provisioning timeout in seconds.",
 )
-@click.option(
-    "-c",
-    "--config",
-    type=click.Path(exists=True, dir_okay=False),
+@spsdk_config_option(
     help="Path to configuration file (parameters on CLI take precedence).",
-    required=True,
 )
 @click.option(
     "-s",
@@ -99,12 +101,8 @@ def load(
     type=click.IntRange(0, 600, clamp=True),
     help="The target provisioning timeout in seconds.",
 )
-@click.option(
-    "-c",
-    "--config",
-    type=click.Path(exists=True, dir_okay=False),
+@spsdk_config_option(
     help="Path to configuration file (parameters on CLI take precedence).",
-    required=False,
 )
 def seal(
     tp_device: str,
@@ -146,27 +144,21 @@ def seal(
 
 
 @main.command(name="get-template", no_args_is_help=True)
-@click.option(
-    "-f",
-    "--family",
-    type=click.Choice(get_supported_devices(), case_sensitive=False),
-    default="lpc55s6x",
-    help="Chip family to generate the TPConfig config for.",
-)
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(dir_okay=False, resolve_path=True),
-    required=True,
-    help="The output YAML template configuration file name.",
-)
+@spsdk_family_option(families=get_supported_devices())
+@spsdk_output_option(force=True)
 # pylint: disable=unused-argument   # preparation for the future
 def get_template(family: str, output: str) -> None:
     """Command to generate tphost template of configuration YML file."""
-    template = load_text(os.path.join(TP_DATA_FOLDER, "tpconfig_cfg_template.yaml"))
+    # TODO: implement proper template generator
+    use_prov_data = get_device_data(key="use_prov_data", family=family)
+    template_name = (
+        "tpconfig_cfg_data_template.yml" if use_prov_data else "tpconfig_cfg_template.yml"
+    )
+    template = load_text(os.path.join(TP_DATA_FOLDER, template_name))
+    template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 
-    click.echo(f"The configuration template created. {output}")
+    click.echo(f"The configuration template created. {os.path.abspath(output)}")
 
 
 main.add_command(device_help)

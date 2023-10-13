@@ -2,11 +2,12 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import CmdInstallKey, CmdNop, EnumAlgorithm, EnumCertFormat, EnumInsKey
+from spsdk.image.commands import CmdInstallKey, EnumAlgorithm, EnumCertFormat, EnumInsKey
+from spsdk.image.segments import CmdNop
 
 
 def test_install_key_cmd_base():
@@ -53,7 +54,7 @@ def test_install_key_cmd_export_parse():
 
 def test_install_key_cmd_info():
     cmd = CmdInstallKey()
-    output = cmd.info()
+    output = str(cmd)
     req_strings = [
         'Command "Install Key',
         "Flag",

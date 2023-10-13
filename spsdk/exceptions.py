@@ -84,3 +84,7 @@ class SPSDKFileNotFoundError(FileNotFoundError, SPSDKError):
 
 class SPSDKAttributeError(SPSDKError, AttributeError):
     """SPSDK standard attribute error."""
+
+
+class SPSDKConnectionError(SPSDKError, ConnectionError):
+    """SPSDK standard connection error."""

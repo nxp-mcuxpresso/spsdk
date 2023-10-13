@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,15 +11,17 @@ from datetime import datetime
 from struct import calcsize, pack, unpack_from
 from typing import Optional
 
-from spsdk import SPSDKError
+from typing_extensions import Self
+
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
+from spsdk.crypto.rng import random_bytes
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.misc import pack_timestamp, unpack_timestamp
-from spsdk.utils.crypto.abstract import BaseClass
-from spsdk.utils.crypto.common import crypto_backend
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo, swap16
+from spsdk.utils.misc import swap16
 
 from ..misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
-from ..sb2.commands import CmdHeader, CmdTag
+from ..sb2.commands import BaseClass, CmdHeader, CmdTag
 
 
 class SecureBootFlagsV1(Enum):
@@ -105,9 +107,6 @@ class SecureBootHeaderV1(BaseClass):
         # Identifier for the disk drive or partition containing this image.
         self.drive_tag = drive_tag
 
-    def __str__(self) -> str:
-        return f"Header: v{self.version}, {self.image_blocks}"
-
     @property
     def key_dictionary_block(self) -> int:
         """Return key dictionary block."""
@@ -123,7 +122,10 @@ class SecureBootHeaderV1(BaseClass):
         """Return size of the header in bytes."""
         return self._SIZE
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"Header: v{self.version}, {self.image_blocks}"
+
+    def __str__(self) -> str:
         """Get info of Header as a string."""
         return (
             f" Digest:               {self.digest.hex()}\n"
@@ -146,25 +148,21 @@ class SecureBootHeaderV1(BaseClass):
     def export(
         self,
         padding8: Optional[bytes] = None,
-        dbg_info: DebugInfo = DebugInfo.disabled(),
     ) -> bytes:
         """Serialization to binary form.
 
         :param padding8: 8 padding bytes used for in the header, None to use random bytes
                 This value shall be used only for regression testing to generate same results
-        :param dbg_info: class allowing to debug output from the export
         :return: Serialize object into bytes
         """
         major_version, minor_version = [int(v) for v in self.version.split(".")]
         product_version_words = [swap16(n) for n in self.product_version.nums]
         component_version_words = [swap16(n) for n in self.component_version.nums]
-        signature2 = crypto_backend().random_bytes(4)
-        padding = padding8 if padding8 else crypto_backend().random_bytes(8)
+        signature2 = random_bytes(4)
+        padding = padding8 if padding8 else random_bytes(8)
 
         if (major_version > 1) or ((major_version == 1) and (minor_version >= 2)):
             signature2 = self._SIGNATURE2
-
-        dbg_info.append_section("SB-file-Header")
 
         result = pack(
             self._FORMAT,
@@ -204,26 +202,22 @@ class SecureBootHeaderV1(BaseClass):
         )
 
         result = result[len(self.digest) :]
-        self.digest = crypto_backend().hash(result, "sha1")
-
-        dbg_info.append_binary_section("digest", self.digest)
-        dbg_info.append_binary_section("attrs", result)
+        self.digest = get_hash(result, EnumHashAlgorithm.SHA1)
 
         return self.digest + result
 
     # pylint: disable=too-many-locals
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SecureBootHeaderV1":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary data into the instance (deserialization).
 
         :param data: given binary data to be decoded
-        :param offset: to start parsing binary data; 0 by default
         :return: the instance of secure boot header v1
         :raises SPSDKError: Raised when there is insufficient size
         :raises SPSDKError: Raised when there is invalid signature
         :raises SPSDKError: Raised when there is unexpected signature
         """
-        if SecureBootHeaderV1._SIZE > len(data) - offset:
+        if SecureBootHeaderV1._SIZE > len(data):
             raise SPSDKError("Insufficient size")
 
         (
@@ -258,7 +252,7 @@ class SecureBootHeaderV1(BaseClass):
             _,  # component version
             drive_tag,
             _,  # padding 6
-        ) = unpack_from(SecureBootHeaderV1._FORMAT, data, offset)
+        ) = unpack_from(SecureBootHeaderV1._FORMAT, data)
 
         # check header signature 1
         if signature1 != SecureBootHeaderV1._SIGNATURE1:
@@ -272,7 +266,7 @@ class SecureBootHeaderV1(BaseClass):
         product_version = BcdVersion3(swap16(pv0), swap16(pv1), swap16(pv2))
         component_version = BcdVersion3(swap16(cv0), swap16(cv1), swap16(cv2))
 
-        obj = SecureBootHeaderV1(
+        obj = cls(
             digest=digest,
             version=f"{major_version}.{minor_version}",
             flags=flags,
@@ -317,12 +311,6 @@ class SectionHeaderItemV1(BaseClass):
         self.num_blocks = num_blocks
         self._flags = flags
 
-    def __str__(self) -> str:
-        return (
-            f"SectionHeaderV1: ID={self.identifier}, Ofs={self.offset}, NumBlocks={self.num_blocks}, "
-            f"Flag=0x{self._flags:X}"
-        )
-
     @property
     def flags(self) -> int:
         """Return flags, see SectionHeaderV1Flags."""
@@ -338,7 +326,13 @@ class SectionHeaderItemV1(BaseClass):
         """Return size of exported data in bytes."""
         return self.SIZE
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return (
+            f"SectionHeaderV1: ID={self.identifier}, Ofs={self.offset}, NumBlocks={self.num_blocks}, "
+            f"Flag=0x{self._flags:X}"
+        )
+
+    def __str__(self) -> str:
         """Return Get text info of Header."""
         return (
             f" Identifier: 0x{self.identifier:08X}\n"
@@ -352,17 +346,16 @@ class SectionHeaderItemV1(BaseClass):
         return pack(self.FORMAT, self.identifier, self.offset, self.num_blocks, self._flags)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SectionHeaderItemV1":
+    def parse(cls, data: bytes) -> Self:
         """Parse binary data into the instance (deserialization).
 
         :param data: to be parsed
-        :param offset: to start parsing the data
         :return: the new instance
         :raises SPSDKError: If size is not sufficient
         """
-        if cls.SIZE > len(data) - offset:
+        if cls.SIZE > len(data):
             raise SPSDKError("Insufficient size")
-        (identifier, offset, length, flags) = unpack_from(cls.FORMAT, data, offset)
+        (identifier, offset, length, flags) = unpack_from(cls.FORMAT, data)
         return cls(identifier, offset, length, SecureBootFlagsV1.from_int(flags))
 
 
@@ -440,8 +433,8 @@ class BootSectionHeaderV1(CmdTag):
         return self.flags & SecureBootFlagsV1.ROM_SECTION_BOOTABLE != 0
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "BootSectionHeaderV1":
+    def parse(cls, data: bytes) -> Self:
         """Parse from bytes into BootSectionHeaderV1 object."""
-        cmd_tag = super(BootSectionHeaderV1, cls).parse(data, offset)
+        cmd_tag = super(BootSectionHeaderV1, cls).parse(data)
         assert isinstance(cmd_tag, BootSectionHeaderV1)
         return cmd_tag

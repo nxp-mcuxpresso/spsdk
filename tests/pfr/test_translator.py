@@ -9,9 +9,8 @@ import os
 
 import pytest
 
-from spsdk.pfr import PfrConfiguration
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError
-from spsdk.pfr.pfr import CFPA, CMPA
+from spsdk.pfr.pfr import CFPA, CMPA, PfrConfiguration
 from spsdk.pfr.translator import Translator
 
 

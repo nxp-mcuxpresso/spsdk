@@ -7,12 +7,11 @@
 """DK6 UART communication interface."""
 import logging
 import struct
-from time import sleep
 from typing import Any, Union
 
 from crcmod.predefined import mkPredefinedCrcFun
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 
 from .commands import CmdPacket, CommandTag, parse_cmd_response
 from .serial_device import SerialDevice
@@ -167,7 +166,6 @@ class Uart:
         :raises SPSDKError: When sending the data fails
         """
         logger.debug(f"->WRITE: [{' '.join(f'{b:02x}' for b in data)}]")
-        sleep(0.01)  # Sleep 10 ms before writing to prevent buffer overrun
         try:
             self.device.write(data)
         except Exception as e:

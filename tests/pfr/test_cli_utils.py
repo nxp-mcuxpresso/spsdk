@@ -1,40 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test CLI utilities."""
-from os import path
+import os
 
 import pytest
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
-from spsdk import SPSDKError
-from spsdk.crypto.loaders import extract_public_key
+from spsdk.crypto.keys import PublicKey
+from spsdk.crypto.utils import extract_public_key
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import use_working_directory
-
-
-def read_file(data_dir, file_name, mode="r"):
-    """Help function to load file."""
-    with open(path.join(data_dir, file_name), mode) as f:
-        return f.read()
 
 
 def test_extract_public_key(data_dir):
     """Test extraction of public key"""
-    public_key_data = read_file(data_dir, "public.pem", "rb")
-    public_key = load_pem_public_key(public_key_data, default_backend())
-    public_nums = public_key.public_numbers()
+    public_key = PublicKey.load(os.path.join(data_dir, "public.pem"))
 
     with use_working_directory(data_dir):
-        numbers = extract_public_key("public.pem", password=None).public_numbers()
-        assert public_nums == numbers
-        numbers = extract_public_key("private.pem", password=None).public_numbers()
-        assert public_nums == numbers
-        numbers = extract_public_key("cert.pem", password=None).public_numbers()
-        assert public_nums == numbers
+        assert extract_public_key("public.pem", password=None) == public_key
+        assert extract_public_key("private.pem", password=None) == public_key
+        assert extract_public_key("cert.pem", password=None) == public_key
 
 
 def test_unsupported_secret_type(data_dir):

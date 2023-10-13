@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.image.header import CmdHeader, Header, Header2, SegTag
 
 
@@ -19,7 +19,7 @@ def test_basic_header_without_length():
     assert tested_header.length == tested_header.SIZE
 
     assert "Header" in repr(tested_header)
-    output = tested_header.info()
+    output = str(tested_header)
     repr_strings = ["TAG", "PARAM", "LEN"]
     for req_string in repr_strings:
         assert req_string in output, f"string {req_string} is not in the output: {output}"
@@ -108,10 +108,10 @@ def test_comparison_header_without_length():
 def test_parse_invalid_command():
     # invalid required_tag: not CmdTag
     with pytest.raises(SPSDKError):
-        CmdHeader.parse(b"", 0, required_tag=-1)
+        CmdHeader.parse(b"", required_tag=-1)
     # invalid zero length
     with pytest.raises(SPSDKError):
-        CmdHeader.parse(b"\xFF\x00\x00\x00", 0, required_tag=None)
+        CmdHeader.parse(b"\xFF\x00\x00\x00", required_tag=None)
     # invalid tag: not CmdTag
     with pytest.raises(SPSDKError):
-        CmdHeader.parse(b"\xFF\x04\x00\x00", 0, required_tag=None)
+        CmdHeader.parse(b"\xFF\x04\x00\x00", required_tag=None)

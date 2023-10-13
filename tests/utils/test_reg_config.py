@@ -9,7 +9,7 @@ import os
 
 import pytest
 
-from spsdk import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.reg_config import RegConfig
 
 
@@ -141,23 +141,6 @@ def test_reg_config_get_seal_count(data_dir):
 
     seal_count = reg_config.get_seal_count()
     assert seal_count == 8
-
-
-def test_reg_config_get_ignored_registers(data_dir):
-    """Test Register Config - get_ignored_registers function."""
-    reg_config = RegConfig(os.path.join(data_dir, "reg_config.json"))
-
-    ignored_registers = reg_config.get_ignored_registers("test_device1")
-    assert "IGNORED_REG" in ignored_registers
-
-    ignored_registers = reg_config.get_ignored_registers("test_device2")
-    assert "IGNORED_REG_GENERAL" in ignored_registers
-
-    ignored_registers = reg_config.get_ignored_registers("invalid_device")
-    assert "IGNORED_REG_GENERAL" in ignored_registers
-
-    ignored_registers = reg_config.get_ignored_registers()
-    assert "IGNORED_REG_GENERAL" in ignored_registers
 
 
 def test_reg_config_get_ignored_fields(data_dir):

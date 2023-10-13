@@ -45,6 +45,12 @@ Data Segments
    :undoc-members:
    :show-inheritance:
 
+Image Segments
+--------------
+.. automodule:: spsdk.image.segments_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 TrustZone
 -------------
@@ -74,7 +80,7 @@ Support for KeyStore used in MasterBootImage
 
 Master Boot Image
 -------------------------
-.. automodule:: spsdk.image.mbimg
+.. automodule:: spsdk.image.mbi.mbi
    :members:
    :undoc-members:
    :show-inheritance:
@@ -90,7 +96,7 @@ Master Boot Image - miscellaneous functions
 
 Master Boot Image - mixin classes
 ----------------------------------
-.. automodule:: spsdk.image.mbi_mixin
+.. automodule:: spsdk.image.mbi.mbi_mixin
    :members:
    :undoc-members:
    :show-inheritance:
@@ -119,3 +125,65 @@ AHAB Container Interface
    :show-inheritance:
    :member-order: bysource
 
+Bootable image
+----------------
+.. automodule:: spsdk.image.bootable_image.bimg
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Bootable image segments
+-----------------------
+.. automodule:: spsdk.image.bootable_image.segments
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+FCB - Flash Configuration Block
+---------------------------------
+.. automodule:: spsdk.image.fcb.fcb
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+HAB - High Assurance Boot
+----------------------------
+.. automodule:: spsdk.image.hab
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+HAB CSF Builder
+----------------------------
+.. automodule:: spsdk.image.hab.csf_builder
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+HAB Config Parser
+----------------------------
+.. automodule:: spsdk.image.hab.config_parser
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+HAB Binary Image
+----------------------------
+.. automodule:: spsdk.image.hab.hab_binary_image
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+HAB Container
+----------------------------
+.. automodule:: spsdk.image.hab.hab_container
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+XMCD
+----------------------------
+.. automodule:: spsdk.image.xmcd
+   :members:
+   :undoc-members:
+   :show-inheritance:

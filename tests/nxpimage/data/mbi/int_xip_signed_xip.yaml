@@ -1,0 +1,18 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Master Boot Image converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+# ----------------------------------------------------------------------------------------------------
+family: lpc551x  # [Required], MCU family name; Possible options:['lpc550x', 'lpc551x', 'lpc552x', 'lpc55s2x', 'lpc55s6x', 'nhs52sxx']
+outputImageExecutionTarget: Internal flash (XIP) # [Required], Application target; Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence; Possible options:['Internal flash (XIP)', 'External flash (XIP)', 'Internal Flash (XIP)', 'External Flash (XIP)', 'RAM', 'ram', 'xip']
+outputImageAuthenticationType: Signed # [Required], Type of boot image authentication; Specification of final master boot image authentication; Possible options:['Plain', 'CRC', 'Signed', 'Encrypted + Signed', 'NXP Signed', 'encrypted', 'signed', 'crc']
+masterBootOutputFile: my_mbi.bin # [Required], Master Boot Image name; The file for Master Boot Image result file.
+inputImageFile: test_application.bin # [Required], Plain application image; The input application image to by modified to Master Boot Image.
+# ----------------------------------------------------------------------------------------------------
+#                                       == Root Keys Settings ==
+# ----------------------------------------------------------------------------------------------------
+mainRootCertId: 0 # [Conditionally required], Main Certificate Index; Index of certificate that is used as a main. If not defined, the certificate matching private key will be selected.
+signProvider: type=file;file_path=k0_cert0_2048.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>". It can be replaced by mainCertPrivateKeyFile key.
+certBlock: cert_v1_1x2048.yaml

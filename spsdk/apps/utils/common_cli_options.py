@@ -8,8 +8,9 @@
 """CLI helper for Click."""
 
 import logging
+import os
 from gettext import gettext
-from typing import Any, Callable, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import click
 from click_command_tree import _build_command_tree, _CommandWrapper
@@ -96,7 +97,27 @@ _buspal_option = click.option(
     "-b",
     "--buspal",
     metavar="spi[,speed,polarity,phase,lsb|msb] | i2c[,address,speed]",
-    help="buspal settings",
+    help="Buspal settings",
+)
+
+_plugin_option = click.option(
+    "-x",
+    "--plugin",
+    metavar="identifier=PLUGIN_IDENTIFIER[,param1=value1,param2=value2]",
+    help="""Plugin interface settings.
+
+    Following format of plugin setting is supported:
+
+    \b
+    identifier=<PLUGIN_IDENTIFIER>[,<key1>=<value1>,<key2>=<value2>,...]
+     - <PLUGIN_IDENTIFIER>: Corresponds to the 'identifier' attribute of the plugin class
+     - <key1>=<value1>: Represent a single interface parameter
+
+    \b
+    Optional interface settings:
+     - Any number of optional <key>=<value> scan settings separated by comma can be defined
+     - The <key>=<value> pairs are used as keyword parameters for 'scan' method of a plugin class
+    """,
 )
 
 _json_option = click.option(
@@ -155,13 +176,142 @@ def spsdk_apps_common_options(options: FC) -> FC:
 def spsdk_plugin_option(options: FC) -> FC:
     """Plugin click option decorator.
 
+    Provides: `plugin: str` a full path to plugin file.
+
     :return: Click decorator
     """
     return click.option(
         "--plugin",
         required=False,
+        type=click.Path(resolve_path=True, dir_okay=False, exists=True),
         help="External python file/package containing a custom plugin implementation.",
     )(options)
+
+
+def spsdk_family_option(
+    families: List[str],
+    required: bool = True,
+    default: Optional[str] = None,
+    help: Optional[str] = None,  # pylint: disable=redefined-builtin
+) -> Callable:
+    """Click decorator handling family selection.
+
+    Provides: `family: str` selected family name.
+
+    :param families: List of available families
+    :param required: Family selection is required
+    :param default: Default selection, defaults to None (user selection is required)
+    :param help: Customized help message, defaults to None
+    :return: Click decorator.
+    """
+
+    def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
+        func = click.option(
+            "-f",
+            "--family",
+            type=click.Choice(choices=families, case_sensitive=False),
+            default=default,
+            required=required,
+            help=help or "Select the chip family.",
+        )(func)
+        return func
+
+    return decorator
+
+
+def spsdk_config_option(
+    required: bool = True,
+    help: Optional[str] = None,  # pylint: disable=redefined-builtin
+) -> Callable:
+    """Click decorator handling config files.
+
+    Provides: `config: str` a full path to config file.
+
+    :param required: Config file is required
+    :param help: Customized help message, defaults to None
+    :return: Click decorator.
+    """
+
+    def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
+        func = click.option(
+            "-c",
+            "--config",
+            type=click.Path(resolve_path=True, exists=True, dir_okay=False),
+            required=required,
+            help=help or "Path to the YAML/JSON configuration file.",
+        )(func)
+        return func
+
+    return decorator
+
+
+_DEFAULT_OUTPUT_HELP = {
+    True: "Path to a directory, where to store generated/parsed files.",
+    False: "Path to a file, where to store the output.",
+}
+
+
+def spsdk_output_option(
+    required: bool = True,
+    directory: bool = False,
+    force: bool = False,
+    help: Optional[str] = None,  # pylint: disable=redefined-builtin
+) -> Callable:
+    """Click decorator handling on output file or directory.
+
+    Provides: `output: str` a full path to directory or file.
+    If a directory is required, it's automatically created.
+    The force option is not passed to click command.
+
+    :param required: Output option is required, defaults to True
+    :param directory: Output is a directory, defaults to False
+    :param force: Include --force option, defaults to False
+    :param help: Customized help message, defaults to None
+    :return: Click decorator
+    """
+
+    def callback(
+        ctx: click.Context,
+        param: click.Parameter,  # pylint: disable=unused-argument  # click's callback signature
+        value: str,
+    ) -> str:
+        if ctx.resilient_parsing:
+            return value
+        if force and value and os.path.exists(value) and not ctx.params["force"]:
+            if (directory and len(os.listdir(value))) or not directory:
+                output_type = "directory" if directory else "file"
+                click.echo(
+                    f"Output {output_type} already exists. "
+                    "Please use --force is you want to overwrite existing files."
+                )
+                ctx.abort()
+        if "force" in ctx.params:
+            del ctx.params["force"]
+        if required and directory:
+            os.makedirs(value, exist_ok=True)
+        return value
+
+    def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
+        if force:
+            func = click.option(
+                "--force",
+                default=False,
+                is_flag=True,
+                help="Force overwriting of existing files.",
+                is_eager=True,
+            )(func)
+        func = click.option(
+            "-o",
+            "--output",
+            type=click.Path(resolve_path=True, dir_okay=directory, file_okay=not directory),
+            required=required,
+            help=help or _DEFAULT_OUTPUT_HELP[directory],
+            callback=callback,
+        )(func)
+
+        return func
+
+    return decorator
 
 
 def isp_interfaces(
@@ -170,6 +320,7 @@ def isp_interfaces(
     sdio: bool = False,
     lpcusbsio: bool = False,
     buspal: bool = False,
+    plugin: bool = False,
     json_option: bool = True,
     timeout_option: bool = True,
     is_sdp: bool = False,
@@ -183,6 +334,7 @@ def isp_interfaces(
     :param sdio: SDIO interface, defaults to False
     :param lpcusbsio: LPCUSBSIO interface, defaults to False
     :param buspal: BUSPAL interface, defaults to False
+    :param plugin: Additional plugin to be used
     :param json_option: add -j option, defaults to True
     :param timeout_option: add timeout option, defaults to True
     :param is_sdp: Specifies whether the ISP interface is meant for SDP(S) protocol
@@ -204,6 +356,8 @@ def isp_interfaces(
             options.append(_lpcusbsio_option)
         if buspal:
             options.append(_buspal_option)
+        if plugin:
+            options.append(_plugin_option)
         if json_option:
             options.append(_json_option)
         if timeout_option:
@@ -237,40 +391,6 @@ class CommandsTreeGroup(click.Group):
         with formatter.section(gettext("Commands")):
             formatter.width = 160
             formatter.write_dl(rows, col_max=80)
-
-
-class GroupAliasedGetCfgTemplate(click.Group):
-    """Alias for get-cfg-template click group extension.
-
-    Temporary class to handle deprecated 'get-cfg-template' command to provide
-    better user experience.
-    """
-
-    # pylint: disable=inconsistent-return-statements    # ctx.fail at the end terminates the command call
-    def get_command(self, ctx: click.Context, cmd_name: str) -> Optional[click.Command]:
-        """Override original click get_command function to implement alias for get-cfg-template obsolete command.
-
-        :param ctx: click Context
-        :param cmd_name: Requested command name
-        :return: Suitable command representation.
-        """
-        command = click.Group.get_command(self, ctx, cmd_name)
-        if command is not None:
-            return command
-        if cmd_name == "get-cfg-template":
-            click.secho(
-                "The 'get-cfg-template' is deprecated command, use 'get-template' instead of.",
-                fg="yellow",
-                bold=True,
-                err=True,
-            )
-            return click.Group.get_command(self, ctx, "get-template")
-
-        ctx.fail(f"Not supported command: '{cmd_name}'")
-
-
-class CommandsTreeGroupAliasedGetCfgTemplate(CommandsTreeGroup, GroupAliasedGetCfgTemplate):
-    """Mix of Command Tree and get-cfg-template alias."""
 
 
 def _get_tree(
@@ -322,3 +442,33 @@ def _get_tree(
             parent_prefix=parent_prefix,
         )
     return rows
+
+
+def is_click_help(ctx: click.Context, argv: List[str]) -> bool:
+    """Is help command?
+
+    :param ctx: Click content
+    :param argv: Command line arguments
+    :return: True if this command is just for help, False otherwise
+    """
+
+    def check_commands(argv: List[str], cmd: click.Command) -> bool:
+        if len(argv) == 0:
+            return cmd.no_args_is_help
+
+        if not hasattr(ctx.command, "commands"):
+            return False
+        commands: Dict[str, click.Command] = ctx.command.commands
+        for x in range(len(argv)):
+            if argv[x] in commands:
+                return check_commands(argv[x + 1 :], commands[argv[x]])
+
+        return False
+
+    if ctx is None or argv is None:
+        return False
+    if "--help" in argv[1:]:
+        return True
+    if ctx.command.name and not ctx.command.name in argv[0]:
+        return False
+    return check_commands(argv[1:], ctx.command)

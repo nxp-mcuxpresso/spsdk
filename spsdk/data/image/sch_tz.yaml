@@ -4,13 +4,14 @@
 
 tz_family_rev:
   type: object
+  required: [family]
   properties:
     family:
       type: string
       title: MCU family
       description: MCU family name.
       enum: []
-      template_value: lpc55xx
+      template_value: lpc55s6x
 
     revision:
       type: string
@@ -40,4 +41,4 @@ tz:
           format: number
           template_value: 0x12345678
 
-  required: [family, tzpOutputFile, trustZonePreset]
+  required: [tzpOutputFile, trustZonePreset]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,8 @@
 import logging
 import os
 
-from spsdk.sdp import SDPS, scan_usb
+from spsdk.sdp.interfaces.usb import SdpUSBInterface
+from spsdk.sdp.sdps import SDPS
 
 # Uncomment for printing debug messages
 logging.basicConfig(level=logging.DEBUG)
@@ -22,9 +23,9 @@ def program_device() -> None:
     Write app to MX815 device using SDPS
     """
     device_name = "MX815"
-    devices = scan_usb(device_name)
-    if devices:
-        with SDPS(devices[0], device_name) as sdps:
+    interfaces = SdpUSBInterface.scan(device_id=device_name)
+    if interfaces:
+        with SDPS(interfaces[0], device_name) as sdps:
             with open(f"{DATA_DIR}/test_m815s.bin", "rb") as f:
                 data = f.read()
                 sdps.write_file(data)

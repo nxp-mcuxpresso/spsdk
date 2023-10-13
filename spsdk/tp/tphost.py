@@ -17,17 +17,20 @@ import time
 from functools import partial
 from typing import Callable, Optional, Sequence
 
-from spsdk import SPSDKError
-from spsdk.crypto import EllipticCurvePublicKey, serialization
-from spsdk.crypto.loaders import Encoding, extract_public_key, load_pem_public_key
+from spsdk.crypto.keys import PublicKeyEcc
+from spsdk.crypto.types import SPSDKEncoding
+from spsdk.crypto.utils import extract_public_key
+from spsdk.exceptions import SPSDKError
 from spsdk.tp.data_container import AuditLog, DataEntry, PayloadType
 from spsdk.utils.database import Database
 from spsdk.utils.misc import Timeout, value_to_int, write_file
 
-from . import TP_DATA_FOLDER, SPSDKTpError, TpDevInterface, TpTargetInterface
+from . import TP_DATABASE
 from .adapters.tptarget_blhost import TpTargetBlHost
 from .adapters.utils import detect_new_usb_path, get_current_usb_paths, update_usb_path
 from .data_container import AuditLogCounter, AuditLogRecord, Container
+from .exceptions import SPSDKTpError
+from .tp_intf import TpDevInterface, TpTargetInterface
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +80,7 @@ class TrustProvisioningHost:
         """
         if database is None:
             logger.debug("Looking up device in database")
-            database = Database(os.path.join(TP_DATA_FOLDER, "database.yaml"))
+            database = Database(TP_DATABASE)
         if family not in database.devices.device_names:
             raise SPSDKTpError(f"Database info missing for '{family}'")
         try:
@@ -194,7 +197,7 @@ class TrustProvisioningHost:
             loc_timeout = Timeout(timeout, "s")
 
             logger.debug("Looking up device in database")
-            database = Database(os.path.join(TP_DATA_FOLDER, "database.yaml"))
+            database = Database(TP_DATABASE)
             if family not in database.devices.device_names:
                 raise SPSDKTpError(f"Database info missing for '{family}'")
 
@@ -292,10 +295,10 @@ class TrustProvisioningHost:
         skip_nxp: bool = False,
         skip_oem: bool = False,
         cert_index: Optional[int] = None,
-        encoding: Encoding = Encoding.PEM,
+        encoding: SPSDKEncoding = SPSDKEncoding.PEM,
         max_processes: Optional[int] = None,
         info_print: Callable[[str], None] = lambda x: None,
-        force_rewrite: bool = False,
+        force_rewrite: bool = True,
     ) -> AuditLogCounter:
         """Verifying audit log with given key (public/private).
 
@@ -305,7 +308,7 @@ class TrustProvisioningHost:
         :param skip_nxp: Skip extracting the NXP Devattest certificates
         :param skip_oem: Skip extracting the OEM x509 Devattest certificates
         :param cert_index: Select single OEM certificate to extract, default None = all certificates
-        :param encoding: Certificate encoding, defaults to Encoding.PEM
+        :param encoding: Certificate encoding, defaults to SPSDK_Encoding.PEM
         :param max_processes: Maximum number od parallel process to use, defaults to CPU count
         :param info_print: Method for printing messages
         :param force_rewrite: Skip checking for empty destination directory and rewrite existing content
@@ -317,11 +320,9 @@ class TrustProvisioningHost:
             logger.info(f"Extracting public key from {audit_log_key}")
 
             log_key = extract_public_key(audit_log_key)
+            assert isinstance(log_key, PublicKeyEcc)
             # PublicKey can't be passed to other processes we have serialize it
-            log_key_pem_data = log_key.public_bytes(
-                encoding=Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
-            )
-            assert isinstance(log_key, EllipticCurvePublicKey)
+            log_key_data = log_key.export()
 
             if destination:
                 os.makedirs(destination, exist_ok=True)
@@ -354,7 +355,7 @@ class TrustProvisioningHost:
                 summary_counter = _verify_extract_chain(
                     audit_log=audit_log,
                     log_slice=slice(0, log_record_count),
-                    public_key_pem_data=log_key_pem_data,
+                    public_key_data=log_key_data,
                     store_cert_method=store_certificate_method,
                 )
             else:
@@ -368,7 +369,7 @@ class TrustProvisioningHost:
                             _verify_extract_chain,
                             audit_log=audit_log,
                             log_slice=log_slice,
-                            public_key_pem_data=log_key_pem_data,
+                            public_key_data=log_key_data,
                             store_cert_method=store_certificate_method,
                         ): log_slice
                         for log_slice in log_slices
@@ -443,14 +444,16 @@ class TrustProvisioningHost:
         response_file: str,
         timeout: int = 60,
         challenge: Optional[bytes] = None,
-        oem_id_key_count: int = 0,
+        oem_key_flags: int = 0,
+        save_debug_data: bool = False,
     ) -> None:
         """Retrieve TP_RESPONSE from the target.
 
         :param response_file: Path where to store TP_RESPONSE
         :param timeout: The timeout of operation is seconds, defaults to 60
         :param challenge: Challenge for the response, defaults to None
-        :param oem_id_key_count: Number of OEM keys to include in the response, defaults to 0
+        :param oem_key_flags: OEM Key flags used for generating the response, defaults to 0
+        :param save_debug_data: Save transmitted data in CWD for debugging purposes
         :raises SPSDKTpError: Failure to retrieve the response
         """
         try:
@@ -467,10 +470,14 @@ class TrustProvisioningHost:
                 DataEntry(
                     payload=challenge,
                     payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND,
-                    extra=oem_id_key_count << 2,
+                    extra=oem_key_flags,
                 )
             )
             logger.info(f"TP Challenge:\n{challenge_container}")
+
+            if save_debug_data:
+                with open("x_challenge.bin", "wb") as f:
+                    f.write(challenge_container.export())
 
             tp_response = self.tptarget.prove_genuinity_challenge(
                 challenge=challenge_container.export(),
@@ -503,18 +510,19 @@ def _get_log_slices(log_length: int, process_count: int) -> Sequence[slice]:
 
 def _verify_extract_chain(
     audit_log: str,
-    public_key_pem_data: bytes,
+    public_key_data: bytes,
     store_cert_method: Callable[[AuditLogRecord], AuditLogCounter],
     log_slice: slice,
 ) -> AuditLogCounter:
     """Verify content of AuditLog and optionally store certificates."""
-    public_key = load_pem_public_key(public_key_pem_data)
-    assert isinstance(public_key, EllipticCurvePublicKey)
     counter = AuditLogCounter()
 
     # if the current slice is not at the begging of file
     # we have to fetch previous record for chain verification
     # if the current slice is the first one in log, the starting hash should be 0
+
+    public_key = PublicKeyEcc.parse(public_key_data)
+
     start = log_slice.start
     fetch_previous = False
     if start != 0:
@@ -532,7 +540,6 @@ def _verify_extract_chain(
             raise SPSDKTpError(f"Log entry #{i} has an invalid signature!")
         if record.start_hash != previous_hash:
             if ALLOW_ARBITRARY_START and (i == 1):
-                # TODO: need to get confirmation on this one
                 pass
             else:
                 raise SPSDKTpError(f"Audit log chain is broken between records #{i - 1} - #{i}")
@@ -548,8 +555,8 @@ def _extract_certificates(
     skip_nxp: bool = False,
     skip_oem: bool = False,
     cert_index: Optional[int] = None,
-    encoding: Encoding = Encoding.PEM,
-    force_rewrite: bool = False,
+    encoding: SPSDKEncoding = SPSDKEncoding.PEM,
+    force_rewrite: bool = True,
 ) -> AuditLogCounter:
     """Extract certificates from the audit log into destination_dir.
 
@@ -558,7 +565,7 @@ def _extract_certificates(
     :param skip_nxp: Skip extracting the NXP Devattest certificates
     :param skip_oem: Skip extracting the OEM x509 Devattest certificates
     :param info_print: Method for printing messages
-    :param encoding: Certificate encoding, defaults to Encoding.PEM
+    :param encoding: Certificate encoding, defaults to SPSDK_Encoding.PEM
     :raises SPSDKTpError: Destination directory doesn't exist
     :return: Number of generated NXP and OEM certificates
     """
@@ -584,7 +591,7 @@ def _extract_certificates(
     return counter
 
 
-def _write_cert_data(cert_data: bytes, name: str, path: str, force_rewrite: bool) -> None:
+def _write_cert_data(cert_data: bytes, name: str, path: str, force_rewrite: bool = True) -> None:
     """Write certificate data into a file.
 
     :param cert_data: Certificate data
@@ -602,17 +609,17 @@ def _write_cert_data(cert_data: bytes, name: str, path: str, force_rewrite: bool
     write_file(cert_data, destination, mode="wb")
 
 
-def _encode_cert_data(cert_data: bytes, encoding: Encoding = Encoding.PEM) -> bytes:
+def _encode_cert_data(cert_data: bytes, encoding: SPSDKEncoding = SPSDKEncoding.PEM) -> bytes:
     """Encode certificate data with given encoding.
 
     :param cert_data: Certificate binary data (DER)
-    :param encoding: Output encoding, defaults to Encoding.PEM
+    :param encoding: Output encoding, defaults to SPSDK_Encoding.PEM
     :raises SPSDKTpError: Unsupported encoding
     :return: Encoded certificate data
     """
-    if encoding == Encoding.DER:
+    if encoding == SPSDKEncoding.DER:
         return cert_data
-    if encoding == Encoding.PEM:
+    if encoding == SPSDKEncoding.PEM:
         data = base64.b64encode(cert_data)
         lines = [data[i : i + 64] for i in range(0, len(data), 64)]
         lines.insert(0, b"-----BEGIN CERTIFICATE-----")

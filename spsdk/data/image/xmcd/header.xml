@@ -1,22 +1,22 @@
-<?xml version="1.0"?>
+<?xml version="1.0" ?>
 <!--
   Copyright 2023 NXP
-
-  SPDX-License-Identifier: BSD-3-Clause 
+  
+  SPDX-License-Identifier: BSD-3-Clause
 -->
 <regs>
-	<register offset="0x00" width="32" name="header" reversed="False" description="XMCD Header">
-		<bit_field offset="0x00" width="12" name="configurationBlockSize" reset_value="0x000" description="Configuration block size including XMCD header itself"/>
-		<bit_field offset="0x0c" width="4" name="configurationBlockType" reset_value="0x0" description="Configuration block type: 0 - Simplified, 1 - Full">
-			<bit_field_value name="XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED" value="0b0" description="Simplified configuration block type"/>
-			<bit_field_value name="XMCD_CONFIG_BLOCK_TYPE_FULL" value="0b1" description="Full configuration block type"/>
+	<register offset="0x0" width="32" name="header" reversed="False" description="XMCD Header">
+		<bit_field offset="0x0" width="12" name="configurationBlockSize" access="R/W" reset_value="0b0000_0000_0000" description="Configuration block size including XMCD header itself"/>
+		<bit_field offset="0xc" width="4" name="configurationBlockType" access="R/W" reset_value="0b0000" description="Configuration block type: 0 - Simplified, 1 - Full">
+			<bit_field_value name="XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED" value="0b0000" description="Simplified configuration block type"/>
+			<bit_field_value name="XMCD_CONFIG_BLOCK_TYPE_FULL" value="0b0001" description="Full configuration block type"/>
 		</bit_field>
-		<bit_field offset="0x10" width="4" name="instance" reset_value="0x0" description="SoC defined instances"/>
-		<bit_field offset="0x14" width="4" name="memoryInterface" reset_value="0x0" description="Memory interface: 0 - FlexSPI, 1 - SEMC">
-			<bit_field_value name="XMCD_MEMORY_INTERFACE_FLEXSPI" value="0b0" description="FlexSPI memory interface"/>
-			<bit_field_value name="XMCD_MEMORY_INTERFACE_SEMC" value="0b1" description="SEMC memory interface"/>
+		<bit_field offset="0x10" width="4" name="instance" access="R/W" reset_value="0b0000" description="SoC defined instances"/>
+		<bit_field offset="0x14" width="4" name="memoryInterface" access="R/W" reset_value="0b0000" description="Memory interface: 0 - FlexSPI, 1 - SEMC">
+			<bit_field_value name="XMCD_MEMORY_INTERFACE_FLEXSPI" value="0b0000" description="FlexSPI memory interface"/>
+			<bit_field_value name="XMCD_MEMORY_INTERFACE_SEMC" value="0b0001" description="SEMC memory interface"/>
 		</bit_field>
-		<bit_field offset="0x18" width="4" name="version" reset_value="0x0" description="Version, fixed value 0x0"/>
-		<bit_field offset="0x1c" width="4" name="tag" reset_value="0xc" description="Tag, fixed value 0xC"/>
+		<bit_field offset="0x18" width="4" name="version" access="R/W" reset_value="0b0000" description="Version, fixed value 0x0"/>
+		<bit_field offset="0x1c" width="4" name="tag" access="R/W" reset_value="0b1100" description="Tag, fixed value 0xC"/>
 	</register>
 </regs>

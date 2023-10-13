@@ -7,11 +7,13 @@
 
 """AHAB abstract classes."""
 
-from abc import ABC
 from struct import calcsize, unpack
 from typing import Tuple
 
+from typing_extensions import Self
+
 from spsdk.exceptions import SPSDKLengthError, SPSDKParsingError, SPSDKValueError
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import check_range
 
 LITTLE_ENDIAN = "<"
@@ -22,7 +24,7 @@ UINT64 = "Q"
 RESERVED = 0
 
 
-class Container(ABC):
+class Container(BaseClass):
     """Base class for any container."""
 
     @classmethod
@@ -32,7 +34,7 @@ class Container(ABC):
         i.e. part of a container holds fixed values, whereas some entries have
         variable length.
         """
-        return calcsize(cls._format())
+        return calcsize(cls.format())
 
     def __len__(self) -> int:
         """Returns the total length of a container.
@@ -41,20 +43,28 @@ class Container(ABC):
         """
         return self.fixed_length()
 
+    def __repr__(self) -> str:
+        return "Base AHAB Container class: " + self.__class__.__name__
+
+    def __str__(self) -> str:
+        raise NotImplementedError("__str__() is not implemented in base AHAB container class")
+
+    def export(self) -> bytes:
+        """Serialize object into bytes array."""
+        raise NotImplementedError("export() is not implemented in base AHAB container class")
+
     @classmethod
-    def _format(cls) -> str:
+    def parse(cls, data: bytes) -> Self:
+        """Deserialize object from bytes array."""
+        raise NotImplementedError("parse() is not implemented in base AHAB container class")
+
+    @classmethod
+    def format(cls) -> str:
         """Returns the container data format as defined by struct package.
 
         The base returns only endianness (LITTLE_ENDIAN).
         """
         return LITTLE_ENDIAN
-
-    def export(self) -> bytes:
-        """Exports container to final bytes array.
-
-        :return: Bytes representation of container object.
-        """
-        raise NotImplementedError
 
     @classmethod
     def _check_fixed_input_length(cls, binary: bytes) -> None:
@@ -111,8 +121,9 @@ class HeaderContainer(Container):
         return False
 
     @classmethod
-    def _format(cls) -> str:
-        return super()._format() + UINT8 + UINT16 + UINT8
+    def format(cls) -> str:
+        """Format of binary representation."""
+        return super().format() + UINT8 + UINT16 + UINT8
 
     def validate_header(self) -> None:
         """Validates the header of container properties...
@@ -140,16 +151,16 @@ class HeaderContainer(Container):
                 f"Parsing error in {cls.__name__} container head data!\n"
                 "Input data must be at least 4 bytes!"
             )
-        (version, length, tag) = unpack(HeaderContainer._format(), binary)
+        (version, length, tag) = unpack(HeaderContainer.format(), binary)
         return tag, length, version
 
     @classmethod
-    def _check_container_head(cls, binary: bytes) -> None:
+    def check_container_head(cls, binary: bytes) -> None:
         """Compares the data length and container length.
 
         This is just a helper function used throughout the code.
 
-        :param Binary: Binary input data.
+        :param binary: Binary input data.
         :raises SPSDKLengthError: If containers length is larger than data length.
         :raises SPSDKParsingError: If containers header value doesn't match.
         """
@@ -165,7 +176,7 @@ class HeaderContainer(Container):
         ):
             raise SPSDKParsingError(
                 f"Parsing error of {cls.__name__} data!\n"
-                f"Invalid TAG 0x{hex(tag)} loaded, expected 0x{hex(cls.TAG)}!"
+                f"Invalid TAG {hex(tag)} loaded, expected {hex(cls.TAG)}!"
             )
 
         if data_len < length:
@@ -206,5 +217,5 @@ class HeaderContainerInversed(HeaderContainer):
                 "Input data must be at least 4 bytes!"
             )
         # Only SRK Table has splitted tag and version in binary format
-        (tag, length, version) = unpack(HeaderContainer._format(), binary)
+        (tag, length, version) = unpack(HeaderContainer.format(), binary)
         return tag, length, version

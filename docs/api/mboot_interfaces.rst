@@ -29,10 +29,20 @@ MBoot USBSIO
    :show-inheritance:
    :member-order: bysource
 
-MBoot Interface Class
----------------------
+MBoot SDIO
+----------
 
-.. automodule:: spsdk.mboot.interfaces.base
+.. automodule:: spsdk.mboot.interfaces.sdio
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
+
+MBoot BUSPAL
+------------
+
+.. automodule:: spsdk.mboot.interfaces.buspal
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource

@@ -10,13 +10,12 @@
 from struct import pack
 from typing import Type
 
-from spsdk import SPSDKError, crypto
-from spsdk.crypto import rsa
-from spsdk.crypto.signature_provider import PlainFileSP
-from spsdk.dat import DebugAuthenticationChallenge
+from typing_extensions import Self
+
+from spsdk.crypto.signature_provider import InteractivePlainFileSP
+from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.debug_credential import DebugCredential
-from spsdk.dat.utils import ecc_public_numbers_to_bytes
-from spsdk.utils.crypto.backend_internal import internal_backend
+from spsdk.exceptions import SPSDKError
 
 
 class DebugAuthenticateResponse:
@@ -40,12 +39,15 @@ class DebugAuthenticateResponse:
         self.auth_beacon = auth_beacon
         self.dac = dac
         self.dck_priv = path_dck_private
-        self.sig_provider = PlainFileSP(path_dck_private)
+        self.sig_provider = InteractivePlainFileSP(path_dck_private)
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"DAR v{self.dac.version}, SOCC: {DebugCredential.get_socc_description(self.dac.version, self.dac.socc)}"
+
+    def __str__(self) -> str:
         """String representation of DebugAuthenticateResponse."""
-        msg = f"DAC:\n{self.dac.info()}\n"
-        msg += f"DC:\n{self.debug_credential.info()}\n"
+        msg = f"DAC:\n{str(self.dac)}\n"
+        msg += f"DC:\n{str(self.debug_credential)}\n"
         msg += f"Authentication Beacon: {self.auth_beacon}\n"
         return msg
 
@@ -79,11 +81,10 @@ class DebugAuthenticateResponse:
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DebugAuthenticateResponse":
+    def parse(cls, data: bytes) -> Self:
         """Parse the DAR.
 
         :param data: Raw data as bytes
-        :param offset: Offset of input data
         :return: DebugAuthenticateResponse object
         :raises NotImplementedError: Derived class has to implement this method
         """
@@ -123,33 +124,12 @@ class DebugAuthenticateResponse:
 class DebugAuthenticateResponseRSA(DebugAuthenticateResponse):
     """Class for RSA specifics of DAR packet."""
 
-    def _get_signature(self) -> bytes:
-        """Create signature for RSA.
-
-        :return: signature in bytes format
-        """
-        key = crypto.load_private_key(file_path=self.dck_priv)
-        assert isinstance(key, rsa.RSAPrivateKey)
-        key_bytes = key.private_bytes(
-            encoding=crypto.Encoding.PEM,
-            format=crypto.serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=crypto.serialization.NoEncryption(),
-        )
-        return internal_backend.rsa_sign(key_bytes, self._get_data_for_signature())
-
 
 class DebugAuthenticateResponseECC(DebugAuthenticateResponse):
     """Class for ECC specific of DAR."""
 
     KEY_LENGTH = 0
-    CURVE: crypto.ec.EllipticCurve = crypto.ec.SECP256R1()
-
-    def _get_signature(self) -> bytes:
-        """Sign the DAR data using SignatureProvider."""
-        signature = super()._get_signature()
-        r, s = crypto.utils_cryptography.decode_dss_signature(signature)
-        public_numbers = crypto.EllipticCurvePublicNumbers(r, s, self.CURVE)
-        return ecc_public_numbers_to_bytes(public_numbers=public_numbers, length=self.KEY_LENGTH)
+    CURVE = "secp256r1"
 
     def _get_common_data(self) -> bytes:
         """Collects dc, auth_beacon and UUID."""
@@ -163,21 +143,21 @@ class DebugAuthenticateResponseECC_256(DebugAuthenticateResponseECC):
     """Class for LPC55S3x specific of DAR, 256 bits sized keys."""
 
     KEY_LENGTH = 32
-    CURVE = crypto.ec.SECP256R1()
+    CURVE = "secp256r1"
 
 
 class DebugAuthenticateResponseECC_384(DebugAuthenticateResponseECC):
     """Class for LPC55S3x specific of DAR, 384 bits sized keys."""
 
     KEY_LENGTH = 48
-    CURVE = crypto.ec.SECP384R1()
+    CURVE = "secp384r1"
 
 
 class DebugAuthenticateResponseECC_521(DebugAuthenticateResponseECC):
     """Class for LPC55S3x specific of DAR, 521 bits sized keys."""
 
     KEY_LENGTH = 66
-    CURVE = crypto.ec.SECP521R1()
+    CURVE = "secp521r1"
 
 
 _version_mapping = {

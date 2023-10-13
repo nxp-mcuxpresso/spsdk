@@ -11,10 +11,11 @@ import logging
 import math
 from typing import Mapping, Optional, Tuple
 
+from spsdk.sdp.interfaces import SDPDeviceTypes
+
 from .commands import CmdPacket, CommandTag, ResponseValue
 from .error_codes import StatusCode
 from .exceptions import SdpCommandError, SdpConnectionError, SdpError
-from .interfaces import SDPInterface
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +47,9 @@ class SDP:
 
         :return: True if device is open, False if it's closed
         """
-        return self._device.is_opened
+        return self._interface.is_opened
 
-    def __init__(self, device: SDPInterface, cmd_exception: bool = False) -> None:
+    def __init__(self, interface: SDPDeviceTypes, cmd_exception: bool = False) -> None:
         """Initialize the SDP object.
 
         :param device: Interface to a device
@@ -58,7 +59,7 @@ class SDP:
         self._cmd_exception = cmd_exception
         self._status_code = StatusCode.SUCCESS
         self._cmd_status = 0
-        self._device = device
+        self._interface = interface
 
     def __enter__(self) -> "SDP":
         self.open()
@@ -69,13 +70,12 @@ class SDP:
 
     def open(self) -> None:
         """Connect to i.MX device."""
-        if not self._device.is_opened:
-            logger.info(f"Connect: {self._device.info()}")
-            self._device.open()
+        logger.info(f"Connect: {str(self._interface)}")
+        self._interface.open()
 
     def close(self) -> None:
         """Disconnect i.MX device."""
-        self._device.close()
+        self._interface.close()
 
     def _process_cmd(self, cmd_packet: CmdPacket) -> bool:
         """Process Command Packet.
@@ -89,18 +89,18 @@ class SDP:
             logger.info("RX-CMD: Device Disconnected")
             raise SdpConnectionError("Device Disconnected !")
 
-        logger.debug(f"TX-PACKET: {cmd_packet.info()}")
+        logger.debug(f"TX-PACKET: {str(cmd_packet)}")
         self._status_code = StatusCode.SUCCESS
 
         try:
-            self._device.write(cmd_packet)
-            response = self._device.read()
+            self._interface.write_command(cmd_packet)
+            response = self._interface.read()
         except Exception as exc:
             logger.debug(exc)
             logger.info("RX-CMD: Timeout Error")
             raise SdpConnectionError("Timeout Error") from exc
 
-        logger.info(f"RX-PACKET: {response.info()}")
+        logger.info(f"RX-PACKET: {str(response)}")
         if response.hab:
             self._hab_status = response.value
             if response.value != ResponseValue.UNLOCKED:
@@ -115,8 +115,8 @@ class SDP:
         :raises SdpConnectionError: Timeout
         """
         try:
-            response = self._device.read()
-            logger.info(f"RX-PACKET: {response.info()}")
+            response = self._interface.read()
+            logger.info(f"RX-PACKET: {str(response)}")
         except Exception as exc:
             logger.info("RX-CMD: Timeout Error")
             raise SdpConnectionError("Timeout Error") from exc
@@ -136,8 +136,8 @@ class SDP:
         remaining = length - len(data)
         while remaining > 0:
             try:
-                self._device.expect_status = False
-                response = self._device.read(min(remaining, max_length))
+                self._interface.expect_status = False
+                response = self._interface.read(min(remaining, max_length))
             except Exception as exc:
                 logger.info("RX-CMD: Timeout Error")
                 raise SdpConnectionError("Timeout Error") from exc
@@ -145,7 +145,7 @@ class SDP:
             if not response.hab:
                 data += response.raw_data
             else:
-                logger.debug(f"RX-DATA: {response.info()}")
+                logger.debug(f"RX-DATA: {str(response)}")
                 self._hab_status = response.value
                 if response.value == ResponseValue.LOCKED:
                     self._status_code = StatusCode.HAB_IS_LOCKED
@@ -165,27 +165,27 @@ class SDP:
             logger.info("TX-DATA: Device Disconnected")
             raise SdpConnectionError("Device Disconnected !")
 
-        logger.debug(f"TX-PACKET: {cmd_packet.info()}")
+        logger.debug(f"TX-PACKET: {str(cmd_packet)}")
         self._status_code = StatusCode.SUCCESS
         ret_val = True
 
         try:
             # Send Command
-            self._device.write(cmd_packet)
+            self._interface.write_command(cmd_packet)
 
             # Send Data
-            self._device.write(data)
+            self._interface.write_data(data)
 
             # Read HAB state (locked / unlocked)
-            hab_response = self._device.read()
-            logger.debug(f"RX-DATA: {hab_response.info()}")
+            hab_response = self._interface.read()
+            logger.debug(f"RX-DATA: {str(hab_response)}")
             self._hab_status = hab_response.value
             if hab_response.value != ResponseValue.UNLOCKED:
                 self._hab_status = StatusCode.HAB_IS_LOCKED
 
             # Read Command Status
-            cmd_response = self._device.read()
-            logger.debug(f"RX-DATA: {cmd_response.info()}")
+            cmd_response = self._interface.read()
+            logger.debug(f"RX-DATA: {str(cmd_response)}")
             self._cmd_status = cmd_response.value
             if (
                 cmd_packet.tag == CommandTag.WRITE_DCD

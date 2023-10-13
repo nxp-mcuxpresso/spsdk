@@ -1,90 +1,443 @@
 # Copyright 2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-# ===========  External Memory Configuration Data template for rt117x.  ===========
-# ----------------------------------------------------------------------------------------------------
-#                                        == General Options ==                                        
-# ----------------------------------------------------------------------------------------------------
-family: rt117x  # [Required], MCU family, MCU family name., Possible options:['rt116x', 'rt117x', 'rt118x']
-revision: latest # [Optional], Chip silicon revision, If needed this could be used to specify silicon revision of device., Possible options:['latest']
-mem_type: semc_sdram # [Optional], Memory type, Specify type of memory used by XMCD description., Possible options:['flexspi_ram', 'semc_sdram']
-config_type: full # [Optional], Configuration type, Specify type of configuration used by XMCD description., Possible options:['simplified', 'full']
-xmcd_settings: # [Required], rt117x
-  header:  # [Optional], header, XMCD Header
-    bitfields:  # [Required]
-      configurationBlockSize: 72  # [Optional], configurationBlockSize, Configuration block size including XMCD header itself
-      configurationBlockType: 1 # [Optional], configurationBlockType, Configuration block type - 0 - Simplified, 1 - Full
-      instance: 0 # [Optional], instance, SoC defined instances
-      memoryInterface: 1 # [Optional], memoryInterface, Memory interface 0 - FlexSPI, 1 - SEMC
-      version: 0 # [Optional], version, Version, fixed value 0x0
-      tag: 12 # [Optional], tag, Tag, fixed value 0xc
-  magicNumber: # [Optional], magicNumber, Fixed to 0xA1
-    value: '0xA1'  # [Required], magicNumber, Fixed to 0xA1
-  version: # [Optional], version, Set to 1 for this implementation
-    value: '0x01'  # [Required], version, Set to 1 for this implementation
-  configOption: # [Optional], configOption, Simplified - 0x00, Full - 0xFF - Must be 0xFF in this case
-    value: '0xFF'  # [Required], configOption, Simplified - 0x00, Full - 0xFF - Must be 0xFF in this case
-  clkMhz: # [Optional], clkMhz, Set the working frequency in the unit of MHz
-    value: '0x00'  # [Required], clkMhz, Set the working frequency in the unit of MHz
-  sdramSizeKb: # [Optional], sdramSizeKb, Set the memory size of SDRAM CS0 in the unit of kilobytes.Range: 4~4*1024*1024
-    value: '0x00000000'  # [Required], sdramSizeKb, Set the memory size of SDRAM CS0 in the unit of kilobytes.Range: 4~4*1024*1024
-  portSize: # [Optional], portSize, Port size of SDRAM. 0 - 8bit, 1 - 16bit, 2 - 32bit
-    value: '0x00'  # [Required], portSize, Port size of SDRAM. 0 - 8bit, 1 - 16bit, 2 - 32bit
-  pinConfigPull: # [Optional], pinConfigPull; Pull config of the SDRAM GPIO pin: 0 - Forbidden, 1 - Pull up, 2 - Pull down, 3 - No pull, Others - Invalid value
-    value: '0x03'  # [Required], pinConfigPull; Pull config of the SDRAM GPIO pin: 0 - Forbidden, 1 - Pull up, 2 - Pull down, 3 - No pull, Others - Invalid value
-  pinConfigDriveStrength: # [Optional], pinConfigDriveStrength, Driver config of SDRAM GPIO pin. 0 - High driver, 1 - Normal driver, Others- Invalid
-    value: '0x00'  # [Required], pinConfigDriveStrength, Driver config of SDRAM GPIO pin. 0 - High driver, 1 - Normal driver, Others- Invalid
-  muxRdy: # [Optional], muxRdy, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x01'  # [Required], muxRdy, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-  muxCsx0: # [Optional], muxCsx0, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x01'  # [Required], muxCsx0, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-  muxCsx1: # [Optional], muxCsx1, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x01'  # [Required], muxCsx1, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-  muxCsx2: # [Optional], muxCsx2, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x01'  # [Required], muxCsx2, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-  muxCsx3: # [Optional], muxCsx3, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-    value: '0x01'  # [Required], muxCsx3, SDRAM CSn device selection. 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others- Invalid for SDRAM
-  bank: # [Optional], bank, Bank numbers of SDRAM device. 0 - 4 banks, 1 - 2 banks, Others- Invalid
-    value: '0x00'  # [Required], bank, Bank numbers of SDRAM device. 0 - 4 banks, 1 - 2 banks, Others- Invalid
-  burstLen: # [Optional], burstLen, Burst length.0 - 1, 1 - 2, 2 - 4, 3 - 8, Others- Invalid
-    value: '0x00'  # [Required], burstLen, Burst length.0 - 1, 1 - 2, 2 - 4, 3 - 8, Others- Invalid
-  columnAddrBitNum: # [Optional], columnAddrBitNum, Column address bit number.0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9 bit, 4 - 8 bit, Others- Invalid
-    value: '0x00'  # [Required], columnAddrBitNum, Column address bit number.0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9 bit, 4 - 8 bit, Others- Invalid
-  casLatency: # [Optional], casLatency, CAS Latency, 1 - 1, 2 - 2, 3 - 3, Others- Invalid
-    value: '0x01'  # [Required], casLatency, CAS Latency, 1 - 1, 2 - 2, 3 - 3, Others- Invalid
-  writeRecoveryNs: # [Optional], writeRecoveryNs, Write recovery time in unit of nanosecond. This could help to meet tWR timing requirement by the SDRAM device.
-    value: '0x00'  # [Required], writeRecoveryNs, Write recovery time in unit of nanosecond. This could help to meet tWR timing requirement by the SDRAM device.
-  refreshRecoveryNs: # [Optional], refreshRecoveryNs, Refresh recovery time in unit of nanosecond. This could help to meet tRFC timing requirement by the SDRAM device.
-    value: '0x00'  # [Required], refreshRecoveryNs, Refresh recovery time in unit of nanosecond. This could help to meet tRFC timing requirement by the SDRAM device.
-  act2readwriteNs: # [Optional], act2readwriteNs, Act to read/write wait time in unit of nanosecond. This could help to meet tRCD timing requirement by the SDRAM device.
-    value: '0x00'  # [Required], act2readwriteNs, Act to read/write wait time in unit of nanosecond. This could help to meet tRCD timing requirement by the SDRAM device.
-  precharge2actNs: # [Optional], precharge2actNs, Precharge to active wait time in unit of nanosecond. This could help to meet tRP timing requirement by SDRAM device.
-    value: '0x00'  # [Required], precharge2actNs, Precharge to active wait time in unit of nanosecond. This could help to meet tRP timing requirement by SDRAM device.
-  act2actBanksNs: # [Optional], act2actBanksNs, Active to active wait time between two different banks in unit of nanosecond. This could help to meet tRRD timing requirement by the SDRAM device.
-    value: '0x00'  # [Required], act2actBanksNs, Active to active wait time between two different banks in unit of nanosecond. This could help to meet tRRD timing requirement by the SDRAM device.
-  refresh2refreshNs: # [Optional], refresh2refreshNs, Auto refresh to auto refresh wait time in unit of nanosecond. This could help to meet tRFC timing requirement by the SDRAM device.
-    value: '0x00'  # [Required], refresh2refreshNs, Auto refresh to auto refresh wait time in unit of nanosecond. This could help to meet tRFC timing requirement by the SDRAM device.
-  selfrefRecoveryNs: # [Optional], selfrefRecoveryNs, Self refresh recovery time in unit of nanosecond. This could help to meet tXSR timing requirement by the SDRAM device.
-    value: '0x00'  # [Required], selfrefRecoveryNs, Self refresh recovery time in unit of nanosecond. This could help to meet tXSR timing requirement by the SDRAM device.
-  act2prechargeMinNs: # [Optional], act2prechargeMinNs, ACT to Precharge minimum time in unit of nanosecond. This could help to meet tRAS(max) timing requirement by the SDRAM device.
-    value: '0x00'  # [Required], act2prechargeMinNs, ACT to Precharge minimum time in unit of nanosecond. This could help to meet tRAS(max) timing requirement by the SDRAM device.
-  act2prechargeMaxNs: # [Optional], act2prechargeMaxNs, ACT to Precharge maximum time in unit of nanosecond. This could help to meet tRAS(max) timing requirement by the SDRAM device.
-    value: '0x00000000'  # [Required], act2prechargeMaxNs, ACT to Precharge maximum time in unit of nanosecond. This could help to meet tRAS(max) timing requirement by the SDRAM device.
-  refreshperiodPerrowNs: # [Optional], refreshperiodPerrowNs, Refresh timer period in unit of nanosecond. Set to (tREF(ms) * 1000000/rows) value.
-    value: '0x00000000'  # [Required], refreshperiodPerrowNs, Refresh timer period in unit of nanosecond. Set to (tREF(ms) * 1000000/rows) value.
-  modeRegister: # [Optional], modeRegister, Define the specific mode of operation of SDRAM. Set to the value required by SDRAM device.
-    value: '0x00000000'  # [Required], modeRegister, Define the specific mode of operation of SDRAM. Set to the value required by SDRAM device.
-  sdram0Base: # [Optional], sdram0Base, Base address of SDRAM CS0. Range: 0x80000000~0xDFFFFFFF.
-    value: '0x00000000'  # [Required], sdram0Base, Base address of SDRAM CS0. Range: 0x80000000~0xDFFFFFFF.
-  sdram1Base: # [Optional], sdram1Base, Base address of SDRAM CS1. Range: 0x80000000~0xDFFFFFFF. If CS1 is not being used, set the address to 0.
-    value: '0x00000000'  # [Required], sdram1Base, Base address of SDRAM CS1. Range: 0x80000000~0xDFFFFFFF. If CS1 is not being used, set the address to 0.
-  sdram2Base: # [Optional], sdram2Base, Base address of SDRAM CS2. Range: 0x80000000~0xDFFFFFFF. If CS2 is not being used, set the address to 0.
-    value: '0x00000000'  # [Required], sdram2Base, Base address of SDRAM CS2. Range: 0x80000000~0xDFFFFFFF. If CS2 is not being used, set the address to 0.
-  sdram3Base: # [Optional], sdram3Base, Base address of SDRAM CS3. Range: 0x80000000~0xDFFFFFFF. If CS3 is not being used, set the address to 0.
-    value: '0x00000000'  # [Required], sdram3Base, Base address of SDRAM CS3. Range: 0x80000000~0xDFFFFFFF. If CS3 is not being used, set the address to 0.
-  sdram1SizeKb: # [Optional], sdram1SizeKb, Set the memory size of SDRAM CS1 in unit of kbytes. Range: 4~4*1024*1024
-    value: '0x00000000'  # [Required], sdram1SizeKb, Set the memory size of SDRAM CS1 in unit of kbytes. Range: 4~4*1024*1024
-  sdram2SizeKb: # [Optional], sdram2SizeKb, Set the memory size of SDRAM CS2 in unit of kbytes. Range: 4~4*1024*1024
-    value: '0x00000000'  # [Required], sdram2SizeKb, Set the memory size of SDRAM CS2 in unit of kbytes. Range: 4~4*1024*1024
-  sdram3SizeKb: # [Optional], sdram3SizeKb, Set the memory size of SDRAM CS3 in unit of kbytes. Range: 4~4*1024*1024
-    value: '0x00000000'  # [Required], sdram3SizeKb, Set the memory size of SDRAM CS3 in unit of kbytes. Range: 4~4*1024*1024
+# =============================  External Memory Configuration Data template for rt117x.  ==============================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <rt116x, rt117x, rt118x>
+family: rt117x
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by XMCD description.
+# Possible options: <flexspi_ram, semc_sdram>
+mem_type: semc_sdram
+# --------------------------------------===== Configuration type [Required] =====---------------------------------------
+# Description: Specify type of configuration used by XMCD description.
+# Possible options: <simplified, full>
+config_type: full
+# --------------------------------------------===== rt117x [Required] =====---------------------------------------------
+# Description:
+xmcd_settings:
+  header:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ------------------------------------------===== header [Required] =====-------------------------------------------
+    # Description: XMCD Header
+    value: '0xC0101048'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ---------------------------------===== configurationBlockSize [Optional] =====----------------------------------
+      # Description: Configuration block size including XMCD header itself
+      configurationBlockSize: 72
+      # ---------------------------------===== configurationBlockType [Optional] =====----------------------------------
+      # Description: Configuration block type: 0 - Simplified, 1 - Full
+      # Possible options: <XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED, XMCD_CONFIG_BLOCK_TYPE_FULL>
+      configurationBlockType: XMCD_CONFIG_BLOCK_TYPE_FULL
+      # ----------------------------------------===== instance [Optional] =====-----------------------------------------
+      # Description: SoC defined instances
+      instance: 0
+      # -------------------------------------===== memoryInterface [Optional] =====-------------------------------------
+      # Description: Memory interface: 0 - FlexSPI, 1 - SEMC
+      # Possible options: <XMCD_MEMORY_INTERFACE_FLEXSPI, XMCD_MEMORY_INTERFACE_SEMC>
+      memoryInterface: XMCD_MEMORY_INTERFACE_SEMC
+      # -----------------------------------------===== version [Optional] =====-----------------------------------------
+      # Description: Version, fixed value 0x0
+      version: 0
+      # -------------------------------------------===== tag [Optional] =====-------------------------------------------
+      # Description: Tag, fixed value 0xC
+      tag: 12
+  # -----------------------------------------===== magicNumber [Optional] =====-----------------------------------------
+  # Description: Fixed to 0xA1
+  magicNumber:
+    # ----------------------------------------===== magicNumber [Required] =====----------------------------------------
+    # Description: Fixed to 0xA1
+    value: '0x00'
+  # -------------------------------------------===== version [Optional] =====-------------------------------------------
+  # Description: Set to 1 for this implementation
+  version:
+    # ------------------------------------------===== version [Required] =====------------------------------------------
+    # Description: Set to 1 for this implementation
+    value: '0x00'
+  configOption:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ---------------------------------------===== configOption [Required] =====----------------------------------------
+    # Description: Simplified - 0x00, Full - 0xFF - Must be 0xFF in this case
+    value: '0xFF'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # --------------------------------------===== configOption [Optional] =====---------------------------------------
+      # Description: Config option
+      # Possible options: <XMCD_SEMC_SDRAM_CONFIG_FULL>
+      configOption: '0xFF'
+  # -------------------------------------------===== clkMhz [Optional] =====--------------------------------------------
+  # Description: Set the working frequency in the unit of MHz
+  clkMhz:
+    # ------------------------------------------===== clkMhz [Required] =====-------------------------------------------
+    # Description: Set the working frequency in the unit of MHz
+    value: '0x00'
+  # -----------------------------------------===== sdramSizeKb [Optional] =====-----------------------------------------
+  # Description: Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e.
+  # 4~4*1024*1024 kilobytes.
+  sdramSizeKb:
+    # ----------------------------------------===== sdramSizeKb [Required] =====----------------------------------------
+    # Description: Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e.
+    # 4~4*1024*1024 kilobytes.
+    value: '0x00000000'
+  portSize:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # -----------------------------------------===== portSize [Required] =====------------------------------------------
+    # Description: Port size of SDRAM: 0 - 8-bit, 1 - 16-bit, 2 - 32-bit
+    value: '0x00'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ----------------------------------------===== portSize [Optional] =====-----------------------------------------
+      # Description: Port size of SDRAM
+      # Possible options: <XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT, XMCD_SEMC_SDRAM_PORT_SIZE_16_BIT,
+      # XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT>
+      portSize: XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT
+  pinConfigPull:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ---------------------------------------===== pinConfigPull [Required] =====---------------------------------------
+    # Description: Pull config of the SDRAM GPIO pin: 0 - Forbidden, 1 - Pull up, 2 - Pull down, 3 - No pull, Others -
+    # Invalid value
+    value: '0x03'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # --------------------------------------===== pinConfigPull [Optional] =====--------------------------------------
+      # Description: Pull config of the SDRAM GPIO pin
+      # Possible options: <XMCD_SEMC_SDRAM_PIN_CONFIG_FORBIDDEN, XMCD_SEMC_SDRAM_PIN_CONFIG_PULL_UP,
+      # XMCD_SEMC_SDRAM_PIN_CONFIG_PULL_DOWN, XMCD_SEMC_SDRAM_PIN_CONFIG_NO_PULL>
+      pinConfigPull: XMCD_SEMC_SDRAM_PIN_CONFIG_NO_PULL
+  pinConfigDriveStrength:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ----------------------------------===== pinConfigDriveStrength [Required] =====-----------------------------------
+    # Description: Driver config of SDRAM GPIO pin: 0 - High driver, 1 - Normal driver, Others - Invalid value
+    value: '0x00'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ---------------------------------===== pinConfigDriveStrength [Optional] =====----------------------------------
+      # Description: Driver config of SDRAM GPIO pin
+      # Possible options: <XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_HIGH,
+      # XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_NORM>
+      pinConfigDriveStrength: XMCD_SEMC_SDRAM_PIN_CONFIG_DRIVE_STRENGTH_HIGH
+  muxRdy:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ------------------------------------------===== muxRdy [Required] =====-------------------------------------------
+    # Description: SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM,
+    # select other external devices
+    value: '0x01'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # -----------------------------------------===== muxRdy [Optional] =====------------------------------------------
+      # Description: SDRAM CSn device selection
+      # Possible options: <XMCD_SEMC_SDRAM_MUX_RDY_CS1, XMCD_SEMC_SDRAM_MUX_RDY_CS2, XMCD_SEMC_SDRAM_MUX_RDY_CS3>
+      muxRdy: XMCD_SEMC_SDRAM_MUX_RDY_CS1
+  muxCsx0:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ------------------------------------------===== muxCsx0 [Required] =====------------------------------------------
+    # Description: SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM,
+    # select other external devices
+    value: '0x01'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # -----------------------------------------===== muxCsx0 [Optional] =====-----------------------------------------
+      # Description: SDRAM CSn device selection
+      # Possible options: <XMCD_SEMC_SDRAM_MUX_CSX0_CS1, XMCD_SEMC_SDRAM_MUX_CSX0_CS2, XMCD_SEMC_SDRAM_MUX_CSX0_CS3>
+      muxCsx0: XMCD_SEMC_SDRAM_MUX_CSX0_CS1
+  muxCsx1:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ------------------------------------------===== muxCsx1 [Required] =====------------------------------------------
+    # Description: SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM,
+    # select other external devices
+    value: '0x01'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # -----------------------------------------===== muxCsx1 [Optional] =====-----------------------------------------
+      # Description: SDRAM CSn device selection
+      # Possible options: <XMCD_SEMC_SDRAM_MUX_CSX1_CS1, XMCD_SEMC_SDRAM_MUX_CSX1_CS2, XMCD_SEMC_SDRAM_MUX_CSX1_CS3>
+      muxCsx1: XMCD_SEMC_SDRAM_MUX_CSX1_CS1
+  muxCsx2:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ------------------------------------------===== muxCsx2 [Required] =====------------------------------------------
+    # Description: SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM,
+    # select other external devices
+    value: '0x01'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # -----------------------------------------===== muxCsx2 [Optional] =====-----------------------------------------
+      # Description: SDRAM CSn device selection
+      # Possible options: <XMCD_SEMC_SDRAM_MUX_CSX2_CS1, XMCD_SEMC_SDRAM_MUX_CSX2_CS2, XMCD_SEMC_SDRAM_MUX_CSX2_CS3>
+      muxCsx2: XMCD_SEMC_SDRAM_MUX_CSX2_CS1
+  muxCsx3:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ------------------------------------------===== muxCsx3 [Required] =====------------------------------------------
+    # Description: SDRAM CSn device selection: 1 - SDRAM CS1, 2 - SDRAM CS2, 3 - SDRAM CS3, Others - Invalid for SDRAM,
+    # select other external devices
+    value: '0x01'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # -----------------------------------------===== muxCsx3 [Optional] =====-----------------------------------------
+      # Description: SDRAM CSn device selection
+      # Possible options: <XMCD_SEMC_SDRAM_MUX_CSX3_CS1, XMCD_SEMC_SDRAM_MUX_CSX3_CS2, XMCD_SEMC_SDRAM_MUX_CSX3_CS3>
+      muxCsx3: XMCD_SEMC_SDRAM_MUX_CSX3_CS1
+  bank:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # -------------------------------------------===== bank [Required] =====--------------------------------------------
+    # Description: Bank numbers of SDRAM device: 0 - 4 banks, 1 - 2 banks, Others - Invalid value
+    value: '0x00'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ------------------------------------------===== bank [Optional] =====-------------------------------------------
+      # Description: Bank numbers of SDRAM device
+      # Possible options: <XMCD_SEMC_SDRAM_BANK_4, XMCD_SEMC_SDRAM_BANK_2>
+      bank: XMCD_SEMC_SDRAM_BANK_4
+  burstLen:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # -----------------------------------------===== burstLen [Required] =====------------------------------------------
+    # Description: Burst length: 0 - 1, 1 - 2, 2 - 4, 3 - 8, Others - Invalid value
+    value: '0x00'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ----------------------------------------===== burstLen [Optional] =====-----------------------------------------
+      # Description: Burst length
+      # Possible options: <XMCD_SEMC_SDRAM_BURST_LEN_1, XMCD_SEMC_SDRAM_BURST_LEN_2, XMCD_SEMC_SDRAM_BURST_LEN_4,
+      # XMCD_SEMC_SDRAM_BURST_LEN_8>
+      burstLen: XMCD_SEMC_SDRAM_BURST_LEN_1
+  columnAddrBitNum:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # -------------------------------------===== columnAddrBitNum [Required] =====--------------------------------------
+    # Description: Column address bit number: 0 - 12 bit, 1 - 11 bit, 2 - 10 bit, 3 - 9 bit, 4 - 8 bit, Others - Invalid
+    # value
+    value: '0x00'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ------------------------------------===== columnAddrBitNum [Optional] =====-------------------------------------
+      # Description: Column address bit number
+      # Possible options: <XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_12, XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_11,
+      # XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_10, XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_9, XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_8>
+      columnAddrBitNum: XMCD_SEMC_SDRAM_COL_ADDR_BIT_NUM_12
+  casLatency:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ----------------------------------------===== casLatency [Required] =====-----------------------------------------
+    # Description: CAS Latency: 1 - 1, 2 - 2, 3 - 3, Others - Invalid value
+    value: '0x01'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ---------------------------------------===== casLatency [Optional] =====----------------------------------------
+      # Description: CAS Latency
+      # Possible options: <XMCD_SEMC_SDRAM_CAS_LATENCY_1, XMCD_SEMC_SDRAM_CAS_LATENCY_2, XMCD_SEMC_SDRAM_CAS_LATENCY_3>
+      casLatency: XMCD_SEMC_SDRAM_CAS_LATENCY_1
+  # ---------------------------------------===== writeRecoveryNs [Optional] =====---------------------------------------
+  # Description: Write recovery time in unit of nanosecond. This could help to meet tWR timing requirement by the SDRAM
+  # device.
+  writeRecoveryNs:
+    # --------------------------------------===== writeRecoveryNs [Required] =====--------------------------------------
+    # Description: Write recovery time in unit of nanosecond. This could help to meet tWR timing requirement by the
+    # SDRAM device.
+    value: '0x00'
+  # --------------------------------------===== refreshRecoveryNs [Optional] =====--------------------------------------
+  # Description: Refresh recovery time in unit of nanosecond. This could help to meet tRFC timing requirement by the
+  # SDRAM device.
+  refreshRecoveryNs:
+    # -------------------------------------===== refreshRecoveryNs [Required] =====-------------------------------------
+    # Description: Refresh recovery time in unit of nanosecond. This could help to meet tRFC timing requirement by the
+    # SDRAM device.
+    value: '0x00'
+  # ---------------------------------------===== act2readwriteNs [Optional] =====---------------------------------------
+  # Description: Act to read/write wait time in unit of nanosecond. This could help to meet tRCD timing requirement by
+  # the SDRAM device.
+  act2readwriteNs:
+    # --------------------------------------===== act2readwriteNs [Required] =====--------------------------------------
+    # Description: Act to read/write wait time in unit of nanosecond. This could help to meet tRCD timing requirement by
+    # the SDRAM device.
+    value: '0x00'
+  # ---------------------------------------===== precharge2actNs [Optional] =====---------------------------------------
+  # Description: Precharge to active wait time in unit of nanosecond. This could help to meet tRP timing requirement by
+  # SDRAM device.
+  precharge2actNs:
+    # --------------------------------------===== precharge2actNs [Required] =====--------------------------------------
+    # Description: Precharge to active wait time in unit of nanosecond. This could help to meet tRP timing requirement
+    # by SDRAM device.
+    value: '0x00'
+  # ---------------------------------------===== act2actBanksNs [Optional] =====----------------------------------------
+  # Description: Active to active wait time between two different banks in unit of nanosecond. This could help to meet
+  # tRRD timing requirement by the SDRAM device.
+  act2actBanksNs:
+    # --------------------------------------===== act2actBanksNs [Required] =====---------------------------------------
+    # Description: Active to active wait time between two different banks in unit of nanosecond. This could help to meet
+    # tRRD timing requirement by the SDRAM device.
+    value: '0x00'
+  # --------------------------------------===== refresh2refreshNs [Optional] =====--------------------------------------
+  # Description: Auto refresh to auto refresh wait time in unit of nanosecond. This could help to meet tRFC timing
+  # requirement by the SDRAM device.
+  refresh2refreshNs:
+    # -------------------------------------===== refresh2refreshNs [Required] =====-------------------------------------
+    # Description: Auto refresh to auto refresh wait time in unit of nanosecond. This could help to meet tRFC timing
+    # requirement by the SDRAM device.
+    value: '0x00'
+  # --------------------------------------===== selfrefRecoveryNs [Optional] =====--------------------------------------
+  # Description: Self refresh recovery time in unit of nanosecond. This could help to meet tXSR timing requirement by
+  # the SDRAM device.
+  selfrefRecoveryNs:
+    # -------------------------------------===== selfrefRecoveryNs [Required] =====-------------------------------------
+    # Description: Self refresh recovery time in unit of nanosecond. This could help to meet tXSR timing requirement by
+    # the SDRAM device.
+    value: '0x00'
+  # -------------------------------------===== act2prechargeMinNs [Optional] =====--------------------------------------
+  # Description: ACT to Precharge minimum time in unit of nanosecond. This could help to meet tRAS(max) timing
+  # requirement by the SDRAM device.
+  act2prechargeMinNs:
+    # ------------------------------------===== act2prechargeMinNs [Required] =====-------------------------------------
+    # Description: ACT to Precharge minimum time in unit of nanosecond. This could help to meet tRAS(max) timing
+    # requirement by the SDRAM device.
+    value: '0x00'
+  # -------------------------------------===== act2prechargeMaxNs [Optional] =====--------------------------------------
+  # Description: ACT to Precharge maximum time in unit of nanosecond. This could help to meet tRAS(max) timing
+  # requirement by the SDRAM device.
+  act2prechargeMaxNs:
+    # ------------------------------------===== act2prechargeMaxNs [Required] =====-------------------------------------
+    # Description: ACT to Precharge maximum time in unit of nanosecond. This could help to meet tRAS(max) timing
+    # requirement by the SDRAM device.
+    value: '0x00000000'
+  # ------------------------------------===== refreshperiodPerrowNs [Optional] =====------------------------------------
+  # Description: Refresh timer period in unit of nanosecond. Set to (tREF(ms) * 1000000/rows) value.
+  refreshperiodPerrowNs:
+    # -----------------------------------===== refreshperiodPerrowNs [Required] =====-----------------------------------
+    # Description: Refresh timer period in unit of nanosecond. Set to (tREF(ms) * 1000000/rows) value.
+    value: '0x00000000'
+  # ----------------------------------------===== modeRegister [Optional] =====-----------------------------------------
+  # Description: Define the specific mode of operation of SDRAM. Set to the value required by SDRAM device.
+  modeRegister:
+    # ---------------------------------------===== modeRegister [Required] =====----------------------------------------
+    # Description: Define the specific mode of operation of SDRAM. Set to the value required by SDRAM device.
+    value: '0x00000000'
+  # -----------------------------------------===== sdram0Base [Optional] =====------------------------------------------
+  # Description: Base address of SDRAM CS0. Range: 0x8000_0000~0xDFFF_FFFF.
+  sdram0Base:
+    # ----------------------------------------===== sdram0Base [Required] =====-----------------------------------------
+    # Description: Base address of SDRAM CS0. Range: 0x8000_0000~0xDFFF_FFFF.
+    value: '0x00000000'
+  # -----------------------------------------===== sdram1Base [Optional] =====------------------------------------------
+  # Description: Base address of SDRAM CS1. Range: 0x8000_0000~0xDFFF_FFFF. If CS1 is not being used, set the address to
+  # 0.
+  sdram1Base:
+    # ----------------------------------------===== sdram1Base [Required] =====-----------------------------------------
+    # Description: Base address of SDRAM CS1. Range: 0x8000_0000~0xDFFF_FFFF. If CS1 is not being used, set the address
+    # to 0.
+    value: '0x00000000'
+  # -----------------------------------------===== sdram2Base [Optional] =====------------------------------------------
+  # Description: Base address of SDRAM CS2. Range: 0x8000_0000~0xDFFF_FFFF. If CS2 is not being used, set the address to
+  # 0.
+  sdram2Base:
+    # ----------------------------------------===== sdram2Base [Required] =====-----------------------------------------
+    # Description: Base address of SDRAM CS2. Range: 0x8000_0000~0xDFFF_FFFF. If CS2 is not being used, set the address
+    # to 0.
+    value: '0x00000000'
+  # -----------------------------------------===== sdram3Base [Optional] =====------------------------------------------
+  # Description: Base address of SDRAM CS3. Range: 0x8000_0000~0xDFFF_FFFF. If CS3 is not being used, set the address to
+  # 0.
+  sdram3Base:
+    # ----------------------------------------===== sdram3Base [Required] =====-----------------------------------------
+    # Description: Base address of SDRAM CS3. Range: 0x8000_0000~0xDFFF_FFFF. If CS3 is not being used, set the address
+    # to 0.
+    value: '0x00000000'
+  # ----------------------------------------===== sdram1SizeKb [Optional] =====-----------------------------------------
+  # Description: Set the memory size of SDRAM CS1 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024
+  # kilobytes.
+  sdram1SizeKb:
+    # ---------------------------------------===== sdram1SizeKb [Required] =====----------------------------------------
+    # Description: Set the memory size of SDRAM CS1 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e.
+    # 4~4*1024*1024 kilobytes.
+    value: '0x00000000'
+  # ----------------------------------------===== sdram2SizeKb [Optional] =====-----------------------------------------
+  # Description: Set the memory size of SDRAM CS2 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024
+  # kilobytes.
+  sdram2SizeKb:
+    # ---------------------------------------===== sdram2SizeKb [Required] =====----------------------------------------
+    # Description: Set the memory size of SDRAM CS2 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e.
+    # 4~4*1024*1024 kilobytes.
+    value: '0x00000000'
+  # ----------------------------------------===== sdram3SizeKb [Optional] =====-----------------------------------------
+  # Description: Set the memory size of SDRAM CS3 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024
+  # kilobytes.
+  sdram3SizeKb:
+    # ---------------------------------------===== sdram3SizeKb [Required] =====----------------------------------------
+    # Description: Set the memory size of SDRAM CS3 in unit of kbytes. Range: 0x0000_0004~0x0040_0000, i.e.
+    # 4~4*1024*1024 kilobytes.
+    value: '0x00000000'

@@ -207,7 +207,7 @@ def run_blhost_proxy(caplog, cmd, expect_exit_code: int = 0, ignore_ack: bool = 
     caplog.set_level(100_000)
     runner = CliRunner()
     with patch(
-        "spsdk.mboot.interfaces.uart.Serial",
+        "spsdk.utils.interfaces.device.serial_device.Serial",
         SerialProxy.init_proxy(data_responses, ignore_ack=ignore_ack),
     ):
         result = runner.invoke(blhost.main, cmd)
@@ -226,7 +226,7 @@ def test_buspal_i2c_get_property(caplog):
     runner = CliRunner()
     cmd = ["-b", "i2c", "-p", "super-com", "get-property", "1"]
     with patch(
-        "spsdk.mboot.interfaces.uart.Serial",
+        "spsdk.utils.interfaces.device.serial_device.Serial",
         SerialBuspalProxy.init_buspal_proxy("i2c", data_responses_buspal_i2c),
     ):
         result = runner.invoke(blhost.main, cmd)
@@ -239,7 +239,7 @@ def test_buspal_spi_get_property(caplog):
     runner = CliRunner()
     cmd = ["-b", "spi,5", "-p", "super-com", "get-property", "1"]
     with patch(
-        "spsdk.mboot.interfaces.uart.Serial",
+        "spsdk.utils.interfaces.device.serial_device.Serial",
         SerialBuspalProxy.init_buspal_proxy("spi", data_responses_buspal_spi),
     ):
         result = runner.invoke(blhost.main, cmd)

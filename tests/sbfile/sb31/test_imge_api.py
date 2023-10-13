@@ -6,9 +6,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb31 import commands
 from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
+from spsdk.utils.misc import load_binary
 
 
 def test_sb31_header_error():
@@ -26,25 +28,25 @@ def test_sb31_header_error():
 
     # invalid CURVE_NAME
     with pytest.raises(SPSDKError):
-        SecureBinary31Header(firmware_version=1, curve_name="totally-legit-curve")
+        SecureBinary31Header(firmware_version=1, hash_type="totally-legit-hash-type")
 
     # invalid CURVE_NAME
-    header = SecureBinary31Header(1, "secp256r1")
-    header.curve_name = "wrong-name"
+    header = SecureBinary31Header(1, EnumHashAlgorithm.SHA256)
+    header.hash_type = "wrong-name"
     with pytest.raises(SPSDKError):
-        header.calculate_block_size()
+        header.block_size
     with pytest.raises(SPSDKError):
-        header.calculate_cert_block_offset()
+        header.cert_block_offset
 
 
 def test_sb31_header_description():
-    header = SecureBinary31Header(1, "secp256r1")
+    header = SecureBinary31Header(1, EnumHashAlgorithm.SHA256)
     assert header.description == bytes(16)
-    header = SecureBinary31Header(1, "secp256r1", description="desc")
+    header = SecureBinary31Header(1, EnumHashAlgorithm.SHA256, description="desc")
     assert header.description == b"desc" + bytes(12)
-    header = SecureBinary31Header(1, "secp256r1", description="very long description")
+    header = SecureBinary31Header(1, EnumHashAlgorithm.SHA256, description="very long description")
     assert header.description == b"very long descri"
-    assert header.info()
+    assert str(header)
 
 
 def test_sb31_commands_errors():
@@ -52,30 +54,34 @@ def test_sb31_commands_errors():
         SecureBinary31Commands.parse(bytes(100))
 
     with pytest.raises(SPSDKError):
-        SecureBinary31Commands(family="lpc55s3x", curve_name="secp384r1")
+        SecureBinary31Commands(family="lpc55s3x", hash_type=EnumHashAlgorithm.SHA384)
 
 
 def test_sb31_commands_add():
-    sc = SecureBinary31Commands(family="lpc55s3x", curve_name="secp256r1", is_encrypted=False)
+    sc = SecureBinary31Commands(
+        family="lpc55s3x", hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
+    )
     sc.add_command(commands.CmdCall(0x100))
     assert len(sc.commands) == 1
-    info = sc.info()
+    info = str(sc)
     assert "CALL: Address=" in info
 
 
 def test_sb31_commands_insert():
-    sc = SecureBinary31Commands(family="lpc55s3x", curve_name="secp256r1", is_encrypted=False)
+    sc = SecureBinary31Commands(
+        family="lpc55s3x", hash_type=EnumHashAlgorithm.SHA256, is_encrypted=False
+    )
     sc.insert_command(0, commands.CmdCall(0x100))
     sc.insert_command(-1, commands.CmdExecute(0x100))
     assert len(sc.commands) == 2
-    assert "CALL:" in sc.commands[0].info()
-    assert "EXECUTE:" in sc.commands[1].info()
+    assert "CALL:" in str(sc.commands[0])
+    assert "EXECUTE:" in str(sc.commands[1])
 
 
 def test_sb31_commands_no_key_derivator():
     sc = SecureBinary31Commands(
         family="lpc55s3x",
-        curve_name="secp256r1",
+        hash_type=EnumHashAlgorithm.SHA256,
         is_encrypted=True,
         pck=bytes(16),
         timestamp=5,
@@ -88,8 +94,7 @@ def test_sb31_commands_no_key_derivator():
 
 
 def test_sb31_parse(data_dir):
-    with open(f"{data_dir}/sb3_384_384.sb3", "rb") as f:
-        data = f.read()
+    data = load_binary(f"{data_dir}/sb3_384_384.sb3")
     header = SecureBinary31Header.parse(data)
-    assert header.curve_name == "secp384r1"
+    assert header.hash_type == EnumHashAlgorithm.SHA384
     assert header.image_total_length == 0x2C8

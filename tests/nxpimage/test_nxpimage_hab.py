@@ -7,18 +7,83 @@
 """Test BEE part of nxpimage app."""
 import filecmp
 import os
+import shutil
 from shutil import copytree
 
 import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
-from spsdk.utils.misc import load_file, use_working_directory
+from spsdk.utils.misc import load_binary, use_working_directory
 
 
 @pytest.fixture()
 def hab_data_dir(data_dir):
     return os.path.join(data_dir, "hab")
+
+
+def export_hab_cli(output_path: str, config_path: str, app_path: str):
+    runner = CliRunner()
+    cmd = [
+        "hab",
+        "export",
+        "--command",
+        config_path,
+        "--output",
+        output_path,
+        app_path,
+    ]
+
+    result = runner.invoke(nxpimage.main, cmd)
+    assert result.exit_code == 0
+
+
+@pytest.mark.parametrize(
+    "configuration, app_name, check_areas",
+    [
+        ("rt1160_xip_mdk_unsigned", "evkbimxrt1160_iled_blinky_cm7_xip_mdk_unsigned.srec", []),
+        ("rt1170_QSPI_flash_unsigned", "evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_unsigned.s19", []),
+        (
+            "rt1170_RAM_non_xip_unsigned",
+            "evkmimxrt1170_iled_blinky_cm7_int_RAM_non_xip_unsigned.s19",
+            [],
+        ),
+        ("rt1170_RAM_unsigned", "evkmimxrt1170_iled_blinky_cm7_int_RAM_unsigned.s19", []),
+        ("rt1170_flashloader_unsigned", "evkmimxrt1170_flashloader.srec", []),
+        ("rt1170_flashloader_authenticated", "flashloader.srec", []),
+        ("rt1170_RAM_authenticated", "evkmimxrt1170_iled_blinky_cm7_int_RAM.s19", []),
+        ("rt1050_xip_image_iar_authenticated", "led_blinky_xip_srec_iar.srec", []),
+        ("rt1170_semcnand_authenticated", "evkmimxrt1170_iled_blinky_cm7_int_RAM.s19", []),
+        ("rt1165_semcnand_authenticated", "evkmimxrt1064_iled_blinky_SDRAM.s19", []),
+        ("rt1165_flashloader_authenticated", "flashloader.srec", []),
+        ("rt1165_semcnand_encrypted", "evkmimxrt1064_iled_blinky_SDRAM.s19", []),
+        ("rt1160_RAM_encrypted", "validationboard_imxrt1160_iled_blinky_cm7_int_RAM.s19", []),
+        (
+            "rt1173_flashloader_authenticated_ecc",
+            "flashloader.srec",
+            [(0, 0x144E8), (0x1466F, 0x148BC), (0x14A43, 0x16000)],
+        ),
+    ],
+)
+def test_nxpimage_hab_export(tmpdir, hab_data_dir, configuration, app_name, check_areas):
+    config_dir = os.path.join(hab_data_dir, "export", configuration)
+    with use_working_directory(tmpdir):
+        output_file_path = os.path.join(tmpdir, "image_output.bin")
+        export_hab_cli(
+            output_file_path,
+            os.path.join(config_dir, "config.bd"),
+            os.path.join(config_dir, app_name),
+        )
+        assert os.path.isfile(output_file_path)
+        ref_binary = load_binary(os.path.join(config_dir, "output.bin"))
+        new_binary = load_binary(output_file_path)
+        assert len(ref_binary) == len(new_binary)
+        # the actual signature check must avoided if ECC keys are used as they change every time
+        if check_areas:
+            for area in check_areas:
+                assert ref_binary[area[0] : area[1]] == new_binary[area[0] : area[1]]
+        else:
+            assert ref_binary == new_binary
 
 
 @pytest.mark.parametrize(
@@ -42,19 +107,35 @@ def hab_data_dir(data_dir):
         ("rt1160_RAM_encrypted", "validationboard_imxrt1160_iled_blinky_cm7_int_RAM.s19"),
     ],
 )
-def test_nxpimage_hab_export(tmpdir, hab_data_dir, configuration, app_name):
+def test_nxpimage_hab_convert(tmpdir, hab_data_dir, configuration, app_name):
     config_dir = os.path.join(hab_data_dir, "export", configuration)
+    shutil.copytree(config_dir, tmpdir, dirs_exist_ok=True)
     command_file_path = os.path.join(config_dir, "config.bd")
     ref_file_path = os.path.join(config_dir, "output.bin")
     app_file_path = os.path.join(config_dir, app_name)
     runner = CliRunner()
     with use_working_directory(tmpdir):
+        converted_config = os.path.join(tmpdir, "config.yaml")
+        cmd = [
+            "hab",
+            "convert",
+            "--command",
+            command_file_path,
+            "--output",
+            converted_config,
+            app_file_path,
+        ]
+        result = runner.invoke(nxpimage.main, cmd)
+        assert result.exit_code == 0
+        assert os.path.isfile(converted_config)
+        # assert load_binary(ref_file_path) == load_binary(output_file_path)
+
         output_file_path = os.path.join(tmpdir, "image_output.bin")
         cmd = [
             "hab",
             "export",
             "--command",
-            command_file_path,
+            converted_config,
             "--output",
             output_file_path,
             app_file_path,
@@ -62,7 +143,7 @@ def test_nxpimage_hab_export(tmpdir, hab_data_dir, configuration, app_name):
         result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         assert os.path.isfile(output_file_path)
-        assert load_file(ref_file_path, mode="rb") == load_file(output_file_path, mode="rb")
+        assert load_binary(ref_file_path) == load_binary(output_file_path)
 
 
 @pytest.mark.parametrize(
@@ -80,7 +161,7 @@ def test_nxpimage_hab_parse(tmpdir, hab_data_dir, configuration, source_bin, seg
     source_bin_path = os.path.join(config_dir, source_bin)
     runner = CliRunner()
     with use_working_directory(tmpdir):
-        cmd = ["hab", "parse", "--binary", source_bin_path, str(tmpdir)]
+        cmd = ["hab", "parse", "--binary", source_bin_path, "-o", str(tmpdir)]
         result = runner.invoke(nxpimage.main, cmd)
         assert result.exit_code == 0
         for segment in segments:
@@ -96,21 +177,18 @@ def test_nxpimage_hab_parse(tmpdir, hab_data_dir, configuration, source_bin, seg
 
 def test_nxpimage_hab_export_secret_key_generated(tmpdir, hab_data_dir):
     config_dir = os.path.join(hab_data_dir, "export", "rt1165_semcnand_encrypted_random")
-    runner = CliRunner()
     with use_working_directory(tmpdir):
         copytree(config_dir, tmpdir, dirs_exist_ok=True)
-        command_file_path = os.path.join(tmpdir, "config.bd")
-        app_file_path = os.path.join(tmpdir, "evkmimxrt1064_iled_blinky_SDRAM.s19")
         output_file_path = os.path.join(tmpdir, "image_output.bin")
-        cmd = (
-            f"hab export --command {command_file_path} --output {output_file_path} {app_file_path}"
+        export_hab_cli(
+            output_file_path,
+            os.path.join(tmpdir, "config.bd"),
+            os.path.join(tmpdir, "evkmimxrt1064_iled_blinky_SDRAM.s19"),
         )
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
         assert os.path.isfile(output_file_path)
         secret_key_path = os.path.join(
             tmpdir, "gen_hab_encrypt", "evkmimxrt1064_iled_blinky_SDRAM_hab_dek.bin"
         )
         assert os.path.isfile(secret_key_path)
-        secret_key = load_file(secret_key_path, "rb")
+        secret_key = load_binary(secret_key_path)
         assert len(secret_key) == 32

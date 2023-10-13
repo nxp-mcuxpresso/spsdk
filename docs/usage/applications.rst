@@ -76,20 +76,6 @@ It allows user to:
 
     blhost --help
 
-:ref:`elftosb`
-==============
-
-The tool for generating TrustZone, MasterBootImage, and SecureBinary images.
-
-- generate TrustZone
-- generate MasterBootImage
-- generate SecureBinary
-
-.. note:: This tool is deprecated, use :ref:`nxpimage` instead
-
-.. code:: bash
-
-    elftosb --help
 
 :ref:`ifr`
 ================
@@ -104,20 +90,6 @@ The *ifr* application allows user to generate IFR0:
 .. code:: bash
 
     ifr --help
-
-:ref:`nxpcertgen`
-=================
-
-The *nxpcertgen* application allows the user to:
-
-- generate the self-signed x.509 certificates with properties given in the YAML configuration file.
-- generate the template of Certificate generation YAML configuration file
-
-The certificates are self-signed and support only BasicConstrains (ca, path_length).
-
-.. code:: bash
-
-    nxpcertgen --help
 
 :ref:`nxpcrypto`
 =================
@@ -185,18 +157,6 @@ The *nxpimage* application allows users to:
 
     nxpimage --help
 
-:ref:`nxpkeygen`
-================
-
-The *nxpkeygen* application allows user to:
-
-- generate RSA/ECC key pairs (private and public) with various key's attributes
-
-.. note:: This tool is deprecated, use :ref:`nxpcrypto` instead
-
-.. code:: bash
-
-    nxpkeygen --help
 
 :ref:`pfr`
 ==========
@@ -262,3 +222,25 @@ It allows user to:
 .. code:: bash
 
     shadowregs --help
+
+
+-------------------------------
+Deleted/deprecated applications
+-------------------------------
+
+nxpcertgen
+==========
+
+.. note:: This tool was replaced by :ref:`nxpcrypto`
+
+
+nxpkeygen
+=========
+
+.. note:: This tool was replaced by :ref:`nxpcrypto`
+
+
+elftosb
+=========
+
+.. note:: This tool was replaced by :ref:`nxpimage`

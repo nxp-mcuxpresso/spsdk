@@ -144,9 +144,6 @@ class DebugProbePyLink(DebugProbe):
             self.pylink.coresight_configure()
             self.pylink.set_speed(speed=value_to_int(self.options.get("frequency", 100)))
             # Power Up the system and debug and clear sticky errors
-            if self.options.get("use_jtag") is not None:
-                # Currently clear_sticky_errors has been defined only for SWD (uncleared for JTAG-DP)
-                self.coresight_reg_write(access_port=False, addr=4, data=0x50000F20)
             self.clear_sticky_errors()
             self.power_up_target()
 
@@ -242,7 +239,4 @@ class DebugProbePyLink(DebugProbe):
         if not self.disable_reinit:
             assert self.pylink
             self.pylink.coresight_configure()
-            if self.options.get("use_jtag") is not None:
-                # Currently clear_sticky_errors has been defined only for SWD (uncleared for JTAG-DP)
-                self.coresight_reg_write(access_port=False, addr=4, data=0x50000F20)
             self._reinit_target()

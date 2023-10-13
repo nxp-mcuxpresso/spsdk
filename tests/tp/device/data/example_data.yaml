@@ -1,0 +1,13 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+family: lpc55s6x
+cmpa_path: example_data/sample_cmpa.bin
+cfpa_path: example_data/sample_cfpa.bin
+sb_kek_path: example_data/sb_kek.txt
+user_kek_path: example_data/user_kek.txt
+oem_log_prk_path: example_data/oem_log_prk.pem
+nxp_prod_cert_path: example_data/nxp_prod_devattest_lpc55s6x.der.crt
+nxp_global_attest_puk_path: example_data/nxp_glob_devattest.pub
+nxp_prod_card_prk_path: example_data/nxp_prod_card_auth_prk.pem
+production-quota: 5

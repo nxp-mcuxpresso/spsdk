@@ -27,6 +27,21 @@ General utils
    :undoc-members:
    :show-inheritance:
 
+Image utils
+-----------
+
+.. automodule:: spsdk.utils.images
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Interfaces utils
+----------------
+
+.. automodule:: spsdk.utils.interfaces
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Serial Proxy
 -------------
@@ -90,6 +105,13 @@ Module for schema-based configuration validation
 Utils Exceptions
 ----------------
 .. automodule:: spsdk.utils.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Database
+--------
+.. automodule:: spsdk.utils.database
    :members:
    :undoc-members:
    :show-inheritance:

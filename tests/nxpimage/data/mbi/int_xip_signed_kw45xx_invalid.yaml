@@ -1,0 +1,12 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+family: kw45xx
+outputImageExecutionTarget: Internal flash (XIP)
+outputImageAuthenticationType: Signed
+masterBootOutputFile: my_mbi.bin
+inputImageFile: test_application.bin
+outputImageExecutionAddress: 0
+certBlock: cert_v21_1x256_none.yaml
+signProvider: type=file;file_path=ec_pk_secp256r1_cert0.pem
+mainRootCertPrivateKeyFile: ec_pk_secp256r1_cert0.pem

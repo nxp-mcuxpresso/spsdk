@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2022 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@
 from datetime import datetime, timezone
 from typing import Any, Sequence, Union
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.utils import misc
 
 

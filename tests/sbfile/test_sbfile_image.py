@@ -12,8 +12,9 @@ from typing import List
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import get_signature_provider
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.commands import (
     CmdCall,
     CmdErase,
@@ -29,10 +30,10 @@ from spsdk.sbfile.sb2.images import (
     BootImageV20,
     BootImageV21,
     BootSectionV2,
-    CertBlockV2,
+    CertBlockV1,
     SBV2xAdvancedParams,
 )
-from spsdk.utils.crypto import Certificate, KeyBlob, Otfad
+from spsdk.utils.crypto.otfad import KeyBlob, Otfad
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import align_block
 
@@ -54,28 +55,25 @@ def test_sb20_parser(data_dir):
 
     assert isinstance(img_obj, BootImageV20)
 
-    # check info() produces something
-    assert img_obj.info()
+    # check __str__() produces something
+    assert str(img_obj)
 
 
-def gen_cert_block(data_dir, sign_bits) -> CertBlockV2:
+def gen_cert_block(data_dir, sign_bits) -> CertBlockV1:
     """Shared function to generate certificate block for SB2.x
     :param data_dir: absolute path to load certificate
     :param sign_bits: signature key length in bits
 
     :return: certificate block for SB2.x
     """
-    with open(
-        os.path.join(data_dir, "sb2_x", "selfsign_" + str(sign_bits) + "_v3.der.crt"), "rb"
-    ) as f:
-        cert_data = f.read()
+    cert_obj = Certificate.load(
+        os.path.join(data_dir, "sb2_x", "selfsign_" + str(sign_bits) + "_v3.der.crt")
+    )
+    root_key_hash = cert_obj.public_key_hash()
 
-    cert_obj = Certificate(cert_data)
-    root_key = cert_obj.public_key_hash
-
-    cb = CertBlockV2()
-    cb.set_root_key_hash(0, root_key)
-    cb.add_certificate(cert_data)
+    cb = CertBlockV1()
+    cb.set_root_key_hash(0, root_key_hash)
+    cb.add_certificate(cert_obj)
     return cb
 
 
@@ -285,8 +283,8 @@ def test_sb2x_builder(
     # test raw_size
     assert len(result) == boot_image.raw_size
 
-    # check that info() prints anything
-    assert boot_image.info()
+    # check that __str__() prints anything
+    assert str(boot_image)
 
     sect_cont_str = SectionsContent.name(sect_cont)
     if otfad:
@@ -391,7 +389,7 @@ def test_invalid_boot_image_v2():
     with pytest.raises(
         SPSDKError, match="Certificate block cannot be used unless SB file is signed"
     ):
-        bimg.cert_block = CertBlockV2()
+        bimg.cert_block = CertBlockV1()
     bimg = BootImageV20(True, kek=bytes(31))
     bimg.cert_block = None
     with pytest.raises(SPSDKError, match="Certification block not present"):

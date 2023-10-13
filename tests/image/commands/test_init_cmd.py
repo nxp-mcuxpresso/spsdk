@@ -2,14 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.image import CmdInitialize, CmdNop, EnumEngine
+from spsdk.exceptions import SPSDKError
+from spsdk.image.commands import CmdInitialize, CmdNop, EnumEngine
 
 
 def test_init_cmd():
@@ -35,7 +35,7 @@ def test_init_cmd_base():
 
 def test_init_cmd_info():
     cmd = CmdInitialize(data=(1, 0))
-    output = cmd.info()
+    output = str(cmd)
     req_strings = ["Initialize Command ", "Engine:", "Value: "]
     for req_string in req_strings:
         assert req_string in output, f"string {req_string} is not int output: {output}"
@@ -60,7 +60,7 @@ def test_init_cmd_export_parse_with_offset():
     # raw_data is made from appending 5,6 into cmd init
     raw_data = b"\xb4\x00\x0c\x00\x00\x00\x00\x05\x00\x00\x00\x06"
     raw_data = b"\x01\x02\x03\x04" + raw_data
-    cmd = CmdInitialize.parse(raw_data, offset=4)
+    cmd = CmdInitialize.parse(raw_data[4:])
     assert len(cmd) == 2
     assert isinstance(cmd, CmdInitialize)
 

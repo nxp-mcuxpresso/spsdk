@@ -2,27 +2,31 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
 
 import pytest
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
 
-from spsdk import SPSDKError
-from spsdk.crypto.loaders import load_certificate
-from spsdk.image import MAC, CertificateImg, SecretKeyBlob, Signature, SrkItem, SrkTable
+from spsdk.crypto.certificate import Certificate
+from spsdk.exceptions import SPSDKError
 from spsdk.image.commands import CmdNop
 from spsdk.image.secret import (
-    BaseClass,
+    MAC,
+    CertificateImg,
+    EnumAlgorithm,
     NotImplementedSRKCertificate,
     NotImplementedSRKItem,
     NotImplementedSRKPublicKeyType,
+    SecretKeyBlob,
+    Signature,
+    SrkItem,
+    SrkItemEcc,
     SrkItemHash,
     SrkItemRSA,
+    SrkTable,
 )
 
 
@@ -81,7 +85,7 @@ def test_srk_table_export(data_dir, srk_pem):
     srk_table = SrkTable(version=0x40)
 
     for pem_data in srk_pem:
-        cert = x509.load_pem_x509_certificate(pem_data, default_backend())
+        cert = Certificate.parse(pem_data)
         srk_table.append(SrkItem.from_certificate(cert))
 
     with open(os.path.join(data_dir, "SRK_1_2_3_4_table.bin"), "rb") as f:
@@ -94,7 +98,7 @@ def test_srk_table_export(data_dir, srk_pem):
 def test_srk_table_single_cert(srk_pem):
     """Smoke test that SrkTable with single certificate works"""
     srk_table = SrkTable(version=0x40)
-    cert = x509.load_pem_x509_certificate(srk_pem[0], default_backend())
+    cert = Certificate.parse(srk_pem[0])
     srk_table.append(SrkItem.from_certificate(cert))
 
     # test export() returns any result
@@ -106,32 +110,20 @@ def test_srk_table_single_cert(srk_pem):
         assert srk_table.get_fuse(fuse_index) >= 0
     with pytest.raises(SPSDKError):
         srk_table.get_fuse(8)
-    # test info() returns non-empty text
-    assert srk_table.info()  # test export returns any result
+    # test __str__() returns non-empty text
+    assert str(srk_table)  # test export returns any result
 
 
 def test_srk_table_cert_hashing(data_dir, srk_pem):
     """Recreate SRK_1_2_H3_H4 table from certificates"""
     srk_table = SrkTable(version=0x40)
-    srk_table.append(
-        SrkItem.from_certificate(x509.load_pem_x509_certificate(srk_pem[0], default_backend()))
-    )
-    srk_table.append(
-        SrkItem.from_certificate(x509.load_pem_x509_certificate(srk_pem[1], default_backend()))
-    )
-    srk_table.append(
-        SrkItem.from_certificate(
-            x509.load_pem_x509_certificate(srk_pem[2], default_backend())
-        ).hashed_entry()
-    )
-    srk_table.append(
-        SrkItem.from_certificate(
-            x509.load_pem_x509_certificate(srk_pem[3], default_backend())
-        ).hashed_entry()
-    )
+    srk_table.append(SrkItem.from_certificate(Certificate.parse(srk_pem[0])))
+    srk_table.append(SrkItem.from_certificate(Certificate.parse(srk_pem[1])))
+    srk_table.append(SrkItem.from_certificate(Certificate.parse(srk_pem[2])).hashed_entry())
+    srk_table.append(SrkItem.from_certificate(Certificate.parse(srk_pem[3])).hashed_entry())
     assert srk_table.export()
     assert len(srk_table.export_fuses()) == 32
-    assert srk_table.info()  # test export returns any result
+    assert str(srk_table)  # test export returns any result
 
     with open(os.path.join(data_dir, "SRK_1_2_H3_H4_table.bin"), "rb") as f:
         preimaged_srk_table_data = f.read()
@@ -147,7 +139,7 @@ def test_mac_class():
     mac = MAC(version=0x40)
 
     assert mac.size == 8 + 16
-    assert mac.info()
+    assert str(mac)
 
     test_nonce = b"0123456789123"
     test_mac = b"fedcba9876543210"
@@ -180,14 +172,14 @@ def test_signature_class():
     sig = Signature(version=0x40)
 
     assert sig.size == 4
-    assert sig.info()
+    assert str(sig)
 
 
 def test_certificate_class():
     cer = CertificateImg(version=0x40)
 
     assert cer.size == 4
-    assert cer.info()
+    assert str(cer)
 
 
 def test_secret_key_blob_class():
@@ -195,7 +187,7 @@ def test_secret_key_blob_class():
     sec_key.blob = bytes([0xFF] * 32)
 
     assert sec_key.size == 36
-    assert sec_key.info()
+    assert str(sec_key)
 
 
 def test_keyblob_base():
@@ -232,10 +224,11 @@ def test_srktable_parse_not_valid_header():
 
 
 def test_srktable_from_certificate_ecc(data_dir):
-    certificate = load_certificate(os.path.join(data_dir, "ecc.crt"))
-
-    with pytest.raises(NotImplementedSRKCertificate):
-        SrkItem.from_certificate(certificate)
+    certificate = Certificate.load(os.path.join(data_dir, "ecc.crt"))
+    srk = SrkItem.from_certificate(certificate)
+    assert isinstance(srk, SrkItemEcc)
+    assert srk.key_size == 256
+    assert srk._header.param == EnumAlgorithm.ECDSA
 
 
 def test_srkitemhash_parse_not_valid_header():
@@ -251,10 +244,28 @@ def test_srkitemhash_invalid_algorithm():
         SrkItemHash(algorithm=88, digest=bytes(16))
 
 
-def test_srktable_invalid_flag():
+def test_srktable_rsa_invalid_flag():
     srk = SrkItemRSA(modulus=bytes(2048), exponent=bytes(4))
     with pytest.raises(SPSDKError, match="Incorrect flag"):
         srk.flag = 8
+
+
+def test_srktable_ecc_invalid_flag():
+    srk = SrkItemEcc(
+        384,
+        3665622270866885529978158465680747282513354288811938395515801825160156741722916065426997878229428508386024599713087,
+        27083679052031733430535650892058391967780814535261890605452924654747789555719343684370905883997273475908096732191742,
+    )
+    with pytest.raises(SPSDKError, match="Incorrect flag"):
+        srk.flag = 8
+
+
+def test_srktable_export_parse_ecc(data_dir):
+    certificate = Certificate.load(os.path.join(data_dir, "ecc.crt"))
+    srk = SrkItemEcc.from_certificate(certificate)
+    srk_data = srk.export()
+    srk1 = SrkItemEcc.parse(srk_data)
+    assert srk == srk1
 
 
 def test_srk_table_invalid_fuse():
@@ -270,6 +281,6 @@ def test_srk_table_item_not_eq():
 
 
 def test_not_eq():
-    cmd = BaseClass(tag=3)
+    cmd = CertificateImg()
     cmd2 = CmdNop()
     assert cmd != cmd2

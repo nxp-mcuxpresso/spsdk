@@ -17,28 +17,27 @@ import click
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
+    is_click_help,
     isp_interfaces,
     spsdk_apps_common_options,
+    spsdk_output_option,
 )
-from spsdk.apps.utils.utils import (
-    INT,
-    SPSDKAppError,
-    catch_spsdk_error,
-    format_raw_data,
-    get_interface,
-)
-from spsdk.sdp import SDP
+from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, format_raw_data
 from spsdk.sdp.commands import ResponseValue
+from spsdk.sdp.scanner import get_sdp_interface
+from spsdk.sdp.sdp import SDP
+from spsdk.utils import misc
 
 
 @click.group(name="sdphost", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True, is_sdp=True, default_timeout=10000)
+@isp_interfaces(uart=True, usb=True, is_sdp=True, plugin=True, default_timeout=10000)
 @spsdk_apps_common_options
 @click.pass_context
 def main(
     ctx: click.Context,
     port: str,
     usb: str,
+    plugin: str,
     use_json: bool,
     log_level: int,
     timeout: int,
@@ -46,9 +45,9 @@ def main(
     """Utility for communication with ROM on i.MX targets using SDP protocol (i.MX RT1xxx)."""
     spsdk_logger.install(level=log_level)
     # if --help is provided anywhere on command line, skip interface lookup and display help message
-    if "--help" not in sys.argv[1:]:
+    if not is_click_help(ctx, sys.argv):
         ctx.obj = {
-            "interface": get_interface(module="sdp", port=port, usb=usb, timeout=timeout),
+            "interface": get_sdp_interface(port=port, usb=usb, plugin=plugin, timeout=timeout),
             "use_json": use_json,
         }
     return 0
@@ -110,9 +109,9 @@ def write_file(ctx: click.Context, address: int, bin_file: click.File, count: in
 
 @main.command()
 @click.argument("address", type=INT(), required=True)
-@click.argument("item_length", type=INT(), required=False, default=32, metavar="[FORMAT]")
+@click.argument("item_length", type=INT(), required=False, default="32", metavar="[FORMAT]")
 @click.argument("count", type=INT(), required=False, default=None)
-@click.argument("file", type=click.File("wb"), required=False)
+@spsdk_output_option(required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_context
 def read_register(
@@ -120,7 +119,7 @@ def read_register(
     address: int,
     item_length: int,
     count: int,
-    file: click.File,
+    output: str,
     use_hexdump: bool,
 ) -> None:
     """Reads the contents of a memory location or register value.
@@ -133,7 +132,6 @@ def read_register(
     ADDRESS - starting address where to read
     FORMAT  - bits per item: valid values: 8, 16, 32; default 32
     COUNT   - bytes to read; default size of FORMAT
-    FILE    - write data into a file; write to stdout if not specified
     """
     with SDP(ctx.obj["interface"]) as sdp:
         response = sdp.read_safe(address, count, item_length)
@@ -141,8 +139,9 @@ def read_register(
         raise SPSDKAppError(
             f"Error: invalid sub-command or arguments 'read-register {address:#8X} {item_length} {count}'"
         )
-    if file:
-        file.write(response)  # type: ignore
+    if output:
+        misc.write_file(response, output, mode="wb")
+        click.echo(f"{len(response)} bytes written to {output}")
     else:
         click.echo(format_raw_data(response, use_hexdump=use_hexdump))
     display_output([], sdp.hab_status, ctx.obj["use_json"])

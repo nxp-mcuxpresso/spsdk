@@ -2,11 +2,11 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import CmdNop, CmdSet
+from spsdk.image.commands import CmdNop, CmdSet
 
 
 def test_nop_cmd():
@@ -24,7 +24,7 @@ def test_nop_cmd_eq():
 
 def test_nop_cmd_info():
     cmd = CmdNop()
-    assert 'Command "No Operation' in cmd.info()
+    assert 'Command "No Operation' in str(cmd)
 
 
 def test_nop_export_parse():

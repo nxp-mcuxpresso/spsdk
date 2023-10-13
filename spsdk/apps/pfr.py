@@ -15,24 +15,30 @@ from typing import Callable, Optional, Tuple, Type, Union
 import click
 from click_option_group import MutuallyExclusiveOptionGroup, optgroup
 
-from spsdk import pfr
-from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     FC,
-    CommandsTreeGroupAliasedGetCfgTemplate,
+    CommandsTreeGroup,
     isp_interfaces,
     spsdk_apps_common_options,
+    spsdk_config_option,
+    spsdk_output_option,
 )
-from spsdk.apps.utils.utils import MBootInterface, catch_spsdk_error, format_raw_data, get_interface
-from spsdk.crypto.loaders import extract_public_keys
-from spsdk.mboot import McuBoot
-from spsdk.pfr.exceptions import SPSDKError, SPSDKPfrConfigError, SPSDKPfrError
+from spsdk.apps.utils.utils import catch_spsdk_error, format_raw_data
+from spsdk.crypto.utils import extract_public_keys
+from spsdk.exceptions import SPSDKError
+from spsdk.mboot.mcuboot import McuBoot
+from spsdk.mboot.protocol.base import MbootProtocolBase
+from spsdk.mboot.scanner import get_mboot_interface
+from spsdk.pfr import pfr
+from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
+from spsdk.pfr.pfr import CFPA, CMPA, PfrConfiguration
 from spsdk.pfr.pfrc import Pfrc
+from spsdk.utils.crypto.cert_blocks import find_root_certificates
 from spsdk.utils.misc import find_file, load_binary, load_configuration, size_fmt, write_file
-from spsdk.utils.schema_validator import ConfigTemplate
+from spsdk.utils.schema_validator import CommentedConfig
 
-PFRArea = Union[Type[pfr.CMPA], Type[pfr.CFPA]]
+PFRArea = Union[Type[CMPA], Type[CFPA]]
 logger = logging.getLogger(__name__)
 
 
@@ -69,9 +75,9 @@ def pfr_device_type_options(no_type: bool = False) -> Callable:
             help="Chip revision; if not specified, most recent one will be used",
         )(options)
         options = click.option(
-            "-d",
-            "--device",
-            type=click.Choice(pfr.CMPA.devices()),
+            "-f",
+            "--family",
+            type=click.Choice(CMPA.devices()),
             help="Device to use",
             required=True,
         )(options)
@@ -89,7 +95,7 @@ def pfr_device_type_options(no_type: bool = False) -> Callable:
     return decorator
 
 
-@click.group(name="pfr", no_args_is_help=True, cls=CommandsTreeGroupAliasedGetCfgTemplate)
+@click.group(name="pfr", no_args_is_help=True, cls=CommandsTreeGroup)
 @spsdk_apps_common_options
 def main(log_level: int) -> int:
     """Utility for generating and parsing Protected Flash Region data (CMPA, CFPA)."""
@@ -99,31 +105,19 @@ def main(log_level: int) -> int:
 
 @main.command(name="get-template", no_args_is_help=True)
 @pfr_device_type_options()
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(resolve_path=True),
-    required=False,
-    help="Save the output into a file instead of console",
-)
-@click.option("-f", "--full", is_flag=True, help="Show full config, including computed values")
-def get_template(device: str, revision: str, area: str, output: str, full: bool) -> None:
+@spsdk_output_option(force=True)
+@click.option("--full", is_flag=True, help="Show full config, including computed values")
+def get_template(family: str, revision: str, area: str, output: str, full: bool) -> None:
     """Generate user configuration template file."""
-    pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
+    pfr_obj = _get_pfr_class(area)(device=family, revision=revision)
     data = pfr_obj.get_yaml_config(not full)
-    yaml_data = ConfigTemplate.convert_cm_to_yaml(data)
+    yaml_data = CommentedConfig.convert_cm_to_yaml(data)
     _store_output(yaml_data, output, msg=f"PFR {area} configuration template has been created.")
 
 
 @main.command(name="parse-binary", no_args_is_help=True)
 @pfr_device_type_options()
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(dir_okay=False),
-    required=False,
-    help="Save the output into a file instead of console",
-)
+@spsdk_output_option(required=False)
 @click.option(
     "-b",
     "--binary",
@@ -132,7 +126,7 @@ def get_template(device: str, revision: str, area: str, output: str, full: bool)
     help="Binary to parse",
 )
 @click.option(
-    "-f",
+    "-d",
     "--show-diff",
     is_flag=True,
     help="Show differences comparing to defaults",
@@ -144,7 +138,7 @@ def get_template(device: str, revision: str, area: str, output: str, full: bool)
     help="Show also calculated fields when displaying difference to " "defaults (--show-diff)",
 )
 def parse_binary(
-    device: str,
+    family: str,
     revision: str,
     area: str,
     output: str,
@@ -156,7 +150,7 @@ def parse_binary(
     data = load_binary(binary)
     yaml_data = _parse_binary_data(
         data=data,
-        device=device,
+        device=family,
         revision=revision,
         area=area,
         show_calc=show_calc,
@@ -186,7 +180,7 @@ def _parse_binary_data(
     pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
     pfr_obj.parse(data)
     parsed = pfr_obj.get_yaml_config(exclude_computed=not show_calc, diff=show_diff)
-    yaml_data = ConfigTemplate.convert_cm_to_yaml(parsed)
+    yaml_data = CommentedConfig.convert_cm_to_yaml(parsed)
     return yaml_data
 
 
@@ -194,32 +188,19 @@ def _parse_binary_data(
 @optgroup.group("Root Of Trust Configuration", cls=MutuallyExclusiveOptionGroup)
 @optgroup.option(
     "-e",
-    "--elf2sb-config",
+    "--rot-config",
     type=click.Path(exists=True, dir_okay=False),
-    help="Specify Root Of Trust from configuration file used by elf2sb tool",
+    help="Specify Root Of Trust from MBI or Cert block configuration file",
 )
 @optgroup.option(
-    "-f",
+    "-sf",
     "--secret-file",
     type=click.Path(exists=True, dir_okay=False),
     multiple=True,
     help="Secret file (certificate, public key, private key); can be defined multiple times",
 )
-@click.option(
-    "-c",
-    "--user-config",
-    "user_config_file",
-    type=click.Path(exists=True, dir_okay=False),
-    required=True,
-    help="YAML/JSON file with user configuration",
-)
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(dir_okay=False, resolve_path=True),
-    required=True,
-    help="Save the output into a file instead of console",
-)
+@spsdk_config_option()
+@spsdk_output_option()
 @click.option("-a", "--add-seal", is_flag=True, help="Add seal mark digest at the end.")
 @click.option(
     "-i",
@@ -241,16 +222,16 @@ def _parse_binary_data(
 )
 def generate_binary(
     output: str,
-    user_config_file: str,
+    config: str,
     add_seal: bool,
     calc_inverse: bool,
-    elf2sb_config: str,
+    rot_config: str,
     secret_file: Tuple[str],
     password: str,
     force: bool,
 ) -> None:
     """Generate binary data."""
-    pfr_config = pfr.PfrConfiguration(user_config_file)
+    pfr_config = PfrConfiguration(config)
     invalid_reason = pfr_config.is_invalid()
     if invalid_reason:
         raise SPSDKPfrConfigError(
@@ -280,12 +261,20 @@ def generate_binary(
                 logger.debug(log_text)
     root_of_trust = None
     keys = None
-    if elf2sb_config:
-        elf2sb_config_dir = os.path.dirname(elf2sb_config)
-        public_keys = RootOfTrustInfo(
-            load_configuration(elf2sb_config), search_paths=[elf2sb_config_dir]
-        ).public_keys
-        root_of_trust = tuple((find_file(x, search_paths=[elf2sb_config_dir]) for x in public_keys))
+    if rot_config:
+        rot_config_dir = os.path.dirname(rot_config)
+        logger.info("Loading configuration from cert block/MBI config file...")
+        config_data = load_configuration(rot_config, search_paths=[rot_config_dir])
+        if "certBlock" in config_data:
+            try:
+                config_data = load_configuration(
+                    config_data["certBlock"], search_paths=[rot_config_dir]
+                )
+            except SPSDKError as e:
+                raise SPSDKError("certBlock must be provided as YAML configuration") from e
+
+        public_keys = find_root_certificates(config_data)
+        root_of_trust = tuple((find_file(x, search_paths=[rot_config_dir]) for x in public_keys))
     if secret_file:
         root_of_trust = secret_file
     if area.lower() == "cmpa" and root_of_trust:
@@ -298,13 +287,7 @@ def generate_binary(
 
 @main.command(name="info", no_args_is_help=True)
 @pfr_device_type_options()
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(dir_okay=False, resolve_path=True),
-    required=True,
-    help="Save the output into a file instead of console",
-)
+@spsdk_output_option()
 @click.option(
     "-p",
     "--open",
@@ -312,11 +295,11 @@ def generate_binary(
     is_flag=True,
     help="Open the generated description file",
 )
-def info(device: str, revision: str, area: str, output: str, open_result: bool) -> None:
+def info(family: str, revision: str, area: str, output: str, open_result: bool) -> None:
     """Generate HTML page with brief description of CMPA/CFPA configuration fields."""
-    pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
+    pfr_obj = _get_pfr_class(area)(device=family, revision=revision)
     html_output = pfr_obj.registers.generate_html(
-        f"{device.upper()} - {area.upper()}",
+        f"{family.upper()} - {area.upper()}",
         pfr_obj.DESCRIPTION,
         regs_exclude=["SHA256_DIGEST"],
         fields_exclude=["FIELD"],
@@ -324,12 +307,6 @@ def info(device: str, revision: str, area: str, output: str, open_result: bool) 
     _store_output(html_output, output, msg="Success. (PFR info HTML page has been generated)")
     if open_result:  # pragma: no cover # can't test opening the html document
         click.launch(f"{output}")
-
-
-@main.command(name="devices", no_args_is_help=False)
-def devices() -> None:
-    """List supported devices."""
-    click.echo("\n".join(pfr.CMPA.devices()))
 
 
 @main.command(name="write", no_args_is_help=True)
@@ -355,17 +332,17 @@ def write(
     buspal: str,
     lpcusbsio: str,
     timeout: int,
-    device: str,
+    family: str,
     revision: str,
     area: str,
     binary: str,
 ) -> None:
     """Write PFR page to the device."""
-    pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
-    pfr_page_address = pfr_obj.config.get_address(device)
+    pfr_obj = _get_pfr_class(area)(device=family, revision=revision)
+    pfr_page_address = pfr_obj.config.get_address(family)
     pfr_page_length = pfr_obj.BINARY_SIZE
 
-    click.echo(f"{pfr_obj.__class__.__name__} page address on {device} is {pfr_page_address:#x}")
+    click.echo(f"{pfr_obj.__class__.__name__} page address on {family} is {pfr_page_address:#x}")
 
     data = load_binary(binary)
     if len(data) != pfr_page_length:
@@ -373,11 +350,11 @@ def write(
             f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
         )
 
-    interface = get_interface(
-        module="mboot", port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
+    interface = get_mboot_interface(
+        port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
     )
-    assert isinstance(interface, MBootInterface)
-    with McuBoot(device=interface) as mboot:
+    assert isinstance(interface, MbootProtocolBase)
+    with McuBoot(interface=interface) as mboot:
         mboot.write_memory(address=pfr_page_address, data=data)
     click.echo(
         f"{pfr_obj.__class__.__name__} data {'written to device.' if mboot.status_code == 0 else 'write failed!'}"
@@ -394,10 +371,8 @@ def write(
     use_long_timeout_option=True,
 )
 @pfr_device_type_options()
-@click.option(
-    "-o",
-    "--output",
-    type=click.Path(dir_okay=False, resolve_path=True),
+@spsdk_output_option(
+    required=False,
     help="Store PFR data into a file. If not specified hexdump data into stdout.",
 )
 @click.option(
@@ -408,7 +383,7 @@ def write(
     help="Parse data read from device into YAML config.",
 )
 @click.option(
-    "-f",
+    "-d",
     "--show-diff",
     is_flag=True,
     help="(applicable for parsing) Show differences comparing to defaults",
@@ -426,7 +401,7 @@ def read(
     buspal: str,
     lpcusbsio: str,
     timeout: int,
-    device: str,
+    family: str,
     revision: str,
     area: str,
     output: str,
@@ -435,18 +410,18 @@ def read(
     show_calc: bool,
 ) -> None:
     """Read PFR page from the device."""
-    pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
-    pfr_page_address = pfr_obj.config.get_address(device)
+    pfr_obj = _get_pfr_class(area)(device=family, revision=revision)
+    pfr_page_address = pfr_obj.config.get_address(family)
     pfr_page_length = pfr_obj.BINARY_SIZE
     pfr_page_name = pfr_obj.__class__.__name__
 
-    click.echo(f"{pfr_page_name} page address on {device} is {pfr_page_address:#x}")
+    click.echo(f"{pfr_page_name} page address on {family} is {pfr_page_address:#x}")
 
-    interface = get_interface(
-        module="mboot", port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
+    interface = get_mboot_interface(
+        port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
     )
-    assert isinstance(interface, MBootInterface)
-    with McuBoot(device=interface) as mboot:
+    assert isinstance(interface, MbootProtocolBase)
+    with McuBoot(interface=interface) as mboot:
         data = mboot.read_memory(address=pfr_page_address, length=pfr_page_length)
     if not data:
         raise SPSDKError(f"Unable to read data from address {pfr_page_address:#x}")
@@ -457,7 +432,7 @@ def read(
     if yaml_output:
         yaml_data = _parse_binary_data(
             data=data,
-            device=device,
+            device=family,
             revision=revision,
             area=area,
             show_calc=show_calc,
@@ -485,21 +460,21 @@ def erase_cmpa(
     buspal: str,
     lpcusbsio: str,
     timeout: int,
-    device: str,
+    family: str,
     revision: str,
 ) -> None:
     """Erase CMPA PFR page in the device if is not sealed."""
-    pfr_obj = _get_pfr_class("cmpa")(device=device, revision=revision)
-    pfr_page_address = pfr_obj.config.get_address(device)
+    pfr_obj = _get_pfr_class("cmpa")(device=family, revision=revision)
+    pfr_page_address = pfr_obj.config.get_address(family)
     pfr_page_length = pfr_obj.BINARY_SIZE
 
-    click.echo(f"CMPA page address on {device} is {pfr_page_address:#x}")
+    click.echo(f"CMPA page address on {family} is {pfr_page_address:#x}")
 
-    interface = get_interface(
-        module="mboot", port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
+    interface = get_mboot_interface(
+        port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
     )
-    assert isinstance(interface, MBootInterface)
-    with McuBoot(device=interface) as mboot:
+    assert isinstance(interface, MbootProtocolBase)
+    with McuBoot(interface=interface) as mboot:
         mboot.write_memory(address=pfr_page_address, data=bytes(pfr_page_length))
     click.echo(f"CMPA page {'has been erased.' if mboot.status_code == 0 else 'erase failed!'}")
 

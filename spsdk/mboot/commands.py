@@ -12,6 +12,7 @@ from struct import pack, unpack, unpack_from
 from typing import Dict, List, Optional, Type
 
 from spsdk.utils.easy_enum import Enum
+from spsdk.utils.interfaces.commands import CmdPacketBase, CmdResponseBase
 
 from .error_codes import StatusCode
 from .exceptions import McuBootError
@@ -162,6 +163,20 @@ class TrustProvWrappingKeyType(Enum):
     INT_SK = (0x10, "INT_SK", "The wrapping key for wrapping of MFG_CUST_MK_SK0_BLOB")
     EXT_SK = (0x11, "EXT_SK", "The wrapping key for wrapping of MFG_CUST_MK_SK0_BLOB")
 
+class TrustProvWpc(Enum):
+    """Type of WPC trusted facility commands for DSC."""
+
+    WPC_GET_ID              = (0x5000000, "wpc_get_id", "WPC get ID")
+    NXP_GET_ID              = (0x5000001, "nxp_get_id", "NXP get ID")
+    WPC_INSERT_CERT         = (0x5000002, "wpc_insert_cert", "WPC insert certificate")
+
+class TrustProvDevHsmDsc(Enum):
+    """Type of DSC Device HSM."""
+
+    DSC_HSM_CREATE_SESSION  = (0x6000000, "dsc_hsm_create_session", "DSC HSM create session")
+    DSC_HSM_ENC_BLK         = (0x6000001, "dsc_hsm_enc_blk", "DSC HSM encrypt bulk")
+    DSC_HSM_ENC_SIGN        = (0x6000002, "dsc_hsm_enc_sign", "DSC HSM sign")
+
 # fmt: on
 
 ########################################################################################################################
@@ -193,10 +208,10 @@ class CmdHeader:
     def __ne__(self, obj: object) -> bool:
         return not self.__eq__(obj)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"<Tag=0x{self.tag:02X}, Flags=0x{self.flags:02X}, ParamsCount={self.params_count}>"
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return (
             f"CmdHeader(tag=0x{self.tag:02X}, flags=0x{self.flags:02X}, "
             f"reserved={self.reserved}, params_count={self.params_count})"
@@ -220,7 +235,7 @@ class CmdHeader:
         return cls(*unpack_from("4B", data, offset))
 
 
-class CmdPacket:
+class CmdPacket(CmdPacketBase):
     """McuBoot command packet format class."""
 
     SIZE = 32
@@ -249,9 +264,6 @@ class CmdPacket:
         return not self.__eq__(obj)
 
     def __str__(self) -> str:
-        return "<" + self.info() + ">"
-
-    def info(self) -> str:
         """Get object info."""
         tag = CommandTag.get(self.header.tag, f"0x{self.header.tag:02X}")
         return f"Tag={tag}, Flags=0x{self.header.flags:02X}" + "".join(
@@ -272,7 +284,7 @@ class CmdPacket:
         return data
 
 
-class CmdResponse:
+class CmdResponse(CmdResponseBase):
     """McuBoot response base format class."""
 
     def __init__(self, header: CmdHeader, raw_data: bytes) -> None:
@@ -288,6 +300,11 @@ class CmdResponse:
         (status,) = unpack_from("<L", raw_data)
         self.status: int = status
 
+    @property
+    def value(self) -> int:
+        """Return a integer representation of the response."""
+        return unpack_from(">I", self.raw_data)[0]
+
     def __eq__(self, obj: object) -> bool:
         return isinstance(obj, CmdResponse) and vars(obj) == vars(self)
 
@@ -295,9 +312,6 @@ class CmdResponse:
         return not self.__eq__(obj)
 
     def __str__(self) -> str:
-        return "<" + self.info() + ">"
-
-    def info(self) -> str:
         """Get object info."""
         return (
             f"Tag=0x{self.header.tag:02X}, Flags=0x{self.header.flags:02X}"
@@ -320,7 +334,7 @@ class GenericResponse(CmdResponse):
         _, tag = unpack_from("<2I", raw_data)
         self.cmd_tag: int = tag
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
         status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
@@ -341,7 +355,7 @@ class GetPropertyResponse(CmdResponse):
         _, *values = unpack_from(f"<{self.header.params_count}I", raw_data)
         self.values: List[int] = list(values)
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
         status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
@@ -363,7 +377,7 @@ class ReadMemoryResponse(CmdResponse):
         _, length = unpack_from("<2I", raw_data)
         self.length: int = length
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
         status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
@@ -385,7 +399,7 @@ class FlashReadOnceResponse(CmdResponse):
         self.values: List[int] = list(values)
         self.data = raw_data[8 : 8 + self.length] if self.length > 0 else b""
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
         status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
@@ -405,7 +419,7 @@ class FlashReadResourceResponse(CmdResponse):
         _, length = unpack_from("<2I", raw_data)
         self.length: int = length
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
         status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
@@ -425,7 +439,7 @@ class KeyProvisioningResponse(CmdResponse):
         _, length = unpack_from("<2I", raw_data)
         self.length: int = length
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
         status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
@@ -445,7 +459,7 @@ class TrustProvisioningResponse(CmdResponse):
         _, *values = unpack(f"<{self.header.params_count}I", raw_data)
         self.values: List[int] = list(values)
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Get object info."""
         tag = ResponseTag.name(self.header.tag)
         status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")

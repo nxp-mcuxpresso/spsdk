@@ -14,6 +14,9 @@ import time
 from types import TracebackType
 from typing import Callable, Dict, List, Optional, Sequence, Type, cast
 
+from spsdk.mboot.protocol.base import MbootProtocolBase
+from spsdk.utils.interfaces.device.usb_device import UsbDevice
+
 from .commands import (
     CmdPacket,
     CmdResponse,
@@ -29,8 +32,10 @@ from .commands import (
     KeyProvUserKeyType,
     NoResponse,
     ReadMemoryResponse,
+    TrustProvDevHsmDsc,
     TrustProvisioningResponse,
     TrustProvOperation,
+    TrustProvWpc,
 )
 from .error_codes import StatusCode, stringify_status_code
 from .exceptions import (
@@ -40,7 +45,6 @@ from .exceptions import (
     McuBootError,
     SPSDKError,
 )
-from .interfaces import MBootInterface, RawHid
 from .memories import ExtMemId, ExtMemRegion, FlashRegion, MemoryRegion, RamRegion
 from .properties import PropertyTag, PropertyValueBase, Version, parse_property_value
 
@@ -68,12 +72,12 @@ class McuBoot:  # pylint: disable=too-many-public-methods
     @property
     def is_opened(self) -> bool:
         """Return True if the device is open."""
-        return self._device.is_opened
+        return self._interface.is_opened
 
-    def __init__(self, device: MBootInterface, cmd_exception: bool = False) -> None:
+    def __init__(self, interface: MbootProtocolBase, cmd_exception: bool = False) -> None:
         """Initialize the McuBoot object.
 
-        :param device: The instance of communication interface class
+        :param interface: The instance of communication interface class
         :param cmd_exception: True to throw McuBootCommandError on any error;
                 False to set status code only
                 Note: some operation might raise McuBootCommandError is all cases
@@ -82,7 +86,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self._cmd_exception = cmd_exception
         # trick mypy to believe StatusCode really is just an integer
         self._status_code = cast(int, StatusCode.SUCCESS)
-        self._device = device
+        self._interface = interface
         self.reopen = False
         self.enable_data_abort = False
         self._pause_point: Optional[int] = None
@@ -94,8 +98,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
     def __exit__(
         self,
-        exception_type: Optional[Type[BaseException]] = None,
-        exception_value: Optional[BaseException] = None,
+        exception_type: Optional[Type[Exception]] = None,
+        exception_value: Optional[Exception] = None,
         traceback: Optional[TracebackType] = None,
     ) -> None:
         self.close()
@@ -108,23 +112,23 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :raises McuBootConnectionError: Timeout Error
         :raises McuBootCommandError: Error during command execution on the target
         """
-        if not self._device.is_opened:
+        if not self.is_opened:
             logger.info("TX: Device not opened")
             raise McuBootConnectionError("Device not opened")
 
-        logger.debug(f"TX-PACKET: {cmd_packet.info()}")
+        logger.debug(f"TX-PACKET: {str(cmd_packet)}")
 
         try:
-            self._device.write(cmd_packet)
-            response = self._device.read()
+            self._interface.write_command(cmd_packet)
+            response = self._interface.read()
         except TimeoutError:
             self._status_code = StatusCode.NO_RESPONSE
             logger.debug("RX-PACKET: No Response, Timeout Error !")
             response = NoResponse(cmd_tag=cmd_packet.header.tag)
 
         assert isinstance(response, CmdResponse)
-        logger.debug(f"RX-PACKET: {response.info()}")
-        self._status_code = response.status  # type: ignore
+        logger.debug(f"RX-PACKET: {str(response)}")
+        self._status_code = response.status
 
         if self._cmd_exception and self._status_code != StatusCode.SUCCESS:
             raise McuBootCommandError(CommandTag.name(cmd_packet.header.tag), response.status)
@@ -148,16 +152,16 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         data = b""
 
-        if not self._device.is_opened:
+        if not self.is_opened:
             logger.error("RX: Device not opened")
             raise McuBootConnectionError("Device not opened")
         while True:
             try:
-                response = self._device.read()
+                response = self._interface.read()
             except McuBootDataAbortError as e:
                 logger.error(f"RX: {e}")
                 logger.info("Try increasing the timeout value")
-                response = self._device.read()
+                response = self._interface.read()
             except TimeoutError:
                 self._status_code = StatusCode.NO_RESPONSE
                 logger.error("RX: No Response, Timeout Error !")
@@ -170,8 +174,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                     progress_callback(len(data), length)
 
             elif isinstance(response, GenericResponse):
-                logger.debug(f"RX-PACKET: {response.info()}")
-                self._status_code = response.status  # type: ignore
+                logger.debug(f"RX-PACKET: {str(response)}")
+                self._status_code = response.status
                 if response.cmd_tag == cmd_tag:
                     break
 
@@ -201,7 +205,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :raises McuBootCommandError: Error during command execution on the target
         :return: True if the operation is successful
         """
-        if not self._device.is_opened:
+        if not self.is_opened:
             logger.info("TX: Device Disconnected")
             raise McuBootConnectionError("Device Disconnected !")
 
@@ -209,10 +213,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         total_to_send = sum(len(chunk) for chunk in data)
         # this difference is applicable for load-image and program-aeskey commands
         expect_response = cmd_tag != CommandTag.NO_COMMAND
-        self._device.allow_abort = self.enable_data_abort
+        self._interface.allow_abort = self.enable_data_abort
         try:
             for data_chunk in data:
-                self._device.write(data_chunk)
+                self._interface.write_data(data_chunk)
                 total_sent += len(data_chunk)
                 if progress_callback:
                     progress_callback(total_sent, total_to_send)
@@ -221,7 +225,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                     self._pause_point = None
 
             if expect_response:
-                response = self._device.read()
+                response = self._interface.read()
         except TimeoutError as e:
             self._status_code = StatusCode.NO_RESPONSE
             logger.error("RX: No Response, Timeout Error !")
@@ -229,14 +233,14 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         except SPSDKError as e:
             logger.error(f"RX: {e}")
             if expect_response:
-                response = self._device.read()
+                response = self._interface.read()
             else:
                 self._status_code = StatusCode.SENDING_OPERATION_CONDITION_ERROR
 
         if expect_response:
             assert isinstance(response, CmdResponse)
-            logger.debug(f"RX-PACKET: {response.info()}")
-            self._status_code = response.status  # type: ignore
+            logger.debug(f"RX-PACKET: {str(response)}")
+            self._status_code = response.status
             if response.status != StatusCode.SUCCESS:
                 status_info = StatusCode.get(self._status_code, f"0x{self._status_code:08X}")
                 logger.debug(f"CMD: Send Error, {status_info}")
@@ -270,7 +274,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param data: Data to send
         :return: List of data splices
         """
-        if not self._device.need_data_split:
+        if not self._interface.need_data_split:
             return [data]
         max_packet_size = self._get_max_packet_size()
         logger.info(f"CMD: Max Packet Size = {max_packet_size}")
@@ -278,15 +282,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
     def open(self) -> None:
         """Connect to the device."""
-        if not self._device.is_opened:
-            logger.info(f"Connect: {self._device.info()}")
-            self._device.open()
+        logger.info(f"Connect: {str(self._interface)}")
+        self._interface.open()
 
     def close(self) -> None:
         """Disconnect from the device."""
-        if self._device.is_opened:
-            logger.info(f"Closing: {self._device.info()}")
-            self._device.close()
+        logger.info(f"Closing: {str(self._interface)}")
+        self._interface.close()
 
     def get_property_list(self) -> List[PropertyValueBase]:
         """Get a list of available properties.
@@ -515,7 +517,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         mem_id = _clamp_down_memory_id(memory_id=mem_id)
 
         # workaround for better USB-HID reliability
-        if isinstance(self._device, RawHid) and not fast_mode:
+        if isinstance(self._interface.device, UsbDevice) and not fast_mode:
             payload_size = self._get_max_packet_size()
             packets = length // payload_size
             remainder = length % payload_size
@@ -666,7 +668,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             self.enable_data_abort = check_errors
-            if isinstance(self._device, RawHid):
+            if isinstance(self._interface.device, UsbDevice):
                 try:
                     # pylint: disable=import-outside-toplevel   # import only if needed to save time
                     from spsdk.sbfile.sb2.images import ImageHeaderV2
@@ -774,7 +776,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             return cmd_response.values[0]
         return None
 
-    def efuse_program_once(self, index: int, value: int, verify: bool = True) -> bool:
+    def efuse_program_once(self, index: int, value: int, verify: bool = False) -> bool:
         """Write into MCU once program region (OCOTP).
 
         :param index: Start index
@@ -1426,6 +1428,180 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             TrustProvOperation.HSM_ENC_SIGN,
             key_blob_input_addr,
             key_blob_input_size,
+            block_data_input_addr,
+            block_data_input_size,
+            signature_output_addr,
+            signature_output_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
+        return None
+
+    def wpc_get_id(
+        self,
+        wpc_id_blob_addr: int,
+        wpc_id_blob_size: int,
+    ) -> Optional[int]:
+        """Command used for harvesting device ID blob.
+
+        :param wpc_id_blob_addr: Buffer address
+        :param wpc_id_blob_size: Buffer size
+        """
+        logger.info("CMD: [TrustProvisioning] WPC GET ID")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            CommandFlag.NONE,
+            TrustProvWpc.WPC_GET_ID,
+            wpc_id_blob_addr,
+            wpc_id_blob_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
+        return None
+
+    def nxp_get_id(
+        self,
+        id_blob_addr: int,
+        id_blob_size: int,
+    ) -> Optional[int]:
+        """Command used for harvesting device ID blob during wafer test as part of RTS flow.
+
+        :param id_blob_addr: address of ID blob defined by Round-trip trust provisioning specification.
+        :param id_blob_size: length of buffer in bytes
+        """
+        logger.info("CMD: [TrustProvisioning] NXP GET ID")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            CommandFlag.NONE,
+            TrustProvWpc.NXP_GET_ID,
+            id_blob_addr,
+            id_blob_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
+        return None
+
+    def wpc_insert_cert(
+        self,
+        wpc_cert_addr: int,
+        wpc_cert_len: int,
+        ec_id_offset: int,
+        wpc_puk_offset: int,
+    ) -> Optional[int]:
+        """Command used for certificate validation before it is written into flash.
+
+        This command does following things:
+            Extracts ECID and WPC PUK from certificate
+            Validates ECID and WPC PUK. If both are OK it returns success. Otherwise returns fail
+
+        :param wpc_cert_addr: address of inserted certificate
+        :param wpc_cert_len: length in bytes of inserted certificate
+        :param ec_id_offset: offset to 72-bit ECID
+        :param wpc_puk_offset: WPC PUK offset from beginning of inserted certificate
+        """
+        logger.info("CMD: [TrustProvisioning] WPC INSERT CERT")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            CommandFlag.NONE,
+            TrustProvWpc.WPC_INSERT_CERT,
+            wpc_cert_addr,
+            wpc_cert_len,
+            ec_id_offset,
+            wpc_puk_offset,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if cmd_response.status == StatusCode.SUCCESS:
+            return 0
+        return None
+
+    def dsc_hsm_create_session(
+        self,
+        oem_seed_input_addr: int,
+        oem_seed_input_size: int,
+        oem_share_output_addr: int,
+        oem_share_output_size: int,
+    ) -> Optional[int]:
+        """Command used by OEM to provide it share to create the initial trust provisioning keys.
+
+        :param oem_seed_input_addr: address of 128-bit entropy seed value provided by the OEM.
+        :param oem_seed_input_size: OEM seed size in bytes
+        :param oem_share_output_addr: A 128-bit encrypted token.
+        :param oem_share_output_size: size in bytes
+        """
+        logger.info("CMD: [TrustProvisioning] DSC HSM CREATE SESSION")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            CommandFlag.NONE,
+            TrustProvDevHsmDsc.DSC_HSM_CREATE_SESSION,
+            oem_seed_input_addr,
+            oem_seed_input_size,
+            oem_share_output_addr,
+            oem_share_output_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
+        return None
+
+    def dsc_hsm_enc_blk(
+        self,
+        sbx_header_input_addr: int,
+        sbx_header_input_size: int,
+        block_num: int,
+        block_data_addr: int,
+        block_data_size: int,
+    ) -> Optional[int]:
+        """Command used to encrypt the given block sliced by the nxpimage.
+
+        This command is only supported after issuance of dsc_hsm_create_session.
+
+        :param sbx_header_input_addr: SBx header containing file size, Firmware version and Timestamp data.
+            Except for hash digest of block 0, all other fields should be valid.
+        :param sbx_header_input_size: size of the header in bytes
+        :param block_num: Number of block
+        :param block_data_addr: Address of data block
+        :param block_data_size: Size of data block
+        """
+        logger.info("CMD: [TrustProvisioning] DSC HSM ENC BLK")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            CommandFlag.NONE,
+            TrustProvDevHsmDsc.DSC_HSM_ENC_BLK,
+            sbx_header_input_addr,
+            sbx_header_input_size,
+            block_num,
+            block_data_addr,
+            block_data_size,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
+        return None
+
+    def dsc_hsm_enc_sign(
+        self,
+        block_data_input_addr: int,
+        block_data_input_size: int,
+        signature_output_addr: int,
+        signature_output_size: int,
+    ) -> Optional[int]:
+        """Command used for signing the data buffer provided.
+
+        This command is only supported after issuance of dsc_hsm_create_session.
+
+        :param block_data_input_addr: Address of data buffer to be signed
+        :param block_data_input_size: Size of data buffer in bytes
+        :param signature_output_addr: Address to output signature data
+        :param signature_output_size: Size of the output signature data in bytes
+        """
+        logger.info("CMD: [TrustProvisioning] DSC HSM ENC SIGN")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            CommandFlag.NONE,
+            TrustProvDevHsmDsc.DSC_HSM_ENC_SIGN,
             block_data_input_addr,
             block_data_input_size,
             signature_output_addr,

@@ -1,0 +1,54 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  AHAB converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+family: rt118x  # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'rt118x']
+revision: a0 # [Optional], MCU revision; Revision of silicon; Possible options:['a0']
+image_type: nand # [Required], Type of image; The final use of image, this setting is changing the style of offsets in final container; Possible options:['xip', 'non_xip', 'serial_downloader', 'nand']
+output: ahab/cntr_signed_ctcm_cm33_nand.bin # [Required], Output file name; Output AHAB file name
+containers: # [Required], List of containers present in AHAB; The order of containers in the list defines the order in AHAB.
+  -
+      # ----------------------------------------------------------------------------------------------------
+      #                     == Optional Binary Container format to add to AHAB image ==
+      # ----------------------------------------------------------------------------------------------------
+    binary_container:  # [Required], Binary AHAB container
+      path: ahab/mxrt1180b0-1c00-ahab-container.img  # [Required], The AHAB container binary file; The binary file that contains AHAB "my_binary_container.bin
+  -
+      # ----------------------------------------------------------------------------------------------------
+      #                  == Optional Configuration Container format to add to AHAB image ==
+      # ----------------------------------------------------------------------------------------------------
+    container:  # [Required], AHAB Container
+      srk_set: oem  # [Required], Super Root Key (SRK) set; Defines which set is used to authenticate the container; Possible options:['none', 'oem', 'nxp']
+      used_srk_id: 0 # [Conditionally required], Used SRK; Which key from SRK set is being used.
+      srk_revoke_mask: 0 # [Optional], SRK revoke mask; Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
+      fuse_version: 0 # [Required], Fuse version; The value must be equal or greater than the version stored in fuses to allow loading this container.
+      sw_version: 0 # [Required], Software version; Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse version field.
+      signing_key: ahab/keys/ecc256/srk0_ecc256.pem # [Conditionally required], AHAB container signing key; Private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been revoked.
+        # ----------------------------------------------------------------------------------------------------
+        #               == Configuration of AHAB Container images (array of multiple images) ==
+        # ----------------------------------------------------------------------------------------------------
+      images: # [Required], Image array; Array of image entries.
+        - image_path: ahab/ctcm_cm33_img.bin  # [Required], Image path; Path to image binary (absolute/relative).
+          image_offset: '0x9c00' # [Required], Image offset in AHAB container; Relative address for start of AHAB image (can contain multiple AHAB containers). In case of XiP type of AHAB image, the load_address and entry_point must correspond to this values. Example of setting of load_address - AHAB_IMAGE_ADDRESS+IMAGE_OFFSET=LOAD_ADDRESS
+          load_address: '0x8000A000' # [Required], Image destination address; Address the image is written to in memory (absolute address in system memory).
+          entry_point: '0x8000A000' # [Required], Image entry point (absolute address). Valid only for executable image types.
+          image_type: executable # [Required], Image type; Kind of image; Possible options:['executable', 'data', 'dcd_image', 'seco', 'provisioning_image', 'provisioning_data']
+          core_id: cortex-m33 # [Required], Core ID; Defines the core the image is dedicated for; Possible options:['cortex-a55', 'cortex-m33', 'cortex-m7']
+          is_encrypted: false # [Required], Image encryption; Determines, whether image is encrypted or not.
+          boot_flags: 0 # [Optional], Boot flags controlling SCFW boot.
+          meta_data_start_cpu_id: 0 # [Optional], Start CPU ID; Resource ID of CPU to be started
+          meta_data_mu_cpu_id: 0 # [Optional], CPU memory unit start ID; Resource ID of the MU associated with the CPU
+          meta_data_start_partition_id: 0 # [Optional], Start partition ID; Partition ID of the partition to start
+          hash_type: sha512 # [Optional], Images HASH type; HASH type of image. All images in the container must have the same HASH type; Possible options:['sha256', 'sha384', 'sha512']
+        # ----------------------------------------------------------------------------------------------------
+        #                                == Configuration of AHAB SRK table ==
+        # ----------------------------------------------------------------------------------------------------
+      srk_table: # [Conditionally required], SRK Table; SRK (Super Root key) table definition.
+        srk_array:  # [Required], Super Root Key (SRK) table; Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms are: RSASSA-PSS or ECDSA. Supported hash algorithms: sha256, sha384, sha512. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096. Certificate may be of Certificate Authority.
+          - ahab/keys/ecc256/srk0_ecc256.pub
+          - ahab/keys/ecc256/srk1_ecc256.pub
+          - ahab/keys/ecc256/srk2_ecc256.pub
+          - ahab/keys/ecc256/srk3_ecc256.pub

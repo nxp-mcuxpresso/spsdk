@@ -7,25 +7,36 @@
 
 """CLI application for various cryptographic operations."""
 
-import copy
 import hashlib
 import os
 import sys
-from typing import Dict, Union
+from typing import List, Union
 
 import click
-from Crypto.PublicKey import ECC, RSA
 
-from spsdk import SPSDKError
 from spsdk.apps.nxpcertgen import main as cert_gen_main
-from spsdk.apps.nxpkeygen import main as key_gen_main
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
-    GroupAliasedGetCfgTemplate,
     spsdk_apps_common_options,
+    spsdk_family_option,
+    spsdk_output_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
+from spsdk.crypto.keys import (
+    PrivateKey,
+    PrivateKeyEcc,
+    PrivateKeyRsa,
+    PrivateKeySM2,
+    PublicKey,
+    PublicKeyEcc,
+    get_ecc_curve,
+    get_supported_keys_generators,
+)
+from spsdk.crypto.types import SPSDKEncoding
+from spsdk.crypto.utils import extract_public_key
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.crypto.rot import Rot
 from spsdk.utils.misc import load_binary, write_file
 
 
@@ -47,7 +58,7 @@ def main(log_level: int) -> None:
 )
 @click.option(
     "-i",
-    "--infile",
+    "--input-file",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
     help="Path to a file to digest.",
@@ -58,13 +69,13 @@ def main(log_level: int) -> None:
     metavar="PATH | DIGEST",
     help="Reference digest to compare. It may be directly on the command line or fetched from a file.",
 )
-def digest(hash_name: str, infile: str, compare: str) -> None:
+def digest(hash_name: str, input_file: str, compare: str) -> None:
     """Computes digest/hash of the given file."""
-    data = load_binary(infile)
+    data = load_binary(input_file)
     hasher = hashlib.new(hash_name.lower())
     hasher.update(data)
     hexdigest = hasher.hexdigest()
-    click.echo(f"{hash_name.upper()}({infile})= {hexdigest}")
+    click.echo(f"{hash_name.upper()}({input})= {hexdigest}")
     if compare:
         # assume comparing to a file
         if os.path.isfile(compare):
@@ -84,7 +95,62 @@ def digest(hash_name: str, infile: str, compare: str) -> None:
             raise SPSDKAppError("Digests differ!")
 
 
-@main.group(name="cert", no_args_is_help=True, cls=GroupAliasedGetCfgTemplate)
+@main.group(name="rot", no_args_is_help=True)
+def rot_group() -> None:
+    """Group of RoT commands."""
+
+
+@rot_group.command(name="export", no_args_is_help=True)
+@spsdk_family_option(families=Rot.get_supported_families())
+@click.option(
+    "-k",
+    "--key",
+    type=click.Path(exists=True, dir_okay=False),
+    multiple=True,
+    help="Path to one or multiple keys or certificates.",
+)
+@click.option(
+    "-p",
+    "--password",
+    help="Password when using encrypted private keys.",
+)
+@spsdk_output_option(required=False)
+def export(family: str, key: List[str], password: str, output: str) -> None:
+    """Export RoT table."""
+    _rot = Rot(family, keys_or_certs=key, password=password)
+    rot_hash = _rot.export()
+    if output:
+        write_file(rot_hash, path=output, mode="wb")
+        click.echo(f"Result has been stored in: {output}")
+    click.echo(f"RoT table: {rot_hash.hex()}")
+
+
+@rot_group.command(name="calculate-hash", no_args_is_help=True)
+@spsdk_family_option(families=Rot.get_supported_families())
+@click.option(
+    "-k",
+    "--key",
+    type=click.Path(exists=True, dir_okay=False),
+    multiple=True,
+    help="Path to one or multiple keys or certificates.",
+)
+@click.option(
+    "-p",
+    "--password",
+    help="Password when using encrypted private keys.",
+)
+@spsdk_output_option(required=False)
+def calculate_hash(family: str, key: List[str], password: str, output: str) -> None:
+    """Calculate RoT hash."""
+    _rot = Rot(family, keys_or_certs=key, password=password)
+    rot_hash = _rot.calculate_hash()
+    if output:
+        write_file(rot_hash, path=output, mode="wb")
+        click.echo(f"Result has been stored in: {output}")
+    click.echo(f"RoT hash: {rot_hash.hex()}")
+
+
+@main.group(name="cert", no_args_is_help=True)
 def cert() -> None:
     """Group of command for working with x509 certificates."""
 
@@ -99,31 +165,72 @@ def key_group() -> None:
     """Group of commands for working with asymmetric keys."""
 
 
-key_gen_copy = copy.deepcopy(key_gen_main)
-key_gen_copy.name = "generate"
-key_group.add_command(key_gen_copy)
+@key_group.command(name="generate", no_args_is_help=True)
+@click.option(
+    "-k",
+    "--key-type",
+    type=click.Choice(list(get_supported_keys_generators()), case_sensitive=False),
+    metavar="KEY-TYPE",
+    help=f"""\b
+        Set of the supported key types.
+
+        Note: NXP DAT protocol is using encryption keys by this table:
+
+        NXP Protocol Version                Key Type
+        1.0                                 RSA 2048
+        1.1                                 RSA 4096
+        2.0                                 SECP256R1
+        2.1                                 SECP384R1
+        2.2                                 SECP521R1
+
+        All possible options:
+        {", ".join(list(get_supported_keys_generators()))}.
+        """,
+)
+@click.option(
+    "--password",
+    "password",
+    metavar="PASSWORD",
+    help="Password with which the output file will be encrypted. "
+    "If not provided, the output will be unencrypted.",
+)
+@spsdk_output_option(force=True)
+@click.option("-e", "--encoding", type=click.Choice(list(SPSDKEncoding.all())), default="PEM")
+def key_generate(key_type: str, output: str, password: str, encoding: str) -> None:
+    """NXP Key Generator Tool."""
+    key_param = key_type.lower().strip()
+    encoding_param = encoding.upper().strip()
+    encoding_enum = SPSDKEncoding.all()[encoding_param]
+
+    pub_key_path = os.path.splitext(output)[0] + ".pub"
+
+    generators = get_supported_keys_generators()
+    func, params = generators[key_param]
+
+    private_key = func(**params)
+    public_key = private_key.get_public_key()
+
+    private_key.save(output, password if password else None, encoding=encoding_enum)
+    public_key.save(pub_key_path, encoding=encoding_enum)
+
+    click.echo(f"The key pair has been created: {(pub_key_path)}, {output}")
 
 
 @key_group.command(name="convert", no_args_is_help=True)
 @click.option(
-    "-f",
-    "--output-format",
+    "-e",
+    "--encoding",
     type=click.Choice(["PEM", "DER", "RAW"], case_sensitive=False),
     help="Desired output format.",
 )
 @click.option(
     "-i",
-    "--infile",
+    "--input-file",
     type=click.Path(exists=True, dir_okay=False),
     required=True,
     help="Path to key file to convert.",
 )
-@click.option(
-    "-o",
-    "--outfile",
-    type=click.Path(dir_okay=False),
-    help="Path to output file.",
-)
+@spsdk_output_option()
 @click.option(
     "-p",
     "--puk",
@@ -131,99 +238,85 @@ key_group.add_command(key_gen_copy)
     default=False,
     help="Extract public key instead of converting private key.",
 )
-@click.option(
-    "--use-pkcs8/--no-pkcs8",
-    is_flag=True,
-    default=True,
-    help="Use/don't use PKCS8 encoding for private keys, default: --use-pkcs8",
-)
-def convert(output_format: str, infile: str, outfile: str, puk: bool, use_pkcs8: bool) -> None:
+def convert(encoding: str, input_file: str, output: str, puk: bool) -> None:
     """Convert Asymmetric key into various formats."""
-    key_data = load_binary(infile)
+    key_data = load_binary(input_file)
     key = reconstruct_key(key_data=key_data)
-    if puk:
-        key = key.public_key()
+    if puk and isinstance(key, (PrivateKeyRsa, PrivateKeyEcc, PrivateKeySM2)):
+        key = key.get_public_key()
 
-    if output_format.upper() in ["PEM", "DER"]:
-        params: Dict[str, Union[str, int, bool]] = {
-            "format": output_format.upper(),
-        }
-        if key.has_private():
-            if isinstance(key, ECC.EccKey):
-                params["use_pkcs8"] = use_pkcs8
-            if isinstance(key, RSA.RsaKey):
-                params["pkcs"] = 8 if use_pkcs8 else 1
-        tmp_data = key.export_key(**params)  # type: ignore  # yeah, MyPy doesn't like dict unpacking
-        out_data = tmp_data.encode("utf-8") if isinstance(tmp_data, str) else tmp_data
-    if output_format.upper() == "RAW":
-        if not isinstance(key, ECC.EccKey):
+    if encoding in ["PEM", "DER"]:
+        encoding_type = {"PEM": SPSDKEncoding.PEM, "DER": SPSDKEncoding.DER}[encoding]
+        out_data = key.export(encoding=encoding_type)
+    if encoding == "RAW":
+        if not isinstance(key, (PrivateKeyEcc, PublicKeyEcc)):
             raise SPSDKError("Converting to RAW is supported only for ECC keys")
-        key_size = key.pointQ.size_in_bytes()
-        if key.has_private():
-            out_data = key.d.to_bytes(key_size)  # type: ignore  # this `to_bytes` doesn't have byteorder
+        key_size = key.key_size // 8
+        if isinstance(key, PrivateKeyEcc):
+            out_data = key.d.to_bytes(key_size, byteorder="big")
         else:
-            x = key.pointQ.x.to_bytes(key_size)  # type: ignore  # this `to_bytes` doesn't have byteorder
-            y = key.pointQ.y.to_bytes(key_size)  # type: ignore  # this `to_bytes` doesn't have byteorder
+            x = key.x.to_bytes(key_size, byteorder="big")
+            y = key.y.to_bytes(key_size, byteorder="big")
             out_data = x + y
 
-    write_file(out_data, outfile, mode="wb")
+    write_file(out_data, output, mode="wb")
 
 
 @key_group.command(name="verify", no_args_is_help=True)
-@click.argument("key1", type=click.Path(exists=True, dir_okay=False))
-@click.argument("key2", type=click.Path(exists=True, dir_okay=False))
-def check_keys(key1: str, key2: str) -> None:
-    """Check whether provided keys form a key pair or represent the same key."""
-    key1_data = load_binary(key1)
-    key2_data = load_binary(key2)
-    first = reconstruct_key(key1_data)
-    second = reconstruct_key(key2_data)
+@click.option(
+    "-k1",
+    "--key1",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to key to verify.",
+)
+@click.option(
+    "-k2",
+    "--key2",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to key for verification.",
+)
+def key_verify(key1: str, key2: str) -> None:
+    """Check whether provided keys form a key pair or represent the same key.
 
-    if not (isinstance(first, ECC.EccKey) and isinstance(second, ECC.EccKey)):
-        raise SPSDKError("Currently on ECC keys are supported.")
-
-    if first.pointQ == second.pointQ:
+    The key could be private key, public key, or certificate. All combination are allowed.
+    In case of certificates, the public key within certificate is considered.
+    To verify certificate signature use `nxpcrypto cert verify`.
+    """
+    if extract_public_key(key1) == extract_public_key(key2):
         click.echo("Keys match.")
     else:
         raise SPSDKAppError("Keys are NOT a valid pair!")
 
 
-def get_curve_name(key_length: int) -> str:
-    """Get curve name for Crypto library."""
-    if key_length <= 32:
-        return "p256"
-    if key_length <= 48:
-        return "p384"
-    if key_length in [64, 96]:
-        return f"p{key_length * 4}"
-    raise SPSDKError(f"Not sure what curve corresponds to {key_length} data")
-
-
-# we use Crypto instead of cryptography because of binary private key reconstruction
-def reconstruct_key(key_data: bytes) -> Union[ECC.EccKey, RSA.RsaKey]:
+def reconstruct_key(
+    key_data: bytes,
+) -> Union[PrivateKey, PublicKey]:
     """Reconstruct Crypto key from PEM,DER or RAW data."""
     try:
-        return RSA.import_key(key_data)
-    except (ValueError, TypeError):
+        return PrivateKey.parse(key_data)
+    except SPSDKError:
         pass
     try:
-        return ECC.import_key(key_data)
-    except ValueError:
+        return PublicKey.parse(key_data)
+    except SPSDKError:
         pass
     # attempt to reconstruct key from raw data
     key_length = len(key_data)
-    curve = get_curve_name(key_length)
+    curve = get_ecc_curve(key_length)
     # everything under 49 bytes is a private key
     if key_length <= 48:
         # pylint: disable=invalid-name   # 'd' is regular name for private key number
         d = int.from_bytes(key_data, byteorder="big")
-        return ECC.construct(curve=curve, d=d)
+        return PrivateKeyEcc.recreate(d=d, curve=curve)
+
     # public keys in binary form have exact sizes
     if key_length in [64, 96]:
         coord_length = key_length // 2
         x = int.from_bytes(key_data[:coord_length], byteorder="big")
         y = int.from_bytes(key_data[coord_length:], byteorder="big")
-        return ECC.construct(curve=curve, point_x=x, point_y=y)
+        return PublicKeyEcc.recreate(coor_x=x, coor_y=y, curve=curve)
     raise SPSDKError(f"Can't recognize key with length {key_length}")
 
 

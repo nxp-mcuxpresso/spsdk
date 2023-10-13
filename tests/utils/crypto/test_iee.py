@@ -9,8 +9,8 @@ import os
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.utils.crypto import (
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.crypto.iee import (
     Iee,
     IeeKeyBlob,
     IeeKeyBlobAttribute,
@@ -37,7 +37,7 @@ def test_iee_keyblob(data_dir):
         0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F,
     )
 
-    assert keyblob.info()
+    assert str(keyblob)
 
     iee = Iee()
     iee.add_key_blob(keyblob)

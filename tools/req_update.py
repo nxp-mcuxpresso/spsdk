@@ -24,7 +24,7 @@ from spsdk.exceptions import SPSDKError
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 REPO_ROOT = os.path.normpath(os.path.join(THIS_DIR, ".."))
-IGNORE_LIST = ["cmsis-pack-manager"]
+IGNORE_LIST = ["click"]
 REQUIRED_PYTHON = (3, 10)
 
 
@@ -182,7 +182,7 @@ def finalize_file(
             )
 
 
-@click.group(no_args_is_help=True)
+@click.group("req-update", no_args_is_help=True)
 def main() -> int:
     """Tool for manipulating requirements files."""
     if sys.version_info < REQUIRED_PYTHON:

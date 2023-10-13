@@ -2,11 +2,11 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import SegAPP, SegBDT
+from spsdk.image.segments import SegAPP, SegBDT
 
 
 def test_app_segment_api():
@@ -50,7 +50,7 @@ def test_app_eq_info_repr():
     assert app != bdt
     assert app == app
 
-    assert "Size" in app_other.info()
+    assert "Size" in str(app_other)
 
     output = repr(app_other)
     repr_strings = ["Bytes", "LEN", "APP"]

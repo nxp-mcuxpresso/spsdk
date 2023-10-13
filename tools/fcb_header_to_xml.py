@@ -13,9 +13,9 @@ from copy import deepcopy
 
 import click
 
-from spsdk import SPSDKError
 from spsdk.apps.utils.common_cli_options import spsdk_apps_common_options
 from spsdk.apps.utils.utils import catch_spsdk_error
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import load_file, value_to_int
 from spsdk.utils.registers import Registers, RegsBitField, RegsRegister
 
@@ -196,7 +196,7 @@ def main(header: str, fcb: str, xml: str, log_level: int) -> int:
         else:
             offset += process_struct_member(regs, member, offset, header_file)
 
-    print(regs.image_info().info())
+    print(str(regs.image_info()))
     if len(regs.image_info()) != 512:
         logger.error("Invalid length of result loaded structure!")
         raise SPSDKError(f"Invalid length of result loaded structure! {len(regs.image_info())}B")

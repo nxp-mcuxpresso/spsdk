@@ -193,7 +193,7 @@ def get_changed_files(
     all_files += uncommitted
 
     # fetch staged new files
-    logger.info("Fetching new files... those need to be stagged\n")
+    logger.info("Fetching new files... those need to be staged\n")
     cmd = "git diff --name-status --cached"
     logger.debug(f"Executing: {cmd}")
     staged = subprocess.check_output(cmd.split(), cwd=repo_path).decode("utf-8")

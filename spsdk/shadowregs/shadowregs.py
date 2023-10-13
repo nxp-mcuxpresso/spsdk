@@ -12,21 +12,16 @@ from typing import Any, List, Optional
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap as CM
 
-from spsdk import SPSDK_YML_INDENT, SPSDKError, __author__, __release__, __version__
+from spsdk import SPSDK_YML_INDENT, __author__, __release__, __version__
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.dm_commands import StartDebugSession
 from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError
 from spsdk.debuggers.utils import test_ahb_access
-from spsdk.utils.misc import (
-    change_endianness,
-    load_configuration,
-    value_to_bytes,
-    value_to_int,
-    write_file,
-)
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.misc import load_configuration, value_to_int, write_file
 from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister, SPSDKRegsErrorRegisterNotFound
-from spsdk.utils.schema_validator import ConfigTemplate
+from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +45,9 @@ class ShadowRegisters:
         self.config = config
         self.device = device
         self.offset = value_to_int(self.config.get_address(self.device))
+        self.offset_for_read = value_to_int(
+            self.config.get_address(self.device, alt_read_address=True)
+        )
         self.fuse_mode = False
 
         self.regs = Registers(self.device)
@@ -91,7 +89,7 @@ class ShadowRegisters:
                 "Shadow registers: Cannot use the communication function without defined debug probe."
             )
 
-        logger.debug(f"Writing shadow register address: {hex(addr)}, data: {hex(data)}")
+        logger.info(f"Writing shadow register address: {hex(addr)}, data: {hex(data)}")
         self.probe.mem_reg_write(addr, data)
 
         if verify_mask:
@@ -105,7 +103,7 @@ class ShadowRegisters:
     def reload_registers(self) -> None:
         """Reload all the values in managed registers."""
         for reg in self.regs.get_registers():
-            self.reload_register(reg)
+            self.get_register(reg.name)
 
     def sets_all_registers(self, verify: bool = True) -> None:
         """Update all shadow registers in target by local values.
@@ -113,33 +111,20 @@ class ShadowRegisters:
         :param verify: Verity write operation.
         """
         for reg in self.regs.get_registers():
-            self.set_register(reg.name, reg.get_value(), verify)
+            self.set_register(reg.name, reg.get_value(raw=True), verify)
 
-    def reload_register(self, reg: RegsRegister) -> None:
-        """Reload the value in requested register.
-
-        :param reg: The register to reload from the HW.
-        """
-        reg.set_value(self.get_register(reg.name), raw=True)
-
-    def read_register(self, reg: RegsRegister) -> bytes:
-        """Read the value in requested register.
-
-        :param reg: The register to read from the HW.
-        """
-        return bytes(self.get_register(reg.name))
-
-    def set_register(self, reg_name: str, data: Any, verify: bool = True) -> None:
+    def set_register(self, reg_name: str, data: Any, verify: bool = True, raw: bool = True) -> None:
         """The function sets the value of the specified register.
 
         :param reg_name: The register name.
         :param data: The new data to be stored to shadow register.
         :param verify: Verity write operation.
+        :param raw: Do not use any modification hooks.
         :raises SPSDKDebugProbeError: The debug probe is not specified.
         :raises SPSDKError: General error with write of Shadow register.
         """
 
-        def write_reg(base_address: int, reg: RegsRegister) -> None:
+        def write_reg(reg: RegsRegister) -> None:
             if not self.probe:
                 raise SPSDKDebugProbeError(
                     "Shadow registers: Cannot use the communication function without defined debug probe."
@@ -149,10 +134,6 @@ class ShadowRegisters:
                 raise SPSDKError(
                     f"Invalid width ({reg.width}b) of shadow register ({reg.name}) to write to device."
                 )
-            # Create value
-            value = reg.get_value()
-            if reg.reverse:
-                value = int.from_bytes(change_endianness(value_to_bytes(value)), "big")
             # Create verify mask
             verify_mask = 0
             if verify:
@@ -164,18 +145,20 @@ class ShadowRegisters:
                     verify_mask = (1 << reg.width) - 1
 
             self._write_shadow_reg(
-                addr=base_address + reg.offset, data=value, verify_mask=verify_mask
+                addr=self.offset + reg.offset,
+                data=reg.get_value(raw=True),
+                verify_mask=verify_mask,
             )
 
         try:
             reg = self.regs.find_reg(reg_name, include_group_regs=True)
-            reg.set_value(data, raw=True)
+            reg.set_value(data, raw)
             if reg.has_group_registers():
-                for sub_reg in reg.sub_regs[:: -1 if reg.reverse_subregs_order else 1]:
-                    write_reg(self.offset, sub_reg)
+                for sub_reg in reg.sub_regs:
+                    write_reg(sub_reg)
             else:
-                write_reg(self.offset, reg=reg)
-            # execute flash function handler if defined for a platfrom
+                write_reg(reg)
+            # execute flash function handler if defined for a platform
             self.flush_func_handler()
         except SPSDKError as exc:
             raise SPSDKError(f"The set shadow register failed({str(exc)}).") from exc
@@ -188,7 +171,7 @@ class ShadowRegisters:
         raises SPSDKDebugProbeError: The debug probe is not specified.
         """
 
-        def read_reg(base_address: int, reg: RegsRegister) -> bytes:
+        def read_reg(reg: RegsRegister) -> None:
             if not self.probe:
                 raise SPSDKDebugProbeError(
                     "Shadow registers: Cannot use the communication function without defined debug probe."
@@ -197,21 +180,17 @@ class ShadowRegisters:
                 raise SPSDKError(
                     f"Invalid width ({reg.width}b) of shadow register ({reg.name}) to read from device."
                 )
-            read_value = self.probe.mem_reg_read(base_address + reg.offset).to_bytes(4, "big")
-            if reg.reverse:
-                read_value = change_endianness(read_value)
-            return read_value
+            reg.set_value(self.probe.mem_reg_read(self.offset_for_read + reg.offset), raw=True)
 
         try:
             reg = self.regs.find_reg(reg_name, include_group_regs=True)
 
-            ret = bytearray()
             if reg.has_group_registers():
-                for sub_reg in reg.sub_regs[:: -1 if reg.reverse_subregs_order else 1]:
-                    ret.extend(read_reg(self.offset, sub_reg))
+                for sub_reg in reg.sub_regs:
+                    read_reg(sub_reg)
             else:
-                ret.extend(read_reg(self.offset, reg=reg))
-            return ret
+                read_reg(reg)
+            return reg.get_bytes_value(raw=True)
 
         except SPSDKError as exc:
             raise SPSDKError(f"The get shadow register failed({str(exc)}).") from exc
@@ -227,7 +206,7 @@ class ShadowRegisters:
         def add_reg(reg: RegsRegister) -> str:
             otp_index = reg.otp_index
             assert otp_index
-            otp_value = "0x" + reg.get_bytes_value().hex()
+            otp_value = "0x" + reg.get_bytes_value(raw=True).hex()
             burn_fuse = f"# Fuse {reg.name}, index {otp_index} and value: {otp_value}.\n"
             burn_fuse += f"efuse-program-once {hex(otp_index)} {otp_value}\n"
             return burn_fuse
@@ -294,7 +273,7 @@ class ShadowRegisters:
             indent=2,
             diff=diff,
         )
-        write_file(ConfigTemplate.convert_cm_to_yaml(data), file_name, encoding="utf8")
+        write_file(CommentedConfig.convert_cm_to_yaml(data), file_name, encoding="utf8")
 
     def load_yaml_config(self, file_name: str, raw: bool = False) -> None:
         """The function loads the configuration from YML file.

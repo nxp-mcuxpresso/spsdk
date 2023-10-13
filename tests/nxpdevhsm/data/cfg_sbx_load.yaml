@@ -1,0 +1,43 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Secure Binary X Configuration template for mc56f81xxx.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+# ----------------------------------------------------------------------------------------------------
+firmwareVersion: 0  # [Optional], Firmware version; Version of application image firmware.
+containerOutputFile: my_new.sbx # [Required], SBx filename; Generated SBx container filename.
+family: mc56f81xxx # [Required], MCU family name; Possible options:['mc56f81xxx']
+# ----------------------------------------------------------------------------------------------------
+#                                    == Secure Binary X Settings ==
+# ----------------------------------------------------------------------------------------------------
+image_type: OEM_PROVISIONING # [Optional], image type; SecureBinaryXType; Possible options:['NXP_PROVISIONING', 'OEM_PROVISIONING', 'OEM']
+description: This is description of generated SB file. # [Optional], Description up to 16 characters, longer will be truncated. Stored in SBx manifest.
+# ----------------------------------------------------------------------------------------------------
+#                                      == Certificate Settings ==
+# ----------------------------------------------------------------------------------------------------
+# signingCertificatePrivateKeyFile: isk_prv_key.pem # [Conditionally required], ISK Certificate private key used to sign certificate. It can be replaced by signProvider key. Only valid for OEM and NXP_PROVISIONING image types
+# signProvider: type=file;file_path=my_prv_key.pem # [Conditionally required], Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+# ----------------------------------------------------------------------------------------------------
+#                               == Secure Binary X Commands Settings ==
+# ----------------------------------------------------------------------------------------------------
+commands: # [Required], SBx Commands; Secure Binary X commands block, list of all possible options - Modify it according to your application
+  - erase:  # [Required]
+      address: 0  # [Required], Address of memory block to be erased.
+      size: 4096 # [Required], Size of memory block to be erased.
+      memoryId: 0 # [Optional], Memory ID; ID of memory block to be erased.
+    # [Example of possible configuration #1]
+  - load: # [Required]
+      address: 0  # [Required], Address of memory block to be loaded.
+      memoryId: 0 # [Optional], Memory ID; ID of memory block to be loaded.
+      file: test_bin.bin # [Optional], Binary file to be loaded.
+      values: 0x1234, 0x5678, 0, 12345678 # [Optional], Binary values delimited by comma to be loaded.
+    # [Example of possible configuration #2]
+  - execute: # [Required]
+      address: 0  # [Required], Address; Jump-to address to start execute code.
+    # [Example of possible configuration #3]
+  - programIFR: # [Required]
+      address: 0  # [Required], Address of IFR region to be programmed.
+      file: test_bin.bin # [Required], Binary file to be programmed.
+    # [Example of possible configuration #4]
+  - reset: true # [Required]

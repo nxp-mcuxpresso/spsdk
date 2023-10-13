@@ -16,7 +16,20 @@ from typing import Optional, TextIO
 
 import colorama
 
+from spsdk.utils.misc import find_file, load_configuration
+
 colorama.just_fix_windows_console()
+
+try:
+    logging_config_file = find_file(
+        "logging.yaml", search_paths=["../../", os.path.expanduser("~/.spsdk")]
+    )
+    config_data = load_configuration(logging_config_file)
+    logging.config.dictConfig(config_data)
+    print(f"Logging config loaded from {logging_config_file}")
+except Exception:
+    # no logging config file found
+    pass
 
 
 class ColoredFormatter(logging.Formatter):
@@ -71,7 +84,7 @@ class ColoredFormatter(logging.Formatter):
         formatter = logging.Formatter(fmt)
         if not self.colored:
             try:
-                record.msg = re.sub("\\x1b\[\d{1,3}m", "", record.msg)
+                record.msg = re.sub(r"\\x1b\[\d{1,3}m", "", record.msg)
             except Exception:
                 # Just ignore all exceptions on this "remove color" operation
                 pass

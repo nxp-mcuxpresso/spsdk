@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 import pytest
 import yaml
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.image import TZ_SCH_FILE
 from spsdk.utils.misc import use_working_directory
 from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
@@ -49,7 +49,8 @@ _TEST_CONFIG_SCHEMA = {
         "n5": {
             "type": "string",
             "title": "n5_title",
-            "description": "n5_description",
+            "description": "n5_description. N5 has really long description to test wrapping text.",
+            "enum": ["test value", "test value2", "test value3", "test value4"],
             "template_value": "n5_value",
         },
         "n6": {
@@ -111,18 +112,37 @@ _TEST_CONFIG = {
 
 # expected commented output for the tested configuration
 _EXP_CONFIG_RESULT = (
-    "# ===========  Super Main Title  ===========\n"
-    "# ----------------------------------------------------------------------------------------------------\n"
-    "#                                           == main_title ==                                          \n"
-    "#                                           main_description                                          \n"
-    "# ----------------------------------------------------------------------------------------------------\n"
-    "n1: false  # [Optional], n1_title; n1_description\n"
-    "n2: 'test value #2' # [Required], n2_title; n2_description\n"
-    "n5: test value # [Conditionally required], n5_title; n5_description\n"
-    "arr: # [Required], arr_title; arr description\n"
-    "  - itm1: 1  # [Required], itm1_title; itm1 description\n"
-    "  - itm1: 2  # [Required], itm1_title; itm1 description\n"
-    "  - itm2: '0x3'  # [Required], itm2_title; itm2 description\n"
+    "# =================================================  Super Main Title  =================================================\n"
+    "\n"
+    "# ======================================================================================================================\n"
+    "#                                                    == main_title ==                                                   \n"
+    "#                                                    main_description                                                   \n"
+    "# ======================================================================================================================\n"
+    "# -------------------------------------------===== n1_title [Optional] =====--------------------------------------------\n"
+    "# Description: n1_description\n"
+    "n1: false\n"
+    "# -------------------------------------------===== n2_title [Required] =====--------------------------------------------\n"
+    "# Description: n2_description\n"
+    "n2: 'test value #2'\n"
+    "# ------------------------------------===== n5_title [Conditionally required] =====-------------------------------------\n"
+    "# Description: n5_description. N5 has really long description to test wrapping text.\n"
+    "# Possible options: <test value, test value2, test value3, test value4>\n"
+    "n5: test value\n"
+    "# -------------------------------------------===== arr_title [Required] =====-------------------------------------------\n"
+    "# Description: arr description\n"
+    "arr:\n"
+    "  -\n"
+    "    # ----------------------------------------===== itm1_title [Required] =====-----------------------------------------\n"
+    "    # Description: itm1 description\n"
+    "    itm1: 1\n"
+    "  -\n"
+    "    # ----------------------------------------===== itm1_title [Required] =====-----------------------------------------\n"
+    "    # Description: itm1 description\n"
+    "    itm1: 2\n"
+    "  -\n"
+    "    # ----------------------------------------===== itm2_title [Required] =====-----------------------------------------\n"
+    "    # Description: itm2 description\n"
+    "    itm2: '0x3'\n"
 )
 
 
@@ -214,11 +234,17 @@ def _is_yaml_comment(yaml_data: str, comment: str, key: str = None) -> bool:
     """Check if this text is in comment."""
     str_lines = yaml_data.splitlines()
 
-    for line in str_lines:
+    for i, line in enumerate(str_lines):
         ix = line.find(comment)
         if ix > 0 and line.find("#", 0, ix) >= 0:
-            if not key or line.find(key, 0, ix) >= 0:
+            if not key:
                 return True
+            # Found comment, and know it must be found also the key
+            for line in str_lines[i:]:
+                if line.find("# ") >= 0:
+                    continue
+                if line.find(key + ":") >= 0:
+                    return True
     return False
 
 

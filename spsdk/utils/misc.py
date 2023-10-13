@@ -28,8 +28,8 @@ from typing import (
     Union,
 )
 
-from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKValueError
+from spsdk.crypto.rng import random_bytes
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 
 # for generics
@@ -87,10 +87,7 @@ class BinaryPattern:
             return bytes(b"\xff" * size)
 
         if self._pattern == "rand":
-            # pylint: disable=import-outside-toplevel
-            from spsdk.utils.crypto.common import crypto_backend
-
-            return crypto_backend().random_bytes(size)
+            return random_bytes(size)
 
         if self._pattern == "inc":
             return bytes((x & 0xFF for x in range(size)))
@@ -199,11 +196,11 @@ def load_binary(path: str, search_paths: Optional[List[str]] = None) -> bytes:
 
 
 def load_text(path: str, search_paths: Optional[List[str]] = None) -> str:
-    """Loads binary file into bytes.
+    """Loads text file into string.
 
     :param path: Path to the file.
     :param search_paths: List of paths where to search for the file, defaults to None
-    :return: content of the binary file as bytes
+    :return: content of the text file as string
     """
     text = load_file(path, mode="r", search_paths=search_paths)
     assert isinstance(text, str)
@@ -279,6 +276,8 @@ def find_file(
     file_path = file_path.replace("\\", "/")
 
     if os.path.isabs(file_path):
+        if not os.path.isfile(file_path):
+            raise SPSDKError(f"File '{file_path}' not found")
         return file_path
     if search_paths:
         for dir_candidate in search_paths:
@@ -300,7 +299,7 @@ def find_file(
     err_str = f"File '{file_path}' not found, Searched in: {', '.join(searched_in)}"
     if not raise_exc:
         logger.debug(err_str)
-        return ""  # TODO Maybe, it will be better return None and solve raised MyPY recommendations
+        return ""
     raise SPSDKError(err_str)
 
 
@@ -322,87 +321,6 @@ def use_working_directory(path: str) -> Iterator[None]:
     finally:
         os.chdir(current_dir)
         assert os.getcwd() == current_dir
-
-
-class DebugInfo:
-    """The class is used to provide detailed information about export process and exported data.
-
-    It is handy for analyzing content and debugging changes in the exported binary output.
-    """
-
-    @classmethod
-    def disabled(cls) -> "DebugInfo":
-        """Return an instance of DebugInfo with disabled message collecting."""
-        return DebugInfo(enabled=False)
-
-    def __init__(self, enabled: bool = True):
-        """Constructor.
-
-        :param enabled: True if logging enabled; False otherwise
-        """
-        self._lines: Optional[List[str]] = [] if enabled else None
-
-    @property
-    def enabled(self) -> bool:
-        """:return: whether debugging enabled."""
-        return self._lines is not None
-
-    def append(self, line: str) -> None:
-        """Appends the line to the log.
-
-        :param line: text to be added
-        :raises SPSDKError: When there is nothing to append
-        """
-        if self.enabled:
-            if self._lines is None:
-                raise SPSDKError("There is nothing to append")
-            self._lines.append(line)
-
-    def append_section(self, name: str) -> None:
-        """Append new section to the debug log.
-
-        :param name: of the section
-        """
-        self.append(f"[{name}]")
-
-    def append_hex_data(self, data: bytes) -> None:
-        """Append binary data in HEX form.
-
-        :param data: to be logged
-        """
-        self.append("hex=" + data.hex())
-        self.append("len=" + str(len(data)) + "=" + hex(len(data)))
-
-    def append_binary_section(self, section_name: str, data: bytes) -> None:
-        """Append section and binary data.
-
-        :param section_name: the name
-        :param data: binary data
-        """
-        self.append_section(section_name)
-        self.append_hex_data(data)
-
-    def append_binary_data(self, data_name: str, data: bytes) -> None:
-        """Append short section with binary data.
-
-        :param data_name: the name
-        :param data: binary data (up to 8 bytes)
-        :raises SPSDKError: When the data has incorrect length
-        """
-        if len(data) > 16:
-            raise SPSDKError("Incorrect data length")
-        self.append(data_name + "=" + data.hex())
-
-    @property
-    def lines(self) -> Iterable[str]:
-        """:return: list of logged lines; empty list if nothing logged or log disabled."""
-        if self._lines:
-            return self._lines
-        return []
-
-    def info(self) -> str:
-        """:return: multi-line text with log; empty string if nothing logged or log disabled."""
-        return "\n".join(self.lines)
 
 
 def format_value(value: int, size: int, delimiter: str = "_", use_prefix: bool = True) -> str:
@@ -791,31 +709,34 @@ def check_range(x: int, start: int = 0, end: int = (1 << 32) - 1) -> bool:
     return True
 
 
-def load_configuration(path: str) -> dict:
+def load_configuration(path: str, search_paths: Optional[List[str]] = None) -> Dict:
     """Load configuration from yml/json file.
 
     :param path: Path to configuration file
+    :param search_paths: List of paths where to search for the file, defaults to None
     :raises SPSDKError: When unsupported file is provided
     :return: Content of configuration as dictionary
     """
-    if not os.path.exists(path):
-        raise SPSDKError(f"File not found'{path}'.")
-
+    try:
+        config = load_text(path, search_paths=search_paths)
+    except Exception as exc:
+        raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
     # import YAML only if needed to save startup time
+    from jinja2 import Template, TemplateError  # pylint: disable=import-outside-toplevel
     from ruamel.yaml import YAML, YAMLError  # pylint: disable=import-outside-toplevel
 
     try:
-        with open(path) as f:
-            return YAML(typ="safe").load(f)
-    except (YAMLError, UnicodeDecodeError):
+        template = Template(config)
+        return YAML(typ="safe").load(template.render())
+
+    except (YAMLError, UnicodeDecodeError, TemplateError):
         pass
 
     # import json only if needed to save startup time
     import commentjson as json  # pylint: disable=import-outside-toplevel
 
     try:
-        with open(path) as f:
-            return json.load(f)
+        return json.load(config)
     except json.JSONLibraryException:
         pass
 

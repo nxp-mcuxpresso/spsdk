@@ -1,0 +1,256 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# NXP nhs52sxx PFR CFPA configuration
+description:  # The CFPA configuration description.
+  device: nhs52sxx  # The NXP device name.
+  revision: a1 # The NXP device revision.
+  type: CFPA # The PFR type (CMPA, CFPA) or IFR type.
+  version: 2.0.0 # The SPSDK tool version.
+settings: # The CFPA registers configuration.
+  HEADER:  # CFPA header field
+    value: 0x12345678  # The value width: 32b
+  VERSION: # CFPA version number
+    value: 0x12345678  # The value width: 32b
+  S_FW_Version: # Secure firmware version
+    value: 0x12345678  # The value width: 32b
+  NS_FW_Version: # Non-Secure firmware version
+    value: 0x12345678  # The value width: 32b
+  IMAGE_KEY_REVOKE: # Image key revocation ID
+    value: 0x12345678  # The value width: 32b
+  ROTKH_REVOKE: # N/A
+    bitfields:  # The register bitfields
+      RoTK0_EN: '0x0'  # Offset: 0b, Width: 2b, Description: RoT Key 0 enable. 00 - Invalid 01 - Enabled 10, 11 - Key revoked
+      RoTK1_EN: '0x0' # Offset: 2b, Width: 2b, Description: RoT Key 1 enable. 00 - Invalid 01 - Enabled 10, 11 - Key revoked
+      RoTK2_EN: '0x0' # Offset: 4b, Width: 2b, Description: RoT Key 2 enable. 00 - Invalid 01 - Enabled 10, 11 - Key revoked
+      RoTK3_EN: '0x0' # Offset: 6b, Width: 2b, Description: RoT Key 3 enable. 00 - Invalid 01 - Enabled 10, 11 - Key revoked
+  VENDOR_USAGE: # Debug vendor usage field
+    bitfields:  # The register bitfields
+      DBG_VENDOR_USAGE: '0x0000'  # Offset: 0b, Width: 16b, Description: DBG_VENDOR_USAGE.
+  DCFG_CC_SOCU_PIN: # With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only. - In this scenario, or easy of development, level-1 customer releases the part to always allow non-secure debug. - To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used. - ROM will use this word to further restrict the debug access.
+    bitfields:  # The register bitfields
+      NIDEN: DCFG_CC_SOCU_PIN_NIDEN_VALUE_0  # Offset: 0b, Width: 1b, Description: Non Secure non-invasive debug enable
+      # - DCFG_CC_SOCU_PIN_NIDEN_VALUE_0, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_NIDEN_VALUE_1, (1): Fixed state
+      DBGEN: DCFG_CC_SOCU_PIN_DBGEN_VALUE_0 # Offset: 1b, Width: 1b, Description: Non Secure debug enable
+      # - DCFG_CC_SOCU_PIN_DBGEN_VALUE_0, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_DBGEN_VALUE_1, (1): Fixed state
+      SPNIDEN: DCFG_CC_SOCU_PIN_SPNIDEN_VALUE_0 # Offset: 2b, Width: 1b, Description: Secure non-invasive debug enable
+      # - DCFG_CC_SOCU_PIN_SPNIDEN_VALUE_0, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_SPNIDEN_VALUE_1, (1): Fixed state
+      SPIDEN: DCFG_CC_SOCU_PIN_SPIDEN_VALUE_0 # Offset: 3b, Width: 1b, Description: Secure invasive debug enable
+      # - DCFG_CC_SOCU_PIN_SPIDEN_VALUE_0, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_SPIDEN_VALUE_1, (1): Fixed state
+      TAPEN: DCFG_CC_SOCU_PIN_TAPEN_VALUE_0 # Offset: 4b, Width: 1b, Description: JTAG TAP enable
+      # - DCFG_CC_SOCU_PIN_TAPEN_VALUE_0, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_TAPEN_VALUE_1, (1): Fixed state
+      ISPCMDEN: DCFG_CC_SOCU_PIN_ISPCMDEN_VALUE_0 # Offset: 6b, Width: 1b, Description: ISP Boot Command enable
+      # - DCFG_CC_SOCU_PIN_ISPCMDEN_VALUE_0, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_ISPCMDEN_VALUE_1, (1): Fixed state
+      PMCMDEN: DCFG_CC_SOCU_PIN_PMCMDEN_VALUE_0 # Offset: 7b, Width: 1b, Description: Programmers Mode Command enable
+      # - DCFG_CC_SOCU_PIN_PMCMDEN_VALUE_0, (0): Use DAP to enable
+      # - DCFG_CC_SOCU_PIN_PMCMDEN_VALUE_1, (1): Fixed state
+      UUID_CHECK: '0x0' # Offset: 15b, Width: 1b, Description: Enforce UUID match during Debug authentication.
+  DCFG_CC_SOCU_DFLT: # With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only. - In this scenario, or easy of development, Level-I customer releases the part to always allow non-secure debug. - To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used. - ROM will use this word to further restrict the debug access.
+    bitfields:  # The register bitfields
+      NIDEN: DCFG_CC_SOCU_DFLT_NIDEN_DISABLE  # Offset: 0b, Width: 1b, Description: Non Secure non-invasive debug fixed state
+      # - DCFG_CC_SOCU_DFLT_NIDEN_DISABLE, (0): Disable
+      # - DCFG_CC_SOCU_DFLT_NIDEN_ENABLE, (1): Enable
+      DBGEN: DCFG_CC_SOCU_DFLT_DBGEN_DISABLE # Offset: 1b, Width: 1b, Description: Non Secure debug fixed state
+      # - DCFG_CC_SOCU_DFLT_DBGEN_DISABLE, (0): Disable
+      # - DCFG_CC_SOCU_DFLT_DBGEN_ENABLE, (1): Enable
+      SPNIDEN: DCFG_CC_SOCU_DFLT_SPNIDEN_DISABLE # Offset: 2b, Width: 1b, Description: Secure non-invasive debug fixed state
+      # - DCFG_CC_SOCU_DFLT_SPNIDEN_DISABLE, (0): Disable
+      # - DCFG_CC_SOCU_DFLT_SPNIDEN_ENABLE, (1): Enable
+      SPIDEN: DCFG_CC_SOCU_DFLT_SPIDEN_DISABLE # Offset: 3b, Width: 1b, Description: Secure invasive debug fixed state
+      # - DCFG_CC_SOCU_DFLT_SPIDEN_DISABLE, (0): Disable
+      # - DCFG_CC_SOCU_DFLT_SPIDEN_ENABLE, (1): Enable
+      TAPEN: DCFG_CC_SOCU_DFLT_TAPEN_DISABLE # Offset: 4b, Width: 1b, Description: JTAG TAP fixed state
+      # - DCFG_CC_SOCU_DFLT_TAPEN_DISABLE, (0): Disable
+      # - DCFG_CC_SOCU_DFLT_TAPEN_ENABLE, (1): Enable
+      ISPCMDEN: DCFG_CC_SOCU_DFLT_ISPCMDEN_DISABLE # Offset: 6b, Width: 1b, Description: ISP Boot Command fixed state
+      # - DCFG_CC_SOCU_DFLT_ISPCMDEN_DISABLE, (0): Disable
+      # - DCFG_CC_SOCU_DFLT_ISPCMDEN_ENABLE, (1): Enable
+      PMCMDEN: DCFG_CC_SOCU_DFLT_PMCMDEN_DISABLE # Offset: 7b, Width: 1b, Description: Programmers Mode Command fixed state
+      # - DCFG_CC_SOCU_DFLT_PMCMDEN_DISABLE, (0): Disable
+      # - DCFG_CC_SOCU_DFLT_PMCMDEN_ENABLE, (1): Enable
+  ENABLE_FA_MODE: # Enable FA mode.
+    value: 0x12345678  # The value width: 32b
+  CMPA_PROG_IN_PROGRESS: # CMPA Page programming on going.
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED0: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED1: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED2: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED3: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED4: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED5: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED6: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED7: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED8: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED9: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED10: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED11: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED12: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED13: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED14: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED15: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED16: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED17: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED18: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED19: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED20: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED21: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED22: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED23: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED24: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED25: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED26: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED27: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED28: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED29: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED30: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED31: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED32: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED33: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED34: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED35: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED36: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED37: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED38: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED39: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED40: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED41: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED42: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED43: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED44: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED45: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED46: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED47: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED48: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED49: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED50: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED51: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED52: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED53: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED54: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED55: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED56: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED57: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED58: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED59: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED60: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED61: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED62: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED63: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED64: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED65: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED66: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED67: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED68: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED69: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED70: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED71: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED72: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED73: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED74: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED75: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED76: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED77: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED78: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED79: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED80: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED81: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED82: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED83: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED84: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED85: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED86: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b
+  CUSTOMER_DEFINED87: # Customer Defined (Programable through ROM API)
+    value: 0x12345678  # The value width: 32b

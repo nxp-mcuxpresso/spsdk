@@ -13,21 +13,20 @@ from datetime import datetime
 from struct import pack, unpack_from
 from typing import Any, Iterable, Iterator, List, Mapping, Optional, Tuple, Type, Union
 
-from asn1crypto import cms, util, x509
+from typing_extensions import Self
 
-from spsdk import SPSDKError
-from spsdk.crypto import Certificate, Encoding
-from spsdk.exceptions import SPSDKValueError
-from spsdk.utils.crypto import crypto_backend, matches_key_and_cert
+from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.cms import cms_sign
+from spsdk.crypto.keys import PrivateKey
+from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo
 
 ########################################################################################################################
 # Enums
 ########################################################################################################################
-from .. import SPSDKError
 from .header import CmdHeader, CmdTag, Header, SegTag
-from .secret import MAC, BaseClass, CertificateImg, EnumAlgorithm, Signature, SrkTable
+from .secret import MAC, BaseSecretClass, CertificateImg, EnumAlgorithm, Signature, SrkTable
 
 
 class EnumWriteOps(Enum):
@@ -125,7 +124,7 @@ class EnumItm(Enum):
 ########################################################################################################################
 
 
-class CmdBase:
+class CmdBase(BaseClass):
     """Base class for all commands."""
 
     def __init__(self, tag: CmdTag, param: int, length: Optional[int] = None):
@@ -172,7 +171,7 @@ class CmdBase:
         raise SPSDKError("cmd-data not supported by the command")
 
     @property
-    def cmd_data_reference(self) -> Optional[BaseClass]:
+    def cmd_data_reference(self) -> Optional[BaseSecretClass]:
         """Reference to a command data (such as certificate, signature, etc).
 
         None if no reference was assigned;
@@ -181,7 +180,7 @@ class CmdBase:
         return None
 
     @cmd_data_reference.setter
-    def cmd_data_reference(self, value: BaseClass) -> None:  # pylint: disable=no-self-use
+    def cmd_data_reference(self, value: BaseSecretClass) -> None:  # pylint: disable=no-self-use
         """Setter.
 
         By default, the command does not support cmd_data_reference
@@ -192,43 +191,36 @@ class CmdBase:
         """
         raise SPSDKError("cmd-data not supported by the command")
 
-    def parse_cmd_data(self, data: bytes, offset: int) -> Any:  # pylint: disable=no-self-use
+    def parse_cmd_data(self, data: bytes) -> Any:  # pylint: disable=no-self-use
         """Parse additional command data from binary data.
 
         :param data: to be parsed
-        :param offset: start position in data to parse
         :raises SPSDKError: If cmd_data is not supported by the command
         """
         raise SPSDKError("cmd-data not supported by the command")
 
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(other, self.__class__) and vars(other) == vars(self)
+    def __repr__(self) -> str:
+        return f"Command: {CmdTag.desc(self.tag)}"
 
-    def __ne__(self, other: Any) -> bool:
-        return not self.__eq__(other)
-
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text representation of the command."""
         return (
             f'Command "{CmdTag.desc(self.tag)}"   [Tag={str(self.tag)}, length={str(self.size)}]\n'
         )
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
         :return: binary representation of the command
         """
         hdr_data = self._header.export()
-        dbg_info.append_binary_data("header", hdr_data)
         return hdr_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdBase":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to readd from data
         :return: parse command
         :raises NotImplementedError: Derived class has to implement this method
         """
@@ -312,10 +304,10 @@ class CmdWriteData(CmdBase):
     def __iter__(self) -> Iterator[List[int]]:
         return self._data.__iter__()
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += f"Write Data Command (Ops: {EnumWriteOps.name(self.ops)}, Bytes: {self.num_bytes})\n"
         for cmd in self._data:
             msg += f"- Address: 0x{cmd[0]:08X}, Value: 0x{cmd[1]:08X}\n"
@@ -344,30 +336,28 @@ class CmdWriteData(CmdBase):
         self._data.clear()
         self._header.length = self._header.size
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
         :return: binary representation of the command
         """
-        raw_data = super().export(dbg_info=dbg_info)
+        raw_data = super().export()
         for cmd in self._data:
             raw_data += pack(">LL", cmd[0], cmd[1])
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdWriteData":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to readd from data
         :return: parse command
         """
-        header = CmdHeader.parse(data, offset=offset, required_tag=CmdTag.WRT_DAT)
+        header = CmdHeader.parse(data, required_tag=CmdTag.WRT_DAT)
         obj = cls(header.param & 0x7, (header.param >> 3) & 0x3)
         index = header.size
         while index < header.length:
-            (address, value) = unpack_from(">LL", data, offset + index)
+            (address, value) = unpack_from(">LL", data, index)
             obj.append(address, value)
             index += 8
         return obj
@@ -439,10 +429,10 @@ class CmdCheckData(CmdBase):
             f"ADDR=0x{self.address:X}, MASK=0x{self.mask:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += f"Check Data Command (Ops: {EnumCheckOps[self.ops]}, Bytes: {self.num_bytes})\n"  # type: ignore
 
         msg += f"- Address: 0x{self.address:08X}, Mask: 0x{self.mask:08X}"
@@ -452,33 +442,31 @@ class CmdCheckData(CmdBase):
         msg += "-" * 60 + "\n"
         return msg
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
         :return: binary representation of the command
         """
-        raw_data = super().export(dbg_info=dbg_info)
+        raw_data = super().export()
         raw_data += pack(">LL", self.address, self.mask)
         if self.count is not None:
             raw_data += pack(">L", self.count)
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdCheckData":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to readd from data
         :return: parse command
         """
-        header = CmdHeader.parse(data, offset, CmdTag.CHK_DAT)
+        header = CmdHeader.parse(data, CmdTag.CHK_DAT)
         numbytes = header.param & 0x7
         ops = (header.param >> 3) & 0x3
-        address, mask = unpack_from(">LL", data, offset + header.size)
+        address, mask = unpack_from(">LL", data, header.size)
         count = None
         if (header.length - header.size) > 8:
-            count = unpack_from(">L", data, offset + header.size + 8)[0]
+            count = unpack_from(">L", data, header.size + 8)[0]
         return cls(numbytes, ops, address, mask, count)
 
 
@@ -492,22 +480,21 @@ class CmdNop(CmdBase):
     def __repr__(self) -> str:
         return "CmdNop"
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += "-" * 60 + "\n"
         return msg
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdNop":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to readd from data
         :return: parse command
         """
-        header = CmdHeader.parse(data, offset, CmdTag.NOP)
+        header = CmdHeader.parse(data, CmdTag.NOP)
         if header.length != header.size:
             pass
         return cls(header.param)
@@ -571,10 +558,10 @@ class CmdSet(CmdBase):
             f" {EnumEngine.name(self.engine)}, eng_cfg=0x{self.engine_cfg:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += "Set Command ITM : {EnumItm.name(self.itm)}\n"
         msg += (
             f"HASH Algo      : {self.hash_algorithm} ({EnumAlgorithm.desc(self.hash_algorithm)})\n"
@@ -584,28 +571,25 @@ class CmdSet(CmdBase):
         msg += "-" * 60 + "\n"
         return msg
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
         :return: binary representation of the command
         """
-        raw_data = super().export(dbg_info=dbg_info)
+        raw_data = super().export()
         raw_data += pack("4B", 0x00, self.hash_algorithm, self.engine, self.engine_cfg)
-        dbg_info.append_binary_data("data", raw_data)
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdSet":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to readd from data
         :return: parse command
         """
-        header = CmdHeader.parse(data, offset, CmdTag.SET)
-        (_, alg, eng, cfg) = unpack_from("4B", data, offset + CmdHeader.SIZE)
-        return CmdSet(
+        header = CmdHeader.parse(data, CmdTag.SET)
+        (_, alg, eng, cfg) = unpack_from("4B", data, CmdHeader.SIZE)
+        return cls(
             EnumItm.from_int(header.param),
             EnumAlgorithm.from_int(alg),
             EnumEngine.from_int(eng),
@@ -649,10 +633,10 @@ class CmdInitialize(CmdBase):
     def __iter__(self) -> Iterator[int]:
         return self._data.__iter__()
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += f"Initialize Command (Engine: {EnumEngine[self.engine]})\n"  # type: ignore
         cnt = 0
         for val in self._data:
@@ -689,33 +673,31 @@ class CmdInitialize(CmdBase):
         self._data.clear()
         self._header.length = self._header.size
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
         :return: binary representation of the command
         """
-        raw_data = super().export(dbg_info=dbg_info)
+        raw_data = super().export()
         for val in self._data:
             raw_data += pack(">L", val)
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdInitialize":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to readd from data
         :return: parse command
         :raises SPSDKError: If incorrect length of data
         """
-        header = CmdHeader.parse(data, offset, CmdTag.INIT)
+        header = CmdHeader.parse(data, CmdTag.INIT)
         obj = cls(EnumEngine.from_int(header.param))
         index = header.size
         while index < header.length:
-            if (offset + index) >= len(data):
+            if index >= len(data):
                 raise SPSDKError("Incorrect length of data")
-            val = unpack_from(">L", data, offset + index)
+            val = unpack_from(">L", data, index)
             obj.append(val[0])
             index += 4
         return obj
@@ -755,10 +737,10 @@ class CmdUnlockAbstract(CmdBase, ABC):
         """
         return EnumEngine.from_int(self._header.param)
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
-        msg = super().info()
-        msg += "Unlock Command\n"
+        msg = super().__str__()
+        msg += f"Unlock Command ({self.__class__.__name__})\n"
         msg += f"Engine : {EnumEngine.desc(self.engine)}\n"
         return msg
 
@@ -776,43 +758,38 @@ class CmdUnlockAbstract(CmdBase, ABC):
         return overall_condition
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdUnlockAbstract":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to readd from data
         :return: Unlock command
         """
-        header = CmdHeader.parse(data, offset, CmdTag.UNLK)
-        features = unpack_from(">L", data, offset + header.size)[0]
+        header = CmdHeader.parse(data, CmdTag.UNLK)
+        features = unpack_from(">L", data, header.size)[0]
         engine = EnumEngine.from_int(header.param)
         uid = 0
         if cls.need_uid(engine, features):
-            uid = unpack_from(">Q", data, offset + header.size + 4)[0]
+            uid = unpack_from(">Q", data, header.size + 4)[0]
 
         if engine == EnumEngine.SNVS:
-            return CmdUnlockSNVS(features)
+            return CmdUnlockSNVS(features)  # type: ignore
         if engine == EnumEngine.CAAM:
-            return CmdUnlockCAAM(features)
+            return CmdUnlockCAAM(features)  # type: ignore
         if engine == EnumEngine.OCOTP:
-            return CmdUnlockOCOTP(features, uid)
-        return CmdUnlock(engine, features, uid)
+            return CmdUnlockOCOTP(features, uid)  # type: ignore
+        return cls(engine, features, uid)
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
         :return: binary representation of the command
         """
         # assert self.size == CmdHeader.SIZE + 4
-        raw_data = super().export(dbg_info=dbg_info)
+        raw_data = super().export()
         data = pack(">L", self.features)
-        dbg_info.append_binary_data("features", data)
         raw_data += data
         if self._need_uid:
-            data = pack(">Q", self.uid)
-            dbg_info.append_binary_data("uid", data)
-            raw_data += data
+            raw_data += pack(">Q", self.uid)
         return raw_data
 
 
@@ -841,10 +818,10 @@ class CmdUnlockSNVS(CmdUnlockAbstract):
         """Leave Zero is able Master Key write unlocked."""
         return self.features & CmdUnlockSNVS.FEATURE_UNLOCK_ZMK_WRITE != 0
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += f"Unlock LP SWR    : {self.unlock_lp_swr}\n"
         msg += f"Unlock ZMK Write : {self.unlock_zmk_write}\n"
         msg += "-" * 60 + "\n"
@@ -883,10 +860,10 @@ class CmdUnlockCAAM(CmdUnlockAbstract):
         """Leave Zero is able Master Key write unlocked."""
         return self.features & self.FEATURE_UNLOCK_MFG != 0
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += f"MID : {self.unlock_mid}\n"
         msg += f"RNG : {self.unlock_rng}\n"
         msg += f"MFG : {self.unlock_mfg}\n"
@@ -939,10 +916,10 @@ class CmdUnlockOCOTP(CmdUnlockAbstract):
         """Unlock JTAG using SCS HAB_JDE bit."""
         return self.features & self.FEATURE_UNLOCK_JTAG != 0
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += f"FLD_RTN : {self.unlock_fld_rtn}\n"
         msg += f"SRK_RVK : {self.unlock_srk_rvk}\n"
         msg += f"CSC     : {self.unlock_csc}\n"
@@ -965,12 +942,12 @@ class CmdUnlock(CmdUnlockAbstract):
         """
         super().__init__(engine, features, uid=uid)
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
-        msg += f"Features: {self.features})\n"
-        msg += f"UID:      {self.uid})\n"
+        msg += super().__str__()
+        msg += f"Features: {self.features}\n"
+        msg += f"UID:      {self.uid}\n"
         msg += "-" * 60 + "\n"
         return msg
 
@@ -1144,17 +1121,16 @@ class CmdInstallKey(CmdBase):
         assert isinstance(value, (CertificateImg, SrkTable))
         self._certificate_ref = value
 
-    def parse_cmd_data(self, data: bytes, offset: int) -> Union[CertificateImg, SrkTable, None]:
+    def parse_cmd_data(self, data: bytes) -> Union[CertificateImg, SrkTable, None]:
         """Parse additional command data from binary data.
 
         :param data: to be parsed
-        :param offset: start position in data to parse
         :return: parsed data object; command-specific: certificate or SrkTable to be installed
         """
         if self.certificate_format == EnumCertFormat.SRK:
-            result: Union[CertificateImg, SrkTable] = SrkTable.parse(data, offset)
+            result: Union[CertificateImg, SrkTable] = SrkTable.parse(data)
         else:
-            result = CertificateImg.parse(data, offset)
+            result = CertificateImg.parse(data)
         self.cmd_data_reference = result
         return result
 
@@ -1174,34 +1150,33 @@ class CmdInstallKey(CmdBase):
     def __repr__(self) -> str:
         return (
             f"CmdInstallKey <{EnumInsKey[self.flags]}, {EnumCertFormat[self.certificate_format]},"  # type: ignore
-            f" {EnumAlgorithm[self.hash_algorithm]}, {self.source_index}, "  # type: ignore
+            f" {EnumAlgorithm[self.hash_algorithm]}, {self.source_index}, "
             f"{self.target_index}, 0x{self.cmd_data_location:X}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += f" Flag      : {self.flags} ({EnumInsKey.desc(self.flags)})\n"
         msg += f" CertFormat: {self.certificate_format}"
-        msg += f"({EnumCertFormat.desc(self.certificate_format)})\n"  # type: ignore
-        msg += f" Algorithm : {self.hash_algorithm} ({EnumAlgorithm.desc(self.hash_algorithm)})\n"  # type: ignore
+        msg += f"({EnumCertFormat.desc(self.certificate_format)})\n"
+        msg += f" Algorithm : {self.hash_algorithm} ({EnumAlgorithm.desc(self.hash_algorithm)})\n"
         msg += f" SrcKeyIdx : {self.source_index} (Source key index) \n"
         msg += f" TgtKeyIdx : {self.target_index} (Target key index) \n"
         msg += f" Location  : 0x{self.cmd_data_location:08X} (Start address of certificate(s) to install) \n"
         if self.certificate_ref:
             msg += "[related-certificate]\n"
-            msg += self.certificate_ref.info()
+            msg += str(self.certificate_ref)
         msg += "-" * 60 + "\n"
         return msg
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
         :return: binary representation of the command
         """
-        raw_data = super().export(dbg_info=dbg_info)
+        raw_data = super().export()
         data = pack(
             ">4BL",
             self.certificate_format,
@@ -1211,21 +1186,17 @@ class CmdInstallKey(CmdBase):
             self.cmd_data_location,
         )
         raw_data += data
-        dbg_info.append_binary_data("data", data)
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> CmdBase:
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to read from data
         :return: parse command
         """
-        header = CmdHeader.parse(data, offset, CmdTag.INS_KEY)
-        protocol, algorithm, src_index, tgt_index, location = unpack_from(
-            ">4BL", data, offset + header.size
-        )
+        header = CmdHeader.parse(data, CmdTag.INS_KEY)
+        protocol, algorithm, src_index, tgt_index, location = unpack_from(">4BL", data, header.size)
         return cls(
             EnumInsKey.from_int(header.param),
             protocol,
@@ -1289,7 +1260,7 @@ class CmdAuthData(CmdBase):
         engine_cfg: int = 0,
         location: int = 0,
         certificate: Optional[Certificate] = None,
-        private_key_pem_data: Optional[bytes] = None,
+        private_key: Optional[PrivateKey] = None,
     ):
         """Initialize the Authenticate data command."""
         super().__init__(CmdTag.AUT_DAT, flags)
@@ -1299,14 +1270,14 @@ class CmdAuthData(CmdBase):
         self.engine_cfg = engine_cfg
         self.location = location
         self.certificate = certificate
-        self.private_key_pem_data = private_key_pem_data
+        self.private_key = private_key
         self._header.length = CmdHeader.SIZE + 8
         self._blocks: List[Tuple[int, int]] = []  # list of (start-address, size)
         self._signature: Optional[SignatureOrMAC] = None
-        if certificate and private_key_pem_data:
+        if certificate and private_key:
             assert isinstance(certificate, Certificate)
-            assert isinstance(private_key_pem_data, bytes)
-            if not matches_key_and_cert(private_key_pem_data, certificate):
+            assert isinstance(private_key, PrivateKey)
+            if not private_key.verify_public_key(certificate.get_public_key()):
                 raise SPSDKError("Given private key does not match the public certificate")
 
     @property
@@ -1353,20 +1324,19 @@ class CmdAuthData(CmdBase):
             raise ExpectedSignatureOrMACError("Unsupported data object is provided")
         self._signature = value
 
-    def parse_cmd_data(self, data: bytes, offset: int) -> SignatureOrMAC:
+    def parse_cmd_data(self, data: bytes) -> SignatureOrMAC:
         """Parse additional command data from binary data.
 
         :param data: to be parsed
-        :param offset: start position in data to parse
         :return: parsed data object; command-specific: Signature or MAC
         :raises ExpectedSignatureOrMACError: if unsupported data object is provided
         """
-        header = Header.parse(data, offset)
+        header = Header.parse(data)
         if header.tag == SegTag.MAC:
-            self._signature = MAC.parse(data, offset)
+            self._signature = MAC.parse(data)
             return self._signature
         if header.tag == SegTag.SIG:
-            self._signature = Signature.parse(data, offset)
+            self._signature = Signature.parse(data)
             return self._signature
         raise ExpectedSignatureOrMACError(f"TAG = {header.tag}")
 
@@ -1404,10 +1374,10 @@ class CmdAuthData(CmdBase):
     def __iter__(self) -> Iterator[Union[Tuple[Any, ...], List[Any]]]:
         return self._blocks.__iter__()
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text description of the command."""
         msg = "-" * 60 + "\n"
-        msg += super().info()
+        msg += super().__str__()
         msg += f" Flag:        {self.flags} ({EnumAuthDat.desc(self.flags)})\n"
         msg += f" Key index:   {self.key_index}\n"
         msg += f" Engine:      {self.engine} ({EnumEngine.desc(self.engine)})\n"
@@ -1415,7 +1385,7 @@ class CmdAuthData(CmdBase):
         msg += f" Location:    0x{self.location:08X} (Start address of authentication data) \n"
         if self.signature:
             msg += "[related signature]\n"
-            msg += self.signature.info()
+            msg += str(self.signature)
         msg += "-" * 60 + "\n"
         for blk in self._blocks:
             msg += f"- Start: 0x{blk[0]:08X}, Length: {blk[1]} Bytes\n"
@@ -1441,93 +1411,6 @@ class CmdAuthData(CmdBase):
         self._blocks.clear()
         self._header.length = self._header.size + 8
 
-    def _cms_signature(self, zulu: datetime, data: bytes) -> bytes:
-        """Sign provided data and return CMS signature.
-
-        :param zulu: current UTC time+date
-        :param data: to be signed
-        :return: CMS signature (binary)
-        :raises SPSDKError: If certificate is not present
-        :raises SPSDKError: If private key is not present
-        :raises SPSDKError: If incorrect time-zone"
-        """
-        if self.certificate is None:
-            raise SPSDKError("Certificate is not present")
-        if self.private_key_pem_data is None:
-            raise SPSDKError("Private key is not present")
-
-        # signed data (main section)
-        signed_data = cms.SignedData()
-        signed_data["version"] = "v1"
-        signed_data["encap_content_info"] = util.OrderedDict([("content_type", "data")])
-        signed_data["digest_algorithms"] = [
-            util.OrderedDict([("algorithm", "sha256"), ("parameters", None)])
-        ]
-
-        # signer info sub-section
-        signer_info = cms.SignerInfo()
-        signer_info["version"] = "v1"
-        signer_info["digest_algorithm"] = util.OrderedDict(
-            [("algorithm", "sha256"), ("parameters", None)]
-        )
-        signer_info["signature_algorithm"] = util.OrderedDict(
-            [("algorithm", "rsassa_pkcs1v15"), ("parameters", b"")]
-        )
-        # signed identifier: issuer amd serial number
-        asn1cert = x509.Certificate.load(self.certificate.public_bytes(Encoding.DER))
-        signer_info["sid"] = cms.SignerIdentifier(
-            {
-                "issuer_and_serial_number": cms.IssuerAndSerialNumber(
-                    {"issuer": asn1cert.issuer, "serial_number": asn1cert.serial_number}
-                )
-            }
-        )
-        # signed attributes
-        signed_attrs = cms.CMSAttributes()
-        signed_attrs.append(
-            cms.CMSAttribute(
-                {
-                    "type": "content_type",
-                    "values": [cms.ContentType("data")],
-                }
-            )
-        )
-        # check time-zone is assigned (expected UTC+0)
-        if not zulu.tzinfo:
-            raise SPSDKError("Incorrect time-zone")
-        signed_attrs.append(
-            cms.CMSAttribute(
-                {
-                    "type": "signing_time",
-                    "values": [cms.Time(name="utc_time", value=zulu.strftime("%y%m%d%H%M%SZ"))],
-                }
-            )
-        )
-        signed_attrs.append(
-            cms.CMSAttribute(
-                {
-                    "type": "message_digest",
-                    "values": [cms.OctetString(crypto_backend().hash(data))],  # digest
-                }
-            )
-        )
-        signer_info["signed_attrs"] = signed_attrs
-
-        # create signature
-        signer_info["signature"] = crypto_backend().rsa_sign(
-            self.private_key_pem_data, signed_attrs.dump()
-        )
-
-        # Adding SignerInfo object to SignedData object
-        signed_data["signer_infos"] = [signer_info]
-
-        # content info
-        content_info = cms.ContentInfo()
-        content_info["content_type"] = "signed_data"
-        content_info["content"] = signed_data
-
-        return content_info.dump()
-
     def update_signature(
         self, zulu: datetime, data: bytes, base_data_addr: int = 0xFFFFFFFF
     ) -> bool:
@@ -1546,7 +1429,7 @@ class CmdAuthData(CmdBase):
         :return: True if length of the signature was unchanged, as this may affect content of the CSF section (pointer
                         to data);
         """
-        if not self.certificate or not self.private_key_pem_data:
+        if not self.certificate or not self.private_key:
             raise SPSDKError("certificate or private key not assigned, cannot update signature")
 
         if self.signature is None:
@@ -1572,7 +1455,12 @@ class CmdAuthData(CmdBase):
         else:
             sign_data = data  # if no blocks defined, sign complete data; used for CSF
         if isinstance(self.signature, Signature):
-            new_signature = self._cms_signature(zulu, sign_data)
+            new_signature = cms_sign(
+                zulu=zulu,
+                data=sign_data,
+                certificate=self.certificate,
+                signing_key=self.private_key,
+            )
             result = len(self.signature.data) == len(new_signature)
             self.signature.data = new_signature
         else:
@@ -1580,15 +1468,14 @@ class CmdAuthData(CmdBase):
             result = True
         return result
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export to binary form (serialization).
 
-        :param dbg_info: debug information about exported data
         :return: binary representation of the command
         """
         self._header.length = self.size
-        raw_data = super().export(dbg_info=dbg_info)
-        data = pack(
+        raw_data = super().export()
+        raw_data += pack(
             ">4BL",
             self.key_index,
             self.sig_format,
@@ -1596,24 +1483,19 @@ class CmdAuthData(CmdBase):
             self.engine_cfg,
             self.location,
         )
-        dbg_info.append_binary_data("data", data)
-        raw_data += data
         for blk in self._blocks:
-            blk_data = pack(">2L", blk[0], blk[1])
-            dbg_info.append_binary_data("block", blk_data)
-            raw_data += blk_data
+            raw_data += pack(">2L", blk[0], blk[1])
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdAuthData":
+    def parse(cls, data: bytes) -> Self:
         """Convert binary representation into command (deserialization from binary data).
 
         :param data: being parsed
-        :param offset: current position to read from data
         :return: parse command
         """
-        header = CmdHeader.parse(data, offset, CmdTag.AUT_DAT)
-        key, sig_format, eng, cfg, location = unpack_from(">4BL", data, offset + header.size)
+        header = CmdHeader.parse(data, CmdTag.AUT_DAT)
+        key, sig_format, eng, cfg, location = unpack_from(">4BL", data, header.size)
         obj = cls(
             EnumAuthDat.from_int(header.param),
             key,
@@ -1624,7 +1506,7 @@ class CmdAuthData(CmdBase):
         )
         index = header.size + 8
         while index < header.length:
-            start_address, size = unpack_from(">2L", data, offset + index)
+            start_address, size = unpack_from(">2L", data, index)
             obj.append(start_address, size)
             index += 8
         return obj
@@ -1643,17 +1525,16 @@ _CMD_TO_CLASS: Mapping[CmdTag, Type[CmdBase]] = {
 }
 
 
-def parse_command(data: bytes, offset: int = 0) -> CmdBase:
+def parse_command(data: bytes) -> CmdBase:
     """Parse CSF/DCD command.
 
     :param data: binary data to be parsed
-    :param offset: to start parsing
     :return: instance of the command
     :raises SPSDKError: If the command is not valid
     """
     try:
-        cmd_tag = CmdTag.from_int(data[offset])
+        cmd_tag = CmdTag.from_int(data[0])
     except ValueError as exc:
-        raise SPSDKError("Unknown command at position: " + hex(offset)) from exc
+        raise SPSDKError("Unknown command to parse") from exc
     cmd_class = _CMD_TO_CLASS[cmd_tag]
-    return cmd_class.parse(data, offset)
+    return cmd_class.parse(data)

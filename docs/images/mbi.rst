@@ -6,11 +6,11 @@ Master Boot Image (MBI)
 Master Boot Image can be used directly (e.g. by using *blhost write-memory* command) or it can be used for further processing  (e.g. used as input to Secure Binary image container).
 Image is created based on a supplied configuration file, either JSON or YAML is supported.
 
-We can divide into two categories based on layout.
+We can divide divide into two categories based on layout. 
 
 * eXecute-In-Place (XIP) images
     * Plain
-    * CRC
+    * CRC 
     * Signed
 
 * Load-to-RAM images
@@ -32,8 +32,8 @@ Sample configuration for LPC55s6x plain signed XIP image. Other sample configura
     #  == Basic Settings ==
     #
     family: lpc55s6x  # MCU family., MCU family name.
-    outputImageExecutionTarget: Internal flash (XIP) # Application target., Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
-    outputImageAuthenticationType: Signed # Type of boot image authentication., Specification of final master boot image authentication.
+    outputImageExecutionTarget: xip # Application target., Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+    outputImageAuthenticationType: signed # Type of boot image authentication., Specification of final master boot image authentication.
     masterBootOutputFile: my_mbi.bin # Master Boot Image name., The file for Master Boot Image result file.
     inputImageFile: my_application.bin # Plain application image., The input application image to by modified to Master Boot Image.
     #
@@ -73,7 +73,7 @@ Supported devices for MBI
 ==========================
 
 NXPIMAGE support devices from LPC55xx family (*LPC55S0x, LPC55S1x, LPC55S2x, LPC552x, LPC55S6x*), *RT5xx*, *RT6xx*, *LPC55S3x*, *MCXN9xx* and *RW61x*.
-Supported execution targets are: *Internal flash (XIP), External Flash (XIP) and Load to RAM* and image authentication types: *Plain, CRC, Signed, Encrypted and NXP Signed*.
+Supported execution targets are: *XIP (Execute in place) and Load to RAM* and image authentication types: *Plain, CRC, Signed, Encrypted and NXP Signed*.
 
 The following table shows the supported image types for each device,
 it either shows "N/A" if the configuration is not available or respective class that will be used for image creation.
@@ -82,6 +82,7 @@ it either shows "N/A" if the configuration is not available or respective class 
 
 .. include:: ../_prebuild/table.inc
 
+.. note:: For LPC55xx (except for the LPC55S36 with external flash) the load-to-RAM images are intended only for recovery boot from 1-bit SPI flash.
 
 
 Supported configuration options
@@ -93,10 +94,9 @@ Please note that the *outputImageExecutionTarget* and *outputImageAuthentication
 
 .. code-block:: yaml
 
-    outputImageExecutionTarget: Internal flash (XIP) # Application target., Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
-    outputImageAuthenticationType: Signed # Type of boot image authentication., Specification of final master boot image authentication.
+    outputImageExecutionTarget: xip # Application target., Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+    outputImageAuthenticationType: signed # Type of boot image authentication., Specification of final master boot image authentication.
 
 
 .. include:: ../_prebuild/schemas.inc
    :parser: myst_parser.sphinx_
-

@@ -4,13 +4,13 @@
 
 TestRegA0:
 # Reg Description: TestRegA0 Description
-  value: '0x01020304'  # The value width: 32b
+  value: '0x31323334'  # The value width: 32b
 TestRegA1:
 # Reg Description: TestRegA1 Description
-  value: '0x11121314'  # The value width: 32b
+  value: '0x21222324'  # The value width: 32b
 TestRegA2:
 # Reg Description: TestRegA2 Description
-  value: '0x21222324'  # The value width: 32b
+  value: '0x11121314'  # The value width: 32b
 TestRegA3:
 # Reg Description: TestRegA3 Description
-  value: '0x31323334'  # The value width: 32b
+  value: '0x01020304'  # The value width: 32b

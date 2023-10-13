@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,10 +10,10 @@ import os.path
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.image import CmdCheckData, CmdWriteData, EnumCheckOps, EnumWriteOps, SegCSF
+from spsdk.exceptions import SPSDKError
+from spsdk.image.commands import CmdCheckData, CmdWriteData, EnumCheckOps, EnumWriteOps
 from spsdk.image.secret import Signature
-from spsdk.image.segments import SegDCD
+from spsdk.image.segments import SegCSF, SegDCD
 from spsdk.utils.misc import extend_block
 
 
@@ -35,7 +35,7 @@ def test_SegCSF_repr_info():
     csf_seg.append_command(
         CmdWriteData(ops=EnumWriteOps.WRITE_VALUE, data=[(0x30340004, 0x4F400005)])
     )
-    assert "Write Data Command" in csf_seg.info()
+    assert "Write Data Command" in str(csf_seg)
 
 
 def test_SegCSF_append():

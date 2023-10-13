@@ -1,0 +1,39 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========================================  HAB converted configuration  ============================================
+
+# ======================================================================================================================
+#                                                    == HAB Input ==                                                    
+# ======================================================================================================================
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image in plain BIN, S-REC or ELF.
+inputImageFile: evkmimxrt1170_iled_blinky_cm7_int_RAM_unsigned.s19
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== HAB Options [Required] =====------------------------------------------
+# Description: An options block contains zero or more name/value pairs and the option settings that assign values to
+# global options used by the nxpimage to control the generation of the output file.
+options:
+  # ------------------------------------------===== HAB flags [Optional] =====------------------------------------------
+  # Description: HAB flags. 0x0 for unsigned, 0x08 signed, 0x0C encrypted.
+  flags: 0
+  # -------------------------------------===== Image start address [Optional] =====-------------------------------------
+  # Description: Start address of the image.
+  startAddress: 4096
+  # -----------------------------------------===== IVT Offset [Optional] =====------------------------------------------
+  # Description: Offset of the IVT in the image.
+  ivtOffset: 4096
+  # --------------------------------------===== Initial Load size [Optional] =====--------------------------------------
+  # Description: Initial load size.
+  initialLoadSize: 8192
+  # -------------------------------------===== Entry Point address [Optional] =====-------------------------------------
+  # Description: Image entry point address.
+  entryPointAddress: 13537
+# ======================================================================================================================
+#                                                   == CSF Sections ==                                                  
+# ======================================================================================================================
+# -----------------------------------------===== CSF Sections [Optional] =====------------------------------------------
+# Description: CSF Sections.
+sections: []

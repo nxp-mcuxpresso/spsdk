@@ -12,7 +12,12 @@ import sys
 from time import sleep
 from typing import Optional
 
-from spsdk import mboot, sdp
+from spsdk.mboot.exceptions import McuBootError
+from spsdk.mboot.interfaces.usb import MbootUSBInterface
+from spsdk.mboot.mcuboot import McuBoot
+from spsdk.sdp.exceptions import SdpError
+from spsdk.sdp.interfaces.usb import SdpUSBInterface
+from spsdk.sdp.sdp import SDP
 
 # Uncomment for printing debug messages
 # import logging
@@ -33,16 +38,16 @@ def run_flash_loader(
     :return: True if running flashloader was successful
     :raises sdp.SdpError: If SDP operation fails
     """
-    devices = sdp.scan_usb(device_name)
-    if not devices:
+    interfaces = SdpUSBInterface.scan(device_id=device_name)
+    if not interfaces:
         return False
 
     try:
-        with sdp.SDP(devices[0], True) as serial_downloader:
+        with SDP(interfaces[0], True) as serial_downloader:
             serial_downloader.write_file(load_address, data)
             serial_downloader.jump_and_run(start_address)
             return True
-    except sdp.SdpError:
+    except SdpError:
         return False
 
 
@@ -56,19 +61,19 @@ def main() -> None:
         print("flash-loader executed")
 
     # Scan for MCU-BOOT device
-    devices = mboot.scan_usb()
-    if not devices:
+    interfaces = MbootUSBInterface.scan()
+    if not interfaces:
         print("Not founded MCU-BOOT device")
         sys.exit()
 
     try:
-        with mboot.McuBoot(devices[0], True) as mb:
+        with McuBoot(interfaces[0], True) as mb:
             mb.reopen = False
             # data = mb.read_memory(0, 500)
             property_list = mb.get_property_list()
             mb.reset()
 
-    except mboot.McuBootError as e:
+    except McuBootError as e:
         print(str(e))
         sys.exit()
 

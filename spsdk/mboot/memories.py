@@ -8,9 +8,9 @@
 
 """Various types of memory identifiers used in the MBoot module."""
 
-from typing import List, Optional, Union
+from typing import List, Optional, cast
 
-from spsdk.utils.easy_enum import Enum, EnumKeyType
+from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import size_fmt
 
 LEGACY_MEM_ID = {
@@ -52,35 +52,32 @@ class ExtMemId(Enum):
 
 # fmt: on
     @classmethod
-    def get_legacy_str(cls, key: str) -> Union[EnumKeyType, None]:
+    def get_legacy_str(cls, key: str) -> Optional[int]:
         """Converts legacy str to new enum key.
 
         :param key: str value of legacy enum
         :return: new enum value
         """
-        value = None
-
         new_key = LEGACY_MEM_ID.get(key)
         if isinstance(new_key, str):
-            value = cls.get(new_key)
+            return cast(int, cls.get(new_key))
 
-        return value
+        return None
 
     @classmethod
-    def get_legacy_int(cls, key: int) -> Union[EnumKeyType, None]:
+    def get_legacy_int(cls, key: int) -> Optional[str]:
         """Converts legacy int to new enum key.
 
         :param key: int value of legacy enum
         :return: new enum value
         """
-        value = None
-
         if isinstance(key, int):
             new_value = cls.get(key)
             if new_value:
-                value = [k for k, v in LEGACY_MEM_ID.items() if v == new_value][0]
+                return [k for k, v in LEGACY_MEM_ID.items() if v == new_value][0]
 
-        return value
+        return None
+
 # fmt: off
 class MemId(ExtMemId): # type: ignore[misc]
     """McuBoot Internal/External Memory Property Tags."""
@@ -119,6 +116,9 @@ class MemoryRegion:
         self.end = end
         self.size = end - start + 1
 
+    def __repr__(self) -> str:
+        return f"Memory region, start: {hex(self.start)}"
+
     def __str__(self) -> str:
         return f"0x{self.start:08X} - 0x{self.end:08X}; Total Size: {size_fmt(self.size)}"
 
@@ -136,6 +136,9 @@ class RamRegion(MemoryRegion):
         """
         super().__init__(start, start + size - 1)
         self.index = index
+
+    def __repr__(self) -> str:
+        return f"RAM Memory region, start: {hex(self.start)}"
 
     def __str__(self) -> str:
         return f"Region {self.index}: {super().__str__()}"
@@ -156,6 +159,9 @@ class FlashRegion(MemoryRegion):
         super().__init__(start, start + size - 1)
         self.index = index
         self.sector_size = sector_size
+
+    def __repr__(self) -> str:
+        return f"Flash Memory region, start: {hex(self.start)}"
 
     def __str__(self) -> str:
         msg = f"Region {self.index}: {super().__str__()} Sector size: {size_fmt(self.sector_size)}"
@@ -190,6 +196,9 @@ class ExtMemRegion(MemoryRegion):
     def name(self) -> str:
         """Get the name of external memory for given memory ID."""
         return ExtMemId.name(self.mem_id)
+
+    def __repr__(self) -> str:
+        return f"EXT Memory region, name: {self.name}, start: {hex(self.start)}"
 
     def __str__(self) -> str:
         if not self.value:

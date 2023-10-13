@@ -1,6 +1,6 @@
 <?xml version = "1.0" ?>
 <!--
-  Copyright 2023 NXP 
+  Copyright 2023 NXP
 
 SPDX - License - Identifier: BSD - 3 - Clause
 -->
@@ -351,7 +351,7 @@ field and the new PID to the usbPid field in this OTP" otp_index="21">
 		</bit_field>
 	</register>
 
-	<register offset="0x7c" width="32" name="DCFG_CC_SOCU_NS" reversed="False" description="With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only.&amp;#10;    - In this scenario,  or easy of development, Level-I customer releases the part to always allow non-secure debug. &amp;#10;    - To allow level-2 customers to further seal the part  DCFG_CC_SOCU_NS is used.&amp;#10;    - ROM will use this word to further restrict the debug access.&amp;#10;    - Layout of this word is same as DCFG_CC_SOCU. &amp;#10;      &amp;#10;1. Pinned disabled state is assumed the highest level of restriction.  (PINNED_xxxEN = 1,  DFLT_xxxEN = 0) &amp;#10;2. Un-pinned PINNED_xxxEN = 0,  DFLT_xxxEN = 0 or 1)&amp;#10;3. Pinned enabled state is the lowest level. PINNED_xxxEN = 1,  DFLT_xxxEN =1" otp_index="31">
+	<register offset="0x7c" width="32" name="DCFG_CC_SOCU_NS" reversed="False" description="The DCFG_CC_SOCU_NS configuration fields can be used to increase the restriction level specified in DCFG_CC_SOCU. With TZ-M, the part can be sold by level 1 customers (secure code developer) to level-2 customers who develops non-secure code only.&amp;#10;    - In this scenario, or easy of development, Level-I customer releases the part to always allow non-secure debug. &amp;#10;    - To allow level-2 customers to further seal the part DCFG_CC_SOCU_NS is used.&amp;#10;    - ROM will use this word to further restrict the debug access.&amp;#10;    - Layout of this word is same as DCFG_CC_SOCU. &amp;#10;    - Combinations of PINNED_xxxEN and DFLT_xxxEN bits and resulting access restriction levels are:&amp;#10;      &amp;#10;1. PINNED_xxxEN=1,DFLT_xxxEN=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. &amp;#10;2. PINNED_xxxEN=0,DFLT_xxxEN=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. &amp;#10;3. PINNED_xxxEN=0,DFLT_xxxEN=1: Illegal setting. Part will lock-up if this setting is selected. &amp;#10;4. PINNED_xxxEN=1,DFLT_xxxEN=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction." otp_index="31">
 		<bit_field offset="0x0" width="8" name="CRC8_NS[7:0]" access="RW" reset_value="0b00000000" description="CRC-8/ITU of upper 3 bytes (bits 8 to 31). Since these fields are security critical, they are constructed with built-in integrity protection to protect from side channel glitch attacks. The lower byte (0 to 7 bits) of these OTP words should be written with CRC-8/ITU of upper 3 bytes (bits 8 to 31). This construction makes the probability of a successful glitch attack to flip the exact control bits extremely difficult. The CRC8 calculation should be based on x8 + x2 + x + 1 polynomial. Polynomial=0x07, initial value= 0x00, XorOut=0x55">
 		</bit_field>
 		<bit_field offset="0x8" width="1" name="DFLT_NIDEN_NS" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0.">
@@ -448,7 +448,7 @@ field and the new PID to the usbPid field in this OTP" otp_index="21">
 		</reserved_bit_field>
 	</register>
 
-	<register offset="0x84" width="32" name="DCFG_CC_SOCU" reversed="False" description="The DCFG_CC_SOCU configuration field specifies the debug access restrictions per debug domain." otp_index="33">
+	<register offset="0x84" width="32" name="DCFG_CC_SOCU" reversed="False" description="The DCFG_CC_SOCU configuration field specifies the debug access restrictions per debug domain. The DCFG_CC_SOCU_NS fields can be used to increase the restriction level specified in DCFG_CC_SOCU but cannot be used to reduce the restriction level.&amp;#10;    - Combinations of PINNED_xxxEN and DFLT_xxxEN bits and resulting access restriction levels are:&amp;#10;      &amp;#10;1. PINNED_xxxEN=1,DFLT_xxxEN=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. &amp;#10;2. PINNED_xxxEN=0,DFLT_xxxEN=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through the debug authentication process by providing an appropriate Debug Credential (DC) certificate. &amp;#10;3. PINNED_xxxEN=0,DFLT_xxxEN=1: Illegal setting. Part will lock-up if this setting is selected. &amp;#10;4. PINNED_xxxEN=1,DFLT_xxxEN=0: Restriction level 2. Access to the sub-domain is permanently disabled and cannot be reversed. This setting offers the highest level of restriction." otp_index="33">
 		<bit_field offset="0x0" width="8" name="CRC8[7:0]" access="RW" reset_value="0b00000000" description="CRC-8/ITU of upper 3 bytes (bits 8 to 31). Since these fields are security critical, they are constructed with built-in integrity protection to protect from side channel glitch attacks. The lower byte (0 to 7 bits) of these OTP words should be written with CRC-8/ITU of upper 3 bytes (bits 8 to 31). This construction makes the probability of a successful glitch attack to flip the exact control bits extremely difficult. The CRC8 calculation should be based on x8 + x2 + x + 1 polynomial. Polynomial=0x07, initial value= 0x00, XorOut=0x55">
 		</bit_field>
 		<bit_field offset="0x8" width="1" name="DFLT_NIDEN" access="RW" reset_value="0b0" description="Controls non-Invasive debugging of TrustZone for Arm8-M defined non-secure domain of CPU0.">
@@ -545,31 +545,31 @@ field and the new PID to the usbPid field in this OTP" otp_index="21">
 		</reserved_bit_field>
 	</register>
 
-	<register offset="0x88" width="32" name="DCFG_CC_SOCU_AP" reversed="False" description="Anti-pole (inverse) value of Debug Configuration word(DCFG_CC_SOCU). DCFG_CC_SOCU_AP should be programmed with the exact anti-pole (inverse value) value of DCFG_CC_SOCU. Any mismatch between DCFG_CC_SOCU and DCFG_CC_SOCU_AP is deemed as an attack and debug is disabled permanently" otp_index="34">
+	<register offset="0x88" width="32" name="DCFG_CC_SOCU_AP" reversed="False" description="Anti-pole (inverse) value of Debug Configuration word (DCFG_CC_SOCU). DCFG_CC_SOCU_AP should be programmed with the exact anti-pole (inverse value) value of DCFG_CC_SOCU. Any mismatch between DCFG_CC_SOCU and DCFG_CC_SOCU_AP is deemed as an attack and part will lock-up." otp_index="34">
 	</register>
 
-	<register offset="0xb4" width="32" name="LIFE_CYCLE_STATE" reversed="False" description="Life cycle state of rw61x platfrom" otp_index="45">
-		<bit_field offset="0x0" width="8" name="LCS[7:0]" access="RW" reset_value="0b00000000" description="Possible values of rw61x lifecycle states">
-			<bit_field_value name="NXP_BLANK" value="0b0000_0000" description="Initial state in NXP factory" />
-			<bit_field_value name="NXP_PROVISIONED" value="0b0000_0001" description="Support ISP command interface on UART port only." />
-			<bit_field_value name="OEM_OPEN" value="0b0000_0011" description="Initial customer development state after leaving NXP manufacturing." />
-			<bit_field_value name="OEM_SECURE" value="0b0000_0111" description="Optional customer development state. Used for development of NS world code." />
-			<bit_field_value name="OEM_CLOSED" value="0b0000_1111" description="In-field application state for end-customer use." />
-			<bit_field_value name="OEM_FIELD_RETURN" value="0b0001_1111" description="Field return state." />
-			<bit_field_value name="NXP_FIELD_RETURN" value="0b0011_1111" description="NXP field return state(CQC)." />
-			<bit_field_value name="OEM_LOCKED" value="0b1100_1111" description="Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state." />
-			<bit_field_value name="SHREDDED" value="0b1111_1111" description="Bricked state to prevent device use." />
+	<register offset="0xb4" width="32" name="LIFE_CYCLE_STATE" reversed="False" description="Life cycle state of RW61x platform" otp_index="45">
+		<bit_field offset="0x0" width="8" name="LCS[7:0]" access="RW" reset_value="0b00000000" description="Possible values of RW61x lifecycle states">
+			<bit_field_value name="Blank" value="0b0000_0000" description="Initial state in NXP factory" />
+			<bit_field_value name="Provisioned" value="0b0000_0001" description="NXP provisioned state" />
+			<bit_field_value name="Develop" value="0b0000_0011" description="Initial customer development state after leaving NXP manufacturing." />
+			<bit_field_value name="Develop2" value="0b0000_0111" description="Optional customer development state. Used for development of NS world code." />
+			<bit_field_value name="In-Field" value="0b0000_1111" description="In-field application state for end-customer use." />
+			<bit_field_value name="Field Return OEM" value="0b0001_1111" description="Field return state." />
+			<bit_field_value name="Failure Analysis (FA)" value="0b0011_1111" description="NXP field return state(CQC)." />
+			<bit_field_value name="In-Field Locked" value="0b1100_1111" description="Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state." />
+			<bit_field_value name="Shredded" value="0b1111_1111" description="Bricked state to prevent device use." />
 		</bit_field>
 		<bit_field offset="0x8" width="8" name="LCS_REDUNDANT[7:0]" access="RW" reset_value="0b00000000" description="Repeat values of lifecycle state due to a security">
-			<bit_field_value name="NXP_BLANK" value="0b0000_0000" description="Initial state in NXP factory" />
-			<bit_field_value name="NXP_PROVISIONED" value="0b0000_0001" description="Support ISP command interface on UART port only." />
-			<bit_field_value name="OEM_OPEN" value="0b0000_0011" description="Initial customer development state after leaving NXP manufacturing." />
-			<bit_field_value name="OEM_SECURE" value="0b0000_0111" description="Optional customer development state. Used for development of NS world code." />
-			<bit_field_value name="OEM_CLOSED" value="0b0000_1111" description="In-field application state for end-customer use." />
-			<bit_field_value name="OEM_FIELD_RETURN" value="0b0001_1111" description="Field return state." />
-			<bit_field_value name="NXP_FIELD_RETURN" value="0b0011_1111" description="NXP field return state(CQC)." />
-			<bit_field_value name="OEM_LOCKED" value="0b1100_1111" description="Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state." />
-			<bit_field_value name="SHREDDED" value="0b1111_1111" description="Bricked state to prevent device use." />
+			<bit_field_value name="Blank" value="0b0000_0000" description="Initial state in NXP factory" />
+			<bit_field_value name="Provisioned" value="0b0000_0001" description="NXP provisioned state" />
+			<bit_field_value name="Develop" value="0b0000_0011" description="Initial customer development state after leaving NXP manufacturing." />
+			<bit_field_value name="Develop2" value="0b0000_0111" description="Optional customer development state. Used for development of NS world code." />
+			<bit_field_value name="In-Field" value="0b0000_1111" description="In-field application state for end-customer use." />
+			<bit_field_value name="Field Return OEM" value="0b0001_1111" description="Field return state." />
+			<bit_field_value name="Failure Analysis (FA)" value="0b0011_1111" description="NXP field return state(CQC)." />
+			<bit_field_value name="In-Field Locked" value="0b1100_1111" description="Alternative in-field application state that prevents use of field return/failure analysis states. The rest of the behavior of the device is same as the In-field state." />
+			<bit_field_value name="Shredded" value="0b1111_1111" description="Bricked state to prevent device use." />
 		</bit_field>
 		<bit_field offset="0x10" width="16" name="Redundancy" access="RW" reset_value="0b0000000000000000" description="None">
 		</bit_field>

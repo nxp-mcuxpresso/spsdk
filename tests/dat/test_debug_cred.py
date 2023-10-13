@@ -7,19 +7,16 @@
 
 """Tests for debug credential."""
 
-import os
 
 import pytest
 import yaml
 
-from spsdk import SPSDKError
 from spsdk.apps.nxpdebugmbox import DatProtocol
-from spsdk.crypto import InvalidSignature, ec, hashes
-from spsdk.crypto.loaders import load_private_key
-from spsdk.dat import utils
+from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.crypto.keys import PrivateKeyEcc
 from spsdk.dat.debug_credential import DebugCredential
-from spsdk.exceptions import SPSDKValueError
-from spsdk.utils.misc import load_binary, use_working_directory
+from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.utils.misc import load_binary, use_working_directory, write_file
 
 
 @pytest.mark.parametrize(
@@ -53,21 +50,10 @@ def test_debugcredential_rsa_compare_with_reference(data_dir):
             dc = DebugCredential.create_from_yaml_config(version="1.0", yaml_config=yaml_config)
             dc.sign()
             data = dc.export()
-            with open("sample.cert", "wb") as f:
-                f.write(data)
-            with open("new_dck_rsa2048.cert", "rb") as f:
-                data_loaded = f.read()
+            data_loaded = load_binary("new_dck_rsa2048.cert")
             assert (
                 data == data_loaded
             ), "The generated dc binary and the referenced one are not the same."
-
-
-def test_reconstruct_signature(data_dir):
-    """Reconstructs the signature."""
-    signature_bytes = load_binary(os.path.join(data_dir, "signature_bytes.bin"))
-    signature = load_binary(os.path.join(data_dir, "signature.bin"))
-    reconstructed_signature = utils.reconstruct_signature(signature_bytes)
-    assert signature == reconstructed_signature
 
 
 def test_verify_ecc_signature(data_dir):
@@ -78,16 +64,13 @@ def test_verify_ecc_signature(data_dir):
         dc = DebugCredential.create_from_yaml_config(version="2.0", yaml_config=yaml_config)
         dc.sign()
         data = dc.export()
-        priv_key = load_private_key(yaml_config["rotk"])
+        priv_key = PrivateKeyEcc.load(yaml_config["rotk"])
     data_without_signature = data[:-64]
     signature_bytes = data[-64:]
-    signature = utils.reconstruct_signature(signature_bytes)
-    pub_key = priv_key.public_key()
-    try:
-        pub_key.verify(signature, data_without_signature, ec.ECDSA(hashes.SHA256()))
-        assert True
-    except InvalidSignature:
-        assert False
+    pub_key = priv_key.get_public_key()
+    assert pub_key.verify_signature(
+        signature_bytes, data_without_signature, EnumHashAlgorithm.SHA256
+    )
 
 
 def test_verify_ecc_signature_lpc55s3x_256(data_dir):
@@ -98,17 +81,14 @@ def test_verify_ecc_signature_lpc55s3x_256(data_dir):
         dc = DebugCredential.create_from_yaml_config(version="2.0", yaml_config=yaml_config)
         dc.sign()
         data = dc.export()
-        priv_key = load_private_key(yaml_config["rotk"])
+        priv_key = PrivateKeyEcc.load(yaml_config["rotk"])
     data_without_signature = data[:-64]
     signature_bytes = data[-64:]
     assert len(signature_bytes) == 64
-    signature = utils.reconstruct_signature(signature_bytes=signature_bytes, size=32)
-    pub_key = priv_key.public_key()
-    try:
-        pub_key.verify(signature, data_without_signature, ec.ECDSA(hashes.SHA256()))
-        assert True
-    except InvalidSignature:
-        assert False
+    pub_key = priv_key.get_public_key()
+    assert pub_key.verify_signature(
+        signature_bytes, data_without_signature, EnumHashAlgorithm.SHA256
+    )
 
 
 def test_verify_ecc_signature_lpc55s3x_384(data_dir):
@@ -119,16 +99,13 @@ def test_verify_ecc_signature_lpc55s3x_384(data_dir):
         dc = DebugCredential.create_from_yaml_config(version="2.1", yaml_config=yaml_config)
         dc.sign()
         data = dc.export()
-        priv_key = load_private_key(yaml_config["rotk"])
+        priv_key = PrivateKeyEcc.load(yaml_config["rotk"])
     data_without_signature = data[:-96]
     signature_bytes = data[-96:]
-    signature = utils.reconstruct_signature(signature_bytes=signature_bytes, size=48)
-    pub_key = priv_key.public_key()
-    try:
-        pub_key.verify(signature, data_without_signature, ec.ECDSA(hashes.SHA384()))
-        assert True
-    except InvalidSignature:
-        assert False
+    pub_key = priv_key.get_public_key()
+    assert pub_key.verify_signature(
+        signature_bytes, data_without_signature, EnumHashAlgorithm.SHA384
+    )
 
 
 def test_debugcredential_ecc_compare_with_reference(data_dir):
@@ -139,7 +116,7 @@ def test_debugcredential_ecc_compare_with_reference(data_dir):
             dc = DebugCredential.create_from_yaml_config(version="2.0", yaml_config=yaml_config)
             dc.sign()
             data = dc.export()
-            pub_key = load_private_key(yaml_config["rotk"]).public_key()
+            priv_key = PrivateKeyEcc.load(yaml_config["rotk"])
         data_without_signature = data[:-64]
         signature_bytes = data[-64:]
         with open("new_dck_secp256r1.cert", "rb") as f:
@@ -149,14 +126,13 @@ def test_debugcredential_ecc_compare_with_reference(data_dir):
         assert (
             data_without_signature == ref_data_without_signature
         ), "The generated dc binary and the referenced one are not the same."
-        signature = utils.reconstruct_signature(signature_bytes)
-        ref_signature = utils.reconstruct_signature(ref_signature_bytes)
-        try:
-            pub_key.verify(signature, data_without_signature, ec.ECDSA(hashes.SHA256()))
-            pub_key.verify(ref_signature, data_without_signature, ec.ECDSA(hashes.SHA256()))
-            assert True
-        except InvalidSignature:
-            assert False
+        pub_key = priv_key.get_public_key()
+        assert pub_key.verify_signature(
+            signature_bytes, data_without_signature, EnumHashAlgorithm.SHA256
+        )
+        assert pub_key.verify_signature(
+            ref_signature_bytes, data_without_signature, EnumHashAlgorithm.SHA256
+        )
 
 
 @pytest.mark.parametrize(
@@ -240,7 +216,7 @@ def test_debugcredential_info_lpc55s3x(data_dir, yml_file_name, version, require
             yaml_config = yaml.safe_load(f)
         dc = DebugCredential.create_from_yaml_config(version=version, yaml_config=yaml_config)
         dc.sign()
-    output = dc.info()
+    output = str(dc)
     req_strings = ["Version", "SOCC", "UUID", "UUID", "CC_SOCC", "CC_VU", "BEACON"]
     req_values = required_values
     for req_string in req_strings:

@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for Debug Probe utilities."""
 import pytest
 
 import spsdk.debuggers.debug_probe as DP
-from spsdk import SPSDKError
 from spsdk.debuggers.utils import (
     DebugProbes,
     DebugProbeUtils,
     ProbeDescription,
     SPSDKProbeNotFoundError,
 )
+from spsdk.exceptions import SPSDKError
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
 

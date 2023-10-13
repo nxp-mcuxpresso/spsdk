@@ -9,7 +9,7 @@
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb31.commands import (
     BaseCmd,
     CmdCall,
@@ -38,7 +38,7 @@ def test_cmd_erase():
     assert cmd.address == 100
     assert cmd.length == 0xFF
     assert cmd.memory_id == 10
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 32
@@ -69,7 +69,7 @@ def test_cmd_load():
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.memory_id == 1
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 48
@@ -91,7 +91,7 @@ def test_cmd_execute():
     """Test address, info value, size after export and parsing of CmdExecute command."""
     cmd = CmdExecute(address=100)
     assert cmd.address == 100
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == BaseCmd.SIZE
@@ -113,7 +113,7 @@ def test_cmd_call():
     """Test address, info value, size after export and parsing of CmdCall command."""
     cmd = CmdCall(address=100)
     assert cmd.address == 100
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == BaseCmd.SIZE
@@ -136,7 +136,7 @@ def test_program_cmd_progfuses():
     cmd = CmdProgFuses(address=100, data=bytes(12))
     assert cmd.address == 100
     assert cmd.length == 3
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == BaseCmd.SIZE + 4 * 4
@@ -150,7 +150,7 @@ def test_cmd_progifr():
     cmd = CmdProgIfr(address=100, data=bytes([0] * 100))
     assert cmd.address == 100
     assert cmd.data == bytes([0] * 100)
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == BaseCmd.SIZE + len(cmd.data) + 12
@@ -165,7 +165,7 @@ def test_cmd_loadcmac():
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.memory_id == 0
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 48
@@ -194,7 +194,7 @@ def test_cmd_copy():
     assert cmd.destination_address == 20
     assert cmd.memory_id_from == 30
     assert cmd.memory_id_to == 40
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) % 16 == 0
@@ -218,7 +218,7 @@ def test_cmd_loadhashlocking():
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.memory_id == 5
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 48 + 64
@@ -248,7 +248,7 @@ def test_cmd_loadkeyblob():
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.key_wrap_id == 17
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) % 16 == 0
@@ -266,7 +266,7 @@ def test_cmd_loadkeyblob_v2():
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.key_wrap_id == 19
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) % 16 == 0
@@ -292,7 +292,7 @@ def test_cmd_configurememory():
     cmd = CmdConfigureMemory(address=100, memory_id=10)
     assert cmd.address == 100
     assert cmd.memory_id == 10
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -316,7 +316,7 @@ def test_cmd_fillmemory():
     assert cmd.address == 100
     assert cmd.length == 100
     assert cmd.pattern == 0xFF1111FF
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 32
@@ -339,7 +339,7 @@ def test_cmd_fwversioncheck():
     cmd = CmdFwVersionCheck(value=100, counter_id=CmdFwVersionCheck.CounterID.SECURE)
     assert cmd.value == 100
     assert cmd.counter_id == 2
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) % 16 == 0
@@ -381,9 +381,9 @@ def test_section_cmd_header_basic():
 
 
 def test_section_cmd_header_info():
-    """Test presence of all keywords in info() method of section header cmd."""
+    """Test presence of all keywords in __str__() method of section header cmd."""
     section_header = CmdSectionHeader(length=100)
-    output = section_header.info()
+    output = str(section_header)
     required_strings = ["UID", "Type"]
     for required_string in required_strings:
         assert required_string in output, f"String {required_string} is not in output"
@@ -394,7 +394,7 @@ def test_section_cmd_header_offset():
     section_header = CmdSectionHeader(length=100)
     data = section_header.export()
     with pytest.raises(SPSDKError):
-        CmdSectionHeader.parse(data=data, offset=50)
+        CmdSectionHeader.parse(data=data[50:])
 
 
 def test_parse_command_function():

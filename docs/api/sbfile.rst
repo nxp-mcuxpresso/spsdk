@@ -113,10 +113,37 @@ SBFile Version 3.1. images
    :undoc-members:
    :show-inheritance:
 
+SBFile Version X
+----------------
+.. automodule:: spsdk.sbfile.sbx.images
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+SBFile Version X - DEVHSM
+-------------------------
+.. automodule:: spsdk.sbfile.sbx.devhsm
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 SBFile - miscellaneous functions
 ----------------------------------
 .. automodule:: spsdk.sbfile.misc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+SBFile - DEVHSM
+---------------
+.. automodule:: spsdk.sbfile.devhsm.devhsm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+SBFile - DEVHSM utils
+---------------------
+.. automodule:: spsdk.sbfile.devhsm.utils
    :members:
    :undoc-members:
    :show-inheritance:

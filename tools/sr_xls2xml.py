@@ -34,7 +34,7 @@ XLS_COLUMN_NAMES = (
 )
 
 
-@click.group()
+@click.group("sr-xls2xml", no_args_is_help=True)
 @click.option("-x", "--xls", type=str)
 @click.option("-s", "--sheet", type=str)
 @click.option("-m", "--xml", type=str)
@@ -498,7 +498,3 @@ XLS_TYPES = {"1": ShadowRegsXlsToXmlType1, "2": ShadowRegsXlsToXmlType2}
 
 if __name__ == "__main__":
     sys.exit(main())  # pragma: no cover # pylint: disable=no-value-for-parameter
-#     xls = ShadowRegsXlsToXml("tools/OTP6.xlsx")
-# regs = Registers("pokus 685", None)
-# regs.load_registers_from_xml("tools/OTP.xml")
-# regs.write_xml("tools/OPT2.xml")

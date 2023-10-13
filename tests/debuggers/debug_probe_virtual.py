@@ -78,7 +78,7 @@ class DebugProbeVirtual(DebugProbe):
         # setup IDR register of standard AP:
         self.coresight_ap[DebugProbe.get_coresight_ap_address(2, 0xFC)] = 0x002A0000
 
-        logger.debug(f"The SPSDK Virtual Interface has been initialized")
+        logger.debug("The SPSDK Virtual Interface has been initialized")
 
     @classmethod
     def get_connected_probes(cls, hardware_id: str = None, options: Dict = None) -> list:
@@ -161,7 +161,7 @@ class DebugProbeVirtual(DebugProbe):
 
         if self.coresight_mem_read_exception > 0:
             self.coresight_mem_read_exception -= 1
-            raise SPSDKDebugProbeTransferError(f"The Coresight memory read operation failed.")
+            raise SPSDKDebugProbeTransferError("The Coresight memory read operation failed.")
 
         return self._get_requested_value(self.virtual_memory, self.virtual_memory_substituted, addr)
 
@@ -215,12 +215,12 @@ class DebugProbeVirtual(DebugProbe):
         if access_port:
             if self.coresight_ap_write_exception > 0:
                 self.coresight_ap_write_exception -= 1
-                raise SPSDKDebugProbeTransferError(f"The Coresight write operation failed.")
+                raise SPSDKDebugProbeTransferError("The Coresight write operation failed.")
             self.coresight_ap[addr] = data
         else:
             if self.coresight_dp_write_exception > 0:
                 self.coresight_dp_write_exception -= 1
-                raise SPSDKDebugProbeTransferError(f"The Coresight write operation failed.")
+                raise SPSDKDebugProbeTransferError("The Coresight write operation failed.")
             self.coresight_dp[addr] = data
 
     def reset(self) -> None:

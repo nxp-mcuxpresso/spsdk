@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module implementing the TrustProvisioning Data Container."""
@@ -11,6 +11,7 @@ from abc import abstractmethod
 from typing import Any, List, Mapping, Type
 
 import hexdump
+from typing_extensions import Self
 
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import align, align_block
@@ -52,7 +53,7 @@ class BaseElement:
 
     @classmethod
     @abstractmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "BaseElement":
+    def parse(cls, data: bytes) -> Self:
         """Reconstruct object from serialized data."""
 
 
@@ -86,7 +87,7 @@ class EntryHeader(BaseElement):
     def stringify_payload_type(self) -> str:
         """Return a stringified payload type."""
         enum = AuthenticationType if self.tag == EntryType.AUTHENTICATION else PayloadType
-        return f"{self.payload_type:#06x} - {enum.desc(self.payload_type)}"  # type: ignore
+        return f"{self.payload_type:#06x} - {enum.desc(self.payload_type)}"
 
     def __str__(self) -> str:
         info = (
@@ -109,9 +110,9 @@ class EntryHeader(BaseElement):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "EntryHeader":
+    def parse(cls, data: bytes) -> Self:
         """Reconstruct the entry header from binary data."""
-        size, _, tag, extra, p_type = struct.unpack_from(cls.FORMAT, data, offset)
+        size, _, tag, extra, p_type = struct.unpack_from(cls.FORMAT, data)
         return cls(tag=tag, payload_size=size, payload_type=p_type, entry_extra=extra)
 
 
@@ -145,9 +146,9 @@ class DestinationHeader(BaseElement):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DestinationHeader":
+    def parse(cls, data: bytes) -> Self:
         """Reconstruct the destination record from binary data."""
-        dest_type, _, _, _, dest = struct.unpack_from(cls.FORMAT, data, offset)
+        dest_type, _, _, _, dest = struct.unpack_from(cls.FORMAT, data)
         return cls(destination=dest, destination_type=dest_type)
 
 
@@ -165,11 +166,14 @@ class DataEntry(BaseElement):
         """
         self.payload = payload
         self.header = EntryHeader(
-            tag=self.TAG, payload_size=len(payload), payload_type=payload_type, entry_extra=extra  # type: ignore
+            tag=self.TAG, payload_size=len(payload), payload_type=payload_type, entry_extra=extra
         )
 
+    def _stringify_payload_type(self) -> str:
+        return self.header.stringify_payload_type()
+
     def _stringify_payload(self) -> str:
-        info = f"Payload type: {self.header.stringify_payload_type()}\n"
+        info = f"Payload type: {self._stringify_payload_type()}\n"
         info += "Payload data: "
         if len(self.payload) <= 4:
             info += f"{self.payload.hex()}\n"
@@ -196,10 +200,10 @@ class DataEntry(BaseElement):
         return align_block(data, alignment=ALIGNMENT)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DataEntry":
+    def parse(cls, data: bytes) -> Self:
         """Reconstruct the entry from binary data."""
-        header = EntryHeader.parse(data, offset=offset)
-        payload_offset = header.SIZE + offset
+        header = EntryHeader.parse(data)
+        payload_offset = header.SIZE
         payload_length = header.payload_size
         payload = data[payload_offset : payload_offset + payload_length]
         return cls(payload=payload, payload_type=header.payload_type, extra=header.entry_extra)
@@ -251,11 +255,11 @@ class DataDestinationEntry(DataEntry):
         return align_block(data, alignment=ALIGNMENT)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "DataDestinationEntry":
+    def parse(cls, data: bytes) -> Self:
         """Reconstruct the entry header from binary data."""
-        header = EntryHeader.parse(data, offset=offset)
-        dest_header = DestinationHeader.parse(data, offset=offset + header.SIZE)
-        payload_start = offset + header.SIZE + dest_header.SIZE
+        header = EntryHeader.parse(data)
+        dest_header = DestinationHeader.parse(data[header.SIZE :])
+        payload_start = header.SIZE + dest_header.SIZE
         payload_size = header.payload_size
         payload = data[payload_start : payload_start + payload_size]
         return cls(
@@ -271,6 +275,21 @@ class DataAuthenticationEntry(DataEntry):
     """Final Data entry used for integrity check."""
 
     TAG = EntryType.AUTHENTICATION
+
+    def get_auth_type(self) -> int:
+        """Get appropriate Authentication type."""
+        return self.header.payload_type
+
+
+class DataAuthenticationEntryV2(DataAuthenticationEntry):
+    """Final Data entry V2 used for integrity check."""
+
+    def get_auth_type(self) -> int:
+        """Get appropriate Authentication type."""
+        return self.header.entry_extra
+
+    def _stringify_payload_type(self) -> str:
+        return AuthenticationType.desc(self.header.entry_extra)
 
 
 class ContainerHeader(BaseElement):
@@ -306,12 +325,12 @@ class ContainerHeader(BaseElement):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "ContainerHeader":
+    def parse(cls, data: bytes) -> Self:
         """Reconstruct the container header from binary data."""
-        patch, minor, major, tag, size, _ = struct.unpack_from(cls.FORMAT, data, offset)
+        patch, minor, major, tag, size, _ = struct.unpack_from(cls.FORMAT, data)
         if tag != cls.TAG:
             raise SPSDKTpError(f"Invalid TAG found: {hex(tag)}, expected {hex(cls.TAG)}")
-        header = ContainerHeader(major=major, minor=minor, patch=patch)
+        header = cls(major=major, minor=minor, patch=patch)
         header.size = size
         return header
 
@@ -319,9 +338,9 @@ class ContainerHeader(BaseElement):
 class Container(BaseElement):
     """TrustProvisioning Data Container."""
 
-    def __init__(self) -> None:
+    def __init__(self, major: int = 1, minor: int = 0, patch: int = 0) -> None:
         """Initialize the container."""
-        self.header = ContainerHeader()
+        self.header = ContainerHeader(major=major, minor=minor, patch=patch)
         #: list containing individual entries (shall not be modified directly)
         self._entries: List[DataEntry] = []
 
@@ -386,9 +405,18 @@ class Container(BaseElement):
         # to add DataAuth entry we need all data so far + header of a not-yet-existing entry :/
         # on top of that we need to add "pro-forma" entry to update container header
         auth_data_len = get_auth_data_len(auth_type=auth_type)
-        self.add_entry(
-            DataAuthenticationEntry(payload=bytes(auth_data_len), payload_type=auth_type)
-        )
+        if self.header.major == 2:
+            self.add_entry(
+                DataAuthenticationEntryV2(
+                    payload=bytes(auth_data_len), payload_type=0x0, extra=auth_type
+                )
+            )
+        else:
+            self.add_entry(
+                DataAuthenticationEntry(
+                    payload=bytes(auth_data_len), payload_type=auth_type, extra=0x0
+                )
+            )
         data = self.export()
 
         # find actual data to sign (skip the pro-forma signature)
@@ -422,18 +450,18 @@ class Container(BaseElement):
         return validate(
             data=data_to_validate,
             signature=auth_entry.payload,
-            auth_type=auth_entry.header.payload_type,  # type: ignore
+            auth_type=auth_entry.get_auth_type(),  # type: ignore
             key=key,
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "Container":
+    def parse(cls, data: bytes) -> Self:
         """Reconstruct container from binary data."""
-        header = ContainerHeader.parse(data=data, offset=offset)
-        offset += ContainerHeader.SIZE
+        header = ContainerHeader.parse(data=data)
+        offset = ContainerHeader.SIZE
         container = cls()
         while offset < len(data) and offset < header.size:
-            entry = parse_entry(data=data, offset=offset)
+            entry = parse_entry(data=data[offset:])
             offset += entry.total_size
             container.add_entry(entry=entry)
         return container
@@ -441,13 +469,13 @@ class Container(BaseElement):
 
 #: Mapping between entry type and its corresponding DataEntry class
 _ENTRY_CLASSES: Mapping[int, Type[DataEntry]] = {
-    EntryType.STANDARD: DataEntry,  # type: ignore
-    EntryType.DESTINATION: DataDestinationEntry,  # type: ignore
-    EntryType.AUTHENTICATION: DataAuthenticationEntry,  # type: ignore
+    EntryType.STANDARD: DataEntry,
+    EntryType.DESTINATION: DataDestinationEntry,
+    EntryType.AUTHENTICATION: DataAuthenticationEntry,
 }
 
 
-def parse_entry(data: bytes, offset: int = 0) -> "DataEntry":
+def parse_entry(data: bytes) -> "DataEntry":
     """Common parser for all known DataEntry classes."""
-    tag = data[offset + 3]
-    return _ENTRY_CLASSES[tag].parse(data=data, offset=offset)
+    tag = data[3]
+    return _ENTRY_CLASSES[tag].parse(data=data)

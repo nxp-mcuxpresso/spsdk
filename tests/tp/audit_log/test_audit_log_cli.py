@@ -46,7 +46,7 @@ def test_tphost_extract(data_dir, tmpdir, skip_nxp, skip_oem, cert_index, expect
         f"{data_dir}/tp_audit_log.db",
         "--audit-log-key",
         f"{data_dir}/oem_log_puk.pub",
-        "--destination",
+        "--output",
         str(tmpdir),
     ]
     if skip_nxp:

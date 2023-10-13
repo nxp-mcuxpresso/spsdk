@@ -1,0 +1,13 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Bootable Image converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==                                        
+# ----------------------------------------------------------------------------------------------------
+family: lpc55s3x  # [Required], MCU family name; Possible options:['lpc55s3x']
+revision: latest # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device; Possible options:['latest']
+memory_type: flexspi_nor # [Required], Memory type; Specify type of memory used by bootable image description; Possible options:['flexspi_nor']
+fcb: fcb.yaml # [Optional], FCB block path; Flash Configuration block path
+image_version: 4696 # [Optional], Image version
+application: mb_ext_xip_crc.yaml # [Required], Application image path

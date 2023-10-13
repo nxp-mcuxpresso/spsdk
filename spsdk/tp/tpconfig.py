@@ -11,7 +11,7 @@ from typing import Callable, Optional
 
 from spsdk.utils.misc import Timeout
 
-from . import TpDevInterface
+from .tp_intf import TpDevInterface
 
 logger = logging.getLogger(__name__)
 

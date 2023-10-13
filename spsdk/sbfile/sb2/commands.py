@@ -9,16 +9,16 @@
 import math
 from abc import abstractmethod
 from struct import calcsize, pack, unpack_from
-from typing import Any, Mapping, Optional, Type
+from typing import Mapping, Optional, Type
 
 from crcmod.predefined import mkPredefinedCrcFun
+from typing_extensions import Self
 
-from spsdk import SPSDKError
-from spsdk.mboot import ExtMemId
+from spsdk.exceptions import SPSDKError
+from spsdk.mboot.memories import ExtMemId
 from spsdk.sbfile.misc import SecBootBlckSize
-from spsdk.utils.crypto.abstract import BaseClass
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo
 
 ########################################################################################################################
 # Constants
@@ -62,7 +62,7 @@ class EnumSectionFlag(Enum):
 ########################################################################################################################
 # Header Class
 ########################################################################################################################
-class CmdHeader:
+class CmdHeader(BaseClass):
     """SBFile command header."""
 
     FORMAT = "<2BH3L"
@@ -87,11 +87,8 @@ class CmdHeader:
         self.count = 0
         self.data = 0
 
-    def __eq__(self, obj: Any) -> bool:
-        return isinstance(obj, self.__class__) and vars(obj) == vars(self)
-
-    def __ne__(self, obj: Any) -> bool:
-        return not self.__eq__(obj)
+    def __repr__(self) -> str:
+        return f"SB2 Command header, TAG:{self.tag}"
 
     def __str__(self) -> str:
         tag = EnumCmdTag.get(self.tag, f"0x{self.tag:02X}")
@@ -113,21 +110,18 @@ class CmdHeader:
         return self._raw_data(self.crc)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdHeader":
+    def parse(cls, data: bytes) -> Self:
         """Parse command header from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: CMDHeader object
         :raises SPSDKError: raised when size is incorrect
         :raises SPSDKError: Raised when CRC is incorrect
         """
-        if calcsize(cls.FORMAT) > len(data) - offset:
+        if calcsize(cls.FORMAT) > len(data):
             raise SPSDKError("Incorrect size")
         obj = cls(EnumCmdTag.NOP)
-        (crc, obj.tag, obj.flags, obj.address, obj.count, obj.data) = unpack_from(
-            cls.FORMAT, data, offset
-        )
+        (crc, obj.tag, obj.flags, obj.address, obj.count, obj.data) = unpack_from(cls.FORMAT, data)
         if crc != obj.crc:
             raise SPSDKError("CRC does not match")
         return obj
@@ -162,24 +156,16 @@ class CmdBaseClass(BaseClass):
         """Return size of the command in binary format (including header)."""
         return CmdHeader.SIZE  # this is default implementation
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return "Command: " + str(self._header)  # default implementation: use command name
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Return text info about the instance."""
-        return str(self) + "\n"  # default implementation is same as __str__
+        return repr(self) + "\n"  # default implementation is same as __repr__
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Return object serialized into bytes."""
-        dbg_info.append_section("Command:" + EnumCmdTag.name(self.header.tag))
-        cmd_data = self._header.export()  # default implementation
-        dbg_info.append_binary_data("cmd-header", cmd_data)
-        return cmd_data
-
-    @classmethod
-    @abstractmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdBaseClass":
-        """Deserialize object from binary."""
+        return self._header.export()  # default implementation
 
 
 class CmdNop(CmdBaseClass):
@@ -190,15 +176,14 @@ class CmdNop(CmdBaseClass):
         super().__init__(EnumCmdTag.NOP)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdNop":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: CMD Nop object
         :raises SPSDKError: When there is incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.NOP:
             raise SPSDKError("Incorrect header tag")
         return cls()
@@ -215,15 +200,14 @@ class CmdTag(CmdBaseClass):
         super().__init__(EnumCmdTag.TAG)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdTag":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: parsed instance
         :raises SPSDKError: When there is incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.TAG:
             raise SPSDKError("Incorrect header tag")
         result = cls()
@@ -293,11 +277,10 @@ class CmdLoad(CmdBaseClass):
             f"Flags=0x{self.flags:08X}, MemId=0x{self.mem_id:08X}"
         )
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export command as binary."""
         self._update_data()
-        result = super().export(dbg_info)
-        dbg_info.append_binary_section("load-data", self.data)
+        result = super().export()
         return result + self.data
 
     def _update_data(self) -> None:
@@ -310,28 +293,26 @@ class CmdLoad(CmdBaseClass):
         self._header.data = crc32_function(self.data, 0xFFFFFFFF)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdLoad":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: CMD Load object
         :raises SPSDKError: Raised when there is invalid CRC
         :raises SPSDKError: When there is incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.LOAD:
             raise SPSDKError("Incorrect header tag")
-        offset += CmdHeader.SIZE
         header_count = SecBootBlckSize.align(header.count)
-        cmd_data = data[offset : offset + header_count]
+        cmd_data = data[CmdHeader.SIZE : CmdHeader.SIZE + header_count]
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         if header.data != crc32_function(cmd_data, 0xFFFFFFFF):
             raise SPSDKError("Invalid CRC in the command header")
         device_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
         group_id = (header.flags & cls.ROM_MEM_GROUP_ID_MASK) >> cls.ROM_MEM_GROUP_ID_SHIFT
         mem_id = get_memory_id(device_id, group_id)
-        obj = CmdLoad(header.address, cmd_data, mem_id)
+        obj = cls(header.address, cmd_data, mem_id)
         obj.header.data = header.data
         obj.header.flags = header.flags
         obj._update_data()
@@ -409,28 +390,25 @@ class CmdFill(CmdBaseClass):
             f"{byte:02X}" for byte in self._pattern
         )
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Return command in binary form (serialization)."""
         # export cmd
-        data = super().export(dbg_info)
+        data = super().export()
         # export additional data
         data = SecBootBlckSize.align_block_fill_random(data)
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdFill":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: Command Fill object
         :raises SPSDKError: If incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.FILL:
             raise SPSDKError("Incorrect header tag")
-        # The last 4 bytes of header are part of pattern value
-        offset += CmdHeader.SIZE - 4
         return cls(header.address, header.data, header.count)
 
 
@@ -491,15 +469,14 @@ class CmdJump(CmdBaseClass):
         return nfo
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdJump":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: Command Jump object
         :raises SPSDKError: If incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.JUMP:
             raise SPSDKError("Incorrect header tag")
         return cls(header.address, header.data, header.count if header.flags else None)
@@ -544,15 +521,14 @@ class CmdCall(CmdBaseClass):
         return f"CALL: Address=0x{self.address:08X}, Argument=0x{self.argument:08X}"
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdCall":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: Command Call object
         :raises SPSDKError: If incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.CALL:
             raise SPSDKError("Incorrect header tag")
         return cls(header.address, header.data)
@@ -619,15 +595,14 @@ class CmdErase(CmdBaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdErase":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: Command Erase object
         :raises SPSDKError: If incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.ERASE:
             raise SPSDKError("Invalid header tag")
         device_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
@@ -644,15 +619,14 @@ class CmdReset(CmdBaseClass):
         super().__init__(EnumCmdTag.RESET)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdReset":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: Cmd Reset object
         :raises SPSDKError: If incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.RESET:
             raise SPSDKError("Invalid header tag")
         return cls()
@@ -721,15 +695,14 @@ class CmdMemEnable(CmdBaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdMemEnable":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: Command Memory Enable object
         :raises SPSDKError: If incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.MEM_ENABLE:
             raise SPSDKError("Invalid header tag")
         device_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
@@ -831,15 +804,14 @@ class CmdProg(CmdBaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdProg":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: parsed command object
         :raises SPSDKError: If incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.PROG:
             raise SPSDKError("Invalid header tag")
         mem_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
@@ -890,20 +862,19 @@ class CmdVersionCheck(CmdBaseClass):
         )
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdVersionCheck":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: parsed command object
         :raises SPSDKError: If incorrect header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.FW_VERSION_CHECK:
             raise SPSDKError("Invalid header tag")
         ver_type = VersionCheckType.from_int(header.address)
         version = header.count
-        return CmdVersionCheck(ver_type, version)
+        return cls(ver_type, version)
 
 
 class CmdKeyStoreBackupRestore(CmdBaseClass):
@@ -955,15 +926,14 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
         return (self.header.flags & self.ROM_MEM_DEVICE_ID_MASK) >> self.ROM_MEM_DEVICE_ID_SHIFT
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CmdKeyStoreBackupRestore":
+    def parse(cls, data: bytes) -> Self:
         """Parse command from bytes.
 
         :param data: Input data as bytes
-        :param offset: The offset of input data
         :return: CmdKeyStoreBackupRestore object
         :raises SPSDKError: When there is invalid header tag
         """
-        header = CmdHeader.parse(data, offset)
+        header = CmdHeader.parse(data)
         if header.tag != cls.cmd_id():
             raise SPSDKError("Invalid header tag")
         address = header.address
@@ -1009,18 +979,17 @@ _CMD_CLASS: Mapping[int, Type[CmdBaseClass]] = {
 }
 
 
-def parse_command(data: bytes, offset: int = 0) -> CmdBaseClass:
+def parse_command(data: bytes) -> CmdBaseClass:
     """Parse SB 2.x command from bytes.
 
     :param data: Input data as bytes
-    :param offset: The offset of input data to start parsing
     :return: parsed command object
     :raises SPSDKError: Raised when there is unsupported command provided
     """
-    header_tag = data[offset + 1]
+    header_tag = data[1]
     if header_tag not in _CMD_CLASS:
         raise SPSDKError(f"Unsupported command: {str(header_tag)}")
-    return _CMD_CLASS[header_tag].parse(data, offset)
+    return _CMD_CLASS[header_tag].parse(data)
 
 
 def get_device_id(mem_id: int) -> int:

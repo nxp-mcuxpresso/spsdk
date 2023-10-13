@@ -1,0 +1,29 @@
+# BuildKit
+# syntax = docker/dockerfile:1.2
+
+FROM python:3-slim-bullseye
+
+ENV http_proxy ${https_proxy}
+ENV https_proxy ${https_proxy}
+
+# ENV PYTHONDONTWRITEBYTECODE=1
+# ENV PYTHONUNBUFFERED=1
+
+COPY . /spsdk
+
+WORKDIR /spsdk
+
+RUN --mount=type=cache,target=/root/.cache/pip python -m pip install -U pip
+RUN --mount=type=cache,target=/root/.cache/pip pip install -e .
+
+# use this as mouting point to "host"?
+RUN mkdir /data
+
+RUN useradd --uid 10000 spsdkuser
+
+RUN chown spsdkuser /data
+RUN chown spsdkuser /spsdk
+
+USER spsdkuser
+
+ENTRYPOINT [ "/bin/bash" ]

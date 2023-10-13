@@ -3,13 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 devices:
-  lpc55xx:
-    revisions:
-      a0:
-        data_file: lpc55xx_a0.yaml
-      a1:
-        data_file: lpc55xx_a1.yaml
-    latest: a1
   lpc55s0x:
     revisions:
       a1:
@@ -18,9 +11,9 @@ devices:
   lpc55s6x:
     revisions:
       a0:
-        data_file: lpc55xx_a0.yaml
+        data_file: lpc55s6x_a0.yaml
       a1:
-        data_file: lpc55xx_a1.yaml
+        data_file: lpc55s6x_a1.yaml
     latest: a1
   lpc55s1x:
     revisions:
@@ -68,3 +61,7 @@ devices:
       a1:
         data_file: kw45xx_a0.yaml
     latest: a1
+  rw61x:
+    revisions:
+      a1:
+        data_file: rw61x_a1.yaml

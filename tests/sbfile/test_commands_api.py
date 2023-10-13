@@ -7,8 +7,8 @@
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.mboot import ExtMemId
+from spsdk.exceptions import SPSDKError
+from spsdk.mboot.memories import ExtMemId
 from spsdk.sbfile.sb2.commands import (
     CmdCall,
     CmdErase,
@@ -31,7 +31,7 @@ from spsdk.sbfile.sb2.commands import (
 
 def test_nop_cmd():
     cmd = CmdNop()
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -50,7 +50,7 @@ def test_nop_cmd_invalid_parse():
 
 def test_tag_cmd():
     cmd = CmdTag()
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -71,7 +71,7 @@ def test_load_cmd():
     cmd = CmdLoad(address=100, data=b"\x00" * 100)
     assert cmd.address == 100
     assert cmd.data == bytearray([0] * 100)
-    assert cmd.info()
+    assert str(cmd)
 
     cmd.data = cmd.data + b"\x10"
     assert len(cmd.data) == 101
@@ -99,7 +99,7 @@ def test_load_cmd_invalid_parse():
 
 def test_load_cmd_invalid_parse_crc():
     cmd = CmdLoad(address=100, data=b"\x00" * 100)
-    data = cmd.export()
+    cmd.export()
     with pytest.raises(SPSDKError, match="Invalid CRC in the command header"):
         CmdLoad.parse(
             data=b"Q\x02\x00\x00d\x00\x00\x00p\x00\x00\x00\x02z\xa7\xfe\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\xd1a\x13<\xf5 \x9cP\xb8\x00\x00"
@@ -202,7 +202,7 @@ def test_jump_cmd():
     assert cmd.address == 100
     assert cmd.argument == 10
     assert cmd.spreg is None
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -241,7 +241,7 @@ def test_call_cmd():
     cmd = CmdCall(address=100, argument=10)
     assert cmd.address == 100
     assert cmd.argument == 10
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -269,7 +269,7 @@ def test_erase_cmd():
     assert cmd.address == 100
     assert cmd.length == 10
     assert cmd.flags == 0
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -285,7 +285,7 @@ def test_erase_invalid():
         cmd.address = 0xFFFFFFFFA
 
 
-def test_erase_invalid():
+def test_erase_invalid2():
     cmd = CmdNop()
     data = cmd.export()
     with pytest.raises(SPSDKError, match="Invalid header tag"):
@@ -294,7 +294,7 @@ def test_erase_invalid():
 
 def test_reset_cmd():
     cmd = CmdReset()
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -316,7 +316,7 @@ def test_mem_enable_cmd():
     assert cmd.address == 100
     assert cmd.size == 10
     assert cmd.mem_id == ExtMemId.MMC_CARD
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -335,7 +335,7 @@ def test_mem_enable_cmd_invalid_parse():
 
 def test_prog_cmd():
     cmd = CmdProg(address=0x1000, mem_id=4, data_word1=0xAABBCCDD, data_word2=0x10000000)
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -355,7 +355,7 @@ def test_prog_cmd_invalid_parse():
 def test_version_check():
     """Test SB command `CmdVersionCheck`"""
     cmd = CmdVersionCheck(VersionCheckType.NON_SECURE_VERSION, 0x16)
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -383,7 +383,7 @@ def test_version_check_invalid_parse():
 def test_keystore_backup():
     """Test SB command `CmdKeyStoreBackup`"""
     cmd = CmdKeyStoreBackup(1000, 1)
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16
@@ -399,7 +399,7 @@ def test_keystore_backup():
 def test_keystore_restore():
     """Test SB command `CmdKeyStoreRestore`"""
     cmd = CmdKeyStoreRestore(1000, 1)
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     assert len(data) == 16

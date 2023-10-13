@@ -1,0 +1,17 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Trust Zone converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+family: rt5xx  # [Required], MCU family name; Possible options:['k32w1xx', 'kw45xx', 'lpc55s0x', 'lpc55s1x', 'lpc55s3x', 'lpc55s6x', 'mcxn9xx', 'nhs52s04', 'rt5xx', 'rt6xx']
+revision: a0 # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device.
+tzpOutputFile: C:/Work/TrustZone/tzFile.bin # [Required], Optional name of output file for TZ binary; The name of output binary file with Trust Zone data.
+trustZonePreset: # [Required], Customization of standard preset values; Trust Zone preset dictionary, with trust zone configuration.
+  MPU Control Register (mpu_ctrl): '0x00000000'  # [Optional], TZ Preset; Preset for MPU Control Register (mpu_ctrl)
+  SAU Control Register (sau_ctrl): '0x00000000' # [Optional], TZ Preset; Preset for SAU Control Register (sau_ctrl)
+  RAM0 Slave Rule Register (ram0_slave_rule): '0x00000000' # [Optional], TZ Preset; Preset for RAM0 Slave Rule Register (ram0_slave_rule)
+  (ezh_ram_slave_rule): '0x00000000' # [Optional], TZ Preset; Preset for (ezh_ram_slave_rule)
+  Secure GPIO Register 8 for DSP (sec_gp_reg8): '0xffffffff' # [Optional], TZ Preset; Preset for Secure GPIO Register 8 for DSP (sec_gp_reg8)
+  Secure Control Register (misc_ctrl_reg): '0x0000aaaa' # [Optional], TZ Preset; Preset for Secure Control Register (misc_ctrl_reg)

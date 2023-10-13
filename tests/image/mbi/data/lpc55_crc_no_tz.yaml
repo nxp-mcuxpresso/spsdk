@@ -1,0 +1,17 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Master Boot Image converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+# ----------------------------------------------------------------------------------------------------
+family: lpc55s6x  # [Required], MCU family name; Possible options:['lpc550x', 'lpc551x', 'lpc552x', 'lpc55s2x', 'lpc55s6x', 'nhs52sxx']
+outputImageExecutionTarget: Internal flash (XIP) # [Required], Application target; Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence; Possible options:['Internal flash (XIP)', 'External flash (XIP)', 'Internal Flash (XIP)', 'External Flash (XIP)', 'RAM', 'ram', 'xip']
+outputImageAuthenticationType: CRC # [Required], Type of boot image authentication; Specification of final master boot image authentication; Possible options:['Plain', 'CRC', 'Signed', 'Encrypted + Signed', 'NXP Signed', 'encrypted', 'signed', 'crc']
+masterBootOutputFile: lpc55_crc_no_tz_mbi.bin # [Required], Master Boot Image name; The file for Master Boot Image result file.
+inputImageFile: lpcxpresso55s69_led_blinky.bin # [Required], Plain application image; The input application image to by modified to Master Boot Image.
+# ----------------------------------------------------------------------------------------------------
+#                                      == Trust Zone Settings ==
+# ----------------------------------------------------------------------------------------------------
+enableTrustZone: false # [Optional], TrustZone enable option; If not specified, the Trust zone is disabled.
+trustZonePresetFile: '' # [Optional], TrustZone Customization file; If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.

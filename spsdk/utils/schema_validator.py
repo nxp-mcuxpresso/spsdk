@@ -12,7 +12,7 @@ import logging
 import os
 import textwrap
 from collections import OrderedDict
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import fastjsonschema
 from deepmerge import Merger, always_merger
@@ -23,12 +23,32 @@ from ruamel.yaml import YAML, YAMLError
 from ruamel.yaml.comments import CommentedMap as CMap
 from ruamel.yaml.comments import CommentedSeq as CSeq
 
-from spsdk import SPSDK_YML_INDENT, SPSDKError
+from spsdk import SPSDK_YML_INDENT
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import find_file, load_configuration, value_to_int, write_file
 
 ENABLE_DEBUG = False
 
 logger = logging.getLogger(__name__)
+
+
+def cmap_update(cmap: CMap, updater: CMap) -> None:
+    """Update CMap including comments.
+
+    :param cmap: Original CMap to be updated.
+    :param updater: CMap updater.
+    """
+    cmap.update(updater)
+    cmap.ca.items.update(updater.ca.items)
+
+
+class PropertyRequired(Enum):
+    """Enum describing if the property is required or optional."""
+
+    REQUIRED = (0, "Required")
+    CONDITIONALLY_REQUIRED = (1, "Conditionally required")
+    OPTIONAL = (2, "Optional")
 
 
 class SPSDKListStrategies(ListStrategies):
@@ -77,30 +97,44 @@ def _is_number(param: Any) -> bool:
         return False
 
 
+def _is_hex_number(param: Any) -> bool:
+    """Checks whether the input represents a hexnumber.
+
+    :param param: Input to analyze
+    :raises SPSDKError: Input doesn't represent a hexnumber
+    :return: True if input represents a hexnumber
+    """
+    try:
+        bytes.fromhex(param)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
 def _print_validation_fail_reason(
     exc: fastjsonschema.JsonSchemaValueException,
-    extra_formaters: Optional[Dict[str, Callable[[str], bool]]] = None,
+    extra_formatters: Optional[Dict[str, Callable[[str], bool]]] = None,
 ) -> str:
-    """Print formated and easy to read reason why the  validation failed.
+    """Print formatted and easy to read reason why the  validation failed.
 
     :param exc: Original exception.
-    :param extra_formaters: Additional custom formatters
+    :param extra_formatters: Additional custom formatters
     :return: String explaining the reason of fail.
     """
 
     def process_nested_rule(
         exception: fastjsonschema.JsonSchemaValueException,
-        extra_formaters: Optional[Dict[str, Callable[[str], bool]]],
+        extra_formatters: Optional[Dict[str, Callable[[str], bool]]],
     ) -> str:
         message = ""
         for rule_def_ix, rule_def in enumerate(exception.rule_definition):
             try:
-                validator = fastjsonschema.compile(rule_def, formats=extra_formaters)
+                validator = fastjsonschema.compile(rule_def, formats=extra_formatters)
                 validator(exception.value)
             except fastjsonschema.JsonSchemaValueException as _exc:
                 message += (
                     f"\nReason of fail for {exception.rule} rule#{rule_def_ix}: "
-                    f"\n {_print_validation_fail_reason(_exc , extra_formaters)}\n"
+                    f"\n {_print_validation_fail_reason(_exc , extra_formatters)}\n"
                 )
         if all(rule_def.get("required") for rule_def in exception.rule_definition):
             message += f"\nYou need to define {exception.rule} of the following sets:"
@@ -117,23 +151,23 @@ def _print_validation_fail_reason(
             message += f"; Non-existing file: {exc.value}"
             message += "; The file must exists even if the key is NOT used in configuration."
     elif exc.rule == "anyOf":
-        message += process_nested_rule(exc, extra_formaters=extra_formaters)
+        message += process_nested_rule(exc, extra_formatters=extra_formatters)
     elif exc.rule == "oneOf":
-        message += process_nested_rule(exc, extra_formaters=extra_formaters)
+        message += process_nested_rule(exc, extra_formatters=extra_formatters)
     return message
 
 
 def check_config(
     config: Union[str, Dict[str, Any]],
     schemas: List[Dict[str, Any]],
-    extra_formaters: Optional[Dict[str, Callable[[str], bool]]] = None,
+    extra_formatters: Optional[Dict[str, Callable[[str], bool]]] = None,
     search_paths: Optional[List[str]] = None,
 ) -> None:
     """Check the configuration by provided list of validation schemas.
 
     :param config: Configuration to check
     :param schemas: List of validation schemas
-    :param extra_formaters: Additional custom formaters
+    :param extra_formatters: Additional custom formatters
     :param search_paths: List of paths where to search for the file, defaults to None
     :raises SPSDKError: Invalid validation schema or configuration
     """
@@ -144,6 +178,7 @@ def check_config(
         "optional_file": lambda x: not x
         or bool(find_file(x, search_paths=search_paths, raise_exc=False)),
         "number": _is_number,
+        "hex_value": _is_hex_number,
     }
     if isinstance(config, str):
         config_to_check = load_configuration(config)
@@ -159,7 +194,7 @@ def check_config(
     for sch in schemas:
         always_merger.merge(schema, copy.deepcopy(sch))
     validator = None
-    formats = always_merger.merge(custom_formatters, extra_formaters or {})
+    formats = always_merger.merge(custom_formatters, extra_formatters or {})
     try:
         if ENABLE_DEBUG:
             validator_code = fastjsonschema.compile_to_code(schema, formats=formats)
@@ -171,7 +206,7 @@ def check_config(
     try:
         if ENABLE_DEBUG:
             # pylint: disable=import-error,import-outside-toplevel
-            import validator_file  # type: ignore
+            import validator_file
 
             validator_file.validate(config_to_check, formats)
         else:
@@ -184,6 +219,8 @@ def check_config(
 
 class CommentedConfig:
     """Class for generating commented config templates or custom configurations."""
+
+    MAX_LINE_LENGTH = 120 - 2  # Minus '# '
 
     def __init__(
         self,
@@ -211,22 +248,28 @@ class CommentedConfig:
         self.export_template = export_template
         assert export_template or values, "values must be defined for configuration export"
 
-    @staticmethod
-    def _get_title_block(title: str, description: Optional[str] = None) -> str:
+    @property
+    def max_line(self) -> int:
+        """Maximal line with current indent."""
+        return self.MAX_LINE_LENGTH - max(SPSDK_YML_INDENT * (self.indent - 1), 0)
+
+    def _get_title_block(self, title: str, description: Optional[str] = None) -> str:
         """Get unified title blob.
 
         :param title: Simple title of block
         :param description: Description of block
         :return: ASCII art block
         """
-        block_len = 100
-        delimiter = "-" * block_len
+        delimiter = "=" * self.max_line
         title_str = f" == {title} == "
-        title_str = title_str.center(block_len)
+        title_str = title_str.center(self.max_line)
         descr_list = (
-            [text.center(block_len) + "\n" for text in textwrap.wrap(description, block_len)]
+            [
+                text.center(self.max_line) + "\n"
+                for text in textwrap.wrap(description, self.max_line)
+            ]
             if description
-            else [""]
+            else []
         )
 
         ret = delimiter + "\n" + title_str + "\n"
@@ -236,7 +279,7 @@ class CommentedConfig:
         return ret
 
     @staticmethod
-    def get_property_optional_required(key: str, block: Dict[str, Any]) -> str:
+    def get_property_optional_required(key: str, block: Dict[str, Any]) -> PropertyRequired:
         """Function to determine if the config property is required or not.
 
         :param key: Name of config record
@@ -273,26 +316,26 @@ class CommentedConfig:
             return list(set(all_props))
 
         if "required" in block and key in block["required"]:
-            return "Required"
+            return PropertyRequired.REQUIRED
 
         for val in block.values():
             if isinstance(val, dict):
                 ret = _find_required(val)
                 if ret and key in ret:
-                    return "Conditionally required"
+                    return PropertyRequired.CONDITIONALLY_REQUIRED
 
         actual_kws = {k: v for k, v in block.items() if k in schema_kws}
         ret = _find_required_in_schema_kws(actual_kws)
         if key in ret:
-            return "Conditionally required"
+            return PropertyRequired.CONDITIONALLY_REQUIRED
 
-        return "Optional"
+        return PropertyRequired.OPTIONAL
 
     def _create_object_block(
         self,
         block: Dict[str, Dict[str, Any]],
         custom_value: Optional[Union[Dict[str, Any], List[Any]]] = None,
-    ) -> Union[CMap, CSeq]:
+    ) -> CMap:
         """Private function used to create object block with data.
 
         :param block: Source block with data
@@ -309,11 +352,6 @@ class CommentedConfig:
 
         assert "properties" in block.keys()
 
-        if "oneOf" in block["properties"].keys():
-            cfg_s = self._create_one_of_block_array(block["properties"], custom_value)  # type: ignore
-            self.indent -= 1
-            return cfg_s
-
         cfg_m = CMap()
         for key in self._get_schema_block_keys(block):
             assert (
@@ -327,17 +365,23 @@ class CommentedConfig:
                 continue
 
             val_p: Dict = block["properties"][key]
-            value_to_add, comment, title = self._get_schema_value(val_p, value)
 
-            cfg_m[key] = value_to_add
-            p_required = self.get_property_optional_required(key, block)
-            cfg_m.yaml_add_eol_comment(f"[{p_required}]{', ' if comment else ''}{comment}", key=key)
-            if title:
-                cfg_m.yaml_set_comment_before_after_key(
+            if key == "oneOf":
+                cmap_update(cfg_m, self._handle_one_of_block(val_p, value))
+            else:
+                value_to_add = self._get_schema_value(val_p, value)
+
+                if value_to_add is None:
+                    continue
+                cfg_m[key] = value_to_add
+                self._add_comment(
+                    cfg_m,
+                    val_p,
                     key,
-                    self._get_title_block(title),
-                    indent=SPSDK_YML_INDENT * (self.indent - 1),
+                    value_to_add,
+                    PropertyRequired.desc(self.get_property_optional_required(key, block)),
                 )
+
         self.indent -= 1
         return cfg_m
 
@@ -354,98 +398,106 @@ class CommentedConfig:
         assert "items" in block.keys()
         self.indent += 1
         val_i: Dict = block["items"]
-        if "oneOf" in val_i.keys():
-            cfg_s = self._create_one_of_block_array(val_i, custom_value)
-        else:
-            cfg_s = CSeq()
-            if custom_value:
-                for cust_val in custom_value:
-                    value, _, _ = self._get_schema_value(val_i, cust_val)
-                    if isinstance(value, list):
-                        cfg_s.extend(value)
-                    else:
-                        cfg_s.append(value)
-            elif self.export_template:
-                value, _, _ = self._get_schema_value(val_i, None)
-                # the template_value can be the actual list(not only one element)
-                if isinstance(value, list):
+
+        cfg_s = CSeq()
+        if custom_value:
+            for cust_val in custom_value:
+                value = self._get_schema_value(val_i, cust_val)
+                if isinstance(value, (CSeq, List)):
                     cfg_s.extend(value)
                 else:
                     cfg_s.append(value)
+        elif self.export_template:
+            value = self._get_schema_value(val_i, None)
+            # the template_value can be the actual list(not only one element)
+            if isinstance(value, (CSeq, List)):
+                cfg_s.extend(value)
+            else:
+                cfg_s.append(value)
         self.indent -= 1
         return cfg_s
 
     @staticmethod
-    def _find_matching_oneof_option(one_of: List[Dict[str, Any]], cust_val: Any) -> Dict[str, Any]:
-        """Find matching "oneOf" schema for given custom value.
+    def _check_matching_oneof_option(one_of: Dict[str, Any], cust_val: Any) -> bool:
+        """Find matching given custom value to "oneOf" schema.
 
-        :param one_of: list of oneOf schemas
-        :param cust_val: custom value; currently must be dictionary
-        :raise SPSDKError: if not found
+        :param one_of:oneOf schema
+        :param cust_val: custom value
+        :raises SPSDKError: if not found
         """
-        assert (
-            isinstance(cust_val, dict) and cust_val
-        ), "currently the implementation supports only dictionary as custom value"
-        for option in one_of:
-            assert option.get("type") == "object"
-            properties = option.get("properties")
-            assert properties, "non-empty properties must be defined"
-            if all([key in properties for key in cust_val.keys()]):
-                return option
-        raise SPSDKError(f"for custom value {str(cust_val)}, no corresponding `oneOf` schema found")
 
-    def _create_one_of_block_array(
-        self, block: Dict[str, Dict[str, Any]], custom_value: Optional[List[Any]]
-    ) -> CSeq:
+        def check_type(option: Dict, t: str) -> bool:
+            option_type = option.get("type")
+            if isinstance(option_type, list):
+                return t in option_type
+            return t == option_type
+
+        if cust_val:
+            if isinstance(cust_val, dict) and check_type(one_of, "object"):
+                properties = one_of.get("properties")
+                assert properties, "non-empty properties must be defined"
+                if all([key in properties for key in cust_val.keys()]):
+                    return True
+
+            if isinstance(cust_val, str) and check_type(one_of, "string"):
+                return True
+
+            if isinstance(cust_val, int) and check_type(one_of, "number"):
+                return True
+
+        return False
+
+    def _handle_one_of_block(
+        self,
+        block: Dict[str, Any],
+        custom_value: Optional[Union[Dict[str, Any], List[Any]]] = None,
+    ) -> CMap:
         """Private function used to create oneOf block with data, and return as an array that contains all values.
 
         :param block: Source block with data
         :param custom_value: custom value to fill the array
         :return: CS base configuration object
         """
-        self.indent += 1
-        ret = CSeq()
-        one_of = block["oneOf"]
+
+        def get_help_name(schema: Dict) -> str:
+            if schema.get("type") == "object":
+                options = list(schema["properties"].keys())
+                if len(options) == 1:
+                    return options[0]
+                return str(options)
+            return str(schema.get("title", schema.get("type", "Unknown")))
+
+        ret = CMap()
+        one_of = block
         assert isinstance(one_of, list)
         if custom_value is not None:
-            for i, cust_val in enumerate(custom_value):
-                option = self._find_matching_oneof_option(one_of, cust_val)
-                value, loc_comment, loc_title = self._get_schema_value(option, cust_val)
-                ret.append(value)
-                if loc_comment:
-                    ret.yaml_add_eol_comment(f"{loc_comment}", key=i)
-                if loc_title:
-                    ret.yaml_set_comment_before_after_key(
-                        key=i,
-                        before=self._get_title_block(loc_title),
-                        indent=SPSDK_YML_INDENT * (self.indent - 1),
-                    )
-        elif self.export_template:
-            option_types = ",".join([str(x.get("type")) for x in one_of])
-            title = f"List of possible {len(one_of)} options. Option types[{option_types}]"
-            for i, option in enumerate(one_of):
-                value, loc_comment, loc_title = self._get_schema_value(option, None)
-                ret.append(value)
-                ret.yaml_add_eol_comment(
-                    f"[Example of possible configuration #{i}] {loc_comment}", key=i
-                )
-                if loc_title:
-                    ret.yaml_set_comment_before_after_key(
-                        key=i,
-                        before=self._get_title_block(loc_title),
-                        indent=SPSDK_YML_INDENT * (self.indent - 1),
-                    )
-            ret.yaml_set_comment_before_after_key(
-                key=0,
-                before=self._get_title_block(title),
-                indent=SPSDK_YML_INDENT * (self.indent - 1),
+            for i, one_option in enumerate(one_of):
+                if not self._check_matching_oneof_option(one_option, custom_value):
+                    continue
+                return self._get_schema_value(one_option, custom_value)
+
+        option_types = ", ".join([get_help_name(x) for x in one_of])
+        title = f"List of possible {len(one_of)} options. Options [{option_types}]"
+        for i, option in enumerate(one_of):
+            if option.get("type") != "object":
+                continue
+            value = self._get_schema_value(option, None)
+            assert isinstance(value, CMap)
+            cmap_update(ret, value)
+
+            key = list(value.keys())[0]
+            comment = ""
+            if i == 0:
+                comment = self._get_title_block(title) + "\n"
+            comment += "\n " + (
+                f" [Example of possible configuration #{i}] ".center(self.max_line, "=")
             )
-        self.indent -= 1
+            self._update_before_comment(cfg=ret, key=key, comment=comment)
         return ret
 
     def _get_schema_value(
         self, block: Dict[str, Any], custom_value: Any
-    ) -> Tuple[Optional[Union[CMap, CSeq, str, int, float, List]], Optional[str], Optional[str]]:
+    ) -> Union[CMap, CSeq, str, int, float, List]:
         """Private function used to fill up configuration block with data.
 
         :param block: Source block with data
@@ -453,9 +505,22 @@ class CommentedConfig:
         :return: CM/CS base configuration object with comment
         :raises SPSDKError: In case of invalid data pattern.
         """
-        title = None
-        if "oneOf" in block.keys():
-            ret = self._create_one_of_block_array(block, custom_value)
+
+        def get_custom_or_template() -> Any:
+            assert (
+                custom_value or "template_value" in block.keys()
+            ), f"Template value not provided in {block}"
+            return (
+                custom_value
+                if (custom_value is not None)
+                else block.get("template_value", "Unknown")
+            )
+
+        ret: Optional[Union[CMap, CSeq, str, int, float]] = None
+        if "oneOf" in block and not "properties" in block:
+            ret = self._handle_one_of_block(block["oneOf"], custom_value)
+            if not ret:
+                ret = get_custom_or_template()
         else:
             schema_type = block.get("type")
             if not schema_type:
@@ -464,32 +529,71 @@ class CommentedConfig:
 
             if schema_type == "object":
                 assert (custom_value is None) or isinstance(custom_value, dict)
-                ret = self._create_object_block(block, custom_value)  # type: ignore
+                ret = self._create_object_block(block, custom_value)
             elif schema_type == "array":
                 assert (custom_value is None) or isinstance(custom_value, list)
-                ret = self._create_array_block(block, custom_value)  # type: ignore
+                ret = self._create_array_block(block, custom_value)
             else:
-                assert "template_value" in block.keys()
-                ret = custom_value if (custom_value is not None) else block.get("template_value")
+                ret = get_custom_or_template()
 
-        assert isinstance(ret, (CMap, CSeq, str, int, float, list)) or (ret is None)
+        assert isinstance(ret, (CMap, CSeq, str, int, float, list))
 
-        p_title = block.get("title", "")
-        p_descr = block.get("description", "")
-        p_enum = block.get("enum", None)
-        if "template_title" in block.keys():
-            title = block["template_title"]
-        if p_enum:
-            if p_descr.endswith("."):
-                p_descr = p_descr[:-1]
-            p_descr = f"{p_descr}{'; ' if p_descr else ''}Possible options:{p_enum}"
-        if p_title.endswith("."):
-            p_title = p_title[:-1]
-        if p_descr.lower().startswith(p_title.lower()):
-            comment = p_descr
-        else:
-            comment = f"{p_title}{'; ' if p_descr else ''}{p_descr}"
-        return ret, comment, title
+        return ret
+
+    def _add_comment(
+        self,
+        cfg: Union[CMap, CSeq],
+        schema: Dict[str, Any],
+        key: Union[str, int],
+        value: Optional[Union[CMap, CSeq, str, int, float, List]],
+        required: str,
+    ) -> None:
+        """Private function used to create comment for block.
+
+        :param cfg: Target configuration where the comment should be stored
+        :param schema: Object configuration JSON SCHEMA
+        :param key: Config key
+        :param value: Value of config key
+        :param required: Required text description
+        """
+        comment = []
+        value_len = len(str(key) + ": ")
+        if value and isinstance(value, (str, int)):
+            value_len += len(str(value))
+        template_title = schema.get("template_title")
+        title = schema.get("title", "")
+        descr = schema.get("description", "")
+        enum_list = schema.get("enum", schema.get("enum_template", []))
+        enum = ""
+
+        if len(enum_list):
+            enum = "Possible options: <" + ", ".join([str(x) for x in enum_list]) + ">"
+        if title:
+            # one_line_comment = (
+            #     f"[{required}] {title}{'; ' if descr else ''}{descr}{';'+enum if enum else ''}"
+            # )
+            # TODO This feature will be disabled since the issue
+            # https://sourceforge.net/p/ruamel-yaml/tickets/475/ will be solved
+            # if True:  # len(one_line_comment) > self.max_line - value_len:
+            # Too long comment split it into comment block
+            comment.append(f"===== {title} [{required}] =====".center(self.max_line, "-"))
+            comment.extend(textwrap.wrap("Description: " + descr, width=self.max_line))
+            if enum:
+                comment.extend(textwrap.wrap(enum, width=self.max_line))
+            cfg.yaml_set_comment_before_after_key(
+                key,
+                "\n".join(comment),
+                indent=SPSDK_YML_INDENT * (self.indent - 1),
+            )
+            # else:
+            #     cfg.yaml_add_eol_comment(
+            #         one_line_comment,
+            #         key=key,
+            #         column=SPSDK_YML_INDENT * (self.indent - 1),
+            #     )
+
+        if template_title:
+            self._update_before_comment(cfg, key, "\n" + self._get_title_block(template_title))
 
     @staticmethod
     def _get_schema_block_keys(schema: Dict[str, Dict[str, Any]]) -> List[str]:
@@ -507,6 +611,31 @@ class CommentedConfig:
             or schema["properties"][key]["skip_in_template"] is False
         ]
 
+    def _update_before_comment(
+        self, cfg: Union[CMap, CSeq], key: Union[str, int], comment: str
+    ) -> None:
+        """Update comment to add new comment before current one.
+
+        :param sfg: Commented map / Commented Sequence
+        :param key: Key name
+        :param comment: Comment that should be place before current one.
+        """
+        from ruamel.yaml.error import CommentMark
+        from ruamel.yaml.tokens import CommentToken
+
+        def comment_token(s: str, mark: CommentMark) -> CommentToken:
+            # handle empty lines as having no comment
+            return CommentToken(("# " if s else "") + s + "\n", mark)
+
+        comments = cfg.ca.items.setdefault(key, [None, None, None, None])
+        if not isinstance(comments[1], list):
+            comments[1] = []
+        new_lines = comment.splitlines()
+        new_lines.reverse()
+        start_mark = CommentMark(SPSDK_YML_INDENT * (self.indent - 1))
+        for c in new_lines:
+            comments[1].insert(0, comment_token(c, start_mark))
+
     def export(self) -> CMap:
         """Export configuration template into CommentedMap.
 
@@ -517,6 +646,8 @@ class CommentedConfig:
         # 1. Get blocks with their titles and lists of their keys
         block_list: Dict[str, Any] = {}
         for schema in loc_schemas:
+            if schema.get("skip_in_template", False):
+                continue
             title = schema.get("title", "General Options")
             if title in block_list:
                 property_list = block_list[title]["properties"]
@@ -562,16 +693,25 @@ class CommentedConfig:
             cfg = self._create_object_block(merged, self.values)
             assert isinstance(cfg, CMap)
             # 5. Add main title of configuration
-            title = f"===========  {self.main_title}  ===========\n"
+            title = f"  {self.main_title}  ".center(self.MAX_LINE_LENGTH, "=") + "\n\n"
             if self.note:
-                title += f"\n {'-'*50} Note {'-'*50}\n{self.note}\n\n"
+                title += f"\n{' Note '.center(self.MAX_LINE_LENGTH, '-')}\n{self.note}\n\n"
             cfg.yaml_set_start_comment(title)
             for title, info in block_list.items():
                 description = info["description"]
                 assert isinstance(description, str) or description is None
-                cfg.yaml_set_comment_before_after_key(
-                    info["properties"][0], self._get_title_block(title, description)
-                )
+
+                first_key = None
+                for info_key in info["properties"]:
+                    if info_key in cfg.keys():
+                        first_key = info_key
+                        break
+
+                if first_key:
+                    self._update_before_comment(
+                        cfg, first_key, self._get_title_block(title, description)
+                    )
+
             return cfg
 
         except Exception as exc:
@@ -589,8 +729,11 @@ class CommentedConfig:
         """Convert Commented Map for into final YAML string.
 
         :param config: Configuration in CM format.
+        :raises SPSDKError: If configuration is empty
         :return: YAML string with configuration to use to store in file.
         """
+        if not config:
+            raise SPSDKError("Configuration cannot be empty")
         yaml = YAML(pure=True)
         yaml.indent(sequence=SPSDK_YML_INDENT * 2, offset=SPSDK_YML_INDENT)
         stream = io.StringIO()
@@ -622,7 +765,3 @@ class ValidationSchemas:
             ValidationSchemas._instancies[abs_path] = schema_cfg
 
         return ValidationSchemas._instancies[abs_path]
-
-
-class ConfigTemplate(CommentedConfig):
-    """Deprecated, kept for backward compatibility only."""

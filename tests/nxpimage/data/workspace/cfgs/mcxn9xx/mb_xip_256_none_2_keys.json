@@ -1,0 +1,17 @@
+{
+	"family": "mcxn9xx",
+	"inputImageFile": ".\\workspace\\input_images\\mcxn9xx_int_xip_hello_world_green_led_blinky_loop.bin",
+	"outputImageExecutionTarget": "xip",
+	"outputImageExecutionAddress": "0x0",
+	"outputImageAuthenticationType": "signed",
+	"enableTrustZone": true,
+	"trustZonePresetFile": ".\\workspace\\trustzone\\mcxn9xx\\tz_mcxn9xx.bin",
+	"firmwareVersion": "0x0",
+	"rootCertificate0File": ".\\workspace\\keys_certs\\ec_secp256r1_cert0.pem",
+	"rootCertificate1File": ".\\workspace\\keys_certs\\ec_secp256r1_cert1.pem",
+	"mainRootCertId": 0,
+	"useIsk": false,
+	"mainRootCertPrivateKeyFile": ".\\workspace\\keys_certs\\ec_pk_secp256r1_cert0.pem",
+	"rootCertificateEllipticCurve": "secp256r1",
+	"masterBootOutputFile": ".\\workspace\\output_images\\mcxn9xx\\mb_xip_256_none_2_keys.bin",
+}

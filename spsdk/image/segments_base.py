@@ -6,14 +6,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """This module contains generic implementation of image segment."""
 import abc
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from spsdk.exceptions import SPSDKValueError
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.database import Database
 from spsdk.utils.registers import Registers
 
 
-class SegmentBase:
+class SegmentBase(BaseClass):
     """Base class for image segment."""
 
     def __init__(self, family: str, revision: str) -> None:
@@ -42,27 +43,12 @@ class SegmentBase:
         """
         return self.registers.image_info().export()
 
-    def parse(self, binary: bytes) -> None:
-        """Parse binary block into segment object.
-
-        :param binary: binary image.
-        :raises SPSDKValueError: Invalid input binary length.
-        """
-        if len(binary) != len(self.registers.image_info()):
-            raise SPSDKValueError(
-                f"Invalid length of input binary: {len(binary)} != {len(self.registers.image_info())}"
-            )
-        for reg in self.registers.get_registers():
-            reg.set_value(
-                int.from_bytes(binary[reg.offset // 8 : reg.offset // 8 + reg.width // 8], "little")
-            )
-
     @staticmethod
     @abc.abstractmethod
     def load_from_config(config: Dict) -> Any:
         """Load configuration file.
 
-        :param config: XMCD configuration file.
+        :param config: Segment configuration file.
         :return: Segment object.
         """
 
@@ -74,7 +60,7 @@ class SegmentBase:
         """
 
     @classmethod
-    def get_supported_families(cls) -> list:
+    def get_supported_families(cls) -> List:
         """Return list of supported families.
 
         :return: List of supported families.
@@ -82,7 +68,7 @@ class SegmentBase:
         return cls.get_database().devices.device_names
 
     @classmethod
-    def get_memory_types(cls, family: str, revision: str = "latest") -> dict:
+    def get_memory_types(cls, family: str, revision: str = "latest") -> Dict:
         """Get memory types data from database.
 
         :param family: Chip family.
@@ -91,7 +77,7 @@ class SegmentBase:
         return cls.get_database().get_device_value("mem_types", family, revision, default={})
 
     @classmethod
-    def get_supported_memory_types(cls, family: str, revision: str = "latest") -> list:
+    def get_supported_memory_types(cls, family: str, revision: str = "latest") -> List:
         """Get list of supported memory types data from database.
 
         :param family: Chip family.

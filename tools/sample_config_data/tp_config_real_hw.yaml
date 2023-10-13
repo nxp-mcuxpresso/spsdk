@@ -1,6 +1,0 @@
-# Copyright 2023 NXP
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-# Path to device family attestation certificate
-nxp_prod_cert_path: sample_config_data/nxp_prod_devattest_lpc55s6x_hw.der.crt

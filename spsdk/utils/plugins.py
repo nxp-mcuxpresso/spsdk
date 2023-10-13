@@ -27,6 +27,7 @@ class PluginType(Enum):
     """Contains commands tags."""
 
     SIGNATURE_PROVIDER = (0, "spsdk.sp", "Signature provider")
+    DEVICE_INTERFACE = (1, "spsdk.device.interface", "Device interface")
 
 
 class PluginsManager(metaclass=SingletonMeta):
@@ -60,8 +61,8 @@ class PluginsManager(metaclass=SingletonMeta):
         for ep in entry_points:
             try:
                 plugin = ep.load()
-            except ModuleNotFoundError:
-                logger.warning(f"Module {ep.module} could not be loaded")
+            except (ModuleNotFoundError, ImportError) as exc:
+                logger.warning(f"Module {ep.module} could not be loaded: {exc}")
                 continue
             logger.info(f"Plugin {ep.name} has been loaded.")
             self.register(plugin)

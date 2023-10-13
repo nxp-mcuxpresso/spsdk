@@ -1,0 +1,25 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Certification block converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                    == ISK Certificate Settings ==
+# ----------------------------------------------------------------------------------------------------
+useIsk: true  # [Conditionally required], Use ISK for signature certification; Enable ISK type of signature certification. Don't use when 'binaryCertificateBlock' is defined
+mainRootCertPrivateKeyFile: .\workspace\keys_certs\ec_pk_secp384r1_cert0.pem # [Conditionally required], Main root Certification Private Key; Path to Main root Certification Private Key. Don't use when 'binaryCertificateBlock' is defined
+signingCertificateFile: .\workspace\keys_certs\ec_secp256r1_sign_cert.pem # [Conditionally required], Signing Certificate; Path to Signing Certificate. Don't use when 'binaryCertificateBlock' is defined
+signingCertificateConstraint: '0x0' # [Optional], Signing certificate constrain number. Don't use when 'binaryCertificateBlock' is defined
+signCertData: .\workspace\input_images\testfffffff.bin # [Optional], Signing Certificate data; Path to Signing Certificate data. Don't use when 'binaryCertificateBlock' is defined
+signingCertificatePrivateKeyFile: .\workspace\keys_certs\ec_pk_secp256r1_sign_cert.pem # [Optional], ISK Certificate private key used to sign certificate. It can be replaced by signProvider key.
+# ----------------------------------------------------------------------------------------------------
+#                                       == Root Keys Settings ==
+# ----------------------------------------------------------------------------------------------------
+rootCertificate0File: .\workspace\keys_certs\ec_secp384r1_cert0.pem # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
+rootCertificate1File: .\workspace\keys_certs\ec_secp384r1_cert1.pem # [Optional], Root Certificate File 1; Root certificate file index 1.
+rootCertificate2File: .\workspace\keys_certs\ec_secp384r1_cert2.pem # [Optional], Root Certificate File 2; Root certificate file index 2.
+rootCertificate3File: .\workspace\keys_certs\ec_secp384r1_cert3.pem # [Optional], Root Certificate File 3; Root certificate file index 3.
+mainRootCertId: 2 # [Conditionally required], Main Certificate Index; Index of certificate that is used as a main. If not defined, the certificate matching private key will be selected.
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+# ----------------------------------------------------------------------------------------------------
+containerOutputFile: .\workspace\output_images\lpc55s3x\cert_384_256.bin # [Required], cert block filename; Generated cert block filename.

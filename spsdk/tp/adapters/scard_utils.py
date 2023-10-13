@@ -9,8 +9,8 @@
 import logging
 from typing import List, NamedTuple, Optional, Tuple
 
-from spsdk import SPSDKError
-from spsdk.apps.utils import format_raw_data
+from spsdk.apps.utils.utils import format_raw_data
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import get_hash
 
@@ -49,6 +49,9 @@ class ProvItem(Enum):
     CFPA = (0x0007, "cfpa")
     CMPA = (0x0008, "cmpa")
     PROD_COUNTER = (0x0009, "prod_counter")
+    PROV_DATA = (0x000A, "prov_data")
+    PROV_FLAGS = (0x000B, "prov_flags")
+    FAMILY = (0x000C, "family")
     OEM_CERT_TEMPLATE = (0x0100, "oem_cert_template")
 
 
@@ -100,6 +103,7 @@ class AppletInfo(NamedTuple):
     reader_name: str
     version: str
     serial_number: int
+    sealed: bool
     card_connection: CardConnection
 
 
@@ -156,11 +160,14 @@ def get_applet_infos(
                 continue
             version_cmd = scard_commands.GetAppletVersion()
             version = version_cmd.format(version_cmd.transmit(scard.connection))
+            sealed_cmd = scard_commands.GetSealState()
+            sealed = sealed_cmd.format(sealed_cmd.transmit(scard.connection))
             ret.append(
                 AppletInfo(
                     reader_name=reader_tuple[0],
                     version=version,
                     serial_number=serial_number,
+                    sealed=sealed,
                     card_connection=scard.connection,
                 )
             )

@@ -1,0 +1,65 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+data:
+  cfpa_path: y_cfpa.bin
+  cmpa_path: y_cmpa.bin
+  family: lpc55s6x
+  oem_cert_0_addr: 268697600
+  oem_cert_0_path: x_oem_cert_0.crt
+  oem_cert_1_addr: 268701696
+  oem_cert_1_path: x_oem_cert_1.crt
+  oem_cert_2_addr: null
+  oem_cert_2_path: x_oem_cert_2.crt
+  oem_cert_3_addr: null
+  oem_cert_3_path: x_oem_cert_3.crt
+  oem_id_config:
+    duration: 3650
+    issuer:
+      COMMON_NAME: Big Tech Company
+      COUNTRY_NAME: CZ
+      LOCALITY_NAME: RpR
+      ORGANIZATION_NAME: BL - EP
+      POSTAL_CODE: 756 61
+      STREET_ADDRESS: 1. maje, 1009
+    subject:
+      COMMON_NAME: Super Tech Device
+  oem_id_count: 2
+  oem_id_meta:
+    coord_len: 32
+    pub_x: 251
+    pub_y: 283
+    ser_len: 20
+    ser_num: 15
+    sig_r: 352
+    sig_s: 387
+    tbs: 4
+    tbs_len: 329
+    total: 419
+  oem_id_prk_path: y_oem_id_prk.pem
+  oem_id_template: y_oem_id_template.der.crt
+  production_quota: 1000000
+  production_counter: 0
+  running_hash: !!binary |
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  sb_kek_path: y_sb_kek.txt
+  user_kek_path: y_user_kek.txt
+description: TP Device Model
+do_encryption: true
+do_wrapping: false
+edh_private_path: x_edh_private.pem
+edh_public_path: x_edh_public.pem
+id: "123456789"
+is_ready: false
+name: card1
+nxp_prod_card_auth_prk_path: nxp_prod_card_auth_prk.pem
+prov_enc_const: 0102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f00
+prov_kwk_const: 0102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f00
+prov_mac_const: 0102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f00
+reuse_edh_keys: true
+reuse_oem_cert: false
+reuse_ses_keys: false
+tp_ses_enc_path: x_tp_ses_enc.txt
+tp_ses_kwk_path: x_tp_ses_kwk.txt
+tp_ses_mac_path: x_tp_ses_mac.txt
+use_aes_ctr: true

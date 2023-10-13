@@ -18,33 +18,32 @@ from typing import Callable, Iterator, List, Optional
 
 import click
 import colorama
+from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
-from spsdk import SPSDK_DATA_FOLDER, SPSDKError
+from spsdk import SPSDK_DATA_FOLDER
 from spsdk.apps.blhost_helper import progress_bar
-from spsdk.apps.elftosb_utils.sb_31_helper import RootOfTrustInfo
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
-    CommandsTreeGroupAliasedGetCfgTemplate,
+    CommandsTreeGroup,
     spsdk_apps_common_options,
+    spsdk_config_option,
+    spsdk_family_option,
+    spsdk_output_option,
     spsdk_plugin_option,
 )
-from spsdk.apps.utils.utils import (
-    INT,
-    SPSDKAppError,
-    catch_spsdk_error,
-    check_file_exists,
-    format_raw_data,
-    parse_file_and_size,
-    parse_hex_data,
-)
-from spsdk.dat import DebugAuthenticateResponse, DebugAuthenticationChallenge, dm_commands
+from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, format_raw_data
+from spsdk.dat import dm_commands
+from spsdk.dat.dac_packet import DebugAuthenticationChallenge
+from spsdk.dat.dar_packet import DebugAuthenticateResponse
 from spsdk.dat.debug_credential import DebugCredential
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.debuggers.utils import PROBES, open_debug_probe, test_ahb_access
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.utils.crypto.cert_blocks import find_root_certificates
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import find_file, load_binary, load_configuration, load_text, write_file
+from spsdk.utils.misc import find_file, load_binary, load_configuration, value_to_int, write_file
 from spsdk.utils.plugins import load_plugin_from_source
+from spsdk.utils.schema_validator import check_config
 
 logger = logging.getLogger(__name__)
 NXPDEBUGMBOX_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpdebugmbox")
@@ -135,6 +134,7 @@ def _open_debugmbox(
         interface=debug_probe_params.interface,
         serial_no=debug_probe_params.serial_no,
         debug_probe_params=debug_probe_params.debug_probe_user_params,
+        print_func=click.echo,
     ) as debug_probe:
         dm = DebugMailbox(
             debug_probe=debug_probe,
@@ -150,7 +150,7 @@ def _open_debugmbox(
             dm.close()
 
 
-@click.group(name="nxpdebugmbox", no_args_is_help=True, cls=CommandsTreeGroupAliasedGetCfgTemplate)
+@click.group(name="nxpdebugmbox", no_args_is_help=True, cls=CommandsTreeGroup)
 @click.option(
     "-i",
     "--interface",
@@ -318,7 +318,7 @@ def auth(
             # convert List[int] to bytes
             dac_data_bytes = struct.pack(f"<{len(dac_data)}I", *dac_data)
             dac = DebugAuthenticationChallenge.parse(dac_data_bytes)
-            logger.info(f"DAC: \n{dac.info()}")
+            logger.info(f"DAC: \n{str(dac)}")
             dac.validate_against_dc(debug_cred)
             dar = DebugAuthenticateResponse.create(
                 version=protocol.version,
@@ -327,7 +327,7 @@ def auth(
                 dac=dac,
                 dck=key,
             )
-            logger.info(f"DAR:\n{dar.info()}")
+            logger.info(f"DAR:\n{str(dar)}")
             dar_data = dar.export()
             # convert bytes to List[int]
             dar_data_words = list(struct.unpack(f"<{len(dar_data) // 4}I", dar_data))
@@ -411,6 +411,7 @@ def reset(
                 interface=debug_probe_params.interface,
                 serial_no=debug_probe_params.serial_no,
                 debug_probe_params=debug_probe_params.debug_probe_user_params,
+                print_func=click.echo,
             ) as debug_probe:
                 debug_probe.reset()
         else:
@@ -488,7 +489,7 @@ def erase(debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailb
         raise SPSDKAppError(f"Mass flash erase failed: {e}") from e
 
 
-@main.command(name="famode", no_args_is_help=True)
+@main.command(name="famode")
 @click.option(
     "-m",
     "--message",
@@ -696,6 +697,7 @@ def test_connection(debug_probe_params: DebugProbeParams) -> bool:
             interface=debug_probe_params.interface,
             serial_no=debug_probe_params.serial_no,
             debug_probe_params=debug_probe_params.debug_probe_user_params,
+            print_func=click.echo,
         ) as debug_probe:
             ahb_access_granted = test_ahb_access(debug_probe)
         return ahb_access_granted
@@ -704,32 +706,24 @@ def test_connection(debug_probe_params: DebugProbeParams) -> bool:
 
 
 @main.command(name="read-memory", no_args_is_help=True)
-@click.argument("address", type=INT(), required=True)
-@click.argument("byte_count", type=INT(), required=True)
-@click.argument("out_file", metavar="FILE", type=click.Path(), required=False)
+@click.option("-a", "--address", type=INT(), required=True, help="Starting address")
+@click.option("-c", "--count", type=INT(), required=True, help="Number of bytes to read")
+@spsdk_output_option(required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_obj
 def read_memory_command(
     pass_obj: dict,
     address: int,
-    byte_count: int,
-    out_file: str,
+    count: int,
+    output: str,
     use_hexdump: bool,
 ) -> None:
-    """Reads the memory and writes it to the file or stdout.
-
-    Returns the contents of memory at the given <ADDRESS>, for a specified <BYTE_COUNT>.
-    Data are read by 4 bytes at once and are store in little endian format!
-    \b
-    ADDRESS     - starting address
-    BYTE_COUNT  - number of bytes to read
-    FILE        - store result into this file, if not specified use stdout
-    """
+    """Reads the memory and writes it to the file or stdout."""
     with progress_bar(suppress=logger.getEffectiveLevel() > logging.INFO) as progress_callback:
-        data = read_memory(pass_obj["debug_probe_params"], address, byte_count, progress_callback)
-    if out_file:
-        write_file(data, out_file, mode="wb")
-        click.echo(f"The memory has been read and written into {out_file}")
+        data = read_memory(pass_obj["debug_probe_params"], address, count, progress_callback)
+    if output:
+        write_file(data, output, mode="wb")
+        click.echo(f"The memory has been read and written into {output}")
     else:
         click.echo(format_raw_data(data, use_hexdump=use_hexdump))
 
@@ -757,6 +751,7 @@ def read_memory(
         interface=debug_probe_params.interface,
         serial_no=debug_probe_params.serial_no,
         debug_probe_params=debug_probe_params.debug_probe_user_params,
+        print_func=click.echo,
     ) as debug_probe:
         try:
             for addr in range(start_addr, start_addr + length, 4):
@@ -780,28 +775,23 @@ def read_memory(
 
 
 @main.command(name="write-memory", no_args_is_help=True)
-@click.argument("address", type=INT(), required=True)
-@click.argument("data_source", metavar="FILE[,BYTE_COUNT] | {{HEX-DATA}}", type=str, required=True)
+@click.option("-a", "--address", type=INT(), required=True, help="Starting address")
+@optgroup("Data Source", cls=RequiredMutuallyExclusiveOptionGroup)
+@optgroup.option(
+    "-f", "--file", type=click.Path(exists=True, dir_okay=False), help="Path to file to write"
+)
+@optgroup.option("-h", "--hex-string", type=str, help="String of hex values. e.g. '1234', '12 34'")
+@click.option("-c", "--count", type=INT(), required=False, help="Number of bytes to write")
 @click.pass_obj
-def write_memory_command(pass_obj: dict, address: int, data_source: str) -> None:
-    """Writes memory from a file or a hex-data.
-
-    Writes memory at <ADDRESS> from <FILE> or <HEX-DATA>
-    Writes a provided buffer to a specified <BYTE_COUNT> in memory.
-
-    \b
-    ADDRESS     - starting address
-    FILE        - write the content of this file
-    BYTE_COUNT  - if specified, load only first BYTE_COUNT number of bytes from file
-    HEX-DATA    - string of hex values: {{112233}}, "{{11 22 33}}"
-                - when using Jupyter notebook, use [[ ]] instead of {{ }}: eg. [[112233]]
-    """
-    try:
-        data = parse_hex_data(data_source)
-    except SPSDKError:
-        file_path, size = parse_file_and_size(data_source)
-        with open(file_path, "rb") as f:
-            data = f.read(size)
+def write_memory_command(
+    pass_obj: dict, address: int, file: str, hex_string: str, count: int
+) -> None:
+    """Writes memory from a file or a hex-data."""
+    if file:
+        with open(file, "rb") as f:
+            data = f.read(count)
+    else:
+        data = bytes.fromhex(hex_string)[:count]
     write_memory(pass_obj["debug_probe_params"], address, data)
     click.echo("The memory has been written successfully.")
 
@@ -822,6 +812,7 @@ def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes
         interface=debug_probe_params.interface,
         serial_no=debug_probe_params.serial_no,
         debug_probe_params=debug_probe_params.debug_probe_user_params,
+        print_func=click.echo,
     ) as debug_probe:
         start_padding = address - start_addr
         align_data = data
@@ -883,6 +874,7 @@ def get_uuid(
             debug_probe_params.interface,
             debug_probe_params.serial_no,
             debug_probe_params.debug_probe_user_params,
+            print_func=click.echo,
         ) as debug_probe:
             try:
                 dm = DebugMailbox(
@@ -910,7 +902,7 @@ def get_uuid(
 
     if dac.uuid == bytes(16):
         logger.warning("The valid UUID is not included in DAC.")
-        logger.info(f"DAC info:\n {dac.info()}")
+        logger.info(f"DAC info:\n {str(dac)}")
         return None
 
     logger.info(
@@ -920,51 +912,31 @@ def get_uuid(
 
 
 @main.command(name="gendc", no_args_is_help=True)
-@click.option(
-    "-c",
-    "--config",
-    type=click.Path(exists=True, dir_okay=False),
-    required=True,
-    help="Specify YAML credential config file.",
-)
+@spsdk_config_option()
 @click.option(
     "-e",
-    "--elf2sb-config",
+    "--rot-config",
     type=click.Path(exists=True, dir_okay=False),
     required=False,
-    help="Specify Root Of Trust from configuration file used by elf2sb tool",
-)
-@click.option(
-    "--force",
-    is_flag=True,
-    default=False,
-    help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
+    help="Specify Root Of Trust from MBI or Cert block configuration file",
 )
 @spsdk_plugin_option
-@click.argument("dc_file_path", metavar="PATH", type=click.Path(file_okay=True))
+@spsdk_output_option(force=True)
 @click.pass_obj
 def gendc_command(
     pass_obj: dict,
     plugin: str,
-    dc_file_path: str,
+    output: str,
     config: str,
-    elf2sb_config: str,
-    force: bool,
+    rot_config: str,
 ) -> None:
-    """Generate debug certificate (DC).
-
-    The -p protocol option must be defined in main application.
-
-    \b
-    PATH    - path to dc file
-    """
+    """Generate debug certificate (DC)."""
     gendc(
         pass_obj["protocol"],
         plugin,
-        dc_file_path,
+        output,
         config,
-        elf2sb_config,
-        force,
+        rot_config,
     )
     click.echo("Creating Debug credential file succeeded")
 
@@ -972,48 +944,64 @@ def gendc_command(
 def gendc(
     protocol: DatProtocol,
     plugin: str,
-    dc_file_path: str,
+    output: str,
     config: str,
-    elf2sb_config: str,
-    force: bool,
+    rot_config: str,
 ) -> None:
     """Generate debug certificate (DC).
 
     :param protocol: Debug authentication protocol.
     :param plugin: Path to external python file containing a custom SignatureProvider implementation.
-    :param dc_file_path: Path to debug certificate file.
+    :param output: Path to debug certificate file.
     :param config: YAML credential config file.
-    :param elf2sb_config: Root Of Trust from configuration file used by elf2sb tool.
-    :param force: Force overwriting of an existing file.
+    :param rot_config: Root Of Trust from MBI or Cert block configuration file.
     :raises SPSDKAppError: Raised if any error occurred.
     """
     protocol.validate()
     try:
         if plugin:
             load_plugin_from_source(plugin)
-        check_file_exists(dc_file_path, force)
         logger.info("Loading configuration from yml file...")
         yaml_content = load_configuration(config)
-        if elf2sb_config:
-            elf2sb_config_dir = os.path.dirname(elf2sb_config)
-            logger.info("Loading configuration from elf2sb config file...")
-            rot_info = RootOfTrustInfo(
-                load_configuration(elf2sb_config), search_paths=[elf2sb_config_dir]
-            )
-            yaml_content["rot_meta"] = [
-                find_file(x, search_paths=[elf2sb_config_dir]) for x in rot_info.public_keys
-            ]
-            assert rot_info.private_key or rot_info.signature_provider_cfg
-            if rot_info.private_key:
-                yaml_content["rotk"] = find_file(
-                    rot_info.private_key, search_paths=[elf2sb_config_dir]
-                )
-            if rot_info.signature_provider_cfg:
-                yaml_content["sign_provider"] = rot_info.signature_provider_cfg
-            yaml_content["rot_id"] = rot_info.public_key_index
+        if rot_config:
+            rot_config_dir = os.path.dirname(rot_config)
+            logger.info("Loading configuration from cert block/MBI config file...")
 
-        # enforcing rot_id presence in yaml config...
-        assert "rot_id" in yaml_content, "Config file doesn't contain the 'rot_id' field"
+            config_data = load_configuration(rot_config, search_paths=[rot_config_dir])
+            if "certBlock" in config_data:
+                try:
+                    config_data = load_configuration(
+                        config_data["certBlock"], search_paths=[rot_config_dir]
+                    )
+                except SPSDKError as e:
+                    raise SPSDKAppError("certBlock must be provided as YAML configuration") from e
+
+            public_keys = find_root_certificates(config_data)
+            yaml_content["rot_meta"] = [
+                find_file(x, search_paths=[rot_config_dir]) for x in public_keys
+            ]
+
+            private_key = (
+                config_data.get("signPrivateKey")
+                or config_data.get("mainCertPrivateKeyFile")
+                or config_data.get("mainRootCertPrivateKeyFile")
+            )
+            if private_key:
+                yaml_content["rotk"] = find_file(private_key, search_paths=[rot_config_dir])
+
+            sp_config = config_data.get("signProvider")
+            if sp_config:
+                yaml_content["sign_provider"] = sp_config
+
+            rot_index = config_data.get("mainRootCertId", config_data.get("mainCertChainId"))
+            if rot_index is not None:
+                yaml_content["rot_id"] = value_to_int(rot_index)
+
+        check_config(
+            yaml_content,
+            DebugCredential.get_validation_schemas(),
+            search_paths=[os.path.dirname(config)],
+        )
 
         logger.info(f"Creating {'RSA' if protocol.is_rsa() else 'ECC'} debug credential object...")
         dc = DebugCredential.create_from_yaml_config(
@@ -1023,42 +1011,109 @@ def gendc(
         )
         dc.sign()
         data = dc.export()
-        click.echo(f"RoT Key Hash: {dc.get_rotkh().hex()}")
-        logger.debug(f"Debug credential file details:\n {dc.info()}")
-        logger.info(f"Saving the debug credential to a file: {dc_file_path}")
-        write_file(data, dc_file_path, mode="wb")
+        click.echo(f"RKTH: {dc.get_rotkh().hex()}")
+        logger.debug(f"Debug credential file details:\n {str(dc)}")
+        logger.info(f"Saving the debug credential to a file: {output}")
+        write_file(data, output, mode="wb")
 
     except Exception as e:
         raise SPSDKAppError(f"The generating of Debug Credential file failed: {e}") from e
 
 
 @main.command(name="get-template", no_args_is_help=True)
-@click.argument("output", metavar="PATH", type=click.Path())
-@click.option(
-    "-f",
-    "--force",
-    is_flag=True,
-    default=False,
-    help="Force overwriting of an existing file. Create destination folder, if doesn't exist already.",
+@spsdk_family_option(
+    families=DebugCredential.get_supported_families(),
+    required=False,
+    default="lpc55s3x",
+    help="If needed select the chip family.",
 )
-def get_template_command(output: str, force: bool) -> None:
-    """Generate the template of Debug Credentials YML configuration file.
-
-    \b
-    PATH    - file name path to write template config file
-    """
-    get_template(output, force)
+@click.option(
+    "-r",
+    "--revision",
+    type=str,
+    default="latest",
+    help="Chip revision; if not specified, most recent one will be used",
+)
+@spsdk_output_option(force=True)
+def get_template_command(family: str, revision: str, output: str) -> None:
+    """Generate the template of Debug Credentials YML configuration file."""
+    get_template(family, revision, output)
     click.echo("The configuration template file has been created.")
 
 
-def get_template(output: str, force: bool) -> None:
+def get_template(family: str, revision: str, output: str) -> None:
     """Generate the template of Debug Credentials YML configuration file.
 
+    :param family: Optional family to have specific template per family.
+    :param revision: Optional chip revision to specify MCU family.
     :param output: Path to output file.
-    :param force: Force overwriting of an existing file.
     """
-    check_file_exists(str(output), force)
-    write_file(load_text(os.path.join(NXPDEBUGMBOX_DATA_FOLDER, "template_config.yaml")), output)
+    write_file(DebugCredential.generate_config_template(family, revision), output)
+
+
+@main.command(name="erase-one-sector", no_args_is_help=True)
+@click.option("-a", "--address", type=INT(), required=True, help="Starting address")
+@click.pass_obj
+def erase_one_sector_command(pass_obj: dict, address: int) -> None:
+    """Erase one flash sector."""
+    erase_one_sector(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], address)
+    click.echo("Erasing one sector succeeded")
+
+
+def erase_one_sector(
+    debug_probe_params: DebugProbeParams, debug_mailbox_params: DebugMailboxParams, address: int
+) -> None:
+    """Erase one sector.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param address: Flash sector address
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
+            dm_commands.EraseOneSector(dm=mail_box).run([address])
+    except Exception as e:
+        raise SPSDKAppError(f"Erasing one sector failed: {e}") from e
+
+
+@main.command(name="write-to-flash", no_args_is_help=True)
+@click.option("-a", "--address", type=INT(), required=True, help="Starting address")
+@click.option("-f", "--file", type=click.Path(), required=True, help="Path to file.")
+@click.pass_obj
+def write_to_flash_command(pass_obj: dict, address: int, file: str) -> None:
+    """Write data to flash."""
+    write_to_flash(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"], address, file)
+    click.echo("Write data to flash succeeded")
+
+
+def write_to_flash(
+    debug_probe_params: DebugProbeParams,
+    debug_mailbox_params: DebugMailboxParams,
+    address: int,
+    file: str,
+) -> None:
+    """Write to flash.
+
+    :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
+    :param address: Flash sector address
+    :param file: File with binary data
+    :raises SPSDKAppError: Raised if any error occurred.
+    """
+    try:
+        with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
+            data = load_binary(file)
+            formatted_data = [data[i : i + 16] for i in range(0, len(data), 16)]
+            if len(formatted_data[-1]) < 16:
+                logger.debug(f"Added padding to the original data source file: {file}")
+                formatted_data[-1] = formatted_data[-1].ljust(16, b"\x00")
+            for i in range(len(formatted_data)):
+                params = [address]
+                params.extend(list(struct.unpack("<4I", formatted_data[i])))
+                dm_commands.WriteToFlash(dm=mail_box).run(params)
+    except Exception as e:
+        raise SPSDKAppError(f"Write words to flash failed: {e}") from e
 
 
 @catch_spsdk_error

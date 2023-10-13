@@ -3,10 +3,86 @@
 .. _LIBUSBSIO_link: https://www.nxp.com/design/software/development-software/library-for-windows-macos-and-ubuntu-linux:LIBUSBSIO?tid=vanLIBUSBSIO
 .. _crypto: api/crypto.html
 .. _usb_device_identification: usage/usb.html
+.. _pfr: apps/pfr.html
+.. _migration guide: migration_guide.html
 
 =============
 Release Notes
 =============
+
+-----------------------
+2.0.0 (13-October-2023)
+-----------------------
+
+**ANNOUNCEMENT**
+
+Current version introduces breaking changes, which are described in details in `migration guide`_.
+
+**New features**
+
+* :ref:`blhost`:
+    - dedicated plugin system
+    - check of written data length in USB Interface
+* :ref:`nxpcrypto`:
+    - remove dependency on PyCryptodome
+    - add rot command for calculating RoT hash
+* :ref:`nxpimage`:
+    - distinguish between fw version and image version
+    - support YAML configuration for HAB
+    - support build RT11xx image with ECC keys
+    - support OSCCA
+    - support AHAB NAND
+    - implement HTTP Proxy Signature Provider
+    - signature provider for OSCCA
+    - add validation of signature in AHAB
+    - support OTFAD for RT1010
+    - export HAB from yaml config in bootable image
+    - revision of offsets in AHAB container
+    - command filter in SB 2.1 based on family
+    - refactor memory types for mbi
+    - add to AHAB key identifier for encrypted images
+* `pfr`_/:ref:`ifr`:
+    - remove devices subcommand
+* :ref:`sdpshost`:
+    - connection support for iMX91 and iMX95
+* :ref:`shadowregs`:
+    - unify endianness
+* tool for converting JSON configuration into YAML with comments
+* support mcxa1xx
+* unify naming: RKTH/RKHT
+* remove nxpkeygen and nxpcertgen apps, replaced by :ref:`nxpcrypto`
+* remove elftosb app, replaced by :ref:`nxpcrypto`
+* positional arguments replaced by options for all parameters with an exception to :ref:`blhost`, :ref:`sdphost` and :ref:`dk6prog`
+* remove backward compatibility with command get-cfg-template, replaced fully with get-template(s)
+* unify family name within all modules
+* remove lpc55xx from family names
+
+**Bugfixes**
+
+* :ref:`blhost`:
+    - fix error of SPI connection
+* :ref:`nxpdevhsm`:
+    - add missing sdio in generate command
+* :ref:`nxpele`:
+    - fix generate-keyblob IEE
+    - fix issue with get-info command
+* :ref:`nxpimage`:
+    - fix certificate block in AHAB
+    - fix signature in AHAB
+    - fix some commands for SB21
+    - fix non generated keys for AHAB parse
+    - fix RAM images for LPC55Sxx
+    - fix MBI signed for xip for MCXN9xx
+    - fix sb21 export yaml errors
+    - fix OTFAD with DUK
+    - fix wrong core ID in parse for iMX93
+    - fix binary certificate block for MBI
+    - fix manifest for mcxn9xx
+    - fix bootable image merge
+    - fix in MBI configurations
+    - fix missing parameters in MBI config in bootable-image parse
+    - fix sb21 file generation without SBKEK
+    - update list of supported MBI images for mcxn9xx
 
 ---------------------
 1.11.0 (7-July-2023)
@@ -33,15 +109,27 @@ Next version of spsdk (2.0) will introduce breaking changes:
     - add possibility to check TP_RESPONSE only with NXP_PROD raw binary key
 * add support for mcxn9xx
 * add API for FuseLockedStatus
-* possibility to declare private keys with passphrase  in signature provider config
+* possibility to declare private keys with passphrase in signature provider config
 * add checking of written data length in usb interface
 * add support for dk6 tools
 
 **Bugfixes**
 
 * :ref:`nxpimage`:
+* nxpimage:
     - fix offset on NAND memory in AHAB image
 * fix plugin error for signature Provider for sb21
+
+---------------------
+1.10.2 (7-July-2023)
+---------------------
+
+**New features**
+
+* :ref:`tphost`/:ref:`tpconfig`:
+    - add support for LPC55S3x
+* :ref:`nxpimage`:
+    - add possibility to define multiple regions in OTFAD in one data blob
 
 ---------------------
 1.10.1 (26-May-2023)
@@ -83,7 +171,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
     - OTFAD support for RT1170
 * :ref:`ifr`:
     -  add commands read/write
-* :ref:`pfr`:
+* `pfr`_:
     - add CMPA erase command
 
 **Bugfixes**
@@ -159,7 +247,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
     - fix non working 384/521 ECC keys for signature in AHAB container
     - fix CRC mode in external flash for lpc55s3x
     - failure on start due to boot_image hook definition
-* :ref:`pfr`:
+* `pfr`_:
     - command line parameter '-t' is duplicated
 * :ref:`tphost`/:ref:`tpconfig`:
     - TPhost load-tpfw requires TP device definition
@@ -181,7 +269,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * :ref:`nxpimage`:
     - add support for BEE
     - enable OTFAD on RT1180
-* :ref:`pfr`:
+* `pfr`_:
     - move the functionality of pfrc tool into PFR tool
 * :ref:`tphost`/:ref:`tpconfig`:
     - implement USB re-enumeration in TPHost after OEM ProvFW is started
@@ -210,7 +298,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 * :ref:`nxpimage`:
     - add OTFAD support for RT5xx and RT6xx devices
-* :ref:`pfr`:
+* `pfr`_:
     - read command allows independent binary and yaml exports
 * :ref:`shadowregs`:
     - new subcommand: fuses-script
@@ -247,7 +335,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
     - support for Bootable images for RTxxx devices
     - support for FCB block parsing and exporting for RTxxx and some RTxxxx devices
     - simply binary image support, like create, merge, extract and convert (S19,HEX,ELF and BIN format)
-* :ref:`pfr`:
+* `pfr`_:
     - load PFR configuration directly from chip using BLHOST
 * :ref:`sdphost`:
     - support for SET_BAUDRATE command
@@ -363,7 +451,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
   * move gendc into nxpdebugmbox
 
-* :ref:`pfr`:
+* `pfr`_:
 
   * unify CMPA/CFPA fields descriptions and bit-field values within XML registers data
   * implement CMPA data generator and parser
@@ -409,7 +497,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
   * generate ends with general error when no container is provided
 
-* :ref:`pfr`:
+* `pfr`_:
 
   * fix problem in registers class with another size of register than 32 bits
 
@@ -467,7 +555,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
   * refactor DebugCredential base class so that it will be possible to pass certificates in yml config file
   * check nxpdebugmbox on LPC55S3x
 
-* :ref:`pfr` - update CMPA/CFPA registers XML data for LPC55S3x with CRR update
+* `pfr`_: - update CMPA/CFPA registers XML data for LPC55S3x with CRR update
 
 * SPSDK :ref:`Applications`:
 
@@ -482,7 +570,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 
 * :ref:`nxpkeygen` - regenerates a key without --force
 * :ref:`elftosb` - unclear error message: No such file or directory: 'None'
-* :ref:`pfr` - duplicated error message: The silicon revision is not specified
+* `pfr`_: - duplicated error message: The silicon revision is not specified
 * :ref:`nxpdebugmbox` - fix Retry of AP register reads after Chip reset
 * :ref:`nxpdebugmbox` - add timeout to never ending loops in spin_read/write methods in Debug mailbox
 * :ref:`blhost` - flash-erase-region command doesn't accept the memory_id argument in hex form
@@ -513,7 +601,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * :ref:`nxpdebugmbox` - debug port enabled check added
 * :ref:`nxpkeygen` - new sub-command added to nxpkeygen to create a template for configuration YML file for DC keys
 * :ref:`nxpkeygen` - new sub-command added to create a template for configuration YML file for DC keys
-* :ref:`pfr` - default JSON config file generation removed, but still accepted as an input. The preferred is the YML configuration format.
+* `pfr`_: - default JSON config file generation removed, but still accepted as an input. The preferred is the YML configuration format.
 * docs - Read The Docs documentation improvements
 
 **Bugfixes**
@@ -524,9 +612,9 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * :ref:`blhost` - mcuBoot Uart doesn't close the device after failed ping command
 * :ref:`blhost` - assertion error when connection lost during fuses readout
 * :ref:`blhost` - sub-command  flash-read-resource fails when the length is not aligned
-* :ref:`pfr` - incorrect keys hash computation for LPC55S3x
-* :ref:`pfr` - wrong LPC55S69 silicon revision
-* :ref:`pfr` - parse does not show PRINCE IV fields
+* `pfr`_: - incorrect keys hash computation for LPC55S3x
+* `pfr`_: - wrong LPC55S69 silicon revision
+* `pfr`_: - parse does not show PRINCE IV fields
 * :ref:`sdphost` - running spdhost --help fails
 * :ref:`shadowregs` - bad DEV_TEST_BIT in shadow registers
 
@@ -534,9 +622,9 @@ Next version of spsdk (2.0) will introduce breaking changes:
 1.3.1 (29-March-2021)
 ---------------------
 
-* :ref:`pfr` - configuration template supports YAML with description, backward compatibility with JSON ensured
-* :ref:`pfr` - API change: "keys" parameter has been moved from __init__ to export
-* :ref:`pfr` - sub-commands renamed:
+* `pfr`_: - configuration template supports YAML with description, backward compatibility with JSON ensured
+* `pfr`_: - API change: "keys" parameter has been moved from __init__ to export
+* `pfr`_: - sub-commands renamed:
   * user-config -> get-cfg-template
   * parse -> parse-binary
   * generate -> generate-binary
@@ -544,7 +632,7 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * :ref:`blhost` - support for RT1170, RT1160
 * :ref:`shadowregs` - shadow registers tool is now top-level module
 * :ref:`blhost` - fix baud rate parameter
-* :ref:`pfr` - fix in data for LPC55S6x, LPC55S1x, LPC55S0x
+* `pfr`_: - fix in data for LPC55S6x, LPC55S1x, LPC55S0x
 * :ref:`blhost` - communication stack breaks down on RT1170 after unsuccessful key-prov enroll command
 
 --------------------
@@ -585,8 +673,8 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * added command read-register into sdphost CLI
 * dynamic plugin support
 * MCU Link Debugger support
-* :ref:`pfr` - added CMAC-based seal
-* :ref:`pfr` - load Root of Trust from elf2sb configuration file
+* `pfr`_: - added CMAC-based seal
+* `pfr`_: - load Root of Trust from elf2sb configuration file
 
 ------------------------
 1.1.0 (4-September-2020)
@@ -611,4 +699,4 @@ Next version of spsdk (2.0) will introduce breaking changes:
 * generation and management of certificate
 * :ref:`blhost` - CLI utility for communication with boot loader on a target
 * :ref:`sdphost` - CLI utility for communication with ROM on a target
-* :ref:`pfr` - CLI utility for generating and parsing Protected Flash Regions - CMPA and CFPA regions
+* `pfr`_: - CLI utility for generating and parsing Protected Flash Regions - CMPA and CFPA regions

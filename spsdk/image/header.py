@@ -11,8 +11,10 @@
 from struct import calcsize, pack, unpack_from
 from typing import Optional
 
-from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKParsingError
+from typing_extensions import Self
+
+from spsdk.exceptions import SPSDKError, SPSDKParsingError
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.easy_enum import Enum
 
 ########################################################################################################################
@@ -59,7 +61,7 @@ class CmdTag(Enum):
 ########################################################################################################################
 
 
-class Header:
+class Header(BaseClass):
     """Header element type."""
 
     FORMAT = ">BHB"
@@ -103,31 +105,20 @@ class Header:
             f"PARAM:0x{self.param:02X}, LEN:{self.length}B>"
         )
 
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, self.__class__) and vars(other) == vars(self)
-
-    def __ne__(self, other: object) -> bool:
-        return not self.__eq__(other)
-
-    def info(self) -> str:
-        """Text representation of the header."""
-        return str(self)
-
     def export(self) -> bytes:
         """Binary representation of the header."""
         return pack(self.FORMAT, self.tag, self.length, self.param)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, required_tag: Optional[int] = None) -> "Header":
+    def parse(cls, data: bytes, required_tag: Optional[int] = None) -> Self:
         """Parse header.
 
         :param data: Raw data as bytes or bytearray
-        :param offset: Offset of input data
         :param required_tag: Check header TAG if specified value or ignore if is None
         :return: Header object
         :raises SPSDKParsingError: if required header tag does not match
         """
-        tag, length, param = unpack_from(cls.FORMAT, data, offset)
+        tag, length, param = unpack_from(cls.FORMAT, data)
         if required_tag is not None and tag != required_tag:
             raise SPSDKParsingError(
                 f" Invalid header tag: '0x{tag:02X}' expected '0x{required_tag:02X}' "
@@ -157,11 +148,10 @@ class CmdHeader(Header):
         return CmdTag.from_int(self._tag)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, required_tag: Optional[int] = None) -> Header:
+    def parse(cls, data: bytes, required_tag: Optional[int] = None) -> Self:
         """Create Header from binary data.
 
         :param data: binary data to convert into header
-        :param offset: to start reading binary data
         :param required_tag: CmdTag, None if not required
         :return: parsed instance
         :raises SPSDKParsingError: If required header tag does not match
@@ -170,7 +160,7 @@ class CmdHeader(Header):
         if required_tag is not None:
             if required_tag not in CmdTag.tags():
                 raise SPSDKError("Invalid tag")
-        return super(CmdHeader, cls).parse(data, offset, required_tag)
+        return super(CmdHeader, cls).parse(data, required_tag)
 
 
 class Header2(Header):
@@ -183,16 +173,15 @@ class Header2(Header):
         return pack(self.FORMAT, self.param, self.length, self.tag)
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0, required_tag: Optional[int] = None) -> "Header":
+    def parse(cls, data: bytes, required_tag: Optional[int] = None) -> Self:
         """Parse header.
 
         :param data: Raw data as bytes or bytearray
-        :param offset: Offset of input data
         :param required_tag: Check header TAG if specified value or ignore if is None
         :raises SPSDKParsingError: Raises an error if required tag is empty or not valid
         :return: Header2 object
         """
-        param, length, tag = unpack_from(cls.FORMAT, data, offset)
+        param, length, tag = unpack_from(cls.FORMAT, data)
         if required_tag is not None and tag != required_tag:
             raise SPSDKParsingError(
                 f" Invalid header tag: '0x{tag:02X}' expected '0x{required_tag:02X}' "

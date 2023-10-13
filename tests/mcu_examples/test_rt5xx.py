@@ -14,23 +14,20 @@ from typing import List, Optional, Tuple
 import pytest
 from bitstring import BitArray
 
-from spsdk.crypto.signature_provider import get_signature_provider
-from spsdk.image import KeySourceType, KeyStore, TrustZone
-from spsdk.image.mbimg import (
-    Mbi_CrcRamRtxxx,
-    Mbi_CrcXipRtxxx,
-    Mbi_EncryptedRamRtxxx,
-    Mbi_PlainSignedRamRtxxx,
-    Mbi_PlainSignedXipRtxxx,
-    SignatureProvider,
-)
-from spsdk.mboot import ExtMemId, KeyProvUserKeyType, McuBoot, PropertyTag, scan_usb
+from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.image.keystore import KeySourceType, KeyStore
+from spsdk.image.mbi.mbi import create_mbi_class
+from spsdk.image.trustzone import TrustZone
 from spsdk.mboot.exceptions import McuBootConnectionError
+from spsdk.mboot.interfaces.uart import MbootUARTInterface
+from spsdk.mboot.mcuboot import KeyProvUserKeyType, McuBoot, PropertyTag
+from spsdk.mboot.memories import ExtMemId
 from spsdk.sbfile.sb2.commands import CmdErase, CmdFill, CmdLoad, CmdMemEnable
-from spsdk.sbfile.sb2.images import BootImageV21, BootSectionV2, CertBlockV2, SBV2xAdvancedParams
-from spsdk.utils.crypto import Certificate, KeyBlob, Otfad
+from spsdk.sbfile.sb2.images import BootImageV21, BootSectionV2, CertBlockV1, SBV2xAdvancedParams
+from spsdk.utils.crypto.otfad import KeyBlob, Otfad
 from spsdk.utils.misc import align_block, load_binary
-from tests.misc import compare_bin_files, write_dbg_log
+from tests.misc import compare_bin_files
 
 # Flag allowing to switch between testing expected image content and generating an output image
 # - use True for "unit-test" mode: output images are not saved but are compared with existing images
@@ -176,7 +173,7 @@ def open_mboot() -> McuBoot:
     for _ in range(
         5
     ):  # try three times to find USB device (wait until shadows registers are ready)
-        devs = scan_usb("RT5xx")
+        devs = MbootUARTInterface.scan("RT5xx")
         if len(devs) == 1:
             break
 
@@ -352,7 +349,7 @@ def get_keystore(data_dir: str) -> KeyStore:
     return KeyStore(KeySourceType.KEYSTORE, key_store_bin)
 
 
-def create_cert_block(data_dir: str) -> CertBlockV2:
+def create_cert_block(data_dir: str) -> CertBlockV1:
     """Load 4 certificates and create certificate block
 
     :param data_dir: absolute path
@@ -362,12 +359,13 @@ def create_cert_block(data_dir: str) -> CertBlockV2:
     cert_path = os.path.join(data_dir, "keys_certs")
     cert_list = list()
     for cert_index in range(4):
-        cert_bin = load_binary(
-            os.path.join(cert_path, f"root_k{str(cert_index)}_signed_cert0_noca.der.cert")
+        cert_list.append(
+            Certificate.load(
+                os.path.join(cert_path, f"root_k{str(cert_index)}_signed_cert0_noca.der.cert")
+            )
         )
-        cert_list.append(Certificate(cert_bin))
     # create certification block
-    cert_block = CertBlockV2(build_number=1)
+    cert_block = CertBlockV1(build_number=1)
     cert_block.add_certificate(cert_list[0])
     # add hashes
     for root_key_index, cert in enumerate(cert_list):
@@ -404,7 +402,7 @@ def test_xip_crc(data_dir: str, image_file_name: str) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = Mbi_CrcXipRtxxx(app=unsigned_image, load_addr=0x08001000)
+    mbi = create_mbi_class("Mbi_CrcXipRtxxx")(app=unsigned_image, load_address=0x08001000)
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -428,7 +426,7 @@ def test_ram_crc(data_dir: str, image_file_name: str, ram_addr: int) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = Mbi_CrcRamRtxxx(app=unsigned_image, load_addr=ram_addr)
+    mbi = create_mbi_class("Mbi_CrcRamRtxxx")(app=unsigned_image, load_address=ram_addr)
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -457,9 +455,9 @@ def test_ram_signed_otp(data_dir: str, image_file_name: str, ram_addr: int) -> N
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    mbi = Mbi_PlainSignedRamRtxxx(
+    mbi = create_mbi_class("Mbi_PlainSignedRamRtxxx")(
         app=unsigned_img,
-        load_addr=ram_addr,
+        load_address=ram_addr,
         key_store=keystore,
         hmac_key=MASTER_KEY,
         trust_zone=TrustZone.disabled(),
@@ -497,9 +495,9 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = Mbi_PlainSignedRamRtxxx(
+    mbi = create_mbi_class("Mbi_PlainSignedRamRtxxx")(
         app=org_data,
-        load_addr=ram_addr,
+        load_address=ram_addr,
         trust_zone=TrustZone.disabled(),
         key_store=key_store,
         cert_block=cert_block,
@@ -531,9 +529,9 @@ def test_xip_signed(data_dir: str, image_file_name: str) -> None:
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    mbi = Mbi_PlainSignedXipRtxxx(
+    mbi = create_mbi_class("Mbi_PlainSignedXipRtxxx")(
         app=unsigned_img,
-        load_addr=0x08001000,
+        load_address=0x08001000,
         cert_block=cert_block,
         signature_provider=signature_provider,
     )
@@ -566,9 +564,9 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = Mbi_EncryptedRamRtxxx(
+    mbi = create_mbi_class("Mbi_EncryptedRamRtxxx")(
         app=org_data,
-        load_addr=ram_addr,
+        load_address=ram_addr,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
         signature_provider=signature_provider,
@@ -607,9 +605,9 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = Mbi_EncryptedRamRtxxx(
+    mbi = create_mbi_class("Mbi_EncryptedRamRtxxx")(
         app=org_data,
-        load_addr=ram_addr,
+        load_address=ram_addr,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
         signature_provider=signature_provider,
@@ -692,11 +690,9 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     )
     boot_image.add_boot_section(boot_section)
 
-    dbg_info = list()  # debug log for analysis of the binary output content
     sb_file = boot_image.export(
-        padding=bytes(8), dbg_info=dbg_info
+        padding=bytes(8)
     )  # padding for unit test only, to avoid random data
-    write_dbg_log(data_dir, image_name + "_keystore.sb", dbg_info, TEST_IMG_CONTENT)
     write_sb(data_dir, image_name + "_keystore.sb", sb_file, get_keystore(data_dir))
 
 
@@ -779,11 +775,9 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     )
     boot_image.add_boot_section(boot_section)
 
-    dbg_info = list()  # debug log for analysis of the binary output content
     sb_file = boot_image.export(
-        padding=bytes(8), dbg_info=dbg_info
+        padding=bytes(8)
     )  # padding for unit test only, to avoid random data
-    write_dbg_log(data_dir, image_name + "_otp.sb", dbg_info, TEST_IMG_CONTENT)
     write_sb(data_dir, image_name + "_otp.sb", sb_file, KeyStore(KeySourceType.OTP))
 
 
@@ -861,11 +855,9 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
     )
     boot_image.add_boot_section(boot_section)
 
-    dbg_info = list()  # debug log for analysis of the binary output content
     sb_file = boot_image.export(
-        padding=bytes(8), dbg_info=dbg_info
+        padding=bytes(8)
     )  # padding for unit test only, to avoid random data
-    write_dbg_log(data_dir, image_name + "_keystore.sb", dbg_info, TEST_IMG_CONTENT)
     write_sb(data_dir, image_name + "_keystore.sb", sb_file, get_keystore(data_dir))
 
 
@@ -974,11 +966,9 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
     )
     boot_image.add_boot_section(boot_section)
 
-    dbg_info = list()  # debug log for analysis of the binary output content
     sb_file = boot_image.export(
-        padding=bytes(8), dbg_info=dbg_info
+        padding=bytes(8)
     )  # padding for unit test only, to avoid random data
-    write_dbg_log(data_dir, image_name + "_otfad_keystore.sb", dbg_info, TEST_IMG_CONTENT)
     write_sb(data_dir, image_name + "_otfad_keystore.sb", sb_file, key_store)
 
 
@@ -1107,9 +1097,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
     )
     boot_image.add_boot_section(boot_section)
 
-    dbg_info = list()  # debug log for analysis of the binary output content
     sb_file = boot_image.export(
-        padding=bytes(8), dbg_info=dbg_info
+        padding=bytes(8)
     )  # padding for unit test only, to avoid random data
-    write_dbg_log(data_dir, image_name + "_otfad_otp.sb", dbg_info, TEST_IMG_CONTENT)
     write_sb(data_dir, image_name + "_otfad_otp.sb", sb_file, key_store)

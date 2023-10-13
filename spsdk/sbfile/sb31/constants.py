@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """File including constants."""
@@ -29,3 +29,5 @@ class EnumCmdTag(Enum):
     CONFIGURE_MEMORY = (0x0B, "CONFIGURE_MEMORY")
     FILL_MEMORY = (0x0C, "FILL_MEMORY")
     FW_VERSION_CHECK = (0x0D, "FW_VERSION_CHECK")
+    # RESET added in SBx
+    RESET = (0x0E, "RESET")

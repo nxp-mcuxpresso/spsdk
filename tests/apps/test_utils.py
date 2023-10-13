@@ -6,9 +6,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
 
-from spsdk import SPSDKError
 from spsdk.apps.utils import utils
 from spsdk.apps.utils.utils import catch_spsdk_error
+from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.utils.misc import load_configuration, use_working_directory
 

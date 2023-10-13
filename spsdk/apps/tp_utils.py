@@ -15,13 +15,14 @@ import colorama
 import prettytable
 from typing_extensions import Literal
 
-from spsdk import SPSDKError
-from spsdk.apps.utils import FC
-from spsdk.tp import TP_DATA_FOLDER, TP_SCH_FILE, SPSDKTpError
-from spsdk.tp.tp_intf import TpDevInterface
+from spsdk.apps.utils.common_cli_options import FC, spsdk_config_option
+from spsdk.exceptions import SPSDKError
+from spsdk.tp import TP_DATA_FOLDER, TP_SCH_FILE
+from spsdk.tp.exceptions import SPSDKTpError
+from spsdk.tp.tp_intf import TpDevInterface, TpIntfDescription
 from spsdk.tp.tphost import TrustProvisioningHost
 from spsdk.tp.utils import (
-    TpIntfDescription,
+    get_device_data,
     get_tp_device_class,
     get_tp_device_types,
     get_tp_target_class,
@@ -50,12 +51,15 @@ class TPBaseConfig:
         self.config_data = config_data
         self.config_dir = config_dir
 
-    def _validate(self) -> None:
-        """Validate configuration data using appropriate validation schema."""
-        schema_cfg = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+    def _validate(self, schema_members: Optional[List[str]] = None) -> None:
+        """Validate configuration data using appropriate validation schema.
 
+        :param schema_members: Explicit schema members to check (default: self.SCHEMA_MEMBERS)
+        """
+        schema_cfg = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+        schema_members_int = schema_members or self.SCHEMA_MEMBERS
         # Get this app type scheme pieces
-        sch_list = [schema_cfg[x] for x in self.SCHEMA_MEMBERS]
+        sch_list = [schema_cfg[x] for x in schema_members_int]
         # First check common settings
         check_config(
             config=self.config_data,
@@ -239,10 +243,6 @@ class TPConfigConfig(TPBaseConfig):
         "family",
         "tp_timeout",
         "device",
-        "cmpa",
-        "cfpa",
-        "sb_kek",
-        "user_kek",
         "production_quota",
         "oem_log_prk",
         "nxp_prod_cert",
@@ -272,6 +272,12 @@ class TPConfigConfig(TPBaseConfig):
         )
 
         self._validate()
+        # first we need to validate family, after that we check family-specific settings
+        if get_device_data(key="use_prov_data", family=self.family):
+            extra_checks = ["provisioning_data"]
+        else:
+            extra_checks = ["cmpa", "cfpa", "sb_kek", "user_kek"]
+        self._validate(extra_checks)
 
 
 def multiple_tp_dict(multi: Optional[List[str]]) -> Dict[str, str]:
@@ -343,7 +349,7 @@ def print_device_table(intfs: List[TpIntfDescription]) -> str:
         ]
 
         for field in header[2:]:
-            fields.append(colorama.Fore.CYAN + str(intf.as_dict().get(field, "")))  # type: ignore
+            fields.append(colorama.Fore.CYAN + str(intf.as_dict().get(field, "")))
         table.add_row(fields)
 
     return table.get_string() + colorama.Style.RESET_ALL
@@ -510,12 +516,8 @@ def list_tpdevices(tp_device: str, tp_device_parameter: List[str]) -> None:
     type=click.IntRange(0, 600, clamp=True),
     help="The target provisioning timeout in seconds.",
 )
-@click.option(
-    "-c",
-    "--config",
-    type=click.Path(exists=True, dir_okay=False),
+@spsdk_config_option(
     help="Path to configuration file (parameters on CLI take precedence).",
-    required=False,
 )
 def get_counters(
     tp_device: str,

@@ -9,19 +9,31 @@
 
 Each concrete signature provider needs to implement:
 - sign(data: bytes) -> bytes
+- signature_length -> int
 - into() -> str
 """
 
 import abc
 import getpass
+import json
 import logging
-import math
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-from Crypto.PublicKey import ECC
+import requests
+from cryptography.hazmat.primitives.hashes import HashAlgorithm
 
-from spsdk import crypto
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash_algorithm
+from spsdk.crypto.keys import (
+    PrivateKey,
+    PrivateKeyEcc,
+    PrivateKeyRsa,
+    PrivateKeySM2,
+    PublicKeyEcc,
+    PublicKeyRsa,
+    PublicKeySM2,
+    SPSDKKeyPassphraseMissing,
+)
 from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation, SPSDKValueError
 from spsdk.utils.misc import find_file
 from spsdk.utils.plugins import PluginsManager, PluginType
@@ -82,13 +94,9 @@ class SignatureProvider(abc.ABC):
             if klass.sp_type == params["type"]:
                 del params["type"]
                 unused_params = set(params) - set(klass.__init__.__code__.co_varnames)
-                for unused_param in unused_params:
-                    if unused_param != "search_paths":
-                        logger.warning(
-                            f"Removing unused parameter for {klass.sp_type} signature provider: {unused_param}"
-                        )
-                    del params[unused_param]
-                return klass(**params)  # type: ignore  #oh dear Mypy
+                if "search_paths" in unused_params:
+                    del params["search_paths"]
+                return klass(**params)
         logger.info(f"Signature provider of type {params['type']} was not found.")
         return None
 
@@ -118,33 +126,29 @@ class PlainFileSP(SignatureProvider):
         self,
         file_path: str,
         password: Optional[str] = None,
-        encoding: str = "PEM",  # pylint: disable=unused-argument
-        hash_alg: Optional[str] = None,
+        hash_alg: Optional[EnumHashAlgorithm] = None,
         search_paths: Optional[List[str]] = None,
-        mode: Optional[str] = None,
     ) -> None:
         """Initialize the plain file signature provider.
 
         :param file_path: Path to private file
         :param password: Password in case of encrypted private file, defaults to None
-        :param encoding: Private file encoding, defaults to 'PEM'
-        :param hash_alg: Hash for the signature, defaults to 'sha256'
+        :param hash_alg: Hash for the signature, defaults to None
         :param search_paths: List of paths where to search for the file, defaults to None
-        :param mode: Optionally there could be specified mode of signature algorithm.
-            For example to switch EC signature to deterministic mode 'deterministic-rfc6979' must be used
         :raises SPSDKError: Invalid Private Key
         """
         self.file_path = find_file(file_path=file_path, search_paths=search_paths)
-        password_bytes = str.encode(password) if password is not None else None
-        self.private_key = crypto.load_private_key(self.file_path, password=password_bytes)
-        assert isinstance(self.private_key, crypto._PrivateKeyTuple)
+        self.private_key = PrivateKey.load(self.file_path, password=password)
+        self.hash_alg = self._get_hash_algorithm(hash_alg)
+
+    def _get_hash_algorithm(self, hash_alg: Optional[EnumHashAlgorithm] = None) -> HashAlgorithm:
         if hash_alg:
             hash_alg_name = hash_alg
         else:
-            if isinstance(self.private_key, crypto.RSAPrivateKey):
-                hash_alg_name = "sha256"
+            if isinstance(self.private_key, PrivateKeyRsa):
+                hash_alg_name = EnumHashAlgorithm.SHA256
 
-            elif isinstance(self.private_key, crypto.EllipticCurvePrivateKey):
+            elif isinstance(self.private_key, PrivateKeyEcc):
                 # key_size <= 256       =>  SHA256
                 # 256 < key_size <= 384 =>  SHA384
                 # 384 < key_size        =>  SHA512
@@ -154,45 +158,36 @@ class PlainFileSP(SignatureProvider):
                     hash_size = 384
                 else:
                     hash_size = 512
-                hash_alg_name = f"sha{hash_size}"
+                hash_alg_name = EnumHashAlgorithm[f"sha{hash_size}"]
+
+            elif isinstance(self.private_key, PrivateKeySM2):
+                hash_alg_name = EnumHashAlgorithm.SM3
             else:
                 raise SPSDKError(
                     f"Unsupported private key by signature provider: {str(self.private_key)}"
                 )
-        self.mode = mode
-        self.hash_alg = getattr(crypto.hashes, hash_alg_name.upper())()
+        return get_hash_algorithm(hash_alg_name)
 
     @property
     def signature_length(self) -> int:
         """Return length of the signature."""
-        sig_len = math.ceil(self.private_key.key_size / 8)
-        if isinstance(self.private_key, crypto.EllipticCurvePrivateKey):
-            sig_len *= 2
-        return sig_len
+        return self.private_key.signature_size
 
     def verify_public_key(self, public_key: bytes) -> bool:
         """Verify if given public key matches private key."""
-        from spsdk.utils.crypto.common import crypto_backend, serialize_ecc_signature
-
-        crypto_public_key = crypto.loaders.load_public_key_from_data(public_key)
-        assert isinstance(crypto_public_key, crypto._PublicKeyTuple)
-        data = bytes()
-        if isinstance(crypto_public_key, crypto.RSAPublicKey):
-            signature = self._rsa_sign(data)
-            is_matching = crypto_backend().rsa_verify(
-                pub_key_mod=crypto_public_key.public_numbers().n,
-                pub_key_exp=crypto_public_key.public_numbers().e,
-                signature=signature,
-                data=data,
-            )
-            return is_matching
-        else:  # public_key can be only one of RSAPublicKey | EllipticCurvePublicKey type
-            signature = self._ecc_sign(data)
-            signature_data = serialize_ecc_signature(signature, self.signature_length // 2)
-            is_matching = crypto_backend().ecc_verify(
-                public_key=crypto_public_key, signature=signature_data, data=data  # type: ignore
-            )
-            return is_matching
+        try:
+            return self.private_key.verify_public_key(PublicKeyEcc.parse(public_key))
+        except SPSDKError:
+            pass
+        try:
+            return self.private_key.verify_public_key(PublicKeyRsa.parse(public_key))
+        except SPSDKError:
+            pass
+        try:
+            return self.private_key.verify_public_key(PublicKeySM2.parse(public_key))
+        except SPSDKError:
+            pass
+        raise SPSDKError("Unsupported public key")
 
     def info(self) -> str:
         """Return basic into about the signature provider."""
@@ -202,74 +197,126 @@ class PlainFileSP(SignatureProvider):
 
     def sign(self, data: bytes) -> bytes:
         """Return the signature for data."""
-        if isinstance(self.private_key, crypto.RSAPrivateKey):
-            return self._rsa_sign(data)
-        else:  # self.private_key can be only one of RSAPrivateKey | RSAPublicKey type
-            return self._ecc_sign(data)
-
-    def _rsa_sign(self, data: bytes) -> bytes:
-        """Return RSA signature."""
-        assert isinstance(self.private_key, crypto.RSAPrivateKey)
-        signature = self.private_key.sign(
-            data=data, padding=crypto.padding.PKCS1v15(), algorithm=self.hash_alg
-        )
-        return signature
-
-    def _ecc_sign(self, data: bytes) -> bytes:
-        """Return ECC signature."""
-        assert isinstance(self.private_key, crypto.EllipticCurvePrivateKey)
-        if self.mode and self.mode == "deterministic-rfc6979":
-            from spsdk.utils.crypto.backend_internal import internal_backend
-
-            private_key_bytes = self.private_key.private_bytes(
-                encoding=crypto.Encoding.PEM,
-                format=crypto.serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=crypto.serialization.NoEncryption(),
-            )
-            crypto_dome_key = ECC.import_key(private_key_bytes)
-            signature = internal_backend.ecc_sign(crypto_dome_key, data)
-        else:
-            signature = self.private_key.sign(
-                data=data, signature_algorithm=crypto.ec.ECDSA(self.hash_alg)
-            )
-        return signature
+        return self.private_key.sign(data)
 
 
 class InteractivePlainFileSP(PlainFileSP):
     """SignatureProvider implementation that uses plain local file in an "interactive" mode.
 
-    If the private key is encrypted, the useer will be promped for password
+    If the private key is encrypted, the user will be prompted for password
     """
 
     sp_type = "interactive_file"
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         file_path: str,
-        encoding: str = "PEM",
-        hash_alg: Optional[str] = None,
+        hash_alg: Optional[EnumHashAlgorithm] = None,
         search_paths: Optional[List[str]] = None,
-        mode: Optional[str] = None,
     ) -> None:
         """Initialize the interactive plain file signature provider.
 
         :param file_path: Path to private file
-        :param encoding: Private file encoding, defaults to 'PEM'
-        :param hash_alg: Hash for the signature, defaults to 'sha256'
+        :param hash_alg: Hash for the signature, defaults to sha256
         :param search_paths: List of paths where to search for the file, defaults to None
-        :param mode: Optionally there could be specified mode of signature algorithm.
-            For example to switch EC signature to deterministic mode 'deterministic-rfc6979' must be used
         :raises SPSDKError: Invalid Private Key
         """
-        password = None
+        self.file_path = find_file(file_path=file_path, search_paths=search_paths)
         try:
-            self.file_path = find_file(file_path=file_path, search_paths=search_paths)
-            self.private_key = crypto.load_private_key(self.file_path)
-        except TypeError:
+            self.private_key = PrivateKey.load(self.file_path)
+        except SPSDKKeyPassphraseMissing:
             password = getpass.getpass(
                 prompt="Private key is encrypted.Enter password: ", stream=None
             )
-        super().__init__(file_path, password, encoding, hash_alg, search_paths, mode)
+            self.private_key = PrivateKey.load(self.file_path, password=password)
+        self.hash_alg = self._get_hash_algorithm(hash_alg)
+
+
+class HttpProxySP(SignatureProvider):
+    """Signature Provider implementation that delegates all operations to a proxy server."""
+
+    sp_type = "proxy"
+
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: str = "8000",
+        url_prefix: str = "api",
+        **kwargs: Dict[str, str],
+    ) -> None:
+        """Initialize Http Proxy Signature Provider.
+
+        :param host: Hostname (IP address) of the proxy server, defaults to "localhost"
+        :param port: Port of the proxy server, defaults to "8000"
+        :param url_prefix: REST API prefix, defaults to "api"
+        """
+        self.base_url = f"http://{host}:{port}/"
+        self.base_url += f"{url_prefix}/" if url_prefix else ""
+        self.kwargs = kwargs
+
+    def _handle_request(self, url: str, data: Optional[Dict] = None) -> Dict:
+        """Handle REST API request.
+
+        :param url: REST API endpoint URL
+        :param data: JSON payload data, defaults to None
+        :raises SPSDKError: HTTP Error during API request
+        :raises SPSDKError: Invalid response data (not a valid dictionary)
+        :return: REST API data response as dictionary
+        """
+        json_payload = data or {}
+        json_payload.update(self.kwargs)
+        full_url = self.base_url + url
+        logger.info(f"Requesting: {full_url}")
+        response = requests.get(url=full_url, json=json_payload, timeout=60)
+        logger.info(f"Response: {response}")
+        if not response.ok:
+            try:
+                extra_message = response.json()
+            except json.JSONDecodeError:
+                extra_message = "N/A"
+            raise SPSDKError(
+                f"Error {response.status_code} ({response.reason}) occurred when calling {full_url}\n"
+                f"Extra response data: {extra_message}"
+            )
+        try:
+            return response.json()
+        except json.JSONDecodeError as e:
+            raise SPSDKError("Response is not a valid JSON object") from e
+
+    def _check_response(self, response: Dict, names_types: List[Tuple[str, Type]]) -> None:
+        """Check if the response contains required data.
+
+        :param response: Response to check
+        :param names_types: Name and type of required response members
+        :raises SPSDKError: Response doesn't contain required member
+        :raises SPSDKError: Responses' member has incorrect type
+        """
+        for name, typ in names_types:
+            if name not in response:
+                raise SPSDKError(f"Response object doesn't contain member '{name}'")
+            if not isinstance(response[name], typ):
+                raise SPSDKError(
+                    f"Response member '{name}' is not a instance of '{typ}' but '{type(response[name])}'"
+                )
+
+    def sign(self, data: bytes) -> bytes:
+        """Return signature for data."""
+        response = self._handle_request("sign", {"data": data.hex()})
+        self._check_response(response=response, names_types=[("data", str)])
+        return bytes.fromhex(response["data"])
+
+    @property
+    def signature_length(self) -> int:
+        """Return length of the signature."""
+        response = self._handle_request("signature_length")
+        self._check_response(response=response, names_types=[("data", int)])
+        return int(response["data"])
+
+    def verify_public_key(self, public_key: bytes) -> bool:
+        """Verify if given public key matches private key."""
+        response = self._handle_request("verify_public_key", {"data": public_key.hex()})
+        self._check_response(response=response, names_types=[("data", bool)])
+        return response["data"]
 
 
 def get_signature_provider(
@@ -292,10 +339,9 @@ def get_signature_provider(
                 params[k] = v
         signature_provider = SignatureProvider.create(params=params)
     elif local_file_key:
-        signature_provider = PlainFileSP(
+        signature_provider = InteractivePlainFileSP(
             file_path=local_file_key,
             search_paths=kwargs.get("search_paths"),
-            mode=kwargs.get("mode"),
         )
     else:
         raise SPSDKValueError("No signature provider configuration is provided")

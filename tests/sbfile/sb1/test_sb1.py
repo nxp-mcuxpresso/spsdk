@@ -1,22 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb1 import BootSectionV1, SecureBootFlagsV1, SecureBootV1
 
 
 def test_sb1x_basic():
     """Basic test of SB 1.x"""
     img = SecureBootV1(version="1.0")
-    assert img.info()
+    assert str(img)
     img = SecureBootV1(version="1.2")
-    assert img.info()
+    assert str(img)
     with pytest.raises(SPSDKError):
         img.export()  # missing bootable section
     assert len(img.sections) == 0

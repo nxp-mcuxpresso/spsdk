@@ -2,11 +2,18 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from spsdk.image import CmdNop, CmdUnlock, CmdUnlockCAAM, CmdUnlockOCOTP, CmdUnlockSNVS, EnumEngine
+from spsdk.image.commands import (
+    CmdNop,
+    CmdUnlock,
+    CmdUnlockCAAM,
+    CmdUnlockOCOTP,
+    CmdUnlockSNVS,
+    EnumEngine,
+)
 from spsdk.image.header import CmdHeader
 
 
@@ -40,7 +47,7 @@ def test_unlock_cmd_equality():
 
 def test_unlock_cmd_info():
     cmd = CmdUnlock()
-    output = cmd.info()
+    output = str(cmd)
     req_strings = ["Unlock Command", "Features:", "UID:"]
     for req_string in req_strings:
         assert req_string in output, f"string {req_string} is not in the output: {output}"
@@ -59,7 +66,7 @@ def test_unlock_snvs():
     assert not cmd.unlock_lp_swr
     assert not cmd.unlock_zmk_write
 
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     cmd2 = CmdUnlock.parse(data)
@@ -75,7 +82,7 @@ def test_unlock_caam():
     assert not cmd.unlock_rng
     assert "CmdUnlockCAAM" in str(cmd)
 
-    assert cmd.info()
+    assert str(cmd)
 
     data = cmd.export()
     cmd2 = CmdUnlock.parse(data)
@@ -95,8 +102,8 @@ def test_unlock_ocotp():
     assert not cmd.unlock_srk_rvk
     assert "CmdUnlockOCOTP" in str(cmd)
 
-    assert "UID" in cmd.info()
-    assert "UID" not in CmdUnlockOCOTP().info()
+    assert "UID" in str(cmd)
+    assert "UID" not in str(CmdUnlockOCOTP())
 
     data = cmd.export()
     cmd2 = CmdUnlock.parse(data)

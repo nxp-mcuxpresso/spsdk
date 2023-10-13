@@ -12,12 +12,14 @@ from hashlib import sha256
 from struct import pack, unpack, unpack_from
 from typing import Any, Iterator, List, Optional, Union
 
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509 import Certificate, ExtensionNotFound, KeyUsage
+from typing_extensions import Self
 
-from spsdk import SPSDKError
+from spsdk.crypto.certificate import Certificate, ExtensionNotFound
+from spsdk.crypto.keys import EccCurve, PublicKeyEcc, PublicKeyRsa, get_ecc_curve
+from spsdk.crypto.types import SPSDKKeyUsage
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import DebugInfo
 
 from .header import Header, SegTag
 from .misc import hexdump_fmt, modulus_fmt
@@ -40,6 +42,7 @@ class EnumAlgorithm(Enum):
     SHA512 = (0x1B, "SHA-512 algorithm ID")
     # Signature algorithms
     PKCS1 = (0x21, "PKCS#1 RSA signature algorithm")
+    ECDSA = (0x27, "NIST ECDSA signature algorithm")
     # Cipher algorithms
     AES = (0x55, "AES algorithm ID")
     # Cipher or hash modes
@@ -55,7 +58,7 @@ class EnumSRK(Enum):
     KEY_HASH = (0xEE, "Any key: hash only")
 
 
-class BaseClass:
+class BaseSecretClass(BaseClass):
     """Base SPSDK class."""
 
     def __init__(self, tag: SegTag, version: int = 0x40):
@@ -65,12 +68,6 @@ class BaseClass:
         :param version: format version
         """
         self._header = Header(tag=tag, param=version)
-
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(other, self.__class__) and vars(other) == vars(self)
-
-    def __ne__(self, obj: Any) -> bool:
-        return not self.__eq__(obj)
 
     @property
     def version(self) -> int:
@@ -91,22 +88,6 @@ class BaseClass:
     def size(self) -> int:
         """Size of the exported binary data.
 
-        :raises NotImplementedError: Derived class has to implement this method
-        """
-        raise NotImplementedError("Derived class has to implement this method.")
-
-    def info(self) -> str:
-        """Description about the instance.
-
-        :raises NotImplementedError: Derived class has to implement this method
-        """
-        raise NotImplementedError("Derived class has to implement this method.")
-
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
-        """Serialization to binary form.
-
-        :param dbg_info: optional instance allowing to debug exported data; provides commented export
-        :return: binary representation of the instance
         :raises NotImplementedError: Derived class has to implement this method
         """
         raise NotImplementedError("Derived class has to implement this method.")
@@ -137,19 +118,19 @@ class SecretKeyBlob:
         self.flag = flag
         self._data = bytearray()
 
-    def __repr__(self) -> str:
-        return (
-            f"SecKeyBlob <Mode: {self.mode}, Algo: {self.algorithm}, "
-            f"Flag: 0x{self.flag:02X}, Size: {len(self._data)}>"
-        )
-
     def __eq__(self, obj: Any) -> bool:
         return isinstance(obj, SecretKeyBlob) and vars(obj) == vars(self)
 
     def __ne__(self, obj: Any) -> bool:
         return not self.__eq__(obj)
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return (
+            f"SecKeyBlob <Mode: {self.mode}, Algo: {self.algorithm}, "
+            f"Flag: 0x{self.flag:02X}, Size: {len(self._data)}>"
+        )
+
+    def __str__(self) -> str:
         """String representation of the Secret Key Blob."""
         msg = "-" * 60 + "\n"
         msg += "SecKeyBlob\n"
@@ -167,16 +148,15 @@ class SecretKeyBlob:
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SecretKeyBlob":
+    def parse(cls, data: bytes) -> Self:
         """Parse of Secret Key Blob."""
-        (mode, alg, size, flg) = unpack_from("4B", data, offset)
-        offset += 4
+        (mode, alg, size, flg) = unpack_from("4B", data)
         obj = cls(mode, alg, flg)
-        obj.blob = data[offset : offset + size]
+        obj.blob = data[4 : 4 + size]
         return obj
 
 
-class CertificateImg(BaseClass):
+class CertificateImg(BaseSecretClass):
     """Certificate structure for bootable image."""
 
     @property
@@ -189,11 +169,6 @@ class CertificateImg(BaseClass):
         super().__init__(SegTag.CRT, version)
         self._data = bytearray() if data is None else bytearray(data)
 
-    def __repr__(self) -> str:
-        return (
-            f"Certificate <Ver: {self.version_major}.{self.version_minor}, Size: {len(self._data)}>"
-        )
-
     def __len__(self) -> int:
         return len(self._data)
 
@@ -206,7 +181,12 @@ class CertificateImg(BaseClass):
     def __iter__(self) -> Iterator[int]:
         return self._data.__iter__()
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return (
+            f"Certificate <Ver: {self.version_major}.{self.version_minor}, Size: {len(self._data)}>"
+        )
+
+    def __str__(self) -> str:
         """String representation of the CertificateImg."""
         msg = "-" * 60 + "\n"
         msg += (
@@ -216,24 +196,21 @@ class CertificateImg(BaseClass):
         msg += "-" * 60 + "\n"
         return msg
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export."""
         self._header.length = self.size
         raw_data = self._header.export()
-        dbg_info.append_binary_section("header", raw_data)
         raw_data += self._data
-        dbg_info.append_binary_section("data", self._data)
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "CertificateImg":
+    def parse(cls, data: bytes) -> Self:
         """Parse."""
-        header = Header.parse(data, offset, SegTag.CRT)
-        offset += Header.SIZE
-        return cls(header.param, data[offset : offset + header.length - Header.SIZE])
+        header = Header.parse(data, SegTag.CRT)
+        return cls(header.param, data[Header.SIZE : header.length])
 
 
-class Signature(BaseClass):
+class Signature(BaseSecretClass):
     """Class representing a signature."""
 
     @property
@@ -246,9 +223,6 @@ class Signature(BaseClass):
         super().__init__(tag=SegTag.SIG, version=version)
         self._data = bytearray() if data is None else bytearray(data)
 
-    def __repr__(self) -> str:
-        return f"Signature <Ver: {self.version >> 4}.{self.version & 0xF}, Size: {len(self._data)}>"
-
     def __len__(self) -> int:
         return len(self._data)
 
@@ -261,7 +235,10 @@ class Signature(BaseClass):
     def __iter__(self) -> Iterator[int]:
         return self._data.__iter__()
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"Signature <Ver: {self.version >> 4}.{self.version & 0xF}, Size: {len(self._data)}>"
+
+    def __str__(self) -> str:
         """String representation of the signature."""
         msg = "-" * 60 + "\n"
         msg += f"Signature (Ver: {self.version >> 4:X}.{self.version & 0xF:X}, Size: {len(self._data)})\n"
@@ -278,24 +255,21 @@ class Signature(BaseClass):
         """Signature data."""
         self._data = bytearray(value)
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export."""
         self._header.length = self.size
         raw_data = self._header.export()
-        dbg_info.append_binary_section("header", raw_data)
         raw_data += self.data
-        dbg_info.append_binary_section("data", self.data)
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "Signature":
+    def parse(cls, data: bytes) -> Self:
         """Parse."""
-        header = Header.parse(data, offset, SegTag.SIG)
-        offset += Header.SIZE
-        return cls(header.param, data[offset : offset + header.length - Header.SIZE])
+        header = Header.parse(data, SegTag.SIG)
+        return cls(header.param, data[Header.SIZE : header.length])
 
 
-class MAC(BaseClass):
+class MAC(BaseSecretClass):
     """Structure that holds initial parameter for AES encryption/decryption.
 
     - nonce - initialization vector for AEAD AES128 decryption
@@ -372,7 +346,7 @@ class MAC(BaseClass):
         """Update AEAD encryption parameters for encrypted image.
 
         :param nonce: initialization vector, length depends on image size,
-        :param mac: message authentication code used to authenticate uncrypted data, 16 bytes
+        :param mac: message authentication code used to authenticate decrypted data, 16 bytes
         :raises SPSDKError: If incorrect length of mac
         :raises SPSDKError: If incorrect length of nonce
         :raises SPSDKError: If incorrect number of MAC bytes"
@@ -386,16 +360,16 @@ class MAC(BaseClass):
             raise SPSDKError("Incorrect number of MAC bytes")
         self.data = nonce + mac
 
+    def __len__(self) -> int:
+        return len(self._data)
+
     def __repr__(self) -> str:
         return (
             f"MAC <Ver: {self.version_major:X}.{self.version_minor:X}, "
             f"Nonce: {self.nonce_len}, MAC: {self.mac_len}>"
         )
 
-    def __len__(self) -> int:
-        return len(self._data)
-
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Text info about the instance."""
         msg = "-" * 60 + "\n"
         msg += f"MAC (Version: {self.version >> 4:X}.{self.version & 0xF:X})\n"
@@ -405,39 +379,32 @@ class MAC(BaseClass):
         msg += f"[{self._data.hex()}]\n"
         return msg
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export instance into binary form (serialization).
 
-        :param dbg_info: optional instance providing debug info about exported content
         :return: binary form
         """
         self._validate_data()
         self._header.length = self.size
         raw_data = self._header.export()
-        dbg_info.append_binary_data("header", raw_data)
         raw_data += pack(">4B", 0, self.nonce_len, 0, self.mac_len)
-        dbg_info.append("nonce=" + self.nonce.hex())
-        dbg_info.append("mac=" + self.mac.hex())
         raw_data += self.data
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "MAC":
+    def parse(cls, data: bytes) -> Self:
         """Parse binary data and creates the instance (deserialization).
 
         :param data: being parsed
-        :param offset: to start parse the data
         :return: the instance
         """
-        header = Header.parse(data, offset, SegTag.MAC)
-        offset += Header.SIZE
-        (_, nonce_bytes, _, mac_bytes) = unpack_from(">4B", data, offset)
-        offset += 4
+        header = Header.parse(data, SegTag.MAC)
+        (_, nonce_bytes, _, mac_bytes) = unpack_from(">4B", data, Header.SIZE)
         return cls(
             header.param,
             nonce_bytes,
             mac_bytes,
-            data[offset : offset + header.length - (Header.SIZE + 4)],
+            data[Header.SIZE + 4 : header.length],
         )
 
 
@@ -478,7 +445,7 @@ class SrkItem:
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Description about the instance.
 
         :raises NotImplementedError: Derived class has to implement this method
@@ -499,41 +466,46 @@ class SrkItem:
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Serialization to binary form.
 
-        :param dbg_info: optional instance allowing to debug exported data; provides commented export
         :return: binary representation of the instance
         :raises NotImplementedError: Derived class has to implement this method
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SrkItem":
+    def parse(cls, data: bytes) -> Self:
         """Pick up the right implementation of an SRK item.
 
         :param data: The bytes array of SRK segment
-        :param offset: The offset of input data
         :return: SrkItem: One of the SrkItem subclasses
         :raises NotImplementedSRKPublicKeyType: Unsupported key algorithm
         :raises NotImplementedSRKItem: Unsupported tag
         """
-        header = Header.parse(data, offset)
+        header = Header.parse(data)
         if header.tag == EnumSRK.KEY_PUBLIC:
             if header.param == EnumAlgorithm.PKCS1:
-                return SrkItemRSA.parse(data, offset)
+                return SrkItemRSA.parse(data)  # type: ignore
+            elif header.param == EnumAlgorithm.ECDSA:
+                return SrkItemEcc.parse(data)  # type: ignore
             raise NotImplementedSRKPublicKeyType(f"{header.param}")
         if header.tag == EnumSRK.KEY_HASH:
-            return SrkItemHash.parse(data, offset)
+            return SrkItemHash.parse(data)  # type: ignore
         raise NotImplementedSRKItem(f"TAG = {header.tag}, PARAM = {header.param}")
 
     @classmethod
     def from_certificate(cls, cert: Certificate) -> "SrkItem":
         """Pick up the right implementation of an SRK item."""
         assert isinstance(cert, Certificate)
-        public_key = cert.public_key()
-        if isinstance(public_key, rsa.RSAPublicKey):
+        try:
             return SrkItemRSA.from_certificate(cert)
+        except SPSDKError:
+            pass
+        try:
+            return SrkItemEcc.from_certificate(cert)
+        except SPSDKError:
+            pass
         raise NotImplementedSRKCertificate()
 
 
@@ -571,7 +543,7 @@ class SrkItemHash(SrkItem):
     def __repr__(self) -> str:
         return f"SRK Hash <Algorithm: {EnumAlgorithm[self._header.param]}>"  # type: ignore
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of SrkItemHash."""
         msg = str()
         msg += f"Hash algorithm: {EnumAlgorithm[self._header.param]}\n"  # type: ignore
@@ -587,23 +559,22 @@ class SrkItemHash(SrkItem):
         """This SRK item should be replaced with an incomplete entry with its digest."""
         return self
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export."""
         data = self._header.export()
         data += self.digest
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SrkItemHash":
+    def parse(cls, data: bytes) -> Self:
         """Parse SRK table item data.
 
         :param data: The bytes array of SRK segment
-        :param offset: The offset of input data
         :return: SrkItemHash: SrkItemHash object
         :raises NotImplementedSRKItem: Unknown tag
         """
-        header = Header.parse(data, offset, EnumSRK.KEY_HASH)
-        rest = data[offset + header.SIZE :]
+        header = Header.parse(data, EnumSRK.KEY_HASH)
+        rest = data[header.SIZE :]
         if header.param == EnumAlgorithm.SHA256:
             digest = rest[: sha256().digest_size]
             return cls(EnumAlgorithm.SHA256, digest)
@@ -655,7 +626,7 @@ class SrkItemRSA(SrkItem):
             f"CA: {'YES' if self.flag == 0x80 else 'NO'}>"
         )
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """String representation of SrkItemRSA."""
         exp = int.from_bytes(self.exponent, "big")
         return (
@@ -676,7 +647,7 @@ class SrkItemRSA(SrkItem):
         """This SRK item should be replaced with an incomplete entry with its digest."""
         return SrkItemHash(EnumAlgorithm.SHA256, self.sha256())
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export."""
         data = self._header.export()
         data += pack(">4B2H", 0, 0, 0, self.flag, len(self.modulus), len(self.exponent))
@@ -685,17 +656,15 @@ class SrkItemRSA(SrkItem):
         return data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SrkItemRSA":
+    def parse(cls, data: bytes) -> Self:
         """Parse SRK table item data.
 
         :param data: The bytes array of SRK segment
-        :param offset: The offset of input data
         :return: SrkItemRSA: SrkItemRSA object
         """
-        Header.parse(data, offset, EnumSRK.KEY_PUBLIC)
-        offset += Header.SIZE + 3
-        (flag, modulus_len, exponent_len) = unpack_from(">B2H", data, offset)
-        offset += 5
+        Header.parse(data, EnumSRK.KEY_PUBLIC)
+        (flag, modulus_len, exponent_len) = unpack_from(">B2H", data, Header.SIZE + 3)
+        offset = 5 + Header.SIZE + 3
         modulus = data[offset : offset + modulus_len]
         offset += modulus_len
         exponent = data[offset : offset + exponent_len]
@@ -705,32 +674,152 @@ class SrkItemRSA(SrkItem):
     def from_certificate(cls, cert: Certificate) -> "SrkItemRSA":
         """Create SRKItemRSA from certificate."""
         assert isinstance(cert, Certificate)
-
         flag = 0
         try:
-            key_usage = cert.extensions.get_extension_for_class(KeyUsage)  # type:ignore
-            assert isinstance(key_usage.value, KeyUsage)
+            key_usage = cert.extensions.get_extension_for_class(SPSDKKeyUsage)
+            assert isinstance(key_usage.value, SPSDKKeyUsage)
+            if key_usage.value.key_cert_sign:
+                flag = 0x80
+        except ExtensionNotFound:
+            pass
+        try:
+            public_key = cert.get_public_key()
+            if not isinstance(public_key, PublicKeyRsa):
+                raise SPSDKError("Not an RSA key")
+            # get modulus and exponent of public key since we are RSA
+            modulus_len = math.ceil(public_key.n.bit_length() / 8)
+            exponent_len = math.ceil(public_key.e.bit_length() / 8)
+            modulus = public_key.n.to_bytes(modulus_len, "big")
+            exponent = public_key.e.to_bytes(exponent_len, "big")
+
+            return cls(modulus, exponent, flag)
+        except SPSDKError as exc:
+            raise NotImplementedSRKCertificate() from exc
+
+
+class SrkItemEcc(SrkItem):
+    """ECC public key in SRK Table, see `SrkTable` class."""
+
+    ECC_KEY_TYPE = {
+        EccCurve.SECP256R1: 0x4B,
+        EccCurve.SECP384R1: 0x4D,
+        EccCurve.SECP521R1: 0x4E,
+    }
+
+    @property
+    def algorithm(self) -> int:
+        """Algorithm."""
+        return self._header.param
+
+    @property
+    def size(self) -> int:
+        """Size of an SRK item."""
+        return self._header.length
+
+    @property
+    def flag(self) -> int:
+        """Flag."""
+        return self._flag
+
+    @flag.setter
+    def flag(self, value: int) -> None:
+        # Check
+        if value not in (0, 0x80):
+            raise SPSDKError("Incorrect flag")
+        self._flag = value
+
+    def __init__(self, key_size: int, x_coordinate: int, y_coordinate: int, flag: int = 0) -> None:
+        """Initialize the srk table item."""
+        self._header = Header(tag=EnumSRK.KEY_PUBLIC, param=EnumAlgorithm.ECDSA)
+        self.x_coordinate = x_coordinate
+        self.y_coordinate = y_coordinate
+        self.key_size = key_size
+        self.coordinate_size = math.ceil(key_size / 8)
+        self.flag = flag
+        self._header.length += (
+            8
+            + len(self.x_coordinate.to_bytes(self.coordinate_size, byteorder="big"))
+            + len(self.y_coordinate.to_bytes(self.coordinate_size, byteorder="big"))
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"SRK <Algorithm: {EnumAlgorithm[self.algorithm]}, "  # type: ignore
+            f"CA: {'YES' if self.flag == 0x80 else 'NO'}>"
+        )
+
+    def __str__(self) -> str:
+        """String representation of SrkItemEcc."""
+        return (
+            f"Algorithm: {EnumAlgorithm[self.algorithm]}\n"  # type: ignore
+            f"Flag:      0x{self.flag:02X} {'(CA)' if self.flag == 0x80 else ''}\n"
+            f"Key size:    {self.key_size} bit\n"
+            f"X coordinate:    {self.x_coordinate}\n"
+            f"Y coordinate:    {self.y_coordinate}\n"
+        )
+
+    def sha256(self) -> bytes:
+        """Export SHA256 hash of the data."""
+        srk_data = self.export()
+        return sha256(srk_data).digest()
+
+    def hashed_entry(self) -> "SrkItemHash":
+        """This SRK item should be replaced with an incomplete entry with its digest."""
+        return SrkItemHash(EnumAlgorithm.SHA256, self.sha256())
+
+    def export(self) -> bytes:
+        """Export."""
+        data = self._header.export()
+        curve_id = self.ECC_KEY_TYPE[get_ecc_curve(self.key_size // 8)]
+        data += pack(
+            ">8B", 0, 0, 0, self.flag, curve_id, 0, self.key_size >> 8 & 0xFF, self.key_size & 0xFF
+        )
+        data += self.x_coordinate.to_bytes(self.coordinate_size, byteorder="big")
+        data += self.y_coordinate.to_bytes(self.coordinate_size, byteorder="big")
+        return data
+
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
+        """Parse SRK table item data.
+
+        :param data: The bytes array of SRK segment
+        :return: SrkItemEcc: SrkItemEcc object
+        """
+        Header.parse(data, EnumSRK.KEY_PUBLIC)
+        (flag, curve_id, _, key_size) = unpack_from(">3BH", data, Header.SIZE + 3)
+        if curve_id not in list(cls.ECC_KEY_TYPE.values()):
+            raise SPSDKError(f"Unknown curve with id {curve_id}")
+        offset = 5 + Header.SIZE + 3
+        coordinate_size = math.ceil(key_size / 8)
+        x_coordinate = data[offset : offset + coordinate_size]
+        offset += coordinate_size
+        y_coordinate = data[offset : offset + coordinate_size]
+        return cls(
+            key_size, int.from_bytes(x_coordinate, "big"), int.from_bytes(y_coordinate, "big"), flag
+        )
+
+    @classmethod
+    def from_certificate(cls, cert: Certificate) -> "SrkItemEcc":
+        """Create SrkItemEcc from certificate."""
+        flag = 0
+        try:
+            key_usage = cert.extensions.get_extension_for_class(SPSDKKeyUsage)
+            assert isinstance(key_usage.value, SPSDKKeyUsage)
             if key_usage.value.key_cert_sign:
                 flag = 0x80
         except ExtensionNotFound:
             pass
 
-        if isinstance(cert.public_key(), rsa.RSAPublicKey):
-            public_key = cert.public_key()
-            assert isinstance(public_key, rsa.RSAPublicKey)
-            pub_key_numbers = public_key.public_numbers()
-            assert isinstance(pub_key_numbers, rsa.RSAPublicNumbers)
-            # get modulus and exponent of public key since we are RSA
-            modulus_len = math.ceil(pub_key_numbers.n.bit_length() / 8)
-            exponent_len = math.ceil(pub_key_numbers.e.bit_length() / 8)
-            modulus = pub_key_numbers.n.to_bytes(modulus_len, "big")
-            exponent = pub_key_numbers.e.to_bytes(exponent_len, "big")
-
-            return cls(modulus, exponent, flag)
-        raise NotImplementedSRKCertificate()
+        try:
+            public_key = cert.get_public_key()
+            if not isinstance(public_key, PublicKeyEcc):
+                raise SPSDKError("Not an ECC key")
+            return cls(public_key.key_size, public_key.x, public_key.y, flag)
+        except SPSDKError as exc:
+            raise NotImplementedSRKCertificate() from exc
 
 
-class SrkTable(BaseClass):
+class SrkTable(BaseSecretClass):
     """SRK table."""
 
     @property
@@ -749,12 +838,6 @@ class SrkTable(BaseClass):
         super().__init__(tag=SegTag.CRT, version=version)
         self._keys: List[SrkItem] = []
 
-    def __repr__(self) -> str:
-        return (
-            f"SRK_Table <Version: {self.version_major:X}.{self.version_minor:X},"
-            f" Keys: {len(self._keys)}>"
-        )
-
     def __len__(self) -> int:
         return len(self._keys)
 
@@ -768,7 +851,13 @@ class SrkTable(BaseClass):
     def __iter__(self) -> Iterator[SrkItem]:
         return self._keys.__iter__()
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return (
+            f"SRK_Table <Version: {self.version_major:X}.{self.version_minor:X},"
+            f" Keys: {len(self._keys)}>"
+        )
+
+    def __str__(self) -> str:
         """Text info about the instance."""
         msg = "-" * 60 + "\n"
         msg += (
@@ -778,7 +867,7 @@ class SrkTable(BaseClass):
         msg += "-" * 60 + "\n"
         for i, srk in enumerate(self._keys):
             msg += f"SRK Key Index: {i} \n"
-            msg += srk.info()
+            msg += str(srk)
             msg += "\n"
         return msg
 
@@ -812,31 +901,27 @@ class SrkTable(BaseClass):
             data += srk.sha256()
         return sha256(data).digest()
 
-    def export(self, dbg_info: DebugInfo = DebugInfo.disabled()) -> bytes:
+    def export(self) -> bytes:
         """Export into binary form (serialization).
 
-        :param dbg_info: optional instance allowing to debug exported content
         :return: binary representation of the instance
         """
         self._header.length = self.size
         raw_data = self._header.export()
-        dbg_info.append_binary_section("header", raw_data)
         for srk in self._keys:
-            item_data = srk.export()
-            raw_data += item_data
-            dbg_info.append_binary_section("srk_item", item_data)
+            raw_data += srk.export()
         return raw_data
 
     @classmethod
-    def parse(cls, data: bytes, offset: int = 0) -> "SrkTable":
+    def parse(cls, data: bytes) -> Self:
         """Parse of SRK table."""
-        header = Header.parse(data, offset, SegTag.CRT)
-        offset += Header.SIZE
+        header = Header.parse(data, SegTag.CRT)
+        offset = Header.SIZE
         obj = cls(header.param)
         obj._header.length = header.length  # pylint: disable=protected-access
         length = header.length - Header.SIZE
         while length > 0:
-            srk = SrkItem.parse(data, offset)
+            srk = SrkItem.parse(data[offset:])
             offset += srk.size
             length -= srk.size
             obj.append(srk)

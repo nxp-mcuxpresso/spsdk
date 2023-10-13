@@ -17,17 +17,19 @@ from spsdk.apps.utils.common_cli_options import (
     isp_interfaces,
     spsdk_apps_common_options,
 )
-from spsdk.apps.utils.utils import WARNING_MSG, catch_spsdk_error, get_interface
-from spsdk.sdp import SDPS
-from spsdk.sdp.sdps import ROM_INFO
+from spsdk.apps.utils.utils import WARNING_MSG, catch_spsdk_error
+from spsdk.sdp.scanner import get_sdp_interface
+from spsdk.sdp.sdps import ROM_INFO, SDPS
 
 
 @click.group(name="sdpshost", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True, is_sdp=True, json_option=False)
+@isp_interfaces(uart=True, usb=True, is_sdp=True, plugin=True, json_option=False)
 @click.option("-n", "--name", type=click.Choice(list(ROM_INFO.keys())), help="Name of the device")
 @spsdk_apps_common_options
 @click.pass_context
-def main(ctx: click.Context, port: str, usb: str, name: str, log_level: int, timeout: int) -> int:
+def main(
+    ctx: click.Context, port: str, usb: str, plugin: str, name: str, log_level: int, timeout: int
+) -> int:
     """Utility for communication with ROM on i.MX targets using SDPS protocol (i.MX8/9)."""
     spsdk_logger.install(level=log_level)
     click.echo(WARNING_MSG)
@@ -35,7 +37,7 @@ def main(ctx: click.Context, port: str, usb: str, name: str, log_level: int, tim
     if "--help " in sys.argv:
         port, usb = None, None  # type: ignore
     ctx.obj = {
-        "interface": get_interface(module="sdp", port=port, usb=usb, timeout=timeout)
+        "interface": get_sdp_interface(port=port, usb=usb, plugin=plugin, timeout=timeout)
         if port or usb
         else None,
         "name": name,

@@ -2,14 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.image import CmdNop, CmdSet, EnumItm
+from spsdk.exceptions import SPSDKError
+from spsdk.image.commands import CmdNop, CmdSet, EnumItm
 
 
 def test_set_cmd():
@@ -35,7 +35,7 @@ def test_set_cmd_eq():
 
 def test_set_cmd_info():
     cmd = CmdSet()
-    output = cmd.info()
+    output = str(cmd)
     req_strings = ["Set Command ITM", "HASH Algo", "Engine", "Engine Conf"]
 
     for req_string in req_strings:

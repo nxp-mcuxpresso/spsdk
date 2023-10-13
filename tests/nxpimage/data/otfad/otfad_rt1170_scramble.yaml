@@ -1,0 +1,30 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  OTFAD converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==                                        
+# ----------------------------------------------------------------------------------------------------
+family: rt117x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'rt118x', 'rt5xx', 'rt6xx']
+output_folder: otfad_scramble_outputs # [Required], OTFAD output folder; Path to directory where the OTFAD output will be generated
+# ----------------------------------------------------------------------------------------------------
+#                                         == OTFAD Settings ==                                        
+# ----------------------------------------------------------------------------------------------------
+kek: kek_inc.bin # [Required], KEK; OTFAD Key Encryption Key to encrypt OTFAD table. Might be provided as a path to binary file containing KEK or as a string or number
+otfad_table_address: 67108864 # [Required], OTFAD key blobs table address; The base address of key blob table, it should be aligned to 1 KB (1024 B)
+data_blobs: # [Optional], Data blobs list; List of all data blobs included in this key blob
+  - data: blink_fspi2_xip_cm33_ahab.bin  # [Required], Plain Text data blob; Path to binary file with plain text data to be encrypted if desired
+    address: '0x04001000' # [Required], Data blob address, it could be omitted if data blob starts at start_address
+key_blobs: # [Required], List of Key Blobs used by OTFAD; The list of definition of individual key blobs including plain data. Add other array items as you need and device allows
+  - aes_key: 5233100606242806050955395731361295  # [Required], AES key for the key blob
+    aes_ctr: 81985529216486895 # [Required], AES counter value for the key blob
+    start_address: 67112960 # [Required], Start address of key blob data, it should be aligned to 1 KB (1024 B)
+    end_address: 67239935 # [Required], End address of key blob data, it should be aligned to 1 KB (1024 B)
+    aes_decryption_enable: true # [Optional], AES decryption enable flag; For accesses hitting in a valid context, this bit indicates if the fetched data is to be decrypted or simply bypassed
+    valid: true # [Optional], Valid flag; This field signals if the context is valid or not
+# ----------------------------------------------------------------------------------------------------
+#                                 == OTFAD Key Scrambling Settings ==                                 
+# ----------------------------------------------------------------------------------------------------
+key_scramble: # [Optional], If Key scrambling is not required, this section must be commented out
+  key_scramble_mask: 2018915346  # [Required], Key Scramble; OTFAD Key Scramble mask (4 bytes size)
+  key_scramble_align: 114 # [Required], Key Scramble Align; OTFAD Key scramble mask align (1 byte size)

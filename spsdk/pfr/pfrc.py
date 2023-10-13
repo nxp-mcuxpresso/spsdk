@@ -12,8 +12,10 @@ import os
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
-from spsdk.pfr import PFR_DATA_FOLDER, Processor, Translator
+from spsdk.pfr import PFR_DATA_FOLDER
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError, SPSDKPfrConfigError
+from spsdk.pfr.processor import Processor
+from spsdk.pfr.translator import Translator
 from spsdk.utils.database import Database
 from spsdk.utils.misc import load_configuration
 

@@ -76,7 +76,7 @@ class ConfigOptions:
         """Parse config options from dictionary.
 
         :param options: Options to be parsed
-        :raise SPSDKKeyError: If unexpected key is present
+        :raises SPSDKKeyError: If unexpected key is present
         """
         params = {}
         for opt in options:

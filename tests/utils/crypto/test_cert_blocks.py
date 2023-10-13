@@ -9,17 +9,20 @@ import os
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKValueError
+from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.signature_provider import get_signature_provider
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.crypto.cert_blocks import (
     CertBlockHeader,
-    CertBlockV2,
-    Certificate,
+    CertBlockV1,
+    CertBlockV21,
+    CertBlockVx,
     CertificateBlockHeader,
     find_main_cert_index,
     find_root_certificates,
     get_main_cert_index,
 )
+from spsdk.utils.misc import load_binary
 
 
 def test_cert_block_header():
@@ -44,7 +47,7 @@ def test_cert_block_header_invalid():
 
 
 def test_cert_block_basic():
-    cb = CertBlockV2()
+    cb = CertBlockV1()
     # test default values
     assert cb.image_length == 0
     assert cb.alignment == 16
@@ -55,62 +58,54 @@ def test_cert_block_basic():
     assert cb.alignment == 1
     assert cb.image_length == 1
     assert cb.header.image_length == 1
-    # invalid root key index
-    with pytest.raises(SPSDKError):
-        cb.set_root_key_hash(4, bytes([0] * 32))
     # invalid root key size
     with pytest.raises(SPSDKError):
         cb.set_root_key_hash(0, bytes())
 
 
 def test_cert_block(data_dir):
-    with open(os.path.join(data_dir, "selfsign_2048_v3.der.crt"), "rb") as f:
-        cert_data = f.read()
+    cert_obj = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
 
-    cert_obj = Certificate(cert_data)
-
-    cb = CertBlockV2()
-    cb.set_root_key_hash(0, cert_obj.public_key_hash)
-    cb.add_certificate(cert_data)
+    cb = CertBlockV1()
+    cb.set_root_key_hash(0, cert_obj.public_key_hash())
+    cb.add_certificate(cert_obj)
     assert cb.rkh_index == 0
     cb.export()
 
     # test RKHT
-    assert cb.rkht.hex() == "db31d46c717711a8231cbc38b1de8a6e8657e1f733e04c2ee4b62fcea59149fa"
-    fuses = cb.rkht_fuses
+    assert cb.rkth.hex() == "db31d46c717711a8231cbc38b1de8a6e8657e1f733e04c2ee4b62fcea59149fa"
+    fuses = cb.rkth_fuses
     assert len(fuses) == 8
     assert fuses[0] == 1825845723
 
     # test exception if child certificate in chain is not signed by parent certificate
-    with open(os.path.join(data_dir, "ca0_v3.der.crt"), "rb") as f:
-        ca0_cert_data = f.read()
-    ca0_cert = Certificate(ca0_cert_data)
+    ca0_cert = Certificate.load(os.path.join(data_dir, "ca0_v3.der.crt"))
     with pytest.raises(SPSDKError):
         cb.add_certificate(ca0_cert)
 
     # test exception if no certificate specified
-    cb = CertBlockV2()
-    cb.set_root_key_hash(0, cert_obj.public_key_hash)
+    cb = CertBlockV1()
+    cb.set_root_key_hash(0, cert_obj.public_key_hash())
     with pytest.raises(SPSDKError):
         cb.export()
 
     # test exception last certificate is set as CA
-    cb = CertBlockV2()
-    cb.set_root_key_hash(0, ca0_cert.public_key_hash)
+    cb = CertBlockV1()
+    cb.set_root_key_hash(0, ca0_cert.public_key_hash())
     cb.add_certificate(ca0_cert)
     with pytest.raises(SPSDKError):
         cb.export()
 
     # test exception if hash does not match any certificate
-    cb = CertBlockV2()
-    cb.set_root_key_hash(0, ca0_cert.public_key_hash)
-    cb.add_certificate(cert_data)
+    cb = CertBlockV1()
+    cb.set_root_key_hash(0, ca0_cert.public_key_hash())
+    cb.add_certificate(cert_obj)
     with pytest.raises(SPSDKError):
         cb.export()
 
 
 def test_add_invalid_cert_in_cert_block(data_dir):
-    cb = CertBlockV2()
+    cb = CertBlockV1()
     with open(os.path.join(data_dir, "selfsign_2048_v3.der.crt"), "rb") as f:
         cert_data = f.read()
     with open(os.path.join(data_dir, "ca0_v3.der.crt"), "rb") as f:
@@ -125,15 +120,11 @@ def test_add_invalid_cert_in_cert_block(data_dir):
 
 
 def test_cert_block_export_invalid(data_dir):
-    with open(os.path.join(data_dir, "selfsign_2048_v3.der.crt"), "rb") as f:
-        cert_data = f.read()
-    with open(os.path.join(data_dir, "ca0_v3.der.crt"), "rb") as f:
-        ca0_cert_data = f.read()
-    cert_obj = Certificate(cert_data)
-    cb = CertBlockV2()
-    cb.set_root_key_hash(0, cert_obj.public_key_hash)
-    cb.add_certificate(cert_data)
-    cb.add_certificate(cert_data)
+    cert_obj = Certificate.load(os.path.join(data_dir, "selfsign_2048_v3.der.crt"))
+    cb = CertBlockV1()
+    cb.set_root_key_hash(0, cert_obj.public_key_hash())
+    cb.add_certificate(cert_obj)
+    cb.add_certificate(cert_obj)
     assert cb.rkh_index == 0
     with pytest.raises(
         SPSDKError, match="All certificates except the last chain certificate must be CA"
@@ -152,19 +143,14 @@ def test_invalid_cert_block_header():
 
 
 def test_cert_block_invalid():
-    cb = CertBlockV2()
-    cb.RKH_SIZE = 77777
-    with pytest.raises(SPSDKError, match="Invalid length of data"):
-        cb.rkht
+    cb = CertBlockV1()
     with pytest.raises(SPSDKError, match="Invalid image length"):
         cb.image_length = -2
     with pytest.raises(SPSDKError, match="Invalid alignment"):
         cb.alignment = -2
-    cb = CertBlockV2()
-    with pytest.raises(SPSDKError, match="Invalid index of root key hash in the table"):
-        cb.set_root_key_hash(5, bytes(32))
+    cb = CertBlockV1()
     with pytest.raises(SPSDKError, match="Invalid length of key hash"):
-        cb.set_root_key_hash(3, bytes(5))
+        cb.set_root_key_hash(0, bytes(5))
 
 
 @pytest.mark.parametrize(
@@ -340,3 +326,42 @@ def test_find_root_certficates(config, error, expected_list):
         certificates = find_root_certificates(config)
         assert certificates == expected_list
         assert certificates == expected_list
+
+
+def test_cert_block_vx(data_dir):
+    main_root_private_key_file = f"{data_dir}/ec_pk_secp256r1_cert0.pem"
+    isk_certificate = f"{data_dir}/ec_secp256r1_cert0.pem"
+
+    signature_provider = get_signature_provider(
+        local_file_key=main_root_private_key_file,
+    )
+    isk_cert = load_binary(isk_certificate)
+
+    cert_block = CertBlockVx(
+        signature_provider=signature_provider,
+        isk_cert=isk_cert,
+    )
+
+    exported = cert_block.export()
+    CertBlockVx.parse(exported).export()
+
+
+def test_cert_block_v31(data_dir):
+    main_root_private_key_file = f"{data_dir}/ec_pk_secp256r1_cert0.pem"
+    isk_certificate = f"{data_dir}/ec_secp256r1_cert0.pem"
+
+    signature_provider = get_signature_provider(
+        local_file_key=main_root_private_key_file,
+    )
+    isk_cert = load_binary(isk_certificate)
+
+    rot = [load_binary(os.path.join(data_dir, "ecc_secp256r1_priv_key.pem")) for x in range(4)]
+
+    cert = CertBlockV21(
+        root_certs=rot,
+        signature_provider=signature_provider,
+        isk_cert=isk_cert,
+    )
+    cert.calculate()
+    exported = cert.export()
+    CertBlockV21.parse(exported)

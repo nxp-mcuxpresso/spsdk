@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,7 +20,7 @@ def test_SegBDSa_repr():
 def test_SegBDSa_info():
     bds3a = SegBDS3a()
     bds3a.images_count = 2
-    info_msg = bds3a.info()
+    info_msg = str(bds3a)
     repr_strings = ["IMAGES", "DFLAGS", "IMAGE"]
     for req_string in repr_strings:
         assert req_string in info_msg, f"string {req_string} is not in the output: {info_msg}"
@@ -48,14 +48,14 @@ def test_SegBDSb_repr():
 
 def test_SegBDSb_info():
     bds3b = SegBDS3b()
-    info_msg = bds3b.info()
+    info_msg = str(bds3b)
     repr_strings = ["IMAGES", "DFLAGS", "IMAGE"]
     for req_string in repr_strings:
         assert req_string in info_msg, f"string {req_string} is not in the output: {info_msg}"
 
     bds3b.scd.image_source = 0x400FC010
     bds3b.csf.image_source = 0x400FC010
-    info_msg = bds3b.info()
+    info_msg = str(bds3b)
     repr_strings = ["SCD", "CSF"]
     for req_string in repr_strings:
         assert req_string in info_msg, f"string {req_string} is not in the output: {info_msg}"

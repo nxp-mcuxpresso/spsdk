@@ -24,9 +24,10 @@ with open(os.path.join(base_dir, "spsdk", "__version__.py")) as f:
     exec(f.read(), version_info)
 
 extras_require = {
-    "tp": ["pyscard==2.0.2"],
+    "tp": ["swig", "pyscard==2.0.2"],
     "examples": ["flask", "requests", "ipython", "notebook"],
     "dk6": ["pyftdi", "pylibftdi", "ftd2xx"],
+    "oscca": ["asn1tools>=0.160,<1", "gmssl>=3.2,<4"],
 }
 # specify all option that contains all extras
 extras_require["all"] = list(itertools.chain.from_iterable(extras_require.values()))
@@ -72,18 +73,16 @@ setup(
     ),
     entry_points={
         "console_scripts": [
-            "elftosb=spsdk.apps.elftosb:safe_main",
             "pfr=spsdk.apps.pfr:safe_main",
             "blhost=spsdk.apps.blhost:safe_main",
             "sdphost=spsdk.apps.sdphost:safe_main",
             "sdpshost=spsdk.apps.sdpshost:safe_main",
             "spsdk=spsdk.apps.spsdk_apps:safe_main",
-            "nxpkeygen=spsdk.apps.nxpkeygen:safe_main",
             "nxpdebugmbox=spsdk.apps.nxpdebugmbox:safe_main",
-            "nxpcertgen=spsdk.apps.nxpcertgen:safe_main",
             "nxpcrypto=spsdk.apps.nxpcrypto:safe_main",
             "nxpdevscan=spsdk.apps.nxpdevscan:safe_main",
             "nxpdevhsm=spsdk.apps.nxpdevhsm:safe_main",
+            "nxpele=spsdk.apps.nxpele:safe_main",
             "nxpimage=spsdk.apps.nxpimage:safe_main",
             "shadowregs=spsdk.apps.shadowregs:safe_main",
             "ifr=spsdk.apps.ifr:safe_main",

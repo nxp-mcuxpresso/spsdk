@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,10 +9,11 @@ from os import path
 
 import pytest
 
-from spsdk.mboot import McuBoot, scan_usb
+from spsdk.mboot.interfaces.usb import MbootUSBInterface
+from spsdk.mboot.mcuboot import McuBoot
 
 from .device_config import DevConfig
-from .virtual_device import VirtualDevice
+from .virtual_device import VirtualDevice, VirtualMbootInterface
 
 
 @pytest.fixture(scope="module")
@@ -36,13 +37,13 @@ def config(target):
 @pytest.fixture(scope="module")
 def device(target, config):
     if target == "VIRTUAL":
-        device = VirtualDevice(config=config)
+        interface = VirtualMbootInterface(VirtualDevice(config))
     else:
-        devs = scan_usb(target)
+        devs = MbootUSBInterface.scan_from_args(target)
         if not devs:
             raise Exception(f"Device {target} not connected")
-        device = devs[0]
-    return device
+        interface = devs[0]
+    return interface
 
 
 @pytest.fixture(scope="module")

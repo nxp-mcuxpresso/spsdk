@@ -9,7 +9,7 @@
 import time
 from typing import Any, List, Optional
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import format_value
 
@@ -227,3 +227,19 @@ class StartDebugSessions(DebugMailboxCommand):
     def __init__(self, dm: DebugMailbox) -> None:
         """Initialize."""
         super().__init__(dm, id=7, name="START_DEBUG_SESSION")
+
+
+class EraseOneSector(DebugMailboxCommand):
+    """Class for Erase One Sector."""
+
+    def __init__(self, dm: DebugMailbox) -> None:
+        """Initialize."""
+        super().__init__(dm, id=11, name="ERASE_ONE_SECTOR", paramlen=1)
+
+
+class WriteToFlash(DebugMailboxCommand):
+    """Class for Write To Flash."""
+
+    def __init__(self, dm: DebugMailbox) -> None:
+        """Initialize."""
+        super().__init__(dm, id=9, name="WRITE_TO_FLASH", paramlen=5)

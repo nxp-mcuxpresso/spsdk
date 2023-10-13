@@ -17,7 +17,7 @@ def test_parse_xmcd(data_dir):
         data = f.read()
     image = BootImgRT.parse(data)
     assert image.xmcd
-    assert "XMCD" in image.info()
+    assert "XMCD" in str(image)
 
 
 def test_parse_no_xmcd(data_dir):
@@ -25,7 +25,7 @@ def test_parse_no_xmcd(data_dir):
         data = f.read()
     image = BootImgRT.parse(data)
     assert image.xmcd is None
-    assert "XMCD" not in image.info()
+    assert "XMCD" not in str(image)
 
 
 def test_xmcd_header():

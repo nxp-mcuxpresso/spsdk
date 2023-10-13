@@ -470,12 +470,36 @@
     </bit_field>
     <bit_field offset="3" width="3" name="RoTK1_Usage" access="RO" reset_value="0" description="RoTK1_Usage">
       <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK1_Usage(x)"/>
+      <bit_field_value name="RoTK_USAGE_RoTK1_Usage_USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="RoTK_USAGE_RoTK1_Usage_DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK1_Usage_IMG_BOOT_AND_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK1_Usage_DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="RoTK_USAGE_RoTK1_Usage_IMG_KEY_AND_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK1_Usage_BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK1_Usage_FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK1_Usage_KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
     </bit_field>
     <bit_field offset="6" width="3" name="RoTK2_Usage" access="RO" reset_value="0" description="RoTK2_Usage">
       <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK2_Usage(x)"/>
+      <bit_field_value name="RoTK_USAGE_RoTK2_Usage_USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="RoTK_USAGE_RoTK2_Usage_DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK2_Usage_IMG_BOOT_AND_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK2_Usage_DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="RoTK_USAGE_RoTK2_Usage_IMG_KEY_AND_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK2_Usage_BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK2_Usage_FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK2_Usage_KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
     </bit_field>
     <bit_field offset="9" width="3" name="RoTK3_Usage" access="RO" reset_value="0" description="RoTK3_Usage">
       <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK3_Usage(x)"/>
+      <bit_field_value name="RoTK_USAGE_RoTK3_Usage_USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="RoTK_USAGE_RoTK3_Usage_DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK3_Usage_IMG_BOOT_AND_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK3_Usage_DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="RoTK_USAGE_RoTK3_Usage_IMG_KEY_AND_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK3_Usage_BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK3_Usage_FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="RoTK_USAGE_RoTK3_Usage_KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
     </bit_field>
     <reserved_bit_field offset="12" width="20" reset_value="0"/>
   </register>

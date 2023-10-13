@@ -9,8 +9,7 @@
 import os
 from typing import Any, Dict, List, Optional
 
-from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.database import Database
 from spsdk.utils.misc import value_to_int
 
@@ -18,13 +17,17 @@ from spsdk.utils.misc import value_to_int
 class RegConfig(Database):
     """Class that helps manage the registers configuration."""
 
-    def get_address(self, device: str) -> int:
+    def get_address(self, device: str, alt_read_address: bool = False) -> int:
         """Get the area address in chip memory.
 
         :param device: The device name.
+        :param alt_read_address: The flag is used if an alternate read address applies.
         :return: Base address of registers.
         """
-        return value_to_int(self.devices.get_by_name(device).attributes["address"])
+        address = self.devices.get_by_name(device).attributes["address"]
+        if alt_read_address:
+            address = self.devices.get_by_name(device).attributes.get("read_address", address)
+        return value_to_int(address)
 
     def get_data_file(self, device: str, revision: str) -> str:
         """Return the full path to data file (xml).
@@ -79,16 +82,6 @@ class RegConfig(Database):
         :return: The list of grouped registers descriptions.
         """
         val = self.get_value("grouped_registers", device, default=[])
-        assert isinstance(val, list)
-        return list(val)
-
-    def get_ignored_registers(self, device: Optional[str] = None) -> List[str]:
-        """Return the list of ignored registers.
-
-        :param device: The device name, if not specified, the general value is used.
-        :return: The list of ignored register.
-        """
-        val = self.get_value("ignored_registers", device, default=[])
         assert isinstance(val, list)
         return list(val)
 

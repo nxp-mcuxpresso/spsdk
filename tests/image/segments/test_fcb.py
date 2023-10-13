@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2021 NXP
+# Copyright 2020-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@ import os
 
 import pytest
 
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 from spsdk.image.segments import FlexSPIConfBlockFCB, PaddingFCB, SegFCB, SegIVT3b
 from spsdk.utils.misc import load_binary
 from tests.misc import compare_bin_files
@@ -50,7 +50,7 @@ def test_not_empty_FCB_export():
 def test_flexspi_conf_block_fcb(data_dir) -> None:
     # default object created
     fcb = FlexSPIConfBlockFCB()
-    assert fcb.info()
+    assert str(fcb)
     assert fcb.export()
     assert fcb == FlexSPIConfBlockFCB.parse(fcb.export())
     fcb.padding_len = 10
@@ -58,7 +58,7 @@ def test_flexspi_conf_block_fcb(data_dir) -> None:
     # FCB from RT105x EVK
     fcb_path = os.path.join(data_dir, "rt105x_flex_spi.fcb")
     fcb = FlexSPIConfBlockFCB.parse(load_binary(fcb_path))
-    assert fcb.info()
+    assert str(fcb)
     fcb.padding_len = 0
     compare_bin_files(fcb_path, fcb.export())
     fcb.enabled = False
@@ -83,20 +83,20 @@ def test_padding_fcb() -> None:
     assert fcb.size == 10
     assert fcb.space == 10
     assert fcb.export() == b"\xA5" * 10
-    assert fcb.info()
+    assert str(fcb)
     # not enabled
     fcb.enabled = False
     fcb.padding_len = 6
     assert fcb.size == 0
     assert fcb.space == 0
     assert fcb.export() == b""
-    assert fcb.info()
+    assert str(fcb)
     # enabled with padding
     fcb.enabled = True
     assert fcb.size == 10
     assert fcb.space == 16
     assert fcb.export() == b"\xA5" * 10 + b"\x00" * 6
-    assert fcb.info()
+    assert str(fcb)
 
 
 def test_padding_fcb_invalid() -> None:

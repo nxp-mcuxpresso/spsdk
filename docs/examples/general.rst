@@ -25,15 +25,15 @@ Located at: `examples/image_srk.py`
 
 Create and Secure Boot image for LPC55xx and download it to the target.
 ------------------------------------------------------------------------
-Located at: `examples/lpc55xx.py`
+Located at: `examples/lpc55s6x.py`
 
-.. automodule:: examples.lpc55xx
+.. automodule:: examples.lpc55s6x
 
 Create custom TrustZone and Protected Flash Region data for LPC55xx.
 ---------------------------------------------------------------------
-Located at: `examples/lpc55xx_tz_pfr.py`
+Located at: `examples/lpc55s6x_tz_pfr.py`
 
-.. automodule:: examples.lpc55xx_tz_pfr
+.. automodule:: examples.lpc55s6x_tz_pfr
 
 Read properties of the target's bootloader.
 --------------------------------------------

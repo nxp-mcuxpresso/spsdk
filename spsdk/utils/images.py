@@ -9,6 +9,7 @@
 import logging
 import math
 import os
+import re
 import textwrap
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
@@ -25,7 +26,7 @@ from spsdk.utils.misc import (
     size_fmt,
     write_file,
 )
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
 
 if TYPE_CHECKING:
     # bincopy will be loaded lazily as needed, this is just to satisfy type-hint checkers
@@ -116,7 +117,7 @@ class BinaryImage:
     @property
     def size(self) -> int:
         """Size property."""
-        return self._size
+        return len(self)
 
     @size.setter
     def size(self, value: int) -> None:
@@ -180,7 +181,7 @@ class BinaryImage:
         aligned_len = aligned_end - self.aligned_start(alignment)
         return aligned_len
 
-    def info(self) -> str:
+    def __str__(self) -> str:
         """Provides information about image.
 
         :return: String information about Image.
@@ -190,7 +191,7 @@ class BinaryImage:
         ret += f"Name:      {self.image_name}\n"
         ret += f"Starts:    {hex(self.absolute_address)}\n"
         ret += f"Ends:      {hex(self.absolute_address+ size-1)}\n"
-        ret += f"Size:      {size_fmt(size, use_kibibyte=False)}\n"
+        ret += f"Size:      {self._get_size_line(size)}\n"
         ret += f"Alignment: {size_fmt(self.alignment, use_kibibyte=False)}\n"
         if self.pattern:
             ret += f"Pattern:{self.pattern.pattern}\n"
@@ -227,10 +228,22 @@ class BinaryImage:
 
                     raise SPSDKOverlapError(
                         f"The image overlap error:\n"
-                        f"{image.info()}\n"
+                        f"{str(image)}\n"
                         "overlaps the:\n"
-                        f"{sibling.info()}\n"
+                        f"{str(sibling)}\n"
                     )
+
+    def _get_size_line(self, size: int) -> str:
+        """Get string of size line.
+
+        :param size: Size in bytes
+        :return: Formatted size line.
+        """
+        if size >= 1024:
+            real_size = ",".join(re.findall(".{1,3}", (str(len(self)))[::-1]))[::-1]
+            return f"Size: {size_fmt(len(self), False)}; {real_size} B"
+
+        return f"Size: {size_fmt(len(self), False)}"
 
     def get_min_draw_width(self, include_sub_images: bool = True) -> int:
         """Get minimal width of table for draw function.
@@ -241,7 +254,7 @@ class BinaryImage:
         widths = [
             self.MINIMAL_DRAW_WIDTH,
             len(f"+==-0x0000_0000= {self.name} =+"),
-            len(f"|Size: {size_fmt(len(self), False)}|"),
+            len(f"|{self._get_size_line(self.size)}|"),
         ]
         if include_sub_images:
             for child in self.sub_images:
@@ -321,7 +334,7 @@ class BinaryImage:
         header = f"+=={format_value(self.absolute_address, 32)}= {self.name} ="
         block += color + f"{header}{'='*(width-len(header)-1)}+\n"
         # - Size
-        block += _get_centered_line(f"Size: {size_fmt(len(self), False)}")
+        block += _get_centered_line(self._get_size_line(len(self)))
         # - Description
         if self.description:
             for line in textwrap.wrap(self.description, width=width - 2, fix_sentence_endings=True):
@@ -385,11 +398,24 @@ class BinaryImage:
 
         :return: Byte array of binary image.
         """
-        ret = bytearray(self.pattern.get_block(len(self))) if self.pattern else bytearray(len(self))
+        if self.binary and len(self) == len(self.binary) and len(self.sub_images) == 0:
+            return self.binary
+
+        if self.pattern:
+            ret = bytearray(self.pattern.get_block(len(self)))
+        else:
+            ret = bytearray(len(self))
+
         if self.binary:
-            ret[: len(self.binary)] = self.binary
+            binary_view = memoryview(self.binary)
+            ret[: len(self.binary)] = binary_view
+
         for image in self.sub_images:
-            ret[image.offset : image.offset + len(image)] = image.export()[: len(image)]
+            image_data = image.export()
+            ret_slice = memoryview(ret)[image.offset : image.offset + len(image_data)]
+            image_data_view = memoryview(image_data)
+            ret_slice[:] = image_data_view
+
         return align_block(ret, self.alignment, self.pattern)
 
     @staticmethod
@@ -412,14 +438,15 @@ class BinaryImage:
         """
         name = config.get("name", "Base Image")
         size = config.get("size", 0)
-        pattern = BinaryPattern(config["pattern"])
-        ret = BinaryImage(name=name, size=size, pattern=pattern)
+        pattern = BinaryPattern(config.get("pattern", "zeros"))
+        alignment = config.get("alignment", 1)
+        ret = BinaryImage(name=name, size=size, pattern=pattern, alignment=alignment)
         regions = config.get("regions")
         if regions:
             for i, region in enumerate(regions):
                 binary_file: Dict = region.get("binary_file")
                 if binary_file:
-                    offset = binary_file["offset"]
+                    offset = binary_file.get("offset", ret.aligned_length(ret.alignment))
                     name = binary_file.get("name", binary_file["path"])
                     ret.add_image(
                         BinaryImage.load_binary_image(
@@ -433,7 +460,7 @@ class BinaryImage:
                 binary_block: Dict = region.get("binary_block")
                 if binary_block:
                     size = binary_block["size"]
-                    offset = binary_block["offset"]
+                    offset = binary_block.get("offset", ret.aligned_length(ret.alignment))
                     name = binary_block.get("name", f"Binary block(#{i})")
                     pattern = BinaryPattern(binary_block["pattern"])
                     ret.add_image(BinaryImage(name, size, offset, pattern=pattern))
@@ -494,7 +521,7 @@ class BinaryImage:
 
         :return: Template to create binary merge..
         """
-        return ConfigTemplate(
+        return CommentedConfig(
             "Binary Image Configuration template.",
             BinaryImage.get_validation_schemas(),
         ).export_to_yaml()
@@ -509,9 +536,12 @@ class BinaryImage:
         pattern: Optional[BinaryPattern] = None,
         search_paths: Optional[List[str]] = None,
         alignment: int = 1,
+        load_bin: bool = True,
     ) -> "BinaryImage":
         # pylint: disable=missing-param-doc
         r"""Load binary data file.
+
+        Supported formats are ELF, HEX, SREC and plain binary
 
         :param path: Path to the file.
         :param name: Name of Image, defaults to file name.
@@ -521,6 +551,7 @@ class BinaryImage:
         :param pattern: Optional binary pattern.
         :param search_paths: List of paths where to search for the file, defaults to None
         :param alignment: Optional alignment of result image
+        :param load_bin: Load as binary in case of every other format load fails
         :raises SPSDKError: The binary file cannot be loaded.
         :return: Binary data represented in BinaryImage class.
         """
@@ -537,13 +568,15 @@ class BinaryImage:
         bin_file = bincopy.BinFile()
         try:
             if data == b"\x7fELF":
-                logger.warning("Elf file support is experimental. Take that with care.")
                 bin_file.add_elf_file(path)
             else:
                 try:
                     bin_file.add_file(path)
-                except (UnicodeDecodeError, bincopy.UnsupportedFileFormatError):
-                    bin_file.add_binary_file(path)
+                except (UnicodeDecodeError, bincopy.UnsupportedFileFormatError) as e:
+                    if load_bin:
+                        bin_file.add_binary_file(path)
+                    else:
+                        raise SPSDKError("Cannot load file as ELF, HEX or SREC") from e
         except Exception as e:
             raise SPSDKError(f"Error loading file: {str(e)}") from e
 

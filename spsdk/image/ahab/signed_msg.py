@@ -16,7 +16,7 @@ from inspect import isclass
 from struct import calcsize, pack, unpack
 from typing import Any, Dict, List, Optional, Tuple, Type
 
-from ruamel.yaml import CommentedMap as CM
+from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.ahab import SIGNED_MSG_SCH_FILE
@@ -33,7 +33,7 @@ from spsdk.image.ahab.ahab_container import (
 from spsdk.utils.easy_enum import Enum
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import align, align_block, check_range, value_to_bytes, value_to_int
-from spsdk.utils.schema_validator import ConfigTemplate, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
 
 logger = logging.getLogger(__name__)
 
@@ -112,12 +112,32 @@ class Message(Container):
         self.unique_id = unique_id or b""
         self.payload = payload or b""
 
-    # We need to extend the format, as the parent provides only endianness,
-    # and length.
+    def __repr__(self) -> str:
+        return f"Message, {MessageCommands.desc(self.TAG, 'Base Class')}"
+
+    def __str__(self) -> str:
+        ret = repr(self) + ":\n"
+        ret += (
+            f"  Certificate version:{self.cert_ver}\n"
+            f"  Permissions:        {hex(self.permissions)}\n"
+            f"  Issue date:         {hex(self.issue_date)}\n"
+            f"  UUID:               {self.unique_id.hex() if self.unique_id else 'Not Available'}\n"
+            f"  Payload:            {self.payload.hex() if self.payload else 'Not Available'}\n"
+        )
+        return ret
+
+    def __len__(self) -> int:
+        """Returns the total length of a container.
+
+        The length includes the fixed as well as the variable length part.
+        """
+        return self.fixed_length() + len(self.payload)
+
     @classmethod
-    def _format(cls) -> str:
+    def format(cls) -> str:
+        """Format of binary representation."""
         return (
-            super()._format()
+            super().format()
             + UINT16  # Issue Date
             + UINT8  # Permission
             + UINT8  # Certificate version
@@ -157,7 +177,7 @@ class Message(Container):
 
         if (
             self.payload is None
-            or not len(self.payload)
+            or len(self.payload) == 0
             or len(self.payload) != align(len(self.payload), alignment=4)
         ):
             raise SPSDKValueError(
@@ -170,7 +190,7 @@ class Message(Container):
         :return: Bytes representation of message object.
         """
         msg = pack(
-            self._format(),
+            self.format(),
             self.issue_date,
             self.permissions,
             self.cert_ver,
@@ -201,7 +221,7 @@ class Message(Container):
         """
         command = config.get("command")
         assert command and len(command) == 1
-        msg_cls = Message.getMessageClass(list(command.keys())[0])
+        msg_cls = Message.get_message_class(list(command.keys())[0])
         return msg_cls.load_from_config(config)
 
     @staticmethod
@@ -214,7 +234,7 @@ class Message(Container):
         :return: Message object.
         """
         cert_ver = value_to_int(config.get("cert_version", 0))
-        permission = value_to_int(config.get("permission", 0))
+        permission = value_to_int(config.get("cert_permission", 0))
         issue_date_raw = config.get("issue_date", None)
         if issue_date_raw:
             assert isinstance(issue_date_raw, str)
@@ -226,13 +246,13 @@ class Message(Container):
         uuid = bytes.fromhex(config.get("uuid", bytes(Message.UNIQUE_ID_LEN)))
         return (cert_ver, permission, issue_date, uuid)
 
-    def _create_general_config(self) -> CM:
+    def _create_general_config(self) -> Dict[str, Any]:
         """Create configuration of the general parts of  Message.
 
         :return: Configuration dictionary.
         """
         assert self.unique_id
-        cfg = CM()
+        cfg: Dict[str, Any] = {}
         cfg["cert_version"] = self.cert_ver
         cfg["cert_permission"] = self.permissions
         cfg["issue_date"] = f"{(self.issue_date & 0xfff)}-{(self.issue_date>>12) & 0xf}"
@@ -240,36 +260,36 @@ class Message(Container):
 
         return cfg
 
-    def create_config(self) -> CM:
+    def create_config(self) -> Dict[str, Any]:
         """Create configuration of the Signed Message.
 
         :return: Configuration dictionary.
         """
         assert self.payload
         cfg = self._create_general_config()
-        cmd_cfg = CM()
+        cmd_cfg = {}
         cmd_cfg[MessageCommands.get(self.cmd)] = self.payload.hex()
         cfg["command"] = cmd_cfg
 
         return cfg
 
-    @staticmethod
-    def getMessageClass(cmd: str) -> Type["Message"]:
+    @classmethod
+    def get_message_class(cls, cmd: str) -> Type[Self]:
         """Get the dedicated message class for command."""
         for var in globals():
             obj = globals()[var]
             if isclass(obj) and issubclass(obj, Message) and obj is not Message:
-                assert isinstance(obj, type(Message))
+                assert issubclass(obj, Message)
                 if MessageCommands.get(cmd) == obj.TAG:
-                    return obj
+                    return obj  # type: ignore
 
         raise SPSDKValueError(f"Command {cmd} is not supported.")
 
-    @staticmethod
-    def parse(binary: bytes) -> "Message":
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
         """Parse input binary to the signed message object.
 
-        :param binary: Binary data with Container block to parse.
+        :param data: Binary data with Container block to parse.
         :return: Object recreated from the binary data.
         """
         (
@@ -281,17 +301,18 @@ class Message(Container):
             _,  # Reserved
             uuid_lower,  # Unique ID (Lower 32 bits)
             uuid_upper,  # Unique ID (Upper 32 bits)
-        ) = unpack(Message._format(), binary[: Message.fixed_length()])
+        ) = unpack(Message.format(), data[: Message.fixed_length()])
 
         cmd_name = str(MessageCommands.get(command))
-        parsed_msg = Message.getMessageClass(cmd_name)(
+        msg_cls = Message.get_message_class(cmd_name)
+        parsed_msg = msg_cls(
             cert_ver=certificate_version,
             permissions=permission,
             issue_date=issue_date,
             unique_id=uuid_lower + uuid_upper,
         )
-        parsed_msg.payload = binary[Message.fixed_length() :]
-        return parsed_msg
+        parsed_msg.payload = data[Message.fixed_length() :]
+        return parsed_msg  # type: ignore
 
 
 class MessageReturnLifeCycle(Message):
@@ -326,6 +347,11 @@ class MessageReturnLifeCycle(Message):
         )
         self.life_cycle = life_cycle
 
+    def __str__(self) -> str:
+        ret = super().__str__()
+        ret += f"  Life Cycle:         {hex(self.life_cycle)}"
+        return ret
+
     @property
     def life_cycle(self) -> int:
         """Get the requested life cycle.
@@ -350,7 +376,7 @@ class MessageReturnLifeCycle(Message):
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
         """
-        command = config.get("command", dict())
+        command = config.get("command", {})
         if not isinstance(command, dict) or len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
         command_name = list(command.keys())[0]
@@ -370,13 +396,13 @@ class MessageReturnLifeCycle(Message):
             life_cycle=life_cycle,
         )
 
-    def create_config(self) -> CM:
+    def create_config(self) -> Dict[str, Any]:
         """Create configuration of the Signed Message.
 
         :return: Configuration dictionary.
         """
         cfg = self._create_general_config()
-        cmd_cfg = CM()
+        cmd_cfg = {}
         cmd_cfg[MessageCommands.get(self.TAG)] = self.life_cycle
         cfg["command"] = cmd_cfg
 
@@ -434,6 +460,14 @@ class MessageWriteSecureFuse(Message):
 
         self.update_payload()
 
+    def __str__(self) -> str:
+        ret = super().__str__()
+        ret += f"  Fuse Index:         {hex(self.fuse_id)}, {self.fuse_id}\n"
+        ret += f"  Fuse Length:        {self.length}\n"
+        ret += f"  Fuse Flags:         {hex(self.flags)}\n"
+        ret += f"  Fuse Value:         {self.fuse_data.hex()}"
+        return ret
+
     def update_payload(self) -> None:
         """Set the requested write secure fuse payload."""
         payload = pack(
@@ -452,7 +486,7 @@ class MessageWriteSecureFuse(Message):
         :raises SPSDKError: Invalid configuration detected.
         :return: Message object.
         """
-        command = config.get("command", dict())
+        command = config.get("command", {})
         if not isinstance(command, dict) or len(command) != 1:
             raise SPSDKError(f"Invalid config field command: {command}")
         command_name = list(command.keys())[0]
@@ -482,17 +516,20 @@ class MessageWriteSecureFuse(Message):
             data=data,
         )
 
-    def create_config(self) -> CM:
+    def create_config(self) -> Dict[str, Any]:
         """Create configuration of the Signed Message.
 
         :return: Configuration dictionary.
         """
         cfg = self._create_general_config()
-        write_fuse_cfg = CM()
-        cmd_cfg = CM()
+        write_fuse_cfg: Dict[str, Any] = {}
+        cmd_cfg = {}
         write_fuse_cfg["id"] = self.fuse_id
         write_fuse_cfg["flags"] = self.flags
-        write_fuse_cfg["data"] = self.fuse_data.hex()
+        write_fuse_cfg["data"] = [
+            hex(x) for x in list(unpack(f"<{len(self.fuse_data) // 4}L", self.fuse_data))
+        ]
+
         cmd_cfg[MessageCommands.get(self.TAG)] = write_fuse_cfg
         cfg["command"] = cmd_cfg
 
@@ -501,7 +538,7 @@ class MessageWriteSecureFuse(Message):
     def validate(self) -> None:
         """Validate general message properties."""
         super().validate()
-        if self.payload is None or len(self.payload) != 4:
+        if self.payload is None or len(self.payload) != 4 + len(self.fuse_data):
             raise SPSDKValueError(
                 f"Message Write secure fuse request: Invalid payload: {self.payload.hex() if self.payload else 'None'}"
             )
@@ -580,6 +617,19 @@ class SignedMessage(AHABContainerBase):
 
         return False
 
+    def __repr__(self) -> str:
+        return f"Signed Message, {'Encrypted' if self.encrypt_iv else 'Plain'}"
+
+    def __str__(self) -> str:
+        return (
+            f"  Flags:              {hex(self.flags)}\n"
+            f"  Fuse version:       {hex(self.fuse_version)}\n"
+            f"  SW version:         {hex(self.sw_version)}\n"
+            f"  Signature Block:\n{str(self.signature_block)}\n"
+            f"  Message:\n{str(self.message)}\n"
+            f"  Encryption IV:      {self.encrypt_iv.hex() if self.encrypt_iv else 'Not Available'}"
+        )
+
     @property
     def _signature_block_offset(self) -> int:
         """Returns current signature block offset.
@@ -588,10 +638,7 @@ class SignedMessage(AHABContainerBase):
         """
         # Constant size of Container header + Image array Entry table
         assert self.message
-        return align(
-            calcsize(self._format()) + len(self.message),
-            CONTAINER_ALIGNMENT,
-        )
+        return calcsize(self.format()) + len(self.message)
 
     def __len__(self) -> int:
         """Get total length of AHAB container.
@@ -600,12 +647,11 @@ class SignedMessage(AHABContainerBase):
         """
         return self._signature_block_offset + len(self.signature_block)
 
-    # We need to extend the format, as the parent provides only endianness,
-    # and length.
     @classmethod
-    def _format(cls) -> str:
+    def format(cls) -> str:
+        """Format of binary representation."""
         return (
-            super()._format()
+            super().format()
             + UINT8  # Descriptor Flags
             + UINT8  # Reserved
             + UINT16  # Reserved
@@ -619,11 +665,9 @@ class SignedMessage(AHABContainerBase):
         """
         # 0. Update length
         self.length = len(self)
-        # 1. Encrypt all images if applicable
-        # TODO :-)
-        # 2. Update the signature block to get overall size of it
+        # 1. Update the signature block to get overall size of it
         self.signature_block.update_fields()
-        # 3. Sign the image header
+        # 2. Sign the image header
         if self.flag_srk_set != "none":
             assert self.signature_block.signature
             self.signature_block.signature.sign(self.get_signature_data())
@@ -634,7 +678,7 @@ class SignedMessage(AHABContainerBase):
         :return: bytes representing container header content including the signature block.
         """
         signed_message = pack(
-            self._format(),
+            self.format(),
             self.version,
             len(self),
             self.tag,
@@ -689,15 +733,15 @@ class SignedMessage(AHABContainerBase):
             raise SPSDKValueError("Signed Message: Invalid Message payload.")
         self.message.validate()
 
-    @staticmethod
-    def parse(binary: bytes) -> "SignedMessage":
+    @classmethod
+    def parse(cls, data: bytes) -> Self:
         """Parse input binary to the signed message object.
 
-        :param binary: Binary data with Container block to parse.
+        :param data: Binary data with Container block to parse.
         :return: Object recreated from the binary data.
         """
-        SignedMessage._check_container_head(binary)
-        image_format = SignedMessage._format()
+        SignedMessage.check_container_head(data)
+        image_format = SignedMessage.format()
         (
             _,  # version
             _,  # container_length
@@ -712,23 +756,23 @@ class SignedMessage(AHABContainerBase):
             _,  # reserved
             _,  # reserved
             iv,
-        ) = unpack(image_format, binary[: SignedMessage.fixed_length()])
+        ) = unpack(image_format, data[: SignedMessage.fixed_length()])
 
-        parsed_signed_msg = SignedMessage(
+        parsed_signed_msg = cls(
             flags=flags,
             fuse_version=fuse_version,
             sw_version=sw_version,
             encrypt_iv=iv if bool(descriptor_flags & 0x01) else None,
         )
-        parsed_signed_msg.signature_block = SignatureBlock.parse(binary, signature_block_offset)
+        parsed_signed_msg.signature_block = SignatureBlock.parse(data[signature_block_offset:])
 
         # Parse also Message itself
         parsed_signed_msg.message = Message.parse(
-            binary[SignedMessage.fixed_length() : signature_block_offset]
+            data[SignedMessage.fixed_length() : signature_block_offset]
         )
         return parsed_signed_msg
 
-    def create_config(self, data_path: str) -> CM:
+    def create_config(self, data_path: str) -> Dict[str, Any]:
         """Create configuration of the Signed Message.
 
         :param data_path: Path to store the data files of configuration.
@@ -736,10 +780,6 @@ class SignedMessage(AHABContainerBase):
         """
         self.validate({})
         cfg = self._create_config(0, data_path)
-        cfg.yaml_set_start_comment(
-            "Signed Message recreated configuration from :"
-            f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
-        )
         cfg["family"] = "N/A"
         cfg["revision"] = "N/A"
         cfg["output"] = "N/A"
@@ -806,7 +846,7 @@ class SignedMessage(AHABContainerBase):
         val_schemas = SignedMessage.get_validation_schemas()
 
         if family in AHABImage.get_supported_families():
-            yaml_data = ConfigTemplate(
+            yaml_data = CommentedConfig(
                 f"Signed message Configuration template for {family}.",
                 val_schemas,
             ).export_to_yaml()

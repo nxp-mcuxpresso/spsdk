@@ -1,56 +1,38 @@
 # Copyright 2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-# ===========  Signed message Configuration template for rt118x.  ===========
+# ===========  Signed Message converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
 # ----------------------------------------------------------------------------------------------------
-family: rt118x  # [Required], MCU family, Family identifier including the chip revision. If revision is not present, latest revision is used as default., Possible options:['rt118x']
-revision: a0 # [Optional], MCU revision, Revision of silicon, Possible options:['a0']
-output: ahab/signed_msg_oem_field_return.bin # [Required], Output file name, Output Signed Message file name
+family: rt118x  # [Required], MCU family; Family identifier including the chip revision. If revision is not present, latest revision is used as default; Possible options:['mx93', 'rt118x']
+revision: a0 # [Optional], MCU revision; Revision of silicon; Possible options:['a0']
+output: ahab/signed_msg_oem_field_return.bin # [Required], Output file name; Output Signed Message file name
 # ----------------------------------------------------------------------------------------------------
 #                                   == Settings of Signed Message ==
 # ----------------------------------------------------------------------------------------------------
-srk_set: oem # [Required], Super Root Key (SRK) set, Defines which set is used to authenticate the container., Possible options:['none', 'oem', 'nxp']
-used_srk_id: 0 # [Required], Used SRK, Which key from SRK set is being used.
-srk_revoke_mask: 0 # [Required], SRK revoke mask, Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
-fuse_version: 0 # [Required], Fuse version, The value must be equal or greater than the version stored in fuses to allow loading this container.
-sw_version: 0 # [Required], Software version, Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse version field.
-signing_key: ahab/keys/cert1_key_ecc_prime256v1.pem # [Required], Signed Message container signing key, Private key used for sign the container header. Header can be signed by SRK or by image key that was signed by SRK. If an image key is used, it must be the same algorithm and key size as the SRK. In both cases, the referenced SRK must not have been revoked.
+srk_set: oem # [Required], Super Root Key (SRK) set; Defines which set is used to authenticate the signed message; Possible options:['none', 'oem', 'nxp']
+used_srk_id: 0 # [Required], Used SRK; Which key from SRK set is being used.
+srk_revoke_mask: 0 # [Required], SRK revoke mask; Bitmask to indicate which SRKs to revoke. Bit set to 1 means revoke key. Bit 0 = revoke SRK_0, bit 1 = revoke SRK_1 etc.
+fuse_version: 0 # [Required], Fuse version; The value must be equal or greater than the version stored in fuses to allow loading this container.
+sw_version: 0 # [Required], Software version; Number used by Privileged Host Boot Companion (PHBC) to select between multiple images with same Fuse version field.
+signing_key: ahab/keys/ecc256/srk0_ecc256.pem # [Required], Signed Message container signing key; Private key used for sign the container header. Header can be signed by SRK. The referenced SRK must not have been revoked.
 # ----------------------------------------------------------------------------------------------------
 #                           == Configuration of Signed Message SRK table ==
 # ----------------------------------------------------------------------------------------------------
-srk_table: # [Required], SRK Table, SRK (Super Root key) table definition.
-  hash_type: sha256  # [Required], SRK HASH type, HASH type of image. All images in the container must have the same HASH type., Possible options:['sha256', 'sha384', 'sha512']
-  srk_array: # [Required], Super Root Key (SRK) table, Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms are: RSASSA-PSS or ECDSA. Supported hash algorithms: sha256, sha384, sha512. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096. Certificate may be of Certificate Authority.
-    - ahab/keys/cert1_key_ecc_prime256v1.pem  # SRK key, Path to SRK Key file.
-    - ahab/keys/cert2_key_ecc_prime256v1.pem  # SRK key, Path to SRK Key file.
-    - ahab/keys/cert3_key_ecc_prime256v1.pem  # SRK key, Path to SRK Key file.
-    - ahab/keys/cert4_key_ecc_prime256v1.pem  # SRK key, Path to SRK Key file.
-# iv_path: my_IV.txt # [Optional], IV file path, Used only for encrypted messages. Fixed size at 256 bits. If defined the encryption is used for this Signed message. The HEX format is accepted.
+srk_table: # [Required], SRK Table; SRK (Super Root key) table definition.
+  srk_array:  # [Required], Super Root Key (SRK) table; Table containing the used SRK records. All SRKs must be of the same type. Supported signing algorithms are: RSASSA-PSS or ECDSA. Supported hash algorithms: sha256, sha384, sha512. Supported key sizes/curves: prime256v1, sec384r1, sec512r1, rsa2048, rsa4096. Certificate may be of Certificate Authority.
+    - ahab/keys/ecc256/srk0_ecc256.pem
+    - ahab/keys/ecc256/srk1_ecc256.pem
+    - ahab/keys/ecc256/srk2_ecc256.pem
+    - ahab/keys/ecc256/srk3_ecc256.pem
 # ----------------------------------------------------------------------------------------------------
 #                                      == Settings of Message ==
 # ----------------------------------------------------------------------------------------------------
 message: # [Required]
-  cert_version: 0  # [Optional], Certificate version, Certificate version
-  cert_permission: 0 # [Optional], Certificate permission, Certificate permission, to be used in future. The stated permission must allow the operation requested by the signed message.
-  issue_date: 2022-12 # [Optional], Issue date, Optional Issue date of message, if not defined the current date is used. The format must be following: 'YYYY-MM'
-  uuid: '5C3C74B6C0204467BC5AF5D28DC75628' # [Required], UUID, (Optional) 64-bit unique identifier
+  cert_version: 0  # [Optional], Certificate version
+  cert_permission: 0 # [Optional], Certificate permission, to be used in future. The stated permission must allow the operation requested by the signed message.
+  issue_date: 2022-12 # [Optional], Issue date; Optional Issue date of message, if not defined the current date is used. The format must be following: 'YYYY-MM'
+  uuid: 5C3C74B6C0204467BC5AF5D28DC75628 # [Required], Device UUID; Unique identifier of the chip. It could be retrieve by BLHOST command from chip or also the debug authentication protocol could provide this value. Hex string format (hexadecimal string without '0x').
   command: # [Required]
-    RETURN_LIFECYCLE_UPDATE_REQ: 16  # [Required], Life Cycle, Value of life cycle to be reverted back
-    # ----------------------------------------------------------------------------------------------------
-    #                 == List of possible 3 options. Option types[object,object,object] ==
-    # ----------------------------------------------------------------------------------------------------
-    # -  # [Example of possible configuration #0]
-    #   RETURN_LIFECYCLE_UPDATE_REQ: 16  # [Required], Life Cycle, Value of life cycle to be reverted back
-    # - # [Example of possible configuration #1]
-    #   WRITE_SEC_FUSE_REQ:  # [Required], Secure Fuse, Description of secure fuse to write (burn)
-    #     id: 0  # [Required], Fuse ID, Fuse ID (address), maximal 16 bit value is allowed.
-    #     length: 0 # [Optional], Fuse Length, Fuse length, maximal 8 bit value is allowed.
-    #     flags: 0 # [Optional], Fuse flags, Fuse flags, maximal 8 bit value is allowed.
-    #     data: 2779096485 # [Required], Fuse data, Fuse data, maximal 32 bit value is allowed.
-    # - # [Example of possible configuration #2]
-    #   ENABLE_DEBUG_REQ:  # [Required], Enable debug, Description of enabling debug
-    #     domain: 0  # [Required], Debug Domain, Debug domain area, maximal 8 bit value is allowed.
-    #     debug_vector: 0 # [Required], Debug vector, Debug vector, maximal 8 bit value is allowed.
+    RETURN_LIFECYCLE_UPDATE_REQ: 16  # [Required], Life Cycle; Value of life cycle to be moved on. The value 16 is used for OEM keys (FIELD_RETURN_OEM) and 32 for NXP keys(FIELD_RETURN_NXP).

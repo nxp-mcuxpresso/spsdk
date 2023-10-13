@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module provides exceptions for PFR module."""
-from spsdk import SPSDKError
+from spsdk.exceptions import SPSDKError
 
 
 class SPSDKPfrError(SPSDKError):

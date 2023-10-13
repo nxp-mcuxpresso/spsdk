@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,7 @@ from spsdk.image.commands import CmdBase, CmdTag
 
 def test_base_command():
     base = CmdBase(CmdTag.NOP, 0)
-    assert base.info()
+    assert str(base)
     assert base.export()
     assert len(base.export()) == base.size
     with pytest.raises(NotImplementedError):
@@ -28,4 +28,4 @@ def test_no_supported():
     with pytest.raises(SPSDKError):
         base.cmd_data_offset = 0
     with pytest.raises(SPSDKError):
-        base.parse_cmd_data(data=None, offset=None)
+        base.parse_cmd_data(data=None)

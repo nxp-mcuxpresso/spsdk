@@ -8,21 +8,24 @@
 """Test AHAB part of nxpimage app."""
 import filecmp
 import os
+import shutil
 
 import pytest
 from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
+from spsdk.crypto.keys import IS_OSCCA_SUPPORTED
+from spsdk.exceptions import SPSDKValueError
 from spsdk.image.ahab.ahab_container import AHABImage
 from spsdk.image.ahab.signed_msg import SignedMessage
-from spsdk.utils.misc import load_binary, use_working_directory, write_file
-from tests.elftosb.test_elftosb_sb31 import process_config_file
+from spsdk.utils.misc import load_binary, use_working_directory
+from tests.nxpimage.test_nxpimage_cert_block import process_config_file
 
 
 @pytest.mark.parametrize(
     "config_file",
     [
-        ("config_ctcm.json"),
+        ("config_ctcm.yaml"),
     ],
 )
 def test_nxpimage_ahab_export(tmpdir, data_dir, config_file):
@@ -30,7 +33,7 @@ def test_nxpimage_ahab_export(tmpdir, data_dir, config_file):
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
-        cmd = f"ahab export {new_config}"
+        cmd = f"ahab export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(new_binary)
@@ -40,11 +43,13 @@ def test_nxpimage_ahab_export(tmpdir, data_dir, config_file):
 @pytest.mark.parametrize(
     "config_file",
     [
-        ("ctcm_cm33_signed_img.json"),
-        ("ctcm_cm33_signed_cert.yaml"),
-        ("ctcm_cm33_signed_cert_nx.yaml"),
-        ("ctcm_cm33_signed_cert_sb.yaml"),
-        ("ctcm_cm33_signed_cert_nand.yaml"),
+        ("ctcm_cm33_signed_img.yaml"),
+        ("ctcm_cm33_signed.yaml"),
+        ("ctcm_cm33_signed_nx.yaml"),
+        ("ctcm_cm33_signed_sb.yaml"),
+        ("ctcm_cm33_signed_sb_mx93.yaml"),
+        ("ctcm_cm33_signed_nand.yaml"),
+        ("ctcm_cm33_signed_certificate.yaml"),
         ("ctcm_cm33_encrypted_img.yaml"),
     ],
 )
@@ -53,43 +58,170 @@ def test_nxpimage_ahab_export_signed_encrypted(tmpdir, data_dir, config_file):
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
-        cmd = f"ahab export {new_config}"
+        cmd = f"ahab export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(new_binary)
         assert os.path.getsize(ref_binary) == os.path.getsize(new_binary)
 
 
-def test_nxpimage_ahab_parse_cli(tmpdir, data_dir):
+@pytest.mark.parametrize(
+    "config_file",
+    [
+        ("ahab_certificate256.yaml"),
+        ("ahab_certificate384.yaml"),
+        ("ahab_certificate521.yaml"),
+        ("ahab_certificate256_uuid.yaml"),
+        ("ahab_certificate384_uuid.yaml"),
+        ("ahab_certificate521_uuid.yaml"),
+    ],
+)
+def test_nxpimage_ahab_cert_export(tmpdir, data_dir, config_file):
     runner = CliRunner()
     with use_working_directory(data_dir):
-        cmd = f"ahab parse -f rt118x -b ahab/mxrt1180a0-ahab-container.bin {tmpdir}"
+        ref_binary = os.path.join(data_dir, "ahab", os.path.splitext(config_file)[0] + ".bin")
+        new_binary = os.path.join(tmpdir, os.path.splitext(config_file)[0] + ".bin")
+        cmd = f"ahab certificate export -c ahab/{config_file} -o {new_binary}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
-        assert os.path.isfile(os.path.join(tmpdir, "parsed_config.yaml"))
+        assert os.path.isfile(new_binary)
+        assert os.path.getsize(ref_binary) == os.path.getsize(new_binary)
 
 
 @pytest.mark.parametrize(
-    "binary,image_type",
+    "config_file",
     [
-        ("cntr_signed_ctcm_cm33_cert.bin", "xip"),
-        ("cntr_signed_ctcm_cm33_cert_nx.bin", "non_xip"),
-        ("cntr_signed_ctcm_cm33_cert_sb.bin", "serial_downloader"),
-        ("cntr_signed_ctcm_cm33_cert_nand.bin", "nand"),
-        ("cntr_encrypted_ctcm_cm33.bin", "non_xip"),
-        ("ctcm_cm33_signed_img.bin", "non_xip"),
+        ("ahab_certificate256.bin"),
+        ("ahab_certificate384.bin"),
+        ("ahab_certificate521.bin"),
+        ("ahab_certificate256_uuid.bin"),
+        ("ahab_certificate384_uuid.bin"),
+        ("ahab_certificate521_uuid.bin"),
     ],
 )
-def test_nxpimage_ahab_parse(data_dir, binary, image_type):
+def test_nxpimage_ahab_cert_parse(tmpdir, data_dir, config_file):
+    runner = CliRunner()
+    with use_working_directory(tmpdir):
+        input_binary = os.path.join(data_dir, "ahab", config_file)
+        cmd = f"ahab certificate parse -b {input_binary} -o {tmpdir} -s oem"
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+        assert os.path.isfile("certificate_config.yaml")
+
+
+@pytest.mark.skipif(
+    not IS_OSCCA_SUPPORTED, reason="Install OSCCA dependency with pip install spsdk[oscca]"
+)
+@pytest.mark.parametrize(
+    "config_file",
+    [
+        ("ctcm_cm33_signed_img_sm2.yaml"),
+    ],
+)
+def test_nxpimage_ahab_export_signed_encrypted_sm2(tmpdir, data_dir, config_file):
+    test_nxpimage_ahab_export_signed_encrypted(tmpdir, data_dir, config_file)
+
+
+def test_nxpimage_ahab_parse_cli(tmpdir, data_dir):
+    def is_subpart(new_file, orig_file):
+        new = load_binary(new_file)
+        orig = load_binary(orig_file)
+        return new[: len(orig)] == orig
+
+    runner = CliRunner()
+    with use_working_directory(data_dir):
+        cmd = f"ahab parse -f rt118x -b ahab/test_parse_ahab.bin -o {tmpdir}/parsed"
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+        assert os.path.isfile(os.path.join(tmpdir, "parsed", "parsed_config.yaml"))
+        assert is_subpart(
+            os.path.join(tmpdir, "parsed", "container0_image0_executable.bin"),
+            os.path.join(data_dir, "ahab", "inc13.bin"),
+        )
+        assert is_subpart(
+            os.path.join(tmpdir, "parsed", "container1_image0_executable.bin"),
+            os.path.join(data_dir, "ahab", "inc1024.bin"),
+        )
+        assert is_subpart(
+            os.path.join(tmpdir, "parsed", "container1_image1_executable.bin"),
+            os.path.join(data_dir, "ahab", "inc1026.bin"),
+        )
+        assert is_subpart(
+            os.path.join(tmpdir, "parsed", "container1_image2_executable.bin"),
+            os.path.join(data_dir, "ahab", "inc13.bin"),
+        )
+
+
+@pytest.mark.parametrize(
+    "binary,family,target_memory",
+    [
+        ("cntr_signed_ctcm_cm33.bin", "rt118x", "nor"),
+        ("cntr_signed_ctcm_cm33_nx.bin", "rt118x", "nor"),
+        ("cntr_signed_ctcm_cm33_sb.bin", "rt118x", "serial_downloader"),
+        ("cntr_signed_ctcm_cm33_sb_mx93.bin", "mx93", "serial_downloader"),
+        ("cntr_signed_ctcm_cm33_nand.bin", "rt118x", "nand_2k"),
+        ("cntr_encrypted_ctcm_cm33.bin", "rt118x", "nor"),
+    ],
+)
+def test_nxpimage_ahab_parse(data_dir, binary, family, target_memory):
     with use_working_directory(data_dir):
         original_file = load_binary(f"{data_dir}/ahab/{binary}")
-        ahab = AHABImage("rt118x", "a0", image_type)
+        ahab = AHABImage(family, "a0", target_memory)
         ahab.parse(original_file)
         ahab.update_fields()
         ahab.validate()
         exported_ahab = ahab.export()
         assert original_file == exported_ahab
-        assert ahab.image_type == image_type
+        assert ahab.target_memory == target_memory
+
+
+@pytest.mark.parametrize(
+    "binary,family,target_memory",
+    [
+        ("cntr_signed_ctcm_cm33_cert_wrong_signature.bin", "rt118x", "nor"),
+    ],
+)
+def test_nxpimage_ahab_wrong_signature(data_dir, binary, family, target_memory):
+    with use_working_directory(data_dir):
+        original_file = load_binary(f"{data_dir}/ahab/{binary}")
+        ahab = AHABImage(family, "a0", target_memory)
+        ahab.parse(original_file)
+        ahab.update_fields()
+        with pytest.raises(SPSDKValueError, match="Signature cannot be verified"):
+            ahab.validate()
+
+
+@pytest.mark.parametrize(
+    "binary,family",
+    [
+        ("cntr_signed_ctcm_cm33.bin", "rt118x"),
+        ("cntr_signed_ctcm_cm33_nx.bin", "rt118x"),
+        ("cntr_signed_ctcm_cm33_sb.bin", "rt118x"),
+        ("cntr_signed_ctcm_cm33_sb_mx93.bin", "mx93"),
+        ("cntr_signed_ctcm_cm33_nand.bin", "rt118x"),
+        ("cntr_encrypted_ctcm_cm33.bin", "rt118x"),
+    ],
+)
+def test_nxpimage_ahab_parse_cli2(data_dir, binary, family, tmpdir):
+    runner = CliRunner()
+    with use_working_directory(data_dir):
+        cmd = f"ahab parse -f {family} -b ahab/{binary} -o {tmpdir}/parsed"
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+        assert os.path.isfile(os.path.join(tmpdir, "parsed", "parsed_config.yaml"))
+
+
+@pytest.mark.skipif(
+    not IS_OSCCA_SUPPORTED, reason="Install OSCCA dependency with pip install spsdk[oscca]"
+)
+@pytest.mark.parametrize(
+    "binary,family,target_memory",
+    [
+        ("cntr_signed_ctcm_cm33_img_sm2.bin", "rt118x", "nor"),
+    ],
+)
+def test_nxpimage_ahab_parse_sm2(data_dir, binary, family, target_memory):
+    test_nxpimage_ahab_parse(data_dir, binary, family, target_memory)
 
 
 @pytest.mark.parametrize(
@@ -103,7 +235,7 @@ def test_nxpimage_signed_message_export(tmpdir, data_dir, config_file):
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
-        cmd = f"signed-msg export {new_config}"
+        cmd = f"signed-msg export -c {new_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(new_binary)
@@ -118,10 +250,22 @@ def test_nxpimage_signed_message_export(tmpdir, data_dir, config_file):
 def test_nxpimage_signed_message_parse_cli(tmpdir, data_dir):
     runner = CliRunner()
     with use_working_directory(data_dir):
-        cmd = f"signed-msg parse -b ahab/signed_msg_oem_field_return.bin {tmpdir}"
+        cmd = f"signed-msg parse -b ahab/signed_msg_oem_field_return.bin -o {tmpdir}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(tmpdir, "parsed_config.yaml"))
+
+
+@pytest.mark.parametrize(
+    "family",
+    ["mx8ulp", "mx93", "mx95", "rt118x"],
+)
+def test_nxpimage_fcb_template_cli(tmpdir, family):
+    runner = CliRunner()
+    cmd = f"signed-msg get-template -f {family} --output {tmpdir}/signed_msg.yml"
+    result = runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0
+    assert os.path.isfile(f"{tmpdir}/signed_msg.yml")
 
 
 def test_nxpimage_signed_message_parse(data_dir):
@@ -132,3 +276,46 @@ def test_nxpimage_signed_message_parse(data_dir):
         signed_msg.validate({})
         exported_signed_msg = signed_msg.export()
         assert original_file == exported_signed_msg
+
+
+def test_nxpimage_ahab_update_keyblob(tmpdir, data_dir):
+    runner = CliRunner()
+    with use_working_directory(data_dir):
+        new_bin_path = f"{tmpdir}/cntr_encrypted_ctcm_cm33.bin"
+        ref_bin_path = "ahab/cntr_encrypted_ctcm_cm33.bin"
+        shutil.copyfile(ref_bin_path, new_bin_path)
+
+        ref_bin = load_binary(ref_bin_path)
+
+        cmd = f"ahab update-keyblob -b {new_bin_path} -i 1 -k ahab/keyblobs/container1_dek_keyblob.bin"
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
+
+        new_bin = load_binary(new_bin_path)
+        assert len(new_bin) == len(ref_bin)
+        assert new_bin != ref_bin
+
+
+def test_nxpimage_ahab_update_keyblob_invalid(data_dir):
+    runner = CliRunner()
+    with use_working_directory(data_dir):
+        cmd = f"ahab update-keyblob -b ahab/cntr_encrypted_ctcm_cm33.bin -i 0 -k ahab/keyblobs/container1_dek_keyblob.bin"
+        result = runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 1
+
+
+@pytest.mark.parametrize(
+    "family",
+    [
+        "mx8ulp",
+        "mx93",
+        "mx95",
+        "rt118x",
+    ],
+)
+def test_nxpimage_ahab_get_template(tmpdir, family):
+    runner = CliRunner()
+    cmd = f"ahab get-template -f {family} -o {tmpdir}/tmp.yaml"
+    result = runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0
+    assert os.path.isfile(f"{tmpdir}/tmp.yaml")

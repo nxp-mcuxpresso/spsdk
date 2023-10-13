@@ -6,7 +6,7 @@
 version: 2
 
 # The example of device configuration
-family: lpc55s6x
+family: TMP_FAMILY
 
 ## Data settings
 
@@ -41,7 +41,6 @@ tp_target: blhost
 
 # The example of specifying configuration for TP target
 tp_target_parameter:
-  buffer_address: 0x2000_6000
   blhost_timeout: 5_000
   blhost_port: "com10"
 

@@ -1,0 +1,118 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =============================  External Memory Configuration Data template for rt118x.  ==============================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <rt116x, rt117x, rt118x>
+family: rt118x
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by XMCD description.
+# Possible options: <flexspi_ram, semc_sdram>
+mem_type: semc_sdram
+# --------------------------------------===== Configuration type [Required] =====---------------------------------------
+# Description: Specify type of configuration used by XMCD description.
+# Possible options: <simplified, full>
+config_type: simplified
+# --------------------------------------------===== rt118x [Required] =====---------------------------------------------
+# Description:
+xmcd_settings:
+  header:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ------------------------------------------===== header [Required] =====-------------------------------------------
+    # Description: XMCD Header
+    value: '0xC010000D'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ---------------------------------===== configurationBlockSize [Optional] =====----------------------------------
+      # Description: Configuration block size including XMCD header itself
+      configurationBlockSize: 13
+      # ---------------------------------===== configurationBlockType [Optional] =====----------------------------------
+      # Description: Configuration block type: 0 - Simplified, 1 - Full
+      # Possible options: <XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED, XMCD_CONFIG_BLOCK_TYPE_FULL>
+      configurationBlockType: XMCD_CONFIG_BLOCK_TYPE_SIMPLIFIED
+      # ----------------------------------------===== instance [Optional] =====-----------------------------------------
+      # Description: SoC defined instances
+      instance: 0
+      # -------------------------------------===== memoryInterface [Optional] =====-------------------------------------
+      # Description: Memory interface: 0 - FlexSPI, 1 - SEMC
+      # Possible options: <XMCD_MEMORY_INTERFACE_FLEXSPI, XMCD_MEMORY_INTERFACE_SEMC>
+      memoryInterface: XMCD_MEMORY_INTERFACE_SEMC
+      # -----------------------------------------===== version [Optional] =====-----------------------------------------
+      # Description: Version, fixed value 0x0
+      version: 0
+      # -------------------------------------------===== tag [Optional] =====-------------------------------------------
+      # Description: Tag, fixed value 0xC
+      tag: 12
+  # -----------------------------------------===== magicNumber [Optional] =====-----------------------------------------
+  # Description: Magic number: Fixed to 0xA1
+  magicNumber:
+    # ----------------------------------------===== magicNumber [Required] =====----------------------------------------
+    # Description: Magic number: Fixed to 0xA1
+    value: '0x00'
+  # -------------------------------------------===== version [Optional] =====-------------------------------------------
+  # Description: Version: Set to 1 for this implementation
+  version:
+    # ------------------------------------------===== version [Required] =====------------------------------------------
+    # Description: Version: Set to 1 for this implementation
+    value: '0x00'
+  configOption:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # ---------------------------------------===== configOption [Required] =====----------------------------------------
+    # Description: Config option: Simplified - 0x00, Full - 0xFF; Must be 0x00 in this case
+    value: '0x00'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # --------------------------------------===== configOption [Optional] =====---------------------------------------
+      # Description: Config option
+      # Possible options: <XMCD_SEMC_SDRAM_CONFIG_SIMPLIFIED>
+      configOption: XMCD_SEMC_SDRAM_CONFIG_SIMPLIFIED
+  # -------------------------------------------===== clkMhz [Optional] =====--------------------------------------------
+  # Description: Set the working frequency in the unit of MHz
+  clkMhz:
+    # ------------------------------------------===== clkMhz [Required] =====-------------------------------------------
+    # Description: Set the working frequency in the unit of MHz
+    value: '0x00'
+  # -----------------------------------------===== sdramSizeKb [Optional] =====-----------------------------------------
+  # Description: Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e.
+  # 4~4*1024*1024 kilobytes.
+  sdramSizeKb:
+    # ----------------------------------------===== sdramSizeKb [Required] =====----------------------------------------
+    # Description: Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e.
+    # 4~4*1024*1024 kilobytes.
+    value: '0x00000000'
+  portSize:
+  # ====================================================================================================================
+  #                             == List of possible 2 options. Options [value, bitfields] ==                            
+  # ====================================================================================================================
+
+  #  ====================================== [Example of possible configuration #0] ======================================
+    # -----------------------------------------===== portSize [Required] =====------------------------------------------
+    # Description: Port size of SDRAM
+    value: '0x00'
+
+  #  ====================================== [Example of possible configuration #1] ======================================
+    bitfields:
+      # ----------------------------------------===== portSize [Optional] =====-----------------------------------------
+      # Description: Port size of SDRAM
+      # Possible options: <XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT, XMCD_SEMC_SDRAM_PORT_SIZE_16_BIT,
+      # XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT>
+      portSize: XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT

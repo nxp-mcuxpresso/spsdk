@@ -1,0 +1,22 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  BEE converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+# ----------------------------------------------------------------------------------------------------
+output_folder: bee_output  # [Required], BEE output folder; Folder name to store generated BEE output
+input_binary: evkbimxrt1050_iled_blinky_ext_FLASH_unencrypted_nopadding.bin # [Required], Input binary file; Path to input binary file
+# ----------------------------------------------------------------------------------------------------
+#                                          == BEE Settings ==
+# ----------------------------------------------------------------------------------------------------
+engine_selection: engine1 # [Required], Engine selection; BEE Engine Selection, engine0, engine1 or both engines; Possible options:['engine0', 'engine1', 'both']
+engine_key_selection: random # [Required], Engine Key selection; Random Key or Zero key; Possible options:['random', 'zero']
+base_address: '0x60001000' # [Required], Base address of the image
+bee_engine: # [Required], Bee engines; Configuration of BEE engines
+  - bee_cfg:  # [Required]
+      user_key: '0x0123456789abcdeffedcba9876543210'  # [Required], User AES-128 key; AES key for encryption
+      protected_region: # [Optional], Protected region; List of protected regions, up to four regions
+        - start_address: '0x60001000'  # [Required], Start address of protected region, it should be aligned to 1 KB (1024 B)
+          length: '0x1000' # [Required], Length of protected region, it should be aligned to 1 KB (1024 B)
+          protected_level: 0 # [Required], Protected level (0/1/2/3), 0 is default

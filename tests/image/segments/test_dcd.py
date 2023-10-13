@@ -2,14 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2018 Martin Olejar
-# Copyright 2019-2021 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.image import CmdCheckData, CmdNop, EnumCheckOps
+from spsdk.exceptions import SPSDKError
+from spsdk.image.commands import CmdCheckData, CmdNop, EnumCheckOps
 from spsdk.image.segments import FlexSPIConfBlockFCB, SegDCD, SegFCB
 
 
@@ -46,9 +46,9 @@ def test_segDCD_pop_append():
     dcd_seg.append(CmdCheckData(ops=EnumCheckOps.ALL_CLEAR, address=0x307900C4, mask=0x00000001))
     dcd_seg.append(CmdNop())
     output = dcd_seg.pop(1)
-    assert 'Command "No Operation' in output.info()
+    assert 'Command "No Operation' in str(output)
     output = dcd_seg.pop(0)
-    assert 'Command "Check Data' in output.info()
+    assert 'Command "Check Data' in str(output)
 
 
 def test_segDCD_clear():

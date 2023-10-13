@@ -1,10 +1,9 @@
 {
     "issuer": {
-        // this should cause an exception
-        "COMMON_NAME": "ONE",
+        "COMMON_NAME": "ONE"
     },
     "subject": {
-        "COMMON_NAME": "TWO",
+        "COMMON_NAME": "TWO"
     },
     "serial_number": 777,
     "extensions": {

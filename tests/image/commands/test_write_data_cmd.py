@@ -2,14 +2,14 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2022 NXP
+# Copyright 2019-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from spsdk import SPSDKError
-from spsdk.image import CmdNop, CmdWriteData, EnumWriteOps
+from spsdk.exceptions import SPSDKError
+from spsdk.image.commands import CmdNop, CmdWriteData, EnumWriteOps
 
 
 @pytest.mark.parametrize(

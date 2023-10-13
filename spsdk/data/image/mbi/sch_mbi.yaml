@@ -1,0 +1,326 @@
+# Copyright 2021-2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+app:
+  type: object
+  title: Basic Settings
+  properties:
+    inputImageFile:
+      type: string
+      title: Plain application image
+      description: The input application image to by modified to Master Boot Image.
+      format: file
+      template_value: my_application.bin
+  required: [inputImageFile]
+
+output_file:
+  type: object
+  title: Basic Settings
+  properties:
+    masterBootOutputFile:
+      type: string
+      title: Master Boot Image name
+      description: The file for Master Boot Image result file.
+      format: file_name
+      template_value: my_mbi.bin
+  required: [masterBootOutputFile]
+
+trust_zone:
+  type: object
+  title: Trust Zone Settings
+  properties:
+    enableTrustZone:
+      type: boolean
+      title: TrustZone enable option
+      description: If not specified, the Trust zone is disabled.
+      template_value: false
+    trustZonePresetFile:
+      type: string
+      title: TrustZone Customization file
+      description: If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.
+      template_value: my_tz_custom.yaml
+      format: optional_file
+
+load_addr:
+  type: object
+  title: Basic Settings
+  properties:
+    outputImageExecutionAddress:
+      type: [number, string]
+      title: Loading address of application
+      description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
+      template_value: 0
+  required: [outputImageExecutionAddress]
+
+firmware_version:
+  type: object
+  title: Basic Settings
+  properties:
+    firmwareVersion:
+      type: [number, string]
+      title: Firmware version.
+      description: Value compared with Secure_FW_Version monotonic counter value stored in PFR/IFR. If value is lower than value in PFR/IFR, then is image rejected (rollback protection)..
+      format: number
+      template_value: 0
+
+image_version:
+  type: object
+  title: Basic Settings
+  properties:
+    imageVersion:
+      type: [number, string]
+      title: Image version.
+      description: Image version is used for dual boot. The boot ROM decides which image to boot first based on the image version. It boots the one with the newer image version first, and in case of a failure, it boots the older one.
+      format: number
+      template_value: 0
+
+image_subtype:
+  type: object
+  title: Basic Settings
+  properties:
+    outputImageSubtype:
+      type: string
+      title: Image SubType
+      description: Image subtype determine the image use in MCU. "main" for main application, "nbu" for Narrow Band Unit image and "recovery" for recovery image type
+      enum: [main, nbu, recovery]
+      template_value: main
+
+digest_hash_algo:
+  type: object
+  title: Image Manifest Settings
+  properties:
+    manifestDigestHashAlgorithm:
+      type: string
+      title: Manifest signing hash algorithm
+      description: Optional Manifest signing hash algorithm name to create Certificate v3.1 Manifest.
+      enum: [sha256, sha384, sha521]
+      template_value: sha256
+
+cert_block_v1:
+  type: object
+  title: Certificate Block V1
+  properties:
+    certBlock:
+      type: string
+      title: Certificate Block binary/config file
+      description: Path to certificate block binary or config file.
+      template_value: cert_block.yaml
+      format: file
+  required: [certBlock]
+
+cert_block_v21:
+  type: object
+  title: Certificate Block V2.1
+  properties:
+    certBlock:
+      type: string
+      title: Certificate Block binary/config file
+      description: Path to certificate block binary or config file.
+      template_value: cert_block.yaml
+      format: file
+  required: [certBlock]
+
+cert_block_vX:
+  type: object
+  title: Certificate Block vX
+  properties:
+    certBlock:
+      type: string
+      title: Certificate Block binary/config file
+      description: Path to certificate block binary or config file.
+      template_value: cert_block.yaml
+      format: file
+  required: [certBlock]
+
+signature_provider:
+  type: object
+  title: Image Signing Settings
+  properties:
+    mainRootCertPrivateKeyFile:
+      type: string
+      title: Main Certificate private key
+      description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+      template_value: main_prv_key.pem
+      format: file
+      skip_in_template: true
+    signPrivateKey:
+      type: string
+      title: Main Certificate private key
+      description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+      template_value: main_prv_key.pem
+      format: file
+
+    signProvider:
+      type: string
+      title: Signature Provider
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+      template_value: type=file;file_path=my_prv_key.pem
+  oneOf:
+    - allOf:
+        - oneOf:
+            - required: [mainRootCertPrivateKeyFile]
+            - required: [signPrivateKey]
+        - not:
+            required: [signProvider]
+    - allOf:
+        - required: [signProvider]
+        - not:
+            oneOf:
+              - required: [mainRootCertPrivateKeyFile]
+              - required: [signPrivateKey]
+
+hw_key:
+  type: object
+  title: Basic Settings
+  properties:
+    enableHwUserModeKeys:
+      type: [boolean, string]
+      title: Enable User HW key sharing
+      description: Controlling secure hardware key bus. If enabled(1), then it is possible to access keys on hardware secure bus from non-secure application, else non-secure application will read zeros.
+      template_value: false
+  required: [enableHwUserModeKeys]
+
+key_store:
+  type: object
+  title: Encryption Settings
+  properties:
+    keyStoreFile:
+      type: string
+      title: The Key store data file
+      description: Optional KeyStore data file for included keystore in LoadToRam images. If defined the KeyStore is added into MBI.
+      format: optional_file
+      template_value: my_key_store_data.bin
+
+hmac:
+  type: object
+  title: Encryption Settings
+  properties:
+    outputImageEncryptionKeyFile:
+      type: string
+      title: OTP Master key (HMAC Key)
+      description:
+        The OTP Master key that is used to compute HMAC encryption key.
+        Could be defined as hex number and also as hex/binary file.\n
+        Used algorithm by tool the get HMAC Key; AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)
+      template_value: otp_master_key.bin
+
+hmac_mandatory:
+  type: object
+  title: Encryption Settings
+  properties:
+    outputImageEncryptionKeyFile:
+      type: string
+      title: OTP Master key (HMAC Key)
+      description:
+        The OTP Master key that is used to compute HMAC encryption key.
+        Could be defined as hex number and also as hex/binary file.\n
+        Used algorithm by tool the get HMAC Key; AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)
+      template_value: otp_master_key.bin
+  required: [outputImageEncryptionKeyFile]
+
+ctr_init_vector:
+  type: object
+  title: Encryption Settings
+  properties:
+    CtrInitVector:
+      type: string
+      title: The output image encryption initial vector for encryption counter
+      description: The initial vector for encryption counter. Could be defined as hex number and also as hex/binary file
+      template_value: "0xc3df2316fd40b15586cb5ae49483aee2"
+
+app_table:
+  type: object
+  title: Basic Settings
+  properties:
+    applicationTable:
+      type: array
+      title: The list of additional binaries
+      description: This is software future of RTxxx family that NXP SDK startup code(not ROM) could load additional images.
+      items:
+        type: object
+        required: [binary, destAddress, load]
+        properties:
+          binary:
+            type: string
+            title: Binary file
+            description: The binary file to be added to final application.
+            format: file
+            template_value: my_additional_binary.bin
+          destAddress:
+            type: [string, number]
+            title: Destination address
+            description: Destination address in RAM of additional binary.
+            format: number
+            template_value: 0x20000000
+          load:
+            type: boolean
+            title: Enable load
+            description: Enabler to load/use the image.
+            template_value: true
+
+no_signature:
+  type: object
+  title: Extra Settings
+  properties:
+    noSignature:
+      type: boolean
+      title: No Signature
+      description: When is set, the signature is not included. The signature could be later added by HSM.
+      template_value: false
+
+family:
+  type: object
+  title: Basic Settings
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      # enum: [] # The family list will be replaced in runtime
+      template_value: lpc55s6x
+  required: [family]
+
+image_type:
+  type: object
+  title: Basic Settings
+  properties:
+    outputImageExecutionTarget:
+      type: string
+      title: Application target
+      description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+      enum:
+        [
+          "xip",
+          "load-to-ram",
+          "Internal flash (XIP)",
+          "External flash (XIP)",
+          "Internal Flash (XIP)",
+          "External Flash (XIP)",
+          "RAM",
+          "ram",
+        ]
+      template_value: xip
+
+    outputImageAuthenticationType:
+      type: string
+      title: Type of boot image authentication
+      description: Specification of final master boot image authentication.
+      enum:
+        [
+          plain,
+          crc,
+          signed,
+          signed-encrypted,
+          signed-nxp,
+          Plain,
+          CRC,
+          Signed,
+          Encrypted + Signed,
+          NXP Signed,
+          NXP signed,
+          encrypted,
+        ]
+      template_value: plain
+
+  required: [outputImageExecutionTarget, outputImageAuthenticationType]

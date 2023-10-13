@@ -302,13 +302,24 @@ After the reset the device boots from flash and user image is programmed success
     :nested: full
 
 .. note::
-    The SB file format is described in the document *elftosb* User's Guide and can be created using the *elftosb* tool.
+    The SB file format is described in the documentation for *nxpimage* and can be created using the *nxpimage* tool.
 
     Note that if the SB file contains a JUMP command, the receive-sb-file sub-command is aborted at the point of the jump, and a status of kStatus_AbortDataPhase is returned.
 
 .. click:: spsdk.apps.blhost:execute
     :prog: blhost execute
     :nested: full
+
+.. warning::
+
+    For LPC55S0x/1x/2x/6x
+
+    ADDRESS – should be set to initial PC value of the image to be executed. You can read the value from the binary of the application image (second 32-bit word in the application binary)
+
+    ARGUMENT – image start address (location in memory where the image is loaded)
+
+    STACKPOINTER – should be set to initial SP value of the image to be executed. You can read the value from the binary of the application image (first 32-bit word in the application binary)
+
 
 .. note::
     The effective prototype of the called function is:
@@ -372,6 +383,11 @@ After the reset the device boots from flash and user image is programmed success
     :prog: blhost flash-image
     :nested: full
 
+.. note::
+    Write the formatted image in <file> to the memory specified by memoryID. Supported file types are S-Record (.srec and .s19),
+    and Hex (.hex). Flash is erased before writing if [erase] is ‘erase’ or 1. This blhost command does not directly correspond to a
+    bootloader command, but may send multiple bootloader commands to perform the operation.
+
 .. click:: spsdk.apps.blhost:generate_key_blob
     :prog: blhost generate-key-blob
     :nested: full
@@ -422,13 +438,6 @@ After the reset the device boots from flash and user image is programmed success
 .. click:: spsdk.apps.blhost:fuse_read
     :prog: blhost fuse-read
     :nested: full
-
-..note::
-    Write the formatted image in <file> to the memory specified by memoryID. Supported file types are S-Record (.srec and .s19),
-    and Hex (.hex). Flash is erased before writing if [erase] is ‘erase’ or 1. This blhost command does not directly correspond to a
-    bootloader command, but may send multiple bootloader commands to perform the operation.
-
-..note:: Elf files are not supported yet.
 
 .. click:: spsdk.apps.blhost:trust_provisioning
     :prog: blhost trust-provisioning

@@ -1,0 +1,21 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  Certification Block V1 template  ==========================================
+
+# ======================================================================================================================
+#                                             == Certificate V1 Settings ==                                             
+# ======================================================================================================================
+# --------------------------------------===== Image Build Number [Optional] =====---------------------------------------
+imageBuildNumber: '0x0' # [Optional], Image Build Number; If it's omitted, it will be used 0 as default value.
+
+mainCertPrivateKeyFile: .\sb_sources\keys_and_certs\k1_cert0_2048.pem # [Conditionally required], Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+# ----------------------------------------------------------------------------------------------------
+#                                       == Root Keys Settings ==
+# ----------------------------------------------------------------------------------------------------
+rootCertificate0File: .\sb_sources\keys_and_certs\root_k0_signed_cert0_noca.der.cert # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
+rootCertificate1File: .\sb_sources\keys_and_certs\root_k1_signed_cert0_noca.der.cert # [Optional], Root Certificate File 1; Root certificate file index 1.
+rootCertificate2File: .\sb_sources\keys_and_certs\root_k2_signed_cert0_noca.der.cert # [Optional], Root Certificate File 2; Root certificate file index 2.
+rootCertificate3File: .\sb_sources\keys_and_certs\root_k3_signed_cert0_noca.der.cert # [Optional], Root Certificate File 3; Root certificate file index 3.
+
+containerOutputFile: cert_block.bin

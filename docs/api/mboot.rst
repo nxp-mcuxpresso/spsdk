@@ -55,3 +55,31 @@ MBoot Exceptions
    :members:
    :undoc-members:
    :show-inheritance:
+
+MBoot Scanner
+-------------
+.. automodule:: spsdk.mboot.scanner
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+MBoot Protocol
+--------------
+.. automodule:: spsdk.mboot.protocol.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+MBoot Bulk
+----------
+.. automodule:: spsdk.mboot.protocol.bulk_protocol
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+MBoot Serial
+------------
+.. automodule:: spsdk.mboot.protocol.serial_protocol
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -5,15 +5,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust Provisioning utilities."""
-import os
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Union
 
-from spsdk.crypto import ec
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.misc import load_configuration
+from spsdk.utils.database import Database
 
-from . import TP_DATA_FOLDER, TpDevInterface, TpIntfDescription, TpTargetInterface
+from . import TP_DATABASE
 from .adapters import TP_DEVICES, TP_TARGETS
+from .tp_intf import TpDevInterface, TpIntfDescription, TpTargetInterface
 
 
 def single_tp_device_adapter() -> bool:
@@ -27,12 +26,15 @@ def single_tp_target_adapter() -> bool:
 
 
 def get_supported_devices() -> List[str]:
-    """Return list of supported devices for Trust Provisioning.
+    """Return list of supported devices for Trust Provisioning."""
+    database = Database(TP_DATABASE)
+    return [dev.name for dev in database.devices]
 
-    :return: List of devices.
-    """
-    data = load_configuration(os.path.join(TP_DATA_FOLDER, "database.yaml"))
-    return list(data["devices"].keys())
+
+def get_device_data(key: str, family: Optional[str] = None) -> Union[str, int, bool]:
+    """Return an entry from the Trust Provisioning device database."""
+    database = Database(TP_DATABASE)
+    return database.get_device_value(key=key, device=family)
 
 
 def get_tp_device_types() -> List[str]:
@@ -157,14 +159,3 @@ def get_tp_target_class(name: str) -> Type[TpTargetInterface]:
     :return: TP target interface.
     """
     return TP_TARGETS[name]
-
-
-def reconstruct_cryptography_key(key_material: bytes) -> ec.EllipticCurvePublicKey:
-    """Reconstruct cryptography's ECC Public Key from coordinates."""
-    coordinate_length = len(key_material) // 2
-    curve = {32: ec.SECP256R1(), 48: ec.SECP384R1()}[coordinate_length]
-    point_x = int.from_bytes(key_material[:coordinate_length], byteorder="big")
-    point_y = int.from_bytes(key_material[coordinate_length:], byteorder="big")
-    pub_numbers = ec.EllipticCurvePublicNumbers(x=point_x, y=point_y, curve=curve)
-    key = pub_numbers.public_key()
-    return key

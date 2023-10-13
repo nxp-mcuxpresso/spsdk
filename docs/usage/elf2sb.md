@@ -4,7 +4,7 @@ This is a user guide describing how to generate a secure binary rev. 2.1 based o
 
 ## Supported Syntax
 
-The syntax is written in EBNF (Extended Backus Naur Form), however, the `elftosb` application uses (namely SLY - python implementation of Lex/Yacc) only BNF. From this perspective the graphs visualize the EBNF form with the grammar and the conversion into BNF as well as remarks what is supported.
+The syntax is written in EBNF (Extended Backus Naur Form), however, the application uses (namely SLY - python implementation of Lex/Yacc) only BNF. From this perspective the graphs visualize the EBNF form with the grammar and the conversion into BNF as well as remarks what is supported.
 
 **command_file:**
 

@@ -9,7 +9,8 @@
 
 from typing import Optional
 
-from spsdk.sdp import SDP, scan_usb
+from spsdk.sdp.interfaces.usb import SdpUSBInterface
+from spsdk.sdp.sdp import SDP
 
 # Uncomment for printing debug messages
 # import logging
@@ -28,9 +29,9 @@ def read_memory(address: int, length: int, device_name: Optional[str] = None) ->
     :param device_name: i.MX-RT device name or VID:PID
     :return: bytes or None
     """
-    devices = scan_usb(device_name)
-    if devices:
-        with SDP(devices[0]) as sdp:
+    interfaces = SdpUSBInterface.scan(device_id=device_name)
+    if interfaces:
+        with SDP(interfaces[0]) as sdp:
             return sdp.read(address, length, 8)
     return None
 

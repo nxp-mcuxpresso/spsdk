@@ -235,7 +235,7 @@ def main():
         "Crypto",
         "Master Boot Image",
         "Secure Binary File",
-        "AHAB",
+        "AHAB + ELE",
         "Debug Authentication",
         "Mboot Protocol",
         "SDP(S) Protocol",

@@ -9,9 +9,8 @@
 
 from typing import Optional
 
-from Crypto.Cipher import AES
-
-from spsdk import SPSDKError
+from spsdk.crypto.symmetric import aes_ecb_encrypt
+from spsdk.exceptions import SPSDKError
 from spsdk.utils.easy_enum import Enum
 
 
@@ -63,7 +62,10 @@ class KeyStore:
         """Binary key store content; empty bytes for empty key-store."""
         return self._key_store if self._key_store else bytes()
 
-    def info(self) -> str:
+    def __repr__(self) -> str:
+        return f"KeyStore Class, Source: {self.key_source}"
+
+    def __str__(self) -> str:
         """Information about key store in text form."""
         return (
             f"Device key source:    {KeySourceType.name(self.key_source)}\n"
@@ -80,8 +82,7 @@ class KeyStore:
         """
         if len(hmac_key) != 32:
             raise SPSDKError("Invalid length of hmac key")
-        aes = AES.new(hmac_key, AES.MODE_ECB)
-        return aes.encrypt(bytes([0] * 16))
+        return aes_ecb_encrypt(hmac_key, bytes([0] * 16))
 
     @staticmethod
     def derive_enc_image_key(master_key: bytes) -> bytes:
@@ -93,8 +94,7 @@ class KeyStore:
         """
         if len(master_key) != 32:
             raise SPSDKError("Invalid length of master key")
-        aes = AES.new(master_key, AES.MODE_ECB)
-        return aes.encrypt(bytes([1] + [0] * 15 + [2] + [0] * 15))
+        return aes_ecb_encrypt(master_key, bytes([1] + [0] * 15 + [2] + [0] * 15))
 
     @staticmethod
     def derive_sb_kek_key(master_key: bytes) -> bytes:
@@ -106,8 +106,7 @@ class KeyStore:
         """
         if len(master_key) != 32:
             raise SPSDKError("Invalid length of master key")
-        aes = AES.new(master_key, AES.MODE_ECB)
-        return aes.encrypt(bytes([3] + [0] * 15 + [4] + [0] * 15))
+        return aes_ecb_encrypt(master_key, bytes([3] + [0] * 15 + [4] + [0] * 15))
 
     @staticmethod
     def derive_otfad_kek_key(master_key: bytes, otfad_input: bytes) -> bytes:
@@ -123,5 +122,4 @@ class KeyStore:
             raise SPSDKError("Invalid length of master key")
         if len(otfad_input) != KeyStore.OTFAD_KEY_SIZE:
             raise SPSDKError("Invalid length of input")
-        aes = AES.new(master_key, AES.MODE_ECB)
-        return aes.encrypt(otfad_input)
+        return aes_ecb_encrypt(master_key, otfad_input)

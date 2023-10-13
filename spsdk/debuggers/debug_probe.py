@@ -11,8 +11,7 @@ import logging
 from time import sleep
 from typing import Any, Dict, List, Optional, no_type_check
 
-from spsdk import SPSDKError
-from spsdk.exceptions import SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import Timeout
 
@@ -58,6 +57,12 @@ class DebugProbe:
     CDBGPWRUPACK = 0x20 << 24
     CDBGPWRUPREQ = 0x10 << 24
     MASKLANE = 0x0F << 8
+
+    # Constants for DHCSR, Debug Halting Control and Status Register
+    DHCSR_REG = 0xE000EDF0
+    DHCSR_DEBUGKEY = 0xA05F0000
+    DHCSR_C_DEBUGEN = 0x1
+    DHCSR_C_HALT = 0x2
 
     RESET_TIME = 0.1
     AFTER_RESET_TIME = 0.05
@@ -141,7 +146,27 @@ class DebugProbe:
                         ap_class = (idr & 0x1E000) >> 13
                         if ap_class == 8:
                             try:
+                                # Enter debug state and halt
+                                self._mem_reg_read(mem_ap_ix=i, addr=self.DHCSR_REG)
+                                self._mem_reg_write(
+                                    mem_ap_ix=i,
+                                    addr=self.DHCSR_REG,
+                                    data=(
+                                        self.DHCSR_DEBUGKEY
+                                        | self.DHCSR_C_HALT
+                                        | self.DHCSR_C_DEBUGEN
+                                    ),
+                                )
                                 self._mem_reg_read(mem_ap_ix=i, addr=self.TEST_MEM_AP_ADDRESS)
+                                # Exit debug state
+                                self._mem_reg_write(
+                                    mem_ap_ix=i,
+                                    addr=self.DHCSR_REG,
+                                    data=(self.DHCSR_DEBUGKEY | self.DHCSR_C_DEBUGEN),
+                                )
+                                self._mem_reg_write(
+                                    mem_ap_ix=i, addr=self.DHCSR_REG, data=self.DHCSR_DEBUGKEY
+                                )
                             except SPSDKError:
                                 continue
 
@@ -200,6 +225,38 @@ class DebugProbe:
         """
         return self._mem_reg_read(mem_ap_ix=self.mem_ap_ix, addr=addr)
 
+    def _mem_reg_write(self, mem_ap_ix: int, addr: int = 0, data: int = 0) -> None:
+        """Write 32-bit register in memory space of MCU.
+
+        This is write 32-bit register in memory space of MCU function for SPSDK library
+        to support various DEBUG PROBES.
+
+        :param mem_ap_ix: The index of memory access port
+        :param addr: the register address
+        :param data: the data to be written into register
+        :raises SPSDKDebugProbeTransferError: Error occur during memory transfer.
+        """
+        try:
+            self.coresight_reg_write(
+                access_port=True,
+                addr=self.get_coresight_ap_address(mem_ap_ix, 0 * 4),
+                data=0x22000012,
+            )
+            self.coresight_reg_write(
+                access_port=True,
+                addr=self.get_coresight_ap_address(mem_ap_ix, 1 * 4),
+                data=addr,
+            )
+            self.coresight_reg_write(
+                access_port=True,
+                addr=self.get_coresight_ap_address(mem_ap_ix, 3 * 4),
+                data=data,
+            )
+            self.coresight_reg_read(access_port=False, addr=self.DP_CTRL_STAT_REG)
+        except SPSDKError as exc:
+            self.clear_sticky_errors()
+            raise SPSDKDebugProbeTransferError(f"Failed write memory({str(exc)})") from exc
+
     @get_mem_ap
     def mem_reg_write(self, addr: int = 0, data: int = 0) -> None:
         """Write 32-bit register in memory space of MCU.
@@ -209,27 +266,8 @@ class DebugProbe:
 
         :param addr: the register address
         :param data: the data to be written into register
-        :raises SPSDKDebugProbeTransferError: Error occur during memory transfer.
         """
-        try:
-            self.coresight_reg_write(
-                access_port=True,
-                addr=self.get_coresight_ap_address(self.mem_ap_ix, 0 * 4),
-                data=0x22000012,
-            )
-            self.coresight_reg_write(
-                access_port=True,
-                addr=self.get_coresight_ap_address(self.mem_ap_ix, 1 * 4),
-                data=addr,
-            )
-            self.coresight_reg_write(
-                access_port=True,
-                addr=self.get_coresight_ap_address(self.mem_ap_ix, 3 * 4),
-                data=data,
-            )
-        except SPSDKError as exc:
-            self.clear_sticky_errors()
-            raise SPSDKDebugProbeTransferError(f"Failed write memory({str(exc)})") from exc
+        return self._mem_reg_write(mem_ap_ix=self.mem_ap_ix, addr=addr, data=data)
 
     @classmethod
     def get_coresight_ap_address(cls, access_port: int, address: int) -> int:
@@ -271,6 +309,9 @@ class DebugProbe:
 
     def clear_sticky_errors(self) -> None:
         """Clear sticky errors of Debug port interface."""
+        if self.options.get("use_jtag") is not None:
+            # Currently clear_sticky_errors has been defined only for SWD (uncleared for JTAG-DP)
+            self.coresight_reg_write(access_port=False, addr=4, data=0x50000F20)
         disable_reinit = self.disable_reinit
         try:
             self.disable_reinit = True

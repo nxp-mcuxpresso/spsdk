@@ -21,11 +21,23 @@ SDP USB
    :show-inheritance:
    :member-order: bysource
 
+SDP Protocol
+--------------
+.. automodule:: spsdk.sdp.protocol.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-SDP Interface Class
--------------------
+SDP Bulk
+----------
+.. automodule:: spsdk.sdp.protocol.bulk_protocol
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-.. automodule:: spsdk.sdp.interfaces.base
+SDP Serial
+------------
+.. automodule:: spsdk.sdp.protocol.serial_protocol
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,17 +1,13 @@
 # Copyright 2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-# ----------------------------------------------------------------------------------------------------
-# ===========  Bootable Image Configuration template for lpc55s3x.  ===========
+# ===========  Bootable Image converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
 #                                        == General Options ==
-family: lpc55s3x # [Required], MCU family., MCU family name., Possible options:['rt5xx', 'rt6xx', 'lpc55s3x']
-revision: latest # [Optional], Chip silicon revision., If needed this could be used to specify silicon revision of device., Possible options:['latest']
-memory_type: flexspi_nor # [Required], Memory type., Specify type of memory used by bootable image description., Possible options:['flexspi_nor']
 # ----------------------------------------------------------------------------------------------------
-#                                == Bootable Image blocks definition ==
-# ----------------------------------------------------------------------------------------------------
-fcb: fcb.bin # [Optional], FCB block path, Flash Configuration block path
-image_version: 0x1258 # [Optional], FCB block path, Flash Configuration block path
-application: application.bin # [Optional], Application, Application image path
+family: lpc55s3x  # [Required], MCU family name; Possible options:['lpc55s3x']
+revision: latest # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device; Possible options:['latest']
+memory_type: flexspi_nor # [Required], Memory type; Specify type of memory used by bootable image description; Possible options:['flexspi_nor']
+fcb: fcb.bin # [Optional], FCB block path; Flash Configuration block path
+image_version: 4696 # [Optional], Image version
+mbi: mbi.bin # [Required], Application image path

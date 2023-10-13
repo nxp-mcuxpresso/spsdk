@@ -1,0 +1,563 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-2-Clause
+
+common:
+  type: object
+  title: Basic Setting
+  properties:
+    containerKeyBlobEncryptionKey:
+      type: string
+      title: SB2.1 SBKEK
+      description: Path to SB key encryption key (AES-128). It might be provided in text file or binary file or as a hex string in the configuration.
+      template_value: sbkek.txt
+    RKTHOutputPath:
+      type: string
+      title: Path to file where the hash of hashes will be stored
+      description: Path to output hash of hashes of root keys
+      template_value: hash.bin
+      format: file_name
+  required: [containerKeyBlobEncryptionKey]
+
+sb2_family:
+  type: object
+  title: Basic Settings
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      enum: [] # Just placeholder to keep this record that will be fulfilled in runtime
+      template_value: lpc55s6x
+  required: [family]
+
+sb2_output:
+  type: object
+  title: SB2.1 Output
+  properties:
+    containerOutputFile:
+      type: string
+      title: SB2 filename
+      description: Generated SB2 container filename.
+      template_value: my_new.sb
+      format: file_name
+  required: [containerOutputFile]
+
+sb2:
+  type: object
+  required: [options]
+  properties:
+    options:
+      type: object
+      title: SB2.1 Options
+      description: An options block contains zero or more name/value pairs and the option settings that assign values to global options used by the nxpimage to control the generation of the output file.
+      required:
+        - flags
+      properties:
+        flags:
+          type:
+            - number
+            - string
+          title: SB2.1 flags
+          description: For SB2.1 use only 0x8 encrypted + signed.
+          template_value: 0x8
+        buildNumber:
+          type:
+            - number
+            - string
+          title: SB2.1 build number
+          description: Build number.
+          template_value: 0x1
+        productVersion:
+          type:
+            - number
+            - string
+          title: Product version
+          description: Version string as "xxx.yyy.zzz".
+          template_value: "1.00.00"
+        componentVersion:
+          type:
+            - number
+            - string
+          title: Component version
+          description: Component version string as "xxx.yyy.zzz".
+          template_value: "1.00.00"
+        secureBinaryVersion:
+          type:
+            - number
+            - string
+          title: SB Version
+          description: Used to specify version of SB2 file.
+          template_value: "2.1"
+
+keyblobs:
+  type: object
+  title: SB 2.1 Keyblobs
+  properties:
+    keyblobs:
+      type: array
+      title: SB2.1 Keyblobs
+      description: Section with keyblobs
+      items:
+        type: object
+        required:
+          - keyblob_id
+          - keyblob_content
+        properties:
+          keyblob_id:
+            type: number
+            title: Keyblob ID
+            description: >-
+              ID referenced by keywrap and encrypt commands
+            template_value: 0
+          keyblob_content:
+            type: array
+            title: Keyblob Content
+            description: >-
+              Definition of keyblobs
+            items:
+              type: object
+              required:
+                - start
+                - end
+                - key
+                - counter
+              properties:
+                start:
+                  type:
+                    - string
+                    - number
+                  title: Start address
+                  description: >-
+                    Start address of keyblob
+                  template_value: "0x08008000"
+                end:
+                  type:
+                    - string
+                    - number
+                  title: End address
+                  description: >-
+                    End address of keyblob. last bits must be 0x3ff to have the AES enabled, bit ADE = 1
+                  template_value: "0x087983ff"
+                key:
+                  type: string
+                  title: AES key
+                  description: >-
+                    Random user defined key
+                  template_value: "000102030405060708090A0B0C0D0E0F"
+                  minLength: 32
+                  maxLength: 64
+                counter:
+                  type: string
+                  title: AES seed value
+                  description: >-
+                    Counter value
+                  template_value: "0123456789ABCDEF"
+                  minLength: 16
+                  maxLength: 16
+                noByteSwap:
+                  type: number
+                  title: Byte swap
+                  description: >-
+                    RT500, RT600: noByteSwap = 1 (default)
+                  template_value: 1
+
+sb2_sections:
+  type: object
+  title: SB 2.1 Sections and commands
+  required: [sections]
+  properties:
+    sections:
+      type: array
+      title: SB2.1 Sections
+      description: Secure Binary v2.1 section blocks
+      items:
+        type: object
+        properties:
+          section_id:
+            type: number
+            title: Section ID
+            description: >-
+              ID of the section
+            template_value: 0
+            skip_in_template: True
+          commands:
+            type: array
+            title: SB2.1 Commands
+            description: >-
+              Secure Binary v2.1 commands block, list of all possible options -
+              Modify it according to your application
+            items:
+              oneOf:
+                - type: object
+                  required:
+                    - erase
+                  properties:
+                    erase:
+                      type: object
+                      title: Erase
+                      description: >-
+                        Performs a flash erase of the given address range. The
+                        erase will be rounded up to the sector size.
+                      properties:
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Address of memory block to be erased.
+                          template_value: 0
+                        length:
+                          type:
+                            - string
+                            - number
+                          title: Size
+                          description: Size of memory block to be erased.
+                          template_value: 4096
+                        mem_opt:
+                          type:
+                            - string
+                            - number
+                          title: Memory ID
+                          description: ID of memory block to be erased.
+                          template_value: 0
+                        flags:
+                          type: number
+                          title: Flags
+                          description: For erase all, flags=1, for erase unsecure all -> 2
+                          template_value: 0
+                      required:
+                        - address
+                - type: object
+                  required:
+                    - load
+                  properties:
+                    load:
+                      type: object
+                      title: Load
+                      description: >-
+                        If set, then the data to write immediately follows the
+                        range header. The length field contains the actual data
+                        length
+                      properties:
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Address of memory block to be loaded.
+                          format: number
+                          template_value: 0
+                        load_opt:
+                          type:
+                            - string
+                            - number
+                          title: Memory ID
+                          description: ID of memory block to be loaded.
+                          template_value: 0
+                        file:
+                          type: string
+                          title: Binary file.
+                          description: Binary file to be loaded.
+                          format: file
+                          template_value: my_binary.bin
+                        pattern:
+                          type:
+                            - string
+                            - number
+                          title: Value for fuse programming
+                          description: Fill the 32bit integer value of fuse to be programmed. Legacy way of programming fuses. ProgramFuses is recommended in new projects.
+                          format: number
+                          template_value: 1
+                        values:
+                          type:
+                            - string
+                            - number
+                          title: Binary values.
+                          description: Binary values delimited by comma to be loaded.
+                          template_value: 0x1224, 0x5678, 0, 12245678
+                      required:
+                        - address
+                - type: object
+                  required:
+                    - enable
+                  properties:
+                    enable:
+                      type: object
+                      title: Configure memory
+                      description: >-
+                        initialization of external memories using a parameter
+                        block that was previously loaded to RAM.
+                      properties:
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Configuration address.
+                          format: number
+                          template_value: 0
+                        mem_opt:
+                          type:
+                            - string
+                            - number
+                          title: Memory ID
+                          description: ID of memory block to be configured.
+                          template_value: 0
+                      required:
+                        - address
+                - type: object
+                  required:
+                    - keywrap
+                  properties:
+                    keywrap:
+                      type: object
+                      title: Keywrap
+                      description: >-
+                        Keywrap holds keyblob ID to be encoded by a value stored in load command and
+                        stored to address defined in the load command.
+                      properties:
+                        keyblob_id:
+                          type: number
+                          title: Address
+                          description: ID of the keyblob.
+                          format: number
+                          template_value: 0
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Address of keyblob.
+                          format: number
+                          template_value: 0
+                        values:
+                          type: string
+                          title: Key.
+                          description: Key encryption key.
+                          minLength: 32
+                          maxLength: 64
+                          template_value: "000102030405060708090A0B0C0D0E0F"
+                      required:
+                        - keyblob_id
+                        - address
+                        - values
+                - type: object
+                  required:
+                    - encrypt
+                  properties:
+                    encrypt:
+                      type: object
+                      title: Encrypt with keyblob
+                      description: >-
+                        Encrypt holds an ID, which is a reference to keyblob to be used for
+                        encryption. So the encrypt command requires a list of keyblobs, the keyblob
+                        ID and load command.
+                      properties:
+                        keyblob_id:
+                          type: number
+                          title: Address
+                          description: ID of the keyblob.
+                          format: number
+                          template_value: 0
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Where the data will be loaded.
+                          format: number
+                          template_value: 0
+                        values:
+                          type: string
+                          title: Datablob.
+                          description: Encrypt data blob, choose either file or datablob.
+                          template_value: "000102030405060708090A0B0C0D0E0F"
+                        file:
+                          type: string
+                          title: Binary file.
+                          description: Binary file to be encrypted.
+                          format: file
+                          template_value: my_binary.bin
+                      required:
+                        - keyblob_id
+                        - address
+                - type: object
+                  required:
+                    - fill
+                  properties:
+                    fill:
+                      type: object
+                      title: Fill memory
+                      description: Used for filling of the memory range by repeated pattern.
+                      properties:
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Address of memory block to be filled.
+                          format: number
+                          template_value: 0
+                        pattern:
+                          type:
+                            - string
+                            - number
+                          title: Pattern
+                          description: Pattern which will be used to fill memory.
+                          format: number
+                          template_value: 2779096485
+                      required:
+                        - address
+                        - pattern
+                - type: object
+                  required:
+                    - jump
+                  properties:
+                    jump:
+                      type: object
+                      title: Jump to address
+                      description: The jump command produces the ROM_JUMP_CMD command. Optionally set SP and call argument.
+                      properties:
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Jump to fixed address.
+                          format: number
+                          template_value: 0
+                        spreg:
+                          type:
+                            - string
+                            - number
+                          title: Stack pointer value
+                          description: Sets the stack pointer before jumping.
+                          template_value: 0x20000e00
+                        argument:
+                          type:
+                            - string
+                            - number
+                          title: Call argument
+                          description: Argument to the function being jumped to.
+                          template_value: 0x5a5a5a5a
+                      required:
+                        - address
+                - type: object
+                  required:
+                    - version_check
+                  properties:
+                    version_check:
+                      type: object
+                      title: Check firmware version
+                      description: >-
+                        Used to execute check of provided counter value with value
+                        stored in specified monotonous counter in device. If
+                        values are not same, SB file is rejected.
+                      properties:
+                        ver_type:
+                          type: number
+                          title: Version type
+                          description: 0 for non secure, 1 for secure.
+                          format: number
+                          template_value: 0
+                        fw_version:
+                          type: number
+                          title: FW version
+                          description: FW version to be checked.
+                          format: number
+                          template_value: 1
+                      required:
+                        - ver_type
+                        - fw_version
+                - type: object
+                  required:
+                    - keystore_to_nv
+                  properties:
+                    keystore_to_nv:
+                      type: object
+                      title: Load keystore to memory
+                      description: >-
+                        The keystore_to_nv statement instructs the bootloader to load the backed up
+                        keystore values back into keystore memory region on non-volatile memory.
+                      properties:
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Address of memory block to be loaded.
+                          format: number
+                          template_value: 0
+                        mem_opt:
+                          type:
+                            - string
+                            - number
+                          title: Memory ID
+                          description: ID of memory block to be loaded.
+                          template_value: 0
+                      required:
+                        - address
+                        - mem_opt
+                - type: object
+                  required:
+                    - keystore_from_nv
+                  properties:
+                    keystore_from_nv:
+                      type: object
+                      title: Load keystore from memory
+                      description: >-
+                        The keystore_to_nv statement instructs the bootloader to load the backed up
+                        keystore values back into keystore memory.
+                      properties:
+                        address:
+                          type:
+                            - string
+                            - number
+                          title: Address
+                          description: Address of memory block to be loaded.
+                          format: number
+                          template_value: 0
+                        mem_opt:
+                          type:
+                            - string
+                            - number
+                          title: Memory ID
+                          description: ID of memory block to be loaded.
+                          template_value: 0
+                      required:
+                        - address
+                        - mem_opt
+                - type: object
+                  required: [programFuses]
+                  properties:
+                    programFuses:
+                      type: object
+                      title: Program Fuses
+                      description: Address is OTP index of fuses to be programmed (Check the reference manual for more information). Values is a comma separated list of 32bit values.
+                      properties:
+                        address:
+                          type: [string, number]
+                          title: Address
+                          description: OTP Index of fuses to be programmed. Depends on the chip ROM.
+                          format: number
+                          template_value: 0x0
+                        values:
+                          type: string
+                          title: Binary values
+                          description: Binary blob either 4 or 8 bytes.
+                          template_value: "aabbccdd"
+                        pattern:
+                          type: [string, number]
+                          title: Integer values
+                          description: values provided as integer e.g. 0x1000 represents data_word1. Choose only one way.
+                          template_value: 0x1000
+                        load_opt:
+                          type:
+                            - string
+                            - number
+                          title: Memory ID
+                          description: ID of memory block to be loaded. Default memory ID for fuses is 4.
+                          template_value: 4
+                          skip_in_template: True
+                      required: [address]

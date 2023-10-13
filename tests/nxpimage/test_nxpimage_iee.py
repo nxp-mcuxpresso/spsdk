@@ -71,7 +71,7 @@ def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
         output_name = config_dict["output_name"]
         keyblob_name = config_dict["keyblob_name"]
         encrypted_name = config_dict["encrypted_name"]
-        cmd = f"iee export {config}"
+        cmd = f"iee export -c {config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
         assert os.path.isfile(os.path.join(out_dir, output_name))
@@ -89,10 +89,18 @@ def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
             assert reference_keyblob == keyblobs_nxpimage
 
 
-def test_nxpimage_iee_template_cli(tmpdir):
+@pytest.mark.parametrize(
+    "family",
+    [
+        ("rt116x"),
+        ("rt117x"),
+        ("rt118x"),
+    ],
+)
+def test_nxpimage_iee_template_cli(tmpdir, family):
     runner = CliRunner()
     template = os.path.join(tmpdir, "iee_template.yaml")
-    cmd = f"iee get-template {template}"
+    cmd = f"iee get-template --family {family} --output {template}"
     result = runner.invoke(nxpimage.main, cmd.split())
     assert result.exit_code == 0
     assert os.path.isfile(template)
@@ -123,7 +131,7 @@ def test_iee_custom_output(tmpdir, data_dir, case, config):
         modified_config = os.path.join(work_dir, "modified_config.yaml")
         with open(modified_config, "w") as f:
             yaml.dump(config_dict, f)
-        cmd = f"iee export {modified_config}"
+        cmd = f"iee export -c {modified_config}"
         result = runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
 

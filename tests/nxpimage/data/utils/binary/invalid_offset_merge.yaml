@@ -1,29 +1,23 @@
 # Copyright 2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-# ===========  Binary Image Configuration template.  ===========
+# ===========  Binary Image merge converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                        == General Options ==
+#                                        == General Options ==                                        
 # ----------------------------------------------------------------------------------------------------
-name: Test of signed merge  # [Optional], Image name, The optional image name used just during prints to console during merging.
-size: 0 # [Optional], Overall size of image, The overall size of merged image.
-pattern: 0xa5 # [Required], Pattern defined as number or special values, The pattern that will be used to fill up gaps between defined regions.
+name: Test of signed merge  # [Optional], Image name; The optional image name used just during prints to console during merging.
+size: 0 # [Optional], Overall size of image; The overall size of merged image.
+pattern: 165 # [Required], Pattern defined as number or special values; The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc
 # ----------------------------------------------------------------------------------------------------
-#                                     == Binary images to merge ==
+#                                     == Binary images to merge ==                                    
 # ----------------------------------------------------------------------------------------------------
-regions: # [Optional], Array of defined binary regions, The array of individual regions to merge into final image.
-    # ----------------------------------------------------------------------------------------------------
-    #                    == List of possible 2 options. Option types[object,object] ==
-    # ----------------------------------------------------------------------------------------------------
-  -  # [Example of possible configuration #0]
-    binary_file:  # [Required], Binary file
-      name: My test image with secure addresses  # [Optional], Image name, The optional image name used just during prints to console during merging.
-      path: secure_address_app.hex # [Required], Binary file, The path to binary file to merge into final image
-      offset: -0x1000_0001 # [Required], Offset of image, The offset of image to be merge on.
-  - # [Example of possible configuration #1]
-    binary_block:  # [Required], Binary block
-      name: My super binary block  # [Optional], Image name, The optional image name used just during prints to console during merging.
-      size: 32 # [Required], Binary block size, The size of binary block
-      offset: 48 # [Required], Offset of binary block, The offset of binary block to be merge on.
-      pattern: 0xcc # [Required], Pattern defined as number or special values, The pattern that will be used to fill up gaps between defined regions.
+regions: # [Optional], Array of defined binary regions; The array of individual regions to merge into final image.
+  - binary_file:  # [Required], Binary file
+      name: My test image with secure addresses  # [Optional], Image name; The optional image name used just during prints to console during merging.
+      path: secure_address_app.hex # [Required], Binary file; The path to binary file to merge into final image
+      offset: -268435457 # [Required], Offset of image; The offset of image to be merge on. The offset could be also negative - for example to 'erase' security bit from address.
+  - binary_block:  # [Required], Binary block
+      name: My super binary block  # [Optional], Image name; The optional image name used just during prints to console during merging.
+      size: 32 # [Required], Binary block size; The size of binary block
+      offset: 48 # [Required], Offset of binary block; The offset of binary block to be merge on.
+      pattern: 204 # [Required], Pattern defined as number or special values; The pattern that will be used to fill up gaps between defined regions. String or number or choose from predefined patterns - rand, zeros, ones, inc

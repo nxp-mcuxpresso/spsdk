@@ -9,6 +9,21 @@ extending trust from the signed part of the SB file to the command and data part
 file. These two keys (AES decrypt key and HMAC key) are wrapped in the RFC3394 key
 blob, for which the key wrapping key is the SBKEK key
 
+SB2 generation using YAML file
+================================
+
+Since version 2.0 it is possible to generate SB file using the YAML configuration in the similar manner as SB 3.1.
+
+Example of use:
+
+1. Generate template first
+
+``nxpimage sb21 get-template -o "sb2_config.yaml``
+
+2. Fill the configuration and export to binary
+
+``nxpimage sb21 export-yaml "sb2_config.yaml``
+
 
 SB2 generation using BD file
 =============================

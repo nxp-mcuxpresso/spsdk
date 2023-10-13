@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2023 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -78,7 +78,6 @@ class BDLexer(Lexer):
         "else": "ELSE",
         "info": "INFO",
         "error": "ERROR",
-        "qspi": "QSPI",
         "enable": "ENABLE",
         "keywrap": "KEYWRAP",
         "keystore_to_nv": "KEYSTORE_TO_NV",
