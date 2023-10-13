@@ -45,9 +45,9 @@ New features
 - tool for converting JSON configuration into YAML with comments
 - support mcxa1xx
 - unify naming: RKTH/RKHT
-- remove nxpkeygen and nxpcertgen apps, replaced by :ref:`nxpcrypto`
-- remove elftosb app, replaced by :ref:`nxpcrypto`
-- positional arguments replaced by options for all parameters with an exception to :ref:`blhost`, :ref:`sdphost` and :ref:`dk6prog`
+- remove nxpkeygen and nxpcertgen apps, replaced by nxpcrypto
+- remove elftosb app, replaced by nxpcrypto
+- positional arguments replaced by options for all parameters with an exception to blhost, sdphost and dk6prog
 - remove backward compatibility with command get-cfg-template, replaced fully with get-template(s)
 - unify family name within all modules
 - remove lpc55xx from family names
