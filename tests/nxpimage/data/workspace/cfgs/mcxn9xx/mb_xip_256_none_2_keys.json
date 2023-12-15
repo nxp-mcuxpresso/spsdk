@@ -5,7 +5,7 @@
 	"outputImageExecutionAddress": "0x0",
 	"outputImageAuthenticationType": "signed",
 	"enableTrustZone": true,
-	"trustZonePresetFile": ".\\workspace\\trustzone\\mcxn9xx\\tz_mcxn9xx.bin",
+	"trustZonePresetFile": ".\\workspace\\trustzone\\mcxn9xx\\tz_mcxn9xx_a1.bin",
 	"firmwareVersion": "0x0",
 	"rootCertificate0File": ".\\workspace\\keys_certs\\ec_secp256r1_cert0.pem",
 	"rootCertificate1File": ".\\workspace\\keys_certs\\ec_secp256r1_cert1.pem",

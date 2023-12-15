@@ -728,28 +728,28 @@
       <bit_field_value name="ENABLED_0b10" value="0b10" description="Erase heck is enabled"/>
       <bit_field_value name="ENABLED_0b11" value="0b11" description="Erase check is enabled"/>
     </bit_field>
-    <bit_field offset="24" width="2" name="NPX_LOCK_CTX0" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 0 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REGn_ERASE_CHECK_EN field. &amp;#10;Lock onchip flash NPX PRINCE context 0 settings.">
+    <bit_field offset="24" width="2" name="NPX_LOCK_CTX0" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 0 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REG0_ERASE_CHECK_EN field.">
       <alias type="CMSIS" value="NPX_LOCK_CTX0(x)"/>
       <bit_field_value name="NOT_LOCKED_0b00" value="0b00" description="Region is not locked."/>
       <bit_field_value name="LOCKED_0b01" value="0b01" description="Region is locked."/>
       <bit_field_value name="LOCKED_0b10" value="0b10" description="Region is locked."/>
       <bit_field_value name="LOCKED_0b11" value="0b11" description="Region is locked."/>
     </bit_field>
-    <bit_field offset="26" width="2" name="NPX_LOCK_CTX1" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 1 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REGn_ERASE_CHECK_EN field. &amp;#10;Lock onchip flash NPX PRINCE context 0 settings.">
+    <bit_field offset="26" width="2" name="NPX_LOCK_CTX1" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 1 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REG1_ERASE_CHECK_EN field.">
       <alias type="CMSIS" value="NPX_LOCK_CTX1(x)"/>
       <bit_field_value name="NOT_LOCKED_0b00" value="0b00" description="Region is not locked."/>
       <bit_field_value name="LOCKED_0b01" value="0b01" description="Region is locked."/>
       <bit_field_value name="LOCKED_0b10" value="0b10" description="Region is locked."/>
       <bit_field_value name="LOCKED_0b11" value="0b11" description="Region is locked."/>
     </bit_field>
-    <bit_field offset="28" width="2" name="NPX_LOCK_CTX2" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 2 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REGn_ERASE_CHECK_EN field. &amp;#10;Lock onchip flash NPX PRINCE context 0 settings.">
+    <bit_field offset="28" width="2" name="NPX_LOCK_CTX2" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 2 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REG2_ERASE_CHECK_EN field.">
       <alias type="CMSIS" value="NPX_LOCK_CTX2(x)"/>
       <bit_field_value name="NOT_LOCKED_0b00" value="0b00" description="Region is not locked."/>
       <bit_field_value name="LOCKED_0b01" value="0b01" description="Region is locked."/>
       <bit_field_value name="LOCKED_0b10" value="0b10" description="Region is locked."/>
       <bit_field_value name="LOCKED_0b11" value="0b11" description="Region is locked."/>
     </bit_field>
-    <bit_field offset="30" width="2" name="NPX_LOCK_CTX3" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 3 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REGn_ERASE_CHECK_EN field. &amp;#10;Lock onchip flash NPX PRINCE context 0 settings.">
+    <bit_field offset="30" width="2" name="NPX_LOCK_CTX3" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 3 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REG3_ERASE_CHECK_EN field.">
       <alias type="CMSIS" value="NPX_LOCK_CTX3(x)"/>
       <bit_field_value name="NOT_LOCKED_0b00" value="0b00" description="Region is not locked."/>
       <bit_field_value name="LOCKED_0b01" value="0b01" description="Region is locked."/>

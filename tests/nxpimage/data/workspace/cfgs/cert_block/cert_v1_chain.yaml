@@ -13,3 +13,4 @@ rootCertificate1File: .\sb_sources\keys_and_certs\root_cert_0_ca_v3.der.crt # [O
 rootCertificate2File: .\sb_sources\keys_and_certs\root_k2_signed_cert0_noca.der.cert # [Optional], Root Certificate File 2; Root certificate file index 2.
 rootCertificate3File: .\sb_sources\keys_and_certs\root_k3_signed_cert0_noca.der.cert # [Optional], Root Certificate File 3; Root certificate file index 3.
 mainRootCertId: 1 # [Conditionally required], Main Certificate Index; Index of certificate that is used as a main. If not defined, the certificate matching private key will be selected.
+containerOutputFile: cert_block.bin

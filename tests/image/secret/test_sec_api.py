@@ -17,7 +17,6 @@ from spsdk.image.secret import (
     MAC,
     CertificateImg,
     EnumAlgorithm,
-    NotImplementedSRKCertificate,
     NotImplementedSRKItem,
     NotImplementedSRKPublicKeyType,
     SecretKeyBlob,

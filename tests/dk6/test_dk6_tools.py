@@ -9,54 +9,43 @@
 import platform
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import dk6prog
+from tests.cli_runner import CliRunner
 
 pytest.importorskip("pyftdi")
 
 
-def test_cli():
+def test_cli(cli_runner: CliRunner):
     """Test the CLI."""
-    runner = CliRunner()
-    result = runner.invoke(dk6prog.main)
-    assert result.exit_code == 0
+    result = cli_runner.invoke(dk6prog.main)
     assert "Usage: dk6prog [OPTIONS] COMMAND1" in result.output
-    help_result = runner.invoke(dk6prog.main, ["--help"])
-    assert help_result.exit_code == 0
-    assert "Usage: dk6prog [OPTIONS] COMMAND1" in help_result.output
+    result = cli_runner.invoke(dk6prog.main, ["--help"])
+    assert "Usage: dk6prog [OPTIONS] COMMAND1" in result.output
 
 
-def test_cli_listdev():
+def test_cli_listdev(cli_runner: CliRunner):
     """Test the CLI listdev command."""
     if platform.system() == "Windows":
         # Test needs FTD2xx.DLL
         return
-    runner = CliRunner()
-    result = runner.invoke(dk6prog.main, "listdev")
-    assert result.exit_code == 0
+    result = cli_runner.invoke(dk6prog.main, "listdev")
     assert "List of available devices:" in result.output
 
 
-def test_cli_erase():
+def test_cli_erase(cli_runner: CliRunner):
     """Test the CLI erase command."""
-    runner = CliRunner()
-    result = runner.invoke(dk6prog.main, "erase --help")
-    assert result.exit_code == 0
+    result = cli_runner.invoke(dk6prog.main, "erase --help")
     assert "Erase the content of memory at the given <ADDRESS>" in result.output
 
 
-def test_cli_read():
+def test_cli_read(cli_runner: CliRunner):
     """Test the CLI read command."""
-    runner = CliRunner()
-    result = runner.invoke(dk6prog.main, "read --help")
-    assert result.exit_code == 0
+    result = cli_runner.invoke(dk6prog.main, "read --help")
     assert "Reads the memory and writes it to the file or stdout." in result.output
 
 
-def test_cli_info():
+def test_cli_info(cli_runner: CliRunner):
     """Test the CLI info command."""
-    runner = CliRunner()
-    result = runner.invoke(dk6prog.main, "info")
-    assert result.exit_code == 1
+    cli_runner.invoke(dk6prog.main, "info", expected_code=1)
     # assert "Issues ISP sequence as defined in Driver interface." in result.output

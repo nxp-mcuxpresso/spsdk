@@ -1,0 +1,846 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==================================  Trust Zone Configuration template for k32w1xx.  ==================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <k32w1xx, kw45xx, lpc55s0x, lpc55s1x, lpc55s3x, lpc55s6x, mcxn9xx, nhs52s04, rt5xx, rt6xx, rw61x>
+family: k32w1xx
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+revision: a1
+# --------------------------===== Optional name of output file for TZ binary [Required] =====---------------------------
+# Description: The name of output binary file with Trust Zone data.
+tzpOutputFile: C:/Work/TrustZone/tzFile.bin
+# ----------------------------===== Customization of standard preset values [Required] =====----------------------------
+# Description: Trust Zone preset dictionary, with trust zone configuration.
+trustZonePreset:
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Start of block (tzm_magic)
+  Start of block (tzm_magic): '0x4d2d5a54'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for TZM info which data are initialized (tzm_control)
+  TZM info which data are initialized (tzm_control): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Secure vector table address (cm33_vtor_addr)
+  CM33 Secure vector table address (cm33_vtor_addr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Non-secure vector table address (cm33_vtor_ns_addr)
+  CM33 Non-secure vector table address (cm33_vtor_ns_addr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0)
+  CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Interrupt target non-secure register 1((cm33_nvic_itns1)
+  CM33 Interrupt target non-secure register 1((cm33_nvic_itns1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Miscellaneous CM33 settings (cm33_misc_ctrl)
+  Miscellaneous CM33 settings (cm33_misc_ctrl): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Non-secure Access Control Register (cm33_nsacr)
+  CM33 Non-secure Access Control Register (cm33_nsacr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Coprocessor Power Control Register (cm33_cppwr)
+  CM33 Coprocessor Power Control Register (cm33_cppwr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Coprocessor Access Control Register (cm33_cpacr)
+  CM33 Coprocessor Access Control Register (cm33_cpacr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Control Register (cm33_mpu_ctrl)
+  MPU Control Register (cm33_mpu_ctrl): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0)
+  MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1)
+  MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 0 Base Address Register (cm33_mpu_rbar0)
+  MPU Region 0 Base Address Register (cm33_mpu_rbar0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 0 Limit Address Register (cm33_mpu_rlar0)
+  MPU Region 0 Limit Address Register (cm33_mpu_rlar0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 1 Base Address Register (cm33_mpu_rbar1)
+  MPU Region 1 Base Address Register (cm33_mpu_rbar1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 1 Limit Address Register (cm33_mpu_rlar1)
+  MPU Region 1 Limit Address Register (cm33_mpu_rlar1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 2 Base Address Register (cm33_mpu_rbar2)
+  MPU Region 2 Base Address Register (cm33_mpu_rbar2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 2 Limit Address Register (cm33_mpu_rlar2)
+  MPU Region 2 Limit Address Register (cm33_mpu_rlar2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 3 Base Address Register (cm33_mpu_rbar3)
+  MPU Region 3 Base Address Register (cm33_mpu_rbar3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 3 Limit Address Register (cm33_mpu_rlar3)
+  MPU Region 3 Limit Address Register (cm33_mpu_rlar3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 4 Base Address Register (cm33_mpu_rbar4)
+  MPU Region 4 Base Address Register (cm33_mpu_rbar4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 4 Limit Address Register (cm33_mpu_rlar4)
+  MPU Region 4 Limit Address Register (cm33_mpu_rlar4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 5 Base Address Register (cm33_mpu_rbar5)
+  MPU Region 5 Base Address Register (cm33_mpu_rbar5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 5 Limit Address Register (cm33_mpu_rlar5)
+  MPU Region 5 Limit Address Register (cm33_mpu_rlar5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 6 Base Address Register (cm33_mpu_rbar6)
+  MPU Region 6 Base Address Register (cm33_mpu_rbar6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 6 Limit Address Register (cm33_mpu_rlar6)
+  MPU Region 6 Limit Address Register (cm33_mpu_rlar6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 7 Base Address Register (cm33_mpu_rbar7)
+  MPU Region 7 Base Address Register (cm33_mpu_rbar7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 7 Limit Address Register (cm33_mpu_rlar7)
+  MPU Region 7 Limit Address Register (cm33_mpu_rlar7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Control Register (cm33_mpu_ctrl_ns)
+  Non-secure MPU Control Register (cm33_mpu_ctrl_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0_ns)
+  Non-secure MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1_ns)
+  Non-secure MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 0 Base Address Register (cm33_mpu_rbar0_ns)
+  Non-secure MPU Region 0 Base Address Register (cm33_mpu_rbar0_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 0 Limit Address Register(cm33_mpu_rlar0_ns)
+  Non-secure MPU Region 0 Limit Address Register(cm33_mpu_rlar0_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 1 Base Address Register (cm33_mpu_rbar1_ns)
+  Non-secure MPU Region 1 Base Address Register (cm33_mpu_rbar1_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 1 Limit Address Register(cm33_mpu_rlar1_ns)
+  Non-secure MPU Region 1 Limit Address Register(cm33_mpu_rlar1_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 2 Base Address Register (cm33_mpu_rbar2_ns)
+  Non-secure MPU Region 2 Base Address Register (cm33_mpu_rbar2_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 2 Limit Address Register(cm33_mpu_rlar2_ns)
+  Non-secure MPU Region 2 Limit Address Register(cm33_mpu_rlar2_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 3 Base Address Register (cm33_mpu_rbar3_ns)
+  Non-secure MPU Region 3 Base Address Register (cm33_mpu_rbar3_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 3 Limit Address Register(cm33_mpu_rlar3_ns)
+  Non-secure MPU Region 3 Limit Address Register(cm33_mpu_rlar3_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 4 Base Address Register (cm33_mpu_rbar4_ns)
+  Non-secure MPU Region 4 Base Address Register (cm33_mpu_rbar4_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 4 Limit Address Register(cm33_mpu_rlar4_ns)
+  Non-secure MPU Region 4 Limit Address Register(cm33_mpu_rlar4_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 5 Base Address Register (cm33_mpu_rbar5_ns)
+  Non-secure MPU Region 5 Base Address Register (cm33_mpu_rbar5_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 5 Limit Address Register(cm33_mpu_rlar5_ns)
+  Non-secure MPU Region 5 Limit Address Register(cm33_mpu_rlar5_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 6 Base Address Register (cm33_mpu_rbar6_ns)
+  Non-secure MPU Region 6 Base Address Register (cm33_mpu_rbar6_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 6 Limit Address Register(cm33_mpu_rlar6_ns)
+  Non-secure MPU Region 6 Limit Address Register(cm33_mpu_rlar6_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 7 Base Address Register (cm33_mpu_rbar7_ns)
+  Non-secure MPU Region 7 Base Address Register (cm33_mpu_rbar7_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 7 Limit Address Register(cm33_mpu_rlar7_ns)
+  Non-secure MPU Region 7 Limit Address Register(cm33_mpu_rlar7_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Control Register (cm33_sau_ctrl)
+  SAU Control Register (cm33_sau_ctrl): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 0 Base Address Register (cm33_sau_rbar0)
+  SAU Region 0 Base Address Register (cm33_sau_rbar0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 0 Limit Address Register (cm33_sau_rlar0)
+  SAU Region 0 Limit Address Register (cm33_sau_rlar0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 1 Base Address Register (cm33_sau_rbar1)
+  SAU Region 1 Base Address Register (cm33_sau_rbar1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 1 Limit Address Register (cm33_sau_rlar1)
+  SAU Region 1 Limit Address Register (cm33_sau_rlar1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 2 Base Address Register (cm33_sau_rbar2)
+  SAU Region 2 Base Address Register (cm33_sau_rbar2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 2 Limit Address Register (cm33_sau_rlar2)
+  SAU Region 2 Limit Address Register (cm33_sau_rlar2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 3 Base Address Register (cm33_sau_rbar3)
+  SAU Region 3 Base Address Register (cm33_sau_rbar3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 3 Limit Address Register (cm33_sau_rlar3)
+  SAU Region 3 Limit Address Register (cm33_sau_rlar3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 4 Base Address Register (cm33_sau_rbar4)
+  SAU Region 4 Base Address Register (cm33_sau_rbar4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 4 Limit Address Register (cm33_sau_rlar4)
+  SAU Region 4 Limit Address Register (cm33_sau_rlar4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 5 Base Address Register (cm33_sau_rbar5)
+  SAU Region 5 Base Address Register (cm33_sau_rbar5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 5 Limit Address Register (cm33_sau_rlar5)
+  SAU Region 5 Limit Address Register (cm33_sau_rlar5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 6 Base Address Register (cm33_sau_rbar6)
+  SAU Region 6 Base Address Register (cm33_sau_rbar6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 6 Limit Address Register (cm33_sau_rlar6)
+  SAU Region 6 Limit Address Register (cm33_sau_rlar6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 7 Base Address Register (cm33_sau_rbar7)
+  SAU Region 7 Base Address Register (cm33_sau_rbar7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 7 Limit Address Register (cm33_sau_rlar7)
+  SAU Region 7 Limit Address Register (cm33_sau_rlar7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for TRDC Control Register (cr)
+  TRDC Control Register (cr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for TRDC IDAU Control Register (idau_cr)
+  TRDC IDAU Control Register (idau_cr): '0x00000008'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Master 0 Domain Assignment Register (mda_w0_DOM0_dfmt0)
+  Master 0 Domain Assignment Register (mda_w0_DOM0_dfmt0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Master 1 Domain Assignment Register (mda_w0_DOM1_dfmt1)
+  Master 1 Domain Assignment Register (mda_w0_DOM1_dfmt1): '0x20000000'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Master 2 Domain Assignment Register (mda_w0_DOM2_dfmt1)
+  Master 2 Domain Assignment Register (mda_w0_DOM2_dfmt1): '0x20000000'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Master 3 Domain Assignment Register (mda_w0_DOM3_dfmt1)
+  Master 3 Domain Assignment Register (mda_w0_DOM3_dfmt1): '0x20000000'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Global Access Control Register 0 (mbc0_memn_glbac0)
+  MBC 0 Global Access Control Register 0 (mbc0_memn_glbac0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Global Access Control Register 1 (mbc0_memn_glbac1)
+  MBC 0 Global Access Control Register 1 (mbc0_memn_glbac1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Global Access Control Register 2 (mbc0_memn_glbac2)
+  MBC 0 Global Access Control Register 2 (mbc0_memn_glbac2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Global Access Control Register 3 (mbc0_memn_glbac3)
+  MBC 0 Global Access Control Register 3 (mbc0_memn_glbac3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Global Access Control Register 4 (mbc0_memn_glbac4)
+  MBC 0 Global Access Control Register 4 (mbc0_memn_glbac4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Global Access Control Register 5 (mbc0_memn_glbac5)
+  MBC 0 Global Access Control Register 5 (mbc0_memn_glbac5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Global Access Control Register 6 (mbc0_memn_glbac6)
+  MBC 0 Global Access Control Register 6 (mbc0_memn_glbac6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Global Access Control Register 7 (mbc0_memn_glbac7)
+  MBC 0 Global Access Control Register 7 (mbc0_memn_glbac7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 0 Slave 0 Configuration Word Register 0 (mbc0_DOM0_mem0_blk_cfg_w0)
+  MBC 0 Domain 0 Slave 0 Configuration Word Register 0 (mbc0_DOM0_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 0 Slave 0 Configuration Word Register 1 (mbc0_DOM0_mem0_blk_cfg_w1)
+  MBC 0 Domain 0 Slave 0 Configuration Word Register 1 (mbc0_DOM0_mem0_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 0 Slave 0 Configuration Word Register 2 (mbc0_DOM0_mem0_blk_cfg_w2)
+  MBC 0 Domain 0 Slave 0 Configuration Word Register 2 (mbc0_DOM0_mem0_blk_cfg_w2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 0 Slave 0 Configuration Word Register 3 (mbc0_DOM0_mem0_blk_cfg_w3)
+  MBC 0 Domain 0 Slave 0 Configuration Word Register 3 (mbc0_DOM0_mem0_blk_cfg_w3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 0 Slave 1 Configuration Word Register 0 (mbc0_DOM0_mem1_blk_cfg_w0)
+  MBC 0 Domain 0 Slave 1 Configuration Word Register 0 (mbc0_DOM0_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 0 Slave 2 Configuration Word Register 0 (mbc0_DOM0_mem2_blk_cfg_w0)
+  MBC 0 Domain 0 Slave 2 Configuration Word Register 0 (mbc0_DOM0_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 0 Slave 3 Configuration Word Register 0 (mbc0_DOM0_mem3_blk_cfg_w0)
+  MBC 0 Domain 0 Slave 3 Configuration Word Register 0 (mbc0_DOM0_mem3_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 0 Slave 3 Configuration Word Register 1 (mbc0_DOM0_mem3_blk_cfg_w1)
+  MBC 0 Domain 0 Slave 3 Configuration Word Register 1 (mbc0_DOM0_mem3_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 1 Slave 0 Configuration Word Register 0 (mbc0_DOM1_mem0_blk_cfg_w0)
+  MBC 0 Domain 1 Slave 0 Configuration Word Register 0 (mbc0_DOM1_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 1 Slave 0 Configuration Word Register 1 (mbc0_DOM1_mem0_blk_cfg_w1)
+  MBC 0 Domain 1 Slave 0 Configuration Word Register 1 (mbc0_DOM1_mem0_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 1 Slave 0 Configuration Word Register 2 (mbc0_DOM1_mem0_blk_cfg_w2)
+  MBC 0 Domain 1 Slave 0 Configuration Word Register 2 (mbc0_DOM1_mem0_blk_cfg_w2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 1 Slave 0 Configuration Word Register 3 (mbc0_DOM1_mem0_blk_cfg_w3)
+  MBC 0 Domain 1 Slave 0 Configuration Word Register 3 (mbc0_DOM1_mem0_blk_cfg_w3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 1 Slave 1 Configuration Word Register 0 (mbc0_DOM1_mem1_blk_cfg_w0)
+  MBC 0 Domain 1 Slave 1 Configuration Word Register 0 (mbc0_DOM1_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 1 Slave 2 Configuration Word Register 0 (mbc0_DOM1_mem2_blk_cfg_w0)
+  MBC 0 Domain 1 Slave 2 Configuration Word Register 0 (mbc0_DOM1_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 1 Slave 3 Configuration Word Register 0 (mbc0_DOM1_mem3_blk_cfg_w0)
+  MBC 0 Domain 1 Slave 3 Configuration Word Register 0 (mbc0_DOM1_mem3_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 1 Slave 3 Configuration Word Register 1 (mbc0_DOM1_mem3_blk_cfg_w1)
+  MBC 0 Domain 1 Slave 3 Configuration Word Register 1 (mbc0_DOM1_mem3_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 2 Slave 0 Configuration Word Register 0 (mbc0_DOM2_mem0_blk_cfg_w0)
+  MBC 0 Domain 2 Slave 0 Configuration Word Register 0 (mbc0_DOM2_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 2 Slave 0 Configuration Word Register 1 (mbc0_DOM2_mem0_blk_cfg_w1)
+  MBC 0 Domain 2 Slave 0 Configuration Word Register 1 (mbc0_DOM2_mem0_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 2 Slave 0 Configuration Word Register 2 (mbc0_DOM2_mem0_blk_cfg_w2)
+  MBC 0 Domain 2 Slave 0 Configuration Word Register 2 (mbc0_DOM2_mem0_blk_cfg_w2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 2 Slave 0 Configuration Word Register 3 (mbc0_DOM2_mem0_blk_cfg_w3)
+  MBC 0 Domain 2 Slave 0 Configuration Word Register 3 (mbc0_DOM2_mem0_blk_cfg_w3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 2 Slave 1 Configuration Word Register 0 (mbc0_DOM2_mem1_blk_cfg_w0)
+  MBC 0 Domain 2 Slave 1 Configuration Word Register 0 (mbc0_DOM2_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 2 Slave 2 Configuration Word Register 0 (mbc0_DOM2_mem2_blk_cfg_w0)
+  MBC 0 Domain 2 Slave 2 Configuration Word Register 0 (mbc0_DOM2_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 2 Slave 3 Configuration Word Register 0 (mbc0_DOM2_mem3_blk_cfg_w0)
+  MBC 0 Domain 2 Slave 3 Configuration Word Register 0 (mbc0_DOM2_mem3_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 0 Domain 2 Slave 3 Configuration Word Register 1 (mbc0_DOM2_mem3_blk_cfg_w1)
+  MBC 0 Domain 2 Slave 3 Configuration Word Register 1 (mbc0_DOM2_mem3_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Global Access Control Register 0 (mbc1_memn_glbac0)
+  MBC 1 Global Access Control Register 0 (mbc1_memn_glbac0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Global Access Control Register 1 (mbc1_memn_glbac1)
+  MBC 1 Global Access Control Register 1 (mbc1_memn_glbac1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Global Access Control Register 2 (mbc1_memn_glbac2)
+  MBC 1 Global Access Control Register 2 (mbc1_memn_glbac2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Global Access Control Register 3 (mbc1_memn_glbac3)
+  MBC 1 Global Access Control Register 3 (mbc1_memn_glbac3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Global Access Control Register 4 (mbc1_memn_glbac4)
+  MBC 1 Global Access Control Register 4 (mbc1_memn_glbac4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Global Access Control Register 5 (mbc1_memn_glbac5)
+  MBC 1 Global Access Control Register 5 (mbc1_memn_glbac5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Global Access Control Register 6 (mbc1_memn_glbac6)
+  MBC 1 Global Access Control Register 6 (mbc1_memn_glbac6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Global Access Control Register 7 (mbc1_memn_glbac7)
+  MBC 1 Global Access Control Register 7 (mbc1_memn_glbac7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 0 Slave 0 Configuration Word Register 0 (mbc1_DOM0_mem0_blk_cfg_w0)
+  MBC 1 Domain 0 Slave 0 Configuration Word Register 0 (mbc1_DOM0_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 0 Slave 1 Configuration Word Register 0 (mbc1_DOM0_mem1_blk_cfg_w0)
+  MBC 1 Domain 0 Slave 1 Configuration Word Register 0 (mbc1_DOM0_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 0 Slave 2 Configuration Word Register 0 (mbc1_DOM0_mem2_blk_cfg_w0)
+  MBC 1 Domain 0 Slave 2 Configuration Word Register 0 (mbc1_DOM0_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 0 Slave 3 Configuration Word Register 0 (mbc1_DOM0_mem3_blk_cfg_w0)
+  MBC 1 Domain 0 Slave 3 Configuration Word Register 0 (mbc1_DOM0_mem3_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 1 Slave 0 Configuration Word Register 0 (mbc1_DOM1_mem0_blk_cfg_w0)
+  MBC 1 Domain 1 Slave 0 Configuration Word Register 0 (mbc1_DOM1_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 1 Slave 1 Configuration Word Register 0 (mbc1_DOM1_mem1_blk_cfg_w0)
+  MBC 1 Domain 1 Slave 1 Configuration Word Register 0 (mbc1_DOM1_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 1 Slave 2 Configuration Word Register 0 (mbc1_DOM1_mem2_blk_cfg_w0)
+  MBC 1 Domain 1 Slave 2 Configuration Word Register 0 (mbc1_DOM1_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 1 Slave 3 Configuration Word Register 0 (mbc1_DOM1_mem3_blk_cfg_w0)
+  MBC 1 Domain 1 Slave 3 Configuration Word Register 0 (mbc1_DOM1_mem3_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 2 Slave 0 Configuration Word Register 0 (mbc1_DOM2_mem0_blk_cfg_w0)
+  MBC 1 Domain 2 Slave 0 Configuration Word Register 0 (mbc1_DOM2_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 2 Slave 1 Configuration Word Register 0 (mbc1_DOM2_mem1_blk_cfg_w0)
+  MBC 1 Domain 2 Slave 1 Configuration Word Register 0 (mbc1_DOM2_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 2 Slave 2 Configuration Word Register 0 (mbc1_DOM2_mem2_blk_cfg_w0)
+  MBC 1 Domain 2 Slave 2 Configuration Word Register 0 (mbc1_DOM2_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 1 Domain 2 Slave 3 Configuration Word Register 0 (mbc1_DOM2_mem3_blk_cfg_w0)
+  MBC 1 Domain 2 Slave 3 Configuration Word Register 0 (mbc1_DOM2_mem3_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Global Access Control Register 0 (mbc2_memn_glbac0)
+  MBC 2 Global Access Control Register 0 (mbc2_memn_glbac0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Global Access Control Register 1 (mbc2_memn_glbac1)
+  MBC 2 Global Access Control Register 1 (mbc2_memn_glbac1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Global Access Control Register 2 (mbc2_memn_glbac2)
+  MBC 2 Global Access Control Register 2 (mbc2_memn_glbac2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Global Access Control Register 3 (mbc2_memn_glbac3)
+  MBC 2 Global Access Control Register 3 (mbc2_memn_glbac3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Global Access Control Register 4 (mbc2_memn_glbac4)
+  MBC 2 Global Access Control Register 4 (mbc2_memn_glbac4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Global Access Control Register 5 (mbc2_memn_glbac5)
+  MBC 2 Global Access Control Register 5 (mbc2_memn_glbac5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Global Access Control Register 6 (mbc2_memn_glbac6)
+  MBC 2 Global Access Control Register 6 (mbc2_memn_glbac6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Global Access Control Register 7 (mbc2_memn_glbac7)
+  MBC 2 Global Access Control Register 7 (mbc2_memn_glbac7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 0 (mbc2_DOM0_mem0_blk_cfg_w0)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 0 (mbc2_DOM0_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 1 (mbc2_DOM0_mem0_blk_cfg_w1)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 1 (mbc2_DOM0_mem0_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 2 (mbc2_DOM0_mem0_blk_cfg_w2)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 2 (mbc2_DOM0_mem0_blk_cfg_w2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 3 (mbc2_DOM0_mem0_blk_cfg_w3)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 3 (mbc2_DOM0_mem0_blk_cfg_w3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 4 (mbc2_DOM0_mem0_blk_cfg_w4)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 4 (mbc2_DOM0_mem0_blk_cfg_w4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 5 (mbc2_DOM0_mem0_blk_cfg_w5)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 5 (mbc2_DOM0_mem0_blk_cfg_w5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 6 (mbc2_DOM0_mem0_blk_cfg_w6)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 6 (mbc2_DOM0_mem0_blk_cfg_w6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 7 (mbc2_DOM0_mem0_blk_cfg_w7)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 7 (mbc2_DOM0_mem0_blk_cfg_w7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 8 (mbc2_DOM0_mem0_blk_cfg_w8)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 8 (mbc2_DOM0_mem0_blk_cfg_w8): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 0 Configuration Word Register 9 (mbc2_DOM0_mem0_blk_cfg_w9)
+  MBC 2 Domain 0 Slave 0 Configuration Word Register 9 (mbc2_DOM0_mem0_blk_cfg_w9): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 1 Configuration Word Register 0 (mbc2_DOM0_mem1_blk_cfg_w0)
+  MBC 2 Domain 0 Slave 1 Configuration Word Register 0 (mbc2_DOM0_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 2 Configuration Word Register 0 (mbc2_DOM0_mem2_blk_cfg_w0)
+  MBC 2 Domain 0 Slave 2 Configuration Word Register 0 (mbc2_DOM0_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 0 Slave 2 Configuration Word Register 1 (mbc2_DOM0_mem2_blk_cfg_w1)
+  MBC 2 Domain 0 Slave 2 Configuration Word Register 1 (mbc2_DOM0_mem2_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 0 (mbc2_DOM1_mem0_blk_cfg_w0)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 0 (mbc2_DOM1_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 1 (mbc2_DOM1_mem0_blk_cfg_w1)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 1 (mbc2_DOM1_mem0_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 2 (mbc2_DOM1_mem0_blk_cfg_w2)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 2 (mbc2_DOM1_mem0_blk_cfg_w2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 3 (mbc2_DOM1_mem0_blk_cfg_w3)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 3 (mbc2_DOM1_mem0_blk_cfg_w3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 4 (mbc2_DOM1_mem0_blk_cfg_w4)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 4 (mbc2_DOM1_mem0_blk_cfg_w4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 5 (mbc2_DOM1_mem0_blk_cfg_w5)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 5 (mbc2_DOM1_mem0_blk_cfg_w5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 6 (mbc2_DOM1_mem0_blk_cfg_w6)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 6 (mbc2_DOM1_mem0_blk_cfg_w6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 7 (mbc2_DOM1_mem0_blk_cfg_w7)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 7 (mbc2_DOM1_mem0_blk_cfg_w7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 8 (mbc2_DOM1_mem0_blk_cfg_w8)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 8 (mbc2_DOM1_mem0_blk_cfg_w8): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 9 (mbc2_DOM1_mem0_blk_cfg_w9)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 9 (mbc2_DOM1_mem0_blk_cfg_w9): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 1 Configuration Word Register 0 (mbc2_DOM1_mem1_blk_cfg_w0)
+  MBC 2 Domain 1 Slave 1 Configuration Word Register 0 (mbc2_DOM1_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 2 Configuration Word Register 0 (mbc2_DOM1_mem2_blk_cfg_w0)
+  MBC 2 Domain 1 Slave 2 Configuration Word Register 0 (mbc2_DOM1_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 2 Configuration Word Register 1 (mbc2_DOM1_mem2_blk_cfg_w1)
+  MBC 2 Domain 1 Slave 2 Configuration Word Register 1 (mbc2_DOM1_mem2_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 0 (mbc2_DOM2_mem0_blk_cfg_w0)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 0 (mbc2_DOM2_mem0_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 1 (mbc2_DOM2_mem0_blk_cfg_w1)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 1 (mbc2_DOM2_mem0_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 2 (mbc2_DOM2_mem0_blk_cfg_w2)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 2 (mbc2_DOM2_mem0_blk_cfg_w2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 3 (mbc2_DOM2_mem0_blk_cfg_w3)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 3 (mbc2_DOM2_mem0_blk_cfg_w3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 4 (mbc2_DOM2_mem0_blk_cfg_w4)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 4 (mbc2_DOM2_mem0_blk_cfg_w4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 5 (mbc2_DOM2_mem0_blk_cfg_w5)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 5 (mbc2_DOM2_mem0_blk_cfg_w5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 6 (mbc2_DOM2_mem0_blk_cfg_w6)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 6 (mbc2_DOM2_mem0_blk_cfg_w6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 7 (mbc2_DOM2_mem0_blk_cfg_w7)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 7 (mbc2_DOM2_mem0_blk_cfg_w7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 8 (mbc2_DOM2_mem0_blk_cfg_w8)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 8 (mbc2_DOM2_mem0_blk_cfg_w8): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 0 Configuration Word Register 9 (mbc2_DOM2_mem0_blk_cfg_w9)
+  MBC 2 Domain 1 Slave 0 Configuration Word Register 9 (mbc2_DOM2_mem0_blk_cfg_w9): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 1 Configuration Word Register 0 (mbc2_DOM2_mem1_blk_cfg_w0)
+  MBC 2 Domain 1 Slave 1 Configuration Word Register 0 (mbc2_DOM2_mem1_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 2 Configuration Word Register 0 (mbc2_DOM2_mem2_blk_cfg_w0)
+  MBC 2 Domain 1 Slave 2 Configuration Word Register 0 (mbc2_DOM2_mem2_blk_cfg_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MBC 2 Domain 1 Slave 2 Configuration Word Register 1 (mbc2_DOM2_mem2_blk_cfg_w1)
+  MBC 2 Domain 1 Slave 2 Configuration Word Register 1 (mbc2_DOM2_mem2_blk_cfg_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Global Access Control Register 0 (mrc0_memn_glbac0)
+  MRC 0 Global Access Control Register 0 (mrc0_memn_glbac0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Global Access Control Register 1 (mrc0_memn_glbac1)
+  MRC 0 Global Access Control Register 1 (mrc0_memn_glbac1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Global Access Control Register 2 (mrc0_memn_glbac2)
+  MRC 0 Global Access Control Register 2 (mrc0_memn_glbac2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Global Access Control Register 3 (mrc0_memn_glbac3)
+  MRC 0 Global Access Control Register 3 (mrc0_memn_glbac3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Global Access Control Register 4 (mrc0_memn_glbac4)
+  MRC 0 Global Access Control Register 4 (mrc0_memn_glbac4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Global Access Control Register 5 (mrc0_memn_glbac5)
+  MRC 0 Global Access Control Register 5 (mrc0_memn_glbac5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Global Access Control Register 6 (mrc0_memn_glbac6)
+  MRC 0 Global Access Control Register 6 (mrc0_memn_glbac6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Global Access Control Register 7 (mrc0_memn_glbac7)
+  MRC 0 Global Access Control Register 7 (mrc0_memn_glbac7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 0 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd0_w0)
+  MRC 0 Domain 0 Region 0 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd0_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 0 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd0_w1)
+  MRC 0 Domain 0 Region 0 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd0_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 1 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd1_w0)
+  MRC 0 Domain 0 Region 1 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd1_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 1 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd1_w1)
+  MRC 0 Domain 0 Region 1 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd1_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 2 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd2_w0)
+  MRC 0 Domain 0 Region 2 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd2_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 2 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd2_w1)
+  MRC 0 Domain 0 Region 2 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd2_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 3 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd3_w0)
+  MRC 0 Domain 0 Region 3 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd3_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 3 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd3_w1)
+  MRC 0 Domain 0 Region 3 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd3_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 4 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd4_w0)
+  MRC 0 Domain 0 Region 4 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd4_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 4 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd4_w1)
+  MRC 0 Domain 0 Region 4 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd4_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 5 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd5_w0)
+  MRC 0 Domain 0 Region 5 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd5_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 5 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd5_w1)
+  MRC 0 Domain 0 Region 5 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd5_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 6 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd6_w0)
+  MRC 0 Domain 0 Region 6 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd6_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 6 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd6_w1)
+  MRC 0 Domain 0 Region 6 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd6_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 7 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd7_w0)
+  MRC 0 Domain 0 Region 7 Memory Region Descriptor Register 0 (mrc0_DOM0_rgd7_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 0 Region 7 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd7_w1)
+  MRC 0 Domain 0 Region 7 Memory Region Descriptor Register 1 (mrc0_DOM0_rgd7_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 0 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd0_w0)
+  MRC 0 Domain 1 Region 0 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd0_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 0 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd0_w1)
+  MRC 0 Domain 1 Region 0 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd0_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 1 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd1_w0)
+  MRC 0 Domain 1 Region 1 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd1_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 1 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd1_w1)
+  MRC 0 Domain 1 Region 1 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd1_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 2 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd2_w0)
+  MRC 0 Domain 1 Region 2 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd2_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 2 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd2_w1)
+  MRC 0 Domain 1 Region 2 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd2_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 3 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd3_w0)
+  MRC 0 Domain 1 Region 3 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd3_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 3 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd3_w1)
+  MRC 0 Domain 1 Region 3 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd3_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 4 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd4_w0)
+  MRC 0 Domain 1 Region 4 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd4_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 4 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd4_w1)
+  MRC 0 Domain 1 Region 4 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd4_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 5 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd5_w0)
+  MRC 0 Domain 1 Region 5 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd5_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 5 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd5_w1)
+  MRC 0 Domain 1 Region 5 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd5_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 6 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd6_w0)
+  MRC 0 Domain 1 Region 6 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd6_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 6 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd6_w1)
+  MRC 0 Domain 1 Region 6 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd6_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 7 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd7_w0)
+  MRC 0 Domain 1 Region 7 Memory Region Descriptor Register 0 (mrc0_DOM1_rgd7_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 1 Region 7 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd7_w1)
+  MRC 0 Domain 1 Region 7 Memory Region Descriptor Register 1 (mrc0_DOM1_rgd7_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 0 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd0_w0)
+  MRC 0 Domain 2 Region 0 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd0_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 0 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd0_w1)
+  MRC 0 Domain 2 Region 0 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd0_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 1 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd1_w0)
+  MRC 0 Domain 2 Region 1 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd1_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 1 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd1_w1)
+  MRC 0 Domain 2 Region 1 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd1_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 2 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd2_w0)
+  MRC 0 Domain 2 Region 2 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd2_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 2 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd2_w1)
+  MRC 0 Domain 2 Region 2 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd2_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 3 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd3_w0)
+  MRC 0 Domain 2 Region 3 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd3_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 3 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd3_w1)
+  MRC 0 Domain 2 Region 3 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd3_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 4 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd4_w0)
+  MRC 0 Domain 2 Region 4 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd4_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 4 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd4_w1)
+  MRC 0 Domain 2 Region 4 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd4_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 5 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd5_w0)
+  MRC 0 Domain 2 Region 5 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd5_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 5 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd5_w1)
+  MRC 0 Domain 2 Region 5 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd5_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 6 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd6_w0)
+  MRC 0 Domain 2 Region 6 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd6_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 6 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd6_w1)
+  MRC 0 Domain 2 Region 6 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd6_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 7 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd7_w0)
+  MRC 0 Domain 2 Region 7 Memory Region Descriptor Register 0 (mrc0_DOM2_rgd7_w0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MRC 0 Domain 2 Region 7 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd7_w1)
+  MRC 0 Domain 2 Region 7 Memory Region Descriptor Register 1 (mrc0_DOM2_rgd7_w1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Lock Register (gpioa_lock)
+  GPIO A Lock Register (gpioa_lock): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Pin Control Non-Secure Register (gpioa_pcns)
+  GPIO A Pin Control Non-Secure Register (gpioa_pcns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Non-Secure Register (gpioa_icns)
+  GPIO A Interrupt Control Non-Secure Register (gpioa_icns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Pin Control Non-Privilege Register (gpioa_pcnp)
+  GPIO A Pin Control Non-Privilege Register (gpioa_pcnp): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Non-Privilege Register (gpioa_icnp)
+  GPIO A Interrupt Control Non-Privilege Register (gpioa_icnp): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 0 (gpioa_icr0)
+  GPIO A Interrupt Control Pin 0 (gpioa_icr0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 1 (gpioa_icr1)
+  GPIO A Interrupt Control Pin 1 (gpioa_icr1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 4 (gpioa_icr4)
+  GPIO A Interrupt Control Pin 4 (gpioa_icr4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 16 (gpioa_icr16)
+  GPIO A Interrupt Control Pin 16 (gpioa_icr16): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 17 (gpioa_icr17)
+  GPIO A Interrupt Control Pin 17 (gpioa_icr17): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 18 (gpioa_icr18)
+  GPIO A Interrupt Control Pin 18 (gpioa_icr18): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 19 (gpioa_icr19)
+  GPIO A Interrupt Control Pin 19 (gpioa_icr19): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 20 (gpioa_icr20)
+  GPIO A Interrupt Control Pin 20 (gpioa_icr20): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO A Interrupt Control Pin 21 (gpioa_icr21)
+  GPIO A Interrupt Control Pin 21 (gpioa_icr21): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Lock Register (gpiob_lock)
+  GPIO B Lock Register (gpiob_lock): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Pin Control Non-Secure Register (gpiob_pcns)
+  GPIO B Pin Control Non-Secure Register (gpiob_pcns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Interrupt Control Non-Secure Register (gpiob_icns)
+  GPIO B Interrupt Control Non-Secure Register (gpiob_icns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Pin Control Non-Privilege Register (gpiob_pcnp)
+  GPIO B Pin Control Non-Privilege Register (gpiob_pcnp): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Interrupt Control Non-Privilege Register (gpiob_icnp)
+  GPIO B Interrupt Control Non-Privilege Register (gpiob_icnp): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Interrupt Control Pin 0 (gpiob_icr0)
+  GPIO B Interrupt Control Pin 0 (gpiob_icr0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Interrupt Control Pin 1 (gpiob_icr1)
+  GPIO B Interrupt Control Pin 1 (gpiob_icr1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Interrupt Control Pin 2 (gpiob_icr2)
+  GPIO B Interrupt Control Pin 2 (gpiob_icr2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Interrupt Control Pin 3 (gpiob_icr3)
+  GPIO B Interrupt Control Pin 3 (gpiob_icr3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Interrupt Control Pin 4 (gpiob_icr4)
+  GPIO B Interrupt Control Pin 4 (gpiob_icr4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO B Interrupt Control Pin 5 (gpiob_icr5)
+  GPIO B Interrupt Control Pin 5 (gpiob_icr5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Lock Register (gpioc_lock)
+  GPIO C Lock Register (gpioc_lock): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Pin Control Non-Secure Register (gpioc_pcns)
+  GPIO C Pin Control Non-Secure Register (gpioc_pcns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Non-Secure Register (gpioc_icns)
+  GPIO C Interrupt Control Non-Secure Register (gpioc_icns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Pin Control Non-Privilege Register (gpioc_pcnp)
+  GPIO C Pin Control Non-Privilege Register (gpioc_pcnp): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Non-Privilege Register (gpioc_icnp)
+  GPIO C Interrupt Control Non-Privilege Register (gpioc_icnp): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Pin 0 (gpioc_icr0)
+  GPIO C Interrupt Control Pin 0 (gpioc_icr0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Pin 1 (gpioc_icr1)
+  GPIO C Interrupt Control Pin 1 (gpioc_icr1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Pin 2 (gpioc_icr2)
+  GPIO C Interrupt Control Pin 2 (gpioc_icr2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Pin 3 (gpioc_icr3)
+  GPIO C Interrupt Control Pin 3 (gpioc_icr3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Pin 4 (gpioc_icr4)
+  GPIO C Interrupt Control Pin 4 (gpioc_icr4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Pin 5 (gpioc_icr5)
+  GPIO C Interrupt Control Pin 5 (gpioc_icr5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Pin 6 (gpioc_icr6)
+  GPIO C Interrupt Control Pin 6 (gpioc_icr6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO C Interrupt Control Pin 7 (gpioc_icr7)
+  GPIO C Interrupt Control Pin 7 (gpioc_icr7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Lock Register (gpiod_lock)
+  GPIO D Lock Register (gpiod_lock): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Pin Control Non-Secure Register (gpiod_pcns)
+  GPIO D Pin Control Non-Secure Register (gpiod_pcns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Interrupt Control Non-Secure Register (gpiod_icns)
+  GPIO D Interrupt Control Non-Secure Register (gpiod_icns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Pin Control Non-Privilege Register (gpiod_pcnp)
+  GPIO D Pin Control Non-Privilege Register (gpiod_pcnp): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Interrupt Control Non-Privilege Register (gpiod_icnp)
+  GPIO D Interrupt Control Non-Privilege Register (gpiod_icnp): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Interrupt Control Pin 0 (gpiod_icr0)
+  GPIO D Interrupt Control Pin 0 (gpiod_icr0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Interrupt Control Pin 1 (gpiod_icr1)
+  GPIO D Interrupt Control Pin 1 (gpiod_icr1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Interrupt Control Pin 2 (gpiod_icr2)
+  GPIO D Interrupt Control Pin 2 (gpiod_icr2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Interrupt Control Pin 3 (gpiod_icr3)
+  GPIO D Interrupt Control Pin 3 (gpiod_icr3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Interrupt Control Pin 4 (gpiod_icr4)
+  GPIO D Interrupt Control Pin 4 (gpiod_icr4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for GPIO D Interrupt Control Pin 5 (gpiod_icr5)
+  GPIO D Interrupt Control Pin 5 (gpiod_icr5): '0x0'

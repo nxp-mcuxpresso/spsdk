@@ -191,17 +191,6 @@ key_blobs:
             format: number
             template_value: "0x30008000"
 
-master_id:
-  type: object
-  title: Master ID for MIMXRT118x core
-  properties:
-    master:
-      type: string
-      title: Master ID for RT118x
-      description: M33 or M7 core
-      enum: ["CM33", "CM7"]
-      template_value: "CM7"
-
 key_blobs_rt118x:
   type: object
   title: MIMXRT118x Keyblob Configuration
@@ -209,9 +198,15 @@ key_blobs_rt118x:
     key_blob:
       description: Keyblob configuration, keyblob won't be generated.
       type: object
-      required: [key1, key2, aes_mode, key_size]
-
+      required: [key1, key2, aes_mode, key_size, start_address, end_address]
       properties:
+        region_lock:
+          type: boolean
+          title: Keyblob lock attribute
+          description: Determines if the ROM will lock the IEE configuration to prevent later changes.
+          template_value: False
+          default: False
+
         aes_mode:
           type: string
           title: AES mode
@@ -233,6 +228,14 @@ key_blobs_rt118x:
           enum: ["CTR256XTS512", "CTR128XTS256"]
           template_value: "CTR256XTS512"
 
+        page_offset:
+          type: number
+          title: Page offset
+          description: Page offset, IEE_REG0PO value
+          format: number
+          template_value: 0
+          default: 0
+
         key1:
           type: [number, string]
           title: AES-XTS key1 / AES-CTR key
@@ -246,3 +249,17 @@ key_blobs_rt118x:
           description: AES key for the key blob, size depends on key_size
           format: number
           template_value: "0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F"
+
+        start_address:
+          type: [number, string]
+          title: Start address of key blob data
+          description: Start address of key blob data, it should be aligned to 1 KB (1024 B)
+          format: number
+          template_value: "0x04001000"
+
+        end_address:
+          type: [number, string]
+          title: End address of key blob data
+          description: End address of key blob data, it should be aligned to 1 KB (1024 B)
+          format: number
+          template_value: "0x04008000"

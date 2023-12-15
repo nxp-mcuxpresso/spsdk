@@ -9,6 +9,7 @@
 import logging
 from typing import Optional
 
+from spsdk.exceptions import SPSDKAttributeError
 from spsdk.sdp.commands import CmdResponse
 from spsdk.sdp.protocol.base import SDPProtocolBase
 from spsdk.utils.interfaces.commands import CmdPacketBase
@@ -43,10 +44,11 @@ class SDPSerialProtocol(SDPProtocolBase):
         """Encapsulate command into frames and send them to device.
 
         :param packet: Command packet object to be sent
+        :raises SPSDKAttributeError: Command packed contains no data to be sent
         """
         data = packet.to_bytes()
         if not data:
-            raise AttributeError("Incorrect packet type")
+            raise SPSDKAttributeError("Incorrect packet type")
         self._send_frame(data)
 
     def read(self, length: Optional[int] = None) -> CmdResponse:

@@ -89,6 +89,7 @@ Secure Provisioning SDK (SPSDK)
     examples/kw45xx_k32w1xx
     examples/dk6
     examples/signature_provider
+    examples/mc56
 
 
 Indices and tables

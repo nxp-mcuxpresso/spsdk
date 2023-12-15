@@ -113,7 +113,7 @@ def _load_pem_public_key(data: bytes) -> Any:
             return sm2.CryptSM2(private_key=None, public_key=public_key.public)
         except (SPSDKError, DecodeError) as exc:
             last_error = exc
-    raise SPSDKError(f"Cannot load PEM private key: {last_error}")
+    raise SPSDKError(f"Cannot load PEM public key: {last_error}")
 
 
 def _load_der_public_key(data: bytes) -> Any:
@@ -813,13 +813,18 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
         )
 
     def sign(
-        self, data: bytes, algorithm: Optional[EnumHashAlgorithm] = None, der_format: bool = False
+        self,
+        data: bytes,
+        algorithm: Optional[EnumHashAlgorithm] = None,
+        der_format: bool = False,
+        prehashed: bool = False,
     ) -> bytes:
         """Sign input data.
 
         :param data: Input data
         :param algorithm: Used algorithm
         :param der_format: Use DER format as a output
+        :param prehashed: Use pre hashed value as input
         :return: Signed data
         """
         hash_name = (
@@ -830,7 +835,11 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
                 521: EnumHashAlgorithm.SHA512,
             }[self.key.key_size]
         )
-        signature = self.key.sign(data, ec.ECDSA(get_hash_algorithm(hash_name)))
+        if prehashed:
+            signature_algorithm = ec.ECDSA(utils.Prehashed(get_hash_algorithm(hash_name)))
+        else:
+            signature_algorithm = ec.ECDSA(get_hash_algorithm(hash_name))
+        signature = self.key.sign(data, signature_algorithm)
 
         if der_format:
             return signature
@@ -909,12 +918,14 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         signature: bytes,
         data: bytes,
         algorithm: Optional[EnumHashAlgorithm] = None,
+        prehashed: bool = False,
     ) -> bool:
         """Verify input data.
 
         :param signature: The signature of input data
         :param data: Input data
         :param algorithm: Used algorithm
+        :param prehashed: Use pre hashed value as input
         :return: True if signature is valid, False otherwise
         """
         coordinate_size = math.ceil(self.key.key_size / 8)
@@ -927,6 +938,11 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
             }[self.key.key_size]
         )
 
+        if prehashed:
+            signature_algorithm = ec.ECDSA(utils.Prehashed(get_hash_algorithm(hash_name)))
+        else:
+            signature_algorithm = ec.ECDSA(get_hash_algorithm(hash_name))
+
         if len(signature) == self.signature_size:
             der_signature = utils.encode_dss_signature(
                 int.from_bytes(signature[:coordinate_size], byteorder="big"),
@@ -936,7 +952,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
             der_signature = signature
         try:
             # pylint: disable=no-value-for-parameter    # pylint is mixing RSA and ECC verify methods
-            self.key.verify(der_signature, data, ec.ECDSA(get_hash_algorithm(hash_name)))
+            self.key.verify(der_signature, data, signature_algorithm)
             return True
         except InvalidSignature:
             return False

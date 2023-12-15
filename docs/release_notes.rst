@@ -10,6 +10,26 @@
 Release Notes
 =============
 
+------------------------
+2.0.1 (15-December-2023)
+------------------------
+
+**Bugfixes**
+
+* :ref:`nxpele`:
+    - remove temporary file
+* :ref:`nxpdebugmbox`:
+    - fix test memory AP address
+* :ref:`nxpimage`:
+    - Fix detection of input file for FCB in bootable image
+    - fix IEE encryption for RT1180
+    - fix signed MBI for Anguilla Nano
+    - fix SB21 export with yaml config
+* :ref:`shadowregs`:
+    - fix behavior of the RKTH registers
+    - fix invalid names of CRC field in database
+* fix setting a register value as raw value when loading from configuration
+
 -----------------------
 2.0.0 (13-October-2023)
 -----------------------

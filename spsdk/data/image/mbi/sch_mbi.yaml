@@ -127,10 +127,16 @@ cert_block_vX:
   properties:
     certBlock:
       type: string
-      title: Certificate Block binary/config file
-      description: Path to certificate block binary or config file.
-      template_value: cert_block.yaml
+      title: Certificate Block binary file
+      description: Path to certificate block.
+      template_value: cert_block.bin
       format: file
+    addCertHash:
+      type: boolean
+      title: True to append SHA256 hash [0:127] at the end of certificate block
+      description: Not mandatory if the hash is written in OTP
+      template_value: true
+
   required: [certBlock]
 
 signature_provider:

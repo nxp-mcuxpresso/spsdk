@@ -11,6 +11,7 @@ from typing import List, Optional
 import pytest
 from typing_extensions import Self
 
+from spsdk.exceptions import SPSDKAttributeError
 from spsdk.sdp.commands import CmdResponse, CommandTag, ResponseValue
 from spsdk.sdp.error_codes import StatusCode
 from spsdk.sdp.exceptions import SdpError
@@ -87,7 +88,7 @@ class VirtualSDPInterface:
     def write_command(self, packet: CmdPacket):
         data = packet.to_bytes()
         if not data:
-            raise AttributeError("Incorrect packet type")
+            raise SPSDKAttributeError("Incorrect packet type")
         self.device.write(data)
 
 

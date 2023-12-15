@@ -9,7 +9,7 @@
 
 import math
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from typing_extensions import Self
 
@@ -186,8 +186,13 @@ class DebugCredential:
         )
         return data
 
+    def _vars(self) -> Dict[str, Any]:
+        v = vars(self).copy()
+        del v["signature_provider"]
+        return v
+
     def __eq__(self, other: Any) -> bool:
-        return isinstance(other, DebugCredential) and vars(self) == vars(other)
+        return isinstance(other, DebugCredential) and self._vars() == other._vars()
 
     @classmethod
     def _get_rot_meta(cls, config: Dict[str, Any]) -> bytes:
@@ -226,8 +231,19 @@ class DebugCredential:
 
     @classmethod
     def _get_class(cls, version: str, socc: int) -> "Type[DebugCredential]":
+        """Get DC class.
+
+        :param version: Protocol version
+        :param socc: SOCC index
+        :raises SPSDKValueError: Unsupported version (invalid version) detected
+        :return: Debug credential class
+        """
         if socc in DebugCredentialEdgeLockEnclave.SUPPORTED_SOCC:
+            if not version in _edge_lock_version_mapping:
+                raise SPSDKValueError(f"Unsupported version({version}) by DC ELE class")
             return _edge_lock_version_mapping[version]
+        if not version in _version_mapping:
+            raise SPSDKValueError(f"Unsupported version({version}) by DC class")
         return _version_mapping[version]
 
     @classmethod
@@ -281,11 +297,11 @@ class DebugCredential:
         version = f"{ver[0]}.{ver[1]}"
         socc = unpack_from("<L", data, 4)
         klass = cls._get_class(version, socc[0])
-        return klass.get_instance_from_challenge(data)  # type: ignore
+        return klass._parse(data)  # type: ignore
 
     @classmethod
-    def get_instance_from_challenge(cls, data: bytes) -> Self:
-        """Returns instance of class from DAP authentication challenge data.
+    def _parse(cls, data: bytes) -> Self:
+        """Parse Debug credential serialized data.
 
         :return: Instance of this class.
         """
@@ -521,6 +537,22 @@ class DebugCredentialECC(DebugCredential):
         flags |= len(rot_pub_keys) << 4
         return pack("<L", flags)
 
+    @staticmethod
+    def parse_flags(data: bytes) -> Tuple[int, int]:
+        """Parse flags in rot meta.
+
+        :param data: 4 bytes of raw flags
+        :returns: Tuple of used ROT cert index and count of public keys.
+        """
+        if len(data) != 4:
+            raise SPSDKValueError("Invalid data flags length to parse")
+        flags = int.from_bytes(data, "little")
+        if not flags & (1 << 31):
+            raise SPSDKValueError("Invalid flags format to parse")
+        used_root_cert = (flags >> 8) & 0x0F
+        cnt_root_cert = (flags >> 4) & 0x0F
+        return (used_root_cert, cnt_root_cert)
+
     def export(self) -> bytes:
         """Export to binary form (serialization)."""
         data = pack(
@@ -555,14 +587,10 @@ class DebugCredentialECC(DebugCredential):
         return data
 
     def __eq__(self, other: Any) -> bool:
-        self_vars = vars(self)
-        del self_vars["signature_provider"]
-        other_vars = vars(other)
-        del other_vars["signature_provider"]
-        return isinstance(other, DebugCredential) and other_vars == self_vars
+        return isinstance(other, DebugCredentialECC) and self._vars() == other._vars()
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def _parse(cls, data: bytes) -> Self:
         """Parse the debug credential.
 
         :param data: Raw data as bytes
@@ -618,14 +646,6 @@ class DebugCredentialECC(DebugCredential):
             return get_hash(data=self.rot_pub, algorithm=EnumHashAlgorithm[f"sha{key_length}"])
         key_length = 256 if ((len(self.rot_meta) - 4) // srk_records_num) == 32 else 384
         return get_hash(data=self.rot_meta[4:], algorithm=EnumHashAlgorithm[f"sha{key_length}"])
-
-    @classmethod
-    def get_instance_from_challenge(cls, data: bytes) -> Self:
-        """Returns instance of class from DAP authentication challenge data.
-
-        :return: Instance of this class.
-        """
-        return cls.parse(data)
 
 
 class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
@@ -759,14 +779,10 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         return data
 
     def __eq__(self, other: Any) -> bool:
-        self_vars = vars(self)
-        del self_vars["signature_provider"]
-        other_vars = vars(other)
-        del other_vars["signature_provider"]
-        return isinstance(other, DebugCredential) and other_vars == self_vars
+        return isinstance(other, DebugCredentialEdgeLockEnclave) and self._vars() == other._vars()
 
     @classmethod
-    def parse(cls, data: bytes) -> Self:
+    def _parse(cls, data: bytes) -> Self:
         """Parse the debug credential.
 
         :param data: Raw data as bytes
@@ -784,8 +800,7 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
             beacon,
             flags,
         ) = unpack_from(format_head, data)
-        if not flags & 0x8000_0000:
-            raise SPSDKError("Invalid flag")
+        (used_rot, _) = DebugCredentialEdgeLockEnclave.parse_flags(int.to_bytes(flags, 4, "little"))
 
         srk_table = SRKTable.parse(data[calcsize(format_head) :])
         srk_table.update_fields()
@@ -793,26 +808,19 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         rot_meta = int.to_bytes(flags, 4, "little") + srk_table.export()
         format_tail = f"<{cls.HASH_LENGTH * 2}s{cls.HASH_LENGTH * 2}s"
         dck_pub, signature = unpack_from(format_tail, data, calcsize(format_head) + len(srk_table))
+        rot_pub = srk_table.get_source_keys()[used_rot].export()
 
         return cls(
             socc=socc,
             uuid=uuid,
             rot_meta=rot_meta,
             dck_pub=dck_pub,
-            rot_pub=bytes(),
+            rot_pub=rot_pub,
             cc_socu=cc_socu,
             cc_vu=cc_vu,
             cc_beacon=beacon,
             signature=signature,
         )
-
-    @classmethod
-    def get_instance_from_challenge(cls, data: bytes) -> Self:
-        """Returns instance of class from DAP authentication challenge data.
-
-        :return: Instance of this class.
-        """
-        return cls.parse(data)
 
 
 class DebugCredentialRSA2048(DebugCredentialRSA):

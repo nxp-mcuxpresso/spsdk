@@ -10,15 +10,15 @@ from copy import copy
 
 import pytest
 import yaml
-from click.testing import CliRunner
 
 import spsdk.shadowregs.shadowregs as SR
 import spsdk.utils.registers as REGS
-from spsdk.apps.shadowregs import main
+from spsdk.apps.shadowregs import CONFIG_DATABASE, main
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound
 from spsdk.utils.misc import use_working_directory
 from spsdk.utils.reg_config import RegConfig
+from tests.cli_runner import CliRunner
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
 TEST_DEV_NAME = "sh_test_dev"
@@ -152,13 +152,13 @@ def test_shadowreg_yml(data_dir, tmpdir):
     test_val_rev.reverse()
     shadowregs.set_register("REG1", 0x12345678)
     shadowregs.set_register("REG2", 0x4321)
-    shadowregs.set_register("REG_INVERTED_AP", 0xA5A5A5A5)
+    shadowregs.set_register("REG_INVERTED_AP", 0xEDCBA987)
     shadowregs.set_register("REG_BIG", test_val)
     shadowregs.set_register("REG_BIG_REV", test_val)
 
     assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
     assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, "big")
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
+    assert shadowregs.get_register("REG_INVERTED_AP") == 0xEDCBA987.to_bytes(4, "big")
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 
@@ -173,9 +173,9 @@ def test_shadowreg_yml(data_dir, tmpdir):
 
     assert shadowregs_load_raw.get_register("REG1") == 0x12345678.to_bytes(4, "big")
     assert shadowregs_load_raw.get_register("REG2") == 0x4321.to_bytes(2, "big")
-    assert shadowregs_load_raw.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
+    assert shadowregs_load_raw.get_register("REG_INVERTED_AP") == 0xEDCBA987.to_bytes(4, "big")
     assert shadowregs_load_raw.get_register("REG_BIG") == test_val
-    assert shadowregs_load_raw.get_register("REG_BIG_REV") == test_val_rev
+    assert shadowregs_load_raw.get_register("REG_BIG_REV") == test_val
 
     probe.clear()
 
@@ -187,7 +187,7 @@ def test_shadowreg_yml(data_dir, tmpdir):
     assert shadowregs_load.get_register("REG2") == b"\x03!"
     assert shadowregs_load.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
     assert shadowregs_load.get_register("REG_BIG") == test_val
-    assert shadowregs_load.get_register("REG_BIG_REV") == test_val
+    assert shadowregs_load.get_register("REG_BIG_REV") == test_val_rev
 
     probe.clear()
 
@@ -199,7 +199,7 @@ def test_shadowreg_yml(data_dir, tmpdir):
     assert shadowregs_load2.get_register("REG2") == b"\x03!"
     assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
     assert shadowregs_load2.get_register("REG_BIG") == test_val
-    assert shadowregs_load2.get_register("REG_BIG_REV") == test_val
+    assert shadowregs_load2.get_register("REG_BIG_REV") == test_val_rev
 
     shadowregs_load2 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
     shadowregs_load2.load_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=False)
@@ -209,7 +209,7 @@ def test_shadowreg_yml(data_dir, tmpdir):
     assert shadowregs_load2.get_register("REG2") == b"\x03!"
     assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
     assert shadowregs_load2.get_register("REG_BIG") == test_val
-    assert shadowregs_load2.get_register("REG_BIG_REV") == test_val
+    assert shadowregs_load2.get_register("REG_BIG_REV") == test_val_rev
 
 
 def test_shadowreg_yml_corrupted(data_dir):
@@ -343,18 +343,38 @@ def test_shadow_register_enable_debug_probe_exceptions():
         assert not SR.enable_debug(probe)
 
 
-def test_generate_template(tmpdir):
+def test_generate_template(cli_runner: CliRunner, tmpdir):
     template = "template.yaml"
     family = "rt6xx"
     with use_working_directory(tmpdir):
-        runner = CliRunner()
-        result = runner.invoke(main, f"--family {family} get-template --output {template}")
-        assert result.exit_code == 0
+        cli_runner.invoke(main, f"--family {family} get-template --output {template}")
         assert os.path.isfile(template)
-        result = runner.invoke(
-            main, f"--family {family} get-template --output {template} --raw --force"
-        )
-        assert result.exit_code == 0
+        cli_runner.invoke(main, f"--family {family} get-template --output {template} --raw --force")
         assert os.path.isfile(template)
         with open(template) as f:
             assert yaml.safe_load(f)
+
+
+@pytest.mark.parametrize(
+    "family",
+    [
+        ("rt5xx"),
+        ("rt6xx"),
+        ("rw61x"),
+    ],
+)
+def test_rkth_order(family, data_dir):
+    """Test for rkth right order in shadowregs."""
+    probe = get_probe()
+    config = RegConfig(CONFIG_DATABASE)
+    sr = SR.ShadowRegisters(debug_probe=probe, config=config, device=family)
+    # to simplify HW differencies unify offsets
+    sr.offset_for_read = sr.offset
+    sr.load_yaml_config(os.path.join(data_dir, "cfg_rkth.yaml"))
+    sr.sets_all_registers()
+
+    # validate expected results
+    assert sr.get_register("RKTH0") == b"\x13\x12\x11\x10"
+    assert sr.get_register("RKTH7") == b"\x2f\x2e\x2d\x2c"
+    rkth = sr.regs.find_reg("RKTH").get_bytes_value()
+    assert rkth[:4] == b"\x10\x11\x12\x13"

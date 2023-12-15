@@ -50,7 +50,7 @@ devices:
         data_file: mcxn9xx_a0.yaml
       a1:
         data_file: mcxn9xx_a1.yaml
-    latest: a0
+    latest: a1
   kw45xx:
     revisions:
       a1:
@@ -65,3 +65,4 @@ devices:
     revisions:
       a1:
         data_file: rw61x_a1.yaml
+    latest: a1

@@ -11,21 +11,19 @@ import logging
 import os
 
 import pytest
-from click.testing import CliRunner
 from ruamel.yaml import YAML
 
 from spsdk.apps import pfr as cli
 from spsdk.apps import spsdk_apps
 from spsdk.pfr.pfr import CMPA, PfrConfiguration
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from tests.cli_runner import CliRunner
 
 
-def test_command_line_interface():
+def test_command_line_interface(cli_runner: CliRunner):
     """Test the CLI."""
-    runner = CliRunner()
-    help_result = runner.invoke(cli.main, ["--help"])
-    assert help_result.exit_code == 0, help_result.output
-    assert "Show this message and exit." in help_result.output
+    result = cli_runner.invoke(cli.main, ["--help"])
+    assert "Show this message and exit." in result.output
 
 
 @pytest.mark.parametrize(
@@ -42,7 +40,7 @@ def test_command_line_interface():
         ("nhs52sxx", "cfpa"),
     ],
 )
-def test_generate_all(data_dir, tmpdir, name, type):
+def test_generate_all(cli_runner: CliRunner, data_dir, tmpdir, name, type):
     """Test PFR CLI - Generation CMPA binary for all interesting parts."""
     test_data_dir = os.path.join(data_dir, "yaml_bin")
 
@@ -56,15 +54,51 @@ def test_generate_all(data_dir, tmpdir, name, type):
         "-x",  # Omit PFRC tests
     ]
     logging.debug(cmd)
-    runner = CliRunner()
-    result = runner.invoke(cli.main, cmd)
-    assert result.exit_code == 0, result.output
+    cli_runner.invoke(cli.main, cmd)
     new_data = load_binary(f"{tmpdir}/{name}_{type}.bin")
     expected = load_binary(f"{test_data_dir}/{name}_{type}.bin", "rb")
     assert new_data == expected
 
 
-def test_generate_cmpa(data_dir, tmpdir):
+def test_generate_cmpa_validate_export(cli_runner: CliRunner, data_dir, tmpdir):
+    out_file = os.path.join(tmpdir, "cmpa_mcxn9xx.bin")
+    cmd_cmpa_config = [
+        "generate-binary",
+        "--output",
+        out_file,
+        "--config",
+        os.path.join(data_dir, "cmpa_mcxn9xx.yaml"),
+    ]
+    cmd_cert_block_config = cmd_cmpa_config + [
+        "--rot-config",
+        os.path.join(data_dir, "cert_block_v21.yaml"),
+    ]
+    cmd_mbi_config = cmd_cmpa_config + [
+        "--rot-config",
+        os.path.join(data_dir, "mbi_config_mcxn9xx.yaml"),
+    ]
+    cmd_secret_file = cmd_cmpa_config + [
+        f"--secret-file",
+        os.path.join(data_dir, "keys", "ROT1_p384.pem"),
+        f"--secret-file",
+        os.path.join(data_dir, "keys", "ROT2_p384.pem"),
+        f"--secret-file",
+        os.path.join(data_dir, "keys", "ROT3_p384.pem"),
+        f"--secret-file",
+        os.path.join(data_dir, "keys", "ROT4_p384.pem"),
+    ]
+
+    reference_binary = b""
+    for cmd in [cmd_cmpa_config, cmd_cert_block_config, cmd_mbi_config, cmd_secret_file]:
+        cli_runner.invoke(cli.main, cmd)
+        assert os.path.isfile(out_file)
+        if not reference_binary:
+            reference_binary = load_binary(out_file)
+            continue
+        assert reference_binary == load_binary(out_file)
+
+
+def test_generate_cmpa(cli_runner: CliRunner, data_dir, tmpdir):
     """Test PFR CLI - Generation CMPA binary."""
     cmd = [
         "generate-binary",
@@ -77,15 +111,13 @@ def test_generate_cmpa(data_dir, tmpdir):
         f"{data_dir}/selfsign_privatekey_rsa2048.pem",
     ]
     logging.debug(cmd)
-    runner = CliRunner()
-    result = runner.invoke(cli.main, cmd)
-    assert result.exit_code == 0, result.output
+    cli_runner.invoke(cli.main, cmd)
     new_data = open(f"{tmpdir}/pnd.bin", "rb").read()
     expected = open(f"{data_dir}/CMPA_96MHz.bin", "rb").read()
     assert new_data == expected
 
 
-def test_generate_cmpa_with_elf2sb(data_dir, tmpdir):
+def test_generate_cmpa_with_elf2sb(cli_runner: CliRunner, data_dir, tmpdir):
     """Test PFR CLI - Generation CMPA binary with elf2sb."""
     org_file = f"{tmpdir}/org.bin"
     new_file = f"{tmpdir}/new.bin"
@@ -102,12 +134,9 @@ def test_generate_cmpa_with_elf2sb(data_dir, tmpdir):
         + f" -o {big_file} -e big_elf2sb_config.json -sf rotk0_rsa_2048.pub -sf rotk1_rsa_2048.pub"
     )
     with use_working_directory(data_dir):
-        result = CliRunner().invoke(cli.main, cmd1.split())
-        assert result.exit_code == 0, result.output
-        result = CliRunner().invoke(cli.main, cmd2.split())
-        assert result.exit_code == 0, result.output
-        result = CliRunner().invoke(cli.main, cmd3.split())
-        assert result.exit_code != 0, result.output
+        cli_runner.invoke(cli.main, cmd1.split())
+        cli_runner.invoke(cli.main, cmd2.split())
+        cli_runner.invoke(cli.main, cmd3.split(), expected_code=-1)
     assert filecmp.cmp(org_file, new_file)
 
 
@@ -123,7 +152,7 @@ def test_generate_cmpa_with_elf2sb_lpc55s3x(data_dir, tmpdir):
         assert filecmp.cmp(org, new)
 
 
-def test_parse(data_dir, tmpdir):
+def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
     """Test PFR CLI - Parsing CMPA binary to get config."""
     cmd = [
         "parse-binary",
@@ -139,9 +168,7 @@ def test_parse(data_dir, tmpdir):
     ]
 
     logging.debug(cmd)
-    runner = CliRunner()
-    result = runner.invoke(cli.main, cmd)
-    assert result.exit_code == 0, result.output
+    cli_runner.invoke(cli.main, cmd)
     new_cfg = PfrConfiguration(f"{tmpdir}/config.yml")
     expected_cfg = PfrConfiguration(f"{data_dir}/cmpa_96mhz_rotkh.yml")
     assert new_cfg.settings == expected_cfg.settings
@@ -174,7 +201,7 @@ def test_parse(data_dir, tmpdir):
         ("nhs52sxx", "cfpa"),
     ],
 )
-def test_user_config(tmpdir, family, type):
+def test_user_config(cli_runner: CliRunner, tmpdir, family, type):
     """Test PFR CLI - Generation CMPA user config."""
     cmd = [
         "get-template",
@@ -186,21 +213,17 @@ def test_user_config(tmpdir, family, type):
         f"{tmpdir}/pfr.yml",
     ]
     logging.debug(cmd)
-    runner = CliRunner()
-    result = runner.invoke(cli.main, cmd)
-    assert result.exit_code == 0, result.output
+    cli_runner.invoke(cli.main, cmd)
     pfr_config = PfrConfiguration(f"{tmpdir}/pfr.yml")
     assert pfr_config
     assert pfr_config.type == "CMPA" or pfr_config.type == "CFPA"
 
 
-def test_info(tmpdir):
+def test_info(cli_runner: CliRunner, tmpdir):
     """Test PFR CLI - Creating HTML fields information."""
     cmd = f"info --family lpc55s6x --type cmpa --output {tmpdir}/cmpa.html"
     logging.debug(cmd)
-    runner = CliRunner()
-    result = runner.invoke(cli.main, cmd.split())
-    assert result.exit_code == 0, result.output
+    cli_runner.invoke(cli.main, cmd.split())
     assert os.path.isfile(f"{tmpdir}/cmpa.html")
 
 
@@ -217,7 +240,14 @@ def test_info(tmpdir):
     ],
 )
 def test_pfrc_integration_1(
-    tmp_path, data_dir, test_pass, dfl_niden, dfl_inverse, force, calc_inverse
+    cli_runner: CliRunner,
+    tmp_path,
+    data_dir,
+    test_pass,
+    dfl_niden,
+    dfl_inverse,
+    force,
+    calc_inverse,
 ):
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     config = load_configuration(cmpa_config_template)
@@ -235,7 +265,21 @@ def test_pfrc_integration_1(
     if calc_inverse:
         cmd += " --calc-inverse"
     logging.debug(cmd)
-    runner = CliRunner()
-    result = runner.invoke(cli.main, cmd.split())
-    expected_code = 0 if test_pass else 1
-    assert result.exit_code == expected_code
+    cli_runner.invoke(cli.main, cmd.split(), expected_code=0 if test_pass else 1)
+
+
+def test_generate_cmpa_certblock_lpc55s3x(cli_runner: CliRunner, data_dir, tmpdir):
+    """Test PFR CLI - Generation CMPA binary with elf2sb."""
+    new = f"{tmpdir}/new.bin"
+    org = "cmpa_lpc55s3x.bin"
+    cmd1 = f"generate-binary --config cmpa_lpc55s3x.json -e mbi_config_lpc55s3x.yaml -o {new}"
+    cmd2 = f"generate-binary --config cmpa_lpc55s3x.json -e mbi_config_lpc55s3x_bin_certblock.yaml -o {new}"
+    cmd3 = f"generate-binary --config cmpa_lpc55s3x.json -e cert_block_v21.yaml -o {new}"
+    cmd4 = f"generate-binary --config cmpa_lpc55s3x.json -e cert_block_v21.bin -o {new}"
+    cmds = [cmd1, cmd2, cmd3, cmd4]
+
+    with use_working_directory(data_dir):
+        for cmd in cmds:
+            logging.debug(cmd)
+            cli_runner.invoke(cli.main, cmd.split())
+            assert filecmp.cmp(org, new)

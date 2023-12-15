@@ -5,8 +5,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test for TPHOST target adapter for BLHOST."""
-from unittest.mock import patch
-
 import pytest
 
 from spsdk.mboot.interfaces.uart import MbootUARTInterface

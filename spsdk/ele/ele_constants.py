@@ -20,6 +20,7 @@ class MessageIDs(Enum):
     READ_COMMON_FUSE = (0x97, "Read common fuse request.", "")
     GET_FW_VERSION_REQ = (0x9D, "Get firmware version request.", "")
     RETURN_LIFECYCLE_UPDATE_REQ = (0xA0, "Return lifecycle update request.", "")
+    LOAD_KEY_BLOB_REQ = (0xA7, "Load KeyBlob request.", "")
     GENERATE_KEY_BLOB_REQ = (0xAF, "Generate KeyBlob request.", "")
     GET_FW_STATUS_REQ = (0xC5, "Get ELE FW status request.", "")
     GET_INFO_REQ = (0xDA, "Get ELE Information request.", "")

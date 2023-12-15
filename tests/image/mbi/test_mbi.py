@@ -506,6 +506,24 @@ def test_plain_ram_crc_default_tz(data_dir, input_img, load_address, expected_mb
     "input_img,tz_config,family,expected_mbi",
     [
         (
+            "lpcxpresso55s06_hello_world.bin",
+            "lpc55s0xA0.yaml",
+            "lpc55s0x",
+            "lpc55s0x_a1_hello_world_xip_crc_custom_tz_mbi.bin",
+        ),
+        (
+            "lpcxpresso55s16_hello_world.bin",
+            "lpc55s1xA0.yaml",
+            "lpc55s1x",
+            "lpc55s1x_a1_hello_world_xip_crc_custom_tz_mbi.bin",
+        ),
+        (
+            "lpcxpresso55s36_hello_world.bin",
+            "lpc55s3xA1.yaml",
+            "lpc55s3x",
+            "lpc55s3x_a1_hello_world_xip_crc_custom_tz_mbi.bin",
+        ),
+        (
             "lpcxpresso55s69_led_blinky.bin",
             "lpc55s6xA1.yaml",
             "lpc55s6x",
@@ -534,6 +552,30 @@ def test_plain_ram_crc_default_tz(data_dir, input_img, load_address, expected_mb
             "rt5xx_few.yaml",
             "rt5xx",
             "evkmimxrt595_hello_world_xip_crc_custom_tz_mbi.bin",
+        ),
+        (
+            "mcxn9xxevk_hello_world.bin",
+            "mcxn9xxA1.yaml",
+            "mcxn9xx",
+            "mcxn9xx_a1_hello_world_xip_crc_custom_tz_mbi.bin",
+        ),
+        (
+            "kw45b41z_hello_world.bin",
+            "kw45xxA1.yaml",
+            "kw45xx",
+            "kw45b41z_a1_hello_world_xip_crc_custom_tz_mbi.bin",
+        ),
+        (
+            "k32w148_hello_world.bin",
+            "k32w1xxA1.yaml",
+            "k32w1xx",
+            "k32w148_a1_hello_world_xip_crc_custom_tz_mbi.bin",
+        ),
+        (
+            "rdrw610_hello_world.bin",
+            "rw61xA1.yaml",
+            "rw61x",
+            "rw61x_a1_hello_world_xip_crc_custom_tz_mbi.bin",
         ),
     ],
 )

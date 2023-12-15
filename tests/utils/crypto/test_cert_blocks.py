@@ -13,14 +13,14 @@ from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.crypto.cert_blocks import (
+    CertBlock,
     CertBlockHeader,
     CertBlockV1,
     CertBlockV21,
     CertBlockVx,
     CertificateBlockHeader,
-    find_main_cert_index,
+    IskCertificateLite,
     find_root_certificates,
-    get_main_cert_index,
 )
 from spsdk.utils.misc import load_binary
 
@@ -189,15 +189,15 @@ def test_cert_block_invalid():
 def test_get_main_cert_index(data_dir, config, passed, expected_result):
     search_paths = [os.path.join(data_dir, "certs_and_keys")]
     if passed:
-        result = get_main_cert_index(config, search_paths=search_paths)
+        result = CertBlockV1.get_main_cert_index(config, search_paths=search_paths)
         assert result == expected_result
     else:
         with pytest.raises(expected_result):
-            get_main_cert_index(config, search_paths=search_paths)
+            CertBlockV1.get_main_cert_index(config, search_paths=search_paths)
 
 
 @pytest.mark.parametrize(
-    "config,index",
+    "config,index,cert_block_version",
     [
         (
             {
@@ -208,6 +208,18 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
                 "rootCertificate3File": "root_k1_signed_cert0_noca.der.cert",
             },
             1,
+            "cert_block_v1",
+        ),
+        (
+            {
+                "mainRootCertPrivateKeyFile": "k0_cert0_2048.pem",
+                "rootCertificate0File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate1File": "root_k0_signed_cert0_noca.der.cert",
+                "rootCertificate2File": "root_k1_signed_cert0_noca.der.cert",
+                "rootCertificate3File": "root_k1_signed_cert0_noca.der.cert",
+            },
+            1,
+            "cert_block_v21",
         ),
         (
             {
@@ -218,6 +230,7 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
                 "rootCertificate3File": "root_k1_signed_cert0_noca.der.cert",
             },
             None,
+            "cert_block_v1",
         ),
         (
             {
@@ -227,6 +240,7 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
                 "rootCertificate3File": "root_k3_signed_cert0_noca.der.cert",
             },
             None,
+            "cert_block_v1",
         ),
         (
             {
@@ -236,6 +250,7 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
                 "rootCertificate2File": "one_more_non_existing.cert",
             },
             None,
+            "cert_block_v1",
         ),
         (
             {
@@ -246,12 +261,16 @@ def test_get_main_cert_index(data_dir, config, passed, expected_result):
                 "rootCertificate3File": "root_k3_signed_cert0_noca.der.cert",
             },
             None,
+            "cert_block_v1",
         ),
     ],
 )
-def test_find_main_cert_index(data_dir, config, index):
+def test_find_main_cert_index(data_dir, config, index, cert_block_version):
+    cert_block_class: CertBlock = {"cert_block_v1": CertBlockV1, "cert_block_v21": CertBlockV21}[
+        cert_block_version
+    ]
     search_paths = [os.path.join(data_dir, "certs_and_keys")]
-    found_index = find_main_cert_index(config, search_paths=search_paths)
+    found_index = cert_block_class.find_main_cert_index(config, search_paths=search_paths)
     assert found_index == index
 
 
@@ -328,6 +347,21 @@ def test_find_root_certficates(config, error, expected_list):
         assert certificates == expected_list
 
 
+def test_isk_cert_lite(data_dir):
+    main_root_private_key_file = f"{data_dir}/ec_pk_secp256r1_cert0.pem"
+    pub_key = f"{data_dir}/ec_secp256r1_cert0.pem"
+    isk_cert = load_binary(pub_key)
+
+    signature_provider = get_signature_provider(
+        local_file_key=main_root_private_key_file,
+    )
+
+    cert = IskCertificateLite(isk_cert)
+    cert.create_isk_signature(signature_provider)
+    data = cert.export()
+    assert data == IskCertificateLite.parse(data).export()
+
+
 def test_cert_block_vx(data_dir):
     main_root_private_key_file = f"{data_dir}/ec_pk_secp256r1_cert0.pem"
     isk_certificate = f"{data_dir}/ec_secp256r1_cert0.pem"
@@ -340,10 +374,13 @@ def test_cert_block_vx(data_dir):
     cert_block = CertBlockVx(
         signature_provider=signature_provider,
         isk_cert=isk_cert,
+        self_signed=True,
     )
 
     exported = cert_block.export()
-    CertBlockVx.parse(exported).export()
+    cert_block = CertBlockVx.parse(exported)
+    cert_block.signature_provider = signature_provider
+    assert len(cert_block.export()) == CertBlockVx.ISK_CERT_LENGTH
 
 
 def test_cert_block_v31(data_dir):

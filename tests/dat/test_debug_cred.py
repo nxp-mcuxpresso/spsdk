@@ -16,7 +16,7 @@ from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKeyEcc
 from spsdk.dat.debug_credential import DebugCredential
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.misc import load_binary, use_working_directory, write_file
+from spsdk.utils.misc import load_binary, use_working_directory
 
 
 @pytest.mark.parametrize(
@@ -162,7 +162,7 @@ def test_lpc55s3x_export_parse_invalid(data_dir):
             yaml_config = yaml.safe_load(f)
         dc = DebugCredential.create_from_yaml_config(version="2.0", yaml_config=yaml_config)
         dc.sign()
-        with pytest.raises(SPSDKError, match="Invalid flag"):
+        with pytest.raises(SPSDKValueError):
             dc.parse(bytes(232))
 
 
@@ -260,3 +260,9 @@ def test_debugcredential_parse_export(data_dir, dc_file_name):
         dc_binary = load_binary(dc_file_name)
         dc = DebugCredential.parse(dc_binary)
         assert dc_binary == dc.export()
+
+
+def test_debugcredential_parse_invalid_data():
+    """Verifies parse/export functions."""
+    with pytest.raises(SPSDKError):
+        DebugCredential.parse(b"123456798258963147")

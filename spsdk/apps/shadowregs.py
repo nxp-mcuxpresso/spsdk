@@ -127,6 +127,7 @@ def main(
 ) -> int:
     """NXP Shadow Registers control Tool."""
     spsdk_logger.install(level=log_level)
+    spsdk_logger.configure_pyocd_logger()
 
     probe_user_params = {}
     for par in debug_probe_option:

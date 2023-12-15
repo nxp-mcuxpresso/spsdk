@@ -10,10 +10,10 @@ import shutil
 
 import pytest
 import yaml
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from tests.cli_runner import CliRunner
 
 INPUT_BINARY = "evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_bootable_nopadding.bin"
 
@@ -59,8 +59,7 @@ INPUT_BINARY = "evkmimxrt1170_iled_blinky_cm7_QSPI_FLASH_bootable_nopadding.bin"
         ),
     ],
 )
-def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
-    runner = CliRunner()
+def test_nxpimage_iee(cli_runner: CliRunner, tmpdir, data_dir, case, config, reference, keyblobs):
     work_dir = os.path.join(tmpdir, "iee", case)
     shutil.copytree(os.path.join(data_dir, "iee", case), work_dir)
     shutil.copy(os.path.join(data_dir, "iee", INPUT_BINARY), work_dir)
@@ -72,8 +71,7 @@ def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
         keyblob_name = config_dict["keyblob_name"]
         encrypted_name = config_dict["encrypted_name"]
         cmd = f"iee export -c {config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(os.path.join(out_dir, output_name))
         assert os.path.isfile(os.path.join(out_dir, encrypted_name))
 
@@ -97,12 +95,10 @@ def test_nxpimage_iee(tmpdir, data_dir, case, config, reference, keyblobs):
         ("rt118x"),
     ],
 )
-def test_nxpimage_iee_template_cli(tmpdir, family):
-    runner = CliRunner()
+def test_nxpimage_iee_template_cli(cli_runner: CliRunner, tmpdir, family):
     template = os.path.join(tmpdir, "iee_template.yaml")
     cmd = f"iee get-template --family {family} --output {template}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(template)
 
 
@@ -115,8 +111,7 @@ def test_nxpimage_iee_template_cli(tmpdir, family):
         )
     ],
 )
-def test_iee_custom_output(tmpdir, data_dir, case, config):
-    runner = CliRunner()
+def test_iee_custom_output(cli_runner: CliRunner, tmpdir, data_dir, case, config):
     work_dir = os.path.join(tmpdir, "iee", case)
     shutil.copytree(os.path.join(data_dir, "iee", case), work_dir)
     shutil.copy(os.path.join(data_dir, "iee", INPUT_BINARY), work_dir)
@@ -132,8 +127,7 @@ def test_iee_custom_output(tmpdir, data_dir, case, config):
         with open(modified_config, "w") as f:
             yaml.dump(config_dict, f)
         cmd = f"iee export -c {modified_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
 
         assert os.path.isfile(os.path.join(out_dir, "keyblob.bin"))
         assert not os.path.isfile(os.path.join(out_dir, "iee_rt117x_blhost.bcf"))

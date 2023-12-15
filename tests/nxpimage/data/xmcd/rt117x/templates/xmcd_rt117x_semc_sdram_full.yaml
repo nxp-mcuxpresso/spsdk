@@ -107,7 +107,7 @@ xmcd_settings:
   #  ====================================== [Example of possible configuration #0] ======================================
     # -----------------------------------------===== portSize [Required] =====------------------------------------------
     # Description: Port size of SDRAM: 0 - 8-bit, 1 - 16-bit, 2 - 32-bit
-    value: '0x00'
+    value: '0x02'
 
   #  ====================================== [Example of possible configuration #1] ======================================
     bitfields:
@@ -115,7 +115,7 @@ xmcd_settings:
       # Description: Port size of SDRAM
       # Possible options: <XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT, XMCD_SEMC_SDRAM_PORT_SIZE_16_BIT,
       # XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT>
-      portSize: XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT
+      portSize: XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT
   pinConfigPull:
   # ====================================================================================================================
   #                             == List of possible 2 options. Options [value, bitfields] ==                            

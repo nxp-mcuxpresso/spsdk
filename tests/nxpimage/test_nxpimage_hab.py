@@ -11,10 +11,10 @@ import shutil
 from shutil import copytree
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
 from spsdk.utils.misc import load_binary, use_working_directory
+from tests.cli_runner import CliRunner
 
 
 @pytest.fixture()
@@ -22,8 +22,7 @@ def hab_data_dir(data_dir):
     return os.path.join(data_dir, "hab")
 
 
-def export_hab_cli(output_path: str, config_path: str, app_path: str):
-    runner = CliRunner()
+def export_hab_cli(cli_runner: CliRunner, output_path: str, config_path: str, app_path: str):
     cmd = [
         "hab",
         "export",
@@ -34,8 +33,7 @@ def export_hab_cli(output_path: str, config_path: str, app_path: str):
         app_path,
     ]
 
-    result = runner.invoke(nxpimage.main, cmd)
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd)
 
 
 @pytest.mark.parametrize(
@@ -65,11 +63,14 @@ def export_hab_cli(output_path: str, config_path: str, app_path: str):
         ),
     ],
 )
-def test_nxpimage_hab_export(tmpdir, hab_data_dir, configuration, app_name, check_areas):
+def test_nxpimage_hab_export(
+    cli_runner: CliRunner, tmpdir, hab_data_dir, configuration, app_name, check_areas
+):
     config_dir = os.path.join(hab_data_dir, "export", configuration)
     with use_working_directory(tmpdir):
         output_file_path = os.path.join(tmpdir, "image_output.bin")
         export_hab_cli(
+            cli_runner,
             output_file_path,
             os.path.join(config_dir, "config.bd"),
             os.path.join(config_dir, app_name),
@@ -107,13 +108,12 @@ def test_nxpimage_hab_export(tmpdir, hab_data_dir, configuration, app_name, chec
         ("rt1160_RAM_encrypted", "validationboard_imxrt1160_iled_blinky_cm7_int_RAM.s19"),
     ],
 )
-def test_nxpimage_hab_convert(tmpdir, hab_data_dir, configuration, app_name):
+def test_nxpimage_hab_convert(cli_runner: CliRunner, tmpdir, hab_data_dir, configuration, app_name):
     config_dir = os.path.join(hab_data_dir, "export", configuration)
     shutil.copytree(config_dir, tmpdir, dirs_exist_ok=True)
     command_file_path = os.path.join(config_dir, "config.bd")
     ref_file_path = os.path.join(config_dir, "output.bin")
     app_file_path = os.path.join(config_dir, app_name)
-    runner = CliRunner()
     with use_working_directory(tmpdir):
         converted_config = os.path.join(tmpdir, "config.yaml")
         cmd = [
@@ -125,8 +125,7 @@ def test_nxpimage_hab_convert(tmpdir, hab_data_dir, configuration, app_name):
             converted_config,
             app_file_path,
         ]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(converted_config)
         # assert load_binary(ref_file_path) == load_binary(output_file_path)
 
@@ -140,8 +139,7 @@ def test_nxpimage_hab_convert(tmpdir, hab_data_dir, configuration, app_name):
             output_file_path,
             app_file_path,
         ]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(output_file_path)
         assert load_binary(ref_file_path) == load_binary(output_file_path)
 
@@ -156,14 +154,14 @@ def test_nxpimage_hab_convert(tmpdir, hab_data_dir, configuration, app_name):
         ),
     ],
 )
-def test_nxpimage_hab_parse(tmpdir, hab_data_dir, configuration, source_bin, segments):
+def test_nxpimage_hab_parse(
+    cli_runner: CliRunner, tmpdir, hab_data_dir, configuration, source_bin, segments
+):
     config_dir = os.path.join(hab_data_dir, "parse", configuration)
     source_bin_path = os.path.join(config_dir, source_bin)
-    runner = CliRunner()
     with use_working_directory(tmpdir):
         cmd = ["hab", "parse", "--binary", source_bin_path, "-o", str(tmpdir)]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
         for segment in segments:
             segment_file_name = f"{segment}.bin"
             segment_file_path = os.path.join(tmpdir, segment_file_name)
@@ -175,12 +173,13 @@ def test_nxpimage_hab_parse(tmpdir, hab_data_dir, configuration, source_bin, seg
             )
 
 
-def test_nxpimage_hab_export_secret_key_generated(tmpdir, hab_data_dir):
+def test_nxpimage_hab_export_secret_key_generated(cli_runner: CliRunner, tmpdir, hab_data_dir):
     config_dir = os.path.join(hab_data_dir, "export", "rt1165_semcnand_encrypted_random")
     with use_working_directory(tmpdir):
         copytree(config_dir, tmpdir, dirs_exist_ok=True)
         output_file_path = os.path.join(tmpdir, "image_output.bin")
         export_hab_cli(
+            cli_runner,
             output_file_path,
             os.path.join(tmpdir, "config.bd"),
             os.path.join(tmpdir, "evkmimxrt1064_iled_blinky_SDRAM.s19"),

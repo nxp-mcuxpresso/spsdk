@@ -195,7 +195,7 @@ def get_jira_ids(git_output: str) -> List[str]:
     return ids
 
 
-def ticket_info_param_hasher(args: tuple, kwargs: dict) -> int:
+def ticket_info_hasher(args: tuple, kwargs: dict) -> str:
     """Helper function providing hash value of arguments for `get_ticket_info` function.
 
     To optimize caching persistent caching, we need function with consistent return values.
@@ -205,12 +205,12 @@ def ticket_info_param_hasher(args: tuple, kwargs: dict) -> int:
     to_hash: str = kwargs["ticket"] if "ticket" in kwargs else args[0]
     digest = hashes.Hash(hashes.MD5())
     digest.update(to_hash.encode("utf-8"))
-    hash_val = int.from_bytes(digest.finalize(), "big")
-    logging.debug(f"cache param hashing: {to_hash} -> {hash_val}")
-    return hash_val
+    digest_string = digest.finalize().hex()
+    logging.debug(f"cache param hashing: {to_hash} -> {digest_string}")
+    return digest_string
 
 
-@cachier(hash_params=ticket_info_param_hasher)
+@cachier(hash_func=ticket_info_hasher)
 def get_ticket_info(ticket: str, jira: Optional[JIRA]) -> TicketRecord:
     """Extract info for `ticket` from JIRA.
 

@@ -16,6 +16,7 @@ from typing import Generator, NamedTuple, Optional, Tuple, Union
 from crcmod.predefined import mkPredefinedCrcFun
 from typing_extensions import Self
 
+from spsdk.exceptions import SPSDKAttributeError
 from spsdk.mboot.commands import CmdResponse, parse_cmd_response
 from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
 from spsdk.mboot.protocol.base import MbootProtocolBase
@@ -129,10 +130,11 @@ class MbootSerialProtocol(MbootProtocolBase):
         """Encapsulate command into frames and send them to device.
 
         :param packet: Command packet object to be sent
+        :raises SPSDKAttributeError: Command packed contains no data to be sent
         """
         data = packet.to_bytes(padding=False)
         if not data:
-            raise AttributeError("Incorrect packet type")
+            raise SPSDKAttributeError("Incorrect packet type")
         frame = self._create_frame(data, FPType.CMD)
         self._send_frame(frame)
 

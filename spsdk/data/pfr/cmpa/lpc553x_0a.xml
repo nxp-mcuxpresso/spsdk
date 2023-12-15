@@ -2,9 +2,10 @@
 <!--
   Copyright 2023 NXP
 
-  SPDX-License-Identifier: BSD-3-Clause 
+  SPDX-License-Identifier: BSD-3-Clause
 -->
-<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
   <register offset="0" width="32" name="BOOT_CFG" description="Boot Configuration">
     <alias type="CMSIS" value="CMPA.BOOT_CFG"/>
     <bit_field offset="0" width="3" name="DEFAULT_BOOT_SOURCE" access="RO" reset_value="0" description="Default Boot Source">
@@ -33,9 +34,8 @@
     <bit_field offset="7" width="2" name="BOOT_SPEED" access="RO" reset_value="0" description="Boot Speed Core Clock">
       <alias type="CMSIS" value="FLASH_CMPA_BOOT_CFG_BOOT_SPEED(x)"/>
       <bit_field_value name="BOOT_CFG_BOOT_SPEED_SYS_SPD_CODE" value="0b00" description="Defined by NMPA[SYSTEM_SPEED_CODE]"/>
-      <bit_field_value name="BOOT_CFG_BOOT_SPEED_HHZ48_FRO" value="0b01" description="48MHz FRO"/>
-      <bit_field_value name="BOOT_CFG_BOOT_SPEED_MHZ96_FRO" value="0b10" description="96MHz FRO"/>
-      <bit_field_value name="BOOT_CFG_BOOT_SPEED_MHZ150_PLL" value="0b11" description="150MHz PLL"/>
+      <bit_field_value name="BOOT_CFG_BOOT_SPEED_HHZ96_FRO" value="0b01" description="96MHz FRO"/>
+      <bit_field_value name="BOOT_CFG_BOOT_SPEED_MHZ48_FRO" value="0b10" description="48MHz FRO"/>
     </bit_field>
     <reserved_bit_field offset="9" width="12" reset_value="0"/>
     <bit_field offset="21" width="1" name="ASRT_FATAL" access="RO" reset_value="0" description="ASRT_FATAL">

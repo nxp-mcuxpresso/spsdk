@@ -23,7 +23,7 @@
   </register>
   <register name="CFPA_PAGE_VERSION" offset="0x4" width="32" description="CFPA Page Version.">
     <alias type="CMSIS" value="CFPA_PAGE_VERSION"/>
-    <bit_field offset="0" width="24" name="CFPA_PAGE_VERSION" access="RO" reset_value="0" description="CFPA page version. &amp;#10;Boot ROM uses this field to determine the active CFPA page by comparing the values in this field for the two CFPA pages. The page with higher version number is picked as active page if it passes the CMAC authentication. This field is updated by ROM whenever CFPA page is updated.">
+    <bit_field offset="0" width="24" name="CFPA_PAGE_VERSION" access="RO" reset_value="0" description="CFPA page version. &amp;#10;Boot ROM uses this field to determine the active CFPA page by comparing the values in this field for the two CFPA pages. The page with higher version number is picked as active page if it passes the CMAC authentication. This field is updated by ROM whenever CFPA page is updated. &amp;#10;Write '0xFF_FFFF' to auto increment current CFPA page version value (by ROM).">
     </bit_field>
     <bit_field offset="24" width="2" name="IMG_UPD" access="RO" reset_value="0" description="Image updated. &amp;#10;Note: CMAC boot is only supported for internal flash. If using a FlexSPI flash XIP image, then this field should always be left as zero.">
       <alias type="CMSIS" value="IMG_UPD"/>

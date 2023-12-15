@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError
 from spsdk.image import IMG_DATA_FOLDER, segments
 from spsdk.image.hab.config_parser import ImageConfig
 from spsdk.image.hab.csf_builder import CsfBuildDirector, CsfBuilder
@@ -21,7 +21,7 @@ from spsdk.image.hab.hab_binary_image import HabBinaryImage, HabSegment
 from spsdk.image.images import BootImgRT
 from spsdk.sbfile.sb2.sly_bd_parser import BDParser
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import load_binary, load_configuration, load_text
+from spsdk.utils.misc import BinaryPattern, load_binary, load_configuration, load_text
 from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
 
 HAB_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_hab.yaml")
@@ -45,38 +45,39 @@ class HabContainer:
     @property
     def ivt_segment(self) -> Optional[bytes]:
         """IVT segment binary."""
-        segment = self.hab_image.get_hab_segment(HabSegment.IVT)
-        return segment.binary if segment else None
+        return self._get_segment(HabSegment.IVT)
 
     @property
     def bdt_segment(self) -> Optional[bytes]:
         """BDT segment binary."""
-        segment = self.hab_image.get_hab_segment(HabSegment.BDT)
-        return segment.binary if segment else None
+        return self._get_segment(HabSegment.BDT)
 
     @property
     def dcd_segment(self) -> Optional[bytes]:
         """DCD segment binary."""
-        segment = self.hab_image.get_hab_segment(HabSegment.DCD)
-        return segment.binary if segment else None
+        return self._get_segment(HabSegment.DCD)
 
     @property
     def xmcd_segment(self) -> Optional[bytes]:
         """XMCD segment binary."""
-        segment = self.hab_image.get_hab_segment(HabSegment.XMCD)
-        return segment.binary if segment else None
+        return self._get_segment(HabSegment.XMCD)
 
     @property
     def app_segment(self) -> Optional[bytes]:
         """APP segment binary."""
-        segment = self.hab_image.get_hab_segment(HabSegment.APP)
-        return segment.binary if segment else None
+        return self._get_segment(HabSegment.APP)
 
     @property
     def csf_segment(self) -> Optional[bytes]:
         """APP segment binary."""
-        segment = self.hab_image.get_hab_segment(HabSegment.CSF)
-        return segment.binary if segment else None
+        return self._get_segment(HabSegment.CSF)
+
+    def _get_segment(self, segment_name: HabSegment) -> Optional[bytes]:
+        try:
+            segment = self.hab_image.get_hab_segment(segment_name)
+        except SPSDKKeyError:
+            return None
+        return segment.binary
 
     @classmethod
     def load_from_config(
@@ -175,7 +176,11 @@ class HabContainer:
             hab_image.add_hab_segment(HabSegment.BDT, rt_img.bdt.export())
         # DCD
         if rt_img.dcd is not None:
-            hab_image.add_hab_segment(HabSegment.DCD, rt_img.dcd.export())
+            hab_image.add_hab_segment(
+                HabSegment.DCD,
+                rt_img.dcd.export(),
+                offset_override=rt_img.ivt.dcd_address - rt_img.ivt.ivt_address,
+            )
         # XMCD
         if rt_img.xmcd is not None:
             hab_image.add_hab_segment(HabSegment.XMCD, rt_img.xmcd.export())
@@ -195,8 +200,10 @@ class HabContainer:
             )
         return cls(hab_image)
 
-    def export(self) -> bytes:
+    def export(self, pattern: Optional[BinaryPattern] = None) -> bytes:
         """Export into binary."""
+        if pattern:
+            self.hab_image.pattern = pattern
         return self.hab_image.export()
 
     @classmethod

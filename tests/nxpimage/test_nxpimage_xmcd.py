@@ -11,12 +11,12 @@ import os
 
 import pytest
 import yaml
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.image.xmcd.xmcd import XMCD, MemoryType
 from spsdk.utils.misc import load_configuration, use_working_directory
+from tests.cli_runner import CliRunner
 
 
 @pytest.mark.parametrize(
@@ -34,8 +34,9 @@ from spsdk.utils.misc import load_configuration, use_working_directory
         ("rt116x", "flexspi_ram", "full", None),
     ],
 )
-def test_nxpimage_xmcd_export(tmpdir, data_dir, family, mem_type, config_type, option):
-    runner = CliRunner()
+def test_nxpimage_xmcd_export(
+    cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, config_type, option
+):
     with use_working_directory(data_dir):
         file_base_name = f"{mem_type}_{config_type}"
         if option is not None:
@@ -43,8 +44,7 @@ def test_nxpimage_xmcd_export(tmpdir, data_dir, family, mem_type, config_type, o
         config_file_path = os.path.join(data_dir, "xmcd", family, f"{file_base_name}.yaml")
         out_file = os.path.join(tmpdir, f"xmcd_{family}_{mem_type}_{config_type}_exported.bin")
         cmd = ["bootable-image", "xmcd", "export", "-c", config_file_path, "-o", out_file]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file)
         assert filecmp.cmp(
             os.path.join(data_dir, "xmcd", family, f"{file_base_name}.bin"),
@@ -68,8 +68,9 @@ def test_nxpimage_xmcd_export(tmpdir, data_dir, family, mem_type, config_type, o
         ("rt116x", "flexspi_ram", "full", None),
     ],
 )
-def test_nxpimage_xmcd_parse_cli(tmpdir, data_dir, family, mem_type, config_type, option):
-    runner = CliRunner()
+def test_nxpimage_xmcd_parse_cli(
+    cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, config_type, option
+):
     with use_working_directory(data_dir):
         data_folder = os.path.join(data_dir, "xmcd", family)
         output_file = os.path.join(tmpdir, f"xmcd_{family}_{mem_type}_{config_type}.yaml")
@@ -89,9 +90,7 @@ def test_nxpimage_xmcd_parse_cli(tmpdir, data_dir, family, mem_type, config_type
             "-o",
             output_file,
         ]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
-
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(output_file)
 
 
@@ -99,12 +98,10 @@ def test_nxpimage_xmcd_parse_cli(tmpdir, data_dir, family, mem_type, config_type
     "family",
     ["rt117x", "rt116x", "rt118x"],
 )
-def test_nxpimage_xmcd_template_cli(tmpdir, data_dir, family):
+def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, family):
     templates_folder = os.path.join(data_dir, "xmcd", family, "templates")
-    runner = CliRunner()
     cmd = f"bootable-image xmcd get-templates -f {family} --output {tmpdir}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
 
     mem_types = XMCD.get_supported_memory_types(family)
     for mem_type in mem_types:

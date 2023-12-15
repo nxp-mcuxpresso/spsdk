@@ -20,6 +20,9 @@ devices:
   lpc55s3x:
     attributes:
       mem_types:
+        internal:
+          segments:
+            mbi: 0x0
         flexspi_nor:
           segments:
             fcb: 0x0400

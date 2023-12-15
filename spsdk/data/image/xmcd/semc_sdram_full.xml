@@ -15,7 +15,7 @@
 	<register offset="0x3" width="8" name="clkMhz" reversed="False" description="Set the working frequency in the unit of MHz"/>
 	<register offset="0x4" width="32" name="sdramSizeKb" reversed="False" description="Set the memory size of SDRAM CS0 in the unit of kilobytes. Range: 0x0000_0004~0x0040_0000, i.e. 4~4*1024*1024 kilobytes."/>
 	<register offset="0x8" width="8" name="portSize" reversed="False" description="Port size of SDRAM: 0 - 8-bit, 1 - 16-bit, 2 - 32-bit">
-		<bit_field offset="0x0" width="8" name="portSize" access="R/W" reset_value="0x00" description="Port size of SDRAM">
+		<bit_field offset="0x0" width="8" name="portSize" access="R/W" reset_value="0x02" description="Port size of SDRAM">
 			<bit_field_value name="XMCD_SEMC_SDRAM_PORT_SIZE_8_BIT" value="0x00" description="8-bit"/>
 			<bit_field_value name="XMCD_SEMC_SDRAM_PORT_SIZE_16_BIT" value="0x01" description="16-bit"/>
 			<bit_field_value name="XMCD_SEMC_SDRAM_PORT_SIZE_32_BIT" value="0x02" description="32-bit"/>

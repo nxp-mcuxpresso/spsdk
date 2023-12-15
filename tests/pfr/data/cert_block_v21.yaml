@@ -1,0 +1,13 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+rootCertificate0File: keys/ROT1_p384.pem # [Conditionally required], Root Certificate File 0; Root certificate file index 0.
+rootCertificate1File: keys/ROT2_p384.pem # [Optional], Root Certificate File 1; Root certificate file index 1.
+rootCertificate2File: keys/ROT3_p384.pem # [Optional], Root Certificate File 2; Root certificate file index 2.
+rootCertificate3File: keys/ROT4_p384.pem # [Optional], Root Certificate File 3; Root certificate file index 3.
+mainRootCertId: 0 # [Conditionally required], Main Certificate Index; Index of certificate that is used as a main. If not defined, the certificate matching private key will be selected.
+# ----------------------------------------------------------------------------------------------------
+#                                    == ISK Certificate Settings ==
+# ----------------------------------------------------------------------------------------------------
+useIsk: false # [Conditionally required], Use ISK for signature certification; Enable ISK type of signature certification. Don't use when 'binaryCertificateBlock' is defined
+containerOutputFile: cert_block_v21.bin

@@ -9,7 +9,6 @@
 import os
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import nxpdevhsm
 from spsdk.crypto.hash import EnumHashAlgorithm
@@ -21,14 +20,13 @@ from spsdk.sbfile.sb31.images import SecureBinary31Commands
 from spsdk.sbfile.sbx.devhsm import DevHsmSBx
 from spsdk.sbfile.sbx.images import SecureBinaryXType
 from spsdk.utils.misc import load_binary, use_working_directory
+from tests.cli_runner import CliRunner
 
 
-def test_nxpdevhsm_run_generate(data_dir, tmpdir):
-    runner = CliRunner()
+def test_nxpdevhsm_run_generate(cli_runner: CliRunner, data_dir, tmpdir):
     with use_working_directory(data_dir):
         cmd = f"generate -p COMx -f lpc55s3x -k test_bin.bin -i test_bin.bin -o {tmpdir}/bootable_images/cust_mk_sk.sb"
-        result = runner.invoke(nxpdevhsm.main, cmd.split())
-        assert result.exit_code == 1
+        result = cli_runner.invoke(nxpdevhsm.main, cmd.split(), expected_code=1)
         assert "Selected 'uart' device not found." == result.exception.description
 
 
@@ -130,10 +128,8 @@ def test_sbx_devhsm(data_dir):
         ("rw61x"),
     ],
 )
-def test_nxpdevhsm_get_template(tmpdir, family):
+def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir, family):
     """Test NXPDEVHSM CLI - Generation IF user config."""
     cmd = ["get-template", "-f", family, "--output", f"{tmpdir}/devhsm.yml"]
-    runner = CliRunner()
-    result = runner.invoke(nxpdevhsm.main, cmd)
-    assert result.exit_code == 0, result.output
+    cli_runner.invoke(nxpdevhsm.main, cmd)
     assert os.path.isfile(f"{tmpdir}/devhsm.yml")

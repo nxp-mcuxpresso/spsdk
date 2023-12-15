@@ -17,4 +17,6 @@ firmwareVersion: 2 # [Optional], Firmware version; Version of application image 
 # ----------------------------------------------------------------------------------------------------
 certBlock: ./workspace/cfgs/cert_block/vx_cert_256_256.yaml
 signPrivateKey: .\workspace\keys_certs\ec_pk_secp256r1_sign_cert.pem # [Conditionally required], Signing Certificate; Path to Signing Certificate. Unused when 'binaryCertificateBlock' is defined
+addCertHash: True
 # signProvider: type=file;file_path=ec_pk_secp256r1_cert0.pem # [Optional], ISK Signature Provider; Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+

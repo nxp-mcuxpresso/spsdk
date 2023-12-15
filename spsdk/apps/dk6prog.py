@@ -15,7 +15,6 @@ import colorama
 import hexdump
 import prettytable
 
-from spsdk.apps.blhost_helper import progress_bar
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup, spsdk_apps_common_options
 from spsdk.apps.utils.utils import (
@@ -24,6 +23,7 @@ from spsdk.apps.utils.utils import (
     catch_spsdk_error,
     parse_file_and_size,
     parse_hex_data,
+    progress_bar,
 )
 from spsdk.dk6.commands import MemoryAccessValues, MemoryId, MemoryType
 from spsdk.dk6.dk6device import DK6Device, DK6Memory
@@ -197,7 +197,7 @@ def main(
 ) -> int:
     """Tool for reading and programming flash memory of DK6 target devices.
 
-    !!! THIS IS AN EXPERIMENTAL UTILITY! USE WITH CAUTION !!!
+    This is an experimental utility. Use with caution!
     """
     spsdk_logger.install(level=log_level)
     click.echo(WARNING_MSG)

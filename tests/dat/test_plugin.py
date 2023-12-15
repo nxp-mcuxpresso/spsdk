@@ -5,13 +5,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from click.testing import CliRunner
 
 from spsdk.apps import nxpdebugmbox
 from spsdk.utils.misc import use_working_directory
+from tests.cli_runner import CliRunner
 
 
-def test_nxpkeygen_plugin(tmpdir, data_dir):
+def test_nxpkeygen_plugin(cli_runner: CliRunner, tmpdir, data_dir):
     out_dc = f"{tmpdir}/file.dc"
     cmd = [
         "-p",
@@ -25,8 +25,7 @@ def test_nxpkeygen_plugin(tmpdir, data_dir):
         out_dc,
     ]
     with use_working_directory(data_dir):
-        result = CliRunner().invoke(nxpdebugmbox.main, cmd)
-        assert result.exit_code == 0, result.output
+        cli_runner.invoke(nxpdebugmbox.main, cmd)
     with open(out_dc, "rb") as f:
         dc_data = f.read()
     assert dc_data[-256:] == 256 * b"x"

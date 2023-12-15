@@ -510,7 +510,7 @@ class RegsRegister:
         self.access = access or "RW"
         self.reverse = reverse
         self._bitfields: List[RegsBitField] = []
-        self._set_value_hooks: list = []
+        self._set_value_hooks: List = []
         self._value = 0
         self._reset_value = 0
         self.config_as_hexstring = config_as_hexstring
@@ -518,6 +518,7 @@ class RegsRegister:
         self.reverse_subregs_order = reverse_subregs_order
         self.base_endianness = base_endianness
         self.alt_widths = alt_widths
+        self._alias_names: List[str] = []
 
         # Grouped register members
         self.sub_regs: List["RegsRegister"] = []
@@ -568,11 +569,20 @@ class RegsRegister:
                     if len(reg.description) < len(bitfield.description):
                         reg.description = bitfield.description
                     reg.access = bitfield.access
+                    reg._reset_value = bitfield.reset_value
                 else:
                     if reg.access == "N/A":
                         reg.access = "Bitfields depended"
                     reg.add_bitfield(bitfield)
         return reg
+
+    def add_alias(self, alias: str) -> None:
+        """Add alias name to register.
+
+        :param alias: Register name alias.
+        """
+        if not alias in self._alias_names:
+            self._alias_names.append(alias)
 
     def has_group_registers(self) -> bool:
         """Returns true if register is compounded from sub-registers.
@@ -677,15 +687,7 @@ class RegsRegister:
                     f"Input value {value} doesn't fit into register of width {self.width}."
                 )
 
-            alt_width = self.width
-            if self.alt_widths:
-                real_byte_cnt = get_bytes_cnt_of_int(value)
-                self.alt_widths.sort()
-                for alt in self.alt_widths:
-                    if real_byte_cnt <= alt // 8:
-                        alt_width = alt
-                        logger.debug(f"Alternative width changed to {alt}")
-                        break
+            alt_width = self.get_alt_width(value)
 
             if not raw:
                 for hook in self._set_value_hooks:
@@ -724,6 +726,22 @@ class RegsRegister:
         """
         self.set_value(self.get_reset_value(), raw)
 
+    def get_alt_width(self, value: int) -> int:
+        """Get alternative width of register.
+
+        :param value: Input value to recognize width
+        :return: Current width
+        """
+        alt_width = self.width
+        if self.alt_widths:
+            real_byte_cnt = get_bytes_cnt_of_int(value)
+            self.alt_widths.sort()
+            for alt in self.alt_widths:
+                if real_byte_cnt <= alt // 8:
+                    alt_width = alt
+                    break
+        return alt_width
+
     def get_value(self, raw: bool = False) -> int:
         """Get the value of register.
 
@@ -743,14 +761,7 @@ class RegsRegister:
         else:
             value = self._value
 
-        alt_width = self.width
-        if self.alt_widths:
-            real_byte_cnt = get_bytes_cnt_of_int(self._value)
-            self.alt_widths.sort()
-            for alt in self.alt_widths:
-                if real_byte_cnt <= alt // 8:
-                    alt_width = alt
-                    break
+        alt_width = self.get_alt_width(self._value)
 
         if not raw and self.reverse:
             val_bytes = value_to_bytes(
@@ -771,10 +782,11 @@ class RegsRegister:
         :param raw: Do not use any modification hooks.
         :return: Register value in bytes.
         """
+        value = self.get_value(raw=raw)
         return value_to_bytes(
-            self.get_value(raw=raw),
+            value,
             align_to_2n=False,
-            byte_cnt=self.width // 8,
+            byte_cnt=self.get_alt_width(value) // 8,
             endianness=self.base_endianness,
         )
 
@@ -784,8 +796,9 @@ class RegsRegister:
         :param raw: Do not use any modification hooks.
         :return: Hexadecimal value of register.
         """
-        count = "0" + str(self.width // 4)
-        value = f"{self.get_value(raw=raw):{count}X}"
+        val_int = self.get_value(raw=raw)
+        count = "0" + str(self.get_alt_width(val_int) // 4)
+        value = f"{val_int:{count}X}"
         if not self.config_as_hexstring:
             value = "0x" + value
         return value
@@ -795,8 +808,8 @@ class RegsRegister:
 
         :return: Reset value of register.
         """
-        value = 0
-        for bitfield in self.get_bitfields():
+        value = self._reset_value
+        for bitfield in self._bitfields:
             width = bitfield.width
             offset = bitfield.offset
             val = bitfield.reset_value
@@ -898,6 +911,8 @@ class Registers:
         for reg in self._registers:
             if name == reg.name:
                 return reg
+            if name in reg._alias_names:
+                return reg
             if include_group_regs and reg.has_group_registers():
                 for sub_reg in reg.sub_regs:
                     if name == sub_reg.name:
@@ -920,6 +935,16 @@ class Registers:
         if reg.name in self.get_reg_names():
             raise SPSDKRegsError(f"Cannot add register with same name: {reg.name}.")
 
+        for idx, register in enumerate(self._registers):
+            # TODO solve problem with group register that are always at 0 offset
+            if register.offset == reg.offset != 0:
+                logger.debug(
+                    f"Found register at the same offset {hex(reg.offset)}"
+                    f", adding {reg.name} as an alias to {register.name}"
+                )
+                self._registers[idx].add_alias(reg.name)
+                self._registers[idx]._bitfields.extend(reg._bitfields)
+                return
         # update base endianness for all registers in group
         reg.base_endianness = self.base_endianness
         self._registers.append(reg)
@@ -1030,12 +1055,15 @@ class Registers:
         """
         image = BinaryImage(self.dev_name, size=size, pattern=pattern)
         for reg in self._registers:
+            description = reg.description
+            if reg._alias_names:
+                description += f"\n Alias names: {', '.join(reg._alias_names)}"
             image.add_image(
                 BinaryImage(
                     reg.name,
                     reg.width // 8,
                     offset=reg.offset,
-                    description=reg.description,
+                    description=description,
                     binary=reg.get_bytes_value(raw=True),
                 )
             )
@@ -1239,7 +1267,7 @@ class Registers:
                     if register.config_as_hexstring and isinstance(raw_val, str)
                     else value_to_int(raw_val)
                 )
-                register.set_value(val, True)
+                register.set_value(val, False)
             elif "bitfields" in reg_dict.keys():
                 for bitfield_name in reg_dict["bitfields"]:
                     bitfield_val = reg_dict["bitfields"][bitfield_name]

@@ -198,7 +198,7 @@ The *sdpshost* application is a utility for communication with ROM on i.MX targe
 
 It allows the user to write boot image data from the provided binary file.
 
-.. warning:: THIS IS AN EXPERIMENTAL UTILITY! USE WITH CAUTION !!!
+.. warning:: This is an experimental utility. Use with caution!
 
 .. code:: bash
 

@@ -8,7 +8,6 @@
 """Console script for pfr."""
 
 import logging
-import os
 import sys
 from typing import Callable, Optional, Tuple, Type, Union
 
@@ -34,8 +33,8 @@ from spsdk.pfr import pfr
 from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
 from spsdk.pfr.pfr import CFPA, CMPA, PfrConfiguration
 from spsdk.pfr.pfrc import Pfrc
-from spsdk.utils.crypto.cert_blocks import find_root_certificates
-from spsdk.utils.misc import find_file, load_binary, load_configuration, size_fmt, write_file
+from spsdk.utils.crypto.cert_blocks import get_keys_or_rotkh_from_certblock_config
+from spsdk.utils.misc import load_binary, size_fmt, write_file
 from spsdk.utils.schema_validator import CommentedConfig
 
 PFRArea = Union[Type[CMPA], Type[CFPA]]
@@ -259,29 +258,15 @@ def generate_binary(
                     raise SPSDKError(log_text)
             else:
                 logger.debug(log_text)
-    root_of_trust = None
     keys = None
-    if rot_config:
-        rot_config_dir = os.path.dirname(rot_config)
-        logger.info("Loading configuration from cert block/MBI config file...")
-        config_data = load_configuration(rot_config, search_paths=[rot_config_dir])
-        if "certBlock" in config_data:
-            try:
-                config_data = load_configuration(
-                    config_data["certBlock"], search_paths=[rot_config_dir]
-                )
-            except SPSDKError as e:
-                raise SPSDKError("certBlock must be provided as YAML configuration") from e
-
-        public_keys = find_root_certificates(config_data)
-        root_of_trust = tuple((find_file(x, search_paths=[rot_config_dir]) for x in public_keys))
+    root_of_trust, rotkh = get_keys_or_rotkh_from_certblock_config(rot_config, pfr_config.device)
     if secret_file:
         root_of_trust = secret_file
     if area.lower() == "cmpa" and root_of_trust:
         keys = extract_public_keys(root_of_trust, password)
     if not pfr_config.revision:
         pfr_config.revision = pfr_obj.revision
-    data = pfr_obj.export(add_seal=add_seal, keys=keys)
+    data = pfr_obj.export(add_seal=add_seal, keys=keys, rotkh=rotkh)
     _store_output(data, output, "wb", msg="Success. (PFR binary has been generated)")
 
 

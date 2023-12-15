@@ -7,9 +7,8 @@
 
 """Helper module for blhost application."""
 
-import contextlib
 from copy import deepcopy
-from typing import Any, Callable, Iterator, Optional, Union
+from typing import Any, Optional
 
 import click
 
@@ -164,26 +163,3 @@ def _parse_key_type(user_input: str, collection: Any, default: Optional[int] = N
                 f"Unable to find '{user_input}' in '{collection.__name__}'"
             )
         return key_type_int
-
-
-@contextlib.contextmanager
-def progress_bar(
-    suppress: bool = False, **progress_bar_params: Union[str, int]
-) -> Iterator[Callable[[int, int], None]]:
-    """Creates a progress bar and return callback function for updating the progress bar.
-
-    :param suppress: Suppress the progress bar creation; return an empty callback, defaults to False
-    :param progress_bar_params: Standard parameters for click.progressbar
-    :yield: Callback for updating the progress bar
-    """
-    if suppress:
-        yield lambda _x, _y: None
-    else:
-        with click.progressbar(length=100, **progress_bar_params) as p_bar:  # type: ignore
-
-            def progress(step: int, total_steps: int) -> None:
-                per_step = 100 / total_steps
-                increment = step * per_step - p_bar.pos
-                p_bar.update(round(increment))
-
-            yield progress

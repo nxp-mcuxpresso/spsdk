@@ -1,0 +1,741 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===================================  Trust Zone Configuration template for rw61x.  ===================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <k32w1xx, kw45xx, lpc55s0x, lpc55s1x, lpc55s3x, lpc55s6x, mcxn9xx, nhs52s04, rt5xx, rt6xx, rw61x>
+family: rw61x
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+revision: a1
+# --------------------------===== Optional name of output file for TZ binary [Required] =====---------------------------
+# Description: The name of output binary file with Trust Zone data.
+tzpOutputFile: C:/Work/TrustZone/tzFile.bin
+# ----------------------------===== Customization of standard preset values [Required] =====----------------------------
+# Description: Trust Zone preset dictionary, with trust zone configuration.
+trustZonePreset:
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Start of block (tzm_magic)
+  Start of block (tzm_magic): '0x4d2d5a54'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Secure vector table address (cm33_vtor_addr)
+  CM33 Secure vector table address (cm33_vtor_addr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Non-secure vector table address (cm33_vtor_ns_addr)
+  CM33 Non-secure vector table address (cm33_vtor_ns_addr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0)
+  CM33 Interrupt target non-secure register 0 (cm33_nvic_itns0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Interrupt target non-secure register 1 (cm33_nvic_itns1)
+  CM33 Interrupt target non-secure register 1 (cm33_nvic_itns1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Miscellaneous CM33 settings (cm33_misc_ctrl)
+  Miscellaneous CM33 settings (cm33_misc_ctrl): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Non-secure Access Control Register (cm33_nsacr)
+  CM33 Non-secure Access Control Register (cm33_nsacr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Coprocessor Power Control Register (cm33_cppwr)
+  CM33 Coprocessor Power Control Register (cm33_cppwr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for CM33 Coprocessor Access Control Register (cm33_cpacr)
+  CM33 Coprocessor Access Control Register (cm33_cpacr): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Control Register (cm33_mpu_ctrl)
+  MPU Control Register (cm33_mpu_ctrl): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0)
+  MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1)
+  MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 0 Base Address Register (cm33_mpu_rbar0)
+  MPU Region 0 Base Address Register (cm33_mpu_rbar0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 0 Limit Address Register (cm33_mpu_rlar0)
+  MPU Region 0 Limit Address Register (cm33_mpu_rlar0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 1 Base Address Register (cm33_mpu_rbar1)
+  MPU Region 1 Base Address Register (cm33_mpu_rbar1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 1 Limit Address Register (cm33_mpu_rlar1)
+  MPU Region 1 Limit Address Register (cm33_mpu_rlar1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 2 Base Address Register (cm33_mpu_rbar2)
+  MPU Region 2 Base Address Register (cm33_mpu_rbar2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 2 Limit Address Register (cm33_mpu_rlar2)
+  MPU Region 2 Limit Address Register (cm33_mpu_rlar2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 3 Base Address Register (cm33_mpu_rbar3)
+  MPU Region 3 Base Address Register (cm33_mpu_rbar3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 3 Limit Address Register (cm33_mpu_rlar3)
+  MPU Region 3 Limit Address Register (cm33_mpu_rlar3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 4 Base Address Register (cm33_mpu_rbar4)
+  MPU Region 4 Base Address Register (cm33_mpu_rbar4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 4 Limit Address Register (cm33_mpu_rlar4)
+  MPU Region 4 Limit Address Register (cm33_mpu_rlar4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 5 Base Address Register (cm33_mpu_rbar5)
+  MPU Region 5 Base Address Register (cm33_mpu_rbar5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 5 Limit Address Register (cm33_mpu_rlar5)
+  MPU Region 5 Limit Address Register (cm33_mpu_rlar5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 6 Base Address Register (cm33_mpu_rbar6)
+  MPU Region 6 Base Address Register (cm33_mpu_rbar6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 6 Limit Address Register (cm33_mpu_rlar6)
+  MPU Region 6 Limit Address Register (cm33_mpu_rlar6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 7 Base Address Register (cm33_mpu_rbar7)
+  MPU Region 7 Base Address Register (cm33_mpu_rbar7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for MPU Region 7 Limit Address Register (cm33_mpu_rlar7)
+  MPU Region 7 Limit Address Register (cm33_mpu_rlar7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Control Register (cm33_mpu_ctrl_ns)
+  Non-secure MPU Control Register (cm33_mpu_ctrl_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0_ns)
+  Non-secure MPU Memory Attribute Indirection Register 0 (cm33_mpu_mair0_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1_ns)
+  Non-secure MPU Memory Attribute Indirection Register 1 (cm33_mpu_mair1_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 0 Base Address Register (cm33_mpu_rbar0_ns)
+  Non-secure MPU Region 0 Base Address Register (cm33_mpu_rbar0_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 0 Limit Address Register (cm33_mpu_rlar0_ns)
+  Non-secure MPU Region 0 Limit Address Register (cm33_mpu_rlar0_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 1 Base Address Register (cm33_mpu_rbar1_ns)
+  Non-secure MPU Region 1 Base Address Register (cm33_mpu_rbar1_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 1 Limit Address Register (cm33_mpu_rlar1_ns)
+  Non-secure MPU Region 1 Limit Address Register (cm33_mpu_rlar1_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 2 Base Address Register (cm33_mpu_rbar2_ns)
+  Non-secure MPU Region 2 Base Address Register (cm33_mpu_rbar2_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 2 Limit Address Register (cm33_mpu_rlar2_ns)
+  Non-secure MPU Region 2 Limit Address Register (cm33_mpu_rlar2_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 3 Base Address Register (cm33_mpu_rbar3_ns)
+  Non-secure MPU Region 3 Base Address Register (cm33_mpu_rbar3_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 3 Limit Address Register (cm33_mpu_rlar3_ns)
+  Non-secure MPU Region 3 Limit Address Register (cm33_mpu_rlar3_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 4 Base Address Register (cm33_mpu_rbar4_ns)
+  Non-secure MPU Region 4 Base Address Register (cm33_mpu_rbar4_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 4 Limit Address Register (cm33_mpu_rlar4_ns)
+  Non-secure MPU Region 4 Limit Address Register (cm33_mpu_rlar4_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 5 Base Address Register (cm33_mpu_rbar5_ns)
+  Non-secure MPU Region 5 Base Address Register (cm33_mpu_rbar5_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 5 Limit Address Register (cm33_mpu_rlar5_ns)
+  Non-secure MPU Region 5 Limit Address Register (cm33_mpu_rlar5_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 6 Base Address Register (cm33_mpu_rbar6_ns)
+  Non-secure MPU Region 6 Base Address Register (cm33_mpu_rbar6_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 6 Limit Address Register (cm33_mpu_rlar6_ns)
+  Non-secure MPU Region 6 Limit Address Register (cm33_mpu_rlar6_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 7 Base Address Register (cm33_mpu_rbar7_ns)
+  Non-secure MPU Region 7 Base Address Register (cm33_mpu_rbar7_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Non-secure MPU Region 7 Limit Address Register (cm33_mpu_rlar7_ns)
+  Non-secure MPU Region 7 Limit Address Register (cm33_mpu_rlar7_ns): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Control Register (cm33_sau_ctrl)
+  SAU Control Register (cm33_sau_ctrl): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 0 Base Address Register (cm33_sau_rbar0)
+  SAU Region 0 Base Address Register (cm33_sau_rbar0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 0 Limit Address Register (cm33_sau_rlar0)
+  SAU Region 0 Limit Address Register (cm33_sau_rlar0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 1 Base Address Register (cm33_sau_rbar1)
+  SAU Region 1 Base Address Register (cm33_sau_rbar1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 1 Limit Address Register (cm33_sau_rlar1)
+  SAU Region 1 Limit Address Register (cm33_sau_rlar1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 2 Base Address Register (cm33_sau_rbar2)
+  SAU Region 2 Base Address Register (cm33_sau_rbar2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 2 Limit Address Register (cm33_sau_rlar2)
+  SAU Region 2 Limit Address Register (cm33_sau_rlar2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 3 Base Address Register (cm33_sau_rbar3)
+  SAU Region 3 Base Address Register (cm33_sau_rbar3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 3 Limit Address Register (cm33_sau_rlar3)
+  SAU Region 3 Limit Address Register (cm33_sau_rlar3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 4 Base Address Register (cm33_sau_rbar4)
+  SAU Region 4 Base Address Register (cm33_sau_rbar4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 4 Limit Address Register (cm33_sau_rlar4)
+  SAU Region 4 Limit Address Register (cm33_sau_rlar4): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 5 Base Address Register (cm33_sau_rbar5)
+  SAU Region 5 Base Address Register (cm33_sau_rbar5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 5 Limit Address Register (cm33_sau_rlar5)
+  SAU Region 5 Limit Address Register (cm33_sau_rlar5): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 6 Base Address Register (cm33_sau_rbar6)
+  SAU Region 6 Base Address Register (cm33_sau_rbar6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 6 Limit Address Register (cm33_sau_rlar6)
+  SAU Region 6 Limit Address Register (cm33_sau_rlar6): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 7 Base Address Register (cm33_sau_rbar7)
+  SAU Region 7 Base Address Register (cm33_sau_rbar7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SAU Region 7 Limit Address Register (cm33_sau_rlar7)
+  SAU Region 7 Limit Address Register (cm33_sau_rlar7): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ROM Memory Rule Register 0 (rom_mem_rule0)
+  ROM Memory Rule Register 0 (rom_mem_rule0): '0x33333333'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ROM Memory Rule Register 1 (rom_mem_rule1)
+  ROM Memory Rule Register 1 (rom_mem_rule1): '0x33333333'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ROM Memory Rule Register 2 (rom_mem_rule2)
+  ROM Memory Rule Register 2 (rom_mem_rule2): '0x33333333'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ROM Memory Rule Register 3 (rom_mem_rule3)
+  ROM Memory Rule Register 3 (rom_mem_rule3): '0x33333333'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 0 Memory Rule Register 0 (flexspi0_region0_mem_rule0)
+  FLEXCOMM SPI 0 region 0 Memory Rule Register 0 (flexspi0_region0_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 0 Memory Rule Register 1 (flexspi0_region0_mem_rule1)
+  FLEXCOMM SPI 0 region 0 Memory Rule Register 1 (flexspi0_region0_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 0 Memory Rule Register 2 (flexspi0_region0_mem_rule2)
+  FLEXCOMM SPI 0 region 0 Memory Rule Register 2 (flexspi0_region0_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 0 Memory Rule Register 3 (flexspi0_region0_mem_rule3)
+  FLEXCOMM SPI 0 region 0 Memory Rule Register 3 (flexspi0_region0_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 1 Memory Rule Register 0 (flexspi0_region1_mem_rule0)
+  FLEXCOMM SPI 0 region 1 Memory Rule Register 0 (flexspi0_region1_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 2 Memory Rule Register 1 (flexspi0_region2_mem_rule0)
+  FLEXCOMM SPI 0 region 2 Memory Rule Register 1 (flexspi0_region2_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 3 Memory Rule Register 2 (flexspi0_region3_mem_rule0)
+  FLEXCOMM SPI 0 region 3 Memory Rule Register 2 (flexspi0_region3_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 4 Memory Rule Register 3 (flexspi0_region4_mem_rule0)
+  FLEXCOMM SPI 0 region 4 Memory Rule Register 3 (flexspi0_region4_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 5 Memory Rule Register 0 (flexspi0_region5_mem_rule0)
+  FLEXCOMM SPI 0 region 5 Memory Rule Register 0 (flexspi0_region5_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 5 Memory Rule Register 1 (flexspi0_region5_mem_rule1)
+  FLEXCOMM SPI 0 region 5 Memory Rule Register 1 (flexspi0_region5_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 5 Memory Rule Register 2 (flexspi0_region5_mem_rule2)
+  FLEXCOMM SPI 0 region 5 Memory Rule Register 2 (flexspi0_region5_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 5 Memory Rule Register 3 (flexspi0_region5_mem_rule3)
+  FLEXCOMM SPI 0 region 5 Memory Rule Register 3 (flexspi0_region5_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 6 Memory Rule Register 0 (flexspi0_region6_mem_rule0)
+  FLEXCOMM SPI 0 region 6 Memory Rule Register 0 (flexspi0_region6_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 7 Memory Rule Register 0 (flexspi0_region7_mem_rule0)
+  FLEXCOMM SPI 0 region 7 Memory Rule Register 0 (flexspi0_region7_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 8 Memory Rule Register 0 (flexspi0_region8_mem_rule0)
+  FLEXCOMM SPI 0 region 8 Memory Rule Register 0 (flexspi0_region8_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 0 region 9 Memory Rule Register 0 (flexspi0_region9_mem_rule0)
+  FLEXCOMM SPI 0 region 9 Memory Rule Register 0 (flexspi0_region9_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 0 Memory Rule Register 0 (flexspi1_region0_mem_rule0)
+  FLEXCOMM SPI 1 region 0 Memory Rule Register 0 (flexspi1_region0_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 0 Memory Rule Register 1 (flexspi1_region0_mem_rule1)
+  FLEXCOMM SPI 1 region 0 Memory Rule Register 1 (flexspi1_region0_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 0 Memory Rule Register 2 (flexspi1_region0_mem_rule2)
+  FLEXCOMM SPI 1 region 0 Memory Rule Register 2 (flexspi1_region0_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 0 Memory Rule Register 3 (flexspi1_region0_mem_rule3)
+  FLEXCOMM SPI 1 region 0 Memory Rule Register 3 (flexspi1_region0_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 1 Memory Rule Register 0 (flexspi1_region1_mem_rule0)
+  FLEXCOMM SPI 1 region 1 Memory Rule Register 0 (flexspi1_region1_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 2 Memory Rule Register 1 (flexspi1_region2_mem_rule0)
+  FLEXCOMM SPI 1 region 2 Memory Rule Register 1 (flexspi1_region2_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 3 Memory Rule Register 2 (flexspi1_region3_mem_rule0)
+  FLEXCOMM SPI 1 region 3 Memory Rule Register 2 (flexspi1_region3_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 4 Memory Rule Register 3 (flexspi1_region4_mem_rule0)
+  FLEXCOMM SPI 1 region 4 Memory Rule Register 3 (flexspi1_region4_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 5 Memory Rule Register 0 (flexspi1_region5_mem_rule0)
+  FLEXCOMM SPI 1 region 5 Memory Rule Register 0 (flexspi1_region5_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 5 Memory Rule Register 1 (flexspi1_region5_mem_rule1)
+  FLEXCOMM SPI 1 region 5 Memory Rule Register 1 (flexspi1_region5_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 5 Memory Rule Register 2 (flexspi1_region5_mem_rule2)
+  FLEXCOMM SPI 1 region 5 Memory Rule Register 2 (flexspi1_region5_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 5 Memory Rule Register 3 (flexspi1_region5_mem_rule3)
+  FLEXCOMM SPI 1 region 5 Memory Rule Register 3 (flexspi1_region5_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 6 Memory Rule Register 0 (flexspi1_region6_mem_rule0)
+  FLEXCOMM SPI 1 region 6 Memory Rule Register 0 (flexspi1_region6_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 7 Memory Rule Register 0 (flexspi1_region7_mem_rule0)
+  FLEXCOMM SPI 1 region 7 Memory Rule Register 0 (flexspi1_region7_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 8 Memory Rule Register 0 (flexspi1_region8_mem_rule0)
+  FLEXCOMM SPI 1 region 8 Memory Rule Register 0 (flexspi1_region8_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 1 region 9 Memory Rule Register 0 (flexspi1_region9_mem_rule0)
+  FLEXCOMM SPI 1 region 9 Memory Rule Register 0 (flexspi1_region9_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 0 Memory Rule Register 0 (flexspi2_region0_mem_rule0)
+  FLEXCOMM SPI 2 region 0 Memory Rule Register 0 (flexspi2_region0_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 0 Memory Rule Register 1 (flexspi2_region0_mem_rule1)
+  FLEXCOMM SPI 2 region 0 Memory Rule Register 1 (flexspi2_region0_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 0 Memory Rule Register 2 (flexspi2_region0_mem_rule2)
+  FLEXCOMM SPI 2 region 0 Memory Rule Register 2 (flexspi2_region0_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 0 Memory Rule Register 3 (flexspi2_region0_mem_rule3)
+  FLEXCOMM SPI 2 region 0 Memory Rule Register 3 (flexspi2_region0_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 1 Memory Rule Register 0 (flexspi2_region1_mem_rule0)
+  FLEXCOMM SPI 2 region 1 Memory Rule Register 0 (flexspi2_region1_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 2 Memory Rule Register 1 (flexspi2_region2_mem_rule0)
+  FLEXCOMM SPI 2 region 2 Memory Rule Register 1 (flexspi2_region2_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 3 Memory Rule Register 2 (flexspi2_region3_mem_rule0)
+  FLEXCOMM SPI 2 region 3 Memory Rule Register 2 (flexspi2_region3_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 4 Memory Rule Register 3 (flexspi2_region4_mem_rule0)
+  FLEXCOMM SPI 2 region 4 Memory Rule Register 3 (flexspi2_region4_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 5 Memory Rule Register 0 (flexspi2_region5_mem_rule0)
+  FLEXCOMM SPI 2 region 5 Memory Rule Register 0 (flexspi2_region5_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 5 Memory Rule Register 1 (flexspi2_region5_mem_rule1)
+  FLEXCOMM SPI 2 region 5 Memory Rule Register 1 (flexspi2_region5_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 5 Memory Rule Register 2 (flexspi2_region5_mem_rule2)
+  FLEXCOMM SPI 2 region 5 Memory Rule Register 2 (flexspi2_region5_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 5 Memory Rule Register 3 (flexspi2_region5_mem_rule3)
+  FLEXCOMM SPI 2 region 5 Memory Rule Register 3 (flexspi2_region5_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 6 Memory Rule Register 0 (flexspi2_region6_mem_rule0)
+  FLEXCOMM SPI 2 region 6 Memory Rule Register 0 (flexspi2_region6_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 7 Memory Rule Register 0 (flexspi2_region7_mem_rule0)
+  FLEXCOMM SPI 2 region 7 Memory Rule Register 0 (flexspi2_region7_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 8 Memory Rule Register 0 (flexspi2_region8_mem_rule0)
+  FLEXCOMM SPI 2 region 8 Memory Rule Register 0 (flexspi2_region8_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for FLEXCOMM SPI 2 region 9 Memory Rule Register 0 (flexspi2_region9_mem_rule0)
+  FLEXCOMM SPI 2 region 9 Memory Rule Register 0 (flexspi2_region9_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM00 Memory Rule Register 0 (ram0_mem_rule0)
+  RAM00 Memory Rule Register 0 (ram0_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM00 Memory Rule Register 1 (ram0_mem_rule1)
+  RAM00 Memory Rule Register 1 (ram0_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM00 Memory Rule Register 2 (ram0_mem_rule2)
+  RAM00 Memory Rule Register 2 (ram0_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM00 Memory Rule Register 3 (ram0_mem_rule3)
+  RAM00 Memory Rule Register 3 (ram0_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM01 Memory Rule Register 0 (ram1_mem_rule0)
+  RAM01 Memory Rule Register 0 (ram1_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM01 Memory Rule Register 1 (ram1_mem_rule1)
+  RAM01 Memory Rule Register 1 (ram1_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM01 Memory Rule Register 2 (ram1_mem_rule2)
+  RAM01 Memory Rule Register 2 (ram1_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM01 Memory Rule Register 3 (ram1_mem_rule3)
+  RAM01 Memory Rule Register 3 (ram1_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM02 Memory Rule Register 0 (ram2_mem_rule0)
+  RAM02 Memory Rule Register 0 (ram2_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM02 Memory Rule Register 1 (ram2_mem_rule1)
+  RAM02 Memory Rule Register 1 (ram2_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM02 Memory Rule Register 2 (ram2_mem_rule2)
+  RAM02 Memory Rule Register 2 (ram2_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM02 Memory Rule Register 3 (ram2_mem_rule3)
+  RAM02 Memory Rule Register 3 (ram2_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM03 Memory Rule Register 0 (ram3_mem_rule0)
+  RAM03 Memory Rule Register 0 (ram3_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM03 Memory Rule Register 1 (ram3_mem_rule1)
+  RAM03 Memory Rule Register 1 (ram3_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM03 Memory Rule Register 2 (ram3_mem_rule2)
+  RAM03 Memory Rule Register 2 (ram3_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM03 Memory Rule Register 3 (ram3_mem_rule3)
+  RAM03 Memory Rule Register 3 (ram3_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM04 Memory Rule Register 0 (ram4_mem_rule0)
+  RAM04 Memory Rule Register 0 (ram4_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM04 Memory Rule Register 1 (ram4_mem_rule1)
+  RAM04 Memory Rule Register 1 (ram4_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM04 Memory Rule Register 2 (ram4_mem_rule2)
+  RAM04 Memory Rule Register 2 (ram4_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM04 Memory Rule Register 3 (ram4_mem_rule3)
+  RAM04 Memory Rule Register 3 (ram4_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM05 Memory Rule Register 0 (ram5_mem_rule0)
+  RAM05 Memory Rule Register 0 (ram5_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM05 Memory Rule Register 1 (ram5_mem_rule1)
+  RAM05 Memory Rule Register 1 (ram5_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM05 Memory Rule Register 2 (ram5_mem_rule2)
+  RAM05 Memory Rule Register 2 (ram5_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM05 Memory Rule Register 3 (ram5_mem_rule3)
+  RAM05 Memory Rule Register 3 (ram5_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM06 Memory Rule Register 0 (ram6_mem_rule0)
+  RAM06 Memory Rule Register 0 (ram6_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM06 Memory Rule Register 1 (ram6_mem_rule1)
+  RAM06 Memory Rule Register 1 (ram6_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM06 Memory Rule Register 2 (ram6_mem_rule2)
+  RAM06 Memory Rule Register 2 (ram6_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM06 Memory Rule Register 3 (ram6_mem_rule3)
+  RAM06 Memory Rule Register 3 (ram6_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM07 Memory Rule Register 0 (ram7_mem_rule0)
+  RAM07 Memory Rule Register 0 (ram7_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM07 Memory Rule Register 1 (ram7_mem_rule1)
+  RAM07 Memory Rule Register 1 (ram7_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM07 Memory Rule Register 2 (ram7_mem_rule2)
+  RAM07 Memory Rule Register 2 (ram7_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM07 Memory Rule Register 3 (ram7_mem_rule3)
+  RAM07 Memory Rule Register 3 (ram7_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM08 Memory Rule Register 0 (ram8_mem_rule0)
+  RAM08 Memory Rule Register 0 (ram8_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM08 Memory Rule Register 1 (ram8_mem_rule1)
+  RAM08 Memory Rule Register 1 (ram8_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM08 Memory Rule Register 2 (ram8_mem_rule2)
+  RAM08 Memory Rule Register 2 (ram8_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM08 Memory Rule Register 3 (ram8_mem_rule3)
+  RAM08 Memory Rule Register 3 (ram8_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM09 Memory Rule Register 0 (ram9_mem_rule0)
+  RAM09 Memory Rule Register 0 (ram9_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM09 Memory Rule Register 1 (ram9_mem_rule1)
+  RAM09 Memory Rule Register 1 (ram9_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM09 Memory Rule Register 2 (ram9_mem_rule2)
+  RAM09 Memory Rule Register 2 (ram9_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM09 Memory Rule Register 3 (ram9_mem_rule3)
+  RAM09 Memory Rule Register 3 (ram9_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM10 Memory Rule Register 0 (ram10_mem_rule0)
+  RAM10 Memory Rule Register 0 (ram10_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM10 Memory Rule Register 1 (ram10_mem_rule1)
+  RAM10 Memory Rule Register 1 (ram10_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM10 Memory Rule Register 2 (ram10_mem_rule2)
+  RAM10 Memory Rule Register 2 (ram10_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM10 Memory Rule Register 3 (ram10_mem_rule3)
+  RAM10 Memory Rule Register 3 (ram10_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM11 Memory Rule Register 0 (ram11_mem_rule0)
+  RAM11 Memory Rule Register 0 (ram11_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM11 Memory Rule Register 1 (ram11_mem_rule1)
+  RAM11 Memory Rule Register 1 (ram11_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM11 Memory Rule Register 2 (ram11_mem_rule2)
+  RAM11 Memory Rule Register 2 (ram11_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM11 Memory Rule Register 3 (ram11_mem_rule3)
+  RAM11 Memory Rule Register 3 (ram11_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM12 Memory Rule Register 0 (ram12_mem_rule0)
+  RAM12 Memory Rule Register 0 (ram12_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM12 Memory Rule Register 1 (ram12_mem_rule1)
+  RAM12 Memory Rule Register 1 (ram12_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM12 Memory Rule Register 2 (ram12_mem_rule2)
+  RAM12 Memory Rule Register 2 (ram12_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM12 Memory Rule Register 3 (ram12_mem_rule3)
+  RAM12 Memory Rule Register 3 (ram12_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM13 Memory Rule Register 0 (ram13_mem_rule0)
+  RAM13 Memory Rule Register 0 (ram13_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM13 Memory Rule Register 1 (ram13_mem_rule1)
+  RAM13 Memory Rule Register 1 (ram13_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM13 Memory Rule Register 2 (ram13_mem_rule2)
+  RAM13 Memory Rule Register 2 (ram13_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM13 Memory Rule Register 3 (ram13_mem_rule3)
+  RAM13 Memory Rule Register 3 (ram13_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM14 Memory Rule Register 0 (ram14_mem_rule0)
+  RAM14 Memory Rule Register 0 (ram14_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM14 Memory Rule Register 1 (ram14_mem_rule1)
+  RAM14 Memory Rule Register 1 (ram14_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM14 Memory Rule Register 2 (ram14_mem_rule2)
+  RAM14 Memory Rule Register 2 (ram14_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM14 Memory Rule Register 3 (ram14_mem_rule3)
+  RAM14 Memory Rule Register 3 (ram14_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM15 Memory Rule Register 0 (ram15_mem_rule0)
+  RAM15 Memory Rule Register 0 (ram15_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM15 Memory Rule Register 1 (ram15_mem_rule1)
+  RAM15 Memory Rule Register 1 (ram15_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM15 Memory Rule Register 2 (ram15_mem_rule2)
+  RAM15 Memory Rule Register 2 (ram15_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM15 Memory Rule Register 3 (ram15_mem_rule3)
+  RAM15 Memory Rule Register 3 (ram15_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM16 Memory Rule Register 0 (ram16_mem_rule0)
+  RAM16 Memory Rule Register 0 (ram16_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM16 Memory Rule Register 1 (ram16_mem_rule1)
+  RAM16 Memory Rule Register 1 (ram16_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM16 Memory Rule Register 2 (ram16_mem_rule2)
+  RAM16 Memory Rule Register 2 (ram16_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM16 Memory Rule Register 3 (ram16_mem_rule3)
+  RAM16 Memory Rule Register 3 (ram16_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM17 Memory Rule Register 0 (ram17_mem_rule0)
+  RAM17 Memory Rule Register 0 (ram17_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM17 Memory Rule Register 1 (ram17_mem_rule1)
+  RAM17 Memory Rule Register 1 (ram17_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM17 Memory Rule Register 2 (ram17_mem_rule2)
+  RAM17 Memory Rule Register 2 (ram17_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM17 Memory Rule Register 3 (ram17_mem_rule3)
+  RAM17 Memory Rule Register 3 (ram17_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM18 Memory Rule Register 0 (ram18_mem_rule0)
+  RAM18 Memory Rule Register 0 (ram18_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM18 Memory Rule Register 1 (ram18_mem_rule1)
+  RAM18 Memory Rule Register 1 (ram18_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM18 Memory Rule Register 2 (ram18_mem_rule2)
+  RAM18 Memory Rule Register 2 (ram18_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for RAM18 Memory Rule Register 3 (ram18_mem_rule3)
+  RAM18 Memory Rule Register 3 (ram18_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for APB Bridge Group 0 Memory Rule Register 0 (apb_grp0_mem_rule0)
+  APB Bridge Group 0 Memory Rule Register 0 (apb_grp0_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for APB Bridge Group 0 Memory Rule Register 1 (apb_grp0_mem_rule1)
+  APB Bridge Group 0 Memory Rule Register 1 (apb_grp0_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for APB Bridge Group 0 Memory Rule Register 2 (apb_grp0_mem_rule2)
+  APB Bridge Group 0 Memory Rule Register 2 (apb_grp0_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for APB Bridge Group 0 Memory Rule Register 3 (apb_grp0_mem_rule3)
+  APB Bridge Group 0 Memory Rule Register 3 (apb_grp0_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for APB Bridge Group 1 Memory Rule Register 0 (apb_grp1_mem_rule0)
+  APB Bridge Group 1 Memory Rule Register 0 (apb_grp1_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for APB Bridge Group 1 Memory Rule Register 1 (apb_grp1_mem_rule1)
+  APB Bridge Group 1 Memory Rule Register 1 (apb_grp1_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for APB Bridge Group 1 Memory Rule Register 2 (apb_grp1_mem_rule2)
+  APB Bridge Group 1 Memory Rule Register 2 (apb_grp1_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for APB Bridge Group 1 Memory Rule Register 3 (apb_grp1_mem_rule3)
+  APB Bridge Group 1 Memory Rule Register 3 (apb_grp1_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for AHB Peripherals 0 Slave Rule Register (ahb_periph0_slave_rule)
+  AHB Peripherals 0 Slave Rule Register (ahb_periph0_slave_rule): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for AHB Peripherals 1 Slave Rule Register (ahb_periph1_slave_rule)
+  AHB Peripherals 1 Slave Rule Register (ahb_periph1_slave_rule): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for AIPS bridge 1 Memory Rule Register 0 (aips_bridge_mem_rule0)
+  AIPS bridge 1 Memory Rule Register 0 (aips_bridge_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for AIPS bridge 1 Memory Rule Register 1 (aips_bridge_mem_rule1)
+  AIPS bridge 1 Memory Rule Register 1 (aips_bridge_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for AHB Peripherals 2 Slave Rule Register (ahb_periph2_slave_rule)
+  AHB Peripherals 2 Slave Rule Register (ahb_periph2_slave_rule): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Security control Memory Rule Register (security_ctrl_mem_rule)
+  Security control Memory Rule Register (security_ctrl_mem_rule): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for AHB Peripherals 3 Slave Rule Register (ahb_periph3_slave_rule)
+  AHB Peripherals 3 Slave Rule Register (ahb_periph3_slave_rule): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Always ON Memory Rule Register (aon_mem_rule)
+  Always ON Memory Rule Register (aon_mem_rule): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for WLAN Slave Rule register (wlan_s0_slave_rule)
+  WLAN Slave Rule register (wlan_s0_slave_rule): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for WLAN Memory Rule Register 0 (wlan_s1_mem_rule0)
+  WLAN Memory Rule Register 0 (wlan_s1_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for WLAN Memory Rule Register 1 (wlan_s1_mem_rule1)
+  WLAN Memory Rule Register 1 (wlan_s1_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for WLAN Memory Rule Register 2 (wlan_s1_mem_rule2)
+  WLAN Memory Rule Register 2 (wlan_s1_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for WLAN Memory Rule Register 3 (wlan_s1_mem_rule3)
+  WLAN Memory Rule Register 3 (wlan_s1_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for BLE Slave Rule register (ble_s0_slave_rule)
+  BLE Slave Rule register (ble_s0_slave_rule): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for BLE Memory Rule Register 0 (ble_s1_mem_rule0)
+  BLE Memory Rule Register 0 (ble_s1_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for BLE Memory Rule Register 1 (ble_s1_mem_rule1)
+  BLE Memory Rule Register 1 (ble_s1_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for BLE Memory Rule Register 2 (ble_s1_mem_rule2)
+  BLE Memory Rule Register 2 (ble_s1_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for BLE Memory Rule Register 3 (ble_s1_mem_rule3)
+  BLE Memory Rule Register 3 (ble_s1_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SOC Top Memory Rule Register 0 (soc_top_mem_rule0)
+  SOC Top Memory Rule Register 0 (soc_top_mem_rule0): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SOC Top Memory Rule Register 1 (soc_top_mem_rule1)
+  SOC Top Memory Rule Register 1 (soc_top_mem_rule1): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SOC Top Memory Rule Register 2 (soc_top_mem_rule2)
+  SOC Top Memory Rule Register 2 (soc_top_mem_rule2): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for SOC Top Memory Rule Register 3 (soc_top_mem_rule3)
+  SOC Top Memory Rule Register 3 (soc_top_mem_rule3): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Security violation address/information registers valid flags (sec_vio_info_valid)
+  Security violation address/information registers valid flags (sec_vio_info_valid): '0x0'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Secure GPIO Mask Register 0 (sec_gpio_mask0)
+  Secure GPIO Mask Register 0 (sec_gpio_mask0): '0xffffffff'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Secure GPIO Mask Register 1 (sec_gpio_mask1)
+  Secure GPIO Mask Register 1 (sec_gpio_mask1): '0xffffffff'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Secure GPIO Mask Lock Register (sec_gpio_mask_lock)
+  Secure GPIO Mask Lock Register (sec_gpio_mask_lock): '0x0000000a'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Master Secure Level Register (master_sec_reg)
+  Master Secure Level Register (master_sec_reg): '0x80000000'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Master Secure Level Anti-pole Register (master_sec_anti_pol_reg)
+  Master Secure Level Anti-pole Register (master_sec_anti_pol_reg): '0xbfffffff'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for M33 Lock Control Register (cm33_lock_reg)
+  M33 Lock Control Register (cm33_lock_reg): '0x800002aa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Secure Control Duplicate Register (misc_ctrl_dp_reg)
+  Secure Control Duplicate Register (misc_ctrl_dp_reg): '0x000086a2'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Secure Control Register (misc_ctrl_reg)
+  Secure Control Register (misc_ctrl_reg): '0x000086a2'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ITRC IRQ Trigger source low selector register 0 (itrc_irq_lo_sel0)
+  ITRC IRQ Trigger source low selector register 0 (itrc_irq_lo_sel0): '0xaaaaaaaa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ITRC IRQ Trigger source low selector register 1 (itrc_irq_lo_sel1)
+  ITRC IRQ Trigger source low selector register 1 (itrc_irq_lo_sel1): '0xaaaaaaaa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ITRC CHIP_RESET Trigger low source selector register 0 (itrc_chip_reset_lo_sel0)
+  ITRC CHIP_RESET Trigger low source selector register 0 (itrc_chip_reset_lo_sel0): '0xaaaaaaaa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ITRC CHIP_RESET Trigger low source selector register 1 (itrc_chip_reset_lo_sel1)
+  ITRC CHIP_RESET Trigger low source selector register 1 (itrc_chip_reset_lo_sel1): '0xaaaaaaaa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ITRC IRQ Trigger source high selector register 0 (itrc_irq_hi_sel0)
+  ITRC IRQ Trigger source high selector register 0 (itrc_irq_hi_sel0): '0xaaaaaaaa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ITRC IRQ Trigger source high selector register 1 (itrc_irq_hi_sel1)
+  ITRC IRQ Trigger source high selector register 1 (itrc_irq_hi_sel1): '0xaaaaaaaa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ITRC CHIP_RESET Trigger high source selector register 0 (itrc_chip_reset_hi_sel0)
+  ITRC CHIP_RESET Trigger high source selector register 0 (itrc_chip_reset_hi_sel0): '0xaaaaaaaa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for ITRC CHIP_RESET Trigger high source selector register 1 (itrc_chip_reset_hi_sel1)
+  ITRC CHIP_RESET Trigger high source selector register 1 (itrc_chip_reset_hi_sel1): '0xaaaaaaaa'
+  # ------------------------------------------===== TZ Preset [Optional] =====------------------------------------------
+  # Description: Preset for Miscellaneous TZM settings (misc_tzm_settings)
+  Miscellaneous TZM settings (misc_tzm_settings): '0x0'

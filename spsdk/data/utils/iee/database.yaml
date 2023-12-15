@@ -35,7 +35,7 @@ devices:
       generate_keyblob: False
       sb_21_supported: False
       has_kek_fuses: False
-      additional_template: ["master_id", "key_blobs_rt118x"]
+      additional_template: ["key_blobs_rt118x"]
 
 # default values for all devices
 attributes:

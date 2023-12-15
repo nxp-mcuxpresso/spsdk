@@ -6,39 +6,29 @@ description:  # The CMPA configuration description.
   device: mcxa1xx  # The NXP device name.
   revision: a0 # The NXP device revision.
   type: CMPA # The PFR type (CMPA, CFPA) or IFR type.
-  version: 2.0.0 # The SPSDK tool version.
+  version: 2.0.1 # The SPSDK tool version.
 settings: # The CMPA registers configuration.
   BOOT_CFG:  # Boot Configuration
     bitfields:  # The register bitfields
       ISP_BOOT_IF: AUTO_ISP  # Offset: 4b, Width: 3b, Description: ISP boot interface
       # - AUTO_ISP, (0): Auto ISP
-      # - UART_ISP, (1): UART ISP
-      # - SPI_SLAVE, (2): SPI Slave ISP
-      # - I2C_SLAVE, (3): I2C slave ISP
+      # - UART_ISP, (1): LPUART ISP
+      # - SPI_SLAVE, (2): LPSPI Slave ISP
+      # - I2C_SLAVE, (3): LPI2C slave ISP
       # - USB0_HID, (4): USB0_HID
-      # - USB1_HID, (5): USB1_HID
-      # - CAN_ISP, (6): CAN ISP
-      # - RESERVED, (7): Reserved
+      # - RESERVED_0b101, (5): Reserved
+      # - RESERVED_0b110, (6): Reserved
+      # - RESERVED_0b111, (7): Reserved
       BOOT_SPEED: FRO_48_MHZ # Offset: 12b, Width: 2b, Description: Core Clock
       # - FRO_48_MHZ, (0): 48Mhz FRO @1v0
       # - FRO_96_MHZ, (1): 96MHz FRO @1v1
-      # - RESERVED, (2): Reserved @1v2
-      # - FRO_12_MHZ, (3): 12MHz FRO @1v0
-      AGDET_EN: ENABLED_0b00 # Offset: 14b, Width: 2b, Description: AGDET Enable
-      # - ENABLED_0b00, (0): Enable AGDET Reset
-      # - ENABLED_0b01, (1): Enable AGDET Reset
-      # - ENABLED_0b10, (2): Enable AGDET Reset
-      # - DISABLED_0b11, (3): Don't enable AGDET Reset
+      # - RESERVED_0b10, (2): Reserved
+      # - RESERVED_0b11, (3): Reserved
       HEADER: '0x5963' # Offset: 16b, Width: 16b, Description: CMPA Header marker should be set to 0x5963
   FLASH_CFG: # Flash Configuration
     bitfields:  # The register bitfields
-      FLASH_REMAP_SIZE: '0x0'  # Offset: 0b, Width: 5b, Description: Flash remap size. 
+      FLASH_REMAP_SIZE: '0x0'  # Offset: 0b, Width: 5b, Description: Flash remap size.
       # This field should be written to remap field in flash.
-      ISP_FT_ENTRY: ALLOWED_0b00 # Offset: 8b, Width: 2b, Description: Authentication failure
-      # - ALLOWED_0b00, (0): ISP entry allowed
-      # - DISABLED_0b01, (1): ISP entry disabled
-      # - ALLOWED_0b10, (2): ISP entry allowed
-      # - ALLOWED_0b11, (3): ISP entry allowed
       ISP_PIN_ENTRY: ALLOWED_0b00 # Offset: 10b, Width: 2b, Description: Disable ISP mode entry  through pin assertion.
       # - ALLOWED_0b00, (0): ISP entry allowed
       # - DISABLED_0b01, (1): ISP entry disabled
@@ -54,149 +44,96 @@ settings: # The CMPA registers configuration.
       # - DISABLED_0b01, (1): ISP entry disabled
       # - ALLOWED_0b10, (2): ISP entry allowed
       # - ALLOWED_0b11, (3): ISP entry allowed
-      ACTIVE_IMG_PROT: NO_PROTECTION # Offset: 16b, Width: 2b, Description: Protection of active image. &10;This field defines protection of flash area occupied by active image. Only applicable to internal flash.
-      # - NO_PROTECTION, (0): No protection after from ACL list.
-      # - WITH_STICKY_LOCK, (1): Write protect active image area with sticky lock.
-      # - NO_STICKY_LOCK, (2): Write protect active image area without sticky lock.
-      # - XOM_PROTECTION, (3): XOM protect active image area with sticky lock.
-  BOOT_LED_STATUS: # BOOT_LED_STATUS
+  BOOT_LED_STATUS: # Boot LED Status
     bitfields:  # The register bitfields
-      ISP_BOOT_LED: '0x00'  # Offset: 8b, Width: 8b, Description: Assert on ISP fall through. 
-      # ROM drives the GPIO pin identified by this field whenever primary boot fails and execution falls through to ISP mode. 
-      # [4:0] GPIO Pin number 
+      BOOT_FAIL_LED: '0x00'  # Offset: 16b, Width: 8b, Description: Assert on fatal errors during boot.
+      # ROM toggles the GPIO pin identified by this field whenever primary boot fails due to fatal errors before locking-up/reset.
+      # Note, use QUICK_SET_/CLR_GPIOx field to set the default level of pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
-      BOOT_FAIL_LED: '0x00' # Offset: 16b, Width: 8b, Description: Assert on fatal errors during boot. 
-      # ROM toggles the GPIO pin identified by this field whenever primary boot fails due to fatal errors before locking-up/reset. 
-      # Note, use QUICK_SET_/CLR_GPIOx field to set the default level of pin. 
-      # [4:0] GPIO Pin number 
-      # [7:5] GPIO port number
-  BOOT_TIMERS: # BOOT_TIMERS
+  BOOT_TIMERS: # Boot Timers
     bitfields:  # The register bitfields
-      POWERDOWN_TIMEOUT_SECS: '0x0000'  # Offset: 0b, Width: 16b, Description: Powerdown timeout: 
-      # Timeout value in seconds. 
+      POWERDOWN_TIMEOUT_SECS: '0x0000'  # Offset: 0b, Width: 16b, Description: Powerdown timeout:
+      # Timeout value in seconds.
       # When a non-zero value is programmed in this field ROM uses it as idle timeout value to enter power-down state to conserve power.
-      WDOG_TIMEOUT_COUNT: '0x0000' # Offset: 16b, Width: 16b, Description: WDOG timeout: 
-      # Upper 16 bits of 24-bit count value in WWDT_TC register Timeout value in seconds. 
-      # When a non-zero value is programmed in this field ROM configures the watch dog timer to reset the device on timeout before passing execution control to user code.
-  ISP_UART_CFG: # ISP_UART_CFG
+  ISP_UART_CFG: # ISP UART Configuration
     bitfields:  # The register bitfields
-      UART_RX_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default UART RX ISP pin. 
-      # Identifies the pin to be used as UART_RX pin. 
-      # [4:0] GPIO Pin number 
+      UART_RX_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default UART RX ISP pin.
+      # Identifies the pin to be used as UART_RX pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
       UART_RX_FUNC_SLOT: '0x0' # Offset: 8b, Width: 4b, Description: Identifies the pin mux function slot.
-      UART_ISP_FLEXCOM: '0x0' # Offset: 12b, Width: 4b, Description: Identifies the FlexComm used for UART ISP mode.
-      UART_TX_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default UART TX ISP pin. 
-      # Identifies the pin to be used as UART_TX pin. 
-      # [4:0] GPIO Pin number 
+      UART_ISP_INSTANCE: '0x0' # Offset: 12b, Width: 4b, Description: Identifies the LPUART instance used for UART ISP mode.
+      UART_TX_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default UART TX ISP pin.
+      # Identifies the pin to be used as UART_TX pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
       UART_TX_FUNC_SLOT: '0x0' # Offset: 24b, Width: 4b, Description: Identifies the pin mux function slot.
-      UART_BAUD_RATE: AUTO_DETECT # Offset: 28b, Width: 4b, Description: UART baud rate. 
-      # Baud rate configured during UART ISP mode. 
+      UART_BAUD_RATE: AUTO_DETECT # Offset: 28b, Width: 4b, Description: UART baud rate.
+      # Baud rate configured during UART ISP mode.
       # default: Auto baud detection.
       # - AUTO_DETECT, (0): Auto baud detection.
-  ISP_I2C_CFG: # ISP_I2C_CFG
+  ISP_I2C_CFG: # ISP I2C Configuration
     bitfields:  # The register bitfields
-      I2C_SCL_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default I2C SCL ISP pin. 
-      # Identifies the pin to be used as I2C_SCL pin. 
-      # [4:0] GPIO Pin number 
+      I2C_SCL_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default I2C SCL ISP pin.
+      # Identifies the pin to be used as I2C_SCL pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
       I2C_SCL_FUNC_SLOT: '0x0' # Offset: 8b, Width: 4b, Description: Identifies the pin mux function slot.
-      I2C_ISP_FLEXCOM: '0x0' # Offset: 12b, Width: 4b, Description: Identifies the FlexComm used for I2C ISP mode.
-      I2C_SDA_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default I2C SDA ISP pin. 
-      # Identifies the pin to be used as I2C_SDA pin. 
-      # [4:0] GPIO Pin number 
+      I2C_ISP_INSTANCE: '0x0' # Offset: 12b, Width: 4b, Description: Identifies the LPI2C instance used for LPI2C ISP mode.
+      I2C_SDA_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default I2C SDA ISP pin.
+      # Identifies the pin to be used as I2C_SDA pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
       I2C_SDA_FUNC_SLOT: '0x0' # Offset: 24b, Width: 4b, Description: Identifies the pin mux function slot.
-  ISP_CAN_CFG: # ISP_CAN_CFG
+  ISP_SPI_CFG0: # ISP SPI Configuration 0
     bitfields:  # The register bitfields
-      CAN_RX_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default CAN RX ISP pin. 
-      # Identifies the pin to be used as CAN_RX pin. 
-      # [4:0] GPIO Pin number 
-      # [7:5] GPIO port number
-      CAN_RX_FUNC_SLOT: '0x0' # Offset: 8b, Width: 4b, Description: Identifies the pin mux function slot.
-      CAN_ISP_FLEXCOM: '0x0' # Offset: 12b, Width: 4b, Description: Identifies the FlexComm used for CAN ISP mode.
-      CAN_TX_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default CAN TX ISP pin. 
-      # Identifies the pin to be used as CAN_TX pin. 
-      # [4:0] GPIO Pin number 
-      # [7:5] GPIO port number
-      CAN_TX_FUNC_SLOT: '0x0' # Offset: 24b, Width: 4b, Description: Identifies the pin mux function slot.
-      CAN_BAUD_RATE: AUTO_DETECT # Offset: 28b, Width: 4b, Description: CAN baud rate. 
-      # Baud rate configured during CAN ISP mode. 
-      # Default: Auto baud detection.
-      # - AUTO_DETECT, (0): Auto baud detection (125K, 250K, 500K, 1M)
-      # - KBPS_10, (1): 10 kbps
-      # - KBPS_20, (2): 20 kbps
-      # - KBPS_50, (3): 50 kbps
-      # - KBPS_125, (4): 125 kbps
-      # - KBPS_250, (5): 250 kbps
-      # - KBPS_500, (6): 500 kbps
-      # - KBPS_800, (7): 800 kbps
-      # - KBPS_1000, (8): 1,000 kbps
-  ISP_SPI_CFG0: # ISP_SPI_CFG0
-    bitfields:  # The register bitfields
-      SPI_SCK_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default SPI SCK ISP pin. 
-      # Identifies the pin to be used as SPI_SCK pin. 
-      # [4:0] GPIO Pin number 
+      SPI_SCK_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default SPI SCK ISP pin.
+      # Identifies the pin to be used as SPI_SCK pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
       SPI_SCK_FUNC_SLOT: '0x0' # Offset: 8b, Width: 4b, Description: Identifies the pin mux function slot.
-      SPI_ISP_FLEXCOM: '0x0' # Offset: 12b, Width: 4b, Description: Identifies the FlexComm used for SPI ISP mode
-      SPI_MOSI_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default SPI MOSI ISP pin. 
-      # Identifies the pin to be used as SPI_MOSI pin. 
-      # [4:0] GPIO Pin number 
+      SPI_ISP_INSTANCE: '0x0' # Offset: 12b, Width: 4b, Description: Identifies the LPSPI instance used for SPI ISP mode
+      SPI_MOSI_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default SPI MOSI ISP pin.
+      # Identifies the pin to be used as SPI_MOSI pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
       SPI_MOSI_FUNC_SLOT: '0x0' # Offset: 24b, Width: 4b, Description: Identifies the pin mux function slot.
-  ISP_SPI_CFG1: # ISP_SPI_CFG1
+  ISP_SPI_CFG1: # ISP SPI Configuration 1
     bitfields:  # The register bitfields
-      SPI_MISO_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default SPI MISO ISP pin. 
-      # Identifies the pin to be used as SPI_MISO pin. 
-      # [4:0] GPIO Pin number 
+      SPI_MISO_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default SPI MISO ISP pin.
+      # Identifies the pin to be used as SPI_MISO pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
       SPI_MISO_FUNC_SLOT: '0x0' # Offset: 8b, Width: 4b, Description: Identifies the pin mux function slot.
-      SPI_SSEL_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default SPI SSEL ISP pin. 
-      # Identifies the pin to be used as SPI_SSEL pin. 
-      # [4:0] GPIO Pin number 
+      SPI_SSEL_PIN: '0x00' # Offset: 16b, Width: 8b, Description: Override default SPI SSEL ISP pin.
+      # Identifies the pin to be used as SPI_SSEL pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
       SPI_SSEL_FUNC_SLOT: '0x0' # Offset: 24b, Width: 4b, Description: Identifies the pin mux function slot.
-      ISP_SPI_SSEL_X: '0x0' # Offset: 28b, Width: 2b, Description: SPI chip select number. 
+      ISP_SPI_SSEL_X: '0x0' # Offset: 28b, Width: 2b, Description: SPI chip select number.
       # FlexComm SPI interfaces supports up to four chip selects.
-  ISP_USB_ID: # ISP_USB_ID
+  ISP_USB_ID: # ISP USB Identification
     bitfields:  # The register bitfields
       USB_Vendor_ID: '0x0000'  # Offset: 0b, Width: 16b, Description: USB Vendor ID
       USB_Product_ID: '0x0000' # Offset: 16b, Width: 16b, Description: USB Product ID
-  ISP_USB_CFG: # ISP_USB_CFG
+  ISP_USB_CFG: # ISP USB Configuration
     bitfields:  # The register bitfields
-      USB0_VBUS_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default USB0_VBUS_DETECT ISP pin. 
-      # Identifies the pin to be used as USB0_VBUS detect pin. 
-      # [4:0] GPIO Pin number 
+      USBx_VBUS_PIN: '0x00'  # Offset: 0b, Width: 8b, Description: Override default USB0_VBUS_DETECT ISP pin.
+      # Identifies the pin to be used as USB0_VBUS detect pin.
+      # [4:0] GPIO Pin number
       # [7:5] GPIO port number
-      USB0_VBUS_FUNC_SLOT: '0x0' # Offset: 8b, Width: 4b, Description: Identifies the pin mux function slot.
-      EXT_XTAL_CLK: XTAL_32MHZ # Offset: 16b, Width: 3b, Description: USB PHY input clock frequency. 
-      # For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board.
-      # - XTAL_32MHZ, (0): 32MHz input clock (Divide by 15)
-      # - XTAL_30MHZ, (1): 30MHz input clock (Divide by 16)
-      # - RESERVED, (2): Reserved
-      # - XTAL_20MHZ, (4): 20MHz input clock (Divide by 24)
-      # - XTAL_19_2MHZ, (5): 19.2MHz input clock (Divide by 25)
-      # - XTAL_16MHZ, (6): 16MHz input clock (Divide by 30)
-      # - XTAL_12MHZ, (7): 12MHz input clock (Divide by 40) 
-      PRE_DIV: '0x0' # Offset: 19b, Width: 1b, Description: Enable Pre-divider. 
-      # Needed to support 48MHz and other high speed crystals.
-  ISP_MISC_CFG: # ISP_MISC_CFG
+      USBx_VBUS_FUNC_SLOT: '0x0' # Offset: 8b, Width: 4b, Description: Identifies the pin mux function slot.
+  ISP_MISC_CFG: # ISP MISC Configuration
     bitfields:  # The register bitfields
-      I2C_SLAVE_ADDR: '0x00'  # Offset: 0b, Width: 8b, Description: I2C slave addres. 
-      # A 7-bit Address used for selecting our device on shared I2C bus system. 
+      I2C_SLAVE_ADDR: '0x00'  # Offset: 0b, Width: 8b, Description: I2C slave addres.
+      # A 7-bit Address used for selecting our device on shared I2C bus system.
       # By default ROM uses 0x10 as slave address.
       ISP_USB_CUST: DEDICATED # Offset: 22b, Width: 2b, Description: Use customer defined GPIO for USB VBUS detect function during ISP mode.
       # - DEDICATED, (0): Use dedicated VBUS pins.
       # - USB0_VBUS, (1): Customer defined GPIO for USB0_VBUS detect.
-      # - USB1_VBUS, (2): Customer defined GPIO for USB1_VBUS detect.
+      # - RESERVED_0b10, (2): Reserved
       # - VDD_USB, (3): Use VDD_USB for VBUS presence. On board regulator should generate VDD_USB voltage using 5V input fo VBUS pin on connector.
-      ISP_CAN_CUST: DEFAULT_0b00 # Offset: 24b, Width: 2b, Description: Use customer defined CAN ISP pins.
-      # - DEFAULT_0b00, (0): Default ROM defined pins.
-      # - CUST_DEF_0b01, (1): Customer defined.
-      # - DEFAULT_0b10, (2): Default ROM defined pins.
-      # - DEFAULT_0b11, (3): Default ROM defined pins.
       ISP_SPI_CUST: DEFAULT_0b00 # Offset: 26b, Width: 2b, Description: Use customer defined SPI ISP pins.
       # - DEFAULT_0b00, (0): Default ROM defined pins.
       # - CUST_DEF_0b01, (1): Customer defined.
@@ -212,43 +149,9 @@ settings: # The CMPA registers configuration.
       # - CUST_DEF_0b01, (1): Customer defined.
       # - DEFAULT_0b10, (2): Default ROM defined pins.
       # - DEFAULT_0b11, (3): Default ROM defined pins.
-  CC_SOCU_PIN: # Credential Constraints for SoC specific Use Pinned
-    bitfields:  # The register bitfields
-      NIDEN: USE_DAP  # Offset: 0b, Width: 1b, Description: Non-secure Non-invasive Debug Enable
-      # - USE_DAP, (0): Use DAP to enable
-      # - FIXED_STATE, (1): Fixed state
-      DBGEN: USE_DAP # Offset: 1b, Width: 1b, Description: Non-secure Debug Enable
-      # - USE_DAP, (0): Use DAP to enable
-      # - FIXED_STATE, (1): Fixed state
-      ISP_CMD_EN: USE_DAP # Offset: 6b, Width: 1b, Description: ISP Boot Command Enable
-      # - USE_DAP, (0): Use DAP to enable
-      # - FIXED_STATE, (1): Fixed state
-      FA_CMD_EN: USE_DAP # Offset: 7b, Width: 1b, Description: FA Command Enable
-      # - USE_DAP, (0): Use DAP to enable
-      # - FIXED_STATE, (1): Fixed state
-      ME_CMD_EN: USE_DAP # Offset: 8b, Width: 1b, Description: Flash Mass Erase Command Enable
-      # - USE_DAP, (0): Use DAP to enable
-      # - FIXED_STATE, (1): Fixed state
-  CC_SOCU_DFLT: # Credential Constraints for SoC specific Use Debug Filter
-    bitfields:  # The register bitfields
-      NIDEN: DISABLED  # Offset: 0b, Width: 1b, Description: Non Secure Non-invasive Debug Fixed State
-      # - DISABLED, (0): Disabled
-      # - ENABLED, (1): Enabled
-      DBGEN: DISABLED # Offset: 1b, Width: 1b, Description: Non-secure Debug Fixed State
-      # - DISABLED, (0): Disabled
-      # - ENABLED, (1): Enabled
-      ISP_CMD_EN: DISABLED # Offset: 6b, Width: 1b, Description: ISP Command Fixed State
-      # - DISABLED, (0): Disabled
-      # - ENABLED, (1): Enabled
-      FA_CMD_EN: DISABLED # Offset: 7b, Width: 1b, Description: FA Command Fixed State
-      # - DISABLED, (0): Disabled
-      # - ENABLED, (1): Enabled
-      ME_CMD_EN: DISABLED # Offset: 8b, Width: 1b, Description: Flash Mass Erase Command Fixed State
-      # - DISABLED, (0): Disabled
-      # - ENABLED, (1): Enabled
   LP_VECTOR_ADDR: # Vector address when waking from power-down and deep power down states.
     value: '0x12345678'  # The value width: 32b
-  FLASH_ACL_0_7: # Access control for flash sector 0-7.
+  FLASH_ACL_0_7: # Access control for flash sector 0-7
     bitfields:  # The register bitfields
       ACL_SEC_0: '0x4'  # Offset: 0b, Width: 3b, Description: Access control for flash sector.
       ACL_SEC_1: '0x4' # Offset: 4b, Width: 3b, Description: Access control for flash sector.
@@ -258,7 +161,7 @@ settings: # The CMPA registers configuration.
       ACL_SEC_5: '0x4' # Offset: 20b, Width: 3b, Description: Access control for flash sector.
       ACL_SEC_6: '0x4' # Offset: 24b, Width: 3b, Description: Access control for flash sector.
       ACL_SEC_7: '0x4' # Offset: 28b, Width: 3b, Description: Access control for flash sector.
-  FLASH_ACL_8_15: # Access control for flash sector 8-15.
+  FLASH_ACL_8_15: # Access control for flash sector 8-15
     bitfields:  # The register bitfields
       ACL_SEC_8: '0x4'  # Offset: 0b, Width: 3b, Description: Access control for flash sector.
       ACL_SEC_9: '0x4' # Offset: 4b, Width: 3b, Description: Access control for flash sector.
@@ -268,45 +171,55 @@ settings: # The CMPA registers configuration.
       ACL_SEC_13: '0x4' # Offset: 20b, Width: 3b, Description: Access control for flash sector.
       ACL_SEC_14: '0x4' # Offset: 24b, Width: 3b, Description: Access control for flash sector.
       ACL_SEC_15: '0x4' # Offset: 28b, Width: 3b, Description: Access control for flash sector.
-  QUICK_SET_GPIO_0: # Quick Set to Drive GPIO 0 port [31:0] pins high after reset. 
-# Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. 
+  QUICK_SET_GPIO_0: # Quick Set to Drive GPIO 0 port [31:0] pins high after reset.
+# Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
     value: '0x12345678'  # The value width: 32b
-  QUICK_CLR_GPIO_0: # Quick Clear to Drive GPIO 0 port [31:0] pins low after reset. 
-# Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. 
+  QUICK_CLR_GPIO_0: # Quick Clear to Drive GPIO 0 port [31:0] pins low after reset.
+# Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
     value: '0x12345678'  # The value width: 32b
-  QUICK_SET_GPIO_1: # Quick Set to Drive GPIO 1 port [31:0] pins high after reset. 
-# Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. 
+  QUICK_SET_GPIO_1: # Quick Set to Drive GPIO 1 port [31:0] pins high after reset.
+# Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
     value: '0x12345678'  # The value width: 32b
-  QUICK_CLR_GPIO_1: # Quick Clear to Drive GPIO 1 port [31:0] pins low after reset. 
-# Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. 
+  QUICK_CLR_GPIO_1: # Quick Clear to Drive GPIO 1 port [31:0] pins low after reset.
+# Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
     value: '0x12345678'  # The value width: 32b
-  QUICK_SET_GPIO_2: # Quick Set to Drive GPIO 2 port [31:0] pins high after reset. 
-# Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. 
+  QUICK_SET_GPIO_2: # Quick Set to Drive GPIO 2 port [31:0] pins high after reset.
+# Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
     value: '0x12345678'  # The value width: 32b
-  QUICK_CLR_GPIO_2: # Quick Clear to Drive GPIO 2 port [31:0] pins low after reset. 
-# Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. 
+  QUICK_CLR_GPIO_2: # Quick Clear to Drive GPIO 2 port [31:0] pins low after reset.
+# Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
     value: '0x12345678'  # The value width: 32b
-  QUICK_SET_GPIO_3: # Quick Set to Drive GPIO 3 port [31:0] pins high after reset. 
-# Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. 
+  QUICK_SET_GPIO_3: # Quick Set to Drive GPIO 3 port [31:0] pins high after reset.
+# Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
     value: '0x12345678'  # The value width: 32b
-  QUICK_CLR_GPIO_3: # Quick Clear to Drive GPIO 3 port [31:0] pins low after reset. 
-# Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. 
+  QUICK_CLR_GPIO_3: # Quick Clear to Drive GPIO 3 port [31:0] pins low after reset.
+# Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs.
 # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
     value: '0x12345678'  # The value width: 32b
-  ROP_STATE: # ROP_STATE. 
-# 2'b00 Disable CRC check 
-# All other value enable CRC
-    value: '0xFFFFFFFF'  # The value width: 32b
-  ROP_STATE_DP: # ROP_STATE_DP. 
-# 2'b00 Disable CRC check 
-# All other value enable CRC
-    value: '0xFFFFFFFF'  # The value width: 32b
-  CMPA_CRC32: # CRC32 of CMPA page data offset from 0x00 to 0x8C
-    value: '0x12345678'  # The value width: 32b
+  ROP_STATE: # Read Out Protection (ROP) State value.
+# Device does not support secure boot, but it does support four levels of Read Out Protection, referred as ROP_STATE.
+# This read out protection is a mechanism that allows user to enable different levels of protection in the system.
+# ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE.
+# Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).
+    bitfields:  # The register bitfields
+      ROP_STATE: ROP_LEVEL0  # Offset: 0b, Width: 32b, Description: ROP_STATE[31:0]
+      # - ROP_LEVEL0, (4294967295): ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state.
+      # - ROP_LEVEL1, (3): ROP_STATE = 0x0000_0003. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available.
+      # - ROP_LEVEL2, (1): ROP_STATE = 0x0000_0001. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available.
+      # - ROP_LEVEL3, (0): ROP_STATE = 0x0000_0000. Debug disabled and locked, cannot be modified by customer, no debug mailbox commands available.
+  ROP_STATE_DP: # Read Out Protection (ROP) State duplicate value.
+# ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the device; if match then programs it to SYSCON->ROP_STATE.
+# Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).
+    bitfields:  # The register bitfields
+      ROP_STATE_DP: ROP_LEVEL0  # Offset: 0b, Width: 32b, Description: ROP_STATE_DP[31:0]
+      # - ROP_LEVEL0, (4294967295): ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state.
+      # - ROP_LEVEL1, (3): ROP_STATE = 0x0000_0003. Debug disabled and unlocked, can be modified by customer, only limited debug mailbox commands available.
+      # - ROP_LEVEL2, (1): ROP_STATE = 0x0000_0001. Debug disabled and locked, cannot be modified by customer, only limited debug mailbox commands available.
+      # - ROP_LEVEL3, (0): ROP_STATE = 0x0000_0000. Debug disabled and locked, cannot be modified by customer, no debug mailbox commands available.

@@ -11,6 +11,8 @@ from os import path
 import pytest
 from cryptography.hazmat.backends.openssl import backend
 
+from tests.cli_runner import CliRunner
+
 # Disable RSA key blinding to speed up unit tests in cryptography 37+
 # https://github.com/pyca/cryptography/issues/7236
 backend._rsa_skip_check_key = True
@@ -20,6 +22,11 @@ try:
     import smartcard
 except ImportError:
     collect_ignore_glob = ["tp*"]
+
+
+@pytest.fixture
+def cli_runner():
+    return CliRunner()
 
 
 @pytest.fixture(scope="module")

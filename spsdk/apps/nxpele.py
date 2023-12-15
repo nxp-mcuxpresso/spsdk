@@ -10,6 +10,7 @@
 import logging
 import os
 import sys
+from struct import pack
 
 import click
 
@@ -31,6 +32,7 @@ from spsdk.mboot.exceptions import McuBootCommandError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.mboot.scanner import get_mboot_interface
+from spsdk.utils.crypto.iee import IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes, IeeNxp
 from spsdk.utils.crypto.otfad import KeyBlob, OtfadNxp
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import BinaryPattern, load_binary, load_configuration, write_file
@@ -365,6 +367,48 @@ def ele_start_trng(ele_handler: EleMessageHandler) -> None:
     with ele_handler:
         ele_handler.send_message(start_trng)
     click.echo("ELE starts TRNG successfully")
+
+
+@main.command(name="load-keyblob", no_args_is_help=True)
+@click.option(
+    "-i",
+    "--key-id",
+    type=INT(),
+    required=True,
+    help=(
+        "Key ID (know also as Key Identifier), the same value has to be "
+        "provided again when decrypting the generated blob."
+    ),
+)
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, file_okay=True, resolve_path=True),
+    required=True,
+    help="Binary file with EdgeLock Enclave keyblob to be loaded to HW.",
+)
+@click.pass_obj
+def cmd_ele_load_keyblob(handler: EleMessageHandler, key_id: int, binary: str) -> None:
+    """Load EdgeLock Enclave keyblob to hardware.
+
+    The command 'Load key blob' is used to inject some keys in specific HW blocks.
+    Currently only the IEE HW is supported. The expected blob must have been previously
+    created by using the 'Generate Key Blob' command.
+    """
+    ele_load_keyblob(handler, key_id, load_binary(binary))
+
+
+def ele_load_keyblob(ele_handler: EleMessageHandler, key_id: int, binary: bytes) -> None:
+    """Authenticate and execute EdgeLock Enclave firmware command.
+
+    :param ele_handler: ELE handler class
+    :param key_id: Key Identifier
+    :param binary: Binary form of the keyblob
+    """
+    ele_load_keyblob_msg = ele_message.EleMessageLoadKeyBLob(key_identifier=key_id, keyblob=binary)
+    with ele_handler:
+        ele_handler.send_message(ele_load_keyblob_msg)
+    click.echo("ELE load keyblob ends successfully.")
 
 
 @main.group(name="generate-keyblob", no_args_is_help=True)
@@ -791,69 +835,69 @@ def cmd_gen_keyblob_iee(
     locked: bool,
     output: str,
 ) -> None:
-    """Generate IEE keyblob on EdgeLock Enclave."""
-    ele_gen_keyblob_iee(
-        handler,
-        key_id,
-        algorithm,
-        key,
-        key_size,
-        counter,
-        ctr_mode,
-        page_offset,
-        region_number,
-        bypass,
-        locked,
-        output,
-    )
-
-
-def ele_gen_keyblob_iee(
-    ele_handler: EleMessageHandler,
-    key_id: int,
-    algorithm: KeyBlobEncryptionAlgorithm,
-    key: str,
-    key_size: int,
-    counter: str,
-    ctr_mode: KeyBlobEncryptionIeeCtrModes,
-    page_offset: int,
-    region_number: int,
-    bypass: bool,
-    locked: bool,
-    output: str,
-) -> None:
-    """Generate IEE keyblob on EdgeLock Enclave.
-
-    :param ele_handler: ELE handler class
-    :param key_id: Key Identifier
-    :param algorithm: Encryption algorithm to wrap key
-    :param key: AES Key as hexadecimal string or path to file containing key in plain text or in binary
-    :param key_size: Size of key in bits
-    :param counter: AES Counter 64 bits
-    :param ctr_mode: CTR mode, of IEE encryption
-    :param page_offset: IEE page offset
-    :param region_number: Region number
-    :param bypass: Bypass encryption
-    :param locked:Lock configuration
-    :param output: Output keyblob file name
-    :raises SPSDKAppError: Invalid input key length
-    """
+    """Generate IEE keyblob atomic command on EdgeLock Enclave."""
     enum_algorithm = KeyBlobEncryptionAlgorithm.get(algorithm)
     assert isinstance(enum_algorithm, int)
     enum_ctr_mode = KeyBlobEncryptionIeeCtrModes.get(ctr_mode)
     assert isinstance(enum_ctr_mode, int)
+
     if (
         key_size
         not in ele_message.EleMessageGenerateKeyBLobIee.SUPPORTED_ALGORITHMS[enum_algorithm]
     ):
         raise SPSDKAppError("Invalid key size")
 
+    key_blob = ele_gen_keyblob_iee(
+        handler,
+        key_id,
+        enum_algorithm,
+        key=get_key(key, key_size // 8),
+        counter=get_key(counter, 16) if counter else b"",
+        ctr_mode=enum_ctr_mode,
+        page_offset=page_offset,
+        region_number=region_number,
+        bypass=bypass,
+        locked=locked,
+    )
+
+    click.echo(f"ELE generate IEE key blob ends successfully:\n{key_blob.hex()}")
+    if output:
+        write_file(key_blob, output, mode="wb")
+
+
+def ele_gen_keyblob_iee(
+    ele_handler: EleMessageHandler,
+    key_id: int,
+    algorithm: int,
+    key: bytes,
+    counter: bytes,
+    ctr_mode: int,
+    page_offset: int,
+    region_number: int,
+    bypass: bool,
+    locked: bool,
+) -> bytes:
+    """Generate IEE keyblob on EdgeLock Enclave.
+
+    :param ele_handler: ELE handler class
+    :param key_id: Key Identifier
+    :param algorithm: Encryption algorithm to wrap key
+    :param key: AES Key as bytes
+    :param counter: AES Counter 64 bits, 16 bytes
+    :param ctr_mode: CTR mode, of IEE encryption
+    :param page_offset: IEE page offset
+    :param region_number: Region number
+    :param bypass: Bypass encryption
+    :param locked:Lock configuration
+    :raises SPSDKAppError: Invalid input key length
+    :returns: Wrapped IEE keyblob
+    """
     gen_keyblob_iee_msg = ele_message.EleMessageGenerateKeyBLobIee(
         key_identifier=key_id,
-        algorithm=enum_algorithm,
-        key=get_key(key, key_size // 8),
-        aes_counter=get_key(counter, 8) if counter else b"",
-        ctr_mode=enum_ctr_mode,
+        algorithm=algorithm,
+        key=key,
+        aes_counter=counter,
+        ctr_mode=ctr_mode,
         page_offset=page_offset,
         region_number=region_number,
         bypass=bypass,
@@ -861,11 +905,124 @@ def ele_gen_keyblob_iee(
     )
     with ele_handler:
         ele_handler.send_message(gen_keyblob_iee_msg)
-    click.echo(
-        f"ELE generate IEE key blob ends successfully:\n{gen_keyblob_iee_msg.key_blob.hex()}"
+
+    return gen_keyblob_iee_msg.key_blob
+
+
+@gen_keyblob_group.command(name="IEE-KEYBLOB", no_args_is_help=True)
+@click.option(
+    "-r",
+    "--region-number",
+    type=INT(),
+    required=True,
+    help="Region number",
+)
+@spsdk_config_option(
+    help="Configuration file from NXPIMAGE IEE tool. From the config, all needed values has been loaded."
+)
+@spsdk_output_option(
+    required=False,
+    help="Store IEE keyblob into a file. If not used, value is just printed to console.",
+)
+@click.pass_obj
+def cmd_gen_keyblob_iee_full(
+    handler: EleMessageHandler, region_number: int, config: str, output: str
+) -> None:
+    """Generate IEE keyblob on EdgeLock Enclave."""
+    ele_gen_keyblob_iee_whole_keyblob(handler, region_number, config, output)
+
+
+def ele_gen_keyblob_iee_whole_keyblob(
+    ele_handler: EleMessageHandler, region_number: int, config: str, output: str
+) -> None:
+    """Generate OTFAD keyblob on EdgeLock Enclave.
+
+    :param ele_handler: ELE handler class
+    :param region_number: Region number
+    :param config: Configuration of IEE from NXPIMAGE IEE tool
+    :param output: Output keyblob file name
+    """
+    IEE_KEYBLOB_ID = 0x49454542
+    config_data = load_configuration(config)
+    config_dir = os.path.dirname(config)
+    check_config(config_data, IeeNxp.get_validation_schemas_family(), search_paths=[config_dir])
+    family = config_data["family"]
+    schemas = IeeNxp.get_validation_schemas(family)
+    check_config(config_data, schemas, search_paths=[config_dir])
+    iee = IeeNxp.load_from_config(config_data, config_dir, search_paths=[config_dir])
+
+    bypass = bool(iee[0].attributes.aes_mode == IeeKeyBlobModeAttributes.Bypass)
+    encryption_algorithm = (
+        KeyBlobEncryptionAlgorithm.AES_XTS
+        if iee[0].attributes.aes_mode == IeeKeyBlobModeAttributes.AesXTS
+        else KeyBlobEncryptionAlgorithm.AES_CTR
     )
+    key = iee[0].key1
+    if iee[0].attributes.ctr_mode:
+        key = iee[0].key1
+        counter = iee[0].key2
+        counter_mode = {
+            IeeKeyBlobModeAttributes.AesCTRWAddress: KeyBlobEncryptionIeeCtrModes.AesCTRWAddress,
+            IeeKeyBlobModeAttributes.AesCTRWOAddress: KeyBlobEncryptionIeeCtrModes.AesCTRWOAddress,
+            IeeKeyBlobModeAttributes.AesCTRkeystream: KeyBlobEncryptionIeeCtrModes.AesCTRkeystream,
+        }[iee[0].attributes.aes_mode]
+    else:
+        key = iee[0].key1 + iee[0].key2
+        counter = b""
+        counter_mode = KeyBlobEncryptionIeeCtrModes.AesCTRWAddress
+    iee_keyblob = ele_gen_keyblob_iee(
+        ele_handler=ele_handler,
+        key_id=IEE_KEYBLOB_ID,
+        algorithm=encryption_algorithm,
+        key=key,
+        counter=counter,
+        ctr_mode=counter_mode,
+        page_offset=iee[0].page_offset,
+        region_number=region_number,
+        bypass=bypass,
+        locked=bool(iee[0].attributes.lock == IeeKeyBlobLockAttributes.LOCK),
+    )
+    header_xor = iee[0].HEADER_TAG ^ iee[0].start_addr ^ iee[0].end_addr
+    logger.debug(
+        "Header IEE:\n"
+        f"TAG:        {iee[0].HEADER_TAG:08X}\n"
+        f"START ADDR: {iee[0].start_addr:08X}\n"
+        f"END ADDR:   {iee[0].end_addr:08X}\n"
+        f"EXOR:       {header_xor:08X}"
+    )
+    iee_keyblob_header = pack(
+        "<4I", iee[0].HEADER_TAG, iee[0].start_addr, iee[0].end_addr, header_xor
+    )
+
+    iee_keyblobs = BinaryImage(
+        name="IEE Keyblobs",
+        description=ele_handler.family,
+        size=0,
+        pattern=BinaryPattern("zeros"),
+    )
+    iee_keyblobs.add_image(
+        BinaryImage(
+            name="IEE Keyblob header",
+            offset=0,
+            description=str(iee[0]),
+            size=16,
+            binary=iee_keyblob_header,
+        )
+    )
+    iee_keyblobs.add_image(
+        BinaryImage(
+            name="IEE wrapped keyblob",
+            offset=16,
+            description="Wrapped IEE keyblob by ELE",
+            binary=iee_keyblob,
+        )
+    )
+
+    logger.info(iee_keyblobs.draw())
+
+    click.echo(f"ELE generate IEE key blobs ends successfully:\n{iee_keyblobs.export().hex()}")
     if output:
-        write_file(gen_keyblob_iee_msg.key_blob, output, mode="wb")
+        write_file(iee_keyblobs.export(), output, mode="wb")
 
 
 @main.command(name="write-fuse", no_args_is_help=True)

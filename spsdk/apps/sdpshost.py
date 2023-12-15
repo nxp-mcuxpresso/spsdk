@@ -57,6 +57,7 @@ def write_file(ctx: click.Context, bin_file: click.File) -> None:
     data = bin_file.read()  # type: ignore
     with SDPS(ctx.obj["interface"], device_name=ctx.obj["name"]) as sdps:
         sdps.write_file(data)
+    click.echo(f"Writing of file '{bin_file.name}' succeeded.")
 
 
 @catch_spsdk_error

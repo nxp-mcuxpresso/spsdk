@@ -7,13 +7,13 @@
 from unittest.mock import MagicMock
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import tphost
 from spsdk.tp.tphost import SPSDKTpError, TrustProvisioningHost
+from tests.cli_runner import CliRunner
 
 
-def test_tphost_check_cot(data_dir):
+def test_tphost_check_cot(cli_runner: CliRunner, data_dir):
     cmd = [
         "--root-cert",
         f"{data_dir}/nxp_glob_devattest.crt",
@@ -22,34 +22,31 @@ def test_tphost_check_cot(data_dir):
         "--tp-response",
         f"{data_dir}/tp_response.bin",
     ]
-    runner = CliRunner()
-    result = runner.invoke(tphost.check_cot, cmd)
+    result = cli_runner.invoke(tphost.check_cot, cmd, expected_code=-1)
     assert "OK" in result.output
     assert "FAILED" in result.output
 
 
-def test_tphost_check_cot_no_glob(data_dir):
+def test_tphost_check_cot_no_glob(cli_runner: CliRunner, data_dir):
     cmd = [
         "--intermediate-cert",
         f"{data_dir}/lpc55_devattest.crt",
         "--tp-response",
         f"{data_dir}/tp_response.bin",
     ]
-    runner = CliRunner()
-    result = runner.invoke(tphost.check_cot, cmd)
+    result = cli_runner.invoke(tphost.check_cot, cmd, expected_code=-1)
     assert "OK" in result.output
     assert "FAILED" in result.output
 
 
-def test_tphost_check_cot_no_glob_bin(data_dir):
+def test_tphost_check_cot_no_glob_bin(cli_runner: CliRunner, data_dir):
     cmd = [
         "--intermediate-cert",
         f"{data_dir}/lpc55_devattest.bin",
         "--tp-response",
         f"{data_dir}/tp_response.bin",
     ]
-    runner = CliRunner()
-    result = runner.invoke(tphost.check_cot, cmd)
+    result = cli_runner.invoke(tphost.check_cot, cmd, expected_code=-1)
     assert "OK" in result.output
     assert "FAILED" in result.output
 

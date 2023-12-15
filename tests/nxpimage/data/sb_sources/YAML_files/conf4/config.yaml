@@ -1,0 +1,161 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==========================================  SB 2.1 converted configuration  ==========================================
+
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+# --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
+# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signPrivateKey: sb_sources/keys_and_certs/k0_cert0_2048.pem
+# ======================================================================================================================
+#                                               == Certificate Block V1 ==
+# ======================================================================================================================
+# -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
+# Description: Path to certificate block binary or config file.
+certBlock: sb_sources/YAML_files/conf4/cert_block.yaml
+# ======================================================================================================================
+#                                                   == SB2.1 Output ==
+# ======================================================================================================================
+# -----------------------------------------===== SB2 filename [Required] =====------------------------------------------
+# Description: Generated SB2 container filename.
+containerOutputFile: output.sb
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc55s0x, lpc55s1x, lpc55s2x, lpc55s6x, rt5xx, rt6xx>
+family: rt6xx
+# ======================================================================================================================
+#                                                  == Basic Setting ==
+# ======================================================================================================================
+# ------------------------------------------===== SB2.1 SBKEK [Required] =====------------------------------------------
+# Description: Path to SB key encryption key (AES-128). It might be provided in text file or binary file or as a hex
+# string in the configuration.
+containerKeyBlobEncryptionKey: sb_sources/keys/SBkek_PUF.txt
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -----------------------------------------===== SB2.1 Options [Required] =====-----------------------------------------
+# Description: An options block contains zero or more name/value pairs and the option settings that assign values to
+# global options used by the nxpimage to control the generation of the output file.
+options:
+  # -----------------------------------------===== SB2.1 flags [Required] =====-----------------------------------------
+  # Description: For SB2.1 use only 0x8 encrypted + signed.
+  flags: 8
+  # ---------------------------------------===== Product version [Optional] =====---------------------------------------
+  # Description: Version string as "xxx.yyy.zzz".
+  productVersion: 1.00.00
+  # --------------------------------------===== Component version [Optional] =====--------------------------------------
+  # Description: Component version string as "xxx.yyy.zzz".
+  componentVersion: 1.0.0
+  # -----------------------------------------===== SB Version [Optional] =====------------------------------------------
+  # Description: Used to specify version of SB2 file.
+  secureBinaryVersion: "2.1"
+# ======================================================================================================================
+#                                           == SB 2.1 Sections and commands ==
+# ======================================================================================================================
+# ----------------------------------------===== SB2.1 Sections [Required] =====-----------------------------------------
+# Description: Secure Binary v2.1 section blocks
+sections:
+  - # --------------------------------------===== SB2.1 Commands [Optional] =====---------------------------------------
+    # Description: Secure Binary v2.1 commands block, list of all possible options - Modify it according to your
+    # application
+    commands:
+      - # --------------------------------------===== Fill memory [Required] =====--------------------------------------
+        # Description: Used for filling of the memory range by repeated pattern.
+        fill:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be filled.
+          address: 537083904
+          # ---------------------------------------===== Pattern [Required] =====---------------------------------------
+          # Description: Pattern which will be used to fill memory.
+          pattern: 1342177280
+      - # --------------------------------------===== Fill memory [Required] =====--------------------------------------
+        # Description: Used for filling of the memory range by repeated pattern.
+        fill:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be filled.
+          address: 537083908
+          # ---------------------------------------===== Pattern [Required] =====---------------------------------------
+          # Description: Pattern which will be used to fill memory.
+          pattern: 0
+      - # --------------------------------------===== Fill memory [Required] =====--------------------------------------
+        # Description: Used for filling of the memory range by repeated pattern.
+        fill:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be filled.
+          address: 537083912
+          # ---------------------------------------===== Pattern [Required] =====---------------------------------------
+          # Description: Pattern which will be used to fill memory.
+          pattern: 245760
+      - # -----------------------------------===== Configure memory [Required] =====------------------------------------
+        # Description: initialization of external memories using a parameter block that was previously loaded to RAM.
+        enable:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Configuration address.
+          address: 537083904
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be configured.
+          mem_opt: 0
+      - # -----------------------------------===== Configure memory [Required] =====------------------------------------
+        # Description: initialization of external memories using a parameter block that was previously loaded to RAM.
+        enable:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Configuration address.
+          address: 537083904
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be configured.
+          mem_opt: 9
+      - # -----------------------------------------===== Erase [Required] =====-----------------------------------------
+        # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector
+        # size.
+        erase:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be erased.
+          address: 0
+          # ----------------------------------------===== Flags [Optional] =====----------------------------------------
+          # Description: For erase all, flags=1, for erase unsecure all -> 2
+          flags: 1
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 0
+          # ------------------------------------===== Binary file. [Optional] =====-------------------------------------
+          # Description: Binary file to be loaded.
+          file: sb_sources/output_images/bootloaderImage.bin
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16384
+          # ------------------------------------===== Binary file. [Optional] =====-------------------------------------
+          # Description: Binary file to be loaded.
+          file: sb_sources/output_images/tmdImage.bin
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 490496
+          # ------------------------------------===== Binary file. [Optional] =====-------------------------------------
+          # Description: Binary file to be loaded.
+          file: sb_sources/output_images/audioImage.bin
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 645632
+          # ------------------------------------===== Binary file. [Optional] =====-------------------------------------
+          # Description: Binary file to be loaded.
+          file: sb_sources/output_images/tmdData.bin

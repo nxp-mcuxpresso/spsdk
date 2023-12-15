@@ -6,77 +6,25 @@ production deployment. The library allows the user to connect and communicate wi
 configure the device, prepare, download and upload data, including security operations. It is
 delivered in the form of a python library and command-line applications.
 
-Version: 2.0.0
+Version: 2.0.1
 ==============
-Date: 13-October-2023
-
-ANNOUNCEMENT:
-
-Current version introduces breaking changes, which are described in details in migration guide.
-
-New features
-- blhost:
-    - dedicated plugin system
-    - check of written data length in USB Interface
-- nxpcrypto:
-    - remove dependency on PyCryptodome
-    - add rot command for calculating RoT hash
-- nxpimage:
-    - distinguish between fw version and image version
-    - support YAML configuration for HAB
-    - support build RT11xx image with ECC keys
-    - support OSCCA
-    - support AHAB NAND
-    - implement HTTP Proxy Signature Provider
-    - signature provider for OSCCA
-    - add validation of signature in AHAB
-    - support OTFAD for RT1010
-    - export HAB from yaml config in bootable image
-    - revision of offsets in AHAB container
-    - command filter in SB 2.1 based on family
-    - refactor memory types for mbi
-    - add to AHAB key identifier for encrypted images
-- pfr/ifr:
-    - remove devices subcommand
-- sdpshost:
-    - connection support for iMX91 and iMX95
-- shadowregs:
-    - unify endianness
-- tool for converting JSON configuration into YAML with comments
-- support mcxa1xx
-- unify naming: RKTH/RKHT
-- remove nxpkeygen and nxpcertgen apps, replaced by nxpcrypto
-- remove elftosb app, replaced by nxpcrypto
-- positional arguments replaced by options for all parameters with an exception to blhost, sdphost and dk6prog
-- remove backward compatibility with command get-cfg-template, replaced fully with get-template(s)
-- unify family name within all modules
-- remove lpc55xx from family names
+Date: 15-December-2023
 
 Bugfixes
-- blhost:
-    - fix error of SPI connection
-- nxpdevhsm:
-    - add missing sdio in generate command
+
+- nxpdebugmbox:
+    - fix test memory AP address
 - nxpele:
-    - fix generate-keyblob IEE
-    - fix issue with get-info command
+    - remove temporary file
 - nxpimage:
-    - fix certificate block in AHAB
-    - fix signature in AHAB
-    - fix some commands for SB21
-    - fix non generated keys for AHAB parse
-    - fix RAM images for LPC55Sxx
-    - fix MBI signed for xip for MCXN9xx
-    - fix sb21 export yaml errors
-    - fix OTFAD with DUK
-    - fix wrong core ID in parse for iMX93
-    - fix binary certificate block for MBI
-    - fix manifest for mcxn9xx
-    - fix bootable image merge
-    - fix in MBI configurations
-    - fix missing parameters in MBI config in bootable-image parse
-    - fix sb21 file generation without SBKEK
-    - update list of supported MBI images for mcxn9xx
+    - Fix detection of input file for FCB in bootable image
+    - fix IEE encryption for RT1180
+    - fix signed MBI for Anguilla Nano
+    - fix SB21 export with yaml config
+- shadowregs:
+    - fix behavior of the RKTH registers
+    - fix invalid names of CRC field in database
+- fix setting a register value as raw value when loading from configuration
 
 Supported devices
 =================
@@ -107,6 +55,66 @@ Python 3.8+ interpreter, old version 2.x is not supported
 
 Revision History
 ================
+ 2.0.0
+- blhost:
+    - dedicated plugin system
+    - check of written data length in USB Interface
+    - fix error of SPI connection
+- nxpcrypto:
+    - remove dependency on PyCryptodome
+    - add rot command for calculating RoT hash
+- nxpdevhsm:
+    - add missing sdio in generate command
+- nxpele:
+    - fix generate-keyblob IEE
+    - fix issue with get-info command
+- nxpimage:
+    - distinguish between fw version and image version
+    - support YAML configuration for HAB
+    - support build RT11xx image with ECC keys
+    - support OSCCA
+    - support AHAB NAND
+    - implement HTTP Proxy Signature Provider
+    - signature provider for OSCCA
+    - add validation of signature in AHAB
+    - support OTFAD for RT1010
+    - export HAB from yaml config in bootable image
+    - revision of offsets in AHAB container
+    - command filter in SB 2.1 based on family
+    - refactor memory types for mbi
+    - add to AHAB key identifier for encrypted images
+    - fix certificate block in AHAB
+    - fix signature in AHAB
+    - fix some commands for SB21
+    - fix non generated keys for AHAB parse
+    - fix RAM images for LPC55Sxx
+    - fix MBI signed for xip for MCXN9xx
+    - fix sb21 export yaml errors
+    - fix OTFAD with DUK
+    - fix wrong core ID in parse for iMX93
+    - fix binary certificate block for MBI
+    - fix manifest for mcxn9xx
+    - fix bootable image merge
+    - fix in MBI configurations
+    - fix missing parameters in MBI config in bootable-image parse
+    - fix sb21 file generation without SBKEK
+    - update list of supported MBI images for mcxn9xx
+- pfr/ifr:
+    - remove devices subcommand
+- sdpshost:
+    - connection support for iMX91 and iMX95
+- shadowregs:
+    - unify endianness
+- tool for converting JSON configuration into YAML with comments
+- support mcxa1xx
+- unify naming: RKTH/RKHT
+- remove nxpkeygen and nxpcertgen apps, replaced by nxpcrypto
+- remove elftosb app, replaced by nxpcrypto
+- positional arguments replaced by options for all parameters with an exception to :blhost, :sdphost and :dk6prog
+- remove backward compatibility with command get-cfg-template, replaced fully with get-template(s)
+- unify family name within all modules
+- remove lpc55xx from family names
+
 1.11.0
 - nxpimage:
     - enable signature providers for AHAB image and signed messages

@@ -12,7 +12,6 @@ from typing import List
 
 import pytest
 import yaml
-from click.testing import CliRunner
 
 from spsdk.apps.nxpcertgen import main
 from spsdk.crypto.certificate import (
@@ -27,6 +26,7 @@ from spsdk.crypto.keys import PrivateKeyRsa, PublicKey
 from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import load_binary, use_working_directory
+from tests.cli_runner import CliRunner
 
 
 def get_certificate(data_dir, cert_file_name: str) -> Certificate:
@@ -228,7 +228,7 @@ def test_certificate_generation_invalid():
 
 
 @pytest.mark.parametrize("json, encoding", [(True, "PEM"), (False, "Der")])
-def test_certificate_generation_cli(tmpdir, data_dir, json, encoding):
+def test_certificate_generation_cli(cli_runner: CliRunner, tmpdir, data_dir, json, encoding):
     with use_working_directory(data_dir):
         cert_path = os.path.join(tmpdir, "cert.crt")
         cmd = [
@@ -240,9 +240,7 @@ def test_certificate_generation_cli(tmpdir, data_dir, json, encoding):
             "-e",
             encoding,
         ]
-        runner = CliRunner()
-        result = runner.invoke(main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(main, cmd)
         assert os.path.isfile(cert_path)
 
     generated_cert = Certificate.load(cert_path)
@@ -264,12 +262,10 @@ def test_invalid_certificate_chain():
         validate_certificate_chain(chain_list=[])
 
 
-def test_generate_template(tmpdir):
+def test_generate_template(cli_runner: CliRunner, tmpdir):
     template = "template.yaml"
     with use_working_directory(tmpdir):
-        runner = CliRunner()
-        result = runner.invoke(main, f"get-template -o {template}")
-        assert result.exit_code == 0
+        cli_runner.invoke(main, f"get-template -o {template}")
         assert os.path.isfile(template)
         with open(template) as f:
             data = yaml.safe_load(f)

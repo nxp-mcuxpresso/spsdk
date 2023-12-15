@@ -10,10 +10,12 @@ import filecmp
 import os
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
+from spsdk.exceptions import SPSDKError
+from spsdk.image.fcb.fcb import FCB
 from spsdk.utils.misc import use_working_directory
+from tests.cli_runner import CliRunner
 
 
 @pytest.mark.parametrize(
@@ -27,14 +29,12 @@ from spsdk.utils.misc import use_working_directory
         ("lpc55s3x", "flexspi_nor"),
     ],
 )
-def test_nxpimage_fcb_export(tmpdir, data_dir, family, mem_type):
-    runner = CliRunner()
+def test_nxpimage_fcb_export(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type):
     with use_working_directory(data_dir):
         config_file = os.path.join(data_dir, "fcb", family, f"fcb_{family}_{mem_type}.yaml")
         out_file = os.path.join(tmpdir, f"fcb_{family}_exported.bin")
         cmd = ["bootable-image", "fcb", "export", "-c", config_file, "-o", out_file]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file)
         assert filecmp.cmp(
             os.path.join(data_dir, "fcb", family, "fcb.bin"),
@@ -54,8 +54,7 @@ def test_nxpimage_fcb_export(tmpdir, data_dir, family, mem_type):
         ("lpc55s3x", "flexspi_nor", "fcb.bin"),
     ],
 )
-def test_nxpimage_fcb_parse_cli(tmpdir, data_dir, family, mem_type, binary):
-    runner = CliRunner()
+def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, binary):
     with use_working_directory(data_dir):
         data_folder = os.path.join(data_dir, "fcb", family)
         binary_path = os.path.join(data_folder, binary)
@@ -73,8 +72,7 @@ def test_nxpimage_fcb_parse_cli(tmpdir, data_dir, family, mem_type, binary):
             "-o",
             out_config,
         ]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
 
         assert os.path.isfile(out_config)
 
@@ -96,12 +94,35 @@ def test_nxpimage_fcb_parse_cli(tmpdir, data_dir, family, mem_type, binary):
         ("rw61x", ["flexspi_nor"]),
     ],
 )
-def test_nxpimage_fcb_template_cli(tmpdir, family, mem_types):
-    runner = CliRunner()
+def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family, mem_types):
     cmd = f"bootable-image fcb get-templates -f {family} --output {tmpdir}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
 
     for mem_type in mem_types:
         template_name = os.path.join(tmpdir, f"fcb_{family}_{mem_type}.yaml")
         assert os.path.isfile(template_name)
+
+
+@pytest.mark.parametrize(
+    "binary,fail",
+    [
+        (b"0" * 512, True),
+        (b"FCFB" + b"0" * 507, True),
+        (b"FCFB" + b"0" * 508, False),
+        (b"FCFB" + b"0" * 512, False),
+    ],
+)
+@pytest.mark.parametrize(
+    "family,mem_type",
+    [
+        ("rt5xx", "flexspi_nor"),
+        ("rt117x", "flexspi_nor"),
+        ("rt118x", "flexspi_nor"),
+    ],
+)
+def test_fcb_parse_invalid(binary, fail, family, mem_type):
+    if fail:
+        with pytest.raises(SPSDKError):
+            FCB.parse(binary, family=family, mem_type=mem_type)
+    else:
+        FCB.parse(binary, family=family, mem_type=mem_type)

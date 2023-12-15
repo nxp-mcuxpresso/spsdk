@@ -50,14 +50,14 @@ devices:
         DCFG_CC_SOCU: DCFG_CC_SOCU_AP
       computed_fields:
         DCFG_CC_SOCU:
-          CRC8_AP[7:0]: comalg_dcfg_cc_socu_crc8
+          CRC8[7:0]: comalg_dcfg_cc_socu_crc8
         DCFG_CC_SOCU_NS:
-          CRC8_AP[7:0]: comalg_dcfg_cc_socu_crc8
+          CRC8_NS[7:0]: comalg_dcfg_cc_socu_crc8
       grouped_registers:
         - name: RKTH
           width: 384
           config_as_hexstring: true
-          reverse_subregs_order: true
+          reversed: true
           alternative_widths: [256]
           description:
             ROTKH field is compounded by 12 32-bit fields and contains Root key
@@ -91,7 +91,7 @@ attributes:
         (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0]);
     - name: RKTH
       width: 256
-      reverse_subregs_order: True
+      reversed: True
       config_as_hexstring: True
       description:
         "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||

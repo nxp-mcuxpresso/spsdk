@@ -9,9 +9,9 @@
 import os
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
+from tests.cli_runner import CliRunner
 
 
 @pytest.mark.parametrize(
@@ -24,12 +24,10 @@ from spsdk.apps import nxpimage
         ("rw61x"),
     ],
 )
-def test_nxpimage_get_template_create_sb31(tmpdir, device):
-    runner = CliRunner()
+def test_nxpimage_get_template_create_sb31(cli_runner: CliRunner, tmpdir, device):
     file_name = os.path.join(tmpdir, "template.yml")
     cmd = f"sb31 get-template -f {device} --output {file_name}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(file_name)
 
 
@@ -37,12 +35,10 @@ def test_nxpimage_get_template_create_sb31(tmpdir, device):
     "device",
     [("rt118x"), ("mx93")],
 )
-def test_nxpimage_get_template_ahab(tmpdir, device):
-    runner = CliRunner()
+def test_nxpimage_get_template_ahab(cli_runner: CliRunner, tmpdir, device):
     file_name = os.path.join(tmpdir, "template.yml")
     cmd = f"ahab get-template -f {device} --output {file_name}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(file_name)
 
 
@@ -63,12 +59,10 @@ def test_nxpimage_get_template_ahab(tmpdir, device):
         ("nhs52s04", "latest"),
     ],
 )
-def test_nxpimage_get_template_tz(tmpdir, device, revision):
-    runner = CliRunner()
+def test_nxpimage_get_template_tz(cli_runner: CliRunner, tmpdir, device, revision):
     file_name = os.path.join(tmpdir, f"template_{device}_{revision}.yml")
     cmd = f"tz get-template -f {device} -r {revision} --output {file_name}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(file_name)
 
 
@@ -95,8 +89,6 @@ def test_nxpimage_get_template_tz(tmpdir, device, revision):
         ("rw61x"),
     ],
 )
-def test_nxpimage_get_template_mbi(tmpdir, device):
-    runner = CliRunner()
+def test_nxpimage_get_template_mbi(cli_runner: CliRunner, tmpdir, device):
     cmd = f"mbi get-templates -f {device} --output {tmpdir}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())

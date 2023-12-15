@@ -1101,6 +1101,7 @@ class Mbi_MixinBca(Mbi_Mixin):
     IMG_ISK_OFFSET = IMG_FCB_OFFSET + IMG_FCB_SIZE
     IMG_DATA_START = 0xC00
     IMG_SIGNED_HEADER_END = IMG_FCB_OFFSET
+    IMG_ISK_HASH_OFFSET = 0x4A0
     firmware_version: Optional[int]
 
     def mix_len(self) -> int:
@@ -1521,6 +1522,7 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
     NEEDED_MEMBERS: Dict[str, Any] = {"cert_block": None, "signature_provider": None}
 
     cert_block: CertBlockVx
+    add_hash: bool
     signature_provider: Optional[SignatureProvider]
     search_paths: Optional[List[str]]
     IMG_ISK_OFFSET: int
@@ -1540,6 +1542,8 @@ class Mbi_MixinCertBlockVx(Mbi_Mixin):
             local_file_key=private_key_file_name,
             search_paths=self.search_paths,
         )
+
+        self.add_hash = config.get("addCertHash", True)
 
     def mix_validate(self) -> None:
         """Validate the setting of image.
@@ -2249,6 +2253,7 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
     app: Optional[bytes]
     signature_provider: Optional[SignatureProvider]
     no_signature: Optional[bool]
+    add_hash: bool
     cert_block: CertBlockVx
 
     IMG_DIGEST_OFFSET: int
@@ -2257,6 +2262,7 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
     IMG_DATA_START: int
     IMG_DIGEST_SIZE: int
     IMG_ISK_OFFSET: int
+    IMG_ISK_HASH_OFFSET: int
 
     def sign(self, image: bytes, revert: bool = False) -> bytes:
         """Do calculation of ECC signature and digest and return updated image with it.
@@ -2272,13 +2278,15 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
             return image
         assert self.signature_provider
 
-        image_digest = get_hash(
+        data_to_sign = (
             image[: self.IMG_DIGEST_OFFSET]
             + image[self.IMG_BCA_OFFSET : self.IMG_SIGNED_HEADER_END]
             + image[self.IMG_DATA_START :]
         )
 
-        signature = self.signature_provider.sign(image_digest)
+        image_digest = get_hash(data_to_sign)
+
+        signature = self.signature_provider.sign(data_to_sign)
         assert signature
 
         # Inject image digest and signature
@@ -2301,6 +2309,16 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
             + self.cert_block.export()
             + image[self.IMG_ISK_OFFSET + self.cert_block.expected_size :]
         )
+
+        # Optionally inject ISK certificate hash
+        if self.add_hash:
+            image = (
+                image[: self.IMG_ISK_HASH_OFFSET]
+                + self.cert_block.cert_hash
+                + image[self.IMG_ISK_HASH_OFFSET + len(self.cert_block.cert_hash) :]
+            )
+
+        logger.info(f"Cert block info: {str(self.cert_block)}")
 
         return image
 

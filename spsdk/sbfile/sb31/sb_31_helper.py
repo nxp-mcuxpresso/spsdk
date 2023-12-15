@@ -11,7 +11,7 @@ from typing import List, Optional
 from spsdk.exceptions import SPSDKError
 from spsdk.image import MBI_SCH_FILE
 from spsdk.utils.crypto import CRYPTO_SCH_FILE
-from spsdk.utils.crypto.cert_blocks import find_root_certificates, get_main_cert_index
+from spsdk.utils.crypto.cert_blocks import CertBlock, find_root_certificates
 from spsdk.utils.schema_validator import ValidationSchemas, check_config
 
 
@@ -43,7 +43,7 @@ class RootOfTrustInfo:  # pylint: disable=too-few-public-methods
                 "One of 'mainCertPrivateKeyFile', 'mainRootCertPrivateKeyFile', 'signProvider' must be specified."
             )
         self.public_keys = find_root_certificates(data)
-        data_main_cert_index = get_main_cert_index(data, search_paths=search_paths)
+        data_main_cert_index = CertBlock.get_main_cert_index(data, search_paths=search_paths)
         root_cert_file = data.get(f"rootCertificate{data_main_cert_index}File")
         if not root_cert_file:
             raise SPSDKError(f"rootCertificate{data_main_cert_index}File doesn't exist")

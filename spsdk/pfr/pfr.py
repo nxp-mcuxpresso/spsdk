@@ -502,20 +502,29 @@ class BaseConfigArea:
             raise SPSDKError("Can't find 'seal_count' in database.yaml")
         return value_to_int(count)
 
-    def export(self, add_seal: bool = False, keys: Optional[List[PublicKey]] = None) -> bytes:
+    def export(
+        self,
+        add_seal: bool = False,
+        keys: Optional[List[PublicKey]] = None,
+        rotkh: Optional[bytes] = None,
+    ) -> bytes:
         """Generate binary output.
 
         :param add_seal: The export is finished in the PFR record by seal.
         :param keys: List of Keys to compute ROTKH field.
+        :param rotkh: ROTKH binary value.
         :return: Binary block with PFR configuration(CMPA or CFPA).
         :raises SPSDKPfrRotkhIsNotPresent: This PFR block doesn't contain ROTKH field.
         :raises SPSDKError: The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}.
         """
-        if keys:
+        if keys or rotkh:
             try:
                 # ROTKH may or may not be present, derived class defines its presence
                 rotkh_reg = self.registers.find_reg(self.ROTKH_REGISTER)
-                rotkh_data = self._calc_rotkh(keys)
+                if rotkh:
+                    rotkh_data = rotkh
+                elif keys:
+                    rotkh_data = self._calc_rotkh(keys)
                 rotkh_reg.set_value(rotkh_data, True)
             except SPSDKRegsErrorRegisterNotFound as exc:
                 raise SPSDKPfrRotkhIsNotPresent(

@@ -22,19 +22,8 @@ from .debug_probe import (
 )
 
 logger = logging.getLogger(__name__)
-JLINK_LOGGER = logger.getChild("PyLink")
-JLINK_LOGGER.setLevel(logging.ERROR)
-
-
-def set_logger(level: int) -> None:
-    """Sets the log level for this module.
-
-    param level: Requested level.
-    """
-    logger.setLevel(level)
-
-
-set_logger(logging.ERROR)
+logger_pylink = logger.getChild("PyLink")
+logger_pylink.setLevel(logging.ERROR)
 
 
 class DebugProbePyLink(DebugProbe):
@@ -59,10 +48,10 @@ class DebugProbePyLink(DebugProbe):
         """
         try:
             return pylink.JLink(
-                log=JLINK_LOGGER.info,
-                detailed_log=JLINK_LOGGER.debug,
-                error=JLINK_LOGGER.error,
-                warn=JLINK_LOGGER.warn,
+                log=logger_pylink.info,
+                detailed_log=logger_pylink.debug,
+                error=logger_pylink.error,
+                warn=logger_pylink.warn,
             )
         except TypeError as exc:
             raise SPSDKDebugProbeError("Cannot open Jlink DLL") from exc
@@ -73,7 +62,6 @@ class DebugProbePyLink(DebugProbe):
         The PyLink initialization function for SPSDK library to support various DEBUG PROBES.
         """
         super().__init__(hardware_id, options)
-        set_logger(logging.root.level)
         self.pylink = None
 
         logger.debug("The SPSDK PyLink Interface has been initialized")

@@ -9,7 +9,7 @@
 import logging
 from typing import List, Optional, Tuple
 
-from spsdk.exceptions import SPSDKConnectionError
+from spsdk.exceptions import SPSDKAttributeError, SPSDKConnectionError
 from spsdk.sdp.commands import CmdResponse
 from spsdk.sdp.protocol.base import SDPProtocolBase
 from spsdk.utils.interfaces.commands import CmdPacketBase
@@ -54,10 +54,11 @@ class SDPBulkProtocol(SDPProtocolBase):
         """Encapsulate command into frames and send them to device.
 
         :param packet: Command packet object to be sent
+        :raises SPSDKAttributeError: Command packed contains no data to be sent
         """
         data = packet.to_bytes()
         if not data:
-            raise AttributeError("Incorrect packet type")
+            raise SPSDKAttributeError("Incorrect packet type")
         report_id, report_size, _ = HID_REPORT["CMD"]
         frames = self._create_frames(data=data, report_id=report_id, report_size=report_size)
         for frame in frames:

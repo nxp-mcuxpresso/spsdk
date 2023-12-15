@@ -21,7 +21,6 @@ import colorama
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
 from spsdk import SPSDK_DATA_FOLDER
-from spsdk.apps.blhost_helper import progress_bar
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
@@ -31,7 +30,13 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_output_option,
     spsdk_plugin_option,
 )
-from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, format_raw_data
+from spsdk.apps.utils.utils import (
+    INT,
+    SPSDKAppError,
+    catch_spsdk_error,
+    format_raw_data,
+    progress_bar,
+)
 from spsdk.dat import dm_commands
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
@@ -217,6 +222,7 @@ def main(
 ) -> int:
     """Tool for working with Debug Mailbox."""
     spsdk_logger.install(level=log_level)
+    spsdk_logger.configure_pyocd_logger()
 
     probe_user_params = {}
     for par in debug_probe_option:
@@ -354,13 +360,11 @@ def auth(
                     if ahb_access_granted
                     else (colorama.Fore.RED + "without AHB access")
                 )
-                logger.info(f"Debug Authentication ends {res_str}{colorama.Fore.RESET}.")
+                click.echo(f"Debug Authentication ends {res_str}{colorama.Fore.RESET}.")
                 if not ahb_access_granted:
-                    raise SPSDKAppError()
+                    raise SPSDKAppError("Access to AHB is not granted.")
             else:
-                logger.info(
-                    "Debug Authentication ends without exit and without test of AHB access."
-                )
+                click.echo("Debug Authentication ends without exit and without test of AHB access.")
 
     except SPSDKError as e:
         raise SPSDKAppError(
@@ -629,7 +633,7 @@ def token_auth(
 @main.command(name="get-crp")
 @click.pass_obj
 def get_crp_command(pass_obj: dict) -> None:
-    """Get CRP level."""
+    """Get CRP level. This command should be called after 'start' command and with no-reset '-n' option."""
     get_crp(pass_obj["debug_probe_params"], pass_obj["debug_mailbox_params"])
     click.echo("Get CRP Level succeeded")
 
@@ -638,7 +642,7 @@ def get_crp(
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
 ) -> None:
-    """Get CRP level. This command should be called after 'start' command and with no-reset '-n' option.
+    """Get CRP level.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
     :param debug_mailbox_params: DebugMailboxParams object holding information about parameters for debugmailbox.
@@ -647,7 +651,7 @@ def get_crp(
     try:
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             crp_level = dm_commands.GetCRPLevel(dm=mail_box).run()[0]
-            logger.info(f"CRP level is: {crp_level}.")
+            click.echo(f"CRP level is: {crp_level}.")
     except Exception as e:
         raise SPSDKAppError(f"Get CRP Level failed: {e}") from e
 

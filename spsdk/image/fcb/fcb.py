@@ -28,6 +28,8 @@ from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
 class FCB(SegmentBase):
     """FCB (Flash Configuration Block)."""
 
+    TAG = b"FCFB"
+
     def __init__(self, family: str, mem_type: str, revision: str = "latest") -> None:
         """FCB Constructor.
 
@@ -72,10 +74,15 @@ class FCB(SegmentBase):
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Optional Chip family revision.
-        :raises SPSDKError: If given binary block size is not equal to block size in header
+        :raises SPSDKError: If given binary block contains wrong FCB tag
         """
         fcb = cls(family=family, mem_type=mem_type, revision=revision)
         fcb.registers.parse(binary[offset:])
+        tag = fcb.registers.find_reg("tag")
+        if tag.get_bytes_value() != cls.TAG:
+            raise SPSDKError(
+                f"Tag value {tag.get_bytes_value()!r} does does not match the expected value."
+            )
         return fcb
 
     @staticmethod
@@ -85,12 +92,15 @@ class FCB(SegmentBase):
         :param config: FCB configuration file.
         :return: FCB object.
         """
-        family = config.get("family", "Unknown")
-        mem_type = config.get("type", "Unknown")
-        revision = config.get("revision", "latest")
-        fcb = FCB(family=family, mem_type=mem_type, revision=revision)
-        fcb_settings = config.get("fcb_settings", {})
-        fcb.registers.load_yml_config(fcb_settings)
+        try:
+            family = config.get("family", "Unknown")
+            mem_type = config.get("type", "Unknown")
+            revision = config.get("revision", "latest")
+            fcb = FCB(family=family, mem_type=mem_type, revision=revision)
+            fcb_settings = config.get("fcb_settings", {})
+            fcb.registers.load_yml_config(fcb_settings)
+        except (SPSDKError, AttributeError) as exc:
+            raise SPSDKValueError(f"Cannot load FCB configuration: {str(exc)}") from exc
         return fcb
 
     def create_config(self) -> str:

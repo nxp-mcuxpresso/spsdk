@@ -12,19 +12,19 @@ from itertools import zip_longest
 from typing import List
 
 import pytest
-from click.testing import CliRunner, Result
+from click.testing import Result
 
 from spsdk.apps import nxpcrypto
 from spsdk.crypto.keys import PrivateKeyRsa, PublicKeyRsa
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import load_binary, load_text, use_working_directory
+from tests.cli_runner import CliRunner
 
 
-def run_nxpcrypto(cmd: str, cwd: str) -> Result:
+def run_nxpcrypto(cli_runner: CliRunner, cmd: str, cwd: str, expected_code=0) -> Result:
     with use_working_directory(cwd):
-        runner = CliRunner()
         logging.debug(f"Running {cmd}")
-        result = runner.invoke(nxpcrypto.main, cmd.split())
+        result = cli_runner.invoke(nxpcrypto.main, cmd.split(), expected_code=expected_code)
     return result
 
 
@@ -39,10 +39,11 @@ def run_nxpcrypto(cmd: str, cwd: str) -> Result:
         ("prk_rsa4096.pem", "puk_rsa4096.pem", 0),
     ],
 )
-def test_nxpcrypto_key_verify(data_dir: str, key1: str, key2: str, expected_result: int):
+def test_nxpcrypto_key_verify(
+    cli_runner: CliRunner, data_dir: str, key1: str, key2: str, expected_result: int
+):
     cmd = f"key verify -k1 {key1} -k2 {key2}"
-    result = run_nxpcrypto(cmd, data_dir)
-    assert result.exit_code == expected_result
+    run_nxpcrypto(cli_runner, cmd, data_dir, expected_result)
 
 
 @pytest.mark.parametrize(
@@ -56,12 +57,13 @@ def test_nxpcrypto_key_verify(data_dir: str, key1: str, key2: str, expected_resu
         ("prk_rsa4096.pem", "-e pem --puk", "puk_rsa4096.pem"),
     ],
 )
-def test_nxpcrypto_convert(data_dir: str, tmpdir: str, key: str, transform: str, expected: str):
+def test_nxpcrypto_convert(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, key: str, transform: str, expected: str
+):
     src_key = f"{data_dir}/{expected}"
     dst_key = f"{tmpdir}/{expected}"
     cmd = f"key convert -i {key} {transform} -o {dst_key}"
-    result = run_nxpcrypto(cmd, data_dir)
-    assert result.exit_code == 0
+    run_nxpcrypto(cli_runner, cmd, data_dir)
 
     # to validate RAW conversion we need to compare raw data as INT (there might be difference in padding)
     if "raw" in transform:
@@ -80,20 +82,18 @@ def test_nxpcrypto_convert(data_dir: str, tmpdir: str, key: str, transform: str,
             assert src_line == dst_line
 
 
-def test_nxpcrypto_convert_rsa_raw_not_supported(data_dir: str, tmpdir: str):
+def test_nxpcrypto_convert_rsa_raw_not_supported(cli_runner: CliRunner, data_dir: str, tmpdir: str):
     dst_key = f"{tmpdir}/prk_rsa4096.bin"
     cmd = f"key convert -i prk_rsa4096.pem -e raw -o {dst_key}"
-    result = run_nxpcrypto(cmd, data_dir)
-    assert result.exit_code == 1
+    result = run_nxpcrypto(cli_runner, cmd, data_dir, expected_code=1)
     assert result.exc_info[0] is SPSDKError
 
 
-def test_generate_rsa_key(tmpdir) -> None:
+def test_generate_rsa_key(cli_runner: CliRunner, tmpdir) -> None:
     """Test generate rsa key pair."""
 
     cmd = f'{os.path.join(tmpdir, "key_rsa.pem")}'
-    result = run_nxpcrypto(f"key generate -k rsa2048 -o {cmd}", tmpdir)
-    assert result.exit_code == 0
+    run_nxpcrypto(cli_runner, f"key generate -k rsa2048 -o {cmd}", tmpdir)
     assert os.path.isfile(os.path.join(tmpdir, "key_rsa.pem"))
     assert os.path.isfile(os.path.join(tmpdir, "key_rsa.pub"))
 
@@ -105,25 +105,21 @@ def test_generate_rsa_key(tmpdir) -> None:
     assert priv_key_from_file.key_size == 2048
 
 
-def test_generate_invalid_key(tmpdir) -> None:
+def test_generate_invalid_key(cli_runner: CliRunner, tmpdir) -> None:
     """Test generate invalid key pair."""
 
     cmd = f'key generate -k invalid-key-type -o {os.path.join(tmpdir, "key_invalid.pem")}'
-    result = run_nxpcrypto(cmd, tmpdir)
-    assert result.exit_code != 0
+    run_nxpcrypto(cli_runner, cmd, tmpdir, expected_code=-1)
     assert not os.path.isfile(os.path.join(tmpdir, "key_invalid.pem"))
     assert not os.path.isfile(os.path.join(tmpdir, "key_invalid.pub"))
 
 
-def test_force_actual_dir(tmpdir):
-    result = run_nxpcrypto("key generate -k rsa2048 -o key", tmpdir)
-    assert result.exit_code == 0
+def test_force_actual_dir(cli_runner: CliRunner, tmpdir):
+    run_nxpcrypto(cli_runner, "key generate -k rsa2048 -o key", tmpdir)
     # attempt to rewrite the key should fail
-    result = run_nxpcrypto("key generate -k rsa2048 -o key", tmpdir)
-    assert result.exit_code == 1
+    run_nxpcrypto(cli_runner, "key generate -k rsa2048 -o key", tmpdir, expected_code=1)
     # attempt to rewrite should pass due to --forces
-    result = run_nxpcrypto("key generate -k rsa2048 -o key --force", tmpdir)
-    assert result.exit_code == 0
+    run_nxpcrypto(cli_runner, "key generate -k rsa2048 -o key --force", tmpdir)
 
 
 @pytest.mark.parametrize(
@@ -134,15 +130,15 @@ def test_force_actual_dir(tmpdir):
         ("secp521r1", True),
     ],
 )
-def test_key_types(tmpdir, key, valid):
+def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
     if valid:
-        result = run_nxpcrypto(f"key generate -k {key} -o my_key_{key}.pem", tmpdir)
-        assert result.exit_code == 0
+        run_nxpcrypto(cli_runner, f"key generate -k {key} -o my_key_{key}.pem", tmpdir)
         assert os.path.isfile(os.path.join(tmpdir, f"my_key_{key}.pem"))
         assert os.path.isfile(os.path.join(tmpdir, f"my_key_{key}.pub"))
     else:
-        result = run_nxpcrypto(f"key generate -k {key} -o my_key_{key}.pem", tmpdir)
-        assert result.exit_code != 0
+        run_nxpcrypto(
+            cli_runner, f"key generate -k {key} -o my_key_{key}.pem", tmpdir, expected_code=-1
+        )
 
 
 @pytest.mark.parametrize(
@@ -241,14 +237,13 @@ def test_key_types(tmpdir, key, valid):
     ],
 )
 def test_nxpcrypto_rot_calc_hash(
-    data_dir: str, tmpdir: str, keys: List, family: str, ref_rotkth: str
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, keys: List, family: str, ref_rotkth: str
 ):
     out_file = os.path.join(tmpdir, "rot_hash.bin")
     cmd = f"rot calculate-hash -f {family} -o {out_file}"
     for key in keys:
         cmd = " ".join([cmd, f"-k {key}"])
-    result = run_nxpcrypto(cmd, data_dir)
-    assert result.exit_code == 0
+    run_nxpcrypto(cli_runner, cmd, data_dir)
     assert os.path.isfile(out_file)
     rotkth = load_binary(out_file)
     assert rotkth.hex() == ref_rotkth
@@ -294,22 +289,21 @@ def test_nxpcrypto_rot_calc_hash(
         ),
     ],
 )
-def test_nxpcrypto_rot_export(data_dir: str, tmpdir: str, keys: List, family: str, ref_rot: str):
+def test_nxpcrypto_rot_export(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, keys: List, family: str, ref_rot: str
+):
     out_file = os.path.join(tmpdir, "rot_table.bin")
     ref_file = os.path.join(data_dir, ref_rot)
     cmd = f"rot export -f {family} -o {out_file}"
     for key in keys:
         cmd = " ".join([cmd, f"-k {key}"])
-    result = run_nxpcrypto(cmd, data_dir)
-    assert result.exit_code == 0
+    run_nxpcrypto(cli_runner, cmd, data_dir)
     assert os.path.isfile(out_file)
     assert load_binary(out_file) == load_binary(ref_file)
 
 
-def test_npxcrypto_cert_get_template(tmpdir):
+def test_npxcrypto_cert_get_template(cli_runner: CliRunner, tmpdir):
     """Test NXPCRYPTO CLI - Generation of template."""
     cmd = ["cert", "get-template", "--output", f"{tmpdir}/cert.yml"]
-    runner = CliRunner()
-    result = runner.invoke(nxpcrypto.main, cmd)
-    assert result.exit_code == 0, result.output
+    cli_runner.invoke(nxpcrypto.main, cmd)
     assert os.path.isfile(f"{tmpdir}/cert.yml")

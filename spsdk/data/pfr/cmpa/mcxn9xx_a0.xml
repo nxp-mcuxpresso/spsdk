@@ -30,9 +30,9 @@
     <reserved_bit_field offset="7" width="1" reset_value="0"/>
     <bit_field offset="8" width="2" name="RECOVERY_BOOT_SOURCE" access="RO" reset_value="0" description="Recovery boot source">
       <alias type="CMSIS" value="RECOVERY_BOOT_SOURCE(x)"/>
-      <bit_field_value name="DISBALED" value="0b00" description="Recovery boot disabled"/>
+      <bit_field_value name="DISABLED" value="0b00" description="Recovery boot disabled"/>
       <bit_field_value name="XIP_IMAGE" value="0b01" description="XIP image in Bank1 IFR0 (32KB)"/>
-      <bit_field_value name="SB3_IMAGE" value="0b10" description="SB3 image in 1-bit SPI flash connected to FlexComm overlapped with FlexSPI A."/>
+      <bit_field_value name="SB3_IMAGE" value="0b10" description="SB3 image in 1-bit SPI flash connected to FlexComm overlapped with FlexSPI A"/>
       <bit_field_value name="RESERVED" value="0b11" description="Reserved"/>
     </bit_field>
     <reserved_bit_field offset="10" width="2" reset_value="0"/>

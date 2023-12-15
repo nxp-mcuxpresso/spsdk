@@ -10,10 +10,10 @@ import filecmp
 import os
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
 from spsdk.utils.misc import use_working_directory
+from tests.cli_runner import CliRunner
 
 
 @pytest.mark.parametrize(
@@ -27,8 +27,9 @@ from spsdk.utils.misc import use_working_directory
         ("inc_16_r.txt", "inc_16.bin", "hex2bin", True),
     ],
 )
-def test_nxpimage_convert_hexbin(tmpdir, data_dir, in_file, out_file, command, reverse):
-    runner = CliRunner()
+def test_nxpimage_convert_hexbin(
+    cli_runner: CliRunner, tmpdir, data_dir, in_file, out_file, command, reverse
+):
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/hexbin/{in_file}"
         correct_ouput = f"{data_dir}/utils/convert/hexbin/{out_file}"
@@ -37,21 +38,18 @@ def test_nxpimage_convert_hexbin(tmpdir, data_dir, in_file, out_file, command, r
         if reverse:
             cmd.append("-r")
         cmd.extend(["-o", output])
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(output)
         assert filecmp.cmp(output, correct_ouput, shallow=False)
 
 
 @pytest.mark.parametrize("in_file", [("inc_16.bin"), ("inc_16_invalid.hex")])
-def test_nxpimage_convert_hexbin_invalid(tmpdir, data_dir, in_file):
-    runner = CliRunner()
+def test_nxpimage_convert_hexbin_invalid(cli_runner: CliRunner, tmpdir, data_dir, in_file):
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/hexbin/{in_file}"
         output = f"{tmpdir}/test.bin"
         cmd = ["utils", "convert", "hex2bin", "-i", input_file, "-o", output]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code != 0
+        cli_runner.invoke(nxpimage.main, cmd, expected_code=-1)
 
 
 @pytest.mark.parametrize(
@@ -132,8 +130,9 @@ def test_nxpimage_convert_hexbin_invalid(tmpdir, data_dir, in_file):
         ),
     ],
 )
-def test_nxpimage_convert_bin2carr(data_dir, in_file, out_str, type, padding, endian, error):
-    runner = CliRunner()
+def test_nxpimage_convert_bin2carr(
+    cli_runner: CliRunner, data_dir, in_file, out_str, type, padding, endian, error
+):
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/bin2carr/{in_file}"
         cmd = ["utils", "convert", "bin2carr", "-i", input_file]
@@ -143,15 +142,12 @@ def test_nxpimage_convert_bin2carr(data_dir, in_file, out_str, type, padding, en
             cmd.extend(["-p", padding])
         if endian:
             cmd.extend(["-e", endian])
-        result = runner.invoke(nxpimage.main, cmd)
-        if error:
-            assert result.exit_code != 0
-        else:
+        result = cli_runner.invoke(nxpimage.main, cmd, expected_code=-1 if error else 0)
+        if not error:
             assert out_str in result.output
 
 
-def test_nxpimage_convert_bin2carr_file(tmpdir, data_dir):
-    runner = CliRunner()
+def test_nxpimage_convert_bin2carr_file(cli_runner: CliRunner, tmpdir, data_dir):
     with use_working_directory(data_dir):
         input_file = f"{data_dir}/utils/convert/bin2carr/inc9.bin"
         correct_output = f"{data_dir}/utils/convert/bin2carr/inc9_uint32_t.txt"
@@ -171,7 +167,6 @@ def test_nxpimage_convert_bin2carr_file(tmpdir, data_dir):
             "-o",
             output,
         ]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(output)
         assert filecmp.cmp(output, correct_output, shallow=False)

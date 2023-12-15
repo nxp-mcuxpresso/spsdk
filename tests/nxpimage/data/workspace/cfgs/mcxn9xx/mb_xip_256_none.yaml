@@ -21,4 +21,4 @@ mainRootCertPrivateKeyFile: .\workspace\keys_certs\ec_pk_secp256r1_cert0.pem # [
 #                                      == Trust Zone Settings ==
 # ----------------------------------------------------------------------------------------------------
 enableTrustZone: true # [Optional], TrustZone enable option; If not specified, the Trust zone is disabled.
-trustZonePresetFile: .\workspace\trustzone\mcxn9xx\tz_mcxn9xx.bin # [Optional], TrustZone Customization file; If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.
+trustZonePresetFile: .\workspace\trustzone\mcxn9xx\tz_mcxn9xx_a1.bin # [Optional], TrustZone Customization file; If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.

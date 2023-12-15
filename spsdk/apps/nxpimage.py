@@ -56,7 +56,7 @@ from spsdk.sbfile.sb2 import sly_bd_parser as bd_parser
 from spsdk.sbfile.sb2.commands import CmdLoad
 from spsdk.sbfile.sb2.images import BootImageV21
 from spsdk.sbfile.sb31.images import SecureBinary31
-from spsdk.utils.crypto.cert_blocks import CertBlock, CertBlockV1, CertBlockV21
+from spsdk.utils.crypto.cert_blocks import CertBlock, CertBlockV1, CertBlockVx
 from spsdk.utils.crypto.iee import IeeNxp
 from spsdk.utils.crypto.otfad import OtfadNxp
 from spsdk.utils.images import BinaryImage, BinaryPattern
@@ -263,8 +263,6 @@ def sb21_export(
     """Generate Secure Binary v2.1 Image from configuration (BD or YAML)."""
     if plugin:
         load_plugin_from_source(plugin)
-    if output is None:
-        raise SPSDKAppError("Error: no output file was specified")
     signature_provider = None
     if pkey:
         signature_provider = (
@@ -276,8 +274,7 @@ def sb21_export(
     try:
         parsed_config = BootImageV21.parse_sb21_config(command, external_files=external)
         if not output:
-            output = parsed_config.get("containerOutputFile")
-        assert isinstance(output, str), "Error: no output file was specified"
+            output = get_abs_path(parsed_config["containerOutputFile"], config_dir)
         sb2 = BootImageV21.load_from_config(
             config=parsed_config,
             key_file_path=key,
@@ -288,7 +285,7 @@ def sb21_export(
             search_paths=[config_dir],
         )
         write_file(sb2.export(), output, mode="wb")
-    except SPSDKError as exc:
+    except (SPSDKError, KeyError) as exc:
         raise SPSDKAppError(f"The SB2.1 file generation failed: ({str(exc)}).") from exc
     else:
         if sb2.cert_block:
@@ -628,10 +625,24 @@ def cert_block_export(config: str, family: str, plugin: Optional[str] = None) ->
     cert_block = cert_block_class.from_config(config_data, search_paths=[config_dir])
     cert_data = cert_block.export()
 
-    cert_block_output_file_path = get_abs_path(config_data["containerOutputFile"], config_dir)
+    try:
+        cert_block_output_file_path = get_abs_path(config_data["containerOutputFile"], config_dir)
+    except KeyError as e:
+        raise SPSDKAppError(
+            "containerOutputFile property must be provided in order to export cert-block"
+        ) from e
     write_file(cert_data, cert_block_output_file_path, mode="wb")
 
-    click.echo(f"RKTH: {cert_block.rkth.hex()}")
+    if cert_block.rkth:
+        click.echo(f"RKTH: {cert_block.rkth.hex()}")
+    if hasattr(cert_block, "cert_hash"):
+        assert isinstance(cert_block, CertBlockVx), "Wrong instance of cert block"
+        click.echo(f"ISK Certificate hash [0:127]: {cert_block.cert_hash.hex()}\n")
+        otp_script_path = os.path.join(
+            os.path.dirname(cert_block_output_file_path), "otp_script.bcf"
+        )
+        write_file(cert_block.get_otp_script(), otp_script_path)
+        click.echo(f"OTP script written to: {otp_script_path}")
     click.echo(f"Success. (Certificate Block: {cert_block_output_file_path} created.)")
 
 
@@ -656,7 +667,7 @@ def cert_block_parse_command(binary: str, family: str, output: str) -> None:
 # pylint: disable=unused-argument  # preparation for future updates
 def cert_block_parse(binary: str, family: str, output: str) -> None:
     """Parse Certificate Block."""
-    cert_block = CertBlockV21.parse(load_binary(binary))
+    cert_block = CertBlock.get_cert_block_class(family).parse(load_binary(binary))
     logger.info(str(cert_block))
     write_file(cert_block.create_config(output), os.path.join(output, "cert_block_config.yaml"))
     click.echo(f"RKTH: {cert_block.rkth.hex()}")
@@ -915,9 +926,22 @@ def ahab_parse(family: str, binary: str, dek: str, output: str) -> None:
     ID of the container where the keyblob will be replaced.
     """,
 )
-def ahab_update_keyblob_command(family: str, binary: str, keyblob: str, container_id: int) -> None:
+@click.option(
+    "-m",
+    "--mem-type",
+    type=click.Choice(
+        ["serial_downloader", "flexspi_nor", "flexspi_nand", "semc_nand"],
+        case_sensitive=False,
+    ),
+    required=False,
+    help="Select memory type. Only applicable for bootable images "
+    "(image containing FCB or XMCD segments). Do not use for raw AHAB image",
+)
+def ahab_update_keyblob_command(
+    family: str, binary: str, keyblob: str, container_id: int, mem_type: str
+) -> None:
     """Update keyblob in AHAB image."""
-    ahab_update_keyblob(family, binary, keyblob, container_id)
+    ahab_update_keyblob(family, binary, keyblob, container_id, mem_type)
     click.echo(f"Success. (AHAB: {binary} keyblob has been updated)")
 
 
@@ -1507,9 +1531,11 @@ def bootable_image_merge(config: str, output: str, plugin: Optional[str] = None)
 @click.option(
     "-m",
     "--mem-type",
-    default="flexspi_nor",
-    type=click.Choice(["flexspi_nor", "flexspi_nand", "semc_nand"], case_sensitive=False),
-    required=True,
+    type=click.Choice(
+        ["serial_downloader", "flexspi_nor", "flexspi_nand", "semc_nand", "internal"],
+        case_sensitive=False,
+    ),
+    required=False,
     help="Select the chip used memory type.",
 )
 @click.option(
@@ -1527,8 +1553,7 @@ def bootable_image_parse_command(family: str, mem_type: str, binary: str, output
 
 def bootable_image_parse(family: str, mem_type: str, binary: str, output: str) -> None:
     """Parse Bootable Image into YAML configuration and binary images."""
-    bimg_image = BootableImage(family=family, mem_type=mem_type)
-    bimg_image.parse(load_binary(binary))
+    bimg_image = BootableImage.parse(load_binary(binary), family=family, mem_type=mem_type)
     bimg_image_info = bimg_image.image_info()
     logger.info(f"Parsed Bootable image memory map: {bimg_image_info.draw()}")
     bimg_image.store_config(output)
@@ -2146,8 +2171,8 @@ def binary_pad(
     write_file(binary, output, mode="wb")
 
     click.echo(
-        f"The {input} file has been padded to {len(binary)} ({hex(len(binary))}) byte size\
-            and stored into {output}"
+        f"The '{input_file}' file has been padded to {len(binary)} ({hex(len(binary))}) byte size and "
+        f"stored into '{output}'"
     )
 
 

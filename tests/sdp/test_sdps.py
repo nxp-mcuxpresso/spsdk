@@ -10,6 +10,7 @@ from typing import List, Optional, Union
 
 from typing_extensions import Self
 
+from spsdk.exceptions import SPSDKAttributeError, SPSDKConnectionError
 from spsdk.sdp.commands import CmdPacket
 from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.sdps import SDPS
@@ -94,7 +95,7 @@ class VirtualSDPInterface:
     def write_command(self, packet: CmdPacket):
         data = packet.to_bytes(padding=False)
         if not data:
-            raise AttributeError("Incorrect packet type")
+            raise SPSDKAttributeError("Incorrect packet type")
         self.device.write(data)
 
     def configure(self, config):
@@ -122,8 +123,8 @@ def test_sdps_send_data():
 
 
 class VirtualDeviceException(VirtualDevice):
-    def write(self, packet):
-        raise Exception()
+    def write(self, data):
+        raise SPSDKConnectionError()
 
     def __str__(self):
         return "VirtualDeviceException"

@@ -21,4 +21,4 @@ signPrivateKey: .\workspace\keys_certs\ec_pk_secp384r1_sign_cert.pem # [Optional
 # ----------------------------------------------------------------------------------------------------
 #                                      == Trust Zone Settings ==
 # ----------------------------------------------------------------------------------------------------
-trustZonePresetFile: .\workspace\trustzone\mcxn9xx\tz_mcxn9xx.bin # [Optional], TrustZone Customization file; If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.
+trustZonePresetFile: .\workspace\trustzone\mcxn9xx\tz_mcxn9xx_a1.bin # [Optional], TrustZone Customization file; If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.

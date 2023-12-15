@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  IEE converted config.  ===========
 # ----------------------------------------------------------------------------------------------------
-#                                         == Basic Settings ==                                        
+#                                         == Basic Settings ==
 # ----------------------------------------------------------------------------------------------------
 family: rt118x  # [Required], MCU family name; Possible options:['rt116x', 'rt117x', 'rt118x']
 output_folder: iee_output # [Required], IEE output directory; Path to directory where the IEE output will be generated
@@ -11,21 +11,19 @@ output_name: encrypted.bin # [Optional], Output binary image filename; Filename 
 keyblob_name: iee_keyblob.bin # [Optional], Keyblob filename; Filename of the keyblob without file extension (.bin will be appended)
 encrypted_name: encrypted_blob.bin # [Optional], Encrypted name; filename of the encrypted datablobs without file extension (.bin will be appended)
 # ----------------------------------------------------------------------------------------------------
-#                                          == IEE Settings ==                                         
+#                                          == IEE Settings ==
 # ----------------------------------------------------------------------------------------------------
 keyblob_address: '0x04000000' # [Required], Base address of the IEE keyblob; Should be aligned to 1 kB
 data_blobs: # [Optional], Data blobs list; List of all data blobs that will be encrypted
   - data: blink_fspi2_xip_cm33_ahab.bin  # [Required], Binary data blob; Path to binary file with plain text data to be encrypted
     address: '0x04001000' # [Optional], Data blob address, it doesn't have to be specified for S-REC
 # ----------------------------------------------------------------------------------------------------
-#                                 == Master ID for MIMXRT118x core ==                                 
-# ----------------------------------------------------------------------------------------------------
-master: CM33 # [Optional], Master ID for RT118x; M33 or M7 core; Possible options:['CM33', 'CM7']
-# ----------------------------------------------------------------------------------------------------
-#                                == MIMXRT118x Keyblob Configuration ==                               
+#                                == MIMXRT118x Keyblob Configuration ==
 # ----------------------------------------------------------------------------------------------------
 key_blob: # [Optional], Keyblob configuration, keyblob won't be generated.
   aes_mode: AesXTS  # [Required], AES mode, Encryption bypass, AES-XTS, AES-CTR (with or without address binding) or AES-CTR keystream only; Possible options:['Bypass', 'AesXTS', 'AesCTRWAddress', 'AesCTRWOAddress', 'AesCTRkeystream']
   key_size: CTR256XTS512 # [Required], AES key size, 128/256 for AES-CTR or 256/512 for AES-XTS; AES mode, AES-XTS or AES-CTR; Possible options:['CTR256XTS512', 'CTR128XTS256']
   key1: '0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F' # [Required], AES-XTS key1 / AES-CTR key; AES key for the key blob, size depends on key_size
   key2: '0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F' # [Required], AES-CTR Counter value or AES-XTS key2; AES key for the key blob, size depends on key_size
+  start_address: '0x04001000' # [Required], Start address of key blob data, it should be aligned to 1 KB (1024 B)
+  end_address: '0x04008000' # [Required], End address of key blob data, it should be aligned to 1 KB (1024 B)

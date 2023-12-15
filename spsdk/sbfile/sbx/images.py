@@ -175,6 +175,7 @@ class SecureBinaryXHeader(BaseClass):
     MAGIC = b"sbvx"
     FORMAT_VERSION = "1.0"
     DESCRIPTION_LENGTH = 16
+    BLOCK_SIZE = 4 + 256 + 32
 
     def __init__(
         self,
@@ -201,7 +202,7 @@ class SecureBinaryXHeader(BaseClass):
         manifest_size += 32 if image_type == SecureBinaryXType.OEM_PROVISIONING else 64
         self.sbx_block0_total_length = manifest_size
         self.description = self._adjust_description(description)
-        self.block_size = self.calculate_block_size()
+        self.block_size = self.BLOCK_SIZE
 
     def _adjust_description(self, description: Optional[str] = None) -> bytes:
         """Format the description."""
@@ -211,14 +212,6 @@ class SecureBinaryXHeader(BaseClass):
         desc = desc[: self.DESCRIPTION_LENGTH]
         desc += bytes(self.DESCRIPTION_LENGTH - len(desc))
         return desc
-
-    def calculate_block_size(self) -> int:
-        """Calculate the the data block size."""
-        fixed_block_size = 4 + 256
-        if self.image_type == SecureBinaryXType.OEM_PROVISIONING:
-            return fixed_block_size + 32
-        else:
-            return fixed_block_size + 64
 
     def __repr__(self) -> str:
         return "Secure Binary X header"
@@ -312,7 +305,7 @@ class SecureBinaryXHeader(BaseClass):
             raise SPSDKError("Invalid SBx header flags.")
         if self.block_count is None or self.block_count < 0:
             raise SPSDKError("Invalid SBx header block count.")
-        if self.block_size is None or self.block_size != self.calculate_block_size():
+        if self.block_size is None or self.block_size != self.BLOCK_SIZE:
             raise SPSDKError("Invalid SBx header block size.")
         if self.image_type is None or not isinstance(self.image_type, SecureBinaryXType):
             raise SPSDKError("Invalid SBx header image type.")

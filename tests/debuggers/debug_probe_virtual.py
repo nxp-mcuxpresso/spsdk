@@ -21,17 +21,6 @@ from spsdk.debuggers.debug_probe import (
 logger = logging.getLogger(__name__)
 
 
-def set_logger(level: int) -> None:
-    """Sets the log level for this module.
-
-    param level: Requested level.
-    """
-    logger.setLevel(level)
-
-
-set_logger(logging.ERROR)
-
-
 class DebugProbeVirtual(DebugProbe):
     """Class to define Virtual package interface for NXP SPSDK."""
 
@@ -43,8 +32,6 @@ class DebugProbeVirtual(DebugProbe):
         The Virtual initialization function for SPSDK library to support various DEBUG PROBES.
         """
         super().__init__(hardware_id, options)
-
-        set_logger(logging.root.level)
 
         self.opened = False
         self.virtual_memory: Dict[Any, Any] = {}

@@ -11,7 +11,7 @@ import pytest
 
 from spsdk.tp.adapters.tptarget_model import TpTargetSwModel
 from spsdk.tp.data_container import Container, PayloadType
-from spsdk.tp.data_container.data_container import DataDestinationEntry, DataEntry
+from spsdk.tp.data_container.data_container import DataEntry
 from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tp_intf import TpIntfDescription
 from spsdk.utils.misc import load_binary, use_working_directory

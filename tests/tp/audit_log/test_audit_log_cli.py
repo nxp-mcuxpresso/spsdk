@@ -8,12 +8,12 @@
 import os
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import tphost
+from tests.cli_runner import CliRunner
 
 
-def test_cli_run(data_dir):
+def test_cli_run(cli_runner: CliRunner, data_dir):
     cmd = [
         "verify",
         "--audit-log",
@@ -22,9 +22,7 @@ def test_cli_run(data_dir):
         f"{data_dir}/oem_log_puk.pub",
     ]
 
-    runner = CliRunner()
-    result = runner.invoke(tphost.main, cmd)
-    assert result.exit_code == 0
+    cli_runner.invoke(tphost.main, cmd)
 
 
 # The sample audit log file contains 4 devices, 4 OEM + 1 NXP cert for each device
@@ -39,7 +37,9 @@ def test_cli_run(data_dir):
         (True, False, 3, 4),  # 4 NXP certs (cert selector has no impact)
     ],
 )
-def test_tphost_extract(data_dir, tmpdir, skip_nxp, skip_oem, cert_index, expected_count):
+def test_tphost_extract(
+    cli_runner: CliRunner, data_dir, tmpdir, skip_nxp, skip_oem, cert_index, expected_count
+):
     cmd = [
         "verify",
         "--audit-log",
@@ -56,7 +56,5 @@ def test_tphost_extract(data_dir, tmpdir, skip_nxp, skip_oem, cert_index, expect
     if cert_index:
         cmd.extend(["--cert-index", cert_index])
 
-    runner = CliRunner()
-    result = runner.invoke(tphost.main, cmd)
-    assert result.exit_code == 0
+    cli_runner.invoke(tphost.main, cmd)
     assert len(os.listdir(tmpdir)) == expected_count

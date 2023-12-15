@@ -34,6 +34,7 @@ class Segment(BaseClass):
     NAME = "Base"
     CFG_NAME: Optional[str] = None
     SIZE = -1
+    IMAGE_PATTERNS = [BinaryPattern("zeros"), BinaryPattern("ones")]
 
     def __init__(self, raw_block: Optional[bytes] = None) -> None:
         """Segment initialization, at least raw data are stored.
@@ -69,7 +70,6 @@ class Segment(BaseClass):
         family: str = "Unknown",
         mem_type: str = "Unknown",
         revision: str = "latest",
-        pattern: str = "zeros",
     ) -> Self:
         """Parse binary block into Segment object.
 
@@ -77,12 +77,13 @@ class Segment(BaseClass):
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Optional Chip family revision.
-        :param pattern: Default Binary pattern of empty segment.
-        :raises SPSDKError: If given binary block size is not equal to block size in header
+        :raises SPSDKParsingError: If given binary block size is not equal to block size in header
         """
         if cls.SIZE > 0 and len(binary) < cls.SIZE:
             raise SPSDKParsingError("The input binary block is smaller than parsed segment.")
-        if cls.SIZE > 0 and binary[: cls.SIZE] == BinaryPattern(pattern).get_block(cls.SIZE):
+        if cls.SIZE > 0 and binary[: cls.SIZE] in [
+            pattern.get_block(cls.SIZE) for pattern in cls.IMAGE_PATTERNS
+        ]:
             return cls()
         return cls(raw_block=binary[: cls.SIZE] if cls.SIZE > 0 else binary)
 
@@ -153,7 +154,6 @@ class SegmentFcb(Segment):
         family: str = "Unknown",
         mem_type: str = "Unknown",
         revision: str = "latest",
-        pattern: str = "zeros",
     ) -> Self:
         """Parse binary block into Segment object.
 
@@ -161,13 +161,12 @@ class SegmentFcb(Segment):
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Optional Chip family revision.
-        :param pattern: Default Binary pattern of empty segment.
-        :raises SPSDKError: If given binary block size is not equal to block size in header
+        :raises SPSDKParsingError: If given binary block size is not equal to block size in header
         """
         if len(binary) < cls.SIZE:
             raise SPSDKParsingError("The input binary block is smaller than FCB.")
 
-        if binary[:4] != b"FCFB":
+        if binary[:4] != FCB.TAG:
             return cls()
 
         return cls(
@@ -203,7 +202,15 @@ class SegmentFcb(Segment):
             fcb = FCB.load_from_config(load_configuration(cfg_value, search_paths=search_paths))
             return cls(raw_block=fcb.export(), fcb=fcb)
         except SPSDKError:
-            return super().load_from_config(config, search_paths)
+            pass
+
+        family = config.get("family", "Unknown")
+        mem_type = config.get("memory_type", "Unknown")
+        try:
+            FCB.parse(load_binary(cfg_value, search_paths), family=family, mem_type=mem_type)
+        except SPSDKError as exc:
+            logger.warning(f"The Given Binary form of FCB block looks corrupted: {str(exc)}")
+        return super().load_from_config(config, search_paths)
 
 
 class SegmentImageVersion(Segment):
@@ -296,7 +303,7 @@ class SegmentXmcd(Segment):
     """Bootable Image XMCD Segment class."""
 
     NAME = "xmcd"
-    SIZE = 256
+    SIZE = 512
 
     def __init__(self, raw_block: Optional[bytes] = None, xmcd: Optional[XMCD] = None) -> None:
         """Segment initialization, at least raw data are stored.
@@ -316,7 +323,6 @@ class SegmentXmcd(Segment):
         family: str = "Unknown",
         mem_type: str = "Unknown",
         revision: str = "latest",
-        pattern: str = "zeros",
     ) -> Self:
         """Parse binary block into Segment object.
 
@@ -324,12 +330,11 @@ class SegmentXmcd(Segment):
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Optional Chip family revision.
-        :param pattern: Default Binary pattern of empty segment.
-        :raises SPSDKError: If given binary block size is not equal to block size in header
+        :raises SPSDKParsingError: If given binary block size is not equal to block size in header
         """
         if len(binary) < cls.SIZE:
             raise SPSDKParsingError("The input binary block is smaller than XMCD.")
-        # Check if there is header of XMCD exists
+        # Check if the header of XMCD exists
         if binary[:8] == bytes(8):
             return cls(raw_block=binary[: cls.SIZE])
 
@@ -392,7 +397,6 @@ class SegmentMbi(Segment):
         family: str = "Unknown",
         mem_type: str = "Unknown",
         revision: str = "latest",
-        pattern: str = "zeros",
     ) -> Self:
         """Parse binary block into Segment object.
 
@@ -400,8 +404,6 @@ class SegmentMbi(Segment):
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Optional Chip family revision.
-        :param pattern: Default Binary pattern of empty segment.
-        :raises SPSDKError: If given binary block size is not equal to block size in header
         """
         mbi = MasterBootImage.parse(family=family, data=binary)
         return cls(raw_block=binary, mbi=mbi)
@@ -465,7 +467,10 @@ class SegmentHab(Segment):
         """
         super().__init__(raw_block)
         self.hab = hab
-        if hab and self.raw_block != hab.export():
+        if hab:
+            for pattern in self.IMAGE_PATTERNS:
+                if self.raw_block == hab.export(pattern):
+                    return
             raise SPSDKValueError("The HAB block doesn't match the raw data.")
 
     @classmethod
@@ -475,7 +480,6 @@ class SegmentHab(Segment):
         family: str = "Unknown",
         mem_type: str = "Unknown",
         revision: str = "latest",
-        pattern: str = "zeros",
     ) -> Self:
         """Parse binary block into Segment object.
 
@@ -483,8 +487,6 @@ class SegmentHab(Segment):
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Optional Chip family revision.
-        :param pattern: Default Binary pattern of empty segment.
-        :raises SPSDKError: If given binary block size is not equal to block size in header
         """
         hab = HabContainer.parse(data=binary)
         return cls(raw_block=binary, hab=hab)
@@ -539,7 +541,6 @@ class SegmentAhab(Segment):
         family: str = "Unknown",
         mem_type: str = "Unknown",
         revision: str = "latest",
-        pattern: str = "zeros",
     ) -> Self:
         """Parse binary block into Segment object.
 
@@ -547,8 +548,6 @@ class SegmentAhab(Segment):
         :param family: Chip family.
         :param mem_type: Used memory type.
         :param revision: Optional Chip family revision.
-        :param pattern: Default Binary pattern of empty segment.
-        :raises SPSDKError: If given binary block size is not equal to block size in header
         """
         ahab = AHABImage(family=family, revision=revision)
         ahab.parse(binary)

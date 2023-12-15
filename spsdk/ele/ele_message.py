@@ -992,6 +992,7 @@ class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
         )
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         crc: int = crc32_function(iee_config)
+
         return header + options + iee_config + crc.to_bytes(4, "little")
 
     def info(self) -> str:
@@ -999,14 +1000,69 @@ class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
 
         :return: Information about the message.
         """
+        if self.algorithm == KeyBlobEncryptionAlgorithm.AES_CTR:
+            key1 = align_block(self.key, 32, 0)
+            key2 = align_block(self.aes_counter, 32, 0)
+        else:
+            key_len = len(self.key)
+            key1 = align_block(self.key[: key_len // 2], 32, 0)
+            key2 = align_block(self.key[key_len // 2 :], 32, 0)
         ret = super().info()
         if self.algorithm == KeyBlobEncryptionAlgorithm.AES_CTR:
             ret += f"AES Counter mode:{KeyBlobEncryptionIeeCtrModes.desc(self.ctr_mode)}\n"
             ret += f"AES Counter:     {self.aes_counter.hex()}\n"
+        ret += f"Key1:            {key1.hex()}\n"
+        ret += f"Key2:            {key2.hex()}\n"
         ret += f"Page offset:     {self.page_offset:08x}\n"
         ret += f"Region number:   {self.region_number:02x}\n"
         ret += f"Bypass:          {self.bypass}\n"
         ret += f"Locked:          {self.locked}\n"
+        return ret
+
+
+class EleMessageLoadKeyBLob(EleMessage):
+    """ELE Message Load KeyBlob."""
+
+    CMD = MessageIDs.LOAD_KEY_BLOB_REQ
+    COMMAND_PAYLOAD_WORDS_COUNT = 3
+
+    def __init__(self, key_identifier: int, keyblob: bytes) -> None:
+        """Constructor of Load Key Blob class.
+
+        :param key_identifier: ID of key
+        :param keyblob: Keyblob to be wrapped
+        """
+        super().__init__()
+        self.key_id = key_identifier
+
+        self.keyblob = keyblob
+        self.validate()
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        payload = pack(
+            LITTLE_ENDIAN + UINT32 + UINT32 + UINT32, self.key_id, 0, self.command_data_address
+        )
+        payload = self.header_export() + payload
+        return payload
+
+    @property
+    def command_data(self) -> bytes:
+        """Command data to be loaded into target memory space."""
+        return self.keyblob
+
+    def info(self) -> str:
+        """Print information including live data.
+
+        :return: Information about the message.
+        """
+        ret = super().info()
+        ret += "\n"
+        ret += f"Key ID:          {self.key_id}\n"
+        ret += f"KeyBlob size:    {len(self.keyblob)}\n"
         return ret
 
 

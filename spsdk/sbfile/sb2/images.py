@@ -882,6 +882,8 @@ class BootImageV21(BaseClass):
         for schema in schemas:
             if "properties" in schema and "family" in schema["properties"]:
                 schema["properties"]["family"]["enum"] = cls.get_supported_families()
+                if family:
+                    schema["properties"]["family"]["template_value"] = family
                 break
 
         return schemas
@@ -1024,7 +1026,6 @@ class BootImageV21(BaseClass):
 
         if not signature_provider:
             signing_key_path = config.get("signPrivateKey", config.get("mainCertPrivateKeyFile"))
-            assert signing_key_path
             signature_provider = get_signature_provider(
                 sp_cfg=config.get("signProvider"),
                 local_file_key=signing_key_path,

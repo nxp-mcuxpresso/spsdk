@@ -10,12 +10,12 @@ import json
 import os
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
 from spsdk.crypto.keys import PrivateKeyEcc
 from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Header
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from tests.cli_runner import CliRunner
 
 
 def process_config_file(config_path: str, destination: str):
@@ -85,14 +85,12 @@ def get_isk_key(config_file) -> PrivateKeyEcc:
         ("sb3_384_none.yaml", "k32w1xx"),
     ],
 )
-def test_nxpimage_sb31(nxpimage_data_dir, tmpdir, config_file, device):
-    runner = CliRunner()
+def test_nxpimage_sb31(cli_runner: CliRunner, nxpimage_data_dir, tmpdir, config_file, device):
     with use_working_directory(nxpimage_data_dir):
         config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
         cmd = f"sb31 export -c {new_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0, str(result.exception)
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(new_binary)
 
         sb31 = SecureBinary31.load_from_config(
@@ -135,16 +133,14 @@ def test_nxpimage_sb31(nxpimage_data_dir, tmpdir, config_file, device):
         # ISK signature won't be checked - is already checked in MBI tests
 
 
-def test_nxpimage_sb31_notime(nxpimage_data_dir, tmpdir):
+def test_nxpimage_sb31_notime(cli_runner: CliRunner, nxpimage_data_dir, tmpdir):
     config_file = "sb3_256_256.yaml"
     device = "lpc55s3x"
-    runner = CliRunner()
     with use_working_directory(nxpimage_data_dir):
         config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
         cmd = f"sb31 export -c {new_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0, str(result.exception)
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(new_binary)
 
         # Since there's a new timestamp, compare only portions of files

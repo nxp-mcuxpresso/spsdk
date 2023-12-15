@@ -157,11 +157,7 @@ devices:
     latest: a0
     attributes:
       address: 0x100_0000
-      computed_fields:
-        CC_SOCU_PIN:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
-        CC_SOCU_DFLT:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
+      computed_fields: {}
 attributes:
   computed_registers:
     SHA256_DIGEST: ""

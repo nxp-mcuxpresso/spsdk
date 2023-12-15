@@ -1,0 +1,15 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+family: mcxn9xx
+outputImageExecutionTarget: xip
+outputImageAuthenticationType: signed
+masterBootOutputFile: signed_mbi.bin
+inputImageFile: ../source_images/mcxn9xxevk_led_blinky_int_flash.s19
+outputImageExecutionAddress: 0
+firmwareVersion: 0
+outputImageSubtype: main
+imageVersion: 0
+certBlock: cert_block_v21.yaml
+mainRootCertPrivateKeyFile: k0_cert0_2048.pem
+enableTrustZone: false

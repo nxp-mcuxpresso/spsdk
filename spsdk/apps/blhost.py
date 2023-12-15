@@ -25,7 +25,6 @@ from spsdk.apps.blhost_helper import (
     parse_property_tag,
     parse_trust_prov_key_type,
     parse_trust_prov_oem_key_type,
-    progress_bar,
 )
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
@@ -43,6 +42,7 @@ from spsdk.apps.utils.utils import (
     get_key,
     parse_file_and_size,
     parse_hex_data,
+    progress_bar,
 )
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.error_codes import stringify_status_code

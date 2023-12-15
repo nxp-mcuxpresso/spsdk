@@ -11,9 +11,9 @@ from typing import List, Optional, Union
 
 from typing_extensions import Self
 
+from spsdk.exceptions import SPSDKAttributeError
 from spsdk.mboot.commands import (
     CmdPacket,
-    CmdResponse,
     CommandTag,
     KeyProvOperation,
     ResponseTag,
@@ -414,7 +414,7 @@ class VirtualMbootInterface:
         """
         data = packet.to_bytes(padding=False)
         if not data:
-            raise AttributeError("Incorrect packet type")
+            raise SPSDKAttributeError("Incorrect packet type")
         self.device._cmd_tag = packet.header.tag
         self.device._cmd_params = packet.params
         self.device._response_index = 0

@@ -11,7 +11,6 @@ import os
 import shutil
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
 from spsdk.crypto.keys import IS_OSCCA_SUPPORTED
@@ -19,6 +18,7 @@ from spsdk.exceptions import SPSDKValueError
 from spsdk.image.ahab.ahab_container import AHABImage
 from spsdk.image.ahab.signed_msg import SignedMessage
 from spsdk.utils.misc import load_binary, use_working_directory
+from tests.cli_runner import CliRunner
 from tests.nxpimage.test_nxpimage_cert_block import process_config_file
 
 
@@ -28,14 +28,12 @@ from tests.nxpimage.test_nxpimage_cert_block import process_config_file
         ("config_ctcm.yaml"),
     ],
 )
-def test_nxpimage_ahab_export(tmpdir, data_dir, config_file):
-    runner = CliRunner()
+def test_nxpimage_ahab_export(cli_runner: CliRunner, tmpdir, data_dir, config_file):
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
         cmd = f"ahab export -c {new_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(new_binary)
         assert filecmp.cmp(os.path.join(data_dir, "ahab", ref_binary), new_binary, shallow=False)
 
@@ -53,14 +51,14 @@ def test_nxpimage_ahab_export(tmpdir, data_dir, config_file):
         ("ctcm_cm33_encrypted_img.yaml"),
     ],
 )
-def test_nxpimage_ahab_export_signed_encrypted(tmpdir, data_dir, config_file):
-    runner = CliRunner()
+def test_nxpimage_ahab_export_signed_encrypted(
+    cli_runner: CliRunner, tmpdir, data_dir, config_file
+):
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
         cmd = f"ahab export -c {new_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(new_binary)
         assert os.path.getsize(ref_binary) == os.path.getsize(new_binary)
 
@@ -76,14 +74,12 @@ def test_nxpimage_ahab_export_signed_encrypted(tmpdir, data_dir, config_file):
         ("ahab_certificate521_uuid.yaml"),
     ],
 )
-def test_nxpimage_ahab_cert_export(tmpdir, data_dir, config_file):
-    runner = CliRunner()
+def test_nxpimage_ahab_cert_export(cli_runner: CliRunner, tmpdir, data_dir, config_file):
     with use_working_directory(data_dir):
         ref_binary = os.path.join(data_dir, "ahab", os.path.splitext(config_file)[0] + ".bin")
         new_binary = os.path.join(tmpdir, os.path.splitext(config_file)[0] + ".bin")
         cmd = f"ahab certificate export -c ahab/{config_file} -o {new_binary}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(new_binary)
         assert os.path.getsize(ref_binary) == os.path.getsize(new_binary)
 
@@ -99,13 +95,11 @@ def test_nxpimage_ahab_cert_export(tmpdir, data_dir, config_file):
         ("ahab_certificate521_uuid.bin"),
     ],
 )
-def test_nxpimage_ahab_cert_parse(tmpdir, data_dir, config_file):
-    runner = CliRunner()
+def test_nxpimage_ahab_cert_parse(cli_runner: CliRunner, tmpdir, data_dir, config_file):
     with use_working_directory(tmpdir):
         input_binary = os.path.join(data_dir, "ahab", config_file)
         cmd = f"ahab certificate parse -b {input_binary} -o {tmpdir} -s oem"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile("certificate_config.yaml")
 
 
@@ -118,21 +112,21 @@ def test_nxpimage_ahab_cert_parse(tmpdir, data_dir, config_file):
         ("ctcm_cm33_signed_img_sm2.yaml"),
     ],
 )
-def test_nxpimage_ahab_export_signed_encrypted_sm2(tmpdir, data_dir, config_file):
-    test_nxpimage_ahab_export_signed_encrypted(tmpdir, data_dir, config_file)
+def test_nxpimage_ahab_export_signed_encrypted_sm2(
+    cli_runner: CliRunner, tmpdir, data_dir, config_file
+):
+    test_nxpimage_ahab_export_signed_encrypted(cli_runner, tmpdir, data_dir, config_file)
 
 
-def test_nxpimage_ahab_parse_cli(tmpdir, data_dir):
+def test_nxpimage_ahab_parse_cli(cli_runner: CliRunner, tmpdir, data_dir):
     def is_subpart(new_file, orig_file):
         new = load_binary(new_file)
         orig = load_binary(orig_file)
         return new[: len(orig)] == orig
 
-    runner = CliRunner()
     with use_working_directory(data_dir):
         cmd = f"ahab parse -f rt118x -b ahab/test_parse_ahab.bin -o {tmpdir}/parsed"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(os.path.join(tmpdir, "parsed", "parsed_config.yaml"))
         assert is_subpart(
             os.path.join(tmpdir, "parsed", "container0_image0_executable.bin"),
@@ -202,12 +196,10 @@ def test_nxpimage_ahab_wrong_signature(data_dir, binary, family, target_memory):
         ("cntr_encrypted_ctcm_cm33.bin", "rt118x"),
     ],
 )
-def test_nxpimage_ahab_parse_cli2(data_dir, binary, family, tmpdir):
-    runner = CliRunner()
+def test_nxpimage_ahab_parse_cli2(cli_runner: CliRunner, data_dir, binary, family, tmpdir):
     with use_working_directory(data_dir):
         cmd = f"ahab parse -f {family} -b ahab/{binary} -o {tmpdir}/parsed"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(os.path.join(tmpdir, "parsed", "parsed_config.yaml"))
 
 
@@ -230,14 +222,12 @@ def test_nxpimage_ahab_parse_sm2(data_dir, binary, family, target_memory):
         ("return_lc.yaml"),
     ],
 )
-def test_nxpimage_signed_message_export(tmpdir, data_dir, config_file):
-    runner = CliRunner()
+def test_nxpimage_signed_message_export(cli_runner: CliRunner, tmpdir, data_dir, config_file):
     with use_working_directory(data_dir):
         config_file = f"{data_dir}/ahab/{config_file}"
         ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir, "output")
         cmd = f"signed-msg export -c {new_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(new_binary)
         assert os.path.getsize(ref_binary) == os.path.getsize(new_binary)
 
@@ -247,12 +237,10 @@ def test_nxpimage_signed_message_export(tmpdir, data_dir, config_file):
         assert new_bin[:408] == ref_bin[:408]
 
 
-def test_nxpimage_signed_message_parse_cli(tmpdir, data_dir):
-    runner = CliRunner()
+def test_nxpimage_signed_message_parse_cli(cli_runner: CliRunner, tmpdir, data_dir):
     with use_working_directory(data_dir):
         cmd = f"signed-msg parse -b ahab/signed_msg_oem_field_return.bin -o {tmpdir}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(os.path.join(tmpdir, "parsed_config.yaml"))
 
 
@@ -260,11 +248,9 @@ def test_nxpimage_signed_message_parse_cli(tmpdir, data_dir):
     "family",
     ["mx8ulp", "mx93", "mx95", "rt118x"],
 )
-def test_nxpimage_fcb_template_cli(tmpdir, family):
-    runner = CliRunner()
+def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family):
     cmd = f"signed-msg get-template -f {family} --output {tmpdir}/signed_msg.yml"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(f"{tmpdir}/signed_msg.yml")
 
 
@@ -278,8 +264,7 @@ def test_nxpimage_signed_message_parse(data_dir):
         assert original_file == exported_signed_msg
 
 
-def test_nxpimage_ahab_update_keyblob(tmpdir, data_dir):
-    runner = CliRunner()
+def test_nxpimage_ahab_update_keyblob(cli_runner: CliRunner, tmpdir, data_dir):
     with use_working_directory(data_dir):
         new_bin_path = f"{tmpdir}/cntr_encrypted_ctcm_cm33.bin"
         ref_bin_path = "ahab/cntr_encrypted_ctcm_cm33.bin"
@@ -288,7 +273,23 @@ def test_nxpimage_ahab_update_keyblob(tmpdir, data_dir):
         ref_bin = load_binary(ref_bin_path)
 
         cmd = f"ahab update-keyblob -b {new_bin_path} -i 1 -k ahab/keyblobs/container1_dek_keyblob.bin"
-        result = runner.invoke(nxpimage.main, cmd.split())
+        cli_runner.invoke(nxpimage.main, cmd.split())
+
+        new_bin = load_binary(new_bin_path)
+        assert len(new_bin) == len(ref_bin)
+        assert new_bin != ref_bin
+
+
+def test_nxpimage_ahab_update_keyblob_bootable(cli_runner: CliRunner, tmpdir, data_dir):
+    with use_working_directory(data_dir):
+        new_bin_path = f"{tmpdir}/evkmimxrt1180_rgpio_led_output_cm33_int_RAM_bootable_NAND.bin"
+        ref_bin_path = "ahab/evkmimxrt1180_rgpio_led_output_cm33_int_RAM_bootable_NAND.bin"
+        shutil.copyfile(ref_bin_path, new_bin_path)
+
+        ref_bin = load_binary(ref_bin_path)
+
+        cmd = f"ahab update-keyblob -f rt118x -m flexspi_nand -b {new_bin_path} -i 1 -k ahab/keyblobs/dek_keyblob.bin"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
         assert result.exit_code == 0
 
         new_bin = load_binary(new_bin_path)
@@ -296,12 +297,10 @@ def test_nxpimage_ahab_update_keyblob(tmpdir, data_dir):
         assert new_bin != ref_bin
 
 
-def test_nxpimage_ahab_update_keyblob_invalid(data_dir):
-    runner = CliRunner()
+def test_nxpimage_ahab_update_keyblob_invalid(cli_runner: CliRunner, data_dir):
     with use_working_directory(data_dir):
         cmd = f"ahab update-keyblob -b ahab/cntr_encrypted_ctcm_cm33.bin -i 0 -k ahab/keyblobs/container1_dek_keyblob.bin"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 1
+        cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=1)
 
 
 @pytest.mark.parametrize(
@@ -313,9 +312,7 @@ def test_nxpimage_ahab_update_keyblob_invalid(data_dir):
         "rt118x",
     ],
 )
-def test_nxpimage_ahab_get_template(tmpdir, family):
-    runner = CliRunner()
+def test_nxpimage_ahab_get_template(cli_runner: CliRunner, tmpdir, family):
     cmd = f"ahab get-template -f {family} -o {tmpdir}/tmp.yaml"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(f"{tmpdir}/tmp.yaml")

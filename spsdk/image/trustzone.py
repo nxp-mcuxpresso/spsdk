@@ -11,6 +11,7 @@ import os
 import struct
 from typing import Any, Dict, List, Optional
 
+from spsdk import SPSDK_DATA_FOLDER
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image import TZ_SCH_FILE
 from spsdk.utils.database import Database
@@ -32,9 +33,7 @@ class TrustZoneType(Enum):
 class TrustZone:
     """Provide creation of binary data to set up the TrustZone engine in CM-33."""
 
-    PRESET_DIR = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "data", "tz_presets")
-    )
+    PRESET_DIR = os.path.join(SPSDK_DATA_FOLDER, "tz_presets")
     CONFIG_FILE = os.path.join(PRESET_DIR, "database.yaml")
 
     @classmethod

@@ -51,7 +51,7 @@ class UsbSioDevice(DeviceBase):
         :raises SPSDKError: When LIBUSBSIO device is not opened.
         """
         # device is the LIBUSBSIO.PORT instance (LIBUSBSIO.SPI or LIBUSBSIO.I2C class)
-        self.port: Optional[LIBUSBSIO.PORT] = None
+        self.port: Optional[Union[LIBUSBSIO.SPI, LIBUSBSIO.I2C]] = None
 
         # work with the global LIBUSBSIO instance
         self.dev_ix = dev
@@ -78,6 +78,15 @@ class UsbSioDevice(DeviceBase):
         :return: True if device is open, False othervise.
         """
         return bool(self.port)
+
+    def close(self) -> None:
+        """Close the interface."""
+        if self.port:
+            self.port.Close()
+            self.port = None
+            self.sio.Close()
+            # re-init the libusb to prepare it for next open
+            self.sio.GetNumPorts()
 
     def __str__(self) -> str:
         """Return string containing information about the interface."""
@@ -307,15 +316,6 @@ class UsbSioSPIDevice(UsbSioDevice):
         if not self.port:
             raise SPSDKError("Cannot open lpcusbsio SPI interface.\n")
 
-    def close(self) -> None:
-        """Close the interface."""
-        if self.port:
-            self.port.Close()
-            self.port = None
-            # Temporary hack till new version of libusbsio greater than 2.1.11
-            if not self.sio.IsAnyPortOpen():
-                self.sio.Close()
-
     def read(self, length: int, timeout: Optional[int] = None) -> bytes:
         """Read 'length' amount for bytes from device.
 
@@ -412,17 +412,6 @@ class UsbSioI2CDevice(UsbSioDevice):
         )
         if not self.port:
             raise SPSDKError("Cannot open lpcusbsio I2C interface.\n")
-
-    def close(self) -> None:
-        """Close the interface."""
-        if self.port:
-            # Preventive Reset of I2C device to be ready to reopen in case of any pending problem
-            self.port.Reset()
-            self.port.Close()
-            self.port = None
-            # This is temporary hack till new version of libusbsio greater than 2.1.11
-            if not self.sio.IsAnyPortOpen():
-                self.sio.Close()
 
     def read(self, length: int, timeout: Optional[int] = None) -> bytes:
         """Read 'length' amount for bytes from device.

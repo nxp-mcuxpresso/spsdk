@@ -28,25 +28,6 @@ from spsdk.exceptions import SPSDKError
 
 TRACE_ENABLE = True
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.CRITICAL)
-
-
-def set_logger(level: int) -> None:
-    """Sets the log level for this module.
-
-    param level: Requested level.
-    """
-    logger.setLevel(level)
-
-    logging.getLogger("pyocd.board.board").setLevel(logging.CRITICAL)
-    logging.getLogger("pyocd.core.coresight_target").setLevel(level)
-    logging.getLogger("pyocd.probe.common").setLevel(level)
-    logging.getLogger("pyocd.utility").setLevel(level)
-    logging.getLogger("pyocd.core").setLevel(level)
-    logging.getLogger("pyocd.coresight").setLevel(level)
-
-
-set_logger(logging.CRITICAL)
 
 
 class DebugProbePyOCD(DebugProbe):
@@ -59,8 +40,6 @@ class DebugProbePyOCD(DebugProbe):
         """
         super().__init__(hardware_id, options)
         self.probe: PyOCDDebugProbe = None
-
-        set_logger(logging.root.level)
 
         logger.debug("The SPSDK PyOCD Interface has been initialized")
 

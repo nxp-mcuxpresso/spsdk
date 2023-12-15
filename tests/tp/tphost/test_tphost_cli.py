@@ -9,13 +9,13 @@ import os
 import shutil
 
 import pytest
-from click.testing import CliRunner
 
 from spsdk.apps import tphost as cli
 from spsdk.utils.misc import use_working_directory
+from tests.cli_runner import CliRunner
 
 
-def test_tphost_cli_tp_load(data_dir, tmpdir):
+def test_tphost_cli_tp_load(cli_runner: CliRunner, data_dir, tmpdir):
     """Test of TP load CLI basic functionality."""
 
     dest_dir = f"{tmpdir}/data"
@@ -23,8 +23,7 @@ def test_tphost_cli_tp_load(data_dir, tmpdir):
     shutil.copytree(data_dir, dest_dir)
 
     with use_working_directory(dest_dir):
-        runner = CliRunner()
-        result = runner.invoke(
+        cli_runner.invoke(
             cli.main,
             [
                 "load",
@@ -46,24 +45,20 @@ def test_tphost_cli_tp_load(data_dir, tmpdir):
                 "audit_log.yaml",
             ],
         )
-        assert result.exit_code == 0
 
 
-def test_tphost_cli_get_template(tmpdir):
+def test_tphost_cli_get_template(cli_runner: CliRunner, tmpdir):
     """Test of Get Configuration template CLI basic functionality."""
-    runner = CliRunner()
-    result = runner.invoke(
+    cli_runner.invoke(
         cli.main,
         ["get-template", "-f", "lpc55s6x", "-o", tmpdir + "cfg_template.yml"],
     )
-    assert result.exit_code == 0
     assert os.path.isfile(tmpdir + "cfg_template.yml")
 
 
-def test_tphost_cli_list_tpdevs(data_dir):
+def test_tphost_cli_list_tpdevs(cli_runner: CliRunner, data_dir):
     """Test of List TP devices CLI basic functionality."""
-    runner = CliRunner()
-    result = runner.invoke(
+    result = cli_runner.invoke(
         cli.main,
         [
             "list-tpdevices",
@@ -73,15 +68,13 @@ def test_tphost_cli_list_tpdevs(data_dir):
             f"config_file={data_dir}/device_config.yaml",
         ],
     )
-    assert result.exit_code == 0
     assert "card1" in result.output
     assert "card2" in result.output
 
 
-def test_tphost_cli_list_tptarget(data_dir):
+def test_tphost_cli_list_tptarget(cli_runner: CliRunner, data_dir):
     """Test of List TP targets CLI basic functionality."""
-    runner = CliRunner()
-    result = runner.invoke(
+    result = cli_runner.invoke(
         cli.main,
         [
             "list-tptargets",
@@ -91,35 +84,29 @@ def test_tphost_cli_list_tptarget(data_dir):
             f"config_file={data_dir}/target_config.yaml",
         ],
     )
-    assert result.exit_code == 0
     assert "lpc55s69" in result.output
 
 
-def test_tphost_cli_device_help():
+def test_tphost_cli_device_help(cli_runner: CliRunner):
     """Test of get device help CLI basic functionality."""
-    runner = CliRunner()
-    result = runner.invoke(
+    result = cli_runner.invoke(
         cli.main,
         ["device-help", "-d", "swmodel"],
     )
-    assert result.exit_code == 0
     assert "SWMODEL device" in result.output
 
 
-def test_tphost_cli_target_help():
+def test_tphost_cli_target_help(cli_runner: CliRunner):
     """Test of get target help CLI basic functionality."""
-    runner = CliRunner()
-    result = runner.invoke(
+    result = cli_runner.invoke(
         cli.main,
         ["target-help", "-t", "swmodel"],
     )
-    assert result.exit_code == 0
     assert "SWMODEL target" in result.output
 
 
-def test_tphost_cli_extract(data_dir, tmpdir):
-    runner = CliRunner()
-    result = runner.invoke(
+def test_tphost_cli_extract(cli_runner: CliRunner, data_dir, tmpdir):
+    cli_runner.invoke(
         cli.main,
         [
             "verify",
@@ -131,13 +118,11 @@ def test_tphost_cli_extract(data_dir, tmpdir):
             tmpdir,
         ],
     )
-    assert result.exit_code == 0
     assert len(os.listdir(tmpdir)) == 20
 
 
-def test_tphost_cli_extract_skip_nxp(data_dir, tmpdir):
-    runner = CliRunner()
-    result = runner.invoke(
+def test_tphost_cli_extract_skip_nxp(cli_runner: CliRunner, data_dir, tmpdir):
+    cli_runner.invoke(
         cli.main,
         [
             "verify",
@@ -150,7 +135,6 @@ def test_tphost_cli_extract_skip_nxp(data_dir, tmpdir):
             "--skip-nxp",
         ],
     )
-    assert result.exit_code == 0
     assert len(os.listdir(tmpdir)) == 16
 
 
@@ -164,10 +148,8 @@ def test_tphost_cli_extract_skip_nxp(data_dir, tmpdir):
         ("lpc55s6x"),
     ],
 )
-def test_tphost_cli_get_template(tmpdir, family):
+def test_tphost_cli_get_template(cli_runner: CliRunner, tmpdir, family):
     """Test for get template in shadowregs."""
     cmd = f"get-template --family {family} --output {tmpdir}/tphost.yml"
-    runner = CliRunner()
-    result = runner.invoke(cli.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(cli.main, cmd.split())
     assert os.path.isfile(f"{tmpdir}/tphost.yml")

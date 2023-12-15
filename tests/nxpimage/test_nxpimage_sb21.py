@@ -10,13 +10,14 @@ from binascii import unhexlify
 from itertools import zip_longest
 
 import pytest
-from click.testing import CliRunner
+from test_nxpimage_sb31 import process_config_file
 
 import spsdk.apps.nxpimage as nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.images import BootImageV21
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.misc import load_configuration, use_working_directory
 from spsdk.utils.schema_validator import ValidationSchemas
+from tests.cli_runner import CliRunner
 
 SB21_TEST_CONFIGURATIONS = [
     (
@@ -60,9 +61,15 @@ SB21_TEST_CONFIGURATIONS = [
 @pytest.mark.parametrize("use_signature_provider", [True, False])
 @pytest.mark.parametrize("bd_file,legacy_sb,external,family", SB21_TEST_CONFIGURATIONS)
 def test_nxpimage_sb21(
-    use_signature_provider, bd_file, legacy_sb, external, nxpimage_data_dir, family, tmpdir
+    cli_runner: CliRunner,
+    use_signature_provider,
+    bd_file,
+    legacy_sb,
+    external,
+    nxpimage_data_dir,
+    family,
+    tmpdir,
 ):
-    runner = CliRunner()
     with use_working_directory(nxpimage_data_dir):
         bd_file_path = os.path.join(nxpimage_data_dir, bd_file)
         out_file_path_new = os.path.join(tmpdir, "new_elf2sb.bin")
@@ -115,8 +122,7 @@ def test_nxpimage_sb21(
         ]
         for entry in external:
             cmd.append(entry)
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0, str(result.exception)
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file_path_new)
 
         with open(kek_key_path) as f:
@@ -166,8 +172,7 @@ def test_nxpimage_sb21(
             assert i[0] == i[1]
 
 
-def test_sb_21_invalid_signature_provider(tmpdir, nxpimage_data_dir):
-    runner = CliRunner()
+def test_sb_21_invalid_signature_provider(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
     with use_working_directory(nxpimage_data_dir):
         cmd = [
             "sb21",
@@ -218,8 +223,7 @@ def test_sb_21_invalid_signature_provider(tmpdir, nxpimage_data_dir):
             "-h",
             os.path.join(tmpdir, "hash.bin"),
         ]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 1
+        result = cli_runner.invoke(nxpimage.main, cmd, expected_code=1)
         assert issubclass(result.exc_info[0], SPSDKError)
 
 
@@ -228,23 +232,19 @@ def test_sb_21_invalid_parse():
         BootImageV21.parse(data=bytes(232), kek=None)
 
 
-def test_nxpimage_sbkek_cli(tmpdir):
-    runner = CliRunner()
+def test_nxpimage_sbkek_cli(cli_runner: CliRunner, tmpdir):
     cmd = "sb21 get-sbkek"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
 
     cmd = f"sb21 get-sbkek -o {tmpdir}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(os.path.join(tmpdir, "sbkek.bin"))
     assert os.path.isfile(os.path.join(tmpdir, "sbkek.txt"))
 
     test_key = "858A4A83D07C78656165CDDD3B7AF4BB20E534392E7AF99EF7C296F95205E680"
 
     cmd = f"sb21 get-sbkek -k {test_key} -o {tmpdir}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(os.path.join(tmpdir, "sbkek.bin"))
     assert os.path.isfile(os.path.join(tmpdir, "sbkek.txt"))
 
@@ -261,9 +261,14 @@ def test_nxpimage_sbkek_cli(tmpdir):
     ],
 )
 def test_nxpimage_relative_path_sb21(
-    use_signature_provider, bd_file, legacy_sb, external, nxpimage_data_dir, tmpdir
+    cli_runner: CliRunner,
+    use_signature_provider,
+    bd_file,
+    legacy_sb,
+    external,
+    nxpimage_data_dir,
+    tmpdir,
 ):
-    runner = CliRunner()
     bd_file_path = os.path.join(nxpimage_data_dir, bd_file)
     out_file_path_new = os.path.join(tmpdir, "new_elf2sb.bin")
     kek_key_path = os.path.join(nxpimage_data_dir, "sb_sources/keys/SBkek_PUF.txt")
@@ -315,8 +320,7 @@ def test_nxpimage_relative_path_sb21(
     ]
     for entry in external:
         cmd.append(entry)
-    result = runner.invoke(nxpimage.main, cmd)
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd)
     assert os.path.isfile(out_file_path_new)
 
     with open(kek_key_path) as f:
@@ -377,17 +381,18 @@ def test_nxpimage_relative_path_sb21(
         "rt6xx",
     ],
 )
-def test_nxpimage_sb21_get_template(tmpdir, family):
-    runner = CliRunner()
+def test_nxpimage_sb21_get_template(cli_runner: CliRunner, tmpdir, family):
     cmd = f"sb21 get-template -f {family} -o {tmpdir}/tmp.yaml"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(f"{tmpdir}/tmp.yaml")
+    config = load_configuration(f"{tmpdir}/tmp.yaml")
+    assert config["family"] == family
 
 
 @pytest.mark.parametrize("bd_file,legacy_sb,external,family", SB21_TEST_CONFIGURATIONS)
-def test_nxpimage_sb21_convert(bd_file, legacy_sb, external, nxpimage_data_dir, family, tmpdir):
-    runner = CliRunner()
+def test_nxpimage_sb21_convert(
+    cli_runner: CliRunner, bd_file, legacy_sb, external, nxpimage_data_dir, family, tmpdir
+):
     with use_working_directory(nxpimage_data_dir):
         bd_file_path = os.path.join(nxpimage_data_dir, bd_file)
         out_file_path_new = os.path.join(tmpdir, "config.yaml")
@@ -441,16 +446,14 @@ def test_nxpimage_sb21_convert(bd_file, legacy_sb, external, nxpimage_data_dir, 
         ]
         for entry in external:
             cmd.append(entry)
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(out_file_path_new)
 
         sb_file_path_new = os.path.join(tmpdir, "output.sb")
 
         cmd = ["sb21", "export", "-c", out_file_path_new, "-o", sb_file_path_new]
 
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 0, str(result.exception) + str(result.output)
+        cli_runner.invoke(nxpimage.main, cmd)
         assert os.path.isfile(sb_file_path_new)
 
         with open(kek_key_path) as f:
@@ -500,8 +503,7 @@ def test_nxpimage_sb21_convert(bd_file, legacy_sb, external, nxpimage_data_dir, 
             assert i[0] == i[1]
 
 
-def test_sb_21_invalid_signature_provider(tmpdir, nxpimage_data_dir):
-    runner = CliRunner()
+def test_sb_21_invalid_signature_provider(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
     with use_working_directory(nxpimage_data_dir):
         cmd = [
             "sb21",
@@ -552,8 +554,7 @@ def test_sb_21_invalid_signature_provider(tmpdir, nxpimage_data_dir):
             "-h",
             os.path.join(tmpdir, "hash.bin"),
         ]
-        result = runner.invoke(nxpimage.main, cmd)
-        assert result.exit_code == 1
+        result = cli_runner.invoke(nxpimage.main, cmd, expected_code=1)
         assert issubclass(result.exc_info[0], SPSDKError)
 
 
@@ -562,34 +563,28 @@ def test_sb_21_invalid_parse():
         BootImageV21.parse(data=bytes(232), kek=None)
 
 
-def test_nxpimage_sbkek_cli(tmpdir):
-    runner = CliRunner()
+def test_nxpimage_sbkek_cli(cli_runner: CliRunner, tmpdir):
     cmd = "sb21 get-sbkek"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
 
     cmd = f"sb21 get-sbkek -o {tmpdir}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(os.path.join(tmpdir, "sbkek.bin"))
     assert os.path.isfile(os.path.join(tmpdir, "sbkek.txt"))
 
     test_key = "858A4A83D07C78656165CDDD3B7AF4BB20E534392E7AF99EF7C296F95205E680"
 
     cmd = f"sb21 get-sbkek -k {test_key} -o {tmpdir}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(os.path.join(tmpdir, "sbkek.bin"))
     assert os.path.isfile(os.path.join(tmpdir, "sbkek.txt"))
 
 
-def test_nxpimage_parse_cli(tmpdir, nxpimage_data_dir):
+def test_nxpimage_parse_cli(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
     with use_working_directory(f"{nxpimage_data_dir}/sb_sources"):
-        runner = CliRunner()
         parsed_output = f"{tmpdir}/parsed_sb"
         cmd = f"sb21 parse -b SB_files/legacy_real_example1.sb -k keys/SBkek_PUF.txt -o {parsed_output}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
 
         assert os.path.isfile(os.path.join(parsed_output, "certificate_0_der.cer"))
         assert os.path.isfile(os.path.join(parsed_output, "parsed_info.txt"))
@@ -597,13 +592,11 @@ def test_nxpimage_parse_cli(tmpdir, nxpimage_data_dir):
         assert os.path.isfile(os.path.join(parsed_output, "section_0_load_command_9_data.bin"))
 
 
-def test_nxpimage_parse_cli_invalid(tmpdir, nxpimage_data_dir):
+def test_nxpimage_parse_cli_invalid(cli_runner: CliRunner, tmpdir, nxpimage_data_dir):
     with use_working_directory(f"{nxpimage_data_dir}/sb_sources"):
-        runner = CliRunner()
         parsed_output = f"{tmpdir}/parsed_sb"
         cmd = f"sb21 parse -b SB_files/corrupted.sb -k keys/SBkek_PUF.txt -o {parsed_output}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 1
+        cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=1)
 
 
 @pytest.mark.parametrize("bd_file,legacy_sb,external,family", SB21_TEST_CONFIGURATIONS)
@@ -663,3 +656,57 @@ def test_nxpimage_sb21_hex_values(bd_file, legacy_sb, external, nxpimage_data_di
             search_paths=[nxpimage_data_dir],
         )
         sb2.export()
+
+
+@pytest.mark.parametrize("conf", ["conf1", "conf2", "conf3", "conf4", "conf5"])
+def test_nxpimage_sb21_yaml(cli_runner: CliRunner, conf, nxpimage_data_dir, tmpdir):
+    KEK_PATH = os.path.join(nxpimage_data_dir, "sb_sources/keys/SBkek_PUF.txt")
+    with use_working_directory(nxpimage_data_dir):
+        # for conf in conf_dir:
+        output_path = os.path.join(tmpdir, "output.sb")
+        conf_path = os.path.join(nxpimage_data_dir, "sb_sources", "YAML_files", conf, "config.yaml")
+        ref_binary, new_binary, new_config = process_config_file(conf_path, tmpdir)
+        cmd = [
+            "sb21",
+            "export",
+            "-c",
+            new_config,
+        ]
+        cli_runner.invoke(nxpimage.main, cmd)
+        assert os.path.isfile(new_binary)
+        ref_path = os.path.join(nxpimage_data_dir, "sb_sources", "YAML_files", conf, ref_binary)
+
+        with open(KEK_PATH) as f:
+            # transform text-based KEK into bytes
+            sb_kek = unhexlify(f.read())
+
+        # read generated secure binary image
+        with open(new_binary, "rb") as f:
+            sb_file_data_new = f.read()
+
+        sb_new = BootImageV21.parse(data=sb_file_data_new, kek=sb_kek)
+
+        # # read reference SB file
+        with open(ref_path, "rb") as f:
+            sb_file_data_old = f.read()
+
+        sb_old = BootImageV21.parse(data=sb_file_data_old, kek=sb_kek)
+
+        sb_new_lines = str(sb_new).split("\n")
+        sb_old_lines = str(sb_old).split("\n")
+
+        DIGEST_LINE = 4
+        TIMESTAMP_LINE = 14
+        # Remove lines containing digest and timestamp, as these will always differ
+        # -1 for indexing starting from 0
+        del sb_new_lines[DIGEST_LINE - 1]
+        # -1 for indexing starting from 0, -1 for previously removed line => -2
+        del sb_new_lines[TIMESTAMP_LINE - 2]
+
+        # -1 for indexing starting from 0
+        del sb_old_lines[DIGEST_LINE - 1]
+        # -1 for indexing starting from 0, -1 for previously removed line => -2
+        del sb_old_lines[TIMESTAMP_LINE - 2]
+
+        for i in zip_longest(sb_new_lines, sb_old_lines, fillvalue=None):
+            assert i[0] == i[1]

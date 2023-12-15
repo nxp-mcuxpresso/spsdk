@@ -5,8 +5,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import os
-from typing import Iterable
 
 # name if data sub-directory with logs from output generation
 DEBUG_LOG_SUBDIR = "debug_logs"

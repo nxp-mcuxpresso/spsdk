@@ -1,0 +1,40 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===================  Master Boot Image Configuration template for lpc55s3x, Plain CRC XIP Image.  ====================
+
+# ======================================================================================================================
+#                                                  == Basic Settings ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc553x, lpc55s3x>
+family: lpc55s3x
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp>
+outputImageAuthenticationType: crc
+# ------------------------------------===== Master Boot Image name [Required] =====-------------------------------------
+# Description: The file for Master Boot Image result file.
+masterBootOutputFile: mbi.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: normal_boot.bin
+# ----------------------------------------===== Image version. [Optional] =====-----------------------------------------
+# Description: Image version is used for dual boot. The boot ROM decides which image to boot first based on the image
+# version. It boots the one with the newer image version first, and in case of a failure, it boots the older one.
+imageVersion: 0
+# --------------------------------===== Loading address of application [Required] =====---------------------------------
+# Description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
+outputImageExecutionAddress: 0
+# ======================================================================================================================
+#                                               == Trust Zone Settings ==                                               
+# ======================================================================================================================
+# ------------------------------------===== TrustZone enable option [Optional] =====------------------------------------
+# Description: If not specified, the Trust zone is disabled.
+enableTrustZone: false
+

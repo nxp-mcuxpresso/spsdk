@@ -13,9 +13,12 @@ import os
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Union
 
-from spsdk.exceptions import SPSDKKeyError, SPSDKValueError
+from typing_extensions import Self
+
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.image.bootable_image import BIMG_DATABASE_FILE, BIMG_SCH_FILE
 from spsdk.image.bootable_image.segments import Segment, get_segment_class
+from spsdk.utils.abstract import BaseClass
 from spsdk.utils.database import Database
 from spsdk.utils.images import BinaryImage, BinaryPattern
 from spsdk.utils.misc import write_file
@@ -24,8 +27,10 @@ from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, che
 logger = logging.getLogger(__name__)
 
 
-class BootableImage:
+class BootableImage(BaseClass):
     """Bootable Image class."""
+
+    DATABASE = Database(BIMG_DATABASE_FILE)
 
     def __init__(self, family: str, mem_type: str, revision: str = "latest") -> None:
         """Bootable Image constructor.
@@ -40,19 +45,15 @@ class BootableImage:
         self.family = family
         self.revision = revision
         self.mem_type = mem_type
-        self.database = Database(BIMG_DATABASE_FILE)
-        self.mem_types: Dict = self.database.get_device_value("mem_types", family, revision)
-        if mem_type not in self.mem_types.keys():
-            raise SPSDKValueError(f"Unsupported memory type: {mem_type}")
-        self.bimg_descr: Dict[str, Any] = self.mem_types[self.mem_type]
+        self.bimg_descr: Dict[str, Any] = self.get_memory_type_config(family, mem_type, revision)
         self.image_pattern = self.bimg_descr.get("image_pattern", "zeros")
         self.bimg_segments_descr: Dict[str, int] = self.bimg_descr["segments"]
         self.segments: List[Segment] = []
 
-    def parse(self, binary: bytes) -> None:
-        """Parse binary into bootable image object.
+    def _parse(self, binary: bytes) -> None:
+        """Parse binary and set internal members.
 
-        :param binary: Full binary of bootable image.
+        :param binary: Bootable image binary.
         """
         self.segments.clear()
         bimg_segs: Dict[str, int] = self.bimg_segments_descr
@@ -63,9 +64,63 @@ class BootableImage:
                 family=self.family,
                 mem_type=self.mem_type,
                 revision=self.revision,
-                pattern=self.image_pattern,
             )
             self.segments.append(seg)
+
+    @classmethod
+    def parse(
+        cls,
+        binary: bytes,
+        family: Optional[str] = None,
+        mem_type: Optional[str] = None,
+        revision: str = "latest",
+    ) -> Self:
+        """Parse binary into bootable image object.
+
+        :param binary: Bootable image binary.
+        :param family: Chip family.
+        :param mem_type: Used memory type.
+        :param revision: Chip silicon revision.
+        """
+        if not family:
+            raise SPSDKValueError("Family attribute must be specified.")
+        bimg_instances: List[Self] = []
+        mem_types = [mem_type] if mem_type else cls.get_supported_memory_types(family, revision)
+        for mem_type in mem_types:
+            image = cls(family, mem_type, revision)
+            try:
+                image._parse(binary)
+                bimg_instances.append(image)
+            except SPSDKError:
+                continue
+        if not bimg_instances:
+            raise SPSDKError(
+                f"The image is not matching any of memory types: {', '.join(mem_types)}"
+            )
+        bimg_instance = bimg_instances[0]
+        if len(bimg_instances) > 1:
+            mem_types_str = ", ".join(f'"{img.mem_type}"' for img in bimg_instances)
+            logger.warning(
+                f"Multiple possible memory types detected: {mem_types_str}."
+                f'The "{bimg_instance.mem_type}" memory type will be used.'
+            )
+        return bimg_instance
+
+    def __repr__(self) -> str:
+        """Text short representation about the BootableImage."""
+        return f"BootableImage, family:{self.family}, mem_type:{self.mem_type}"
+
+    def __str__(self) -> str:
+        """Text information about the BootableImage."""
+        nfo = "BootableImage\n"
+        nfo += f"  Family:      {self.family}\n"
+        nfo += f"  Revision:    {self.revision}\n"
+        nfo += f"  Memory Type: {self.mem_type}\n"
+        if self.segments:
+            nfo += "  Segments:\n"
+        for segment in self.segments:
+            nfo += f"      {segment}\n"
+        return nfo
 
     @staticmethod
     def get_validation_schemas(
@@ -143,6 +198,7 @@ class BootableImage:
             name=f"Bootable Image for {self.family}",
             size=0,
             pattern=BinaryPattern(self.image_pattern),
+            description=f"Memory type: {self.mem_type}\nRevision: {self.revision}",
         )
         for segment in self.segments:
             if segment.raw_block:
@@ -172,8 +228,8 @@ class BootableImage:
         sch_cfg = ValidationSchemas.get_schema_file(BIMG_SCH_FILE)
         return [sch_cfg["family_rev"]]
 
-    @staticmethod
-    def generate_config_template(family: str, mem_type: str, revision: str = "latest") -> str:
+    @classmethod
+    def generate_config_template(cls, family: str, mem_type: str, revision: str = "latest") -> str:
         """Get validation schema for the family.
 
         :param family: Chip family
@@ -181,7 +237,7 @@ class BootableImage:
         :param revision: Chip revision specification, as default, latest is used.
         :return: Validation schema.
         """
-        schemas = BootableImage.get_validation_schemas(family, mem_type, revision)
+        schemas = cls.get_validation_schemas(family, mem_type, revision)
         override = {}
         override["family"] = family
         override["revision"] = revision
@@ -193,45 +249,42 @@ class BootableImage:
             override,
         ).export_to_yaml()
 
-    @staticmethod
-    def get_supported_families() -> List[str]:
+    @classmethod
+    def get_supported_families(cls) -> List[str]:
         """Get list of all supported families by bootable image.
 
         :return: List of families.
         """
-        return Database(BIMG_DATABASE_FILE).devices.device_names
+        return cls.DATABASE.devices.device_names
 
-    @staticmethod
-    def get_supported_memory_types(family: str, revision: str = "latest") -> List[str]:
+    @classmethod
+    def get_supported_memory_types(cls, family: str, revision: str = "latest") -> List[str]:
         """Return list of supported memory types.
 
         :return: List of supported families.
         """
-        database = Database(BIMG_DATABASE_FILE)
-        return list(database.get_device_value("mem_types", family, revision).keys())
+        return list(cls.DATABASE.get_device_value("mem_types", family, revision).keys())
 
-    @staticmethod
+    @classmethod
     def get_memory_type_config(
-        family: str, mem_type: str, revision: str = "latest"
+        cls, family: str, mem_type: str, revision: str = "latest"
     ) -> Dict[str, Any]:
         """Return dictionary with configuration for specific memory type.
 
         :raises SPSDKKeyError: If memory type does not exist in database
         :return: Dictionary with configuration.
         """
-        if mem_type not in BootableImage.get_supported_memory_types(family):
+        if mem_type not in cls.get_supported_memory_types(family):
             raise SPSDKKeyError(f"Memory type not supported: {mem_type}")
-        database = Database(BIMG_DATABASE_FILE)
-        mem_types: Dict = database.get_device_value("mem_types", family, revision)
+        mem_types: Dict = cls.DATABASE.get_device_value("mem_types", family, revision)
         return mem_types[mem_type]
 
-    @staticmethod
-    def get_supported_revisions(family: str) -> List[str]:
+    @classmethod
+    def get_supported_revisions(cls, family: str) -> List[str]:
         """Return list of supported revisions.
 
         :return: List of supported revisions.
         """
-        database = Database(BIMG_DATABASE_FILE)
         revisions = ["latest"]
-        revisions.extend(database.devices.get_by_name(family).revisions.revision_names)
+        revisions.extend(cls.DATABASE.devices.get_by_name(family).revisions.revision_names)
         return revisions

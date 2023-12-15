@@ -215,11 +215,11 @@ certificate_vx:
   type: object
   title: ISK Certificate Settings
   properties:
-    useIsk:
+    selfSigned:
       type: boolean
-      title: Use ISK for signature certification
-      description: Enable ISK type of signature certification. Unused when 'binaryCertificateBlock' is defined
-      template_value: false
+      title: True if certificate is self signed, false for NXP Signed certificate
+      description: NXP Signed = false, Self signed = True
+      template_value: true
 
     signingCertificateFile:
       type: string
@@ -254,7 +254,6 @@ certificate_vx:
       title: Signature Provider
       description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
       template_value: type=file;file_path=root_prv_key.pem
-  required: [useIsk]
 
   allOf: # Global all of group - this is main concatenation group for all sub rules
     - if:
@@ -336,20 +335,18 @@ certificate_root_keys:
 
   allOf: # Global all of group - this is main concatenation group for all sub rules
     - oneOf:
-      - required: [binaryCertificateBlock]
-      - allOf:
-        - required: [rootCertificate0File]
-        - anyOf:
-          - allOf:
-              - required: [mainCertPrivateKeyFile]
-              - not:
-                  required: [signProvider]
-          - allOf:
-              - required: [signProvider]
-              - not:
-                  required: [mainCertPrivateKeyFile]
-          - anyOf:
-            - required: [mainRootCertId]
-            - required: [mainCertChainId]
-
-
+        - required: [binaryCertificateBlock]
+        - allOf:
+            - required: [rootCertificate0File]
+            - anyOf:
+                - allOf:
+                    - required: [mainCertPrivateKeyFile]
+                    - not:
+                        required: [signProvider]
+                - allOf:
+                    - required: [signProvider]
+                    - not:
+                        required: [mainCertPrivateKeyFile]
+                - anyOf:
+                    - required: [mainRootCertId]
+                    - required: [mainCertChainId]

@@ -9,13 +9,12 @@
 import os
 from unittest.mock import patch
 
-from click.testing import CliRunner
-
 import spsdk
 from spsdk.apps import blhost
 from spsdk.utils.misc import load_binary
 from spsdk.utils.serial_buspal_proxy import SerialBuspalProxy
 from spsdk.utils.serial_proxy import SerialProxy
+from tests.cli_runner import CliRunner
 
 # fmt: off
 data_responses = {
@@ -192,185 +191,180 @@ data_responses_buspal_spi = {
 # fmt: on
 
 
-def test_version():
-    runner = CliRunner()
-    result = runner.invoke(blhost.main, ["--version"])
-    assert result.exit_code == 0
+def test_version(cli_runner: CliRunner):
+    result = cli_runner.invoke(blhost.main, ["--version"])
     assert spsdk.__version__ in result.output
 
 
-def run_blhost_proxy(caplog, cmd, expect_exit_code: int = 0, ignore_ack: bool = False):
+def run_blhost_proxy(
+    cli_runner: CliRunner, caplog, cmd, expect_exit_code: int = 0, ignore_ack: bool = False
+):
     # There's a problem with logging under CliRunner
     # https://github.com/pytest-dev/pytest/issues/3344
     # caplog is set to disable all loging output
     # Comment the folowing line to see logging info, however there will be an failure
     caplog.set_level(100_000)
-    runner = CliRunner()
     with patch(
         "spsdk.utils.interfaces.device.serial_device.Serial",
         SerialProxy.init_proxy(data_responses, ignore_ack=ignore_ack),
     ):
-        result = runner.invoke(blhost.main, cmd)
-        assert result.exit_code == expect_exit_code
+        result = cli_runner.invoke(blhost.main, cmd, expected_code=expect_exit_code)
     return result
 
 
-def test_get_property(caplog):
+def test_get_property(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "get-property", "1"]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Current Version = K3.0.0" in result.output
 
 
-def test_buspal_i2c_get_property(caplog):
+def test_buspal_i2c_get_property(cli_runner: CliRunner, caplog):
     caplog.set_level(100_000)
-    runner = CliRunner()
     cmd = ["-b", "i2c", "-p", "super-com", "get-property", "1"]
     with patch(
         "spsdk.utils.interfaces.device.serial_device.Serial",
         SerialBuspalProxy.init_buspal_proxy("i2c", data_responses_buspal_i2c),
     ):
-        result = runner.invoke(blhost.main, cmd)
+        result = cli_runner.invoke(blhost.main, cmd)
         assert result.exit_code == 0
         assert "Current Version = K3.0.0" in result.output
 
 
-def test_buspal_spi_get_property(caplog):
+def test_buspal_spi_get_property(cli_runner: CliRunner, caplog):
     caplog.set_level(100_000)
-    runner = CliRunner()
     cmd = ["-b", "spi,5", "-p", "super-com", "get-property", "1"]
     with patch(
         "spsdk.utils.interfaces.device.serial_device.Serial",
         SerialBuspalProxy.init_buspal_proxy("spi", data_responses_buspal_spi),
     ):
-        result = runner.invoke(blhost.main, cmd)
-        assert result.exit_code == 0
+        result = cli_runner.invoke(blhost.main, cmd)
         assert "Current Version = K3.0.0" in result.output
 
 
-def test_get_property_hex_input(caplog):
+def test_get_property_hex_input(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "get-property", "0xA"]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
     assert "Response word 1 = 1 (0x1)" in result.output
     assert "Verify Writes = ON" in result.output
 
 
-def test_set_property(caplog):
+def test_set_property(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "set-property", "10", "1"]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
 
 
-def test_efuse_read_once(caplog):
+def test_efuse_read_once(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "efuse-read-once", "100"]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response word 1 = 4 (0x4)" in result.output
     assert "Response word 2 = 0 (0x0)" in result.output
     assert "Response status = 0 (0x0) Success." in result.output
 
 
-def test_efuse_read_once_unknown_error(caplog):
+def test_efuse_read_once_unknown_error(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "efuse-read-once", "0x98"]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Response word 1 = 4 (0x4)" not in result.output
     assert "Unknown error code" in result.output
 
 
-def test_no_response(caplog):
+def test_no_response(cli_runner: CliRunner, caplog):
     # use get-property 13 (reserved) as a vehicle to emulate no response from target
     cmd = ["-p", "super-com", "get-property", "13"]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert (
         "Response status = 10004 (0x2714) No response packet from target device." in result.output
     )
 
 
-def test_unknown_property(caplog):
+def test_unknown_property(cli_runner: CliRunner, caplog):
     # get-property 0xff
     cmd = ["-p", "super-com", "get-property", "0xff"]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Response status = 10300 (0x283c) Unknown Property." in result.output
 
 
-def test_flash_read_once(caplog):
+def test_flash_read_once(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "flash-read-once", "1", "4"]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
     assert "Response word 1 = 4 (0x4)" in result.output
     assert "Response word 2 = 305419896 (0x12345678)" in result.output
 
 
-def test_flash_program_once(caplog):
+def test_flash_program_once(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "flash-program-once", "1", "4", "12345678"]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
 
 
-def test_flash_security_disable(caplog):
+def test_flash_security_disable(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "flash-security-disable", "0102030405060708"]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
-def test_flash_erase_all_unsecure(caplog):
+def test_flash_erase_all_unsecure(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "flash-erase-all-unsecure"]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
-def test_flash_erase_all(caplog):
+def test_flash_erase_all(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "flash-erase-all", "0x0"]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
 
 
-def test_flash_erase_region(caplog):
+def test_flash_erase_region(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "flash-erase-region", "0x8000000", "0x0"]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
 
 
-def run_flash_read_resource(caplog, cmd):
-    result = run_blhost_proxy(caplog, cmd, ignore_ack=True)
+def run_flash_read_resource(cli_runner: CliRunner, caplog, cmd):
+    result = run_blhost_proxy(cli_runner, caplog, cmd, ignore_ack=True)
     assert "Response status = 0 (0x0) Success." in result.output
     assert "Response word 1 = 4 (0x4)" in result.output
     assert "Read 4 of 4 bytes." in result.output
     return result
 
 
-def test_flash_read_resource(caplog):
+def test_flash_read_resource(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "flash-read-resource", "1", "4", "1"]
-    result = run_flash_read_resource(caplog, cmd)
+    result = run_flash_read_resource(cli_runner, caplog, cmd)
     assert "00 00 00 00" in result.output
 
 
-def test_flash_read_resource_to_file(caplog, tmpdir):
+def test_flash_read_resource_to_file(cli_runner: CliRunner, caplog, tmpdir):
     test_file = f"{tmpdir}/read.bin"
     cmd = ["-p", "super-com", "flash-read-resource", "1", "4", "1", test_file]
-    run_flash_read_resource(caplog, cmd)
+    run_flash_read_resource(cli_runner, caplog, cmd)
     assert os.path.isfile(test_file)
     assert load_binary(test_file) == bytes(4)
 
 
-def test_reliable_update(caplog):
+def test_reliable_update(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "reliable-update", "0xfe000"]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
-def test_fuse_read(caplog):
+def test_fuse_read(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "fuse-read", "0x1", "8"]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
-def test_fuse_program(caplog):
+def test_fuse_program(cli_runner: CliRunner, caplog):
     cmd = ["-p", "super-com", "fuse-program", "3", "{{12345678}}", "0"]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Response status = 10000 (0x2710) Unknown Command." in result.output
 
 
-def test_flash_image_memory_not_configured(caplog, data_dir):
+def test_flash_image_memory_not_configured(cli_runner: CliRunner, caplog, data_dir):
     cmd = [
         "-p",
         "super-com",
@@ -379,11 +373,11 @@ def test_flash_image_memory_not_configured(caplog, data_dir):
         "erase",
         "3",
     ]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Response status = 10205 (0x27dd) Memory Not Configured." in result.output
 
 
-def test_tp_hsm_gen_key(caplog):
+def test_tp_hsm_gen_key(cli_runner: CliRunner, caplog):
     cmd = [
         "-p",
         "super-com",
@@ -396,7 +390,7 @@ def test_tp_hsm_gen_key(caplog):
         "0x20009000",
         "64",
     ]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
     assert "Response word 1 = 48 (0x30)" in result.output
     assert "Response word 2 = 64 (0x40)" in result.output
@@ -405,7 +399,7 @@ def test_tp_hsm_gen_key(caplog):
     assert "ECDSA Puk size: 64 (0x40)" in result.output
 
 
-def test_tp_store_key(caplog):
+def test_tp_store_key(cli_runner: CliRunner, caplog):
     cmd = [
         "-p",
         "super-com",
@@ -418,7 +412,7 @@ def test_tp_store_key(caplog):
         "0x2000C000",
         "48",
     ]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
     assert "Response word 1 = 269484129 (0x10100061)" in result.output
     assert "Response word 2 = 48 (0x30)" in result.output
@@ -427,7 +421,7 @@ def test_tp_store_key(caplog):
     assert "Key Blob size: 48 (0x30)" in result.output
 
 
-def test_tp_hsm_enc_blk(caplog):
+def test_tp_hsm_enc_blk(cli_runner: CliRunner, caplog):
     cmd = [
         "-p",
         "super-com",
@@ -442,11 +436,11 @@ def test_tp_hsm_enc_blk(caplog):
         "0x2000D000",
         "256",
     ]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
 
 
-def test_tp_hsm_enc_sign(caplog):
+def test_tp_hsm_enc_sign(cli_runner: CliRunner, caplog):
     cmd = [
         "-p",
         "super-com",
@@ -459,14 +453,14 @@ def test_tp_hsm_enc_sign(caplog):
         "0x20010000",
         "64",
     ]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
     assert "Response word 1 = 64 (0x40)" in result.output
     assert "Output data size/value(s) is(are):" in result.output
     assert "Signature size: 64 (0x40)" in result.output
 
 
-def test_tp_oem_gen_master_share(caplog):
+def test_tp_oem_gen_master_share(cli_runner: CliRunner, caplog):
     cmd = [
         "-p",
         "super-com",
@@ -481,7 +475,7 @@ def test_tp_oem_gen_master_share(caplog):
         "0x2000B000",
         "0x1000",
     ]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
     assert "Response word 1 = 48 (0x30)" in result.output
     assert "Response word 2 = 64 (0x40)" in result.output
@@ -492,7 +486,7 @@ def test_tp_oem_gen_master_share(caplog):
     assert "Cust Cert Puk size: 64 (0x40)" in result.output
 
 
-def test_tp_oem_set_master_share(caplog):
+def test_tp_oem_set_master_share(cli_runner: CliRunner, caplog):
     cmd = [
         "-p",
         "super-com",
@@ -503,11 +497,11 @@ def test_tp_oem_set_master_share(caplog):
         "0x20009000",
         "64",
     ]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
 
 
-def test_oem_get_cust_cert_dice_puk(caplog):
+def test_oem_get_cust_cert_dice_puk(cli_runner: CliRunner, caplog):
     cmd = [
         "-p",
         "super-com",
@@ -518,23 +512,23 @@ def test_oem_get_cust_cert_dice_puk(caplog):
         "0x30016000",
         "0x40",
     ]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     assert "Response status = 0 (0x0) Success." in result.output
     assert "Response word 1 = 64 (0x40)" in result.output
     assert "Output data size/value(s) is(are):" in result.output
     assert "Cust Cert Dice Puk size: 64 (0x40)" in result.output
 
 
-def test_batch(caplog, data_dir):
+def test_batch(cli_runner: CliRunner, caplog, data_dir):
     command_file = os.path.join(data_dir, "blhost_commands.bcf")
     cmd = ["-p", "super-com", "batch", command_file]
-    result = run_blhost_proxy(caplog, cmd)
+    result = run_blhost_proxy(cli_runner, caplog, cmd)
     # we expect 3 successful command execution
     assert result.output.count("Response status = 0 (0x0) Success.") == 3
 
 
-def test_batch_error(caplog, data_dir):
+def test_batch_error(cli_runner: CliRunner, caplog, data_dir):
     command_file = os.path.join(data_dir, "bad_blhost_commands.bcf")
     cmd = ["-p", "super-com", "batch", command_file]
-    result = run_blhost_proxy(caplog, cmd, expect_exit_code=1)
+    result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Unknown command" in str(result.exception)

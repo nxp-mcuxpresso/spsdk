@@ -20,13 +20,7 @@ from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
-from spsdk.utils.misc import (
-    load_configuration,
-    load_text,
-    use_working_directory,
-    value_to_bytes,
-    value_to_int,
-)
+from spsdk.utils.misc import load_configuration, use_working_directory, value_to_bytes, value_to_int
 from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
 TEST_DEVICE_NAME = "TestDevice1"

@@ -289,6 +289,7 @@ class ShadowRegisters:
         if not raw:
             # Just update only configured registers
             exclude_hooks = list(set(self.regs.get_reg_names()) - set(data["registers"].keys()))
+            exclude_hooks.append("RKTH")
             self.regs.run_hooks(exclude_hooks)
 
         logger.debug("The shadow registers has been loaded from configuration.")

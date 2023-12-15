@@ -12,11 +12,11 @@ import shutil
 
 import pytest
 import yaml
-from click.testing import CliRunner
 
 from spsdk.apps import nxpimage
 from spsdk.utils.crypto.otfad import OtfadNxp
 from spsdk.utils.misc import load_configuration, load_text, use_working_directory
+from tests.cli_runner import CliRunner
 
 
 @pytest.mark.parametrize(
@@ -26,16 +26,14 @@ from spsdk.utils.misc import load_configuration, load_text, use_working_director
         ("otfad_rt6xx.yaml"),
     ],
 )
-def test_nxpimage_otfad_export(tmpdir, data_dir, config):
-    runner = CliRunner()
+def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
     work_dir = os.path.join(tmpdir, "otfad")
     shutil.copytree(os.path.join(data_dir, "otfad"), work_dir)
     with use_working_directory(work_dir):
         config_dict = load_configuration(config)
         out_dir = os.path.join(work_dir, config_dict["output_folder"])
         cmd = f"otfad export -c {config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(os.path.join(out_dir, "encrypted_blobs.bin"))
         assert os.path.isfile(os.path.join(out_dir, "OTFAD_Table.bin"))
         assert os.path.isfile(os.path.join(out_dir, "otfad_whole_image.bin"))
@@ -133,17 +131,15 @@ def test_nxpimage_otfad_export(tmpdir, data_dir, config):
     ],
 )
 def test_nxpimage_otfad_export_rt11x0(
-    tmpdir, data_dir, config, per_ix, blhost_bcf_res, bin_out, family
+    cli_runner: CliRunner, tmpdir, data_dir, config, per_ix, blhost_bcf_res, bin_out, family
 ):
-    runner = CliRunner()
     work_dir = os.path.join(tmpdir, "otfad")
     shutil.copytree(os.path.join(data_dir, "otfad"), work_dir)
     with use_working_directory(work_dir):
         config_dict = load_configuration(config)
         out_dir = os.path.join(work_dir, config_dict["output_folder"])
         cmd = f"otfad export -i {per_ix} -c {config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
         assert os.path.isfile(os.path.join(out_dir, f"otfad{per_ix}_{family}_blhost.bcf"))
         assert os.path.isfile(os.path.join(out_dir, "encrypted_blobs.bin"))
         assert os.path.isfile(os.path.join(out_dir, "OTFAD_Table.bin"))
@@ -191,12 +187,10 @@ def test_nxpimage_otfad_export_rt11x0(
         ("otp_master_key.txt", "otfad_key.txt", "rt6xx"),
     ],
 )
-def test_nxpimage_otfad_kek_cli(tmpdir, data_dir, omk, ok, family):
-    runner = CliRunner()
+def test_nxpimage_otfad_kek_cli(cli_runner: CliRunner, tmpdir, data_dir, omk, ok, family):
     with use_working_directory(os.path.join(data_dir, "otfad")):
         cmd = f"otfad get-kek {'-m '+ omk if omk else ''} {'-k '+ ok if ok else ''} -f {family} -o {tmpdir}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
 
         assert os.path.isfile(os.path.join(tmpdir, "otfad_kek.bin"))
         assert os.path.isfile(os.path.join(tmpdir, "otfad_kek.txt"))
@@ -245,12 +239,10 @@ def test_nxpimage_otfad_keys_blhost(omk, ok, family, results):
         ("rt118x"),
     ],
 )
-def test_nxpimage_otfad_template_cli(tmpdir, family):
-    runner = CliRunner()
+def test_nxpimage_otfad_template_cli(cli_runner: CliRunner, tmpdir, family):
     template = os.path.join(tmpdir, "otfad_template.yaml")
     cmd = f"otfad get-template -f {family} --output {template}"
-    result = runner.invoke(nxpimage.main, cmd.split())
-    assert result.exit_code == 0
+    cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(template)
 
 
@@ -260,8 +252,7 @@ def test_nxpimage_otfad_template_cli(tmpdir, family):
         ("otfad_rt1170_custom_name.yaml"),
     ],
 )
-def test_iee_custom_output(tmpdir, data_dir, config):
-    runner = CliRunner()
+def test_iee_custom_output(cli_runner: CliRunner, tmpdir, data_dir, config):
     work_dir = os.path.join(tmpdir, "otfad")
     shutil.copytree(os.path.join(data_dir, "otfad"), work_dir)
 
@@ -276,8 +267,7 @@ def test_iee_custom_output(tmpdir, data_dir, config):
         with open(modified_config, "w") as f:
             yaml.dump(config_dict, f)
         cmd = f"otfad export -c {modified_config}"
-        result = runner.invoke(nxpimage.main, cmd.split())
-        assert result.exit_code == 0
+        cli_runner.invoke(nxpimage.main, cmd.split())
 
         assert os.path.isfile(os.path.join(out_dir, "keyblob.bin"))
         assert not os.path.isfile(os.path.join(out_dir, "readme.txt"))

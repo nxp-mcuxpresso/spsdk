@@ -130,6 +130,7 @@ class DevHsmSBx(DevHsm):
 
         # 5.3: Compose header that will be signed with final hash
         sbx_header = self.sbx.export_header(self.sbx.sb_commands.final_hash)
+        self.store_temp_res("sbx_header_hash.bin", sbx_header, "to_sign")
 
         # 6: Get signature of sbx file manifest
 

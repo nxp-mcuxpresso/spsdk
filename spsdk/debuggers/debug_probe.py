@@ -66,7 +66,7 @@ class DebugProbe:
 
     RESET_TIME = 0.1
     AFTER_RESET_TIME = 0.05
-    TEST_MEM_AP_ADDRESS = 0x2000_8000
+    TEST_MEM_AP_ADDRESS = 0x2000_0000
 
     def __init__(self, hardware_id: str, options: Optional[Dict] = None) -> None:
         """This is general initialization function for SPSDK library to support various DEBUG PROBES.
@@ -134,6 +134,7 @@ class DebugProbe:
 
         @functools.wraps(func)
         def wrapper(self: "DebugProbe", *args, **kwargs) -> Any:
+            status = False
             if self.mem_ap_ix < 0:
                 # Try to find MEM AP
                 for i in POSSIBLE_MEM_AP_IX:
@@ -147,7 +148,8 @@ class DebugProbe:
                         if ap_class == 8:
                             try:
                                 # Enter debug state and halt
-                                self._mem_reg_read(mem_ap_ix=i, addr=self.DHCSR_REG)
+                                dhcsr_reg = self._mem_reg_read(mem_ap_ix=i, addr=self.DHCSR_REG)
+                                logger.debug(f"Value of DHCSR register = {hex(dhcsr_reg)}")
                                 self._mem_reg_write(
                                     mem_ap_ix=i,
                                     addr=self.DHCSR_REG,
@@ -157,16 +159,25 @@ class DebugProbe:
                                         | self.DHCSR_C_DEBUGEN
                                     ),
                                 )
-                                self._mem_reg_read(mem_ap_ix=i, addr=self.TEST_MEM_AP_ADDRESS)
-                                # Exit debug state
-                                self._mem_reg_write(
-                                    mem_ap_ix=i,
-                                    addr=self.DHCSR_REG,
-                                    data=(self.DHCSR_DEBUGKEY | self.DHCSR_C_DEBUGEN),
-                                )
-                                self._mem_reg_write(
-                                    mem_ap_ix=i, addr=self.DHCSR_REG, data=self.DHCSR_DEBUGKEY
-                                )
+                                try:
+                                    self._mem_reg_read(mem_ap_ix=i, addr=self.TEST_MEM_AP_ADDRESS)
+                                    status = True
+                                except SPSDKError:
+                                    logger.debug(
+                                        f"Read operation on AP{i} fails at {hex(self.TEST_MEM_AP_ADDRESS)} address"
+                                    )
+                                finally:
+                                    # Exit debug state
+                                    self._mem_reg_write(
+                                        mem_ap_ix=i,
+                                        addr=self.DHCSR_REG,
+                                        data=(self.DHCSR_DEBUGKEY | self.DHCSR_C_DEBUGEN),
+                                    )
+                                    self._mem_reg_write(
+                                        mem_ap_ix=i, addr=self.DHCSR_REG, data=self.DHCSR_DEBUGKEY
+                                    )
+                                if not status:
+                                    continue
                             except SPSDKError:
                                 continue
 

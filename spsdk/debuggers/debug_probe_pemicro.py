@@ -21,8 +21,7 @@ from .debug_probe import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.CRITICAL)
-PEMICRO_LOGGER = logger.getChild("PyPemicro")
+logger_pypemicro = logger.getChild("PyPemicro")
 
 
 class DebugProbePemicro(DebugProbe):
@@ -47,10 +46,10 @@ class DebugProbePemicro(DebugProbe):
         """
         try:
             return PyPemicro(
-                log_info=PEMICRO_LOGGER.info,
-                log_debug=PEMICRO_LOGGER.debug,
-                log_err=PEMICRO_LOGGER.error,
-                log_war=PEMICRO_LOGGER.warn,
+                log_info=logger_pypemicro.info,
+                log_debug=logger_pypemicro.debug,
+                log_err=logger_pypemicro.error,
+                log_war=logger_pypemicro.warn,
             )
         except PEMicroException as exc:
             raise SPSDKDebugProbeError(f"Cannot get Pemicro library: ({str(exc)})") from exc

@@ -1,0 +1,19 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+description:
+  # NXP IMXRT595 Shadow registers configuration
+  device: rt5xx # The NXP device name.
+  version: 1.7.1 # The SPSDK Shadow register tool version.
+  author: NXP # The author of the configuration.
+  release: alpha # The SPSDK release.
+registers:
+  RKTH: # SHA256 hash digest of hash of four Root Of Trust Keys (modulus || exponent).
+    # For i in 0..3:
+    #   Let M[i] = BE(Modulus i)
+    #   Let E[i] = BE(Exponent i)
+    #   Let RKH[i] = SHA256( M[i] || E[i] )
+    #   Let RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )
+    # Note: Documentation update needed when using blhost due to endianness issue.
+    value: 101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f # The value width: 256b

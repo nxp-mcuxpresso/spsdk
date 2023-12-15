@@ -143,13 +143,6 @@ class IeeKeyBlobAttribute:
         return pack(self._FORMAT, self.lock, self.key_attribute, self.aes_mode, 0)
 
 
-class MasterId(Enum):
-    """Master IDs for RT118x."""
-
-    CM33 = 0b1000  # Cortex M33 Master ID
-    CM7 = 0b1001  # Cortex M7 Master ID
-
-
 class IeeKeyBlob:
     """IEE KeyBlob.
 
@@ -198,7 +191,6 @@ class IeeKeyBlob:
         key2: Optional[bytes] = None,
         page_offset: int = 0,
         crc: Optional[bytes] = None,
-        master: Optional[MasterId] = None,
     ):
         """Constructor.
 
@@ -222,10 +214,6 @@ class IeeKeyBlob:
         key1 = value_to_bytes(key1, byte_cnt=self.attributes.key1_size)
         key2 = value_to_bytes(key2, byte_cnt=self.attributes.key2_size)
 
-        if master == MasterId.CM33:
-            start_addr &= ~(1 << 28)
-            end_addr &= ~(1 << 28)
-
         if start_addr < 0 or start_addr > end_addr or end_addr > 0xFFFFFFFF:
             raise SPSDKError("Invalid start/end address")
 
@@ -234,7 +222,6 @@ class IeeKeyBlob:
                 f"Start address must be aligned to {hex(self._START_ADDR_MASK + 1)} boundary"
             )
 
-        self.master = master
         self.start_addr = start_addr
         self.end_addr = end_addr
 
@@ -300,7 +287,7 @@ class IeeKeyBlob:
         key2 = reverse_bytes_in_longs(self.key2)
 
         for block in split_data(bytearray(data), self._IEE_ENCR_BLOCK_SIZE_XTS):
-            tweak = self.calculate_tweak(current_start, self.master)
+            tweak = self.calculate_tweak(current_start)
 
             encrypted_block = aes_xts_encrypt(
                 key1 + key2,
@@ -322,9 +309,6 @@ class IeeKeyBlob:
         encrypted_data = bytes()
         key = reverse_bytes_in_longs(self.key1)
         nonce = reverse_bytes_in_longs(self.key2)
-
-        if self.master:
-            base_address |= self.master << 32
 
         counter = Counter(nonce, ctr_value=base_address >> 4, ctr_byteorder_encoding="big")
 
@@ -364,16 +348,12 @@ class IeeKeyBlob:
         return self.encrypt_image_xts(base_address, data)
 
     @staticmethod
-    def calculate_tweak(address: int, master: Optional[MasterId] = None) -> bytes:
+    def calculate_tweak(address: int) -> bytes:
         """Calculate tweak value for AES-XTS encryption based on the address value.
 
         :param address: start address of encryption
-        :param master: MasterID
         :return: 16 byte tweak values
         """
-        if master:
-            address |= master << 32
-
         sector = address >> 12
         tweak = bytearray(16)
         for n in range(16):
@@ -738,9 +718,6 @@ class IeeNxp(Iee):
         """
         iee_config: List[Dict[str, Any]] = config.get("key_blobs", [config.get("key_blob")])
         family = config["family"]
-        master = config.get("master")
-        if master:
-            master = MasterId[master]
         ibkek1 = get_key(
             config.get(
                 "ibkek1",
@@ -823,7 +800,6 @@ class IeeNxp(Iee):
                     key1=key1,
                     key2=key2,
                     page_offset=page_offset,
-                    master=master,
                 )
             )
 
