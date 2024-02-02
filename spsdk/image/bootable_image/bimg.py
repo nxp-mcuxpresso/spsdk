@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,27 +10,23 @@
 
 import logging
 import os
-from copy import deepcopy
 from typing import Any, Dict, List, Optional, Union
 
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
-from spsdk.image.bootable_image import BIMG_DATABASE_FILE, BIMG_SCH_FILE
 from spsdk.image.bootable_image.segments import Segment, get_segment_class
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.images import BinaryImage, BinaryPattern
 from spsdk.utils.misc import write_file
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
+from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 logger = logging.getLogger(__name__)
 
 
 class BootableImage(BaseClass):
     """Bootable Image class."""
-
-    DATABASE = Database(BIMG_DATABASE_FILE)
 
     def __init__(self, family: str, mem_type: str, revision: str = "latest") -> None:
         """Bootable Image constructor.
@@ -43,9 +39,14 @@ class BootableImage(BaseClass):
         if family not in self.get_supported_families():
             raise SPSDKValueError(f"Unsupported family: {family}")
         self.family = family
-        self.revision = revision
         self.mem_type = mem_type
-        self.bimg_descr: Dict[str, Any] = self.get_memory_type_config(family, mem_type, revision)
+        self.database = get_db(family, revision)
+        self.revision = self.database.name
+        self.mem_types = self.database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "mem_types")
+        if mem_type not in self.mem_types.keys():
+            raise SPSDKValueError(f"Unsupported memory type: {mem_type}")
+        self.bimg_descr: Dict[str, Any] = self.mem_types[self.mem_type]
+
         self.image_pattern = self.bimg_descr.get("image_pattern", "zeros")
         self.bimg_segments_descr: Dict[str, int] = self.bimg_descr["segments"]
         self.segments: List[Segment] = []
@@ -134,40 +135,41 @@ class BootableImage(BaseClass):
         :return: List of validation schema dictionaries.
         """
         bimg = BootableImage(family=family, mem_type=mem_type, revision=revision)
-        sch_cfg = deepcopy(ValidationSchemas.get_schema_file(BIMG_SCH_FILE))
+        sch_cfg = get_schema_file(DatabaseManager.BOOTABLE_IMAGE)
         sch_cfg["family_rev"]["properties"]["family"]["enum"] = bimg.get_supported_families()
+        sch_cfg["family_rev"]["properties"]["family"]["template_value"] = family
         sch_cfg["family_rev"]["properties"]["revision"]["enum"] = bimg.get_supported_revisions(
             family
         )
-
+        sch_cfg["family_rev"]["properties"]["revision"]["template_value"] = revision
         sch_cfg["family_rev"]["properties"]["memory_type"][
             "enum"
         ] = bimg.get_supported_memory_types(family, revision)
+        sch_cfg["family_rev"]["properties"]["memory_type"]["template_value"] = mem_type
         schemas = [sch_cfg["family_rev"]]
         for segment in bimg.bimg_segments_descr:
             schemas.append(sch_cfg[segment])
         return schemas
 
-    def store_config(self, output: str) -> None:
+    def store_config(self, output: str) -> None:  # TODO refactor to get_config()->Dict[str,Any]:
         """Store bootable image into configuration and binary blocks.
 
         :param output: Path to output folder to store bootable image configuration.
         """
         schemas = self.get_validation_schemas(self.family, self.mem_type, self.revision)
-        override: Dict[str, Union[str, int]] = {}
-        override["family"] = self.family
-        override["revision"] = self.revision
-        override["memory_type"] = self.mem_type
+        config: Dict[str, Union[str, int]] = {}
+        config["family"] = self.family
+        config["revision"] = self.revision
+        config["memory_type"] = self.mem_type
         for segment in self.segments:
-            override[segment.cfg_key()] = segment.create_config(output)
+            config[segment.cfg_key()] = segment.create_config(output)
 
-        config = CommentedConfig(
-            f"Bootable Image Configuration for {self.family}.",
-            schemas,
-            override,
-        ).export_to_yaml()
+        yaml = CommentedConfig(
+            f"Bootable Image Configuration for {self.family}.", schemas
+        ).get_config(config)
+
         write_file(
-            config,
+            yaml,
             os.path.join(output, f"bootable_image_{self.family}_{self.mem_type}.yaml"),
         )
 
@@ -225,7 +227,7 @@ class BootableImage(BaseClass):
 
         :return: List of validation schemas for Bootable Image supported families.
         """
-        sch_cfg = ValidationSchemas.get_schema_file(BIMG_SCH_FILE)
+        sch_cfg = get_schema_file(DatabaseManager.BOOTABLE_IMAGE)
         return [sch_cfg["family_rev"]]
 
     @classmethod
@@ -238,16 +240,10 @@ class BootableImage(BaseClass):
         :return: Validation schema.
         """
         schemas = cls.get_validation_schemas(family, mem_type, revision)
-        override = {}
-        override["family"] = family
-        override["revision"] = revision
-        override["memory_type"] = mem_type
 
         return CommentedConfig(
-            f"Bootable Image Configuration template for {family}.",
-            schemas,
-            override,
-        ).export_to_yaml()
+            f"Bootable Image Configuration template for {family}.", schemas
+        ).get_template()
 
     @classmethod
     def get_supported_families(cls) -> List[str]:
@@ -255,15 +251,28 @@ class BootableImage(BaseClass):
 
         :return: List of families.
         """
-        return cls.DATABASE.devices.device_names
+        return get_families(DatabaseManager.BOOTABLE_IMAGE)
 
     @classmethod
-    def get_supported_memory_types(cls, family: str, revision: str = "latest") -> List[str]:
+    def get_supported_memory_types(
+        cls, family: Optional[str] = None, revision: str = "latest"
+    ) -> List[str]:
         """Return list of supported memory types.
 
         :return: List of supported families.
         """
-        return list(cls.DATABASE.get_device_value("mem_types", family, revision).keys())
+        if family:
+            database = get_db(family, revision)
+            return list(database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "mem_types").keys())
+        else:
+            mem_types = []
+            families = cls.get_supported_families()
+            for family in families:
+                database = get_db(family, revision)
+                mem_types.extend(
+                    list(database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "mem_types").keys())
+                )
+            return list(set(mem_types))
 
     @classmethod
     def get_memory_type_config(
@@ -276,7 +285,8 @@ class BootableImage(BaseClass):
         """
         if mem_type not in cls.get_supported_memory_types(family):
             raise SPSDKKeyError(f"Memory type not supported: {mem_type}")
-        mem_types: Dict = cls.DATABASE.get_device_value("mem_types", family, revision)
+        database = get_db(family, revision)
+        mem_types = database.get_dict(DatabaseManager.BOOTABLE_IMAGE, "mem_types")
         return mem_types[mem_type]
 
     @classmethod
@@ -285,6 +295,4 @@ class BootableImage(BaseClass):
 
         :return: List of supported revisions.
         """
-        revisions = ["latest"]
-        revisions.extend(cls.DATABASE.devices.get_by_name(family).revisions.revision_names)
-        return revisions
+        return DatabaseManager().db.devices.get(family).revisions.revision_names(True)

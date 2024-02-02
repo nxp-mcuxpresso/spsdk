@@ -2,13 +2,13 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Status and error codes used by the MBoot protocol."""
 
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
 # McuBoot Status Codes (Errors)
@@ -16,7 +16,7 @@ from spsdk.utils.easy_enum import Enum
 
 # pylint: disable=line-too-long
 # fmt: off
-class StatusCode(Enum):
+class StatusCode(SpsdkEnum):
     """McuBoot status codes."""
 
     SUCCESS                 = (0, "Success", "Success")
@@ -28,29 +28,39 @@ class StatusCode(Enum):
     NO_TRANSFER_IN_PROGRESS = (6, "NoTransferInProgress", "No Transfer In Progress Error")
 
     # Flash driver errors.
-    FLASH_SIZE_ERROR                = (100, "FlashSizeError", "FLASH Driver: Size Error")
-    FLASH_ALIGNMENT_ERROR           = (101, "FlashAlignmentError", "FLASH Driver: Alignment Error")
-    FLASH_ADDRESS_ERROR             = (102, "FlashAddressError", "FLASH Driver: Address Error")
-    FLASH_ACCESS_ERROR              = (103, "FlashAccessError", "FLASH Driver: Access Error")
-    FLASH_PROTECTION_VIOLATION      = (104, "FlashProtectionViolation", "FLASH Driver: Protection Violation")
-    FLASH_COMMAND_FAILURE           = (105, "FlashCommandFailure", "FLASH Driver: Command Failure")
-    FLASH_UNKNOWN_PROPERTY          = (106, "FlashUnknownProperty", "FLASH Driver: Unknown Property")
-    FLASH_REGION_EXECUTE_ONLY       = (108, "FlashRegionExecuteOnly", "FLASH Driver: Region Execute Only")
-    FLASH_EXEC_IN_RAM_NOT_READY     = (109, "FlashExecuteInRamFunctionNotReady", "FLASH Driver: Execute In RAM Function Not Ready")
-    FLASH_COMMAND_NOT_SUPPORTED     = (111, "FlashCommandNotSupported", "FLASH Driver: Command Not Supported")
-    FLASH_ECC_ERROR                 = (116, "FlashEccError", "FLASH Driver: ECC Error")
-    FLASH_OUT_OF_DATE_CFPA_PAGE     = (132, "FlashOutOfDateCfpaPage", "FLASH Driver: Out Of Date CFPA Page")
-    FLASH_BLANK_IFR_PAGE_DATA       = (133, "FlashBlankIfrPageData", "FLASH Driver: Blank IFR Page Data")
+    FLASH_SIZE_ERROR                  = (100, "FlashSizeError", "FLASH Driver: Size Error")
+    FLASH_ALIGNMENT_ERROR             = (101, "FlashAlignmentError", "FLASH Driver: Alignment Error")
+    FLASH_ADDRESS_ERROR               = (102, "FlashAddressError", "FLASH Driver: Address Error")
+    FLASH_ACCESS_ERROR                = (103, "FlashAccessError", "FLASH Driver: Access Error")
+    FLASH_PROTECTION_VIOLATION        = (104, "FlashProtectionViolation", "FLASH Driver: Protection Violation")
+    FLASH_COMMAND_FAILURE             = (105, "FlashCommandFailure", "FLASH Driver: Command Failure")
+    FLASH_UNKNOWN_PROPERTY            = (106, "FlashUnknownProperty", "FLASH Driver: Unknown Property")
+    FLASH_ERASE_KEY_ERROR             = (107, "FlashEraseKeyError", "FLASH Driver: Provided Key Does Not Match Programmed Flash Memory Key")
+    FLASH_REGION_EXECUTE_ONLY         = (108, "FlashRegionExecuteOnly", "FLASH Driver: Region Execute Only")
+    FLASH_EXEC_IN_RAM_NOT_READY       = (109, "FlashExecuteInRamFunctionNotReady", "FLASH Driver: Execute In RAM Function Not Ready")
+    FLASH_COMMAND_NOT_SUPPORTED       = (111, "FlashCommandNotSupported", "FLASH Driver: Command Not Supported")
+    FLASH_READ_ONLY_PROPERTY          = (112, "FlashReadOnlyProperty", "FLASH Driver: Flash Memory Property Is Read-Only")
+    FLASH_INVALID_PROPERTY_VALUE      = (113, "FlashInvalidPropertyValue", "FLASH Driver: Flash Memory Property Value Out Of Range")
+    FLASH_INVALID_SPECULATION_OPTION  = (114, "FlashInvalidSpeculationOption", "FLASH Driver: Flash Memory Prefetch Speculation Option Is Invalid")
+    FLASH_ECC_ERROR                   = (116, "FlashEccError", "FLASH Driver: ECC Error")
+    FLASH_COMPARE_ERROR               = (117, "FlashCompareError", "FLASH Driver: Destination And Source Memory Contents Do Not Match")
+    FLASH_REGULATION_LOSS             = (118, "FlashRegulationLoss", "FLASH Driver: Loss Of Regulation During Read")
+    FLASH_INVALID_WAIT_STATE_CYCLES   = (119, "FlashInvalidWaitStateCycles", "FLASH Driver: Wait State Cycle Set To Read/Write Mode Is Invalid")
+    FLASH_OUT_OF_DATE_CFPA_PAGE       = (132, "FlashOutOfDateCfpaPage", "FLASH Driver: Out Of Date CFPA Page")
+    FLASH_BLANK_IFR_PAGE_DATA         = (133, "FlashBlankIfrPageData", "FLASH Driver: Blank IFR Page Data")
     FLASH_ENCRYPTED_REGIONS_ERASE_NOT_DONE_AT_ONCE = (134, "FlashEncryptedRegionsEraseNotDoneAtOnce", "FLASH Driver: Encrypted Regions Erase Not Done At Once")
     FLASH_PROGRAM_VERIFICATION_NOT_ALLOWED = (135, "FlashProgramVerificationNotAllowed", "FLASH Driver: Program Verification Not Allowed")
-    FLASH_HASH_CHECK_ERROR          = (136, "FlashHashCheckError", "FLASH Driver: Hash Check Error")
-    FLASH_SEALED_PFR_REGION         = (137, "FlashSealedPfrRegion", "FLASH Driver: Sealed PFR Region")
-    FLASH_PFR_REGION_WRITE_BROKEN   = (138, "FlashPfrRegionWriteBroken", "FLASH Driver: PFR Region Write Broken")
-    FLASH_NMPA_UPDATE_NOT_ALLOWED   = (139, "FlashNmpaUpdateNotAllowed", "FLASH Driver: NMPA Update Not Allowed")
+    FLASH_HASH_CHECK_ERROR            = (136, "FlashHashCheckError", "FLASH Driver: Hash Check Error")
+    FLASH_SEALED_PFR_REGION           = (137, "FlashSealedPfrRegion", "FLASH Driver: Sealed PFR Region")
+    FLASH_PFR_REGION_WRITE_BROKEN     = (138, "FlashPfrRegionWriteBroken", "FLASH Driver: PFR Region Write Broken")
+    FLASH_NMPA_UPDATE_NOT_ALLOWED     = (139, "FlashNmpaUpdateNotAllowed", "FLASH Driver: NMPA Update Not Allowed")
     FLASH_CMPA_CFG_DIRECT_ERASE_NOT_ALLOWED = (140, "FlashCmpaCfgDirectEraseNotAllowed", "FLASH Driver: CMPA Cfg Direct Erase Not Allowed")
-    FLASH_PFR_BANK_IS_LOCKED        = (141, "FlashPfrBankIsLocked", "FLASH Driver: PFR Bank Is Locked")
-    FLASH_CFPA_SCRATCH_PAGE_INVALID = (148, "FlashCfpaScratchPageInvalid", "FLASH Driver: CFPA Scratch Page Invalid")
+    FLASH_PFR_BANK_IS_LOCKED          = (141, "FlashPfrBankIsLocked", "FLASH Driver: PFR Bank Is Locked")
+    FLASH_CFPA_SCRATCH_PAGE_INVALID   = (148, "FlashCfpaScratchPageInvalid", "FLASH Driver: CFPA Scratch Page Invalid")
     FLASH_CFPA_VERSION_ROLLBACK_DISALLOWED = (149, "FlashCfpaVersionRollbackDisallowed", "FLASH Driver: CFPA Version Rollback Disallowed")
+    FLASH_READ_HIDING_AREA_DISALLOWED = (150, "FlashReadHidingAreaDisallowed", "FLASH Driver: Flash Memory Hiding Read Not Allowed")
+    FLASH_MODIFY_PROTECTED_AREA_DISALLOWED = (151, "FlashModifyProtectedAreaDisallowed", "FLASH Driver: Flash Firewall Page Locked Erase And Program Are Not Allowed")
+    FLASH_COMMAND_OPERATION_IN_PROGRESS = (152, "FlashCommandOperationInProgress", "FLASH Driver: Flash Memory State Busy Flash Memory Command Is In Progress")
 
     # I2C driver errors.
     I2C_SLAVE_TX_UNDERRUN       = (200, "I2cSlaveTxUnderrun", "I2C Driver: Slave Tx Underrun")
@@ -323,6 +333,14 @@ class StatusCode(Enum):
     TP_PRINCE_CRITICAL_ERROR        = (80106, "TP_PRINCE_CRITICAL_ERROR", "TP: Error during PRINCE encryption/decryption")
     TP_SHA_CHECK_CRITICAL_ERROR     = (80107, "TP_SHA_CHECK_CRITICAL_ERROR", "TP: SHA check verification failed")
 
+    # IAP statuses.
+    IAP_INVALID_ARGUMENT       = (100001, "IAP_InvalidArgument", "IAP: Invalid Argument Detected During API Execution")
+    IAP_OUT_OF_MEMORY          = (100002, "IAP_OutOfMemory", "IAP: Heap Size Not Large Enough During API Execution")
+    IAP_READ_DISALLOWED        = (100003, "IAP_ReadDisallowed ", "IAP: Read Memory Operation Disallowed During API Execution")
+    IAP_CUMULATIVE_WRITE       = (100004, "IAP_CumulativeWrite", "IAP: Flash Memory Region To Be Programmed Is Not Empty")
+    IAP_ERASE_FAILUIRE         = (100005, "IAP_EraseFailuire", "IAP: Erase Operation Failed")
+    IAP_COMMAND_NOT_SUPPORTED  = (100006, "IAP_CommandNotSupported", "IAP: Specific Command Not Supported")
+    IAP_MEMORY_ACCESS_DISABLED = (100007, "IAP_MemoryAccessDisabled", "IAP: Memory Access Disabled")
 # fmt: on
 
 
@@ -330,5 +348,5 @@ def stringify_status_code(status_code: int) -> str:
     """Stringifies the MBoot status code."""
     return (
         f"{status_code} ({status_code:#x}) "
-        f"{StatusCode.desc(status_code, f'Unknown error code ({status_code})')}."
+        f"{StatusCode.get_description(status_code) if status_code in StatusCode.tags() else f'Unknown error code ({status_code})'}."
     )

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,7 +18,8 @@ from spsdk.exceptions import SPSDKError
 from spsdk.mboot.memories import ExtMemId
 from spsdk.sbfile.misc import SecBootBlckSize
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
 # Constants
@@ -33,30 +34,34 @@ GROUP_ID_SHIFT = 8
 ########################################################################################################################
 # Enums
 ########################################################################################################################
-class EnumCmdTag(Enum):
+class EnumCmdTag(SpsdkEnum):
     """Command tags."""
 
-    NOP = 0x0
-    TAG = 0x1
-    LOAD = 0x2
-    FILL = 0x3
-    JUMP = 0x4
-    CALL = 0x5
-    ERASE = 0x7
-    RESET = 0x8
-    MEM_ENABLE = 0x9
-    PROG = 0xA
-    FW_VERSION_CHECK = (0xB, "Check FW version fuse value")
-    WR_KEYSTORE_TO_NV = (0xC, "Restore key-store restore to non-volatile memory")
-    WR_KEYSTORE_FROM_NV = (0xD, "Backup key-store from non-volatile memory")
+    NOP = (0x0, "NOP")
+    TAG = (0x1, "TAG")
+    LOAD = (0x2, "LOAD")
+    FILL = (0x3, "FILL")
+    JUMP = (0x4, "JUMP")
+    CALL = (0x5, "CALL")
+    ERASE = (0x7, "ERASE")
+    RESET = (0x8, "RESET")
+    MEM_ENABLE = (0x9, "MEM_ENABLE")
+    PROG = (0xA, "PROG")
+    FW_VERSION_CHECK = (0xB, "FW_VERSION_CHECK", "Check FW version fuse value")
+    WR_KEYSTORE_TO_NV = (
+        0xC,
+        "WR_KEYSTORE_TO_NV",
+        "Restore key-store restore to non-volatile memory",
+    )
+    WR_KEYSTORE_FROM_NV = (0xD, "WR_KEYSTORE_FROM_NV", "Backup key-store from non-volatile memory")
 
 
-class EnumSectionFlag(Enum):
+class EnumSectionFlag(SpsdkEnum):
     """Section flags."""
 
-    BOOTABLE = 0x0001
-    CLEARTEXT = 0x0002
-    LAST_SECT = 0x8000
+    BOOTABLE = (0x0001, "BOOTABLE")
+    CLEARTEXT = (0x0002, "CLEARTEXT")
+    LAST_SECT = (0x8000, "LAST_SECT")
 
 
 ########################################################################################################################
@@ -91,7 +96,9 @@ class CmdHeader(BaseClass):
         return f"SB2 Command header, TAG:{self.tag}"
 
     def __str__(self) -> str:
-        tag = EnumCmdTag.get(self.tag, f"0x{self.tag:02X}")
+        tag = (
+            EnumCmdTag.get_label(self.tag) if self.tag in EnumCmdTag.tags() else f"0x{self.tag:02X}"
+        )
         return (
             f"tag={tag}, flags=0x{self.flags:04X}, "
             f"address=0x{self.address:08X}, count=0x{self.count:08X}, data=0x{self.data:08X}"
@@ -120,7 +127,7 @@ class CmdHeader(BaseClass):
         """
         if calcsize(cls.FORMAT) > len(data):
             raise SPSDKError("Incorrect size")
-        obj = cls(EnumCmdTag.NOP)
+        obj = cls(EnumCmdTag.NOP.tag)
         (crc, obj.tag, obj.flags, obj.address, obj.count, obj.data) = unpack_from(cls.FORMAT, data)
         if crc != obj.crc:
             raise SPSDKError("CRC does not match")
@@ -142,9 +149,9 @@ class CmdBaseClass(BaseClass):
     # shift for group ID inside flags
     ROM_MEM_GROUP_ID_SHIFT = 4
 
-    def __init__(self, tag: int) -> None:
+    def __init__(self, tag: EnumCmdTag) -> None:
         """Initialize CmdBase."""
-        self._header = CmdHeader(tag)
+        self._header = CmdHeader(tag.tag)
 
     @property
     def header(self) -> CmdHeader:
@@ -366,7 +373,7 @@ class CmdFill(CmdBaseClass):
         # the length to 4 bytes with the first byte being zero.
         if 3 == math.ceil(pattern_len):
             pattern_len = 4
-        pattern_bytes = pattern.to_bytes(math.ceil(pattern_len), "big")
+        pattern_bytes = pattern.to_bytes(math.ceil(pattern_len), Endianness.BIG.value)
         # The pattern length is computed above, but as we transform the number
         # into bytes, compute the len again just in case - a bit paranoid
         # approach chosen.
@@ -818,11 +825,11 @@ class CmdProg(CmdBaseClass):
         return cls(header.address, mem_id, header.count, header.data, header.flags)
 
 
-class VersionCheckType(Enum):
+class VersionCheckType(SpsdkEnum):
     """Select type of the version check: either secure or non-secure firmware to be checked."""
 
-    SECURE_VERSION = 0
-    NON_SECURE_VERSION = 1
+    SECURE_VERSION = (0, "SECURE_VERSION")
+    NON_SECURE_VERSION = (1, "NON_SECURE_VERSION")
 
 
 class CmdVersionCheck(CmdBaseClass):
@@ -840,15 +847,15 @@ class CmdVersionCheck(CmdBaseClass):
         :raises SPSDKError: If invalid version check type
         """
         super().__init__(EnumCmdTag.FW_VERSION_CHECK)
-        if ver_type not in VersionCheckType.tags():
+        if ver_type not in VersionCheckType:
             raise SPSDKError("Invalid version check type")
-        self.header.address = ver_type
+        self.header.address = ver_type.tag
         self.header.count = version
 
     @property
     def type(self) -> VersionCheckType:
         """Return type of the check version, see VersionCheckType enumeration."""
-        return VersionCheckType.from_int(self.header.address)
+        return VersionCheckType.from_tag(self.header.address)
 
     @property
     def version(self) -> int:
@@ -857,7 +864,7 @@ class CmdVersionCheck(CmdBaseClass):
 
     def __str__(self) -> str:
         return (
-            f"CVER: Type={VersionCheckType.name(self.type)}, Version={str(self.version)}, "
+            f"CVER: Type={self.type.label}, Version={str(self.version)}, "
             f"Flags=0x{self.header.flags:08X}"
         )
 
@@ -872,7 +879,7 @@ class CmdVersionCheck(CmdBaseClass):
         header = CmdHeader.parse(data)
         if header.tag != EnumCmdTag.FW_VERSION_CHECK:
             raise SPSDKError("Invalid header tag")
-        ver_type = VersionCheckType.from_int(header.address)
+        ver_type = VersionCheckType.from_tag(header.address)
         version = header.count
         return cls(ver_type, version)
 
@@ -906,10 +913,10 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
         if address < 0 or address > 0xFFFFFFFF:
             raise SPSDKError("Invalid address")
         self.header.address = address
-        if controller_id < 0 or controller_id > 0xFF:
+        if controller_id.tag < 0 or controller_id.tag > 0xFF:
             raise SPSDKError("Invalid ID of memory")
         self.header.flags = (self.header.flags & ~self.ROM_MEM_DEVICE_ID_MASK) | (
-            (controller_id << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK
+            (controller_id.tag << self.ROM_MEM_DEVICE_ID_SHIFT) & self.ROM_MEM_DEVICE_ID_MASK
         )
         self.header.count = (
             4  # this is useless, but it is kept for backward compatibility with elftosb
@@ -938,7 +945,7 @@ class CmdKeyStoreBackupRestore(CmdBaseClass):
             raise SPSDKError("Invalid header tag")
         address = header.address
         controller_id = (header.flags & cls.ROM_MEM_DEVICE_ID_MASK) >> cls.ROM_MEM_DEVICE_ID_SHIFT
-        return cls(address, controller_id)  # type: ignore
+        return cls(address, ExtMemId.from_tag(controller_id))
 
 
 class CmdKeyStoreBackup(CmdKeyStoreBackupRestore):
@@ -962,7 +969,7 @@ class CmdKeyStoreRestore(CmdKeyStoreBackupRestore):
 ########################################################################################################################
 # Command parser from binary format
 ########################################################################################################################
-_CMD_CLASS: Mapping[int, Type[CmdBaseClass]] = {
+_CMD_CLASS: Mapping[EnumCmdTag, Type[CmdBaseClass]] = {
     EnumCmdTag.NOP: CmdNop,
     EnumCmdTag.TAG: CmdTag,
     EnumCmdTag.LOAD: CmdLoad,
@@ -987,9 +994,10 @@ def parse_command(data: bytes) -> CmdBaseClass:
     :raises SPSDKError: Raised when there is unsupported command provided
     """
     header_tag = data[1]
-    if header_tag not in _CMD_CLASS:
-        raise SPSDKError(f"Unsupported command: {str(header_tag)}")
-    return _CMD_CLASS[header_tag].parse(data)
+    for cmd_tag, cmd in _CMD_CLASS.items():
+        if cmd_tag.tag == header_tag:
+            return cmd.parse(data)
+    raise SPSDKError(f"Unsupported command: {str(header_tag)}")
 
 
 def get_device_id(mem_id: int) -> int:

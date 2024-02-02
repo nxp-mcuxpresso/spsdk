@@ -1,0 +1,39 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =====================================  WPC Certificate injection configuration  ======================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# --------------------------------===== Name of the WPC service adapter [Required] =====--------------------------------
+# Description: Name of the WPC service adapter
+service_type: el2go
+# ----------------------------===== Parameters for the WPC service adapter [Required] =====-----------------------------
+# Description: Parameters for the WPC service adapter
+service_parameters:
+  # ---------------------------------------===== EdgeLock2Go URL [Required] =====---------------------------------------
+  # Description: URL pointing to the root of EL2GO server
+  url: http://localhost:5000
+  # ---------------------------------------===== Customer Qi ID [Required] =====----------------------------------------
+  # Description: Customer's (product line) Qi ID registered in EL2GO
+  qi_id: 2
+  # ----------------------------------------===== EL2GO API Key [Required] =====----------------------------------------
+  # Description: REST API key used for user authentication in EL2GO
+  api_key: THIS_IS_REAL_KEY
+  # ------------------------------------===== Timeout for EL2GO API [Optional] =====------------------------------------
+  # Description: Timeout for EL2GO API in seconds. Default is 60 seconds
+  timeout: 60
+# ----------------------------------===== Name of the target adapter [Required] =====-----------------------------------
+# Description: Name of the target adapter
+target_type: model
+# -------------------------------===== Parameters for the target adapter [Required] =====-------------------------------
+# Description: Parameters for the target adapter
+target_parameters:
+  # ---------------------------------------===== Model directory [Required] =====---------------------------------------
+  # Description: Path to directory containing the model (config.yaml)
+  model_dir: target_model/dev2
+  # ----------------------------------------===== Target family [Required] =====----------------------------------------
+  # Description: Name of the target family
+  # Possible options: <mwct2xxxs>
+  family: mwct2xxxs

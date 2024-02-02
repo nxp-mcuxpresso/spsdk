@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """This module contains generic implementation of image segment."""
@@ -10,12 +10,14 @@ from typing import Any, Dict, List
 
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import Database
+from spsdk.utils.database import get_db, get_families
 from spsdk.utils.registers import Registers
 
 
 class SegmentBase(BaseClass):
     """Base class for image segment."""
+
+    FEATURE = "unknown"
 
     def __init__(self, family: str, revision: str) -> None:
         """Segment base Constructor.
@@ -30,6 +32,7 @@ class SegmentBase(BaseClass):
             )
         self.family = family
         self.revision = revision
+        self.db = get_db(family, revision)
 
     @property
     @abc.abstractmethod
@@ -65,7 +68,7 @@ class SegmentBase(BaseClass):
 
         :return: List of supported families.
         """
-        return cls.get_database().devices.device_names
+        return get_families(cls.FEATURE)
 
     @classmethod
     def get_memory_types(cls, family: str, revision: str = "latest") -> Dict:
@@ -74,18 +77,13 @@ class SegmentBase(BaseClass):
         :param family: Chip family.
         :param revision: Optional Chip family revision.
         """
-        return cls.get_database().get_device_value("mem_types", family, revision, default={})
+        return get_db(family, revision).get_dict(cls.FEATURE, "mem_types", default={})
 
     @classmethod
-    def get_supported_memory_types(cls, family: str, revision: str = "latest") -> List:
+    def get_supported_memory_types(cls, family: str, revision: str = "latest") -> List[str]:
         """Get list of supported memory types data from database.
 
         :param family: Chip family.
         :param revision: Optional Chip family revision.
         """
         return list(cls.get_memory_types(family, revision).keys())
-
-    @staticmethod
-    @abc.abstractmethod
-    def get_database() -> Database:
-        """Get the devices database."""

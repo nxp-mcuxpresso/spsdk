@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,18 +14,18 @@ from spsdk.exceptions import SPSDKAttributeError
 from spsdk.mboot.commands import CmdResponse, parse_cmd_response
 from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.commands import CmdPacketBase
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
-class ReportId(Enum):
+class ReportId(SpsdkEnum):
     """Report ID enum."""
 
-    CMD_OUT = 0x01
-    CMD_IN = 0x03
-    DATA_OUT = 0x02
-    DATA_IN = 0x04
+    CMD_OUT = (0x01, "CMD_OUT")
+    CMD_IN = (0x03, "CMD_IN")
+    DATA_OUT = (0x02, "DATA_OUT")
+    DATA_IN = (0x04, "DATA_IN")
 
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ class MbootBulkProtocol(MbootProtocolBase):
         :param data: Data to send
         :return: Encoded bytes and length of the final report frame
         """
-        raw_data = pack("<2BH", report_id, 0x00, len(data))
+        raw_data = pack("<2BH", report_id.tag, 0x00, len(data))
         raw_data += data
         logger.debug(f"OUT[{len(raw_data)}]: {', '.join(f'{b:02X}' for b in raw_data)}")
         return raw_data

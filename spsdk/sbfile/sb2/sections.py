@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -41,14 +41,14 @@ class BootSectionV2(BaseClass):
     @property
     def is_last(self) -> bool:
         """Check whether the section is the last one."""
-        return self._header.flags & EnumSectionFlag.LAST_SECT != 0
+        return self._header.flags & EnumSectionFlag.LAST_SECT.tag != 0
 
     @is_last.setter
     def is_last(self, value: bool) -> None:
         assert isinstance(value, bool)
-        self._header.flags = EnumSectionFlag.BOOTABLE
+        self._header.flags = EnumSectionFlag.BOOTABLE.tag
         if value:
-            self._header.flags |= EnumSectionFlag.LAST_SECT
+            self._header.flags |= EnumSectionFlag.LAST_SECT.tag
 
     @property
     def hmac_count(self) -> int:
@@ -80,7 +80,7 @@ class BootSectionV2(BaseClass):
         :param commands: List of commands
         :param hmac_count: The number of HMAC entries
         """
-        self._header = CmdHeader(EnumCmdTag.TAG, EnumSectionFlag.BOOTABLE)
+        self._header = CmdHeader(EnumCmdTag.TAG.tag, EnumSectionFlag.BOOTABLE.tag)
         self._commands: List[CmdBaseClass] = []
         self._hmac_count = hmac_count
         for cmd in commands:
@@ -281,7 +281,7 @@ class CertSectionV2(BaseClass):
         """Initialize CertBlockV1."""
         assert isinstance(cert_block, CertBlockV1)
         self._header = CmdHeader(
-            EnumCmdTag.TAG, EnumSectionFlag.CLEARTEXT | EnumSectionFlag.LAST_SECT
+            EnumCmdTag.TAG.tag, EnumSectionFlag.CLEARTEXT.tag | EnumSectionFlag.LAST_SECT.tag
         )
         self._header.address = self.SECT_MARK
         self._header.count = cert_block.raw_size // 16
@@ -367,7 +367,7 @@ class CertSectionV2(BaseClass):
         header = CmdHeader.parse(header_encrypted)
         if header.tag != EnumCmdTag.TAG:
             raise SPSDKError(f"Invalid Header TAG: 0x{header.tag:02X}")
-        if header.flags != (EnumSectionFlag.CLEARTEXT | EnumSectionFlag.LAST_SECT):
+        if header.flags != (EnumSectionFlag.CLEARTEXT.tag | EnumSectionFlag.LAST_SECT.tag):
             raise SPSDKError(f"Invalid Header FLAGS: 0x{header.flags:02X}")
         if header.address != cls.SECT_MARK:
             raise SPSDKError(f"Invalid Section Mark: 0x{header.address:08X}")

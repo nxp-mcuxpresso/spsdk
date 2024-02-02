@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning - TP Target, SW model."""
@@ -12,9 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc, PublicKeyEcc
 from spsdk.crypto.types import SPSDKEncoding
-from spsdk.tp import TP_SCH_FILE
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import load_binary, write_file
-from spsdk.utils.schema_validator import ValidationSchemas
 
 from ..data_container import (
     AuthenticationType,
@@ -156,21 +155,21 @@ class TpTargetSwModel(TpTargetInterface):
         tp_response = Container()
         tp_response.add_entry(
             DataEntry(
-                payload=nxp_die_devattest_id_cert, payload_type=PayloadType.NXP_DIE_ID_AUTH_CERT
+                payload=nxp_die_devattest_id_cert, payload_type=PayloadType.NXP_DIE_ID_AUTH_CERT.tag
             )
         )
         tp_response.add_entry(
-            DataEntry(payload=challenge, payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND)
+            DataEntry(payload=challenge, payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND.tag)
         )
         tp_response.add_entry(
-            DataEntry(payload=dh_public_bytes, payload_type=PayloadType.NXP_EPH_DEVICE_KA_PUK)
+            DataEntry(payload=dh_public_bytes, payload_type=PayloadType.NXP_EPH_DEVICE_KA_PUK.tag)
         )
         for key_index, key in self.oem_id_public_keys:
             key_data = key.export(SPSDKEncoding.NXP)
             tp_response.add_entry(
                 DataEntry(
                     payload=key_data,
-                    payload_type=PayloadType.OEM_DIE_DEVATTEST_ID_PUK,
+                    payload_type=PayloadType.OEM_DIE_DEVATTEST_ID_PUK.tag,
                     extra=key_index,
                 )
             )
@@ -335,7 +334,7 @@ class TpTargetSwModel(TpTargetInterface):
         devattest_cert = Container()
         devattest_cert.add_entry(
             DataEntry(
-                payload_type=PayloadType.NXP_DIE_ID_AUTH_PUK,
+                payload_type=PayloadType.NXP_DIE_ID_AUTH_PUK.tag,
                 payload=die_id_auth_puk.export(SPSDKEncoding.NXP),
             )
         )
@@ -353,20 +352,20 @@ class TpTargetSwModel(TpTargetInterface):
 
             devattest_cert.add_entry(
                 DataEntry(
-                    payload_type=PayloadType.NXP_DIE_ATTEST_AUTH_PUK,
+                    payload_type=PayloadType.NXP_DIE_ATTEST_AUTH_PUK.tag,
                     payload=die_id_attest_puk.export(SPSDKEncoding.NXP),
                 )
             )
 
         devattest_cert.add_entry(
             DataEntry(
-                payload_type=PayloadType.NXP_DIE_ECID_ID_UID,
+                payload_type=PayloadType.NXP_DIE_ECID_ID_UID.tag,
                 payload=bytes.fromhex(self.config.config_data["ecid"]),
             )
         )
         devattest_cert.add_entry(
             DataEntry(
-                payload_type=PayloadType.NXP_DIE_RFC4122v4_ID_UUID,
+                payload_type=PayloadType.NXP_DIE_RFC4122v4_ID_UUID.tag,
                 payload=bytes.fromhex(self.config.config_data["uuid"]),
             )
         )
@@ -400,7 +399,7 @@ class TpTargetSwModel(TpTargetInterface):
 
         return: List of all additional validation schemas.
         """
-        sch_cfg_file = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+        sch_cfg_file = get_schema_file(DatabaseManager.TP)
 
         return [sch_cfg_file["target_swmodel"]]
 

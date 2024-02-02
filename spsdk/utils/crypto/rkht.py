@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,6 +19,7 @@ from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_length
 from spsdk.crypto.keys import PrivateKey, PublicKey, PublicKeyEcc, PublicKeyRsa
 from spsdk.crypto.utils import extract_public_key, extract_public_key_from_data
 from spsdk.exceptions import SPSDKError
+from spsdk.utils.misc import Endianness
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,7 @@ class RKHT:
         :return: Size in bits of hash.
         """
         if isinstance(key, PublicKeyEcc):
-            return EnumHashAlgorithm[f"sha{key.key_size}"]
+            return EnumHashAlgorithm.from_label(f"sha{key.key_size}")
 
         if isinstance(key, PublicKeyRsa):
             # In case of RSA keys, hash is always SHA-256, regardless of the key length
@@ -91,7 +92,7 @@ class RKHT:
         """Used hash algorithm name."""
         if not len(self.rkh_list) > 0:
             raise SPSDKError("Unknown hash algorighm name. No root key hashes.")
-        return EnumHashAlgorithm[f"sha{self.hash_algorithm_size}"]
+        return EnumHashAlgorithm.from_label(f"sha{self.hash_algorithm_size}")
 
     @property
     def hash_algorithm_size(self) -> int:
@@ -126,8 +127,8 @@ class RKHT:
         else:
             raise SPSDKError(f"Unsupported key type: {type(public_key)}")
 
-        n1_bytes = n_1.to_bytes(n1_len, "big")
-        n2_bytes = n_2.to_bytes(n2_len, "big")
+        n1_bytes = n_1.to_bytes(n1_len, Endianness.BIG.value)
+        n2_bytes = n_2.to_bytes(n2_len, Endianness.BIG.value)
 
         algorithm = algorithm or RKHT._get_hash_algorithm(public_key)
         return get_hash(n2_bytes + n1_bytes, algorithm=algorithm)

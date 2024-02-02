@@ -1,31 +1,38 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This module contains HAB related code."""
+"""This module contains HAB container related code."""
 
 import logging
-import os
 from typing import Any, Dict, List, Optional
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError, SPSDKKeyError
-from spsdk.image import IMG_DATA_FOLDER, segments
-from spsdk.image.hab.config_parser import ImageConfig
-from spsdk.image.hab.csf_builder import CsfBuildDirector, CsfBuilder
-from spsdk.image.hab.hab_binary_image import HabBinaryImage, HabSegment
-from spsdk.image.images import BootImgRT
+from spsdk.exceptions import SPSDKError
+from spsdk.image.exceptions import SPSDKSegmentNotPresent
+from spsdk.image.hab.commands.commands import ImageBlock
+from spsdk.image.hab.hab_config import HabConfig
+from spsdk.image.hab.segments import (
+    SEGMENTS_MAPPING,
+    AppHabSegment,
+    BdtHabSegment,
+    CsfHabSegment,
+    DcdHabSegment,
+    HabSegment,
+    HabSegmentBase,
+    HabSegments,
+    IvtHabSegment,
+    XmcdHabSegment,
+)
 from spsdk.sbfile.sb2.sly_bd_parser import BDParser
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import BinaryPattern, load_binary, load_configuration, load_text
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
-
-HAB_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_hab.yaml")
-
+from spsdk.utils.misc import BinaryPattern, load_configuration, load_text
+from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 logger = logging.getLogger(__name__)
 
@@ -33,51 +40,93 @@ logger = logging.getLogger(__name__)
 class HabContainer:
     """Hab container."""
 
-    IVT_VERSION = 0x40
+    def __init__(
+        self,
+        flags: int,
+        ivt_offset: int,
+        start_address: int,
+        segments: HabSegments,
+        image_pattern: str = "zeros",
+    ) -> None:
+        """HAB container initialization.
 
-    def __init__(self, hab_image: HabBinaryImage) -> None:
-        """HAB Constructor.
-
-        :param binary_image: Binary image with required segments.
+        :param flags: Flags
+        :param ivt_offset: IVT offset value
+        :param start_address: Start address value
+        :param segments: Segments list
+        :param image_pattern: Image pattern used to fill empty spaces
         """
-        self.hab_image = hab_image
+        self.flags = flags
+        self.ivt_offset = ivt_offset
+        self.start_address = start_address
+        self.segments = segments
+        self.image_pattern = image_pattern
 
-    @property
-    def ivt_segment(self) -> Optional[bytes]:
-        """IVT segment binary."""
-        return self._get_segment(HabSegment.IVT)
+    def get_segment(self, segment: HabSegment) -> Optional[HabSegmentBase]:
+        """Get container's segment.
 
-    @property
-    def bdt_segment(self) -> Optional[bytes]:
-        """BDT segment binary."""
-        return self._get_segment(HabSegment.BDT)
-
-    @property
-    def dcd_segment(self) -> Optional[bytes]:
-        """DCD segment binary."""
-        return self._get_segment(HabSegment.DCD)
-
-    @property
-    def xmcd_segment(self) -> Optional[bytes]:
-        """XMCD segment binary."""
-        return self._get_segment(HabSegment.XMCD)
-
-    @property
-    def app_segment(self) -> Optional[bytes]:
-        """APP segment binary."""
-        return self._get_segment(HabSegment.APP)
-
-    @property
-    def csf_segment(self) -> Optional[bytes]:
-        """APP segment binary."""
-        return self._get_segment(HabSegment.CSF)
-
-    def _get_segment(self, segment_name: HabSegment) -> Optional[bytes]:
+        :param segment: Segment enum
+        """
         try:
-            segment = self.hab_image.get_hab_segment(segment_name)
-        except SPSDKKeyError:
+            seg = self.segments.get_segment(segment)
+            return seg
+        except SPSDKSegmentNotPresent:
             return None
-        return segment.binary
+
+    @property
+    def is_encrypted(self) -> bool:
+        """Returns true if container is encrypted, false otherwise."""
+        return bool(((self.flags << 1) & 0xF) >> 3)
+
+    @property
+    def is_authenticated(self) -> bool:
+        """Returns true if container is authenticated, false otherwise."""
+        return bool((self.flags & 0xF) >> 3)
+
+    @property
+    def ivt_segment(self) -> IvtHabSegment:
+        """IVT segment object."""
+        seg = self.get_segment(HabSegment.IVT)
+        if not seg:
+            raise SPSDKSegmentNotPresent(f"Segment {HabSegment.IVT.label} is missing")
+        assert isinstance(seg, IvtHabSegment)
+        return seg
+
+    @property
+    def bdt_segment(self) -> BdtHabSegment:
+        """BDT segment object."""
+        seg = self.get_segment(HabSegment.BDT)
+        if not seg:
+            raise SPSDKSegmentNotPresent(f"Segment {HabSegment.BDT.label} is missing")
+        assert isinstance(seg, BdtHabSegment)
+        return seg
+
+    @property
+    def dcd_segment(self) -> Optional[DcdHabSegment]:
+        """DCD segment object if exists, None otherwise."""
+        seg = self.get_segment(HabSegment.DCD)
+        return seg  # type: ignore
+
+    @property
+    def xmcd_segment(self) -> Optional[XmcdHabSegment]:
+        """XMCD segment object if exists, None otherwise."""
+        seg = self.get_segment(HabSegment.XMCD)
+        return seg  # type: ignore
+
+    @property
+    def app_segment(self) -> AppHabSegment:
+        """APP segment object."""
+        seg = self.get_segment(HabSegment.APP)
+        if not seg:
+            raise SPSDKSegmentNotPresent(f"Segment {HabSegment.APP.label} is missing")
+        assert isinstance(seg, AppHabSegment)
+        return seg
+
+    @property
+    def csf_segment(self) -> Optional[CsfHabSegment]:
+        """CSF segment object if exists, None otherwise."""
+        seg = self.get_segment(HabSegment.CSF)
+        return seg  # type: ignore
 
     @classmethod
     def load_from_config(
@@ -90,76 +139,109 @@ class HabContainer:
         :param config: Image configuration
         :param search_paths: List of paths where to search for the file, defaults to None
         """
-        image_config = ImageConfig.parse(config)
-        timestamp = image_config.options.signature_timestamp
-        hab_image = HabBinaryImage()
-        # IVT
-        ivt = segments.SegIVT2(HabContainer.IVT_VERSION)
-        ivt.app_address = image_config.options.entrypoint_address
-        ivt.ivt_address = image_config.options.start_address + image_config.options.ivt_offset
-        ivt.bdt_address = ivt.ivt_address + ivt.size
-        ivt.csf_address = 0
-        hab_image.add_hab_segment(HabSegment.IVT, ivt.export())
-        ivt_image = hab_image.get_hab_segment(HabSegment.IVT)
-        # BDT
-        bdt = segments.SegBDT(app_start=image_config.options.start_address)
-        hab_image.add_hab_segment(HabSegment.BDT, bdt.export())
-        # DCD
-        if image_config.options.dcd_file_path is not None:
-            dcd_bin = load_binary(image_config.options.dcd_file_path, search_paths=search_paths)
-            hab_image.add_hab_segment(HabSegment.DCD, dcd_bin)
-            ivt.dcd_address = ivt.ivt_address + HabBinaryImage.DCD_OFFSET
-            ivt_image.binary = ivt.export()
-        # XMCD
-        if image_config.options.xmcd_file_path is not None:
-            xmcd_bin = load_binary(image_config.options.xmcd_file_path, search_paths=search_paths)
-            hab_image.add_hab_segment(HabSegment.XMCD, xmcd_bin)
-        # APP
-        app_bin = BinaryImage.load_binary_image(
-            image_config.elf_file,
-            search_paths=search_paths,
+        hab_config = HabConfig.load_from_config(config, search_paths)
+        segments = HabSegments()
+        for segment_cls in SEGMENTS_MAPPING.values():
+            try:
+                segment = segment_cls.load_from_config(hab_config, search_paths=search_paths)
+                segments.append(segment)
+            except SPSDKSegmentNotPresent:
+                pass
+        hab = cls(
+            flags=hab_config.options.flags,
+            ivt_offset=hab_config.options.ivt_offset,
+            start_address=hab_config.options.start_address,
+            segments=segments,
         )
-        app_offset = image_config.options.initial_load_size - image_config.options.ivt_offset
-        hab_image.add_hab_segment(HabSegment.APP, app_bin.export(), offset_override=app_offset)
+        hab.update_csf()
+        return hab
 
-        bdt.app_length = image_config.options.ivt_offset + len(hab_image)
-        bdt_image = hab_image.get_hab_segment(HabSegment.BDT)
-        bdt_image.binary = bdt.export()
-        # Calculate CSF offset
-        app_image = hab_image.get_hab_segment(HabSegment.APP)
-        image_len = app_offset + len(app_image) + image_config.options.ivt_offset
-        csf_offset = HabContainer._calculate_csf_offset(image_len)
-        csf_offset = csf_offset - image_config.options.ivt_offset
+    def _get_signed_blocks(self) -> List[ImageBlock]:
+        blocks = []
 
-        csf_builder = CsfBuilder(
-            image_config,
-            csf_offset=csf_offset,
-            search_paths=search_paths,
-            timestamp=timestamp,
-            hab_image=hab_image,
+        def add_block(offset: int, block_size: int) -> None:
+            blocks.append(
+                ImageBlock(
+                    base_address=self.start_address + self.ivt_offset + offset,
+                    start=self.ivt_offset + offset,
+                    size=block_size,
+                )
+            )
+
+        segment_blocks = [
+            [HabSegment.IVT, HabSegment.BDT],
+            [HabSegment.DCD],
+            [HabSegment.XMCD],
+        ]
+        for segments_names in segment_blocks:
+            all_defined = all([self.get_segment(seg_name) for seg_name in segments_names])
+            if all_defined:
+                block_size = sum(
+                    [
+                        self.get_segment(seg_name).size  # type: ignore
+                        for seg_name in segments_names
+                        if self.segments.contains(seg_name)
+                    ]
+                )
+                segment = self.get_segment(segments_names[0])
+                assert segment
+                add_block(segment.offset, block_size)
+        if not self.is_encrypted:
+            add_block(self.app_segment.offset, self.app_segment.size)
+        return blocks
+
+    def _get_encrypted_blocks(self) -> List[ImageBlock]:
+        blocks = []
+        blocks.append(
+            ImageBlock(
+                base_address=self.start_address + self.ivt_offset + self.app_segment.offset,
+                start=self.ivt_offset + self.app_segment.offset,
+                size=self.app_segment.size,
+            )
         )
-        if csf_builder.is_authenticated or csf_builder.is_encrypted:
-            bdt.app_length = image_config.options.ivt_offset + csf_offset + HabBinaryImage.CSF_SIZE
-            if csf_builder.is_encrypted:
-                bdt.app_length += HabBinaryImage.KEYBLOB_SIZE
-            bdt_image.binary = bdt.export()
-            ivt.csf_address = ivt.ivt_address + csf_offset
-            ivt_image.binary = ivt.export()
-        # CSF
-        director = CsfBuildDirector(csf_builder)
-        director.build_csf()
-        return cls(hab_image=hab_image)
+        return blocks
 
-    @staticmethod
-    def _calculate_csf_offset(image_len: int) -> int:
-        """Calculate CSF offset from image length.
+    def update_csf(self) -> None:
+        """Update the CSF segment including signing and encryption."""
+        if self.is_encrypted:
+            assert self.csf_segment
+            self.bdt_segment.segment.app_length += CsfHabSegment.KEYBLOB_SIZE
+        if self.csf_segment:
+            image = self.export_padding()
+            image = image[: self.ivt_offset + self.csf_segment.offset]
+            if self.is_encrypted:
+                blocks = self._get_encrypted_blocks()
+                encrypted_app = self.csf_segment.encrypt(image, blocks)
 
-        :param image_len: Image length
-        :return: CSF offset
+                self.app_segment.binary = encrypted_app
+            if self.is_authenticated:
+                blocks = self._get_signed_blocks()
+                self.csf_segment.update_signature(
+                    image, blocks, base_data_address=self.start_address
+                )
+
+    def image_info(self, padding: bool = False) -> BinaryImage:
+        """Create Binary image of HAB container.
+
+        :return: BinaryImage object of HAB container.
         """
-        csf_offset = image_len + (16 - (image_len % 16))
-        csf_offset = ((csf_offset + 0x1000 - 1) // 0x1000) * 0x1000
-        return csf_offset
+        bin_image = BinaryImage(
+            name="HAB container",
+            size=0,
+            pattern=BinaryPattern(self.image_pattern),
+        )
+        for segment in self.segments:
+            binary = segment.export()
+            offset = segment.offset + self.ivt_offset if padding else segment.offset
+            bin_image.add_image(
+                BinaryImage(
+                    name=segment.__class__.__name__,
+                    size=len(binary),
+                    offset=offset,
+                    binary=binary,
+                )
+            )
+        return bin_image
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -167,44 +249,41 @@ class HabContainer:
 
         :param data: Binary to be parsed
         """
-        rt_img = BootImgRT.parse(data)
-        # IVT
-        hab_image = HabBinaryImage()
-        hab_image.add_hab_segment(HabSegment.IVT, rt_img.ivt.export())
-        # BDT
-        if rt_img.bdt is not None:
-            hab_image.add_hab_segment(HabSegment.BDT, rt_img.bdt.export())
-        # DCD
-        if rt_img.dcd is not None:
-            hab_image.add_hab_segment(
-                HabSegment.DCD,
-                rt_img.dcd.export(),
-                offset_override=rt_img.ivt.dcd_address - rt_img.ivt.ivt_address,
-            )
-        # XMCD
-        if rt_img.xmcd is not None:
-            hab_image.add_hab_segment(HabSegment.XMCD, rt_img.xmcd.export())
-        # CSF
-        if rt_img.csf is not None:
-            hab_image.add_hab_segment(
-                HabSegment.CSF,
-                rt_img.csf.export(),
-                offset_override=rt_img.ivt.csf_address - rt_img.ivt.ivt_address,
-            )
-        # APP
-        if rt_img.app is not None:
-            hab_image.add_hab_segment(
-                HabSegment.APP,
-                rt_img.app.export(),
-                offset_override=rt_img.app_offset - rt_img.ivt_offset,
-            )
-        return cls(hab_image)
+        segments = HabSegments()
+        for seg_class in SEGMENTS_MAPPING.values():
+            try:
+                segment = seg_class.parse(data)
+                segments.append(segment)
+            except SPSDKSegmentNotPresent:
+                pass
 
-    def export(self, pattern: Optional[BinaryPattern] = None) -> bytes:
+        ivt = segments.get_segment(HabSegment.IVT)
+        assert isinstance(ivt, IvtHabSegment)
+        bdt = segments.get_segment(HabSegment.BDT)
+        assert isinstance(bdt, BdtHabSegment)
+        start_address = bdt.segment.app_start
+        ivt_offset = ivt.segment.ivt_address - bdt.segment.app_start
+        flags = cls._get_flags(segments)
+        return cls(
+            flags=flags, ivt_offset=ivt_offset, start_address=start_address, segments=segments
+        )
+
+    @staticmethod
+    def _get_flags(segments: HabSegments) -> int:
+        if not segments.contains(HabSegment.CSF):
+            return 0x0
+        csf = segments.get_segment(HabSegment.CSF)
+        assert isinstance(csf, CsfHabSegment)
+        decrypt = csf.get_decrypt_data_cmd()
+        return 0xC if decrypt else 0x8
+
+    def export_padding(self) -> bytes:
+        """Get into binary including initial padding."""
+        return self.image_info(padding=True).export()
+
+    def export(self) -> bytes:
         """Export into binary."""
-        if pattern:
-            self.hab_image.pattern = pattern
-        return self.hab_image.export()
+        return self.image_info(padding=False).export()
 
     @classmethod
     def get_validation_schemas(cls) -> List[Dict[str, Any]]:
@@ -212,7 +291,7 @@ class HabContainer:
 
         :return: List of validation schemas.
         """
-        hab_schema = ValidationSchemas.get_schema_file(HAB_SCH_FILE)
+        hab_schema = get_schema_file(DatabaseManager.HAB)
 
         schemas: List[Dict[str, Any]] = []
         schemas.extend([hab_schema[x] for x in ["hab_input", "hab"]])
@@ -226,9 +305,8 @@ class HabContainer:
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
         return CommentedConfig(
-            "HAB Configuration template.",
-            cls.get_validation_schemas(),
-        ).export_to_yaml()
+            "HAB Configuration template.", cls.get_validation_schemas()
+        ).get_template()
 
     @classmethod
     def transform_configuration(cls, config: Dict[Any, Any]) -> Dict[Any, Any]:
@@ -255,7 +333,7 @@ class HabContainer:
         }
 
         result = []  # Extract options for each section and replace section_id with name
-        for section in config["sections"]:
+        for section in config.get("sections", []):
             section_id = section["section_id"]
             section_name = section_id_to_name.get(section_id)
             if not section_name:
@@ -294,7 +372,7 @@ class HabContainer:
         }
 
         sections = []
-        for section in config["sections"]:
+        for section in config.get("sections", []):
             for section_name, options in section.items():
                 section_id = section_name_to_id.get(section_name)
                 if section_id is not None:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,7 +19,7 @@ COPYRIGHT_REGEX = re.compile(COPYRIGHT_REGEX_STR)
 NXP_HOLDER_NAME = "NXP"
 THIS_YEAR = datetime.datetime.now().year
 
-EXCLUDED_FILES = ["docs/conf.py", ".pre-commit-config.yaml"]
+EXCLUDED_FILES = ["docs/conf.py", ".pre-commit-config.yaml", ".readthedocs.yml"]
 
 
 def check_file(file: str, silent: bool = False) -> int:

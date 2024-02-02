@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,25 +16,25 @@ from typing import Any, Dict, List, Optional, Union
 from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk import version as spsdk_version
-from spsdk.apps.utils.utils import filepath_from_config, get_key
+from spsdk.apps.utils.utils import filepath_from_config
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import Counter, aes_ctr_encrypt, aes_key_wrap
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
+    Endianness,
     align_block,
     load_binary,
+    load_hex_string,
     reverse_bits_in_bytes,
     split_data,
     value_to_bytes,
     value_to_int,
 )
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
-
-from . import OTFAD_DATA_FOLDER, OTFAD_DATABASE_FILE, OTFAD_SCH_FILE
+from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
 
@@ -42,20 +42,20 @@ logger = logging.getLogger(__name__)
 class KeyBlob:
     """OTFAD KeyBlob: The class specifies AES key and counter initial value for specified address range.
 
-    typedef struct KeyBlob
-    {
-        unsigned char key[kAesKeySizeBytes]; // 16 bytes, 128-bits, KEY[A15...A00]
-        unsigned char ctr[kCtrSizeBytes];    // 8 bytes, 64-bits, CTR[C7...C0]
-        unsigned int srtaddr;                // region start, SRTADDR[31 - 10]
-        unsigned int endaddr;                // region end, ENDADDR[31 - 10]; lowest three bits are used as flags
-        // end of 32-byte area covered by CRC
-        unsigned int zero_fill;      // zeros
-        unsigned int key_blob_crc32; // crc32 over 1st 32-bytes
-        // end of 40 byte (5*64-bit) key blob data
-        unsigned char expanded_wrap_data[8]; // 8 bytes, used for wrap expanded data
-        // end of 48 byte (6*64-bit) wrap data
-        unsigned char unused_filler[16]; // unused fill to 64 bytes
-    } keyblob_t;
+    | typedef struct KeyBlob
+    | {
+    |     unsigned char key[kAesKeySizeBytes]; // 16 bytes, 128-bits, KEY[A15...A00]
+    |     unsigned char ctr[kCtrSizeBytes];    // 8 bytes, 64-bits, CTR[C7...C0]
+    |     unsigned int srtaddr;                // region start, SRTADDR[31 - 10]
+    |     unsigned int endaddr;                // region end, ENDADDR[31 - 10]; lowest three bits are used as flags
+    |     // end of 32-byte area covered by CRC
+    |     unsigned int zero_fill;      // zeros
+    |     unsigned int key_blob_crc32; // crc32 over 1st 32-bytes
+    |     // end of 40 byte (5*64-bit) key blob data
+    |     unsigned char expanded_wrap_data[8]; // 8 bytes, used for wrap expanded data
+    |     // end of 48 byte (6*64-bit) wrap data
+    |     unsigned char unused_filler[16]; // unused fill to 64 bytes
+    | } keyblob_t;
     """
 
     _START_ADDR_MASK = 0x400 - 1
@@ -171,7 +171,9 @@ class KeyBlob:
         else:
             end_addr_with_flags = 0
         result += pack("<I", end_addr_with_flags)
-        header_crc: bytes = mkPredefinedCrcFun("crc-32-mpeg")(result).to_bytes(4, "little")
+        header_crc: bytes = mkPredefinedCrcFun("crc-32-mpeg")(result).to_bytes(
+            4, Endianness.LITTLE.value
+        )
         # zero fill
         if self.zero_fill:
             if len(self.zero_fill) != 4:
@@ -285,7 +287,6 @@ class KeyBlob:
         :param base_address: of the data in target memory; must be >= self.start_addr
         :param data: to be encrypted (e.g. plain image); base_address + len(data) must be <= self.end_addr
         :param byte_swap: this probably depends on the flash device, how bytes are organized there
-                True should be used for FLASH on EVK RT6xx; False for FLASH on EVK RT5xx
         :param counter_value: Optional counter value, if not specified start address of keyblob will be used
         :return: encrypted data
         :raises SPSDKError: If start address is not valid
@@ -304,12 +305,12 @@ class KeyBlob:
                 " Ignore this if flash remap feature is used"
             )
         result = bytes()
-        # SPSDK-936 change base address to start address of keyblob to allow flash remap on RT5xx/RT6xx
+
         if not counter_value:
             counter_value = self.start_addr
 
         counter = Counter(
-            self._get_ctr_nonce(), ctr_value=counter_value, ctr_byteorder_encoding="big"
+            self._get_ctr_nonce(), ctr_value=counter_value, ctr_byteorder_encoding=Endianness.BIG
         )
 
         for index in range(0, data_len, 16):
@@ -381,7 +382,6 @@ class Otfad:
         :param image: plain image to be encrypted
         :param base_addr: where the image will be located in target processor
         :param byte_swap: this probably depends on the flash device, how bytes are organized there
-                True should be used for FLASH on EVK RT6xx; False for FLASH on EVK RT5xx
         :return: encrypted image
         """
         encrypted_data = bytearray(image)
@@ -440,7 +440,7 @@ class Otfad:
 
             logger.debug("The scrambling of keys is enabled.")
             key_scramble_mask_inv = reverse_bits_in_bytes(
-                key_scramble_mask.to_bytes(4, byteorder="big")
+                key_scramble_mask.to_bytes(4, byteorder=Endianness.BIG.value)
             )
             logger.debug(f"The inverted scramble key is: {key_scramble_mask_inv.hex()}")
         result = bytes()
@@ -513,14 +513,12 @@ class OtfadNxp(Otfad):
         self.key_scramble_mask = key_scramble_mask
         self.key_scramble_align = key_scramble_align
         self.table_address = table_address
-        self.database = Database(OTFAD_DATABASE_FILE)
-        self.blobs_min_cnt = self.database.get_device_value("key_blob_min_cnt", device=family)
-        self.blobs_max_cnt = self.database.get_device_value("key_blob_max_cnt", device=family)
-        self.byte_swap = self.database.get_device_value("byte_swap", device=family)
-        self.key_blob_rec_size = self.database.get_device_value("key_blob_rec_size", device=family)
-        self.keyblob_byte_swap_cnt = self.database.get_device_value(
-            "keyblob_byte_swap_cnt", device=family
-        )
+        self.db = get_db(family, "latest")
+        self.blobs_min_cnt = self.db.get_int(DatabaseManager.OTFAD, "key_blob_min_cnt")
+        self.blobs_max_cnt = self.db.get_int(DatabaseManager.OTFAD, "key_blob_max_cnt")
+        self.byte_swap = self.db.get_bool(DatabaseManager.OTFAD, "byte_swap")
+        self.key_blob_rec_size = self.db.get_int(DatabaseManager.OTFAD, "key_blob_rec_size")
+        self.keyblob_byte_swap_cnt = self.db.get_int(DatabaseManager.OTFAD, "keyblob_byte_swap_cnt")
         assert self.keyblob_byte_swap_cnt in [0, 2, 4, 8, 16]
         self.binaries = binaries
 
@@ -552,16 +550,14 @@ class OtfadNxp(Otfad):
         :param otfad_key_seed: OTFAD Key Seed.
         :return: BLHOST script that loads the keys into fuses.
         """
-        database = Database(OTFAD_DATABASE_FILE)
-        xml_fuses = database.get_device_value("reg_fuses", device=family, default=None)
+        database = get_db(family, "latest")
+        xml_fuses = database.get_file_path(DatabaseManager.OTFAD, "reg_fuses", default=None)
         if not xml_fuses:
             logger.debug(f"The {family} has no OTFAD fuses definition")
             return ""
 
-        xml_fuses = os.path.join(OTFAD_DATA_FOLDER, xml_fuses)
-
-        fuses = Registers(family, base_endianness="little")
-        grouped_regs = database.get_device_value("grouped_registers", device=family, default=None)
+        fuses = Registers(family, base_endianness=Endianness.LITTLE)
+        grouped_regs = database.get_list(DatabaseManager.OTFAD, "grouped_registers", default=None)
         fuses.load_registers_from_xml(xml_fuses, grouped_regs=grouped_regs)
         reg_omk = fuses.find_reg("OTP_MASTER_KEY")
         reg_oks = fuses.find_reg("OTFAD_KEK_SEED")
@@ -585,35 +581,40 @@ class OtfadNxp(Otfad):
 
         return ret
 
+    @staticmethod
+    def _replace_idx_value(value: str, index: int) -> str:
+        """Replace index value if provided in the database.
+
+        :param value: value to be replaced f-string containing index
+        :param index: Index of record to be replaced
+        :return: value with replaced index
+        """
+        return value.replace("{index}", str(index))
+
     def get_blhost_script_otp_kek(self, index: int = 1) -> str:
         """Create BLHOST script to load fuses needed to run OTFAD with OTP fuses just for OTFAD key.
 
         :param index: Index of OTFAD peripheral [1, 2, ..., n].
         :return: BLHOST script that loads the keys into fuses.
         """
-        if not self.database.get_device_value("has_kek_fuses", self.family, default=False):
+        if not self.db.get_bool(DatabaseManager.OTFAD, "has_kek_fuses", default=False):
             logger.debug(f"The {self.family} has no OTFAD KEK fuses")
             return ""
 
-        peripheral_list = self.database.get_device_value("peripheral_list", device=self.family)
+        peripheral_list = self.db.get_list(DatabaseManager.OTFAD, "peripheral_list")
         if str(index) not in peripheral_list:
             logger.debug(f"The {self.family} has no OTFAD{index} peripheral")
             return ""
 
         filter_out_list = [f"OTFAD{i}" for i in peripheral_list if str(index) != i]
-        xml_fuses = self.database.get_device_value("reg_fuses", device=self.family, default=None)
+        xml_fuses = self.db.get_file_path(DatabaseManager.OTFAD, "reg_fuses", default=None)
         if not xml_fuses:
             logger.debug(f"The {self.family} has no OTFAD fuses definition")
             return ""
 
-        xml_fuses = os.path.join(OTFAD_DATA_FOLDER, xml_fuses)
+        fuses = Registers(self.family, base_endianness=Endianness.LITTLE)
 
-        fuses = Registers(self.family, base_endianness="little")
-        self.database.index = index
-
-        grouped_regs = self.database.get_device_value(
-            "grouped_registers", device=self.family, default=None
-        )
+        grouped_regs = self.db.get_list(DatabaseManager.OTFAD, "grouped_registers", default=None)
 
         fuses.load_registers_from_xml(xml_fuses, filter_out_list, grouped_regs)
 
@@ -621,29 +622,39 @@ class OtfadNxp(Otfad):
             self.key_scramble_mask is not None and self.key_scramble_align is not None
         )
 
-        otfad_key_fuse = self.database.get_device_value("otfad_key_fuse", self.family)
-        otfad_cfg_fuse = self.database.get_device_value("otfad_cfg_fuse", self.family)
+        otfad_key_fuse = self._replace_idx_value(
+            self.db.get_str(DatabaseManager.OTFAD, "otfad_key_fuse"), index
+        )
+        otfad_cfg_fuse = self._replace_idx_value(
+            self.db.get_str(DatabaseManager.OTFAD, "otfad_cfg_fuse"), index
+        )
 
         fuses.find_reg(otfad_key_fuse).set_value(self.kek)
         otfad_cfg = fuses.find_reg(otfad_cfg_fuse)
 
         try:
             otfad_cfg.find_bitfield(
-                self.database.get_device_value("otfad_enable_bitfield", self.family)
+                self.db.get_str(DatabaseManager.OTFAD, "otfad_enable_bitfield")
             ).set_value(1)
         except SPSDKRegsErrorBitfieldNotFound:
             logger.debug(f"Bitfield for OTFAD ENABLE not found for {self.family}")
 
         if scramble_enabled:
-            scramble_key = self.database.get_device_value("otfad_scramble_key", self.family)
-            scramble_align = self.database.get_device_value(
-                "otfad_scramble_align_bitfield", self.family
+            scramble_key = self._replace_idx_value(
+                self.db.get_str(DatabaseManager.OTFAD, "otfad_scramble_key"), index
             )
-            scramble_align_standalone = self.database.get_device_value(
-                "otfad_scramble_align_fuse_standalone", self.family
+            scramble_align = self._replace_idx_value(
+                self.db.get_str(DatabaseManager.OTFAD, "otfad_scramble_align_bitfield"),
+                index,
+            )
+            scramble_align_standalone = self.db.get_bool(
+                DatabaseManager.OTFAD, "otfad_scramble_align_fuse_standalone"
             )
             otfad_cfg.find_bitfield(
-                self.database.get_device_value("otfad_scramble_enable_bitfield", self.family)
+                self._replace_idx_value(
+                    self.db.get_str(DatabaseManager.OTFAD, "otfad_scramble_enable_bitfield"),
+                    index,
+                )
             ).set_value(1)
             if scramble_align_standalone:
                 fuses.find_reg(scramble_align).set_value(self.key_scramble_align)
@@ -672,11 +683,11 @@ class OtfadNxp(Otfad):
             ret += f"\n# {scramble.name} fuse.\n"
             ret += f"efuse-program-once {scramble.offset} 0x{scramble.get_bytes_value(raw=True).hex()} --no-verify\n"
             if scramble_align_standalone:
-                scramble_align = fuses.find_reg(scramble_align)
-                ret += f"\n# {scramble_align.name} fuse.\n"
+                scramble_align_reg = fuses.find_reg(scramble_align)
+                ret += f"\n# {scramble_align_reg.name} fuse.\n"
                 ret += (
-                    f"efuse-program-once {scramble_align.offset}"
-                    f" 0x{scramble_align.get_bytes_value(raw=True).hex()} --no-verify\n"
+                    f"efuse-program-once {scramble_align_reg.offset}"
+                    f" 0x{scramble_align_reg.get_bytes_value(raw=True).hex()} --no-verify\n"
                 )
 
         return ret
@@ -779,8 +790,7 @@ class OtfadNxp(Otfad):
 
         :return: List of supported families.
         """
-        database = Database(OTFAD_DATABASE_FILE)
-        return database.devices.device_names
+        return get_families(DatabaseManager.OTFAD)
 
     @staticmethod
     def get_validation_schemas(family: str) -> List[Dict[str, Any]]:
@@ -792,13 +802,15 @@ class OtfadNxp(Otfad):
         if family not in OtfadNxp.get_supported_families():
             return []
 
-        database = Database(OTFAD_DATABASE_FILE)
-        schemas = ValidationSchemas.get_schema_file(OTFAD_SCH_FILE)
-        family_sch = deepcopy(schemas["otfad_family"])
+        database = get_db(family, "latest")
+        schemas = get_schema_file(DatabaseManager.OTFAD)
+        family_sch = schemas["otfad_family"]
         family_sch["properties"]["family"]["enum"] = OtfadNxp.get_supported_families()
         family_sch["properties"]["family"]["template_value"] = family
         ret = [family_sch, schemas["otfad_output"], schemas["otfad"]]
-        additional_schemes = database.get_device_value("additional_template", family, default=[])
+        additional_schemes = database.get_list(
+            DatabaseManager.OTFAD, "additional_template", default=[]
+        )
         ret.extend([schemas[x] for x in additional_schemes])
         return ret
 
@@ -808,8 +820,8 @@ class OtfadNxp(Otfad):
 
         :return: Validation list of schemas.
         """
-        schemas = ValidationSchemas.get_schema_file(OTFAD_SCH_FILE)
-        family_sch = deepcopy(schemas["otfad_family"])
+        schemas = get_schema_file(DatabaseManager.OTFAD)
+        family_sch = schemas["otfad_family"]
         family_sch["properties"]["family"]["enum"] = OtfadNxp.get_supported_families()
         return [family_sch]
 
@@ -821,15 +833,15 @@ class OtfadNxp(Otfad):
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
         val_schemas = OtfadNxp.get_validation_schemas(family)
-        database = Database(OTFAD_DATABASE_FILE)
+        database = get_db(family, "latest")
 
         if val_schemas:
-            template_note = database.get_device_value(
-                "additional_template_text", family, default=""
+            template_note = database.get_str(
+                DatabaseManager.OTFAD, "additional_template_text", default=""
             )
             title = f"On-The-Fly AES decryption Configuration template for {family}."
 
-            yaml_data = CommentedConfig(title, val_schemas, note=template_note).export_to_yaml()
+            yaml_data = CommentedConfig(title, val_schemas, note=template_note).get_template()
 
             return {f"{family}_otfad": yaml_data}
 
@@ -850,15 +862,15 @@ class OtfadNxp(Otfad):
         """
         otfad_config: List[Dict[str, Any]] = config["key_blobs"]
         family = config["family"]
-        database = Database(OTFAD_DATABASE_FILE)
-        kek = get_key(config["kek"], expected_size=16, search_paths=search_paths)
+        database = get_db(family, "latest")
+        kek = load_hex_string(config["kek"], expected_size=16, search_paths=search_paths)
         logger.debug(f"Loaded KEK: {kek.hex()}")
         table_address = value_to_int(config["otfad_table_address"])
         start_address = min([value_to_int(addr["start_address"]) for addr in otfad_config])
 
         key_scramble_mask = None
         key_scramble_align = None
-        if database.get_device_value("supports_key_scrambling", device=family, default=False):
+        if database.get_bool(DatabaseManager.OTFAD, "supports_key_scrambling", default=False):
             if "key_scramble" in config.keys():
                 key_scramble = config["key_scramble"]
                 key_scramble_mask = value_to_int(key_scramble["key_scramble_mask"])

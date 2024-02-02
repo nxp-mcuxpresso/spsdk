@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,10 +11,10 @@ from typing import Optional
 
 from spsdk.crypto.symmetric import aes_ecb_encrypt
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
-class KeySourceType(Enum):
+class KeySourceType(SpsdkEnum):
     """Device key source."""
 
     OTP = (0, "OTP", "Device keys stored in OTP")
@@ -25,9 +25,7 @@ class KeyStore:
     """Provide info about KeyStore for MaterBootImage."""
 
     # size of key store in bytes
-    KEY_STORE_SIZE = (
-        1424  # Size can be device-specific, the current value is valid for RT5xx and RT6xx
-    )
+    KEY_STORE_SIZE = 1424  # Size can be device-specific, the current value is valid for currently supported devices
 
     SBKEK_SIZE = 32  # Size of Secure Binary KEK in bytes
 
@@ -68,7 +66,7 @@ class KeyStore:
     def __str__(self) -> str:
         """Information about key store in text form."""
         return (
-            f"Device key source:    {KeySourceType.name(self.key_source)}\n"
+            f"Device key source:    {self.key_source.label}\n"
             f"Device key store len: {str(len(self.export()))}"
         )
 

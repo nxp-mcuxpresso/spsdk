@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox PyLink Debug probes support."""
@@ -15,7 +15,9 @@ from pylink.errors import JLinkException
 from spsdk.utils.misc import value_to_int
 
 from .debug_probe import (
-    DebugProbe,
+    DebugProbeLocal,
+    DebugProbes,
+    ProbeDescription,
     SPSDKDebugProbeError,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
@@ -23,11 +25,13 @@ from .debug_probe import (
 
 logger = logging.getLogger(__name__)
 logger_pylink = logger.getChild("PyLink")
-logger_pylink.setLevel(logging.ERROR)
+logger_pylink.setLevel(logging.CRITICAL)
 
 
-class DebugProbePyLink(DebugProbe):
+class DebugProbePyLink(DebugProbeLocal):
     """Class to define PyLink package interface for NXP SPSDK."""
+
+    NAME = "jlink"
 
     @staticmethod
     def get_options_help() -> Dict[str, str]:
@@ -35,9 +39,15 @@ class DebugProbePyLink(DebugProbe):
 
         :return: Dictionary with individual options. Key is parameter name and value the help text.
         """
-        return {
-            "frequency": "Set the communication frequency in KHz, default is 100KHz",
-        }
+        options_help = {}
+        options_help.update(
+            {
+                "frequency": "Set the communication frequency in KHz, default is 100KHz",
+            }
+        )
+        options_help.update(DebugProbeLocal.get_options_help())
+
+        return options_help
 
     @classmethod
     def get_jlink_lib(cls) -> pylink.JLink:
@@ -69,7 +79,7 @@ class DebugProbePyLink(DebugProbe):
     @classmethod
     def get_connected_probes(
         cls, hardware_id: Optional[str] = None, options: Optional[Dict] = None
-    ) -> list:
+    ) -> DebugProbes:
         """Get all connected probes over PyLink.
 
         This functions returns the list of all connected probes in system by PyLink package.
@@ -79,9 +89,6 @@ class DebugProbePyLink(DebugProbe):
         :param options: The options dictionary
         :return: probe_description
         """
-        # pylint: disable=import-outside-toplevel
-        from .utils import DebugProbes, ProbeDescription
-
         jlink = DebugProbePyLink.get_jlink_lib()
 
         probes = DebugProbes()
@@ -92,7 +99,7 @@ class DebugProbePyLink(DebugProbe):
                     ProbeDescription(
                         "Jlink",
                         str(probe.SerialNumber),
-                        f"Segger {probe.acProduct.decode('utf-8')}: {str(probe.SerialNumber)}",
+                        f"Segger {probe.acProduct.decode('utf-8')}",
                         DebugProbePyLink,
                     )
                 )

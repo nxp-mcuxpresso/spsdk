@@ -1,0 +1,13 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+certBlock: rt5xx_cert_block.yaml
+enableHwUserModeKeys: false
+enableTrustZone: false
+family: rt5xx
+inputImageFile: my_application.bin
+masterBootOutputFile: my_mbi.bin
+outputImageAuthenticationType: signed
+outputImageExecutionAddress: 0
+outputImageExecutionTarget: xip
+signProvider: type=sasp;key_number=0;key_type=rsa2048

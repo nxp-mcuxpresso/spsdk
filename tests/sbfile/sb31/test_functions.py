@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
@@ -12,8 +12,14 @@ import pytest
 
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.sbfile.sb31.commands import BaseCmd, CmdErase, MainCmd
-from spsdk.sbfile.sb31.functions import KeyDerivator, _get_key_derivation_data, derive_block_key
+from spsdk.sbfile.sb31.commands import BaseCmd, CmdErase
+from spsdk.sbfile.sb31.constants import EnumCmdTag
+from spsdk.sbfile.sb31.functions import (
+    KeyDerivationMode,
+    KeyDerivator,
+    _get_key_derivation_data,
+    derive_block_key,
+)
 from spsdk.sbfile.sb31.images import (
     SecureBinary31,
     SecureBinary31Commands,
@@ -29,7 +35,7 @@ def test_invalid_header_parse():
     # valid_tag = BaseCmd.TAG  # TAG = 0x55aaaa55
     invalid_tag = bytes(BaseCmd.SIZE)
     with pytest.raises(SPSDKError):
-        BaseCmd.header_parse(cmd_tag=0, data=invalid_tag)
+        BaseCmd.header_parse(cmd_tag=EnumCmdTag.NONE, data=invalid_tag)
 
 
 def test_value_range():
@@ -70,7 +76,11 @@ def test_get_key_derivation_data(
     derivation_constant, kdk_access_rights, mode, key_length, iteration, result
 ):
     derivation_data = _get_key_derivation_data(
-        derivation_constant, kdk_access_rights, mode, key_length, iteration
+        derivation_constant,
+        kdk_access_rights,
+        KeyDerivationMode.from_tag(mode),
+        key_length,
+        iteration,
     )
     assert derivation_data == bytes.fromhex(result)
 
@@ -94,7 +104,7 @@ def test_key_derivator_invalid():
 def test_header_validate():
     """Test of validation function for Secure Binary header class."""
     with pytest.raises(SPSDKError):
-        SecureBinary31Header(hash_type="Invalid", firmware_version=None)
+        SecureBinary31Header(hash_type=EnumHashAlgorithm.MD5, firmware_version=None)
 
     sb3h = SecureBinary31Header(hash_type=EnumHashAlgorithm.SHA256, firmware_version=0)
     sb3h.validate()

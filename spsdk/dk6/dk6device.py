@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """DK6 Device high level API."""
@@ -10,7 +10,8 @@ from types import TracebackType
 from typing import Callable, Dict, List, Optional, Type, Union
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 from .commands import (
     GetChipIdResponse,
@@ -35,16 +36,16 @@ MAC_LEN = 8
 DEV_LEN = 4
 
 
-class DK6ChipIdInternal(Enum):
+class DK6ChipIdInternal(SpsdkEnum):
     """DK6 Internal chip ID."""
 
-    JN5189 = (0x88888888, "JN5189 ESx")
-    QN9090 = (0x1240C686, "QN9090")
-    K32W041 = (0x1300C686, "K32W041")
-    K32W061 = (0x1440C686, "K32W061")
+    JN5189 = (0x88888888, "JN5189", "JN5189 ESx")
+    QN9090 = (0x1240C686, "QN9090", "QN9090")
+    K32W041 = (0x1300C686, "K32W041", "K32W041")
+    K32W061 = (0x1440C686, "K32W061", "K32W061")
 
 
-class DK6DeviceId(Enum):
+class DK6DeviceId(SpsdkEnum):
     """DK6 Device IDs."""
 
     JN5188 = (5188, "JN5188")
@@ -89,12 +90,12 @@ class DK6Memory:
 
     def __str__(self) -> str:
         return (
-            f"\tMemoryId={MemoryId.get(self.mem_id)}\n"
+            f"\tMemoryId={self.mem_id.label}\n"
             f"\tBaseAddress={hex(self.base_address)}\n"
             f"\tLength={hex(self.length)}\n"
             f"\tSectorSize={hex(self.sector_size)}\n"
-            f"\tMemoryType={MemoryType.get(self.mem_type)}\n"
-            f"\tAccess={MemoryAccessValues.get(self.access)}\n"
+            f"\tMemoryType={self.mem_type.label}\n"
+            f"\tAccess={self.access.label}\n"
         )
 
     def __repr__(self) -> str:
@@ -135,8 +136,10 @@ def check_memory(
     if memory is None:
         raise SPSDKError("Memory ID is not supported")
 
-    if access > memory.access:
-        raise SPSDKError(f"Access {access} is not allowed. Only allowed is {hex(memory.access)}")
+    if access.tag > memory.access.tag:
+        raise SPSDKError(
+            f"Access {access.tag} is not allowed. Only allowed is {hex(memory.access.tag)}"
+        )
 
     if relative:
         address += memory.base_address
@@ -172,8 +175,8 @@ class DK6Device:
         self.chip_id: Union[GetChipIdResponse, None] = None
         self.uart = Uart(device)
         self.protocol = DK6Protocol(self.uart)
-        self.mac_addr: Union[None, bytes] = None
-        self.dev_type: Union[None, DK6DeviceId] = None
+        self.mac_addr: Optional[bytes] = None
+        self.dev_type: Optional[DK6DeviceId] = None
         self.initialized = False
 
     def __del__(self) -> None:
@@ -215,7 +218,7 @@ class DK6Device:
 
         :param memory: DK6Memory
         """
-        self.memories.update({memory.mem_id: memory})
+        self.memories.update({memory.mem_id.tag: memory})
 
     def get_memory(self, memory_id: MemoryId) -> DK6Memory:
         """Get DK6Memory based on memory_id.
@@ -225,7 +228,7 @@ class DK6Device:
         :return: DK6Memory
         """
         if self.memories:
-            memory = self.memories.get(memory_id)
+            memory = self.memories.get(memory_id.tag)
             if memory:
                 return memory
         raise SPSDKError(f"Memory with {memory_id} is not fetched")
@@ -290,7 +293,9 @@ class DK6Device:
             self.protocol.mem_open(MemoryId.Config)
             response = self.protocol.mem_read(DEV_TYPE_ADDR, DEV_LEN)
             try:
-                self.dev_type = DK6DeviceId.from_int(int.from_bytes(response.data, "little"))
+                self.dev_type = DK6DeviceId.from_tag(
+                    int.from_bytes(response.data, Endianness.LITTLE.value)
+                )
             except SPSDKError:
                 self.dev_type = DK6DeviceId.UNKNOWN
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Tests for shadow registers utility."""
@@ -17,22 +17,6 @@ from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 def test_command_line_interface_main(cli_runner: CliRunner):
     """Test for main menu options."""
     result = cli_runner.invoke(main, ["--help"])
-    assert "Show this message and exit." in result.output
-
-
-@pytest.mark.parametrize(
-    "cmd",
-    [
-        "getreg --help",
-        "loadconfig --help",
-        "printregs --help",
-        "saveconfig --help",
-        "setreg --help",
-    ],
-)
-def test_command_line_interface_getreg(cli_runner: CliRunner, cmd):
-    """Test for getreg menu options."""
-    result = cli_runner.invoke(main, cmd.split())
     assert "Show this message and exit." in result.output
 
 
@@ -83,21 +67,6 @@ def test_command_line_interface_getreg_exe(cli_runner: CliRunner):
     """Test for printregs execution menu options."""
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
     cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} getreg -r DCFG_CC_SOCU"
-    cli_runner.invoke(main, cmd.split())
-
-
-def test_command_line_interface_saveloadconfig_r_exe(cli_runner: CliRunner, tmpdir):
-    """Test for saveconfig rich execution menu options."""
-    # create path in TMP DIR
-    filename = os.path.join(tmpdir, "SR_COV_TEST.yml")
-    enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -o {filename} -r"
-    cli_runner.invoke(main, cmd.split())
-    # check if the file really exists
-    assert os.path.isfile(filename)
-
-    # Try to load the generated file
-    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} loadconfig -c {filename} -r"
     cli_runner.invoke(main, cmd.split())
 
 
@@ -205,20 +174,12 @@ def test_command_line_interface_getreg_exe_fail(cli_runner: CliRunner):
     cli_runner.invoke(main, cmd.split(), expected_code=1)
 
 
-def test_command_line_interface_generate_html(cli_runner: CliRunner, tmpdir):
-    """Test for info execution menu options."""
-    cmd = f"-f rt5xx info -o {tmpdir}/imxrt_info.html"
-    cli_runner.invoke(main, cmd.split())
-
-    assert os.path.isfile(f"{tmpdir}/imxrt_info.html")
-
-
 def test_command_line_interface_fuse_script_exe(cli_runner: CliRunner, tmpdir):
     """Test for saveconfig rich execution menu options."""
     # create path in TMP DIR
     filename = os.path.join(tmpdir, "SR_COV_TEST.yml")
     enable_debug = '-o subs_ap={"12":["Exception",12345678],"33554432":[2,0,2,0],"33554440":[0]}'
-    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -o {filename} -r"
+    cmd = f"-f rt5xx -i virtual -s {DebugProbeVirtual.UNIQUE_SERIAL} {enable_debug} saveconfig -o {filename}"
     cli_runner.invoke(main, cmd.split())
     # check if the file really exists
     assert os.path.isfile(filename)

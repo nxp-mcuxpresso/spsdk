@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -127,7 +127,14 @@ def test_nxpimage_bimg_parse_cli(
         ]
         cli_runner.invoke(nxpimage.main, cmd)
 
-        assert os.path.isfile(os.path.join(tmpdir, f"bootable_image_{family}_{mem_type}.yaml"))
+        bimg_config = os.path.join(tmpdir, f"bootable_image_{family}_{mem_type}.yaml")
+        assert os.path.isfile(bimg_config)
+        generated = load_configuration(bimg_config)
+        reference = load_configuration(
+            os.path.join(data_dir, "bootable_image", family, mem_type, "config.yaml")
+        )
+        assert sorted(generated.keys()) == sorted(reference.keys())
+
         for block in blocks:
             assert filecmp.cmp(
                 os.path.join(tmpdir, f"segment_{block}.bin"),

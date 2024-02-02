@@ -1,0 +1,44 @@
+# Copyright 2021-2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+base:
+  type: object
+  required: [family, peripheral]
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      # enum: []
+      template_value: rt118x
+
+    revision:
+      type: string
+      title: Chip silicon revision
+      description: If needed this could be used to specify silicon revision of device.
+      template_value: latest
+
+    peripheral:
+      type: string
+      title: Peripheral name
+      # enum: []
+      description: Name of the external memory support peripheral
+      template_value: spi_nor
+
+    interface:
+      type: string
+      title: Interface name
+      # enum: []
+      description: Interface name of some other details about connection
+      template_value: quad_spi
+
+settings:
+  type: object
+  required: [settings]
+  properties:
+    settings:
+      type: object
+      title: Option words settings
+      description: The The option word settings
+      properties: {}

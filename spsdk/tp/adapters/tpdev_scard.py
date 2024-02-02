@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning - TP Device, Smart Card Adapter."""
@@ -15,16 +15,15 @@ from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
 from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
 from spsdk.utils.misc import (
+    Endianness,
     find_file,
     get_hash,
     load_binary,
     load_text,
     numberify_version,
-    value_to_int,
 )
-from spsdk.utils.schema_validator import ValidationSchemas
 
 try:
     from smartcard.CardConnectionDecorator import CardConnection
@@ -34,7 +33,6 @@ except ImportError as e:
     ) from e
 
 
-from .. import TP_DATABASE, TP_SCH_FILE
 from ..exceptions import SPSDKTpError
 from ..tp_intf import TpDevInterface, TpIntfDescription
 from . import scard_commands
@@ -219,7 +217,7 @@ class TpDevSmartCard(TpDevInterface):
 
         return: List of all additional validation schemas.
         """
-        sch_cfg_file = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+        sch_cfg_file = get_schema_file(DatabaseManager.TP)
 
         return [sch_cfg_file["device_scard"]]
 
@@ -259,14 +257,14 @@ class TpDevSmartCard(TpDevInterface):
         family: str = config_data["family"]
         logger.info(f"Sending family name: {family}")
         cmd = scard_commands.SetProvisioningItem(
-            prov_item=ProvItem.FAMILY, data=family.encode("utf-8")
+            prov_item=ProvItem.FAMILY.tag, data=family.encode("utf-8")
         )
         cmd.transmit(self.card_connection)
 
         tp_flags = TPFlags.for_family(family=family)
         logger.info(f"Sending TPFlags: {tp_flags}")
         cmd = scard_commands.SetProvisioningItem(
-            prov_item=ProvItem.PROV_FLAGS, data=tp_flags.export()
+            prov_item=ProvItem.PROV_FLAGS.tag, data=tp_flags.export()
         )
         cmd.transmit(self.card_connection)
 
@@ -274,19 +272,19 @@ class TpDevSmartCard(TpDevInterface):
             logger.info("Sending Provisioning Data SB3 file")
             file_path = config_data["prov_data_path"]
             cmpa = load_binary(file_path, search_paths=[config_dir] if config_dir else None)
-            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.PROV_DATA, data=cmpa)
+            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.PROV_DATA.tag, data=cmpa)
             cmd.transmit(self.card_connection)
         else:
             logger.info("Sending CMPA")
             file_path = config_data["cmpa_path"]
             cmpa = load_binary(file_path, search_paths=[config_dir] if config_dir else None)
-            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.CMPA, data=cmpa)
+            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.CMPA.tag, data=cmpa)
             cmd.transmit(self.card_connection)
 
             logger.info("Sending CFPA")
             file_path = config_data["cfpa_path"]
             cfpa = load_binary(file_path, search_paths=[config_dir] if config_dir else None)
-            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.CFPA, data=cfpa)
+            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.CFPA.tag, data=cfpa)
             cmd.transmit(self.card_connection)
 
             logger.info("Sending SB KEK")
@@ -296,7 +294,7 @@ class TpDevSmartCard(TpDevInterface):
             )
             # Send KEK reversed, so Applet doesn't have to reverse it
             sb_kek = bytes(reversed(sb_kek))
-            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.SB_KEK, data=sb_kek)
+            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.SB_KEK.tag, data=sb_kek)
             cmd.transmit(self.card_connection)
 
             logger.info("Sending USER KEK")
@@ -306,13 +304,15 @@ class TpDevSmartCard(TpDevInterface):
             )
             # Send KEK reversed, so Applet doesn't have to reverse it
             user_kek = bytes(reversed(user_kek))
-            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.USER_KEK, data=user_kek)
+            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.USER_KEK.tag, data=user_kek)
             cmd.transmit(self.card_connection)
 
         logger.info("Sending oem_log_prk")
         file_path = config_data["oem_log_prk_path"]
         log_prk_data = self._serialize_private_key(file_path, [config_dir] if config_dir else None)
-        cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.OEM_LOG_PRK, data=log_prk_data)
+        cmd = scard_commands.SetProvisioningItem(
+            prov_item=ProvItem.OEM_LOG_PRK.tag, data=log_prk_data
+        )
         cmd.transmit(self.card_connection)
 
         logger.info("Sending nxp_global_attest_puk")
@@ -324,20 +324,23 @@ class TpDevSmartCard(TpDevInterface):
         glob_puk_data = puk.export()
 
         cmd = scard_commands.SetProvisioningItem(
-            prov_item=ProvItem.NXP_GLOB_PUK, data=b"\x04" + glob_puk_data
+            prov_item=ProvItem.NXP_GLOB_PUK.tag, data=b"\x04" + glob_puk_data
         )
         cmd.transmit(self.card_connection)
 
         logger.info("Sending nxp_prod_cert_path")
         file_path = config_data["nxp_prod_cert_path"]
         cert_data = self._serialize_cert(file_path, [config_dir] if config_dir else None)
-        cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.NXP_PROD_CERT, data=cert_data)
+        cmd = scard_commands.SetProvisioningItem(
+            prov_item=ProvItem.NXP_PROD_CERT.tag, data=cert_data
+        )
         cmd.transmit(self.card_connection)
 
         logger.info("Sending production_quota")
         quota: int = config_data["production_quota"]
         cmd = scard_commands.SetProvisioningItem(
-            prov_item=ProvItem.PROD_COUNTER, data=quota.to_bytes(length=4, byteorder="big")
+            prov_item=ProvItem.PROD_COUNTER.tag,
+            data=quota.to_bytes(length=4, byteorder=Endianness.BIG.value),
         )
         cmd.transmit(self.card_connection)
 
@@ -345,7 +348,7 @@ class TpDevSmartCard(TpDevInterface):
         oem_cert_info = OEMCertInfo.from_config(config_data=config_data)
 
         cmd = scard_commands.SetProvisioningItem(
-            prov_item=ProvItem.OEM_CERT_COUNT,
+            prov_item=ProvItem.OEM_CERT_COUNT.tag,
             data=oem_cert_info.flags.export(),
         )
         cmd.transmit(self.card_connection)
@@ -354,7 +357,9 @@ class TpDevSmartCard(TpDevInterface):
             logger.info("Sending oem_id_prk")
             file_path = config_data["oem_id_prk_path"]
             prk_data = self._serialize_private_key(file_path, [config_dir] if config_dir else None)
-            cmd = scard_commands.SetProvisioningItem(prov_item=ProvItem.OEM_ID_PRK, data=prk_data)
+            cmd = scard_commands.SetProvisioningItem(
+                prov_item=ProvItem.OEM_ID_PRK.tag, data=prk_data
+            )
             cmd.transmit(self.card_connection)
 
             template_id = -1
@@ -364,7 +369,7 @@ class TpDevSmartCard(TpDevInterface):
                 cert_data = self._serialize_cert_data(cert_template, cert_address)
                 logger.info(f"Sending OEM cert template #{template_id+1}")
                 cmd = scard_commands.SetProvisioningItem(
-                    prov_item=ProvItem.OEM_CERT_TEMPLATE + template_id, data=cert_data
+                    prov_item=ProvItem.OEM_CERT_TEMPLATE.tag + template_id, data=cert_data
                 )
                 cmd.transmit(self.card_connection)
 
@@ -373,7 +378,7 @@ class TpDevSmartCard(TpDevInterface):
                 cert_data = self._serialize_cert_data(cert_template, oem_cert_info.ca_cert_address)
                 logger.info("Sending OEM CA cert template")
                 cmd = scard_commands.SetProvisioningItem(
-                    prov_item=ProvItem.OEM_CERT_TEMPLATE + template_id, data=cert_data
+                    prov_item=ProvItem.OEM_CERT_TEMPLATE.tag + template_id, data=cert_data
                 )
                 cmd.transmit(self.card_connection)
 
@@ -382,7 +387,7 @@ class TpDevSmartCard(TpDevInterface):
                 cert_data = self._serialize_cert_data(cert_template, oem_cert_info.rtf_cert_address)
                 logger.info("Sending OEM RTF cert template")
                 cmd = scard_commands.SetProvisioningItem(
-                    prov_item=ProvItem.OEM_CERT_TEMPLATE + template_id, data=cert_data
+                    prov_item=ProvItem.OEM_CERT_TEMPLATE.tag + template_id, data=cert_data
                 )
                 cmd.transmit(self.card_connection)
 
@@ -401,7 +406,7 @@ class TpDevSmartCard(TpDevInterface):
 
         logger.info("Setting ECC params")
         ecc_params_cmd = scard_commands.SetProvisioningItem(
-            prov_item=ProvItem.ECC_DOMAIN_PARAM,
+            prov_item=ProvItem.ECC_DOMAIN_PARAM.tag,
             data=(
                 b"\x90 \xff\xff\xff\xff\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
                 b"\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfc\x91 Z\xc65\xd8\xaa:\x93\xe7"
@@ -478,7 +483,7 @@ class TpDevSmartCard(TpDevInterface):
         prk_file = find_file(prk_file_path, search_paths=search_dirs)
         prk = PrivateKeyEcc.load(prk_file)
         d_number = prk.key.private_numbers().private_value
-        d_bytes = d_number.to_bytes(length=32, byteorder="big")
+        d_bytes = d_number.to_bytes(length=32, byteorder=Endianness.BIG.value)
         return d_bytes
 
     @staticmethod
@@ -504,8 +509,8 @@ class TpDevSmartCard(TpDevInterface):
         scn_offset = cert_data.index(scn) + len(scn) - scn_length
         pub_key = cert.get_public_key()
         assert isinstance(pub_key, PublicKeyEcc)
-        x = pub_key.x.to_bytes(length=32, byteorder="big")
-        y = pub_key.y.to_bytes(length=32, byteorder="big")
+        x = pub_key.x.to_bytes(length=32, byteorder=Endianness.BIG.value)
+        y = pub_key.y.to_bytes(length=32, byteorder=Endianness.BIG.value)
         x_offset = cert_data.index(x)
         y_offset = cert_data.index(y)
 
@@ -521,20 +526,21 @@ class TpDevSmartCard(TpDevInterface):
             cert_data
             # final certificate could be 4B longer due to changing signature size
             + bytes(4)
-            + scn_offset.to_bytes(length=2, byteorder="big")
-            + scn_length.to_bytes(length=2, byteorder="big")
-            + x_offset.to_bytes(length=2, byteorder="big")
-            + y_offset.to_bytes(length=2, byteorder="big")
-            + sig_offset.to_bytes(length=2, byteorder="big")
-            + sig_length.to_bytes(length=2, byteorder="big")
-            + tbs_offset.to_bytes(length=2, byteorder="big")
-            + tbs_length.to_bytes(length=2, byteorder="big")
-            + cert_length.to_bytes(length=2, byteorder="big")
-            + destination.to_bytes(length=4, byteorder="little")
+            + scn_offset.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + scn_length.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + x_offset.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + y_offset.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + sig_offset.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + sig_length.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + tbs_offset.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + tbs_length.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + cert_length.to_bytes(length=2, byteorder=Endianness.BIG.value)
+            + destination.to_bytes(length=4, byteorder=Endianness.LITTLE.value)
         )
 
     @staticmethod
     def _create_oem_cert_template(config_data: dict, config_dir: Optional[str] = None) -> bytes:
+        family = config_data["family"]
         logger.info("Creating OEM ID template")
         cert_config: dict = config_data["oem_id_config"]
         sanitize_common_name(cert_config["subject"])
@@ -556,10 +562,8 @@ class TpDevSmartCard(TpDevInterface):
         )
         cert_raw = cert.export(SPSDKEncoding.DER)
 
-        database = Database(TP_DATABASE)
-        max_size = value_to_int(
-            database.get_device_value("max_oem_cert_size", config_data["family"])
-        )
+        db = get_db(family, "latest")
+        max_size = db.get_int(DatabaseManager.TP, "max_oem_cert_size")
         if len(cert_raw) > max_size:
             raise SPSDKTpError(
                 f"OEM certificate is too big: {len(cert_raw)}B, max size: {max_size}B! "

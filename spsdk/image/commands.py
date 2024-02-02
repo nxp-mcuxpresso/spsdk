@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,9 +18,10 @@ from typing_extensions import Self
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.cms import cms_sign
 from spsdk.crypto.keys import PrivateKey
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.crypto.signature_provider import SignatureProvider, try_to_verify_public_key
+from spsdk.exceptions import SPSDKAttributeError, SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
 # Enums
@@ -29,94 +30,95 @@ from .header import CmdHeader, CmdTag, Header, SegTag
 from .secret import MAC, BaseSecretClass, CertificateImg, EnumAlgorithm, Signature, SrkTable
 
 
-class EnumWriteOps(Enum):
+class EnumWriteOps(SpsdkEnum):
     """Enum definition for 'flags' control flags in 'par' parameter of Write Data command."""
 
-    WRITE_VALUE = (0, "Write value")
-    WRITE_CLEAR_BITS = (1, "Write clear bits")
-    CLEAR_BITMASK = (2, "Clear bitmask")
-    SET_BITMASK = (3, "Set bitmask")
+    WRITE_VALUE = (0, "WRITE_VALUE", "Write value")
+    WRITE_CLEAR_BITS = (1, "WRITE_CLEAR_BITS", "Write clear bits")
+    CLEAR_BITMASK = (2, "CLEAR_BITMASK", "Clear bitmask")
+    SET_BITMASK = (3, "SET_BITMASK", "Set bitmask")
 
 
-class EnumCheckOps(Enum):
+class EnumCheckOps(SpsdkEnum):
     """Enum definition for 'par' parameter of Check Data command."""
 
-    ALL_CLEAR = (0, "All bits clear")
-    ALL_SET = (1, "All bits set")
-    ANY_CLEAR = (2, "Any bit clear")
-    ANY_SET = (3, "Any bit set")
+    ALL_CLEAR = (0, "ALL_CLEAR", "All bits clear")
+    ALL_SET = (1, "ALL_SET", "All bits set")
+    ANY_CLEAR = (2, "ANY_CLEAR", "Any bit clear")
+    ANY_SET = (3, "ANY_SET", "Any bit set")
 
 
-class EnumCertFormat(Enum):
+class EnumCertFormat(SpsdkEnum):
     """Certificate format tags."""
 
-    SRK = (0x03, "SRK certificate format")
-    X509 = (0x09, "X.509v3 certificate format")
-    CMS = (0xC5, "CMS/PKCS#7 signature format")
-    BLOB = (0xBB, "SHW-specific wrapped key format")
-    AEAD = (0xA3, "Proprietary AEAD MAC format")
+    SRK = (0x03, "SRK", "SRK certificate format")
+    X509 = (0x09, "X509", "X.509v3 certificate format")
+    CMS = (0xC5, "CMS", "CMS/PKCS#7 signature format")
+    BLOB = (0xBB, "BLOB", "SHW-specific wrapped key format")
+    AEAD = (0xA3, "AEAD", "Proprietary AEAD MAC format")
 
 
-class EnumInsKey(Enum):
+class EnumInsKey(SpsdkEnum):
     """Flags for Install Key commands."""
 
-    CLR = (0, "No flags set")
-    ABS = (1, "Absolute certificate address")
-    CSF = (2, "Install CSF key")
-    DAT = (4, "Key binds to Data Type")
-    CFG = (8, "Key binds to Configuration")
-    FID = (16, "Key binds to Fabrication UID")
-    MID = (32, "Key binds to Manufacturing ID")
-    CID = (64, "Key binds to Caller ID")
-    HSH = (128, "Certificate hash present")
+    CLR = (0, "CLR", "No flags set")
+    ABS = (1, "ABS", "Absolute certificate address")
+    CSF = (2, "CSF", "Install CSF key")
+    DAT = (4, "DAT", "Key binds to Data Type")
+    CFG = (8, "CFG", "Key binds to Configuration")
+    FID = (16, "FID", "Key binds to Fabrication UID")
+    MID = (32, "MID", "Key binds to Manufacturing ID")
+    CID = (64, "CID", "Key binds to Caller ID")
+    HSH = (128, "HSH", "Certificate hash present")
 
 
-class EnumAuthDat(Enum):
+class EnumAuthDat(SpsdkEnum):
     """Flags for Authenticate Data commands."""
 
-    CLR = (0, "No flags set")
-    ABS = (1, "Absolute signature address")
+    CLR = (0, "CLR", "No flags set")
+    ABS = (1, "ABS", "Absolute signature address")
 
 
-class EnumEngine(Enum):
+class EnumEngine(SpsdkEnum):
     """Engine plugin tags."""
 
     ANY = (
         0x00,
+        "ANY",
         "First compatible engine will be selected (no engine configuration parameters are allowed)",
     )
-    SCC = (0x03, "Security controller")
-    RTIC = (0x05, "Run-time integrity checker")
-    SAHARA = (0x06, "Crypto accelerator")
-    CSU = (0x0A, "Central Security Unit")
-    SRTC = (0x0C, "Secure clock")
-    DCP = (0x1B, "Data Co-Processor")
-    CAAM = (0x1D, "Cryptographic Acceleration and Assurance Module")
-    SNVS = (0x1E, "Secure Non-Volatile Storage")
-    OCOTP = (0x21, "Fuse controller")
-    DTCP = (0x22, "DTCP co-processor")
-    ROM = (0x36, "Protected ROM area")
-    HDCP = (0x24, "HDCP co-processor")
-    SW = (0xFF, "Software engine")
+    SCC = (0x03, "ANY", "Security controller")
+    RTIC = (0x05, "RTIC", "Run-time integrity checker")
+    SAHARA = (0x06, "SAHARA", "Crypto accelerator")
+    CSU = (0x0A, "CSU", "Central Security Unit")
+    SRTC = (0x0C, "SRTC", "Secure clock")
+    DCP = (0x1B, "DCP", "Data Co-Processor")
+    CAAM = (0x1D, "CAAM", "Cryptographic Acceleration and Assurance Module")
+    SNVS = (0x1E, "SNVS", "Secure Non-Volatile Storage")
+    OCOTP = (0x21, "OCOTP", "Fuse controller")
+    DTCP = (0x22, "DTCP", "DTCP co-processor")
+    ROM = (0x36, "ROM", "Protected ROM area")
+    HDCP = (0x24, "HDCP", "HDCP co-processor")
+    SW = (0xFF, "SW", "Software engine")
 
 
-class EnumCAAM(Enum):
+class EnumCAAM(SpsdkEnum):
     """CAAM Engine Configuration."""
 
-    DEFAULT = 0x00
-    IN_SWAP8 = 0x01
-    IN_SWAP16 = 0x02
-    OUT_SWAP8 = 0x08
-    OUT_SWAP16 = 0x10
-    DSC_SWAP8 = 0x40
-    DSC_SWAP16 = 0x80
+    DEFAULT = (0x00, "DEFAULT")
+    IN_SWAP8 = (0x01, "IN_SWAP8")
+    IN_SWAP16 = (0x02, "IN_SWAP16")
+    OUT_SWAP8 = (0x08, "OUT_SWAP8")
+    OUT_SWAP16 = (0x10, "OUT_SWAP16")
+    DSC_SWAP8 = (0x40, "DSC_SWAP8")
+    DSC_SWAP16 = (0x80, "DSC_SWAP16")
 
 
-class EnumItm(Enum):
+class EnumItm(SpsdkEnum):
     """Engine configuration flags of Set command."""
 
-    MID = (0x01, "Manufacturing ID (MID) fuse locations")
-    ENG = (0x03, "Preferred engine for a given algorithm")
+    MID = (0x01, "MID", "Manufacturing ID (MID) fuse locations")
+    ENG = (0x03, "ENG", "Preferred engine for a given algorithm")
 
 
 ########################################################################################################################
@@ -142,7 +144,7 @@ class CmdBase(BaseClass):
         return self._header.length
 
     @property
-    def tag(self) -> CmdTag:
+    def tag(self) -> int:
         """Command tag."""
         return self._header.tag
 
@@ -200,13 +202,11 @@ class CmdBase(BaseClass):
         raise SPSDKError("cmd-data not supported by the command")
 
     def __repr__(self) -> str:
-        return f"Command: {CmdTag.desc(self.tag)}"
+        return f"Command: {CmdTag.get_description(self.tag)}"
 
     def __str__(self) -> str:
         """Text representation of the command."""
-        return (
-            f'Command "{CmdTag.desc(self.tag)}"   [Tag={str(self.tag)}, length={str(self.size)}]\n'
-        )
+        return f'Command "{CmdTag.get_description(self.tag)}"   [Tag={str(self.tag)}, length={str(self.size)}]\n'
 
     def export(self) -> bytes:
         """Export to binary form (serialization).
@@ -253,21 +253,21 @@ class CmdWriteData(CmdBase):
         self._header.param |= value
 
     @property
-    def ops(self) -> int:
+    def ops(self) -> EnumWriteOps:
         """Type of write operation."""
-        return (self._header.param >> 3) & 0x3
+        return EnumWriteOps.from_tag((self._header.param >> 3) & 0x3)
 
     @ops.setter
-    def ops(self, value: int) -> None:
+    def ops(self, value: EnumWriteOps) -> None:
         if value not in EnumWriteOps:
             raise SPSDKValueError("Value not defined")
         self._header.param &= ~(0x3 << 3)
-        self._header.param |= int(value) << 3
+        self._header.param |= int(value.tag) << 3
 
     def __init__(
         self,
         numbytes: int = 4,
-        ops: int = EnumWriteOps.WRITE_VALUE,
+        ops: EnumWriteOps = EnumWriteOps.WRITE_VALUE,
         data: Optional[Iterable[Tuple[int, int]]] = None,
     ) -> None:
         """Initialize Write Data command.
@@ -282,7 +282,7 @@ class CmdWriteData(CmdBase):
             raise SPSDKError("Incorrect number of bytes")
         if ops not in EnumWriteOps:
             raise SPSDKError("Incorrect type of operation")
-        super().__init__(CmdTag.WRT_DAT, ((int(ops) & 0x3) << 3) | (numbytes & 0x7))
+        super().__init__(CmdTag.WRT_DAT, ((int(ops.tag) & 0x3) << 3) | (numbytes & 0x7))
         self._data: List[List[int]] = []
         if data is not None:
             assert isinstance(data, (list, tuple))
@@ -290,7 +290,7 @@ class CmdWriteData(CmdBase):
                 self.append(address, value)
 
     def __repr__(self) -> str:
-        return f"CmdWriteData <{EnumWriteOps.name(self.ops)}/{self.num_bytes}, {len(self._data)}>"
+        return f"CmdWriteData <{self.ops.label}/{self.num_bytes}, {len(self._data)}>"
 
     def __len__(self) -> int:
         return len(self._data)
@@ -308,7 +308,7 @@ class CmdWriteData(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().__str__()
-        msg += f"Write Data Command (Ops: {EnumWriteOps.name(self.ops)}, Bytes: {self.num_bytes})\n"
+        msg += f"Write Data Command (Ops: {self.ops.label}, Bytes: {self.num_bytes})\n"
         for cmd in self._data:
             msg += f"- Address: 0x{cmd[0]:08X}, Value: 0x{cmd[1]:08X}\n"
         msg += "-" * 60 + "\n"
@@ -353,8 +353,8 @@ class CmdWriteData(CmdBase):
         :param data: being parsed
         :return: parse command
         """
-        header = CmdHeader.parse(data, required_tag=CmdTag.WRT_DAT)
-        obj = cls(header.param & 0x7, (header.param >> 3) & 0x3)
+        header = CmdHeader.parse(data, required_tag=CmdTag.WRT_DAT.tag)
+        obj = cls(header.param & 0x7, EnumWriteOps.from_tag((header.param >> 3) & 0x3))
         index = header.size
         while index < header.length:
             (address, value) = unpack_from(">LL", data, index)
@@ -379,12 +379,12 @@ class CmdCheckData(CmdBase):
         self._header.param |= int(value)
 
     @property
-    def ops(self) -> int:
+    def ops(self) -> EnumCheckOps:
         """Operation of Check data command."""
-        return (self._header.param >> 3) & 0x3
+        return EnumCheckOps.from_tag((self._header.param >> 3) & 0x3)
 
     @ops.setter
-    def ops(self, value: int) -> None:
+    def ops(self, value: EnumCheckOps) -> None:
         """Operation of Check data command.
 
         :raises SPSDKError: If incorrect operation
@@ -392,12 +392,12 @@ class CmdCheckData(CmdBase):
         if value not in EnumCheckOps:
             raise SPSDKError("Incorrect operation")
         self._header.param &= ~(0x3 << 3)
-        self._header.param |= int(value) << 3
+        self._header.param |= int(value.tag) << 3
 
     def __init__(
         self,
         numbytes: int = 4,
-        ops: int = EnumCheckOps.ALL_SET,
+        ops: EnumCheckOps = EnumCheckOps.ALL_SET,
         address: int = 0,
         mask: int = 0,
         count: Optional[int] = None,
@@ -416,7 +416,7 @@ class CmdCheckData(CmdBase):
             raise SPSDKError("Incorrect number of bytes")
         if ops not in EnumCheckOps:
             raise SPSDKError("Incorrect operation")
-        super().__init__(CmdTag.CHK_DAT, ((int(ops) & 0x3) << 3) | (numbytes & 0x7))
+        super().__init__(CmdTag.CHK_DAT, ((int(ops.tag) & 0x3) << 3) | (numbytes & 0x7))
         self.address = address
         self.mask = mask
         self.count = count
@@ -425,7 +425,7 @@ class CmdCheckData(CmdBase):
 
     def __repr__(self) -> str:
         return (
-            f"CmdCheckData <{EnumCheckOps[self.ops]}/{self.num_bytes}, "  # type: ignore
+            f"CmdCheckData <{self.ops.label}/{self.num_bytes}, "
             f"ADDR=0x{self.address:X}, MASK=0x{self.mask:X}>"
         )
 
@@ -433,7 +433,7 @@ class CmdCheckData(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().__str__()
-        msg += f"Check Data Command (Ops: {EnumCheckOps[self.ops]}, Bytes: {self.num_bytes})\n"  # type: ignore
+        msg += f"Check Data Command (Ops: {self.ops.label}, Bytes: {self.num_bytes})\n"
 
         msg += f"- Address: 0x{self.address:08X}, Mask: 0x{self.mask:08X}"
         if self.count:
@@ -460,14 +460,14 @@ class CmdCheckData(CmdBase):
         :param data: being parsed
         :return: parse command
         """
-        header = CmdHeader.parse(data, CmdTag.CHK_DAT)
+        header = CmdHeader.parse(data, CmdTag.CHK_DAT.tag)
         numbytes = header.param & 0x7
         ops = (header.param >> 3) & 0x3
         address, mask = unpack_from(">LL", data, header.size)
         count = None
         if (header.length - header.size) > 8:
             count = unpack_from(">L", data, header.size + 8)[0]
-        return cls(numbytes, ops, address, mask, count)
+        return cls(numbytes, EnumCheckOps.from_tag(ops), address, mask, count)
 
 
 class CmdNop(CmdBase):
@@ -494,7 +494,7 @@ class CmdNop(CmdBase):
         :param data: being parsed
         :return: parse command
         """
-        header = CmdHeader.parse(data, CmdTag.NOP)
+        header = CmdHeader.parse(data, CmdTag.NOP.tag)
         if header.length != header.size:
             pass
         return cls(header.param)
@@ -504,15 +504,15 @@ class CmdSet(CmdBase):
     """Set command."""
 
     @property
-    def itm(self) -> int:
+    def itm(self) -> EnumItm:
         """Item of Set command."""
-        return self._header.param
+        return EnumItm.from_tag(self._header.param)
 
     @itm.setter
     def itm(self, value: EnumItm) -> None:
         if value not in EnumItm:
             raise SPSDKError("Incorrect item of set command")
-        self._header.param = value
+        self._header.param = value.tag
 
     @property
     def hash_algorithm(self) -> EnumAlgorithm:
@@ -546,7 +546,7 @@ class CmdSet(CmdBase):
         """Initialize the set command."""
         if itm not in EnumItm:
             raise SPSDKError("Incorrect engine configuration flag")
-        super().__init__(CmdTag.SET, itm)
+        super().__init__(CmdTag.SET, itm.tag)
         self.hash_algorithm: EnumAlgorithm = hash_alg
         self.engine = engine
         self.engine_cfg = engine_cfg
@@ -554,8 +554,8 @@ class CmdSet(CmdBase):
 
     def __repr__(self) -> str:
         return (
-            f"CmdSet <{EnumItm.name(self.itm)}, {EnumAlgorithm.name(self.hash_algorithm)},"
-            f" {EnumEngine.name(self.engine)}, eng_cfg=0x{self.engine_cfg:X}>"
+            f"CmdSet <{self.itm.label}, {self.hash_algorithm.label},"
+            f" {self.engine.label}, eng_cfg=0x{self.engine_cfg:X}>"
         )
 
     def __str__(self) -> str:
@@ -563,10 +563,8 @@ class CmdSet(CmdBase):
         msg = "-" * 60 + "\n"
         msg += super().__str__()
         msg += "Set Command ITM : {EnumItm.name(self.itm)}\n"
-        msg += (
-            f"HASH Algo      : {self.hash_algorithm} ({EnumAlgorithm.desc(self.hash_algorithm)})\n"
-        )
-        msg += f"Engine         : {self.engine} ({EnumEngine.desc(self.engine)})\n"
+        msg += f"HASH Algo      : {self.hash_algorithm} ({self.hash_algorithm.description})\n"
+        msg += f"Engine         : {self.engine} ({self.engine.description})\n"
         msg += f"Engine Conf    : {hex(self.engine_cfg)})\n"
         msg += "-" * 60 + "\n"
         return msg
@@ -577,7 +575,7 @@ class CmdSet(CmdBase):
         :return: binary representation of the command
         """
         raw_data = super().export()
-        raw_data += pack("4B", 0x00, self.hash_algorithm, self.engine, self.engine_cfg)
+        raw_data += pack("4B", 0x00, self.hash_algorithm.tag, self.engine.tag, self.engine_cfg)
         return raw_data
 
     @classmethod
@@ -587,12 +585,12 @@ class CmdSet(CmdBase):
         :param data: being parsed
         :return: parse command
         """
-        header = CmdHeader.parse(data, CmdTag.SET)
+        header = CmdHeader.parse(data, CmdTag.SET.tag)
         (_, alg, eng, cfg) = unpack_from("4B", data, CmdHeader.SIZE)
         return cls(
-            EnumItm.from_int(header.param),
-            EnumAlgorithm.from_int(alg),
-            EnumEngine.from_int(eng),
+            EnumItm.from_tag(header.param),
+            EnumAlgorithm.from_tag(alg),
+            EnumEngine.from_tag(eng),
             cfg,
         )
 
@@ -601,25 +599,27 @@ class CmdInitialize(CmdBase):
     """Initialize command."""
 
     @property
-    def engine(self) -> int:
+    def engine(self) -> EnumEngine:
         """Engine."""
-        return self._header.param
+        return EnumEngine.from_tag(self._header.param)
 
     @engine.setter
     def engine(self, value: EnumEngine) -> None:
         if value not in EnumEngine:
             raise SPSDKError("Incorrect value of engine")
-        self._header.param = value
+        self._header.param = value.tag
 
-    def __init__(self, engine: int = EnumEngine.ANY, data: Optional[List[int]] = None) -> None:
+    def __init__(
+        self, engine: EnumEngine = EnumEngine.ANY, data: Optional[List[int]] = None
+    ) -> None:
         """Initialize the initialize command."""
         if engine not in EnumEngine:
             raise SPSDKError("Incorrect value of engine")
-        super().__init__(CmdTag.INIT, engine)
+        super().__init__(CmdTag.INIT, engine.tag)
         self._data = data if data else []
 
     def __repr__(self) -> str:
-        return f"CmdInitialize <{EnumEngine[self.engine]}, {len(self._data)}>"  # type: ignore
+        return f"CmdInitialize <{self.engine.label}, {len(self._data)}>"
 
     def __len__(self) -> int:
         return len(self._data)
@@ -637,7 +637,7 @@ class CmdInitialize(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().__str__()
-        msg += f"Initialize Command (Engine: {EnumEngine[self.engine]})\n"  # type: ignore
+        msg += f"Initialize Command (Engine: {self.engine.description})\n"
         cnt = 0
         for val in self._data:
             msg += f" {cnt:02d}) Value: 0x{val:08X}\n"
@@ -691,8 +691,8 @@ class CmdInitialize(CmdBase):
         :return: parse command
         :raises SPSDKError: If incorrect length of data
         """
-        header = CmdHeader.parse(data, CmdTag.INIT)
-        obj = cls(EnumEngine.from_int(header.param))
+        header = CmdHeader.parse(data, CmdTag.INIT.tag)
+        obj = cls(EnumEngine.from_tag(header.param))
         index = header.size
         while index < header.length:
             if index >= len(data):
@@ -713,7 +713,7 @@ class CmdUnlockAbstract(CmdBase, ABC):
         :param features: engine specific features
         :param uid: Unique ID required by some engine/feature combinations
         """
-        super().__init__(CmdTag.UNLK, EnumEngine.from_int(engine), length=8)
+        super().__init__(CmdTag.UNLK, engine.tag, length=8)
         self.features = features
         self.uid = uid
         if self._need_uid:
@@ -723,7 +723,7 @@ class CmdUnlockAbstract(CmdBase, ABC):
         return self.__iter__()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__} <{EnumEngine.desc(self.engine)}, {self.features}, {self.uid}>"
+        return f"{self.__class__.__name__} <{self.engine.description}, {self.features}, {self.uid}>"
 
     @property
     def engine(self) -> EnumEngine:
@@ -735,13 +735,13 @@ class CmdUnlockAbstract(CmdBase, ABC):
         - security alarm handling
         - access control
         """
-        return EnumEngine.from_int(self._header.param)
+        return EnumEngine.from_tag(self._header.param)
 
     def __str__(self) -> str:
         """Text description of the command."""
         msg = super().__str__()
         msg += f"Unlock Command ({self.__class__.__name__})\n"
-        msg += f"Engine : {EnumEngine.desc(self.engine)}\n"
+        msg += f"Engine : {self.engine.description}\n"
         return msg
 
     @property
@@ -764,9 +764,9 @@ class CmdUnlockAbstract(CmdBase, ABC):
         :param data: being parsed
         :return: Unlock command
         """
-        header = CmdHeader.parse(data, CmdTag.UNLK)
+        header = CmdHeader.parse(data, CmdTag.UNLK.tag)
         features = unpack_from(">L", data, header.size)[0]
-        engine = EnumEngine.from_int(header.param)
+        engine = EnumEngine.from_tag(header.param)
         uid = 0
         if cls.need_uid(engine, features):
             uid = unpack_from(">Q", data, header.size + 4)[0]
@@ -974,7 +974,7 @@ class CmdInstallKey(CmdBase):
         :param location: start address of an additional data such as KEY to be installed;
                 Typically it is relative to CSF start; Might be absolute for DEK key
         """
-        super().__init__(CmdTag.INS_KEY, flags)
+        super().__init__(CmdTag.INS_KEY, flags.tag)
         self._cert_fmt: EnumCertFormat = cert_fmt
         self.hash_algorithm: EnumAlgorithm = hash_alg
         self.source_index = src_index
@@ -986,7 +986,7 @@ class CmdInstallKey(CmdBase):
     @property
     def flags(self) -> EnumInsKey:
         """Flags."""
-        return EnumInsKey.from_int(self._header.param)
+        return EnumInsKey.from_tag(self._header.param)
 
     @flags.setter
     def flags(self, value: EnumInsKey) -> None:
@@ -996,7 +996,7 @@ class CmdInstallKey(CmdBase):
         """
         if value not in EnumInsKey:
             raise SPSDKError("Incorrect flag")
-        self._header.param = value
+        self._header.param = value.tag
 
     @property
     def certificate_format(self) -> EnumCertFormat:
@@ -1048,7 +1048,7 @@ class CmdInstallKey(CmdBase):
         :raises SPSDKError: If incorrect keys
         """
         if self._cert_fmt == EnumCertFormat.SRK:
-            # RT10xx supports just 4 SRK keys; this might need update for other devices
+            # This might need update for devices with different count of keys
             if value not in (
                 0,
                 1,
@@ -1149,8 +1149,8 @@ class CmdInstallKey(CmdBase):
 
     def __repr__(self) -> str:
         return (
-            f"CmdInstallKey <{EnumInsKey[self.flags]}, {EnumCertFormat[self.certificate_format]},"  # type: ignore
-            f" {EnumAlgorithm[self.hash_algorithm]}, {self.source_index}, "
+            f"CmdInstallKey <{self.flags.label}, {self.certificate_format.label},"
+            f" {self.hash_algorithm.label}, {self.source_index}, "
             f"{self.target_index}, 0x{self.cmd_data_location:X}>"
         )
 
@@ -1158,10 +1158,10 @@ class CmdInstallKey(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().__str__()
-        msg += f" Flag      : {self.flags} ({EnumInsKey.desc(self.flags)})\n"
+        msg += f" Flag      : {self.flags} ({self.flags.description})\n"
         msg += f" CertFormat: {self.certificate_format}"
-        msg += f"({EnumCertFormat.desc(self.certificate_format)})\n"
-        msg += f" Algorithm : {self.hash_algorithm} ({EnumAlgorithm.desc(self.hash_algorithm)})\n"
+        msg += f"({self.certificate_format.description})\n"
+        msg += f" Algorithm : {self.hash_algorithm} ({self.hash_algorithm.description})\n"
         msg += f" SrcKeyIdx : {self.source_index} (Source key index) \n"
         msg += f" TgtKeyIdx : {self.target_index} (Target key index) \n"
         msg += f" Location  : 0x{self.cmd_data_location:08X} (Start address of certificate(s) to install) \n"
@@ -1179,8 +1179,8 @@ class CmdInstallKey(CmdBase):
         raw_data = super().export()
         data = pack(
             ">4BL",
-            self.certificate_format,
-            self.hash_algorithm,
+            self.certificate_format.tag,
+            self.hash_algorithm.tag,
             self.source_index,
             self.target_index,
             self.cmd_data_location,
@@ -1195,12 +1195,12 @@ class CmdInstallKey(CmdBase):
         :param data: being parsed
         :return: parse command
         """
-        header = CmdHeader.parse(data, CmdTag.INS_KEY)
+        header = CmdHeader.parse(data, CmdTag.INS_KEY.tag)
         protocol, algorithm, src_index, tgt_index, location = unpack_from(">4BL", data, header.size)
         return cls(
-            EnumInsKey.from_int(header.param),
-            protocol,
-            algorithm,
+            EnumInsKey.from_tag(header.param),
+            EnumCertFormat.from_tag(protocol),
+            EnumAlgorithm.from_tag(algorithm),
             src_index,
             tgt_index,
             location,
@@ -1219,15 +1219,15 @@ class CmdAuthData(CmdBase):
     """Authenticate data command."""
 
     @property
-    def flags(self) -> int:
+    def flags(self) -> EnumAuthDat:
         """Flag of Authenticate data command."""
-        return self._header.param
+        return EnumAuthDat.from_tag(self._header.param)
 
     @flags.setter
-    def flags(self, value: int) -> None:
+    def flags(self, value: EnumAuthDat) -> None:
         if value not in EnumAuthDat:
             raise SPSDKError("Incorrect flag")
-        self._header.param = value
+        self._header.param = value.tag
 
     @property
     def key_index(self) -> int:
@@ -1261,9 +1261,10 @@ class CmdAuthData(CmdBase):
         location: int = 0,
         certificate: Optional[Certificate] = None,
         private_key: Optional[PrivateKey] = None,
+        signature_provider: Optional[SignatureProvider] = None,
     ):
         """Initialize the Authenticate data command."""
-        super().__init__(CmdTag.AUT_DAT, flags)
+        super().__init__(CmdTag.AUT_DAT, flags.tag)
         self.key_index = key_index
         self.sig_format = sig_format
         self.engine = engine
@@ -1271,14 +1272,22 @@ class CmdAuthData(CmdBase):
         self.location = location
         self.certificate = certificate
         self.private_key = private_key
+        self.signature_provider = signature_provider
         self._header.length = CmdHeader.SIZE + 8
         self._blocks: List[Tuple[int, int]] = []  # list of (start-address, size)
         self._signature: Optional[SignatureOrMAC] = None
-        if certificate and private_key:
-            assert isinstance(certificate, Certificate)
-            assert isinstance(private_key, PrivateKey)
-            if not private_key.verify_public_key(certificate.get_public_key()):
-                raise SPSDKError("Given private key does not match the public certificate")
+        if private_key and signature_provider:
+            raise SPSDKValueError(
+                "Only one of private key and signature provider must be specified"
+            )
+        if certificate and (private_key or signature_provider):
+            public_key = certificate.get_public_key()
+            if signature_provider:
+                try_to_verify_public_key(signature_provider, public_key.export())
+            else:
+                assert private_key
+                if not private_key.verify_public_key(public_key):
+                    raise SPSDKError("Given private key does not match the public certificate")
 
     @property
     def needs_cmd_data_reference(self) -> bool:
@@ -1355,7 +1364,7 @@ class CmdAuthData(CmdBase):
 
     def __repr__(self) -> str:
         return (
-            f"CmdAuthData <{EnumAuthDat[self.flags]}, {EnumEngine[self.engine]},"  # type: ignore
+            f"CmdAuthData <{self.flags.label}, {self.engine.label},"
             f" {self.engine_cfg}, key:{self.key_index}, 0x{self.location:X}>"
         )
 
@@ -1378,9 +1387,9 @@ class CmdAuthData(CmdBase):
         """Text description of the command."""
         msg = "-" * 60 + "\n"
         msg += super().__str__()
-        msg += f" Flag:        {self.flags} ({EnumAuthDat.desc(self.flags)})\n"
+        msg += f" Flag:        {self.flags} ({self.flags.description})\n"
         msg += f" Key index:   {self.key_index}\n"
-        msg += f" Engine:      {self.engine} ({EnumEngine.desc(self.engine)})\n"
+        msg += f" Engine:      {self.engine} ({self.engine.description})\n"
         msg += f" Engine Conf: {self.engine_cfg}\n"
         msg += f" Location:    0x{self.location:08X} (Start address of authentication data) \n"
         if self.signature:
@@ -1429,9 +1438,12 @@ class CmdAuthData(CmdBase):
         :return: True if length of the signature was unchanged, as this may affect content of the CSF section (pointer
                         to data);
         """
-        if not self.certificate or not self.private_key:
-            raise SPSDKError("certificate or private key not assigned, cannot update signature")
-
+        if not self.certificate:
+            raise SPSDKAttributeError("Certificate not assigned, cannot update signature")
+        if not (self.private_key or self.signature_provider):
+            raise SPSDKAttributeError(
+                "Private key or signature provider not assigned, cannot update signature"
+            )
         if self.signature is None:
             raise SPSDKError(
                 "signature must be assigned explicitly, so its version matches to CST version"
@@ -1460,6 +1472,7 @@ class CmdAuthData(CmdBase):
                 data=sign_data,
                 certificate=self.certificate,
                 signing_key=self.private_key,
+                signature_provider=self.signature_provider,
             )
             result = len(self.signature.data) == len(new_signature)
             self.signature.data = new_signature
@@ -1478,8 +1491,8 @@ class CmdAuthData(CmdBase):
         raw_data += pack(
             ">4BL",
             self.key_index,
-            self.sig_format,
-            self.engine,
+            self.sig_format.tag,
+            self.engine.tag,
             self.engine_cfg,
             self.location,
         )
@@ -1494,13 +1507,13 @@ class CmdAuthData(CmdBase):
         :param data: being parsed
         :return: parse command
         """
-        header = CmdHeader.parse(data, CmdTag.AUT_DAT)
+        header = CmdHeader.parse(data, CmdTag.AUT_DAT.tag)
         key, sig_format, eng, cfg, location = unpack_from(">4BL", data, header.size)
         obj = cls(
-            EnumAuthDat.from_int(header.param),
+            EnumAuthDat.from_tag(header.param),
             key,
-            sig_format,
-            EnumEngine.from_int(eng),
+            EnumCertFormat.from_tag(sig_format),
+            EnumEngine.from_tag(eng),
             cfg,
             location,
         )
@@ -1533,8 +1546,8 @@ def parse_command(data: bytes) -> CmdBase:
     :raises SPSDKError: If the command is not valid
     """
     try:
-        cmd_tag = CmdTag.from_int(data[0])
-    except ValueError as exc:
+        cmd_tag = CmdTag.from_tag(data[0])
+    except SPSDKKeyError as exc:
         raise SPSDKError("Unknown command to parse") from exc
     cmd_class = _CMD_TO_CLASS[cmd_tag]
     return cmd_class.parse(data)

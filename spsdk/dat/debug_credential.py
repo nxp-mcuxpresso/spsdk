@@ -1,27 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Module with DebugCredential class."""
 
 import math
+from collections import OrderedDict
 from struct import calcsize, pack, unpack_from
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PublicKeyEcc, PublicKeyRsa
-from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.crypto.signature_provider import (
+    SignatureProvider,
+    get_signature_provider,
+    try_to_verify_public_key,
+)
 from spsdk.crypto.utils import extract_public_key
-from spsdk.dat import DAT_DC_SCH_FILE
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.image.ahab.ahab_container import SRKRecord, SRKTable
-from spsdk.utils.misc import find_file
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
+from spsdk.utils.misc import Endianness, find_file, value_to_int
+from spsdk.utils.schema_validator import CommentedConfig
 
 
 class DebugCredential:
@@ -30,41 +35,8 @@ class DebugCredential:
     # Subclasses override the following invalid class member values
     FORMAT = "INVALID_FORMAT"
     FORMAT_NO_SIG = "INVALID_FORMAT"
-    SOCC_FORMAT = ""
     VERSION = "0.0"
     HASH_LENGTH = 32
-
-    SOCC_LIST = {
-        0x0000: [("rt5xx", "a0"), ("rt5xx", "latest"), ("rt6xx", "b0"), ("rt6xx", "latest")],
-        0x0001: [
-            ("lpc550x", "a1"),
-            ("lpc550x", "latest"),
-            ("lpc55s0x", "a1"),
-            ("lpc55s0x", "latest"),
-            ("lpc551x", "a1"),
-            ("lpc551x", "latest"),
-            ("lpc55s1x", "a1"),
-            ("lpc55s1x", "latest"),
-            ("lpc552x", "a1"),
-            ("lpc552x", "latest"),
-            ("lpc55s2x", "a1"),
-            ("lpc55s2x", "latest"),
-            ("lpc55s6x", "a1"),
-            ("lpc55s6x", "latest"),
-        ],
-        0x0004: [
-            ("lpc55s3x", "a1"),
-            ("lpc55s3x", "latest"),
-        ],
-        0x0005: [("kw45xx", "a1"), ("kw45xx", "latest"), ("k32w1xx", "a1"), ("k32w1xx", "latest")],
-        0x0006: [("mcxn9xx", "a0")],
-        0x0007: [("mcxn9xx", "a1"), ("mcxn9xx", "latest")],
-        0x000A: [("rw61x", "a2"), ("rw61x", "latest")],
-        0x4D580008: [("mx8ulp", "a0"), ("mx8ulp", "latest")],
-        0x4D58005D: [("mx93", "a0"), ("mx93", "latest")],
-        0x4D58005F: [("mx95", "a0"), ("mx95", "latest")],
-        0x5254049C: [("rt118x", "a0"), ("rt118x", "latest")],
-    }
 
     def __init__(
         self,
@@ -128,24 +100,50 @@ class DebugCredential:
         return data
 
     @staticmethod
-    def get_socc_description(version: str, socc: int) -> str:
+    def get_socc_list() -> Dict[int, Dict[str, List[str]]]:
+        """Get supported SOCC list."""
+        data: Dict[int, Dict[str, List[str]]] = {}
+        # Get the SOCC information from the database
+        for dev, rev, socc in DatabaseManager().db.devices.feature_items(
+            DatabaseManager.DAT, "socc"
+        ):
+            data.setdefault(socc, {}).setdefault(dev, []).append(rev)
+
+        # Sort the all items to be nice list (also nested)
+        ret: Dict[int, Dict[str, List[str]]] = OrderedDict()
+        for socc in sorted(data):
+            ret[socc] = OrderedDict()
+            for dev in sorted(data[socc]):
+                ret[socc][dev] = sorted(data[socc][dev])
+
+        return ret
+
+    @staticmethod
+    def _get_socc_text_description(socc: int, socc_list: Dict[int, Dict[str, List[str]]]) -> str:
+        """Get text line with printed out all devices and their revisions for SOCC.
+
+        :param socc: SOCC ID
+        :param socc_list: List of all SOCC.
+        :return: Text readable description of supported MCUs
+        """
+        ret = f"0x{socc:08X}: "
+        empty = True
+        for dev, revs in socc_list[socc].items():
+            ret += f"{'' if empty else ', '}{dev}[{','.join(revs)}]"
+            empty = False
+        return ret
+
+    @staticmethod
+    def get_socc_description(socc: int) -> str:
         """Get SOCC family name description.
 
-        :param version: Protocol version
         :param socc: SOCC number
         :return: SOCC string representation
         """
-        cls = DebugCredential._get_class(version, socc)
-        return f"{socc:{cls.SOCC_FORMAT}}, " + ", ".join(
-            [
-                item[0]
-                for item in DebugCredential.SOCC_LIST.get(socc, "Unknown SOCC")
-                if "latest" not in item
-            ]
-        )
+        return DebugCredential._get_socc_text_description(socc, DebugCredential.get_socc_list())
 
     def __repr__(self) -> str:
-        return f"DC v{self.VERSION}, {self.SOCC_LIST.get(self.socc, 'Unknown SOCC')}"
+        return f"DC v{self.VERSION}, 0x{self.socc:08X}"
 
     def __str__(self) -> str:
         """String representation of DebugCredential.
@@ -153,7 +151,7 @@ class DebugCredential:
         :return: binary representation of the debug credential
         """
         msg = f"Version : {self.VERSION}\n"
-        msg += f"SOCC    : {self.get_socc_description(self.VERSION, self.socc)}\n"
+        msg += f"SOCC    : {self.get_socc_description(self.socc)}\n"
         msg += f"UUID    : {self.uuid.hex().upper()}\n"
         msg += f"CC_SOCC : {hex(self.cc_socu)}\n"
         msg += f"CC_VU   : {hex(self.cc_vu)}\n"
@@ -165,7 +163,8 @@ class DebugCredential:
         """Sign the DC data using SignatureProvider."""
         if not self.signature_provider:
             raise SPSDKError("Debug Credential Signature provider is not set")
-        signature = self.signature_provider.sign(self._get_data_to_sign())
+        try_to_verify_public_key(self.signature_provider, self.rot_pub)
+        signature = self.signature_provider.get_signature(self._get_data_to_sign())
         if not signature:
             raise SPSDKError("Debug Credential Signature provider didn't return any signature")
         self.signature = signature
@@ -229,18 +228,29 @@ class DebugCredential:
         """
         raise NotImplementedError("Derived class has to implement this method.")
 
-    @classmethod
-    def _get_class(cls, version: str, socc: int) -> "Type[DebugCredential]":
-        """Get DC class.
+    @staticmethod
+    def get_family_ambassador(socc: Union[int, str]) -> str:
+        """Get family ambassador for given SOCC.
 
-        :param version: Protocol version
-        :param socc: SOCC index
-        :raises SPSDKValueError: Unsupported version (invalid version) detected
-        :return: Debug credential class
+        :param socc: SOCC value
+        :return: Ambassador family name
         """
-        if socc in DebugCredentialEdgeLockEnclave.SUPPORTED_SOCC:
-            if not version in _edge_lock_version_mapping:
-                raise SPSDKValueError(f"Unsupported version({version}) by DC ELE class")
+        socc = value_to_int(socc)
+        socc_list = DebugCredential.get_socc_list()
+        try:
+            supported_families: Dict[str, List[str]] = socc_list[socc]
+        except KeyError as exc:
+            raise SPSDKKeyError(f"Unsupported SOCC(0x{socc:08X}) by DAT tool") from exc
+        return supported_families.popitem()[0]
+
+    @staticmethod
+    def _dat_based_on_ele(socc: int) -> bool:
+        family_ambassador = DebugCredential.get_family_ambassador(socc)
+        return get_db(family_ambassador).get_bool(DatabaseManager.DAT, "based_on_ele", False)
+
+    @staticmethod
+    def _get_class(version: str, socc: int) -> "Type[DebugCredential]":
+        if DebugCredential._dat_based_on_ele(socc):
             return _edge_lock_version_mapping[version]
         if not version in _version_mapping:
             raise SPSDKValueError(f"Unsupported version({version}) by DC class")
@@ -314,10 +324,7 @@ class DebugCredential:
 
         :return: List of supported families.
         """
-        families = []
-        for family_str in DebugCredential.SOCC_LIST.values():
-            families.extend([i[0] for i in family_str])
-        return list(set(families))
+        return get_families(DatabaseManager.DAT)
 
     @staticmethod
     def get_socc_by_family(family: str, revision: str = "latest") -> int:
@@ -328,36 +335,37 @@ class DebugCredential:
         :raises SPSDKValueError: Unsupported family or revision
         :return: SOCC value.
         """
-        for socc, devices in DebugCredential.SOCC_LIST.items():
-            for fam, rev in devices:
-                if family == fam and revision == rev:
-                    return socc
-
-        raise SPSDKValueError(f"Unsupported family {family} or revision {revision}")
+        try:
+            return get_db(family, revision).get_int(DatabaseManager.DAT, "socc")
+        except SPSDKError as exc:
+            raise SPSDKValueError(
+                f"Unsupported family {family} or revision {revision} to get SOCC. Details:\n{str(exc)}"
+            ) from exc
 
     @staticmethod
-    def get_validation_schemas(
-        family: str = "lpc55s3x", revision: str = "latest"
-    ) -> List[Dict[str, Any]]:
+    def get_validation_schemas(family: str, revision: str = "latest") -> List[Dict[str, Any]]:
         """Get list of validation schemas.
 
         :param family: Family for what will be json schema generated.
         :param revision: For a closer specify MCU family.
         :return: Validation list of schemas.
         """
-        schema = ValidationSchemas.get_schema_file(DAT_DC_SCH_FILE)
+        schema = get_schema_file(DatabaseManager.DAT)
         ret = []
         socc = DebugCredential.get_socc_by_family(family, revision)
         schema["dc_content"]["properties"]["socc"]["template_value"] = hex(socc)
-        schema["dc_content"]["properties"]["socc"]["enum"] = list(DebugCredential.SOCC_LIST.keys())
+        schema["dc_content"]["properties"]["socc"]["enum"] = list(
+            DebugCredential.get_socc_list().keys()
+        )
+
         ret.append(schema["dc_content"])
         ret.append(schema["dc_signature"])
-        if socc in DebugCredentialEdgeLockEnclave.SUPPORTED_SOCC:
+        if DebugCredential._dat_based_on_ele(socc):
             ret.append(schema["dc_srk_ca_flag"])
         return ret
 
     @staticmethod
-    def generate_config_template(family: str = "lpc55s3x", revision: str = "latest") -> str:
+    def generate_config_template(family: str, revision: str = "latest") -> str:
         """Generate DC configuration template.
 
         :param family: Family for what will be template generated.
@@ -365,20 +373,19 @@ class DebugCredential:
         :return: DC file template.
         """
         val_schemas = DebugCredential.get_validation_schemas(family, revision)
-        schema = ValidationSchemas.get_schema_file(DAT_DC_SCH_FILE)
+        schema = get_schema_file(DatabaseManager.DAT)
+        socc_list = DebugCredential.get_socc_list()
+
         note = schema["main_note"]
         note += "---==== Supported SOCC ====---"
-        for socc, families in DebugCredential.SOCC_LIST.items():
-            for family_str, rev in families:
-                if rev == "latest":
-                    continue
-                note += f"\n0x{socc:08X}:    {family_str} [{rev}]"
+        for socc in socc_list:
+            note += "\n" + DebugCredential._get_socc_text_description(socc, socc_list)
 
         return CommentedConfig(
             main_title=f"Debug Credential file template for {family} family.",
             schemas=val_schemas,
             note=note,
-        ).export_to_yaml()
+        ).get_template()
 
 
 class DebugCredentialRSA(DebugCredential):
@@ -490,7 +497,7 @@ class DebugCredentialECC(DebugCredential):
         :return: binary representation of the debug credential
         """
         msg = f"Version : {self.VERSION}\n"
-        msg += f"SOCC    : {self.get_socc_description(self.VERSION, self.socc)}\n"
+        msg += f"SOCC    : {self.get_socc_description(self.socc)}\n"
         msg += f"UUID    : {self.uuid.hex().upper()}\n"
         msg += f"CC_SOCC : {hex(self.cc_socu)}\n"
         msg += f"CC_VU   : {hex(self.cc_vu)}\n"
@@ -524,7 +531,9 @@ class DebugCredentialECC(DebugCredential):
             assert isinstance(pub_key, PublicKeyEcc)
             hash_size = DebugCredentialECC.HASH_SIZES[math.ceil(pub_key.key_size / 8)]
             data = pub_key.export()
-            ctrk_hash = get_hash(data=data, algorithm=EnumHashAlgorithm[f"sha{hash_size}"])
+            ctrk_hash = get_hash(
+                data=data, algorithm=EnumHashAlgorithm.from_label(f"sha{hash_size}")
+            )
             ctrk_table += ctrk_hash
         return ctrk_table
 
@@ -643,9 +652,13 @@ class DebugCredentialECC(DebugCredential):
         srk_records_num = self.rot_meta[0] >> 4
         if srk_records_num == 1:
             key_length = 256 if len(self.rot_pub) == 64 else 384
-            return get_hash(data=self.rot_pub, algorithm=EnumHashAlgorithm[f"sha{key_length}"])
+            return get_hash(
+                data=self.rot_pub, algorithm=EnumHashAlgorithm.from_label(f"sha{key_length}")
+            )
         key_length = 256 if ((len(self.rot_meta) - 4) // srk_records_num) == 32 else 384
-        return get_hash(data=self.rot_meta[4:], algorithm=EnumHashAlgorithm[f"sha{key_length}"])
+        return get_hash(
+            data=self.rot_meta[4:], algorithm=EnumHashAlgorithm.from_label(f"sha{key_length}")
+        )
 
 
 class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
@@ -654,8 +667,6 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
     HASH_LENGTH = 0
     KEY_LENGTH = 0
     CORD_LENGTH = 0
-    SOCC_FORMAT = "08X"
-    SUPPORTED_SOCC = [0x5254049C, 0x4D58005D, 0x4D580008, 0x4D58005F]
 
     @classmethod
     def _get_rot_meta(cls, config: Dict[str, Any]) -> bytes:
@@ -705,7 +716,7 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         :return: binary representation of the debug credential
         """
         msg = f"Version : {self.VERSION}\n"
-        msg += f"SOCC    : {self.get_socc_description(self.VERSION, self.socc)}\n"
+        msg += f"SOCC    : {self.get_socc_description(self.socc)}\n"
         msg += f"UUID    : {self.uuid.hex().upper()}\n"
         msg += f"CC_SOCC : {hex(self.cc_socu)}\n"
         msg += f"CC_VU   : {hex(self.cc_vu)}\n"
@@ -805,7 +816,7 @@ class DebugCredentialEdgeLockEnclave(DebugCredentialECC):
         srk_table = SRKTable.parse(data[calcsize(format_head) :])
         srk_table.update_fields()
         srk_table.validate({})
-        rot_meta = int.to_bytes(flags, 4, "little") + srk_table.export()
+        rot_meta = int.to_bytes(flags, 4, Endianness.LITTLE.value) + srk_table.export()
         format_tail = f"<{cls.HASH_LENGTH * 2}s{cls.HASH_LENGTH * 2}s"
         dck_pub, signature = unpack_from(format_tail, data, calcsize(format_head) + len(srk_table))
         rot_pub = srk_table.get_source_keys()[used_rot].export()
@@ -840,7 +851,7 @@ class DebugCredentialRSA4096(DebugCredentialRSA):
 
 
 class DebugCredentialECC256(DebugCredentialECC):
-    """DebugCredential class for LPC55s3x for version 2.0 (p256)."""
+    """DebugCredential class for version 2.0 (p256)."""
 
     VERSION = "2.0"
     CURVE = "secp256r1"
@@ -850,7 +861,7 @@ class DebugCredentialECC256(DebugCredentialECC):
 
 
 class DebugCredentialECC384(DebugCredentialECC):
-    """DebugCredential class for LPC55s3x for version 2.1 (p384)."""
+    """DebugCredential class for version 2.1 (p384)."""
 
     VERSION = "2.1"
     CURVE = "secp384r1"
@@ -860,7 +871,7 @@ class DebugCredentialECC384(DebugCredentialECC):
 
 
 class DebugCredentialECC521(DebugCredentialECC):
-    """DebugCredential class for LPC55s3x for version 2.1 (p384)."""
+    """DebugCredential class for version 2.1 (p384)."""
 
     VERSION = "2.2"
     CURVE = "secp521r1"

@@ -1,0 +1,891 @@
+<?xml version="1.0"?>
+<!--
+  Copyright 2023-2024 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd">
+  <register offset="0" width="32" name="BOOT_CFG" description="Boot Configuration">
+    <alias type="CMSIS" value="CMPA.BOOT_CFG"/>
+    <bit_field offset="0" width="2" name="BOOT_SRC" access="RO" reset_value="0" description="Primary boot source">
+      <alias type="CMSIS" value="CMPA_BOOT_CFG_DEFAULT_BOOT_SOURCE(x)"/>
+      <bit_field_value name="INTERNAL_FLASH_0b00" value="0b00" description="Internal flash"/>
+      <bit_field_value name="FLEXSPI_FLASH_XIP_0b01" value="0b01" description="FlexSPI flash XIP image"/>
+      <bit_field_value name="SECONDARY_BOOTLOADER_0b10" value="0b10" description="Secondary Boot loader in Bank1 IFR0 (32KB)"/>
+      <bit_field_value name="INTERNAL_FLASH_0b11" value="0b11" description="Internal flash"/>
+    </bit_field>
+    <reserved_bit_field offset="2" width="2" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ISP_BOOT_IF" access="RO" reset_value="0" description="ISP boot interface">
+      <alias type="CMSIS" value="ISP_BOOT_INTERFACE(x)"/>
+      <bit_field_value name="AUTO_ISP" value="0b000" description="Auto ISP"/>
+      <bit_field_value name="UART_ISP" value="0b001" description="UART ISP"/>
+      <bit_field_value name="SPI_SLAVE" value="0b010" description="SPI Slave ISP"/>
+      <bit_field_value name="I2C_SLAVE" value="0b011" description="I2C slave ISP"/>
+      <bit_field_value name="USB0_HID" value="0b100" description="USB0_HID"/>
+      <bit_field_value name="USB1_HID" value="0b101" description="USB1_HID"/>
+      <bit_field_value name="CAN_ISP" value="0b110" description="CAN ISP"/>
+      <bit_field_value name="RESERVED" value="0b111" description="Reserved"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="2" name="REC_BOOT_SRC" access="RO" reset_value="0" description="Recovery boot source">
+      <alias type="CMSIS" value="RECOVERY_BOOT_SOURCE(x)"/>
+      <bit_field_value name="DISABLED" value="0b00" description="Recovery boot disabled."/>
+      <bit_field_value name="XIP_IMAGE" value="0b01" description="XIP image in Bank1 IFR0 (32KB)."/>
+      <bit_field_value name="SB3_IMAGE" value="0b10" description="SB3 image in 1-bit SPI flash connected to FlexComm. FC7 used for this function by default overlaps with FlexSPI A."/>
+      <bit_field_value name="RESERVED" value="0b11" description="Reserved"/>
+    </bit_field>
+    <reserved_bit_field offset="10" width="2" reset_value="0"/>
+    <bit_field offset="12" width="2" name="BOOT_SPEED" access="RO" reset_value="0" description="Core Clock">
+      <alias type="CMSIS" value="CORE_CLOCK(x)"/>
+      <bit_field_value name="FRO_48_MHZ" value="0b00" description="48Mhz FRO @ 1.0V"/>
+      <bit_field_value name="FRO_72_MHZ" value="0b01" description="72MHz FRO @ 1.1V"/>
+      <bit_field_value name="FRO_144_MHZ" value="0b10" description="144MHz FRO @ 1.2V"/>
+      <bit_field_value name="PLL_150_MHZ" value="0b11" description="150MHz PLL @ 1.2V"/>
+    </bit_field>
+    <reserved_bit_field offset="14" width="2" reset_value="0"/>
+    <bit_field offset="16" width="16" name="HEADER" access="RO" reset_value="0x5963" description="CMPA Header marker should be set to 0x5963. After this header is set, all non-zero values will take effect; leaving all settings at 0xff will cause undefined behavior. It is recommended to set all values to 0x00 before setting the CMPA header value.">
+      <alias type="CMSIS" value="0x5963"/>
+    </bit_field>
+  </register>
+  <register offset="0x4" width="32" name="FLASH_CFG" description="Flash Configuration">
+    <bit_field offset="0" width="5" name="FLASH_REMAP_SIZE" access="RO" reset_value="0" description="Flash remap size. &amp;#10;FLASH_REMAP_SIZE defines the size of the secondary boot image &amp;#10;(the range of flash addresses that will be remapped)in internal flash, where remapped &amp;#10;address end = (FLASH_REMAP_SIZE + 1) * 32 KB. For example, if FLASH_REMAP_SIZE = 2, &amp;#10;then the first 96KB of addresses will be remapped to flash bank1 instead of flash bank0 &amp;#10;when remap is active. Set this field to 0 if you do not want to use the flash remap feature.">
+      <alias type="CMSIS" value="FLASH_REMAP_SIZE(x)"/>
+    </bit_field>
+    <bit_field offset="5" width="3" name="OEM_BANK1_IFR0_PROT" access="RO" reset_value="0" description="Defines protection for Bank1_IFR0 area based on usage. &amp;#10;Note, if the SBL / Recovery image size is more than IFR0 size of 32KB then sectors from users flash can be associated for extended image size using CMPA.REC_IMG_EXT0/1.">
+      <alias type="CMSIS" value="OEM_BANK1_IFR0_PROT(x)"/>
+      <bit_field_value name="OEM_ROM_RWXL_CODE" value="0b000" description="Not determined by ROM (MBC fields are modified by OEM code)"/>
+      <bit_field_value name="OEM_ROOT_RWXL_1010" value="0b001" description="Used as OEM Root of Trust image, in other words secondary boot loader (OEM_SBL). MBC protection bits set as RWXL = 1010. Updatable by OEM code later."/>
+      <bit_field_value name="OEM_SBL_RWXL_1011" value="0b010" description="Used as OEM_SBL. MBC protection bits set as RWXL = 1011."/>
+      <bit_field_value name="OEM_SBL_RWXL_0011" value="0b011" description="Used as OEM_SBL. MBC protection bits set as RWXL = 0011."/>
+      <bit_field_value name="OEM_REC_RWXL_1010" value="0b100" description="Used as OEM recovery boot image with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 1010 on ROM exiting to user image."/>
+      <bit_field_value name="OEM_REC_RWXL_1011" value="0b101" description="Used as OEM_RCVRY_IMG with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 1011 on ROM exiting to user image."/>
+      <bit_field_value name="OEM_REC_RWXL_0011" value="0b110" description="Used as OEM_RCVRY_IMG with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 0011 on ROM exiting to user image."/>
+      <bit_field_value name="OEM_REC_RWXL_0001" value="0b111" description="Used as OEM_RCVRY_IMG with MBC protection RWXL = 1010 on ROM exiting to recovery image. But set to  RWXL = 0001 on ROM exiting to user image."/>
+    </bit_field>
+    <bit_field offset="8" width="2" name="ISP_PIN_ENTRY" access="RO" reset_value="0" description="Disable ISP mode entry through pin assertion.">
+      <alias type="CMSIS" value="ISP_PIN_ENTRY(x)"/>
+      <bit_field_value name="ALLOWED_0b00" value="0b00" description="ISP entry allowed"/>
+      <bit_field_value name="DISABLED_0b01" value="0b01" description="ISP entry disabled"/>
+      <bit_field_value name="ALLOWED_0b10" value="0b10" description="ISP entry allowed"/>
+      <bit_field_value name="ALLOWED_0b11" value="0b11" description="ISP entry allowed"/>
+    </bit_field>
+    <bit_field offset="10" width="2" name="ISP_DM_ENTRY" access="RO" reset_value="0" description="Disable ISP mode entry through debug mailbox command.">
+      <alias type="CMSIS" value="ISP_DM_ENTRY(x)"/>
+      <bit_field_value name="ALLOWED_0b00" value="0b00" description="ISP entry allowed"/>
+      <bit_field_value name="DISABLED_0b01" value="0b01" description="ISP entry disabled"/>
+      <bit_field_value name="ALLOWED_0b10" value="0b10" description="ISP entry allowed"/>
+      <bit_field_value name="ALLOWED_0b11" value="0b11" description="ISP entry allowed"/>
+    </bit_field>
+    <bit_field offset="12" width="2" name="ISP_API_ENTRY" access="RO" reset_value="0" description="Disable ISP mode entry through ROM API call. &amp;#10;ISP mode can be entered through ROM API invocation">
+      <alias type="CMSIS" value="ISP_API_ENTRY(x)"/>
+      <bit_field_value name="ALLOWED_0b00" value="0b00" description="ISP entry allowed"/>
+      <bit_field_value name="DISABLED_0b01" value="0b01" description="ISP entry disabled"/>
+      <bit_field_value name="ALLOWED_0b10" value="0b10" description="ISP entry allowed"/>
+      <bit_field_value name="ALLOWED_0b11" value="0b11" description="ISP entry allowed"/>
+    </bit_field>
+    <bit_field offset="14" width="2" name="ISP_FT_ENTRY" access="RO" reset_value="0" description="Disable ISP mode entry through image authentication failure">
+      <alias type="CMSIS" value="ISP_FT_ENTRY(x)"/>
+      <bit_field_value name="ALLOWED_0b00" value="0b00" description="ISP entry allowed"/>
+      <bit_field_value name="DISABLED_0b01" value="0b01" description="ISP entry disabled"/>
+      <bit_field_value name="ALLOWED_0b10" value="0b10" description="ISP entry allowed"/>
+      <bit_field_value name="ALLOWED_0b11" value="0b11" description="ISP entry allowed"/>
+    </bit_field>
+    <reserved_bit_field offset="16" width="16" reset_value="0"/>
+  </register>
+  <register offset="0x8" width="32" name="BOOT_LED_STATUS" description="Boot LED Status">
+    <bit_field offset="0" width="8" name="REC_BOOT_LED" access="RO" reset_value="0" description="Assert on recovery boot. &amp;#10;ROM drives the GPIO pin high, identified by this field whenever primary boot fails and fall through to recovery boot source. &amp;#10;[4:0] GPIO Pin number. P0_0 and P0_1 are not supported. &amp;#10;[7:5] GPIO port number. Only 0 - 4  ports are allowed. &amp;#10;If this feature is not use then set this field to 0x00.">
+    </bit_field>
+    <bit_field offset="8" width="8" name="ISP_BOOT_LED" access="RO" reset_value="0" description="Assert on ISP fall through. &amp;#10;ROM drives the GPIO pin high identified by this field whenever primary boot fails and execution falls through to ISP mode. &amp;#10;[[4:0] GPIO Pin number. P0_0 and P0_1 are not supported. &amp;#10;[7:5] GPIO port number. Only 0 - 4  ports are allowed. &amp;#10;If this feature is not use then set this field to 0x00.">
+    </bit_field>
+    <bit_field offset="16" width="8" name="BOOT_FAIL_LED" access="RO" reset_value="0" description="Assert on fatal errors during boot. &amp;#10;ROM drives the GPIO pin high identified by this field whenever primary boot fails due to fatal errors before locking-up/reset. &amp;#10;[4:0] GPIO Pin number. P0_0 and P0_1 are not supported. &amp;#10;[7:5] GPIO port number. Only 0 - 4  ports are allowed. &amp;#10;If this feature is not use then set this field to 0x00.">
+    </bit_field>
+    <reserved_bit_field offset="24" width="8" reset_value="0"/>
+  </register>
+  <register offset="0xC" width="32" name="BOOT_TIMERS" description="Boot Timers">
+    <alias type="CMSIS" value="BOOT_TIMERS"/>
+    <bit_field offset="0" width="16" name="POWERDOWN_TIMEOUT_SECS" access="RO" reset_value="0" description="Power down timeout. &amp;#10;ISP mode peripheral detection timeout value in seconds. &amp;#10;If a non-zero value is program and peripheral activity is not detected within the number of seconds specified here, then the device will go to power down mode to conserve power.">
+    </bit_field>
+    <bit_field offset="16" width="16" name="WDOG_TIMEOUT_COUNT" access="RO" reset_value="0" description="WDOG timeout. &amp;#10;Upper 16 bits of 24-bit count value in WWDT0_TC register Timeout value in seconds. The lower 8 bits of  WWDT0_TC are set to 0. &amp;#10;When a non-zero value is programmed in this field ROM configures the watch dog timer to reset the device on timeout before passing execution control to user code.">
+    </bit_field>
+  </register>
+  <register offset="0x18" width="32" name="REC_SPI_FLASH_CFG0" description="Recovery SPI Flash Configuration 0">
+    <alias type="CMSIS" value="REC_SPI_FLASH_CFG0"/>
+    <bit_field offset="0" width="8" name="REC_SPI_SCK_PIN" access="RO" reset_value="0" description="Override default SPI_SCK ISP pin. &amp;#10;Identifies the pin to be used as SPI_SCK pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="8" width="4" name="REC_SPI_SCK_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by REC_SPI_SCK_PIN.">
+    </bit_field>
+    <bit_field offset="12" width="4" name="REC_SPI_FLEXCOM" access="RO" reset_value="0" description="Identifies the FlexComm used for SPI ISP mode.">
+    </bit_field>
+    <bit_field offset="16" width="8" name="REC_SPI_MOSI_PIN" access="RO" reset_value="0" description="Override default SPI_MOSI ISP pin. &amp;#10;Identifies the pin to be used as SPI_MOSI pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="24" width="4" name="REC_SPI_MOSI_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by REC_SPI_MOSI_PIN.">
+    </bit_field>
+    <reserved_bit_field offset="28" width="4" reset_value="0"/>
+  </register>
+  <register offset="0x1C" width="32" name="REC_SPI_FLASH_CFG1" description="Recovery SPI Flash Configuration 1">
+    <alias type="CMSIS" value="REC_SPI_FLASH_CFG1"/>
+    <bit_field offset="0" width="8" name="REC_SPI_MISO_PIN" access="RO" reset_value="0" description="Override default SPI_MISO ISP pin. &amp;#10;Identifies the pin to be used as SPI_MISO pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="8" width="4" name="REC_SPI_MISO_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by REC_SPI_MISO_PIN.">
+    </bit_field>
+    <reserved_bit_field offset="12" width="4" reset_value="0"/>
+    <bit_field offset="16" width="8" name="REC_SPI_SSEL_PIN" access="RO" reset_value="0" description="Override default SPI_SSEL ISP pin. &amp;#10;Identifies the pin to be used as SPI_SSEL pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="24" width="4" name="REC_SPI_SSEL_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by REC_SPI_SSEL_PIN.">
+    </bit_field>
+    <bit_field offset="28" width="2" name="REC_SPI_SSEL_X" access="RO" reset_value="0" description="SPI chip select number. &amp;#10;FlexComm SPI interfaces supports up to four chip selects.">
+    </bit_field>
+    <bit_field offset="30" width="2" name="REC_BOOT_PIN_CUST" access="RO" reset_value="0" description="Use customer defined pins for 1-bit SPI recovery boot pins.">
+      <bit_field_value name="DEFAULT_ROM_0b00" value="0b00" description="Default ROM defined pins."/>
+      <bit_field_value name="CUSTOMER_DEF_0b01" value="0b01" description="Customer defined."/>
+      <bit_field_value name="DEFAULT_ROM_0b10" value="0b10" description="Default ROM defined pins."/>
+      <bit_field_value name="DEFAULT_ROM_0b11" value="0b11" description="Default ROM defined pins."/>
+    </bit_field>
+  </register>
+  <register offset="0x20" width="32" name="ISP_UART_CFG" description="ISP UART Configuration">
+    <alias type="CMSIS" value="ISP_UART_CFG"/>
+    <bit_field offset="0" width="8" name="UART_RX_PIN" access="RO" reset_value="0" description="Override default UART RX ISP pin. &amp;#10;Identifies the pin to be used as UART_RX pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="8" width="4" name="UART_RX_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by UART_RX_PIN.">
+    </bit_field>
+    <bit_field offset="12" width="4" name="UART_ISP_FLEXCOM" access="RO" reset_value="0" description="Identifies the FlexComm used for UART ISP mode.">
+    </bit_field>
+    <bit_field offset="16" width="8" name="UART_TX_PIN" access="RO" reset_value="0" description="Override default UART TX ISP pin. &amp;#10;Identifies the pin to be used as UART_TX pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="24" width="4" name="UART_TX_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by UART_TX_PIN.">
+    </bit_field>
+    <reserved_bit_field offset="28" width="4" reset_value="0"/>
+  </register>
+  <register offset="0x24" width="32" name="ISP_I2C_CFG" description="ISP I2C Configuration">
+    <alias type="CMSIS" value="ISP_I2C_CFG"/>
+    <bit_field offset="0" width="8" name="I2C_SCL_PIN" access="RO" reset_value="0" description="Override default I2C SCL ISP pin. &amp;#10;Identifies the pin to be used as I2C_SCL pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="8" width="4" name="I2C_SCL_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by I2C_SCL_PIN.">
+    </bit_field>
+    <bit_field offset="12" width="4" name="I2C_ISP_FLEXCOM" access="RO" reset_value="0" description="Identifies the FlexComm used for I2C ISP mode.">
+    </bit_field>
+    <bit_field offset="16" width="8" name="I2C_SDA_PIN" access="RO" reset_value="0" description="Override default I2C SDA ISP pin. &amp;#10;Identifies the pin to be used as I2C_SDA pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="24" width="4" name="I2C_SDA_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by I2C_SDA_PIN.">
+    </bit_field>
+    <reserved_bit_field offset="28" width="4" reset_value="0"/>
+  </register>
+  <register offset="0x28" width="32" name="ISP_CAN_CFG" description="ISP CAN Configuration">
+    <alias type="CMSIS" value="ISP_CAN_CFG"/>
+    <bit_field offset="0" width="8" name="CAN_RX_PIN" access="RO" reset_value="0" description="Override default CAN RX ISP pin. &amp;#10;Identifies the pin to be used as CAN_RX pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="8" width="4" name="CAN_RX_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by CAN_RX_PIN.">
+    </bit_field>
+    <bit_field offset="12" width="4" name="CAN_ISP_INST" access="RO" reset_value="0" description="Identifies the instance used for CAN ISP mode. &amp;#10;0: For CAN0. &amp;#10;1: For CAN1. &amp;#10;Others: Reserved.">
+    </bit_field>
+    <bit_field offset="16" width="8" name="CAN_TX_PIN" access="RO" reset_value="0" description="Override default CAN TX ISP pin. &amp;#10;Identifies the pin to be used as CAN_TX pin. &amp;#10;[7:5] GPIO port number &amp;#10;[4:0] GPIO Pin number">
+    </bit_field>
+    <bit_field offset="24" width="4" name="CAN_TX_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by CAN_TX_PIN.">
+    </bit_field>
+    <bit_field offset="28" width="4" name="CAN_BAUD_RATE" access="RO" reset_value="0" description="CAN baud rate. &amp;#10;Baud rate configured during CAN ISP mode. &amp;#10;2b'0000: Auto baud detection (125K, 250K, 500K, 750K, 1M). &amp;#10;2b'0101 and above: 1000 kbps and auto baud detection.">
+      <alias type="CMSIS" value="CAN_BAUD_RATE(x)"/>
+      <bit_field_value name="AUTO_DETECT" value="0b0000" description="Auto baud detection (125K, 250K, 500K, 750k, 1M)."/>
+      <bit_field_value name="KBPS_125" value="0b0001" description="125 kbps"/>
+      <bit_field_value name="KBPS_250" value="0b0010" description="250 kbps"/>
+      <bit_field_value name="KBPS_500" value="0b0011" description="500 kbps"/>
+      <bit_field_value name="KBPS_750" value="0b0100" description="750 kbps"/>
+      <bit_field_value name="KBPS_AUTO_0b0101" value="0b0101" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b0110" value="0b0110" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b0111" value="0b0111" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b1000" value="0b1000" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b1001" value="0b1001" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b1010" value="0b1010" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b1011" value="0b1011" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b1100" value="0b1100" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b1101" value="0b1101" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b1110" value="0b1110" description="1000 kbps and auto baud detection"/>
+      <bit_field_value name="KBPS_AUTO_0b1111" value="0b1111" description="1000 kbps and auto baud detection"/>
+    </bit_field>
+  </register>
+  <register offset="0x2C" width="32" name="ISP_SPI_CFG0" description="ISP SPI Configuration 0">
+    <alias type="CMSIS" value="ISP_SPI_CFG0"/>
+    <bit_field offset="0" width="8" name="SPI_SCK_PIN" access="RO" reset_value="0" description="Override default SPI_SCK ISP pin. &amp;#10;Identifies the pin to be used as SPI_SCK pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="8" width="4" name="SPI_SCK_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by SPI_SCK_PIN.">
+    </bit_field>
+    <bit_field offset="12" width="4" name="SPI_ISP_FLEXCOM" access="RO" reset_value="0" description="Identifies the FlexComm used for SPI ISP mode.">
+    </bit_field>
+    <bit_field offset="16" width="8" name="SPI_MOSI_PIN" access="RO" reset_value="0" description="Override default SPI_MOSI ISP pin. &amp;#10;Identifies the pin to be used as SPI_MOSI pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="24" width="4" name="SPI_MOSI_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by SPI_MOSI_PIN.">
+    </bit_field>
+    <reserved_bit_field offset="28" width="4" reset_value="0"/>
+  </register>
+  <register offset="0x30" width="32" name="ISP_SPI_CFG1" description="ISP SPI Configuration 1">
+    <alias type="CMSIS" value="ISP_SPI_CFG1"/>
+    <bit_field offset="0" width="8" name="SPI_MISO_PIN" access="RO" reset_value="0" description="Override default SPI_MISO ISP pin. &amp;#10;Identifies the pin to be used as SPI_MISO pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="8" width="4" name="SPI_MISO_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by SPI_MISO_PIN.">
+    </bit_field>
+    <reserved_bit_field offset="12" width="4" reset_value="0"/>
+    <bit_field offset="16" width="8" name="SPI_SSEL_PIN" access="RO" reset_value="0" description="Override default SPI_SSEL ISP pin. &amp;#10;Identifies the pin to be used as SPI_SSEL pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="24" width="4" name="SPI_SSEL_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by SPI_SSEL_PIN.">
+    </bit_field>
+    <bit_field offset="28" width="2" name="ISP_SPI_SSEL_X" access="RO" reset_value="0" description="SPI chip select number. &amp;#10;FlexComm SPI interfaces supports up to four chip selects.">
+    </bit_field>
+    <reserved_bit_field offset="30" width="2" reset_value="0"/>
+  </register>
+  <register offset="0x34" width="32" name="ISP_USB_ID" description="ISP USB Identification">
+    <alias type="CMSIS" value="ISP_USB_ID"/>
+    <bit_field offset="0" width="16" name="USB_Vendor_ID" access="RO" reset_value="0" description="Customer defined USB vendor ID used during USB-ISP mode device enumeration.">
+    </bit_field>
+    <bit_field offset="16" width="16" name="USB_Product_ID" access="RO" reset_value="0" description="Customer defined USB product ID used during USB-ISP mode device enumeration.">
+    </bit_field>
+  </register>
+  <register offset="0x38" width="32" name="ISP_USB_CFG" description="ISP USB Configuration">
+    <alias type="CMSIS" value="ISP_USB_CFG"/>
+    <bit_field offset="0" width="8" name="USBx_VBUS_PIN" access="RO" reset_value="0" description="Override default USBx_VBUS_DETECT ISP pin. &amp;#10;Identifies the pin to be used as USBx_VBUS detect pin. &amp;#10;[4:0] GPIO Pin number &amp;#10;[7:5] GPIO port number">
+    </bit_field>
+    <bit_field offset="8" width="4" name="USBx_VBUS_FUNC_SLOT" access="RO" reset_value="0" description="Identifies the ALT pin mux function to use for the pin selected by USBx_VBUS_PIN.">
+    </bit_field>
+    <reserved_bit_field offset="12" width="4" reset_value="0"/>
+    <bit_field offset="16" width="3" name="EXT_XTAL_CLK" access="RO" reset_value="0" description="USB PHY input clock frequency. &amp;#10;For USB high speed PHY external XTAL input is needed. This field specifies the frequency of XTAL used on board.">
+      <alias type="CMSIS" value="EXT_XTAL_CLK(x)"/>
+      <bit_field_value name="XTAL_24MHZ" value="0b000" description="24MHz input clock (Divide by 20)"/>
+      <bit_field_value name="XTAL_30MHZ" value="0b001" description="30MHz input clock (Divide by 16)"/>
+      <bit_field_value name="XTAL_32MHZ" value="0b010" description="32MHz input clock (Divide by 15)"/>
+      <bit_field_value name="RESERVED" value="0b011" description="Reserved"/>
+      <bit_field_value name="XTAL_20MHZ" value="0b100" description="20MHz input clock (Divide by 24)"/>
+      <bit_field_value name="XTAL_19_2MHZ" value="0b101" description="19.2MHz input clock (Divide by 25)"/>
+      <bit_field_value name="XTAL_16MHZ" value="0b110" description="16MHz input clock (Divide by 30) - Default option when CMPA is blank."/>
+      <bit_field_value name="XTAL_12MHZ" value="0b111" description="12MHz input clock (Divide by 40) "/>
+    </bit_field>
+    <bit_field offset="19" width="1" name="PRE_DIV" access="RO" reset_value="0" description="Enable Pre-divider. &amp;#10;Needed to support 48MHz and other high speed crystals.">
+      <bit_field_value name="DISABLED" value="0b0" description="Disable"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enable"/>
+    </bit_field>
+    <reserved_bit_field offset="20" width="12" reset_value="0"/>
+  </register>
+  <register offset="0x3C" width="32" name="ISP_MISC_CFG" description="ISP Miscellaneous Configuration">
+    <alias type="CMSIS" value="ISP_MISC_CFG"/>
+    <bit_field offset="0" width="8" name="I2C_SLAVE_ADDR" access="RO" reset_value="0" description="I2C slave address. &amp;#10;A 7-bit Address used for selecting our device on shared I2C bus system. &amp;#10;By default  ROM uses 0x10 as slave address. If this address conflicts with another slave on board  customer could use this field to override the address.">
+    </bit_field>
+    <reserved_bit_field offset="8" width="14" reset_value="0"/>
+    <bit_field offset="22" width="2" name="ISP_USB_CUST" access="RO" reset_value="0" description="Use customer defined GPIO for USB VBUS detect function during ISP mode.">
+      <alias type="CMSIS" value="ISP_USB_CUST(x)"/>
+      <bit_field_value name="DEDICATED" value="0b00" description="Use dedicated VBUS pins."/>
+      <bit_field_value name="USB0_VBUS" value="0b01" description="Customer defined GPIO for USB0_VBUS detect."/>
+      <bit_field_value name="USB1_VBUS" value="0b10" description="Customer defined GPIO for USB1_VBUS detect."/>
+      <bit_field_value name="VDD_USB" value="0b11" description="Use VDD_USB for VBUS presence. On board regulator should generate VDD_USB voltage using 5V input fo VBUS pin on connector."/>
+    </bit_field>
+    <bit_field offset="24" width="2" name="ISP_CAN_CUST" access="RO" reset_value="0" description="Use customer defined CAN ISP pins.">
+      <alias type="CMSIS" value="ISP_CAN_CUST(x)"/>
+      <bit_field_value name="DEFAULT_0b00" value="0b00" description="Default ROM defined pins."/>
+      <bit_field_value name="CUST_DEF_0b01" value="0b01" description="Customer defined."/>
+      <bit_field_value name="DEFAULT_0b10" value="0b10" description="Default ROM defined pins."/>
+      <bit_field_value name="DEFAULT_0b11" value="0b11" description="Default ROM defined pins."/>
+    </bit_field>
+    <bit_field offset="26" width="2" name="ISP_SPI_CUST" access="RO" reset_value="0" description="Use customer defined SPI ISP pins.">
+      <alias type="CMSIS" value="ISP_SPI_CUST(x)"/>
+      <bit_field_value name="DEFAULT_0b00" value="0b00" description="Default ROM defined pins."/>
+      <bit_field_value name="CUST_DEF_0b01" value="0b01" description="Customer defined."/>
+      <bit_field_value name="DEFAULT_0b10" value="0b10" description="Default ROM defined pins."/>
+      <bit_field_value name="DEFAULT_0b11" value="0b11" description="Default ROM defined pins."/>
+    </bit_field>
+    <bit_field offset="28" width="2" name="ISP_I2C_CUST" access="RO" reset_value="0" description="Use customer defined I2C ISP pins.">
+      <alias type="CMSIS" value="ISP_I2C_CUST(x)"/>
+      <bit_field_value name="DEFAULT_0b00" value="0b00" description="Default ROM defined pins."/>
+      <bit_field_value name="CUST_DEF_0b01" value="0b01" description="Customer defined."/>
+      <bit_field_value name="DEFAULT_0b10" value="0b10" description="Default ROM defined pins."/>
+      <bit_field_value name="DEFAULT_0b11" value="0b11" description="Default ROM defined pins."/>
+    </bit_field>
+    <bit_field offset="30" width="2" name="ISP_UART_CUST" access="RO" reset_value="0" description="Use customer defined UART ISP pins.">
+      <alias type="CMSIS" value="ISP_UART_CUST(x)"/>
+      <bit_field_value name="DEFAULT_0b00" value="0b00" description="Default ROM defined pins."/>
+      <bit_field_value name="CUST_DEF_0b01" value="0b01" description="Customer defined."/>
+      <bit_field_value name="DEFAULT_0b10" value="0b10" description="Default ROM defined pins."/>
+      <bit_field_value name="DEFAULT_0b11" value="0b11" description="Default ROM defined pins."/>
+    </bit_field>
+  </register>
+  <register offset="0x40" width="32" name="DCFG_CC_SOCU_PIN" description="Credential Constraints for SoC specific Use Pinned">
+    <alias type="CMSIS" value="CMPA.CC_SOCU_PIN"/>
+    <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_NIDEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RO" reset_value="0" description="Non-secure Debug Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_DBGEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="SPNIDEN" access="RO" reset_value="0" description="Secure Non-invasive Debug Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_SPNIDEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="SPIDEN" access="RO" reset_value="0" description="Secure Invasive Debug Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_SPIDEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <reserved_bit_field offset="4" width="2" reset_value="0"/>
+    <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RO" reset_value="0" description="ISP Boot Command Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_ISP_CMD_EN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RO" reset_value="0" description="FA Command Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_FA_CMD_EN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RO" reset_value="0" description="Flash Mass Erase Command Enable">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_ME_CMD_EN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <reserved_bit_field offset="9" width="6" reset_value="0"/>
+    <bit_field offset="15" width="1" name="UUID_CHECK" access="RO" reset_value="0" description="Enforce UUID match during Debug authentication.">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_UUID_CHECK(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Debug certificate can be used with all devices."/>
+      <bit_field_value name="ENABLED" value="0b1" description="Debug certificate per device with matching UUID is needed."/>
+    </bit_field>
+    <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value">
+      <alias type="CMSIS" value="FLASH_CMPA_CC_SOCU_PIN_INVERSE_VALUE(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x44" width="32" name="DCFG_CC_SOCU_DFLT" description="Credential Constraints for SoC specific Use Debug Filter">
+    <alias type="CMSIS" value="CMPA.DCFG_CC_SOCU_DFLT"/>
+    <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non Secure Non-invasive Debug Fixed State">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_NIDEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RO" reset_value="0" description="Non-secure Debug Fixed State">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_DBGEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="SPNIDEN" access="RO" reset_value="0" description="Secure Non-invasive Debug Fixed State">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_SPNIDEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="SPIDEN" access="RO" reset_value="0" description="Secure Invasive Debug Fixed State">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_SPIDEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="4" width="2" reset_value="0"/>
+    <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RO" reset_value="0" description="ISP Command Fixed State">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_ISP_CMD_EN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RO" reset_value="0" description="FA Command Fixed State">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_FA_CMD_EN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RO" reset_value="0" description="Flash Mass Erase Command Fixed State">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_ME_CMD_EN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="9" width="7" reset_value="0"/>
+    <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value">
+      <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_INVERSE_VALUE(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x48" width="32" name="VENDOR_USAGE" description="Vendor Usage">
+    <alias type="CMSIS" value="CMPA.VENDOR_USAGE"/>
+    <reserved_bit_field offset="0" width="16" reset_value="0"/>
+    <bit_field offset="16" width="16" name="VENDOR_USAGE" access="RO" reset_value="0" description="Vendor Usage [31:16]. &amp;#10;Upper 16 bits of vendor usage field defined in DAP. Lower 16-bits come from customer field area (CFPA.DBG_REVOKE_VU).">
+      <alias type="CMSIS" value="FLASH_CMPA_VENDOR_USAGE_VENDOR_USAGE(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x50" width="32" name="SECURE_BOOT_CFG" description="Secure Boot Configuration">
+    <alias type="CMSIS" value="SECURE_BOOT_CFG"/>
+    <bit_field offset="0" width="2" name="SEC_BOOT_EN" access="RO" reset_value="0" description="Secure boot enforcement. &amp;#10;This field defines the minimum image verification procedure (CRC32, CMAC, ECDSA sign). &amp;#10;The Image type field in header indicates the type of verification data (checksum or signature) included in it. &amp;#10;Note: Plain &lt; CRC32 &lt; CMAC &lt; ECDSA">
+      <alias type="CMSIS" value="SEC_BOOT_EN(x)"/>
+      <bit_field_value name="ALL_IMAGES" value="0b00" description="All Image types are allowed."/>
+      <bit_field_value name="CRC32_IMAGES" value="0b01" description="Only CRC32 or signed (CMAC or ECDSA) images are allowed."/>
+      <bit_field_value name="SIGNED_IMAGES" value="0b10" description="Only Signed (CMAC or ECDSA) images are allowed."/>
+      <bit_field_value name="ECDSA_SIGNED" value="0b11" description="Only ECDSA signed images are allowed."/>
+    </bit_field>
+    <reserved_bit_field offset="2" width="1" reset_value="0"/>
+    <bit_field offset="3" width="2" name="LP_SEC_BOOT" access="RO" reset_value="0" description="Secure boot option for low-power wake from power-down and deep-powerdown. For CFPA/CMPA do CRC check always.">
+      <alias type="CMSIS" value="LP_SEC_BOOT(x)"/>
+      <bit_field_value name="COLD_BOOT" value="0b00" description="Same as cold boot"/>
+      <bit_field_value name="CHECK_CRC32" value="0b01" description="CRC check for PFR and CRC32 check of active image"/>
+      <bit_field_value name="CHECK_JUMP" value="0b10" description="CRC check for PFR and jump to vector address specified in CFPA."/>
+      <bit_field_value name="CMAC_CHECK" value="0b11" description="CRC check for PFR and CMAC check of active image"/>
+    </bit_field>
+    <reserved_bit_field offset="5" width="3" reset_value="0"/>
+    <bit_field offset="8" width="2" name="ENF_CNSA" access="RO" reset_value="0" description="Enforce CNSA suite approved algorithms for secure boot, secure update and debug authentication. &amp;#10;Note, CMAC image authentication is only allowed in 2b'00 setting.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_ENF_CNSA(x)"/>
+      <bit_field_value name="ALL_ALLOWED_0b00" value="0b00" description="All algorithms allowed."/>
+      <bit_field_value name="LIMITED_0b01" value="0b01" description="Only ECC P-384 keys, SHA384 and AES256 algorithms are used."/>
+      <bit_field_value name="LIMITED_0b10" value="0b10" description="Only ECC P-384 keys, SHA384 and AES256 algorithms are used."/>
+      <bit_field_value name="LIMITED_0b11" value="0b11" description="Only ECC P-384 keys, SHA384 and AES256 algorithms are used."/>
+    </bit_field>
+    <bit_field offset="10" width="2" name="ENF_TZM_PRESET" access="RO" reset_value="0" description="Enforce TrustZone-M mode.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_ENF_TZM_PRESET(x)"/>
+      <bit_field_value name="IGNORE_0b00" value="0b00" description="Ignored"/>
+      <bit_field_value name="ENFORCE_0b01" value="0b01" description="Enforce preset TZM data in image manifest."/>
+      <bit_field_value name="ENFORCE_0b10" value="0b10" description="Enforce preset TZM data in image manifest."/>
+      <bit_field_value name="ENFORCE_0b11" value="0b11" description="Enforce preset TZM data in image manifest."/>
+    </bit_field>
+    <bit_field offset="12" width="2" name="ITRC_ZEROIZE" access="RO" reset_value="0" description="RAM zeroize on ITRC event. &amp;#10;Zeroize long-term storage RAM (RAMA) on subsequent boot when Intrusion and Tamper control signals an intrusion event (ITRC_OUT3). &amp;#10;Note, when ITRC is re-configured in application then ITRC_OUT4 (CHIP_RESET) should be triggered with at least same events as ITRC_OUT3 (RAM_ZEROIZE).">
+      <alias type="CMSIS" value="ITRC_ZEROIZE(x)"/>
+      <bit_field_value name="NO_ACTION" value="0b00" description="No action."/>
+      <bit_field_value name="PKC_RAM_ON_ITRC" value="0b01" description="Always Zeroize PKC RAM on ITRC event only."/>
+      <bit_field_value name="PKC_RAMA_ON_ITRC" value="0b10" description="Zeroize PKC and RAMA on ITRC event only."/>
+      <bit_field_value name="PKC_RAMA_ALL_RESET" value="0b11" description="Always Zeroize PKC and RAMA on all reset boot."/>
+    </bit_field>
+    <bit_field offset="14" width="2" name="ACTIVE_IMG_PROT" access="RO" reset_value="0" description="Protection of active image. &amp;#10;This field defines protection of flash area occupied by the active image. Only applicable to internal flash.">
+      <alias type="CMSIS" value="ACTIVE_IMG_PROT(x)"/>
+      <bit_field_value name="FLASH_ACL_PROTECTION" value="0b00" description="Protection is defined using the CFPA FLASH_ACL settings."/>
+      <bit_field_value name="WITH_STICKY_LOCK" value="0b01" description="Write protect active image area with sticky lock. GLBAC2 is used. FLASH_ACL settings are ignored."/>
+      <bit_field_value name="NO_STICKY_LOCK" value="0b10" description="Write protect active image area without sticky lock. GLBAC4 is used. FLASH_ACL settings are ignored."/>
+      <bit_field_value name="XOM_PROTECTION" value="0b11" description="XOM protect active image area with sticky lock. GLBAC6 is used. FLASH_ACL settings are ignored."/>
+    </bit_field>
+    <bit_field offset="16" width="2" name="FIPS_SHA_STEN" access="RO" reset_value="0" description="Enable self-test for SHA2 block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_FIPS_SHA_STEN(x)"/>
+      <bit_field_value name="NOT_INCLUDE" value="0b00" description="Not included"/>
+      <bit_field_value name="FAILURE_BOOT" value="0b01" description="On failure continue to boot."/>
+      <bit_field_value name="FAILURE_ISP" value="0b10" description="On failure enter ISP mode for recovery."/>
+      <bit_field_value name="FAILURE_ENF_POWER_CYC" value="0b11" description="On failure lock the device to enforce power-cycle."/>
+    </bit_field>
+    <bit_field offset="18" width="2" name="FIPS_AES_STEN" access="RO" reset_value="0" description="Enable self-test for AES block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_FIPS_AES_STEN(x)"/>
+      <bit_field_value name="NOT_INCLUDE" value="0b00" description="Not included"/>
+      <bit_field_value name="FAILURE_BOOT" value="0b01" description="On failure continue to boot."/>
+      <bit_field_value name="FAILURE_ISP" value="0b10" description="On failure enter ISP mode for recovery."/>
+      <bit_field_value name="FAILURE_ENF_POWER_CYC" value="0b11" description="On failure lock the device to enforce power-cycle."/>
+    </bit_field>
+    <bit_field offset="20" width="2" name="FIPS_ECDSA_STEN" access="RO" reset_value="0" description="Enable self-test for ECDSA block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_FIPS_ECDSA_STEN(x)"/>
+      <bit_field_value name="NOT_INCLUDE" value="0b00" description="Not included"/>
+      <bit_field_value name="FAILURE_BOOT" value="0b01" description="On failure continue to boot."/>
+      <bit_field_value name="FAILURE_ISP" value="0b10" description="On failure enter ISP mode for recovery."/>
+      <bit_field_value name="FAILURE_ENF_POWER_CYC" value="0b11" description="On failure lock the device to enforce power-cycle."/>
+    </bit_field>
+    <bit_field offset="22" width="2" name="FIPS_DRBG_STEN" access="RO" reset_value="0" description="Enable self-test for DRBG block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_FIPS_DRBG_STEN(x)"/>
+      <bit_field_value name="NOT_INCLUDE" value="0b00" description="Not included"/>
+      <bit_field_value name="FAILURE_BOOT" value="0b01" description="On failure continue to boot."/>
+      <bit_field_value name="FAILURE_ISP" value="0b10" description="On failure enter ISP mode for recovery."/>
+      <bit_field_value name="FAILURE_ENF_POWER_CYC" value="0b11" description="On failure lock the device to enforce power-cycle."/>
+    </bit_field>
+    <bit_field offset="24" width="2" name="FIPS_CMAC_STEN" access="RO" reset_value="0" description="Enable self-test for CMAC block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_FIPS_CMAC_STEN(x)"/>
+      <bit_field_value name="NOT_INCLUDE" value="0b00" description="Not included"/>
+      <bit_field_value name="FAILURE_BOOT" value="0b01" description="On failure continue to boot."/>
+      <bit_field_value name="FAILURE_ISP" value="0b10" description="On failure enter ISP mode for recovery."/>
+      <bit_field_value name="FAILURE_ENF_POWER_CYC" value="0b11" description="On failure lock the device to enforce power-cycle."/>
+    </bit_field>
+    <bit_field offset="26" width="2" name="FIPS_KDF_STEN" access="RO" reset_value="0" description="Enable self-test for KDF block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_FIPS_KDF_STEN(x)"/>
+      <bit_field_value name="NOT_INCLUDE" value="0b00" description="Not included"/>
+      <bit_field_value name="FAILURE_BOOT" value="0b01" description="On failure continue to boot."/>
+      <bit_field_value name="FAILURE_ISP" value="0b10" description="On failure enter ISP mode for recovery."/>
+      <bit_field_value name="FAILURE_ENF_POWER_CYC" value="0b11" description="On failure lock the device to enforce power-cycle."/>
+    </bit_field>
+    <bit_field offset="28" width="2" name="FIPS_PUF_STEN" access="RO" reset_value="0" description="Enable self-test for PUF block on power-up. Needed for FIPS certification. If this field is non-zero  run self-test and log result in SYSCON->ELS_AS_BOOT_LOG1[FIPS].">
+      <alias type="CMSIS" value="FIPS_PUF_STEN(x)"/>
+      <bit_field_value name="NOT_INCLUDE" value="0b00" description="Not included"/>
+      <bit_field_value name="FAILURE_BOOT" value="0b01" description="On failure continue to boot."/>
+      <bit_field_value name="FAILURE_ISP" value="0b10" description="On failure enter ISP mode for recovery."/>
+      <bit_field_value name="FAILURE_ENF_POWER_CYC" value="0b11" description="On failure lock the device to enforce power-cycle."/>
+    </bit_field>
+    <reserved_bit_field offset="30" width="2" reset_value="0"/>
+  </register>
+  <register offset="0x54" width="32" name="RoTK_USAGE" description="Root of Trust Key Usage">
+    <alias type="CMSIS" value="CMPA.ROTK_USAGE"/>
+    <bit_field offset="0" width="3" name="RoTK0_Usage" access="RO" reset_value="0" description="RoT key 0 usage properties.">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK0_Usage(x)"/>
+      <bit_field_value name="USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="IMG_BOOT_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="IMG_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
+    </bit_field>
+    <bit_field offset="3" width="3" name="RoTK1_Usage" access="RO" reset_value="0" description="RoT key 1 usage properties.">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK1_Usage(x)"/>
+      <bit_field_value name="USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="IMG_BOOT_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="IMG_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
+    </bit_field>
+    <bit_field offset="6" width="3" name="RoTK2_Usage" access="RO" reset_value="0" description="RoT key 2 usage properties.">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK2_Usage(x)"/>
+      <bit_field_value name="USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="IMG_BOOT_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="IMG_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
+    </bit_field>
+    <bit_field offset="9" width="3" name="RoTK3_Usage" access="RO" reset_value="0" description="RoT key 3 usage properties.">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTK_USAGE_RoTK3_Usage(x)"/>
+      <bit_field_value name="USABLE" value="0b000" description="Usable as debug CA, image CA, FW CA, image and FW key."/>
+      <bit_field_value name="DEBUG" value="0b001" description="Usable as debug CA only."/>
+      <bit_field_value name="IMG_BOOT_FW" value="0b010" description="Usable as image (boot and FW) CA only."/>
+      <bit_field_value name="DEBUG_BOOT_FW_IMG" value="0b011" description="Usable as debug, boot and FW image CA."/>
+      <bit_field_value name="IMG_FW_UPDATE_KEY" value="0b100" description="Usable as image key and FW update key only."/>
+      <bit_field_value name="BOOT_IMAGE_KEY" value="0b101" description="Usable as boot image key only."/>
+      <bit_field_value name="FW_UPDATE_IMG_KEY" value="0b110" description="Usable as FW update image key only."/>
+      <bit_field_value name="KEY_SLOT_NOT_USED" value="0b111" description="Key slot is not used."/>
+    </bit_field>
+    <bit_field offset="12" width="1" name="SKIP_DICE" access="RO" reset_value="0" description="Skip DICE computation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_SKIP_DICE(x)"/>
+      <bit_field_value name="ENABLE_DICE" value="0b00" description="Enable DICE"/>
+      <bit_field_value name="DISABLE_DICE" value="0b01" description="Disable DICE"/>
+    </bit_field>
+    <bit_field offset="13" width="1" name="DICE_INC_NXP_CFG" access="RO" reset_value="0" description="Include NXP area (IFR1) containing specific part configuration data defined during chip manufacturing process in DICE computation.">
+      <alias type="CMSIS" value="FLASH_CMPA_SECURE_BOOT_CFG_DICE_INC_NXP_CFG(x)"/>
+      <bit_field_value name="NOT_INCLUDED" value="0b00" description="Not included"/>
+      <bit_field_value name="INCLUDED" value="0b01" description="Included"/>
+    </bit_field>
+    <bit_field offset="14" width="1" name="DICE_INC_CUST_CFG" access="RO" reset_value="0" description="Include data from CMPA page (512 bytes) in DICE computation.">
+      <alias type="CMSIS" value="DICE_INC_CUST_CFG(x)"/>
+      <bit_field_value name="NOT_INCLUDED" value="0b00" description="Not included"/>
+      <bit_field_value name="INCLUDED" value="0b01" description="Included"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="2" name="REG0_ERASE_CHECK_EN" access="RO" reset_value="0" description="Enable erase check for NPX PRINCE context 0. &amp;#10;When erase check is enabled ROM API will enforce a check to guarantee that all sectors selected in the context are erased together. &amp;#10;When erase check is enabled only contiguous sectors can be selected in context bitmap. &amp;#10; 0x - ROM API will not perform erase check. &amp;#10; 1x - ROM API will perform erase check.">
+      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_CONFIG_REG0_ERASE_CHECK_EN(x)"/>
+      <bit_field_value name="DISABLED_0b00" value="0b00" description="Erase check is disabled"/>
+      <bit_field_value name="DISABLED_0b01" value="0b01" description="Erase check is disabled"/>
+      <bit_field_value name="ENABLED_0b10" value="0b10" description="Erase check is enabled"/>
+      <bit_field_value name="ENABLED_0b11" value="0b11" description="Erase check is enabled"/>
+    </bit_field>
+    <bit_field offset="18" width="2" name="REG1_ERASE_CHECK_EN" access="RO" reset_value="0" description="Enable erase check for NPX PRINCE context 1. &amp;#10;When erase check is enabled ROM API will enforce a check to guarantee that all sectors selected in the context are erased together. &amp;#10;When erase check is enabled only contiguous sectors can be selected in context bitmap. &amp;#10; 0x - ROM API will not perform erase check. &amp;#10; 1x - ROM API will perform erase check.">
+      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_CONFIG_REG1_ERASE_CHECK_EN(x)"/>
+      <bit_field_value name="DISABLED_0b00" value="0b00" description="Erase check is disabled"/>
+      <bit_field_value name="DISABLED_0b01" value="0b01" description="Erase check is disabled"/>
+      <bit_field_value name="ENABLED_0b10" value="0b10" description="Erase check is enabled"/>
+      <bit_field_value name="ENABLED_0b11" value="0b11" description="Erase check is enabled"/>
+    </bit_field>
+    <bit_field offset="20" width="2" name="REG2_ERASE_CHECK_EN" access="RO" reset_value="0" description="Enable erase check for NPX PRINCE context 2. &amp;#10;When erase check is enabled ROM API will enforce a check to guarantee that all sectors selected in the context are erased together. &amp;#10;When erase check is enabled only contiguous sectors can be selected in context bitmap. &amp;#10; 0x - ROM API will not perform erase check. &amp;#10; 1x - ROM API will perform erase check.">
+      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_CONFIG_REG2_ERASE_CHECK_EN(x)"/>
+      <bit_field_value name="DISABLED_0b00" value="0b00" description="Erase check is disabled"/>
+      <bit_field_value name="DISABLED_0b01" value="0b01" description="Erase check is disabled"/>
+      <bit_field_value name="ENABLED_0b10" value="0b10" description="Erase check is enabled"/>
+      <bit_field_value name="ENABLED_0b11" value="0b11" description="Erase check is enabled"/>
+    </bit_field>
+    <bit_field offset="22" width="2" name="REG3_ERASE_CHECK_EN" access="RO" reset_value="0" description="Enable erase check for NPX PRINCE context 3. &amp;#10;When erase check is enabled ROM API will enforce a check to guarantee that all sectors selected in the context are erased together. &amp;#10;When erase check is enabled only contiguous sectors can be selected in context bitmap. &amp;#10; 0x - ROM API will not perform erase check. &amp;#10; 1x - ROM API will perform erase check.">
+      <alias type="CMSIS" value="FLASH_CMPA_PRINCE_CONFIG_REG3_ERASE_CHECK_EN(x)"/>
+      <bit_field_value name="DISABLED_0b00" value="0b00" description="Erase check is disabled"/>
+      <bit_field_value name="DISABLED_0b01" value="0b01" description="Erase check is disabled"/>
+      <bit_field_value name="ENABLED_0b10" value="0b10" description="Erase check is enabled"/>
+      <bit_field_value name="ENABLED_0b11" value="0b11" description="Erase check is enabled"/>
+    </bit_field>
+    <bit_field offset="24" width="2" name="NPX_LOCK_CTX0" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 0 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REG0_ERASE_CHECK_EN field.">
+      <alias type="CMSIS" value="NPX_LOCK_CTX0(x)"/>
+      <bit_field_value name="NOT_LOCKED_0b00" value="0b00" description="Region is not locked."/>
+      <bit_field_value name="LOCKED_0b01" value="0b01" description="Region is locked."/>
+      <bit_field_value name="LOCKED_0b10" value="0b10" description="Region is locked."/>
+      <bit_field_value name="LOCKED_0b11" value="0b11" description="Region is locked."/>
+    </bit_field>
+    <bit_field offset="26" width="2" name="NPX_LOCK_CTX1" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 1 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REG1_ERASE_CHECK_EN field.">
+      <alias type="CMSIS" value="NPX_LOCK_CTX1(x)"/>
+      <bit_field_value name="NOT_LOCKED_0b00" value="0b00" description="Region is not locked."/>
+      <bit_field_value name="LOCKED_0b01" value="0b01" description="Region is locked."/>
+      <bit_field_value name="LOCKED_0b10" value="0b10" description="Region is locked."/>
+      <bit_field_value name="LOCKED_0b11" value="0b11" description="Region is locked."/>
+    </bit_field>
+    <bit_field offset="28" width="2" name="NPX_LOCK_CTX2" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 2 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REG2_ERASE_CHECK_EN field.">
+      <alias type="CMSIS" value="NPX_LOCK_CTX2(x)"/>
+      <bit_field_value name="NOT_LOCKED_0b00" value="0b00" description="Region is not locked."/>
+      <bit_field_value name="LOCKED_0b01" value="0b01" description="Region is locked."/>
+      <bit_field_value name="LOCKED_0b10" value="0b10" description="Region is locked."/>
+      <bit_field_value name="LOCKED_0b11" value="0b11" description="Region is locked."/>
+    </bit_field>
+    <bit_field offset="30" width="2" name="NPX_LOCK_CTX3" access="RO" reset_value="0" description="Lock on-chip flash NPX PRINCE context 3 settings. &amp;#10;Note: when locking a region recommendation is to also enable erase checking using the REG3_ERASE_CHECK_EN field.">
+      <alias type="CMSIS" value="NPX_LOCK_CTX3(x)"/>
+      <bit_field_value name="NOT_LOCKED_0b00" value="0b00" description="Region is not locked."/>
+      <bit_field_value name="LOCKED_0b01" value="0b01" description="Region is locked."/>
+      <bit_field_value name="LOCKED_0b10" value="0b10" description="Region is locked."/>
+      <bit_field_value name="LOCKED_0b11" value="0b11" description="Region is locked."/>
+    </bit_field>
+  </register>
+  <register offset="0x60" width="32" name="ROTKH0" description="Root of Trust Key Hash 0">
+    <alias type="CMSIS" value="CMPA.ROTKH[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x64" width="32" name="ROTKH1" description="Root of Trust Key Hash 1">
+    <alias type="CMSIS" value="CMPA.ROTKH[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x68" width="32" name="ROTKH2" description="Root of Trust Key Hash 2">
+    <alias type="CMSIS" value="CMPA.ROTKH[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x6C" width="32" name="ROTKH3" description="Root of Trust Key Hash 3">
+    <alias type="CMSIS" value="CMPA.ROTKH[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x70" width="32" name="ROTKH4" description="Root of Trust Key Hash 4">
+    <alias type="CMSIS" value="CMPA.ROTKH[4]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x74" width="32" name="ROTKH5" description="Root of Trust Key Hash 5">
+    <alias type="CMSIS" value="CMPA.ROTKH[5]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x78" width="32" name="ROTKH6" description="Root of Trust Key Hash 6">
+    <alias type="CMSIS" value="CMPA.ROTKH[6]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x7C" width="32" name="ROTKH7" description="Root of Trust Key Hash 7">
+    <alias type="CMSIS" value="CMPA.ROTKH[7]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x80" width="32" name="ROTKH8" description="Root of Trust Key Hash 8">
+    <alias type="CMSIS" value="CMPA.ROTKH[8]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x84" width="32" name="ROTKH9" description="Root of Trust Key Hash 9">
+    <alias type="CMSIS" value="CMPA.ROTKH[9]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x88" width="32" name="ROTKH10" description="Root of Trust Key Hash 10">
+    <alias type="CMSIS" value="CMPA.ROTKH[10]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x8C" width="32" name="ROTKH11" description="Root of Trust Key Hash 11">
+    <alias type="CMSIS" value="CMPA.ROTKH[11]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_ROTKH_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x90" width="32" name="NPX_CTX0_WD0" description="Bitmap mask for NPX Prince context 0 (sectors 0 -31)">
+    <alias type="CMSIS" value="NPX_CTX0_WD0"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+    </bit_field>
+  </register>
+  <register offset="0x98" width="32" name="NPX_CTX1_WD0" description="Bitmap mask for NPX Prince context 1 (sectors 0 -31)">
+    <alias type="CMSIS" value="NPX_CTX1_WD0"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+    </bit_field>
+  </register>
+  <register offset="0xA0" width="32" name="NPX_CTX2_WD0" description="Bitmap mask for NPX Prince context 2 (sectors 0 -31)">
+    <alias type="CMSIS" value="NPX_CTX1_WD0"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+    </bit_field>
+  </register>
+  <register offset="0xA8" width="32" name="NPX_CTX3_WD0" description="Bitmap mask for NPX Prince context 3 (sectors 0 -31)">
+    <alias type="CMSIS" value="NPX_CTX3_WD0"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+    </bit_field>
+  </register>
+  <register offset="0xF0" width="32" name="REC_IMG_EXT0" description="Bitmap mask for recovery image extended sectors (sectors 8 - 31).">
+    <alias type="CMSIS" value="REC_IMG_EXT0"/>
+    <reserved_bit_field offset="0" width="8" reset_value="0"/>
+    <bit_field offset="8" width="24" name="REC_IMG_EXT0" access="RO" reset_value="0" description="Bitmap mask to indicate sectors included in recovery image. Recovery image is programmed in BANK1_IFR0. But if the image size is more than 32KB, this field can be used to indicate sectors to include in recovery image. &amp;#10;ROM will configure flash protection setting for these sectors the same as BANK1_IFR0 before exiting to user code. &amp;#10;The protection settings are managed through CMPA.OEM_BANK1_IFR0_PROT. The lower 8 sectors are excluded from this mask to avoid conflicts with dual image boot feature.">
+    </bit_field>
+  </register>
+  <register offset="0x120" width="32" name="QUICK_SET_GPIO_0" description="Drive GPIO 0 port [31:0] pins high after reset. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_0 and QUICK_CLR_GPIO_0 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_SET_GPIO_0"/>
+    <bit_field offset="0" width="32" name="QUICK_SET_GPIO_0" access="RO" reset_value="0" description="QUICK_SET_GPIO_0[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_SET_GPIO_0_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x124" width="32" name="QUICK_CLR_GPIO_0" description="Drive GPIO 0 port [31:0] pins low. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_0 and QUICK_CLR_GPIO_0 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_CLR_GPIO_0"/>
+    <bit_field offset="0" width="32" name="QUICK_CLR_GPIO_0" access="RO" reset_value="0" description="QUICK_CLR_GPIO_0[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_CLR_GPIO_0_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x128" width="32" name="QUICK_SET_GPIO_1" description="Drive GPIO 1 port [31:0] pins high after reset. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_1 and QUICK_CLR_GPIO_1 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_SET_GPIO_1"/>
+    <bit_field offset="0" width="32" name="QUICK_SET_GPIO_1" access="RO" reset_value="0" description="QUICK_SET_GPIO_1[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_SET_GPIO_1_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x12C" width="32" name="QUICK_CLR_GPIO_1" description="Drive GPIO 1 port [31:0] pins low. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_1 and QUICK_CLR_GPIO_1 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_CLR_GPIO_1"/>
+    <bit_field offset="0" width="32" name="QUICK_CLR_GPIO_1" access="RO" reset_value="0" description="QUICK_CLR_GPIO_1[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_CLR_GPIO_1_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x130" width="32" name="QUICK_SET_GPIO_2" description="Drive GPIO 2 port [31:0] pins high after reset. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_2 and QUICK_CLR_GPIO_2 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_SET_GPIO_2"/>
+    <bit_field offset="0" width="32" name="QUICK_SET_GPIO_2" access="RO" reset_value="0" description="QUICK_SET_GPIO_2[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_SET_GPIO_2_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x134" width="32" name="QUICK_CLR_GPIO_2" description="Drive GPIO 2 port [31:0] pins low. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_2 and QUICK_CLR_GPIO_2 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_CLR_GPIO_2"/>
+    <bit_field offset="0" width="32" name="QUICK_CLR_GPIO_2" access="RO" reset_value="0" description="QUICK_CLR_GPIO_2[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_CLR_GPIO_2_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x138" width="32" name="QUICK_SET_GPIO_3" description="Drive GPIO 3 port [31:0] pins high after reset. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_3 and QUICK_CLR_GPIO_3 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_SET_GPIO_3"/>
+    <bit_field offset="0" width="32" name="QUICK_SET_GPIO_3" access="RO" reset_value="0" description="QUICK_SET_GPIO_3[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_SET_GPIO_3_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x13C" width="32" name="QUICK_CLR_GPIO_3" description="Drive GPIO 3 port [31:0] pins low. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_3 and QUICK_CLR_GPIO_3 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_CLR_GPIO_3"/>
+    <bit_field offset="0" width="32" name="QUICK_CLR_GPIO_3" access="RO" reset_value="0" description="QUICK_CLR_GPIO_3[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_CLR_GPIO_3_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x140" width="32" name="QUICK_SET_GPIO_4" description="Drive GPIO 4 port [31:0] pins high after reset. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_4 and QUICK_CLR_GPIO_4 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_SET_GPIO_4"/>
+    <bit_field offset="0" width="32" name="QUICK_SET_GPIO_4" access="RO" reset_value="0" description="QUICK_SET_GPIO_4[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_SET_GPIO_4_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x144" width="32" name="QUICK_CLR_GPIO_4" description="Drive GPIO 4 port [31:0] pins low. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_4 and QUICK_CLR_GPIO_4 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_CLR_GPIO_4"/>
+    <bit_field offset="0" width="32" name="QUICK_CLR_GPIO_4" access="RO" reset_value="0" description="QUICK_CLR_GPIO_4[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_CLR_GPIO_4_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x148" width="32" name="QUICK_SET_GPIO_5" description="Drive GPIO 5 port [31:0] pins high after reset. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_5 and QUICK_CLR_GPIO_5 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_SET_GPIO_5"/>
+    <bit_field offset="0" width="32" name="QUICK_SET_GPIO_5" access="RO" reset_value="0" description="QUICK_SET_GPIO_5[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_SET_GPIO_5_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x14C" width="32" name="QUICK_CLR_GPIO_5" description="Drive GPIO 5 port [31:0] pins low. &amp;#10;Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible. By default most pins come-up as tri-stated inputs. &amp;#10;This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot. &amp;#10;Note, if a pin is selected in both QUICK_SET_GPIO_5 and QUICK_CLR_GPIO_5 fields then pin will be set to high-level with quick transition to low.">
+    <alias type="CMSIS" value="CMPA.QUICK_CLR_GPIO_5"/>
+    <bit_field offset="0" width="32" name="QUICK_CLR_GPIO_5" access="RO" reset_value="0" description="QUICK_CLR_GPIO_5[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_QUICK_CLR_GPIO_5_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x160" width="32" name="CUST_MK_SK_KEY_BLOB0" description="CUST_MK_SK key blob 0">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x164" width="32" name="CUST_MK_SK_KEY_BLOB1" description="CUST_MK_SK key blob 1">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x168" width="32" name="CUST_MK_SK_KEY_BLOB2" description="CUST_MK_SK key blob 2">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x16C" width="32" name="CUST_MK_SK_KEY_BLOB3" description="CUST_MK_SK key blob 3">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x170" width="32" name="CUST_MK_SK_KEY_BLOB4" description="CUST_MK_SK key blob 4">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[4]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x174" width="32" name="CUST_MK_SK_KEY_BLOB5" description="CUST_MK_SK key blob 5">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[5]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x178" width="32" name="CUST_MK_SK_KEY_BLOB6" description="CUST_MK_SK key blob 6">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[6]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x17C" width="32" name="CUST_MK_SK_KEY_BLOB7" description="CUST_MK_SK key blob 7">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[7]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x180" width="32" name="CUST_MK_SK_KEY_BLOB8" description="CUST_MK_SK key blob 8">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[8]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x184" width="32" name="CUST_MK_SK_KEY_BLOB9" description="CUST_MK_SK key blob 9">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[9]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x188" width="32" name="CUST_MK_SK_KEY_BLOB10" description="CUST_MK_SK key blob 10">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[10]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x18C" width="32" name="CUST_MK_SK_KEY_BLOB11" description="CUST_MK_SK key blob 11">
+    <alias type="CMSIS" value="CMPA.CUST_MK_SK_KEY_BLOB[11]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field">
+      <alias type="CMSIS" value="FLASH_CMPA_CUST_MK_SK_KEY_BLOB(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1EC" width="32" name="CMPA_CRC32" description="CRC32 of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field along with CMPA_CMAC. ROM uses this field based on CMPA.LP_SEC_BOOT field option.">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CMPA_CRC32 for address range 0x0100_4000 - 0x0100_41EB">
+    </bit_field>
+  </register>
+  <register offset="0x1F0" width="32" name="CMPA_CMAC0" description="CMAC[31:0] of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field on subsequent boot after page update.">
+    <alias type="CMSIS" value="CMPA.CMPA_CMAC[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CMPA_CMAC[31:0]">
+      <alias type="CMSIS" value="FLASH_CMPA_CMPA_CMAC_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1F4" width="32" name="CMPA_CMAC1" description="CMAC[63:32] of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field on subsequent boot after page update.">
+    <alias type="CMSIS" value="CMPA.CMPA_CMAC[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CMPA_CMAC[63:32]">
+      <alias type="CMSIS" value="FLASH_CMPA_CMPA_CMAC_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1F8" width="32" name="CMPA_CMAC2" description="CMAC[95:64] of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field on subsequent boot after page update.">
+    <alias type="CMSIS" value="CMPA.CMPA_CMAC[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CMPA_CMAC[95:64]">
+      <alias type="CMSIS" value="FLASH_CMPA_CMPA_CMAC_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1FC" width="32" name="CMPA_CMAC3" description="CMAC[127:96] of CMPA page data from offset 0x00 to 0x1EB. ROM updates this field on subsequent boot after page update.">
+    <alias type="CMSIS" value="CMPA.CMPA_CMAC[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CMPA_CMAC[127:96]">
+      <alias type="CMSIS" value="FLASH_CMPA_CMPA_CMAC_FIELD(x)"/>
+    </bit_field>
+  </register>
+</regs:peripheral>

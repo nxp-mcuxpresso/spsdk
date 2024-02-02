@@ -1,0 +1,52 @@
+<?xml version="1.0" ?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<regs>
+	<register offset="0x0" width="32" name="ConfigOption0" reversed="False" description="FlexSPI NAND Configuration Option 0">
+		<bit_field offset="0x0" width="4" name="MaxFreq" access="R/W" reset_value="0x0" description="The maximum work frequency for specified Flash device; 0 - Don't change FlexSPI clock setting. See System Boot Chapter for more details"/>
+		<bit_field offset="0x4" width="4" name="PageSize" access="R/W" reset_value="0x2" description="Specify page size in KB.">
+			<bit_field_value name="2KB" value="0b0010" description="NAND is using 2KB pages"/>
+			<bit_field_value name="4KB" value="0b0100" description="NAND is using 4KB pages"/>
+    </bit_field>
+		<bit_field offset="0x8" width="4" name="PagesPerBlock" access="R/W" reset_value="0b0000" description="Specify the count of pages per one block">
+			<bit_field_value name="64" value="0b0000" description="64 pages per one block"/>
+			<bit_field_value name="128" value="0b0001" description="128 pages per one block"/>
+      <bit_field_value name="256" value="0b0010" description="256 pages per one block"/>
+      <bit_field_value name="32" value="0b0011" description="32 pages per one block"/>
+		</bit_field>
+		<bit_field offset="0x0c" width="4" name="HasMultiPlanes" access="R/W" reset_value="0b0000" description="Has or no multiplanes">
+      <bit_field_value name="Disabled" value="0b0000" description="NAND memory has not multiplanes"/>
+      <bit_field_value name="Enabled" value="0b0001" description="NAND memory has multiplanes"/>
+		</bit_field>
+    <bit_field offset="0x10" width="4" name="FlashSize" access="R/W" reset_value="0b0000" description="Overall flash size">
+      <bit_field_value name="512Mbit" value="0b0000" description="Memory size is 512Mbit"/>
+      <bit_field_value name="1Gbit" value="0b0001" description="Memory size is 1Gbit"/>
+      <bit_field_value name="2Gbit" value="0b0010" description="Memory size is 2Gbit"/>
+      <bit_field_value name="4Gbit" value="0b0100" description="Memory size is 4Gbit"/>
+      <bit_field_value name="8Gbit" value="0b1000" description="Memory size is 8Gbit"/>
+		</bit_field>
+		<bit_field offset="0x14" width="4" name="DeviceType" access="R/W" reset_value="0b0000" description="Device type of NAND.">
+			<bit_field_value name="QuadSpi" value="0b0000" description="QuadSPI NAND"/>
+			<bit_field_value name="Octal" value="0b0001" description="OctalSPI NAND"/>
+		</bit_field>
+		<bit_field offset="0x18" width="4" name="OptionSize" access="R/W" reset_value="0b0000" description="Option Size">
+			<bit_field_value name="OptionSize1" value="0b0000" description="Option words = 1"/>
+			<bit_field_value name="OptionSize2" value="0b0001" description="Option words = 2"/>
+		</bit_field>
+		<reserved_bit_field offset="0x1c" width="4" name="Tag" access="R/W" reset_value="0b1100" description="Tag, fixed value 0xC"/>
+	</register>
+	<register offset="0x4" width="32" name="ConfigOption1" reversed="False" description="FlexSPI NAND flash Configuration Option 1 - Optional">
+		<bit_field offset="0x0" width="8" name="ManufacturerId" access="R/W" reset_value="0x00" description="Manufacture ID"/>
+		<bit_field offset="0x8" width="8" name="EccFailureMask" access="R/W" reset_value="0x00" description="ECC Failure mask"/>
+		<bit_field offset="0x10" width="8" name="EccCheckMask" access="R/W" reset_value="0b0000" description="ECC Check Mask"/>
+		<bit_field offset="0x18" width="4" name="PinMuxGroup" access="R/W" reset_value="0x00" description="Select the FlexSPI Pin MUx group"/>
+		<bit_field offset="0x1c" width="4" name="FlashConnection" access="R/W" reset_value="0x00" description="Select the FlexSPI Port A/B">
+			<bit_field_value name="SingleFlashPort_A" value="0b0000" description="Single Flash connected to port A"/>
+			<bit_field_value name="SingleFlashPort_B" value="0b0010" description="Single Flash connected to port B"/>
+		</bit_field>
+	</register>
+</regs>

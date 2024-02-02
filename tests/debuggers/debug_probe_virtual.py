@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Virtual Debug probes support used for product testing."""
@@ -13,6 +13,8 @@ from typing import Any, Dict
 
 from spsdk.debuggers.debug_probe import (
     DebugProbe,
+    DebugProbes,
+    ProbeDescription,
     SPSDKDebugProbeError,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
@@ -78,9 +80,6 @@ class DebugProbeVirtual(DebugProbe):
         :return: probe_description
         :raises SPSDKDebugProbeError: In case of invoked test Exception.
         """
-        # pylint: disable=import-outside-toplevel
-        from spsdk.debuggers.utils import DebugProbes, ProbeDescription
-
         probes = DebugProbes()
 
         if options is not None and "exc" in options.keys():
@@ -209,6 +208,18 @@ class DebugProbeVirtual(DebugProbe):
                 self.coresight_dp_write_exception -= 1
                 raise SPSDKDebugProbeTransferError("The Coresight write operation failed.")
             self.coresight_dp[addr] = data
+
+    def assert_reset_line(self, assert_reset: bool = False) -> None:
+        """Control reset line at a target.
+
+        :param assert_reset: If True, the reset line is asserted(pulled down), if False the reset line is not affected.
+        """
+        if not self.opened:
+            raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
+
+        logger.debug(
+            f"The Virtual probe {'de-' if not assert_reset else ''}assert reset line  of virtual target."
+        )
 
     def reset(self) -> None:
         """Reset a target.

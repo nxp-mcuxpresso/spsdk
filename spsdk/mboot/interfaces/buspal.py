@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Buspal Mboot device implementation."""
@@ -255,7 +255,7 @@ class MbootBuspalProtocol(MbootSerialProtocol):
             format_received == format_expected
         ), f"Received data '{format_received}' but expected '{format_expected}'"
 
-    def _read_frame_header(self, expected_frame_type: Optional[int] = None) -> Tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> Tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected

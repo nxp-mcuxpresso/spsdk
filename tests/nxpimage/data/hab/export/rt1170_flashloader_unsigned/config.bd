@@ -3,7 +3,6 @@ options {
     startAddress = 0x2024ff00;
     ivtOffset = 0x0;
     initialLoadSize = 0x100;
-    
     entryPointAddress = 0x202629e1;
 }
 

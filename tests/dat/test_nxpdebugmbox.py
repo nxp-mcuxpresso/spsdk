@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for nxpdebugmbox utility."""
@@ -109,7 +109,7 @@ def test_generate_ecc_dc_file(cli_runner: CliRunner, tmpdir, data_dir):
 def test_generate_dc_template(cli_runner: CliRunner, tmpdir):
     """Test generate dc file with ecc protocol for lpc55s3x"""
     out_file = f"{tmpdir}/dc_template.yaml"
-    cmd = f"get-template -o {out_file}"
+    cmd = f"get-template -f lpc55s3x -o {out_file}"
 
     cli_runner.invoke(main, cmd.split())
     assert os.path.isfile(out_file)
@@ -159,12 +159,6 @@ def test_generate_rsa_with_elf2sb(tmpdir, data_dir, config):
         ("rt5xx", "latest"),
         ("rt6xx", "b0"),
         ("rt6xx", "latest"),
-        ("lpc550x", "a1"),
-        ("lpc550x", "latest"),
-        ("lpc551x", "a1"),
-        ("lpc551x", "latest"),
-        ("lpc552x", "a1"),
-        ("lpc552x", "latest"),
         ("lpc55s0x", "a1"),
         ("lpc55s0x", "latest"),
         ("lpc55s1x", "a1"),

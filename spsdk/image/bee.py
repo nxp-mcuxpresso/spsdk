@@ -1,20 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
-"""Contains support for BEE encryption for RT10xx devices."""
+"""Contains support for BEE encryption."""
 
 
 import logging
-import os
 from struct import calcsize, pack, unpack_from
 from typing import Any, Dict, List, Optional, Sequence
 
 from typing_extensions import Self
 
-from spsdk.apps.utils.utils import get_key
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import (
     Counter,
@@ -25,24 +23,20 @@ from spsdk.crypto.symmetric import (
     aes_ecb_encrypt,
 )
 from spsdk.exceptions import SPSDKError, SPSDKOverlapError
-from spsdk.utils import UTILS_DATA_FOLDER
-from spsdk.utils.database import Database
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.database import DatabaseManager, get_families, get_schema_file
 from spsdk.utils.misc import (
+    Endianness,
     align_block_fill_random,
     extend_block,
     load_binary,
+    load_hex_string,
     split_data,
     value_to_int,
 )
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
-
-
-BEE_DATA_FOLDER: str = os.path.join(UTILS_DATA_FOLDER, "bee")
-BEE_SCH_FILE: str = os.path.join(BEE_DATA_FOLDER, "sch_bee.yaml")
-BEE_DATABASE_FILE: str = os.path.join(BEE_DATA_FOLDER, "database.yaml")
 
 # maximal size of encrypted block in bytes
 BEE_ENCR_BLOCK_SIZE = 0x400
@@ -180,11 +174,11 @@ class BeeFacRegion(BeeBaseClass):
         return cls(start, end - start, protected_level)
 
 
-class BeeProtectRegionBlockAesMode(Enum):
+class BeeProtectRegionBlockAesMode(SpsdkEnum):
     """AES mode selection for BEE PRDB encryption."""
 
-    ECB = 0
-    CTR = 1
+    ECB = (0, "ECB")
+    CTR = (1, "CTR")
 
 
 class BeeProtectRegionBlock(BeeBaseClass):
@@ -264,7 +258,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
     def __str__(self) -> str:
         """:return: test description of the instance."""
         result = f"BEE Region Header (start={hex(self._start_addr)}, end={hex(self._end_addr)})\n"
-        result += f"AES Encryption mode: {BeeProtectRegionBlockAesMode.name(self.mode)}\n"
+        result += f"AES Encryption mode: {self.mode.label}\n"
         for fac in self.fac_regions:
             result += str(fac) + "\n"
         return result
@@ -297,7 +291,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
             self.fac_count,
             self._start_addr,
             self._end_addr,
-            self.mode,
+            self.mode.tag,
             self.lock_options,
             self.counter[::-1],  # bytes swapped: reversed order
             b"\x00" * 32,
@@ -336,7 +330,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
         if _reserved_32 != b"\x00" * 32:
             raise SPSDKError("Reserved area is non-zero")
         #
-        result = cls(mode, lock_options, counter[::-1])
+        result = cls(BeeProtectRegionBlockAesMode.from_tag(mode), lock_options, counter[::-1])
         result._start_addr = start_addr
         result._end_addr = end_addr
         offset = calcsize(BeeProtectRegionBlock._struct_format())
@@ -380,7 +374,7 @@ class BeeProtectRegionBlock(BeeBaseClass):
                     cntr_key = Counter(
                         self.counter,
                         ctr_value=start_addr >> 4,
-                        ctr_byteorder_encoding="big",
+                        ctr_byteorder_encoding=Endianness.BIG,
                     )
                     logger.debug(
                         f"Encrypting data, start={hex(start_addr)},"
@@ -555,7 +549,7 @@ class BeeRegionHeader(BeeBaseClass):
         """Deserialization.
 
         :param data: binary data to be parsed
-        :param sw_key: SW key used to decrypt the EKIB data (the key is marked as SW_GP2 on RT10xx)
+        :param sw_key: SW key used to decrypt the EKIB data
         :return: instance created from binary data
         :raises SPSDKError: If invalid sw key
         """
@@ -646,8 +640,7 @@ class BeeNxp:
 
         :return: List of supported families.
         """
-        database = Database(BEE_DATABASE_FILE)
-        return database.devices.device_names
+        return get_families(DatabaseManager.BEE)
 
     @staticmethod
     def get_validation_schemas() -> List[Dict[str, Any]]:
@@ -655,7 +648,7 @@ class BeeNxp:
 
         :return: Validation list of schemas.
         """
-        schemas = ValidationSchemas.get_schema_file(BEE_SCH_FILE)
+        schemas = get_schema_file(DatabaseManager.BEE)
         return [schemas["bee_output"], schemas["bee"]]
 
     @staticmethod
@@ -665,13 +658,7 @@ class BeeNxp:
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
         val_schemas = BeeNxp.get_validation_schemas()
-
-        yaml_data = CommentedConfig(
-            "BEE configuration template",
-            val_schemas,
-        ).export_to_yaml()
-
-        return yaml_data
+        return CommentedConfig("BEE configuration template", val_schemas).get_template()
 
     @staticmethod
     def check_overlaps(bee_headers: List[Optional[BeeRegionHeader]], start_addr: int) -> None:
@@ -724,7 +711,7 @@ class BeeNxp:
             # BEE Configuration
             bee_cfg: Optional[Dict[str, Any]] = bee_engines[engine_idx].get("bee_cfg")
             if bee_cfg:
-                key = get_key(bee_cfg["user_key"], expected_size=16)
+                key = load_hex_string(bee_cfg["user_key"], expected_size=16)
                 bee_headers[header_idx] = BeeRegionHeader(prdb, key, kib)
                 protected_regions = bee_cfg.get("protected_region", [])
                 for protected_region in protected_regions:
@@ -742,7 +729,7 @@ class BeeNxp:
             # BEE Binary configuration
             bee_bin_cfg: Optional[Dict[str, Any]] = bee_engines[engine_idx].get("bee_binary_cfg")
             if bee_bin_cfg:
-                key = get_key(bee_bin_cfg["user_key"], expected_size=16)
+                key = load_hex_string(bee_bin_cfg["user_key"], expected_size=16)
                 bin_ehdr = load_binary(bee_bin_cfg["header_path"], search_paths)
                 bee_headers[header_idx] = BeeRegionHeader.parse(bin_ehdr, sw_key=key)
                 continue

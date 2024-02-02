@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +10,8 @@
 
 from typing import List, Optional, cast
 
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import size_fmt
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 LEGACY_MEM_ID = {
     "internal": "INTERNAL",
@@ -28,29 +28,13 @@ LEGACY_MEM_ID = {
     "mmccard": "MMC",
 }
 
+
 ########################################################################################################################
 # McuBoot External Memory ID
 ########################################################################################################################
+class MemIdEnum(SpsdkEnum):
+    """McuBoot Memory Base class."""
 
-# fmt: off
-class ExtMemId(Enum):
-    """McuBoot External Memory Property Tags."""
-
-    QUAD_SPI0       = (1, "QSPI", "Quad SPI Memory 0")
-    IFR             = (4, "IFR0", "Nonvolatile information register 0 (only used by SB loader)")
-    FUSE            = (4, "FUSE", "Nonvolatile information register 0 (only used by SB loader)")
-    SEMC_NOR        = (8, "SEMC-NOR", "SEMC NOR Memory")
-    FLEX_SPI_NOR    = (9, "FLEX-SPI-NOR", "Flex SPI NOR Memory")
-    SPIFI_NOR       = (10, "SPIFI-NOR", "SPIFI NOR Memory")
-    FLASH_EXEC_ONLY = (16, "FLASH-EXEC", "Execute-Only region on internal Flash")
-    SEMC_NAND       = (256, "SEMC-NAND", "SEMC NAND Memory")
-    SPI_NAND        = (257, "SPI-NAND", "SPI NAND Memory")
-    SPI_NOR_EEPROM  = (272, "SPI-MEM", "SPI NOR/EEPROM Memory")
-    I2C_NOR_EEPROM  = (273, "I2C-MEM", "I2C NOR/EEPROM Memory")
-    SD_CARD         = (288, "SD", "eSD/SD/SDHC/SDXC Memory Card")
-    MMC_CARD        = (289, "MMC", "MMC/eMMC Memory Card")
-
-# fmt: on
     @classmethod
     def get_legacy_str(cls, key: str) -> Optional[int]:
         """Converts legacy str to new enum key.
@@ -59,10 +43,7 @@ class ExtMemId(Enum):
         :return: new enum value
         """
         new_key = LEGACY_MEM_ID.get(key)
-        if isinstance(new_key, str):
-            return cast(int, cls.get(new_key))
-
-        return None
+        return cast(int, cls.get_tag(new_key)) if new_key else None
 
     @classmethod
     def get_legacy_int(cls, key: int) -> Optional[str]:
@@ -72,17 +53,48 @@ class ExtMemId(Enum):
         :return: new enum value
         """
         if isinstance(key, int):
-            new_value = cls.get(key)
+            new_value = cls.from_tag(key)
             if new_value:
-                return [k for k, v in LEGACY_MEM_ID.items() if v == new_value][0]
+                return [k for k, v in LEGACY_MEM_ID.items() if v == new_value.label][0]
 
         return None
 
-# fmt: off
-class MemId(ExtMemId): # type: ignore[misc]
+
+class ExtMemId(MemIdEnum):
+    """McuBoot External Memory Property Tags."""
+
+    QUAD_SPI0 = (1, "QSPI", "Quad SPI Memory 0")
+    IFR = (4, "IFR0", "Nonvolatile information register 0 (only used by SB loader)")
+    FUSE = (4, "FUSE", "Nonvolatile information register 0 (only used by SB loader)")
+    SEMC_NOR = (8, "SEMC-NOR", "SEMC NOR Memory")
+    FLEX_SPI_NOR = (9, "FLEX-SPI-NOR", "Flex SPI NOR Memory")
+    SPIFI_NOR = (10, "SPIFI-NOR", "SPIFI NOR Memory")
+    FLASH_EXEC_ONLY = (16, "FLASH-EXEC", "Execute-Only region on internal Flash")
+    SEMC_NAND = (256, "SEMC-NAND", "SEMC NAND Memory")
+    SPI_NAND = (257, "SPI-NAND", "SPI NAND Memory")
+    SPI_NOR_EEPROM = (272, "SPI-MEM", "SPI NOR/EEPROM Memory")
+    I2C_NOR_EEPROM = (273, "I2C-MEM", "I2C NOR/EEPROM Memory")
+    SD_CARD = (288, "SD", "eSD/SD/SDHC/SDXC Memory Card")
+    MMC_CARD = (289, "MMC", "MMC/eMMC Memory Card")
+
+
+class MemId(MemIdEnum):
     """McuBoot Internal/External Memory Property Tags."""
 
     INTERNAL_MEMORY = (0, "RAM/FLASH", "Internal RAM/FLASH (Used for the PRINCE configuration)")
+    QUAD_SPI0 = (1, "QSPI", "Quad SPI Memory 0")
+    IFR = (4, "IFR0", "Nonvolatile information register 0 (only used by SB loader)")
+    FUSE = (4, "FUSE", "Nonvolatile information register 0 (only used by SB loader)")
+    SEMC_NOR = (8, "SEMC-NOR", "SEMC NOR Memory")
+    FLEX_SPI_NOR = (9, "FLEX-SPI-NOR", "Flex SPI NOR Memory")
+    SPIFI_NOR = (10, "SPIFI-NOR", "SPIFI NOR Memory")
+    FLASH_EXEC_ONLY = (16, "FLASH-EXEC", "Execute-Only region on internal Flash")
+    SEMC_NAND = (256, "SEMC-NAND", "SEMC NAND Memory")
+    SPI_NAND = (257, "SPI-NAND", "SPI NAND Memory")
+    SPI_NOR_EEPROM = (272, "SPI-MEM", "SPI NOR/EEPROM Memory")
+    I2C_NOR_EEPROM = (273, "I2C-MEM", "I2C NOR/EEPROM Memory")
+    SD_CARD = (288, "SD", "eSD/SD/SDHC/SDXC Memory Card")
+    MMC_CARD = (289, "MMC", "MMC/eMMC Memory Card")
 
 
 ########################################################################################################################
@@ -90,16 +102,15 @@ class MemId(ExtMemId): # type: ignore[misc]
 ########################################################################################################################
 
 
-class ExtMemPropTags(Enum):
+class ExtMemPropTags(SpsdkEnum):
     """McuBoot External Memory Property Tags."""
 
-    INIT_STATUS     = 0x00000000
-    START_ADDRESS   = 0x00000001
-    SIZE_IN_KBYTES  = 0x00000002
-    PAGE_SIZE       = 0x00000004
-    SECTOR_SIZE     = 0x00000008
-    BLOCK_SIZE      = 0x00000010
-# fmt: on
+    INIT_STATUS = (0x00000000, "INIT_STATUS")
+    START_ADDRESS = (0x00000001, "START_ADDRESS")
+    SIZE_IN_KBYTES = (0x00000002, "SIZE_IN_KBYTES")
+    PAGE_SIZE = (0x00000004, "PAGE_SIZE")
+    SECTOR_SIZE = (0x00000008, "SECTOR_SIZE")
+    BLOCK_SIZE = (0x00000010, "BLOCK_SIZE")
 
 
 class MemoryRegion:
@@ -183,19 +194,21 @@ class ExtMemRegion(MemoryRegion):
             self.value = None
             return
         super().__init__(0, 0)
-        self.start_address = raw_values[1] if raw_values[0] & ExtMemPropTags.START_ADDRESS else None
-        self.total_size = (
-            raw_values[2] * 1024 if raw_values[0] & ExtMemPropTags.SIZE_IN_KBYTES else None
+        self.start_address = (
+            raw_values[1] if raw_values[0] & ExtMemPropTags.START_ADDRESS.tag else None
         )
-        self.page_size = raw_values[3] if raw_values[0] & ExtMemPropTags.PAGE_SIZE else None
-        self.sector_size = raw_values[4] if raw_values[0] & ExtMemPropTags.SECTOR_SIZE else None
-        self.block_size = raw_values[5] if raw_values[0] & ExtMemPropTags.BLOCK_SIZE else None
+        self.total_size = (
+            raw_values[2] * 1024 if raw_values[0] & ExtMemPropTags.SIZE_IN_KBYTES.tag else None
+        )
+        self.page_size = raw_values[3] if raw_values[0] & ExtMemPropTags.PAGE_SIZE.tag else None
+        self.sector_size = raw_values[4] if raw_values[0] & ExtMemPropTags.SECTOR_SIZE.tag else None
+        self.block_size = raw_values[5] if raw_values[0] & ExtMemPropTags.BLOCK_SIZE.tag else None
         self.value = raw_values[0]
 
     @property
     def name(self) -> str:
         """Get the name of external memory for given memory ID."""
-        return ExtMemId.name(self.mem_id)
+        return ExtMemId.get_label(self.mem_id)
 
     def __repr__(self) -> str:
         return f"EXT Memory region, name: {self.name}, start: {hex(self.start)}"

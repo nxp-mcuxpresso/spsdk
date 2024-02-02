@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """CLI application for various cryptographic operations."""
 
 import hashlib
+import logging
 import os
 import sys
-from typing import List, Union
+from typing import List, Optional, Union
 
 import click
+from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
 from spsdk.apps.nxpcertgen import main as cert_gen_main
 from spsdk.apps.utils import spsdk_logger
@@ -23,21 +25,28 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import (
+    ECDSASignature,
     PrivateKey,
     PrivateKeyEcc,
     PrivateKeyRsa,
     PrivateKeySM2,
     PublicKey,
     PublicKeyEcc,
+    SPSDKKeyPassphraseMissing,
     get_ecc_curve,
     get_supported_keys_generators,
+    prompt_for_passphrase,
 )
+from spsdk.crypto.signature_provider import get_signature_provider
 from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKSyntaxError, SPSDKValueError
 from spsdk.utils.crypto.rot import Rot
-from spsdk.utils.misc import load_binary, write_file
+from spsdk.utils.misc import Endianness, load_binary, write_file
+
+logger = logging.getLogger(__name__)
 
 
 @click.group(name="nxpcrypto", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -75,7 +84,7 @@ def digest(hash_name: str, input_file: str, compare: str) -> None:
     hasher = hashlib.new(hash_name.lower())
     hasher.update(data)
     hexdigest = hasher.hexdigest()
-    click.echo(f"{hash_name.upper()}({input})= {hexdigest}")
+    click.echo(f"{hash_name.upper()}({input_file})= {hexdigest}")
     if compare:
         # assume comparing to a file
         if os.path.isfile(compare):
@@ -221,6 +230,7 @@ def key_generate(key_type: str, output: str, password: str, encoding: str) -> No
     "-e",
     "--encoding",
     type=click.Choice(["PEM", "DER", "RAW"], case_sensitive=False),
+    required=True,
     help="Desired output format.",
 )
 @click.option(
@@ -248,16 +258,18 @@ def convert(encoding: str, input_file: str, output: str, puk: bool) -> None:
     if encoding in ["PEM", "DER"]:
         encoding_type = {"PEM": SPSDKEncoding.PEM, "DER": SPSDKEncoding.DER}[encoding]
         out_data = key.export(encoding=encoding_type)
-    if encoding == "RAW":
+    elif encoding == "RAW":
         if not isinstance(key, (PrivateKeyEcc, PublicKeyEcc)):
             raise SPSDKError("Converting to RAW is supported only for ECC keys")
         key_size = key.key_size // 8
         if isinstance(key, PrivateKeyEcc):
-            out_data = key.d.to_bytes(key_size, byteorder="big")
+            out_data = key.d.to_bytes(key_size, byteorder=Endianness.BIG.value)
         else:
-            x = key.x.to_bytes(key_size, byteorder="big")
-            y = key.y.to_bytes(key_size, byteorder="big")
+            x = key.x.to_bytes(key_size, byteorder=Endianness.BIG.value)
+            y = key.y.to_bytes(key_size, byteorder=Endianness.BIG.value)
             out_data = x + y
+    else:
+        raise SPSDKAppError("Desired output encoding format must be specified by -e/--encoding")
 
     write_file(out_data, output, mode="wb")
 
@@ -308,16 +320,255 @@ def reconstruct_key(
     # everything under 49 bytes is a private key
     if key_length <= 48:
         # pylint: disable=invalid-name   # 'd' is regular name for private key number
-        d = int.from_bytes(key_data, byteorder="big")
+        d = int.from_bytes(key_data, byteorder=Endianness.BIG.value)
         return PrivateKeyEcc.recreate(d=d, curve=curve)
 
     # public keys in binary form have exact sizes
     if key_length in [64, 96]:
         coord_length = key_length // 2
-        x = int.from_bytes(key_data[:coord_length], byteorder="big")
-        y = int.from_bytes(key_data[coord_length:], byteorder="big")
+        x = int.from_bytes(key_data[:coord_length], byteorder=Endianness.BIG.value)
+        y = int.from_bytes(key_data[coord_length:], byteorder=Endianness.BIG.value)
         return PublicKeyEcc.recreate(coor_x=x, coor_y=y, curve=curve)
     raise SPSDKError(f"Can't recognize key with length {key_length}")
+
+
+@main.group(name="signature", no_args_is_help=True)
+def signature_group() -> None:
+    """Group of commands for working with signature."""
+
+
+def cut_off_data_regions(data: bytes, regions: List[str]) -> bytes:
+    """Get the data chunks from the input data.
+
+    The regions are individual string written in python-like syntax. For example '[:0x10]'
+    """
+    if not regions:
+        return data
+    data_chunks = bytes()
+    for region in regions:
+        try:
+            # pylint: disable=eval-used
+            data_chunk = eval(f"data{region}")
+            # if the region was defined as single index such as [0]
+            if isinstance(data_chunk, int):
+                data_chunk = data_chunk.to_bytes(1, Endianness.BIG.value)
+            assert isinstance(data_chunk, bytes)
+            data_chunks += data_chunk
+        except (SyntaxError, NameError) as exc:
+            raise SPSDKSyntaxError(f"Invalid region expression '{region}'") from exc
+        except IndexError as exc:
+            raise SPSDKIndexError(
+                f"The region expression '{region}' is outside the data length {len(data)}"
+            ) from exc
+    return data_chunks
+
+
+@signature_group.command(name="create", no_args_is_help=True)
+@optgroup.group("Signee type", cls=RequiredMutuallyExclusiveOptionGroup)
+@optgroup.option(
+    "-k",
+    "--private-key",
+    type=click.Path(exists=True, dir_okay=False),
+    help=f"""\b
+        Path to private key to be used for signing.
+        Supported private keys:
+        {", ".join(list(get_supported_keys_generators()))}.
+        """,
+)
+@optgroup.option(
+    "-sp",
+    "--signature-provider",
+    type=click.STRING,
+    help="Signature provider configuration string.",
+)
+@click.option(
+    "-p",
+    "--password",
+    type=click.STRING,
+    help="Password when using encrypted private keys.",
+)
+@click.option(
+    "-a",
+    "--algorithm",
+    type=click.Choice(EnumHashAlgorithm.labels()),
+    help="Hash algorithm used when signing the message.",
+)
+@click.option(
+    "-i",
+    "--input-file",
+    required=True,
+    type=click.Path(exists=False, dir_okay=False),
+    help="Path to file containing binary data to be signed.",
+)
+@click.option(
+    "-e",
+    "--encoding",
+    type=click.Choice([SPSDKEncoding.NXP.value, SPSDKEncoding.DER.value]),
+    default=SPSDKEncoding.DER.value,
+    help="Encoding of output signature. This option is applicable only when signing with ECC keys.",
+)
+@click.option(
+    "-r",
+    "--regions",
+    type=click.STRING,
+    multiple=True,
+    help="""\b
+        Region(s) of data that will be signed. Multiple regions can be specified.
+
+        Format of region option is similar to Python's list indices syntax:
+
+        +--------------+--------------------------+
+        | [1]          | Byte with index 1        |
+        +--------------+--------------------------+
+        | [:20]        | Fist 20 bytes            |
+        +--------------+--------------------------+
+        | [0x10:0x20]  | Between 0x10 and 0x20    |
+        +--------------+--------------------------+
+        | [-20:]       | Last 20 bytes            |
+        +--------------+--------------------------+
+        """,
+)
+@spsdk_output_option(force=True)
+def signature_create(
+    private_key: str,
+    signature_provider: str,
+    password: str,
+    algorithm: str,
+    input_file: str,
+    encoding: str,
+    regions: List[str],
+    output: str,
+) -> None:
+    """Sign the data with given private key."""
+    signature = signature_create_command(
+        private_key, signature_provider, password, algorithm, input_file, encoding, regions
+    )
+    write_file(signature, output, mode="wb")
+    click.echo(f"The data have been signed. Signature saved to: {output}")
+
+
+def signature_create_command(
+    private_key: Optional[str],
+    signature_provider_cfg: Optional[str],
+    password: Optional[str],
+    algorithm: Optional[str],
+    input_file: str,
+    encoding_str: str,
+    regions: List[str],
+) -> bytes:
+    """Sign the data with given private key."""
+    data = load_binary(input_file, search_paths=["."])
+    data = cut_off_data_regions(data, regions)
+    hash_alg = EnumHashAlgorithm.from_label(algorithm) if algorithm else None
+    if signature_provider_cfg:
+        signature_provider = get_signature_provider(signature_provider_cfg, search_paths=["."])
+        if hash_alg:
+            logger.warning("Hash algorithm was not applied when using signature provider.")
+        if password:
+            logger.warning("Password was not applied when using signature provider.")
+        signature = signature_provider.get_signature(data)
+    else:
+        assert private_key
+        try:
+            prv_key = PrivateKey.load(private_key, password)
+        except SPSDKKeyPassphraseMissing:
+            prv_key = PrivateKey.load(private_key, prompt_for_passphrase())
+        extra_params = {}
+        if hash_alg:
+            if not isinstance(prv_key, PrivateKeySM2):
+                extra_params["algorithm"] = hash_alg
+            else:
+                if hash_alg != EnumHashAlgorithm.SM3:
+                    logger.warning("Only SM3 hash algorithm is supported for OSCCA")
+        signature = prv_key.sign(data, **extra_params)
+    encoding = SPSDKEncoding.all()[encoding_str.upper().strip()]
+    try:
+        ecc_signature = ECDSASignature.parse(signature)
+        return ecc_signature.export(encoding=encoding)
+    except SPSDKValueError:
+        # Not an ECC signature
+        parameter_source = click.get_current_context().get_parameter_source("encoding")
+        assert parameter_source
+        if parameter_source.name == "COMMANDLINE":
+            logger.warning("Signature encoding is supported only for ECC keys.")
+        return signature
+
+
+@signature_group.command(name="verify", no_args_is_help=True)
+@click.option(
+    "-k",
+    "--public-key",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+    help=f"""\b
+        Path to public key to be used for verification.
+
+        Supported public keys:
+        {", ".join(list(get_supported_keys_generators()))}.
+        """,
+)
+@click.option(
+    "-a",
+    "--algorithm",
+    type=click.Choice(EnumHashAlgorithm.labels()),
+    help="Hash algorithm used when signing the message. If not set, default algorithm will be used.",
+)
+@click.option(
+    "-i",
+    "--input-file",
+    required=True,
+    type=click.Path(exists=False, dir_okay=False),
+    help="Path to file containing original binary data.",
+)
+@click.option(
+    "-s",
+    "--signature",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Path to file containing data signature.",
+)
+@click.option(
+    "-r",
+    "--regions",
+    type=click.STRING,
+    multiple=True,
+    help="""\b
+        Region(s) of data that will be signed. Multiple regions can be specified.
+
+        Format of region option is similar to Python's list indices syntax:
+
+        +--------------+--------------------------+
+        | [1]          | Byte with index 1        |
+        +--------------+--------------------------+
+        | [:20]        | Fist 20 bytes            |
+        +--------------+--------------------------+
+        | [0x10:0x20]  | Between 0x10 and 0x20    |
+        +--------------+--------------------------+
+        | [-20:]       | Last 20 bytes            |
+        +--------------+--------------------------+
+        """,
+)
+def signature_verify(
+    public_key: str, algorithm: Optional[str], input_file: str, signature: str, regions: List[str]
+) -> None:
+    """Verify the given signature with public key."""
+    result = signature_verify_command(public_key, algorithm, input_file, signature, regions)
+    click.echo(f"Signature {'IS' if result else 'IS NOT'} matching the public key.")
+
+
+def signature_verify_command(
+    public_key: str, algorithm: Optional[str], input_file: str, signature: str, regions: List[str]
+) -> bool:
+    """Verify the given signature with public key."""
+    public = PublicKey.load(public_key)
+    extra_params = {}
+    if algorithm:
+        extra_params["algorithm"] = EnumHashAlgorithm.from_label(algorithm)
+    signature_bin = load_binary(signature)
+    data = load_binary(input_file)
+    data = cut_off_data_regions(data, regions)
+    result = public.verify_signature(signature_bin, data, **extra_params)
+    return result
 
 
 @catch_spsdk_error

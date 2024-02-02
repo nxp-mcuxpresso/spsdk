@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -39,6 +39,7 @@ class DevHsmSBx(DevHsm):
         workspace: Optional[str] = None,
         initial_reset: bool = False,
         final_reset: bool = True,
+        buffer_address: Optional[int] = None,
     ) -> None:
         """Initialization of device HSM class. It's designed to create provisioned sbx file.
 
@@ -50,6 +51,7 @@ class DevHsmSBx(DevHsm):
         :param workspace: Optional folder to store middle results.
         :param initial_reset: Reset device before DevHSM creation of SB3 file.
         :param final_reset: Reset device after DevHSM creation of SB3 file.
+        :param buffer_address: Override the default buffer address.
         :raises SPSDKError: In case of any problem.
         """
         if cust_mk_sk:
@@ -57,6 +59,9 @@ class DevHsmSBx(DevHsm):
 
         if not container_conf:
             raise SPSDKError("Container configuration must be provided for SBx")
+
+        if buffer_address is not None:
+            raise SPSDKError("Overriding buffer address for SBx is not supported")
 
         self.mboot = mboot
         self.oem_share_input = oem_share_input
@@ -136,7 +141,7 @@ class DevHsmSBx(DevHsm):
 
         if self.sbx.isk_signed and self.sbx.signature_provider:
             self.info_print(" 6: Creating sbx signature using ISK certificate.")
-            header_signature = self.sbx.signature_provider.sign(sbx_header)
+            header_signature = self.sbx.signature_provider.get_signature(sbx_header)
         else:
             self.info_print(" 6: Creating sbx signature on device.")
             header_signature = self.sign_data_blob(sbx_header)

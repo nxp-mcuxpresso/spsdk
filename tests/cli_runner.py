@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+import traceback
+
 from click.testing import CliRunner as _CliRunner
 from click.testing import Result
 
@@ -31,4 +33,8 @@ class CliRunner(_CliRunner):
         if result.exception:
             error_msg += f"{result.exception}\n"
         error_msg += result.output if self.mix_stderr else result.stderr
+        if result.exc_info[2]:
+            extracted_list = traceback.extract_tb(result.exc_info[2])
+            for item in traceback.StackSummary.from_list(extracted_list).format():
+                error_msg += f"{item}"
         return error_msg

@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # Script for the automated generation of schemas documentation for nxpimage
 import copy
 import os
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 import jsonschema2md
-import yaml
 from pytablewriter import MarkdownTableWriter
 
 from spsdk.image.ahab.ahab_container import AHABImage
@@ -21,9 +20,10 @@ from spsdk.image.hab.hab_container import HabContainer
 from spsdk.image.mbi.mbi import get_all_mbi_classes
 from spsdk.image.xmcd.xmcd import XMCD, ConfigurationBlockType, MemoryType
 from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
-from spsdk.sbfile.sb31.images import DATABASE_FILE, SB3_SCH_FILE, SecureBinary31
+from spsdk.sbfile.sb31.images import SecureBinary31
 from spsdk.utils.crypto.iee import IeeNxp
 from spsdk.utils.crypto.otfad import OtfadNxp
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.schema_validator import CommentedConfig, SPSDKMerger
 
 DOC_PATH = os.path.abspath(".")
@@ -103,21 +103,23 @@ def parse_schema(schema: Dict) -> Sequence[str]:
 
 
 def append_schema(
-    parsed: Sequence[str],
-    template: str,
-    file: str,
+    parsed: Sequence[str], template: str, file: str, note: Optional[str] = None
 ) -> None:
     """Appends schema and template to the markdown document
 
     :param parsed: sequence of MD strings
     :param template: string with YAML to be appended to the doc
     :param file: schema file
+    :param note: note that will be appended after parsed
     """
     if not os.path.exists(DOC_DIR):
         os.makedirs(DOC_DIR)
     with open(file, "a+") as f:
-        del parsed[1]  # remove subtitle
-        f.writelines(parsed)
+        f.write(parsed[0])
+        if note:
+            f.write(note)
+        f.writelines(parsed[1:])
+        f.write("\n")
         f.write("\n")
         f.write("```yaml\n")
         f.write(template)
@@ -125,26 +127,38 @@ def append_schema(
         f.write("\n")
 
 
-def get_template(schemas: Dict, name: str) -> str:
+def get_template(schemas: List, name: str) -> str:
     """Get template for schemas
 
-    :param schemas: dictionary with validation schemas
+    :param schemas: List with validation schemas
     :param name: Name that will be displayed as a title
     :return: string with YAML template
     """
-    override = {}
-    hint = "CHOOSE_FROM_TABLE"
-    override["family"] = hint
-    override["outputImageExecutionTarget"] = hint
-    override["outputImageAuthenticationType"] = hint
 
-    yaml_data = CommentedConfig(
-        name,
-        schemas,
-        override,
-    ).export_to_yaml()
+    def override_template_values(key: str, value: str):
+        for schema in schemas:
+            if "properties" in schema and key in schema["properties"]:
+                schema["properties"][key]["template_value"] = value
+                break
+
+    hint = "CHOOSE_FROM_TABLE"
+
+    override_template_values("family", hint)
+    override_template_values("outputImageExecutionTarget", hint)
+    override_template_values("outputImageAuthenticationType", hint)
+
+    yaml_data = CommentedConfig(name, schemas).get_template()
 
     return yaml_data
+
+
+def get_mbi_note(mbi_cls: Any) -> str:
+    """Get note about MBI supported mixins"""
+    note = "## MBI Mixins\n"
+    for mbi_base in mbi_cls.__bases__:
+        note += f" - {mbi_base.__name__}\n"
+    note += "\n ## Schema \n"
+    return note
 
 
 def get_mbi_doc() -> None:
@@ -155,20 +169,19 @@ def get_mbi_doc() -> None:
     for cls in image_classes:
         validation_schemas = cls.get_validation_schemas()
         schema = get_schema(validation_schemas)
-        schema["title"] = cls.__name__
+        schema["title"] = cls.hash()
         parsed_schema = parse_schema(schema)
+        parsed_schema[1] = parsed_schema[1].replace("Properties", f"Class name: {cls.__name__}")
         template = get_template([schema], f"YAML template {cls.__name__}")
-        append_schema(parsed_schema, template, MBI_SCHEMAS_FILE)
+        note = get_mbi_note(cls)
+        append_schema(parsed_schema, template, MBI_SCHEMAS_FILE, note)
 
 
 def get_sb3_table() -> None:
     """Generates table with SB3 supported commands"""
     # Load the YAML files
-    with open(DATABASE_FILE, "r") as file:
-        devices_yaml = yaml.safe_load(file)
-
-    with open(SB3_SCH_FILE, "r") as file:
-        commands_yaml = yaml.safe_load(file)
+    sb31_devices = get_families(DatabaseManager.SB31)
+    commands_yaml = get_schema_file(DatabaseManager.SB31)
 
     headers = ["Command", "Command Description"]
     values = []
@@ -176,16 +189,10 @@ def get_sb3_table() -> None:
     devices = []
 
     # Iterate over the devices in the devices YAML data
-    for device, device_data in devices_yaml["devices"].items():
-        # Check if the device has a device alias
-        if "device_alias" in device_data:
-            device_alias = device_data["device_alias"]
-            # Get the supported commands from the device alias
-            supported_commands[device] = devices_yaml["devices"][device_alias]["attributes"][
-                "supported_commands"
-            ]
-        else:
-            supported_commands[device] = device_data["attributes"]["supported_commands"]
+    for device in sb31_devices:
+        supported_commands[device] = get_db(device, "latest").get_list(
+            DatabaseManager.SB31, "supported_commands"
+        )
         devices.append(device)
     headers.extend(devices)
     commands = commands_yaml["sb3_commands"]["properties"]["commands"]["items"]["oneOf"]
@@ -352,7 +359,7 @@ def get_xmcd_doc() -> None:
         memories = XMCD.get_supported_memory_types(fam)
         for mem in memories:
             validation_schemas = XMCD.get_validation_schemas(
-                fam, MemoryType[mem], ConfigurationBlockType.FULL
+                fam, MemoryType.from_label(mem), ConfigurationBlockType.FULL
             )
             schema = get_schema(validation_schemas)
             schema["title"] = f"XMCD template for {fam} and {mem}"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Pemicro Debug probes support."""
@@ -14,7 +14,9 @@ from pypemicro import PEMicroException, PEMicroInterfaces, PyPemicro
 from spsdk.utils.misc import value_to_int
 
 from .debug_probe import (
-    DebugProbe,
+    DebugProbeLocal,
+    DebugProbes,
+    ProbeDescription,
     SPSDKDebugProbeError,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
@@ -24,8 +26,10 @@ logger = logging.getLogger(__name__)
 logger_pypemicro = logger.getChild("PyPemicro")
 
 
-class DebugProbePemicro(DebugProbe):
+class DebugProbePemicro(DebugProbeLocal):
     """Class to define Pemicro package interface for NXP SPSDK."""
+
+    NAME = "pemicro"
 
     @staticmethod
     def get_options_help() -> Dict[str, str]:
@@ -33,9 +37,15 @@ class DebugProbePemicro(DebugProbe):
 
         :return: Dictionary with individual options. Key is parameter name and value the help text.
         """
-        return {
-            "frequency": "Set the communication frequency in Hz, default is 100_000Hz",
-        }
+        options_help = {}
+        options_help.update(
+            {
+                "frequency": "Set the communication frequency in Hz, default is 100_000Hz",
+            }
+        )
+        options_help.update(DebugProbeLocal.get_options_help())
+
+        return options_help
 
     @classmethod
     def get_pemicro_lib(cls) -> PyPemicro:
@@ -68,7 +78,7 @@ class DebugProbePemicro(DebugProbe):
     @classmethod
     def get_connected_probes(
         cls, hardware_id: Optional[str] = None, options: Optional[Dict] = None
-    ) -> list:
+    ) -> DebugProbes:
         """Get all connected probes over Pemicro.
 
         This functions returns the list of all connected probes in system by Pemicro package.
@@ -78,9 +88,6 @@ class DebugProbePemicro(DebugProbe):
         :param options: The options dictionary
         :return: probe_description
         """
-        # pylint: disable=import-outside-toplevel
-        from .utils import DebugProbes, ProbeDescription
-
         probes = DebugProbes()
         try:
             connected_probes = PyPemicro.list_ports()

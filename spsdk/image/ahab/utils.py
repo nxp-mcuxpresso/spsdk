@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,13 +11,18 @@ from typing import Optional
 
 from spsdk.apps.utils.utils import SPSDKError
 from spsdk.image.ahab.ahab_container import AHABContainerBase, AHABImage, Blob, SignatureBlock
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.misc import load_binary
 
 logger = logging.getLogger(__name__)
 
 
 def ahab_update_keyblob(
-    family: str, binary: str, keyblob: str, container_id: int, mem_type: Optional[str]
+    family: str,
+    binary: str,
+    keyblob: str,
+    container_id: int,
+    mem_type: Optional[str],
 ) -> None:
     """Update keyblob in AHAB image.
 
@@ -30,14 +35,13 @@ def ahab_update_keyblob(
     :raises SPSDKError: In case the AHAB image does not contain blob
     :raises SPSDKError: In case the length of keyblobs don't match
     """
+    DATA_READ = 0x2000
     offset = 0
     if mem_type:
-        offset = {
-            "serial_downloader": 0x400,
-            "flexspi_nor": 0x1000,
-            "flexspi_nand": 0x400,
-            "semc_nand": 0x400,
-        }[mem_type]
+        database = get_db(family)
+        offset = database.get_dict(
+            DatabaseManager.BOOTABLE_IMAGE, ["mem_types", mem_type, "segments"]
+        )["ahab_container"]
 
     keyblob_data = load_binary(keyblob)
     image = AHABImage(family)
@@ -50,7 +54,7 @@ def ahab_update_keyblob(
     with open(binary, "r+b") as f:
         logger.debug(f"Trying to find AHAB container header at offset {hex(address + offset)}")
         f.seek(address + offset)
-        data = f.read(1024)
+        data = f.read(DATA_READ)
         (
             _,
             _,
@@ -59,7 +63,7 @@ def ahab_update_keyblob(
             signature_block_offset,
         ) = AHABContainerBase._parse(data)
         f.seek(signature_block_offset + address + offset)
-        signature_block = SignatureBlock.parse(f.read(1024))
+        signature_block = SignatureBlock.parse(f.read(DATA_READ))
         blob = Blob.parse(keyblob_data)
         blob.validate()
         signature_block.update_fields()

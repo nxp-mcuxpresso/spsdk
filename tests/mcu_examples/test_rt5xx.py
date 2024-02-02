@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,14 +19,15 @@ from spsdk.crypto.signature_provider import SignatureProvider, get_signature_pro
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbi.mbi import create_mbi_class
 from spsdk.image.trustzone import TrustZone
+from spsdk.mboot.commands import KeyProvUserKeyType
 from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
-from spsdk.mboot.mcuboot import KeyProvUserKeyType, McuBoot, PropertyTag
+from spsdk.mboot.mcuboot import McuBoot, PropertyTag
 from spsdk.mboot.memories import ExtMemId
 from spsdk.sbfile.sb2.commands import CmdErase, CmdFill, CmdLoad, CmdMemEnable
 from spsdk.sbfile.sb2.images import BootImageV21, BootSectionV2, CertBlockV1, SBV2xAdvancedParams
 from spsdk.utils.crypto.otfad import KeyBlob, Otfad
-from spsdk.utils.misc import align_block, load_binary
+from spsdk.utils.misc import Endianness, align_block, load_binary
 from tests.misc import compare_bin_files
 
 # Flag allowing to switch between testing expected image content and generating an output image
@@ -128,8 +129,8 @@ def write_shadow_regis(data_dir: str, writes: List[Tuple[int, int]]) -> None:
 
     assert len(writes) <= 12
     write_shadows_app = load_binary(os.path.join(data_dir, "write_shadows", "write_shadows.bin"))
-    stack_ptr = int.from_bytes(write_shadows_app[:4], byteorder="little")
-    initial_pc = int.from_bytes(write_shadows_app[4:8], byteorder="little")
+    stack_ptr = int.from_bytes(write_shadows_app[:4], byteorder=Endianness.LITTLE.value)
+    initial_pc = int.from_bytes(write_shadows_app[4:8], byteorder=Endianness.LITTLE.value)
     # write_shadow is an application, that contains table of 12 writes, for each write 32 bit address and 32-bit value
     write_shadows_arr = BitArray(write_shadows_app)
     # now we construct an existing table content to be replaced
@@ -214,7 +215,7 @@ def burn_img_via_usb_into_flexspi_flash(data_dir: str, img_data: bytes) -> Optio
     # blhost -u 0x1FC9,0x20 -- fill-memory 0x10c000 4 0xc0403006
     assert mboot.fill_memory(0x10C000, 4, 0xC0403006)
     # blhost -u 0x1FC9,0x20 -- configure-memory 9 0x10c000
-    assert mboot.configure_memory(0x10C000, ExtMemId.FLEX_SPI_NOR)
+    assert mboot.configure_memory(0x10C000, ExtMemId.FLEX_SPI_NOR.tag)
 
     # blhost -u 0x1FC9,0x20 -- list-memory
     mem_dict = mboot.get_memory_list()
@@ -222,17 +223,17 @@ def burn_img_via_usb_into_flexspi_flash(data_dir: str, img_data: bytes) -> Optio
 
     # erase the FLASH
     # blhost -u 0x1FC9,0x20 -- flash-erase-region 0x8000000 0x10000
-    assert mboot.flash_erase_region(0x8000000, 0x10000, ExtMemId.FLEX_SPI_NOR)
+    assert mboot.flash_erase_region(0x8000000, 0x10000, ExtMemId.FLEX_SPI_NOR.tag)
 
     # write FCB to configure FLASH
     # blhost -u 0x1FC9,0x20 -- write-memory 0x8000400 "rt500_oct_flash_fcb.bin"
     with open(os.path.join(data_dir, FCB_FILE_NAME), "rb") as f:
         fcb = f.read()
-    assert mboot.write_memory(0x8000400, fcb, ExtMemId.FLEX_SPI_NOR)
+    assert mboot.write_memory(0x8000400, fcb, ExtMemId.FLEX_SPI_NOR.tag)
 
     # write application to FLASH
     # blhost -u 0x1FC9,0x20 -- write-memory 0x8001000 "app.bin"
-    assert mboot.write_memory(0x8001000, img_data, ExtMemId.FLEX_SPI_NOR)
+    assert mboot.write_memory(0x8001000, img_data, ExtMemId.FLEX_SPI_NOR.tag)
 
     return mboot
 
@@ -308,19 +309,19 @@ def generate_keystore(data_dir: str) -> bytes:
     # blhost -u 0X1FC9,0x20 -- key-provisioning set_user_key 2 keys/OTFADKek_PUF.bin
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "OTFADKek_PUF.bin"), "rb") as f:
         otfad_key = f.read()
-    assert mboot.kp_set_user_key(KeyProvUserKeyType.OTFADKEK, otfad_key)
+    assert mboot.kp_set_user_key(KeyProvUserKeyType.OTFADKEK.tag, otfad_key)
 
     # This key is needed for SB2.1 files:
     # blhost -u 0X1FC9,0x20  -- key-provisioning set_user_key 3 keys/SBkek_PUF.bin
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "SBkek_PUF.bin"), "rb") as f:
         kek_key = f.read()
-    assert mboot.kp_set_user_key(KeyProvUserKeyType.SBKEK, kek_key)
+    assert mboot.kp_set_user_key(KeyProvUserKeyType.SBKEK.tag, kek_key)
 
     # This key is needed for signed bootable images:
     # blhost -u 0X1FC9,0x20 -- key-provisioning set_user_key 11 key_store/userkey.bin
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.bin"), "rb") as f:
         user_key = f.read()
-    assert mboot.kp_set_user_key(KeyProvUserKeyType.USERKEK, user_key)
+    assert mboot.kp_set_user_key(KeyProvUserKeyType.USERKEK.tag, user_key)
 
     # blhost -u 0X1FC9,0x20 -- key-provisioning read_key_store key_store/key_store_rt5xx.bin
     key_store_bin = mboot.kp_read_key_store()
@@ -402,7 +403,7 @@ def test_xip_crc(data_dir: str, image_file_name: str) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = create_mbi_class("Mbi_CrcXipRtxxx")(app=unsigned_image, load_address=0x08001000)
+    mbi = create_mbi_class("crc_xip", "rt5xx")(app=unsigned_image, load_address=0x08001000)
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -426,7 +427,7 @@ def test_ram_crc(data_dir: str, image_file_name: str, ram_addr: int) -> None:
     path = os.path.join(data_dir, INPUT_IMAGES_SUBDIR, image_file_name)
     unsigned_image = load_binary(path)
 
-    mbi = create_mbi_class("Mbi_CrcRamRtxxx")(app=unsigned_image, load_address=ram_addr)
+    mbi = create_mbi_class("crc_ram", "rt5xx")(app=unsigned_image, load_address=ram_addr)
 
     out_image_file_name = image_file_name.replace("_unsigned.bin", "_crc.bin")
     write_image(data_dir, out_image_file_name, mbi.export())
@@ -455,7 +456,7 @@ def test_ram_signed_otp(data_dir: str, image_file_name: str, ram_addr: int) -> N
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    mbi = create_mbi_class("Mbi_PlainSignedRamRtxxx")(
+    mbi = create_mbi_class("signed_ram", "rt5xx")(
         app=unsigned_img,
         load_address=ram_addr,
         key_store=keystore,
@@ -495,7 +496,7 @@ def test_ram_signed_keystore(data_dir: str, image_file_name: str, ram_addr: int)
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = create_mbi_class("Mbi_PlainSignedRamRtxxx")(
+    mbi = create_mbi_class("signed_ram", "rt5xx")(
         app=org_data,
         load_address=ram_addr,
         trust_zone=TrustZone.disabled(),
@@ -529,7 +530,7 @@ def test_xip_signed(data_dir: str, image_file_name: str) -> None:
     cert_block = create_cert_block(data_dir)
     signature_provider = create_signature_provider(data_dir)
 
-    mbi = create_mbi_class("Mbi_PlainSignedXipRtxxx")(
+    mbi = create_mbi_class("signed_xip", "rt5xx")(
         app=unsigned_img,
         load_address=0x08001000,
         cert_block=cert_block,
@@ -564,7 +565,7 @@ def test_ram_encrypted_otp(data_dir: str, image_file_name: str, ram_addr: int) -
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = create_mbi_class("Mbi_EncryptedRamRtxxx")(
+    mbi = create_mbi_class("encrypted_signed_ram", "rt5xx")(
         app=org_data,
         load_address=ram_addr,
         trust_zone=TrustZone.disabled(),
@@ -605,7 +606,7 @@ def test_ram_encrypted_keystore(data_dir: str, image_file_name: str, ram_addr: i
     with open(os.path.join(data_dir, KEYSTORE_SUBDIR, "userkey.txt"), "r") as f:
         hmac_user_key = f.readline()
 
-    mbi = create_mbi_class("Mbi_EncryptedRamRtxxx")(
+    mbi = create_mbi_class("encrypted_signed_ram", "rt5xx")(
         app=org_data,
         load_address=ram_addr,
         trust_zone=TrustZone.disabled(),
@@ -683,7 +684,7 @@ def test_sb_unsigned_keystore(data_dir: str, subdir: str, image_name: str) -> No
     boot_section = BootSectionV2(
         0,
         CmdFill(address=0x10C000, pattern=int("063040C0", 16)),
-        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
+        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR.tag),
         CmdErase(address=0x8000000, length=0x10000),
         CmdLoad(address=0x8000400, data=fcb_data),
         CmdLoad(address=0x8001000, data=plain_image_data),
@@ -767,7 +768,7 @@ def test_sb_unsigned_otp(data_dir: str, subdir: str, image_name: str) -> None:
     boot_section = BootSectionV2(
         0,
         CmdFill(address=0x10C000, pattern=int("063040C0", 16)),
-        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
+        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR.tag),
         CmdErase(address=0x8000000, length=0x00800),
         CmdErase(address=0x8001000, length=0x10000),
         CmdLoad(address=0x8000400, data=fcb_data),
@@ -848,7 +849,7 @@ def test_sb_signed_encr_keystore(data_dir: str, subdir: str, image_name: str) ->
     boot_section = BootSectionV2(
         0,
         CmdFill(address=0x10C000, pattern=int("063040C0", 16)),
-        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
+        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR.tag),
         CmdErase(address=0x8000000, length=0x10000),
         CmdLoad(address=0x8000400, data=fcb_data),
         CmdLoad(address=0x8001000, data=plain_image_data),
@@ -952,7 +953,7 @@ def test_sb_otfad_keystore(data_dir: str, subdir: str, image_name: str, secure: 
         0,
         # configure external FLASH
         CmdFill(address=0x10C000, pattern=int("063040C0", 16)),
-        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
+        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR.tag),
         # erase the FLASH
         CmdErase(address=0x8000000, length=0x10000),
         # load key blobs allowing th decrypt the image
@@ -1083,7 +1084,7 @@ def test_sb_otfad_otp(data_dir: str, subdir: str, image_name: str, secure: bool)
         0,
         # configure external FLASH
         CmdFill(address=0x10C000, pattern=int("063040C0", 16)),
-        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR),
+        CmdMemEnable(0x10C000, 4, ExtMemId.FLEX_SPI_NOR.tag),
         # erase the FLASH
         CmdErase(address=0x8000000, length=0x10000),
         # load key blobs allowing th decrypt the image

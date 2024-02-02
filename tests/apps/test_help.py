@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test that help message for all registered CLI apps works."""
@@ -25,6 +25,8 @@ def test_spsdk_apps_subcommands_help(cli_runner: CliRunner):
     devscan = spsdk_apps.main.commands.pop("nxpdevscan")
     run_help(cli_runner, devscan, help_option=True)
     for name, command in spsdk_apps.main.commands.items():
+        if name == "clear-cache":
+            continue
         logging.debug(f"running help for {name}")
         run_help(cli_runner, command, help_option=True)
         run_help(cli_runner, command, help_option=False)

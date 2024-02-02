@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -23,7 +23,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_config_option,
     spsdk_output_option,
 )
-from spsdk.apps.utils.utils import catch_spsdk_error, format_raw_data
+from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error, format_raw_data
 from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.mcuboot import McuBoot
@@ -31,10 +31,10 @@ from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.mboot.scanner import get_mboot_interface
 from spsdk.pfr import pfr
 from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
-from spsdk.pfr.pfr import CFPA, CMPA, PfrConfiguration
+from spsdk.pfr.pfr import CFPA, CMPA, BaseConfigArea
 from spsdk.pfr.pfrc import Pfrc
 from spsdk.utils.crypto.cert_blocks import get_keys_or_rotkh_from_certblock_config
-from spsdk.utils.misc import load_binary, size_fmt, write_file
+from spsdk.utils.misc import load_binary, load_configuration, size_fmt, write_file
 from spsdk.utils.schema_validator import CommentedConfig
 
 PFRArea = Union[Type[CMPA], Type[CFPA]]
@@ -54,7 +54,7 @@ def _store_output(
         write_file(data, path=path, mode=mode)
 
 
-def _get_pfr_class(area_name: str) -> PFRArea:
+def _get_pfr_class(area_name: str) -> Type[BaseConfigArea]:
     """Return CMPA/CFPA class based on the name."""
     return getattr(pfr, area_name.upper())
 
@@ -72,11 +72,12 @@ def pfr_device_type_options(no_type: bool = False) -> Callable:
             "-r",
             "--revision",
             help="Chip revision; if not specified, most recent one will be used",
+            default="latest",
         )(options)
         options = click.option(
             "-f",
             "--family",
-            type=click.Choice(CMPA.devices()),
+            type=click.Choice(CMPA.get_supported_families()),
             help="Device to use",
             required=True,
         )(options)
@@ -105,12 +106,18 @@ def main(log_level: int) -> int:
 @main.command(name="get-template", no_args_is_help=True)
 @pfr_device_type_options()
 @spsdk_output_option(force=True)
-@click.option("--full", is_flag=True, help="Show full config, including computed values")
+@click.option(
+    "--full", is_flag=True, hidden=True, help="Show full config, including computed values"
+)
 def get_template(family: str, revision: str, area: str, output: str, full: bool) -> None:
     """Generate user configuration template file."""
-    pfr_obj = _get_pfr_class(area)(device=family, revision=revision)
-    data = pfr_obj.get_yaml_config(not full)
-    yaml_data = CommentedConfig.convert_cm_to_yaml(data)
+    if full:
+        logger.warning("The computed values are not part of configuration of PFR anymore.")
+    pfr_cls = _get_pfr_class(area)
+    schemas = pfr_cls.get_validation_schemas(family=family, revision=revision)
+    yaml_data = CommentedConfig(
+        f"PFR {area.upper()} configuration template", schemas
+    ).get_template()
     _store_output(yaml_data, output, msg=f"PFR {area} configuration template has been created.")
 
 
@@ -134,6 +141,7 @@ def get_template(family: str, revision: str, area: str, output: str, full: bool)
     "-c",
     "--show-calc",
     is_flag=True,
+    hidden=True,
     help="Show also calculated fields when displaying difference to " "defaults (--show-diff)",
 )
 def parse_binary(
@@ -146,13 +154,17 @@ def parse_binary(
     show_diff: bool,
 ) -> None:
     """Parse binary and extract configuration."""
+    if show_calc:
+        logger.warning(
+            "Show calculated fields is obsolete function for configuration YAML files."
+            " In case of debugging those values check the binary data."
+        )
     data = load_binary(binary)
     yaml_data = _parse_binary_data(
         data=data,
-        device=family,
+        family=family,
         revision=revision,
         area=area,
-        show_calc=show_calc,
         show_diff=show_diff,
     )
     _store_output(yaml_data, output, msg=f"Success. (PFR: {binary} has been parsed.")
@@ -160,26 +172,28 @@ def parse_binary(
 
 def _parse_binary_data(
     data: bytes,
-    device: str,
+    family: str,
     area: str,
     revision: Optional[str] = None,
-    show_calc: bool = False,
     show_diff: bool = False,
 ) -> str:
     """Parse binary data and extract YAML configuration.
 
     :param data: Data to parse
-    :param device: Device to use
+    :param family: Device to use
     :param revision: Revision to use, defaults to 'latest'
     :param area: PFR are (CMPA, CFPA)
     :param show_calc: Also show calculated fields
     :param show_diff: Show only difference to default
     :return: PFR YAML configuration as a string
     """
-    pfr_obj = _get_pfr_class(area)(device=device, revision=revision)
+    pfr_obj = _get_pfr_class(area)(family=family, revision=revision)
     pfr_obj.parse(data)
-    parsed = pfr_obj.get_yaml_config(exclude_computed=not show_calc, diff=show_diff)
-    yaml_data = CommentedConfig.convert_cm_to_yaml(parsed)
+    parsed = pfr_obj.get_config(diff=show_diff)
+    schemas = pfr_obj.get_validation_schemas(family)
+    yaml_data = CommentedConfig(
+        f"PFR {area.upper()} configuration from parsed binary", schemas=schemas
+    ).get_config(parsed)
     return yaml_data
 
 
@@ -205,6 +219,7 @@ def _parse_binary_data(
     "-i",
     "--calc-inverse",
     is_flag=True,
+    hidden=True,
     help="Calculate the INVERSE values CAUTION!!! It locks the settings",
 )
 @click.option(
@@ -230,17 +245,26 @@ def generate_binary(
     force: bool,
 ) -> None:
     """Generate binary data."""
-    pfr_config = PfrConfiguration(config)
-    invalid_reason = pfr_config.is_invalid()
-    if invalid_reason:
-        raise SPSDKPfrConfigError(
-            f"The configuration file is not valid. The reason is: {invalid_reason}"
+    if calc_inverse:
+        logger.warning(
+            "The calc-inverse option is obsolete option. THe current behavior is following:\n"
+            "In case that the family support also values for computed fields like LPC55s6x"
+            "the inverse fields won't be computed when is not used in configuration, otherwise"
+            "it will be updated correctly.\n"
+            "In case that the inverse values are mandatory, like for LPC55S3x, the inverse values"
+            " will be computed always."
         )
-    area = pfr_config.type
-    assert area
-    pfr_obj = _get_pfr_class(area)(device=pfr_config.device, revision=pfr_config.revision)
-    pfr_obj.set_config(pfr_config, raw=not calc_inverse)
-    if pfr_config.device in Pfrc.get_supported_families():
+
+    cfg = load_configuration(config)
+    description = cfg.get("description")
+    area: str = cfg.get("type", description["type"] if description else "Invalid")
+    if description:
+        family = description["device"]
+    else:
+        family = cfg.get("family", cfg.get("device", "Unknown"))
+
+    pfr_obj = BaseConfigArea.load_from_config(cfg)
+    if family in Pfrc.get_supported_families():
         try:
             pfrc = Pfrc(
                 cmpa=pfr_obj if area.lower() == "cmpa" else None,  # type: ignore
@@ -259,39 +283,15 @@ def generate_binary(
             else:
                 logger.debug(log_text)
     keys = None
-    root_of_trust, rotkh = get_keys_or_rotkh_from_certblock_config(rot_config, pfr_config.device)
+    root_of_trust, rotkh = get_keys_or_rotkh_from_certblock_config(rot_config, family)
     if secret_file:
         root_of_trust = secret_file
     if area.lower() == "cmpa" and root_of_trust:
         keys = extract_public_keys(root_of_trust, password)
-    if not pfr_config.revision:
-        pfr_config.revision = pfr_obj.revision
+
     data = pfr_obj.export(add_seal=add_seal, keys=keys, rotkh=rotkh)
+
     _store_output(data, output, "wb", msg="Success. (PFR binary has been generated)")
-
-
-@main.command(name="info", no_args_is_help=True)
-@pfr_device_type_options()
-@spsdk_output_option()
-@click.option(
-    "-p",
-    "--open",
-    "open_result",
-    is_flag=True,
-    help="Open the generated description file",
-)
-def info(family: str, revision: str, area: str, output: str, open_result: bool) -> None:
-    """Generate HTML page with brief description of CMPA/CFPA configuration fields."""
-    pfr_obj = _get_pfr_class(area)(device=family, revision=revision)
-    html_output = pfr_obj.registers.generate_html(
-        f"{family.upper()} - {area.upper()}",
-        pfr_obj.DESCRIPTION,
-        regs_exclude=["SHA256_DIGEST"],
-        fields_exclude=["FIELD"],
-    )
-    _store_output(html_output, output, msg="Success. (PFR info HTML page has been generated)")
-    if open_result:  # pragma: no cover # can't test opening the html document
-        click.launch(f"{output}")
 
 
 @main.command(name="write", no_args_is_help=True)
@@ -308,8 +308,14 @@ def info(family: str, revision: str, area: str, output: str, open_result: bool) 
     "-b",
     "--binary",
     type=click.Path(exists=True, dir_okay=False),
-    required=True,
-    help="Path to PFR data to write.",
+    help="Path to the BIN file with PFR data to write.",
+)
+@click.option(
+    "-y",
+    "--yaml",
+    "yaml_config",
+    type=click.Path(dir_okay=False, resolve_path=True),
+    help="Path to the PFR YAML config to write.",
 )
 def write(
     port: str,
@@ -321,15 +327,34 @@ def write(
     revision: str,
     area: str,
     binary: str,
+    yaml_config: str,
 ) -> None:
     """Write PFR page to the device."""
-    pfr_obj = _get_pfr_class(area)(device=family, revision=revision)
-    pfr_page_address = pfr_obj.config.get_address(family)
+    if not binary and not yaml_config:
+        raise SPSDKPfrError("The path to the PFR data file was not specified!")
+
+    if binary:
+        pfr_obj = _get_pfr_class(area)(family=family, revision=revision)
+        data = load_binary(binary)
+    elif yaml_config:
+        cfg = load_configuration(yaml_config)
+        description = cfg.get("description")
+        cfg_area: str = cfg.get("type", description["type"] if description else "Invalid")
+        if area != cfg_area.lower():
+            raise SPSDKAppError(
+                "Configuration area doesn't match CLI value and configuration value."
+            )
+        pfr_cls = _get_pfr_class(area)
+        pfr_cls.validate_config(cfg)
+        pfr_obj = pfr_cls.load_from_config(cfg)
+        if family != pfr_obj.family:
+            raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
+        data = pfr_obj.export()
+    pfr_page_address = pfr_obj.reg_config.get_address()
     pfr_page_length = pfr_obj.BINARY_SIZE
 
     click.echo(f"{pfr_obj.__class__.__name__} page address on {family} is {pfr_page_address:#x}")
 
-    data = load_binary(binary)
     if len(data) != pfr_page_length:
         raise SPSDKError(
             f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
@@ -376,6 +401,7 @@ def write(
 @click.option(
     "-c",
     "--show-calc",
+    hidden=True,
     is_flag=True,
     help="(applicable for parsing) Show also calculated fields when displaying difference to "
     "defaults (--show-diff)",
@@ -395,8 +421,13 @@ def read(
     show_calc: bool,
 ) -> None:
     """Read PFR page from the device."""
-    pfr_obj = _get_pfr_class(area)(device=family, revision=revision)
-    pfr_page_address = pfr_obj.config.get_address(family)
+    if show_calc:
+        logger.warning(
+            "Show calculated fields is obsolete function for configuration YAML files."
+            " In case of debugging those values check the binary data."
+        )
+    pfr_obj = _get_pfr_class(area)(family=family, revision=revision)
+    pfr_page_address = pfr_obj.reg_config.get_address()
     pfr_page_length = pfr_obj.BINARY_SIZE
     pfr_page_name = pfr_obj.__class__.__name__
 
@@ -417,10 +448,9 @@ def read(
     if yaml_output:
         yaml_data = _parse_binary_data(
             data=data,
-            device=family,
+            family=family,
             revision=revision,
             area=area,
-            show_calc=show_calc,
             show_diff=show_diff,
         )
         write_file(yaml_data, yaml_output)
@@ -449,8 +479,8 @@ def erase_cmpa(
     revision: str,
 ) -> None:
     """Erase CMPA PFR page in the device if is not sealed."""
-    pfr_obj = _get_pfr_class("cmpa")(device=family, revision=revision)
-    pfr_page_address = pfr_obj.config.get_address(family)
+    pfr_obj = _get_pfr_class("cmpa")(family=family, revision=revision)
+    pfr_page_address = pfr_obj.reg_config.get_address()
     pfr_page_length = pfr_obj.BINARY_SIZE
 
     click.echo(f"CMPA page address on {family} is {pfr_page_address:#x}")

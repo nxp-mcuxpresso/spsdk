@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,6 +12,7 @@ from typing import List
 
 import click
 
+from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.apps.tp_utils import (
     TPConfigConfig,
     device_help,
@@ -30,11 +31,11 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import catch_spsdk_error
-from spsdk.tp import TP_DATA_FOLDER
 from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tp_intf import TpDevInterface
 from spsdk.tp.tpconfig import TrustProvisioningConfig
-from spsdk.tp.utils import get_device_data, get_supported_devices, scan_tp_devices
+from spsdk.tp.utils import get_supported_devices, scan_tp_devices
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.misc import load_text, write_file
 
 
@@ -150,11 +151,12 @@ def seal(
 def get_template(family: str, output: str) -> None:
     """Command to generate tphost template of configuration YML file."""
     # TODO: implement proper template generator
-    use_prov_data = get_device_data(key="use_prov_data", family=family)
+    db = get_db(family, revision="latest")
+    use_prov_data = db.get_bool(DatabaseManager.TP, "use_prov_data")
     template_name = (
         "tpconfig_cfg_data_template.yml" if use_prov_data else "tpconfig_cfg_template.yml"
     )
-    template = load_text(os.path.join(TP_DATA_FOLDER, template_name))
+    template = load_text(os.path.join(SPSDK_DATA_FOLDER_COMMON, "tp", template_name))
     template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for certificate management (generating certificate, validating certificate, chains)."""
@@ -53,9 +53,8 @@ class Certificate(BaseClass):
         subject_public_key: PublicKey,
         issuer_private_key: PrivateKey,
         serial_number: Optional[int] = None,
-        if_ca: bool = True,
-        duration: int = 3650,
-        path_length: int = 2,
+        duration: Optional[int] = None,
+        extensions: Optional[List[x509.ExtensionType]] = None,
     ) -> "Certificate":
         """Generate certificate.
 
@@ -64,25 +63,27 @@ class Certificate(BaseClass):
         :param subject_public_key: Public key of subject
         :param issuer_private_key: Private key of issuer
         :param serial_number: certificate serial number, if not specified, random serial number will be set
-        :param if_ca: true if the certificate can sign certificates, none otherwise
         :param duration: how long the certificate will be valid (in days)
-        :param path_length: The maximum path length for certificates subordinate to this certificate.
+        :param extensions: List of extensions to include in the certificate
         :return: certificate
         """
+        before = datetime.utcnow() if duration else datetime(2000, 1, 1)
+        after = datetime.utcnow() + timedelta(days=duration) if duration else datetime(9999, 12, 31)
         crt = x509.CertificateBuilder(
             subject_name=subject,
             issuer_name=issuer,
-            not_valid_before=datetime.utcnow(),
-            not_valid_after=datetime.utcnow() + timedelta(days=duration),
+            not_valid_before=before,
+            not_valid_after=after,
             public_key=subject_public_key.key,
+            # we don't pass extensions directly, need to handle the "critical" flag
             extensions=[],
             serial_number=serial_number or x509.random_serial_number(),
         )
 
-        crt = crt.add_extension(
-            x509.BasicConstraints(ca=if_ca, path_length=path_length if if_ca else None),
-            critical=True,
-        )
+        if extensions:
+            for ext in extensions:
+                crt = crt.add_extension(ext, critical=True)
+
         return Certificate(crt.sign(issuer_private_key.key, hashes.SHA256()))
 
     def save(
@@ -188,7 +189,7 @@ class Certificate(BaseClass):
         return self.get_public_key().verify_signature(
             subject_certificate.signature,
             subject_certificate.tbs_certificate_bytes,
-            EnumHashAlgorithm[subject_certificate.signature_hash_algorithm.name],
+            EnumHashAlgorithm.from_label(subject_certificate.signature_hash_algorithm.name),
         )
 
     def validate(self, issuer_certificate: "Certificate") -> bool:
@@ -202,7 +203,7 @@ class Certificate(BaseClass):
         return issuer_certificate.get_public_key().verify_signature(
             self.signature,
             self.tbs_certificate_bytes,
-            EnumHashAlgorithm[self.signature_hash_algorithm.name],
+            EnumHashAlgorithm.from_label(self.signature_hash_algorithm.name),
         )
 
     @property
@@ -346,3 +347,46 @@ def generate_name(config: X509NameConfig) -> x509.Name:
                 attributes.append(x509.NameAttribute(name_oid, str(value_second)))
 
     return x509.Name(attributes)
+
+
+def generate_extensions(config: dict) -> List[x509.ExtensionType]:
+    """Get x509 extensions out of config data."""
+    extensions: List[x509.ExtensionType] = []
+
+    for key, val in config.items():
+        if key == "BASIC_CONSTRAINTS":
+            ca = bool(val["ca"])
+            extensions.append(
+                x509.BasicConstraints(ca=ca, path_length=val.get("path_length") if ca else None)
+            )
+        if key == "WPC_QIAUTH_POLICY":
+            extensions.append(WPCQiAuthPolicy(value=val["value"]))
+        if key == "WPC_QIAUTH_RSID":
+            extensions.append(WPCQiAuthRSID(value=val["value"]))
+    return extensions
+
+
+class WPCQiAuthPolicy(x509.UnrecognizedExtension):
+    """WPC Qi Auth Policy x509 extension."""
+
+    oid = x509.ObjectIdentifier("2.23.148.1.1")
+
+    def __init__(self, value: int) -> None:
+        """Initialize the extension with given policy number."""
+        super().__init__(
+            oid=self.oid,
+            value=b"\x04\x04" + value.to_bytes(length=4, byteorder="big"),
+        )
+
+
+class WPCQiAuthRSID(x509.UnrecognizedExtension):
+    """WPC Qi Auth RSID x509 extension."""
+
+    oid = x509.ObjectIdentifier("2.23.148.1.2")
+
+    def __init__(self, value: str) -> None:
+        """Initialize the extension with given RSID in form of a hex-string."""
+        super().__init__(
+            oid=self.oid,
+            value=b"\x04\x09" + bytes.fromhex(value).zfill(9),
+        )

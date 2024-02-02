@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,23 +17,25 @@ from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.misc import pack_timestamp, unpack_timestamp
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import swap16
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 from ..misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
 from ..sb2.commands import BaseClass, CmdHeader, CmdTag
 
 
-class SecureBootFlagsV1(Enum):
+class SecureBootFlagsV1(SpsdkEnum):
     """Flags for SectionHeader."""
 
-    NONE = (0, "No flags")
+    NONE = (0, "NONE", "No flags")
     ROM_SECTION_BOOTABLE = (
         1,
+        "ROM_SECTION_BOOTABLE",
         "The section is bootable and contains a sequence of bootloader commands.",
     )
     ROM_SECTION_CLEARTEXT = (
         2,
+        "ROM_SECTION_CLEARTEXT",
         "The section is unencrypted. Applies only if the rest of the boot image is encrypted.",
     )
 
@@ -314,12 +316,12 @@ class SectionHeaderItemV1(BaseClass):
     @property
     def flags(self) -> int:
         """Return flags, see SectionHeaderV1Flags."""
-        return self._flags
+        return self._flags.tag
 
     @property
     def bootable(self) -> bool:
         """Return whether section is bootable."""
-        return self._flags & SecureBootFlagsV1.ROM_SECTION_BOOTABLE != 0
+        return self.flags & SecureBootFlagsV1.ROM_SECTION_BOOTABLE.tag != 0
 
     @property
     def size(self) -> int:
@@ -329,7 +331,7 @@ class SectionHeaderItemV1(BaseClass):
     def __repr__(self) -> str:
         return (
             f"SectionHeaderV1: ID={self.identifier}, Ofs={self.offset}, NumBlocks={self.num_blocks}, "
-            f"Flag=0x{self._flags:X}"
+            f"Flag=0x{self.flags:X}"
         )
 
     def __str__(self) -> str:
@@ -343,7 +345,7 @@ class SectionHeaderItemV1(BaseClass):
 
     def export(self) -> bytes:
         """Return serialization to binary format."""
-        return pack(self.FORMAT, self.identifier, self.offset, self.num_blocks, self._flags)
+        return pack(self.FORMAT, self.identifier, self.offset, self.num_blocks, self.flags)
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -356,7 +358,7 @@ class SectionHeaderItemV1(BaseClass):
         if cls.SIZE > len(data):
             raise SPSDKError("Insufficient size")
         (identifier, offset, length, flags) = unpack_from(cls.FORMAT, data)
-        return cls(identifier, offset, length, SecureBootFlagsV1.from_int(flags))
+        return cls(identifier, offset, length, SecureBootFlagsV1.from_tag(flags))
 
 
 class BootSectionHeaderV1(CmdTag):
@@ -381,7 +383,7 @@ class BootSectionHeaderV1(CmdTag):
         self.header.address = section_id
         self.header.flags = 0
         self.header.data = (
-            flags  # not sure here, it seems flags are duplicates as 32-bit integer too???
+            flags.tag  # not sure here, it seems flags are duplicates as 32-bit integer too???
         )
 
     @property
@@ -425,12 +427,12 @@ class BootSectionHeaderV1(CmdTag):
     @property
     def flags(self) -> SecureBootFlagsV1:
         """Return section flags."""
-        return SecureBootFlagsV1.from_int(self.header.data)
+        return SecureBootFlagsV1.from_tag(self.header.data)
 
     @property
     def bootable(self) -> bool:
         """Return whether section is bootable."""
-        return self.flags & SecureBootFlagsV1.ROM_SECTION_BOOTABLE != 0
+        return self.flags.tag & SecureBootFlagsV1.ROM_SECTION_BOOTABLE.tag != 0
 
     @classmethod
     def parse(cls, data: bytes) -> Self:

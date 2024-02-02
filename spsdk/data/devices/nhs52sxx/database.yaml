@@ -1,0 +1,135 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a1: {}
+latest: a1
+
+# General MCU information
+info:
+  purpose: Wireless Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/wireless-connectivity/bluetooth-low-energy/nhs52sx4-ultra-low-power-bluetooth-low-energy-solution-with-arm-cortex-m33-trustzone-for-medical-iot:NHS52Sx4
+  memory_map:
+    {} # Memory map basic info
+    # internal_flash:
+    #   base_addr: 0x0
+    #   size: 0x80000
+    #   external: false
+    # sram:
+    #   base_addr: 0x20000000
+    #   size: 0x10000
+    #   external: false
+    # sram4:
+    #   base_addr: 0x20040000
+    #   size: 0x4000
+    #   external: false
+    # sramx:
+    #   base_addr: 0x4000000
+    #   size: 0x8000
+    #   external: false
+  # isp:
+  #   mboot_interfaces: [usb, uart, spi, i2c]
+  #   usb_rom:
+  #     vid: 0x1FC9
+  #     pid: 0x0021
+
+features:
+  # ======== Certificate block section ========
+  cert_block:
+    rot_type: "cert_block_1"
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_ExportMixinAppTrustZone
+      crc_ram:
+        image_type: CRC_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      crc_xip:
+        image_type: CRC_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      signed_ram:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinCertBlockV1
+          - Mbi_ExportMixinAppTrustZoneCertBlock
+          - Mbi_ExportMixinRsaSign
+      signed_xip:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinCertBlockV1
+          - Mbi_ExportMixinAppTrustZoneCertBlock
+          - Mbi_ExportMixinRsaSign
+    images:
+      xip:
+        plain: plain
+        crc: crc_xip
+        signed: signed_xip
+      load_to_ram:
+        crc: crc_ram
+        signed: signed_ram
+
+  # ======== PFR section ========
+  pfr:
+    cfpa: # CFPA description
+      address: 0xF_E000
+      size: 512
+      data_file: pfr_cfpa.xml
+      seal_start: SHA256_DIGEST0
+      seal_count: 8
+      computed_fields:
+        VENDOR_USAGE:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
+        DCFG_CC_SOCU_PIN:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
+        DCFG_CC_SOCU_DFLT:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
+    cmpa: # CMPA description
+      address: 0x10_4000
+      size: 512
+      data_file: pfr_cmpa.xml
+      seal_start: SHA256_DIGEST0
+      seal_count: 8
+      grouped_registers:
+        - name: ROTKH
+          width: 256
+          config_as_hexstring: true
+          reversed: true
+          description:
+            ROTKH field is compounded by 8 32-bit fields and contains Root key
+            table hash
+      computed_fields:
+        CC_SOCU_PIN:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
+        CC_SOCU_DFLT:
+          INVERSE_VALUE: pfr_reg_inverse_high_half
+
+  # ======== TrustZone section ========
+  tz:
+    data_file: tz.yaml

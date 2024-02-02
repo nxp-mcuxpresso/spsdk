@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning - TP Target, ISP mode over BLHOST."""
@@ -14,14 +14,12 @@ from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.interfaces.usb import MbootUSBInterface
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.tp import TP_DATABASE, TP_SCH_FILE
 from spsdk.tp.exceptions import SPSDKTpTargetError
 from spsdk.tp.tp_intf import TpIntfDescription, TpTargetInterface
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
 from spsdk.utils.interfaces.device.serial_device import SerialDevice
 from spsdk.utils.interfaces.device.usb_device import UsbDevice
 from spsdk.utils.misc import value_to_int
-from spsdk.utils.schema_validator import ValidationSchemas
 
 
 class TpBlHostIntfDescription(TpIntfDescription):
@@ -171,10 +169,8 @@ class TpTargetBlHost(TpTargetInterface):
             else 0
         )
         if not self.buffer_address:
-            database = Database(TP_DATABASE)
-            self.buffer_address = value_to_int(
-                database.get_device_value("buffer_address", device=family)
-            )
+            db = get_db(family, "latest")
+            self.buffer_address = db.get_int(DatabaseManager.COMM_BUFFER, "buffer_address")
 
         self.buffer_size = (
             value_to_int(self.descriptor.settings.get("buffer_size", 0))
@@ -182,9 +178,9 @@ class TpTargetBlHost(TpTargetInterface):
             else 0
         )
         if not self.buffer_size:
-            database = Database(TP_DATABASE)
-            self.buffer_size = value_to_int(
-                database.get_device_value("buffer_size", device=family, default=0x1000)
+            db = get_db(family, "latest")
+            self.buffer_size = db.get_int(
+                DatabaseManager.COMM_BUFFER, "buffer_size", default=0x1000
             )
 
     @property
@@ -306,7 +302,7 @@ class TpTargetBlHost(TpTargetInterface):
 
         return: List of all additional validation schemas.
         """
-        sch_cfg_file = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+        sch_cfg_file = get_schema_file(DatabaseManager.TP)
 
         return [sch_cfg_file["target_blhost"]]
 

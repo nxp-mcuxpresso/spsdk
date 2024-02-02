@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -42,7 +42,7 @@ class DebugAuthenticateResponse:
         self.sig_provider = InteractivePlainFileSP(path_dck_private)
 
     def __repr__(self) -> str:
-        return f"DAR v{self.dac.version}, SOCC: {DebugCredential.get_socc_description(self.dac.version, self.dac.socc)}"
+        return f"DAR v{self.dac.version}, SOCC: 0x{self.dac.socc:08X}"
 
     def __str__(self) -> str:
         """String representation of DebugAuthenticateResponse."""
@@ -126,7 +126,7 @@ class DebugAuthenticateResponseRSA(DebugAuthenticateResponse):
 
 
 class DebugAuthenticateResponseECC(DebugAuthenticateResponse):
-    """Class for ECC specific of DAR."""
+    """Class for DAR, using Elliptic curve keys."""
 
     KEY_LENGTH = 0
     CURVE = "secp256r1"
@@ -140,21 +140,21 @@ class DebugAuthenticateResponseECC(DebugAuthenticateResponse):
 
 
 class DebugAuthenticateResponseECC_256(DebugAuthenticateResponseECC):
-    """Class for LPC55S3x specific of DAR, 256 bits sized keys."""
+    """Class for DAR, using Elliptic curve, 256 bits sized keys."""
 
     KEY_LENGTH = 32
     CURVE = "secp256r1"
 
 
 class DebugAuthenticateResponseECC_384(DebugAuthenticateResponseECC):
-    """Class for LPC55S3x specific of DAR, 384 bits sized keys."""
+    """Class for DAR, using Elliptic curve, 384 bits sized keys."""
 
     KEY_LENGTH = 48
     CURVE = "secp384r1"
 
 
 class DebugAuthenticateResponseECC_521(DebugAuthenticateResponseECC):
-    """Class for LPC55S3x specific of DAR, 521 bits sized keys."""
+    """Class for DAR, using Elliptic curve, 521 bits sized keys."""
 
     KEY_LENGTH = 66
     CURVE = "secp521r1"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -27,6 +27,7 @@ from spsdk.sbfile.sb2.commands import (
     VersionCheckType,
     parse_command,
 )
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 def test_nop_cmd():
@@ -312,10 +313,10 @@ def test_reset_cmd_invalid_parse():
 
 
 def test_mem_enable_cmd():
-    cmd = CmdMemEnable(address=100, size=10, mem_id=ExtMemId.MMC_CARD)
+    cmd = CmdMemEnable(address=100, size=10, mem_id=ExtMemId.MMC_CARD.tag)
     assert cmd.address == 100
     assert cmd.size == 10
-    assert cmd.mem_id == ExtMemId.MMC_CARD
+    assert cmd.mem_id == ExtMemId.MMC_CARD.tag
     assert str(cmd)
 
     data = cmd.export()
@@ -369,8 +370,11 @@ def test_version_check():
 
 
 def test_version_check_invalid_version():
+    class TestVersionCheckType(SpsdkEnum):
+        TEST = (2, "TEST")
+
     with pytest.raises(SPSDKError, match="Invalid version check type"):
-        CmdVersionCheck(2, 0x16)
+        CmdVersionCheck(TestVersionCheckType.TEST, 0x16)
 
 
 def test_version_check_invalid_parse():
@@ -382,7 +386,7 @@ def test_version_check_invalid_parse():
 
 def test_keystore_backup():
     """Test SB command `CmdKeyStoreBackup`"""
-    cmd = CmdKeyStoreBackup(1000, 1)
+    cmd = CmdKeyStoreBackup(1000, ExtMemId.QUAD_SPI0)
     assert str(cmd)
 
     data = cmd.export()
@@ -398,7 +402,7 @@ def test_keystore_backup():
 
 def test_keystore_restore():
     """Test SB command `CmdKeyStoreRestore`"""
-    cmd = CmdKeyStoreRestore(1000, 1)
+    cmd = CmdKeyStoreRestore(1000, ExtMemId.QUAD_SPI0)
     assert str(cmd)
 
     data = cmd.export()

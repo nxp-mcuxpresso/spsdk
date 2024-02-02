@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """File including constants."""
 
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 ########################################################################################################################
 # Enums version 3.1
 ########################################################################################################################
-class EnumCmdTag(Enum):
+class EnumCmdTag(SpsdkEnum):
     """Contains commands tags."""
 
     NONE = (0x00, "NONE")

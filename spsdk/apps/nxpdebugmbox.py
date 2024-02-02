@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Main Debug Authentication Tool application."""
 
 import contextlib
+import datetime
 import logging
 import os
 import struct
@@ -20,7 +21,6 @@ import click
 import colorama
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
-from spsdk import SPSDK_DATA_FOLDER
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
@@ -42,16 +42,31 @@ from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
 from spsdk.dat.debug_credential import DebugCredential
 from spsdk.dat.debug_mailbox import DebugMailbox
-from spsdk.debuggers.utils import PROBES, open_debug_probe, test_ahb_access
+from spsdk.dat.famode_image import (
+    check_famode_data,
+    create_config,
+    generate_config_templates,
+    get_supported_families,
+    modify_input_config,
+)
+from spsdk.debuggers.utils import PROBES, load_all_probe_types, open_debug_probe, test_ahb_access
 from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.image.mbi.mbi import MasterBootImage, get_mbi_class
 from spsdk.utils.crypto.cert_blocks import find_root_certificates
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import find_file, load_binary, load_configuration, value_to_int, write_file
+from spsdk.utils.misc import (
+    Endianness,
+    find_file,
+    get_abs_path,
+    load_binary,
+    load_configuration,
+    value_to_int,
+    write_file,
+)
 from spsdk.utils.plugins import load_plugin_from_source
-from spsdk.utils.schema_validator import check_config
+from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 logger = logging.getLogger(__name__)
-NXPDEBUGMBOX_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpdebugmbox")
 
 
 def get_debug_probe_options_help() -> str:
@@ -150,7 +165,7 @@ def _open_debugmbox(
         try:
             yield dm
         except SPSDKError as exc:
-            raise SPSDKError("Problem with debug probe occurred") from exc
+            raise SPSDKError(f"Problem with debug mailbox occurred: {exc}") from exc
         finally:
             dm.close()
 
@@ -159,8 +174,11 @@ def _open_debugmbox(
 @click.option(
     "-i",
     "--interface",
-    type=click.Choice(list(PROBES.keys())),
-    help="Probe interface selection, if not specified, all available debug probe interfaces are used.",
+    type=str,
+    help=(
+        "Probe interface selection, if not specified, all available debug probe"
+        f" interfaces are used. {list(PROBES.keys())}"
+    ),
 )
 @click.option(
     "-s",
@@ -208,6 +226,7 @@ def _open_debugmbox(
     " for communication with debug mailbox. Default value is 1000ms.",
 )
 @spsdk_apps_common_options
+@spsdk_plugin_option
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -219,10 +238,20 @@ def main(
     debug_probe_option: List[str],
     no_reset: bool,
     operation_timeout: int,
+    plugin: str,
 ) -> int:
     """Tool for working with Debug Mailbox."""
     spsdk_logger.install(level=log_level)
     spsdk_logger.configure_pyocd_logger()
+
+    if plugin:
+        load_plugin_from_source(plugin)
+        load_all_probe_types()
+
+    if interface and interface not in PROBES:
+        raise SPSDKAppError(
+            f"Defined interface({interface}) is not in available interfaces: {list(PROBES.keys())}"
+        )
 
     probe_user_params = {}
     for par in debug_probe_option:
@@ -312,7 +341,9 @@ def auth(
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             debug_cred_data = load_binary(certificate)
             debug_cred = DebugCredential.parse(debug_cred_data)
-            dac_rsp_len = 30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc in [4, 6] else 26
+            dac_rsp_len = (
+                30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc in [4, 6, 7] else 26
+            )
             if nxp_keys:
                 dac_data = dm_commands.NxpDebugAuthenticationStart(
                     dm=mail_box, resplen=dac_rsp_len
@@ -651,7 +682,7 @@ def get_crp(
     try:
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             crp_level = dm_commands.GetCRPLevel(dm=mail_box).run()[0]
-            click.echo(f"CRP level is: {crp_level}.")
+            click.echo(f"CRP level is: 0x{crp_level:02X}.")
     except Exception as e:
         raise SPSDKAppError(f"Get CRP Level failed: {e}") from e
 
@@ -761,7 +792,7 @@ def read_memory(
             for addr in range(start_addr, start_addr + length, 4):
                 if progress_callback:
                     progress_callback(addr, start_addr + length)
-                data += debug_probe.mem_reg_read(addr).to_bytes(4, "little")
+                data += debug_probe.mem_reg_read(addr).to_bytes(4, Endianness.LITTLE.value)
         except SPSDKError as exc:
             raise SPSDKAppError(str(exc)) from exc
 
@@ -821,18 +852,22 @@ def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes
         start_padding = address - start_addr
         align_data = data
         if start_padding:
-            align_start_word = debug_probe.mem_reg_read(start_addr).to_bytes(4, "little")
+            align_start_word = debug_probe.mem_reg_read(start_addr).to_bytes(
+                4, Endianness.LITTLE.value
+            )
             align_data = align_start_word[:start_padding] + data
 
         end_padding = length - byte_count - start_padding
         if end_padding:
-            align_end_word = debug_probe.mem_reg_read(start_addr + length - 4).to_bytes(4, "little")
+            align_end_word = debug_probe.mem_reg_read(start_addr + length - 4).to_bytes(
+                4, Endianness.LITTLE.value
+            )
             align_data = align_data + align_end_word[4 - end_padding :]
 
         with progress_bar(suppress=logger.getEffectiveLevel() > logging.INFO) as progress_callback:
             for i, addr in enumerate(range(start_addr, start_addr + length, 4)):
                 progress_callback(addr, start_addr + length)
-                to_write = int.from_bytes(align_data[i * 4 : i * 4 + 4], "little")
+                to_write = int.from_bytes(align_data[i * 4 : i * 4 + 4], Endianness.LITTLE.value)
                 debug_probe.mem_reg_write(addr, to_write)
                 # verify write
                 try:
@@ -909,9 +944,7 @@ def get_uuid(
         logger.info(f"DAC info:\n {str(dac)}")
         return None
 
-    logger.info(
-        f"Got DAC from SOCC:'{DebugCredential.get_socc_description(dac.version, dac.socc)}' to retrieve UUID."
-    )
+    logger.info(f"Got DAC from SOCC:'0x{dac.socc:08X}' to retrieve UUID.")
     return dac.uuid
 
 
@@ -962,11 +995,16 @@ def gendc(
     :raises SPSDKAppError: Raised if any error occurred.
     """
     protocol.validate()
+
     try:
         if plugin:
             load_plugin_from_source(plugin)
         logger.info("Loading configuration from yml file...")
         yaml_content = load_configuration(config)
+        socc = yaml_content.get("socc")
+        if socc is None:
+            raise SPSDKAppError("SOCC must be defined in configuration.")
+
         if rot_config:
             rot_config_dir = os.path.dirname(rot_config)
             logger.info("Loading configuration from cert block/MBI config file...")
@@ -1001,9 +1039,11 @@ def gendc(
             if rot_index is not None:
                 yaml_content["rot_id"] = value_to_int(rot_index)
 
+        family_ambassador = DebugCredential.get_family_ambassador(socc)
+
         check_config(
             yaml_content,
-            DebugCredential.get_validation_schemas(),
+            DebugCredential.get_validation_schemas(family_ambassador),
             search_paths=[os.path.dirname(config)],
         )
 
@@ -1027,8 +1067,7 @@ def gendc(
 @main.command(name="get-template", no_args_is_help=True)
 @spsdk_family_option(
     families=DebugCredential.get_supported_families(),
-    required=False,
-    default="lpc55s3x",
+    required=True,
     help="If needed select the chip family.",
 )
 @click.option(
@@ -1118,6 +1157,100 @@ def write_to_flash(
                 dm_commands.WriteToFlash(dm=mail_box).run(params)
     except Exception as e:
         raise SPSDKAppError(f"Write words to flash failed: {e}") from e
+
+
+@main.group("famode-image", no_args_is_help=True)
+def famode_image_group() -> None:
+    """Group of sub-commands related to Fault Analysis Mode Image (related to some families)."""
+
+
+@famode_image_group.command(name="export", no_args_is_help=True)
+@spsdk_config_option(required=True)
+@spsdk_plugin_option
+def famode_image_export_command(config: str, plugin: str) -> None:
+    """Generate Fault Analysis mode image from YAML/JSON configuration.
+
+    The configuration template files could be generated by subcommand 'get-templates'.
+    """
+    famode_image_export(config, plugin)
+
+
+def famode_image_export(config: str, plugin: Optional[str] = None) -> None:
+    """Generate Fault Analysis mode image from YAML/JSON configuration.
+
+    :param config: Path to the YAML/JSON configuration
+    :param plugin: Path to external python file containing a custom SignatureProvider implementation.
+    """
+    config_data = load_configuration(config)
+    if plugin:
+        load_plugin_from_source(plugin)
+    config_dir = os.path.dirname(config)
+    config_data = modify_input_config(config_data)
+    mbi_cls = get_mbi_class(config_data)
+    check_config(config_data, mbi_cls.get_validation_schemas(), search_paths=[config_dir, "."])
+    mbi_obj = mbi_cls()
+    mbi_obj.load_from_config(config_data, search_paths=[config_dir, "."])
+    mbi_data = mbi_obj.export()
+    if mbi_obj.rkth:
+        click.echo(f"RKTH: {mbi_obj.rkth.hex()}")
+    mbi_output_file_path = get_abs_path(config_data["masterBootOutputFile"], config_dir)
+    write_file(mbi_data, mbi_output_file_path, mode="wb")
+
+    click.echo(f"Success. (Master Boot Image: {mbi_output_file_path} created.)")
+
+
+@famode_image_group.command(name="parse", no_args_is_help=True)
+@spsdk_family_option(families=get_supported_families())
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True, resolve_path=True),
+    required=True,
+    help="Path to binary FA Mode image to parse.",
+)
+@spsdk_output_option(directory=True)
+def famode_image_parse_command(family: str, binary: str, output: str) -> None:
+    """Parse MBI Image into YAML configuration and binary images."""
+    famode_image_parse(family, binary, output)
+
+
+def famode_image_parse(family: str, binary: str, output: str) -> None:
+    """Parse FA Mode Image into YAML configuration and binary images."""
+    mbi = MasterBootImage.parse(family=family, data=load_binary(binary))
+
+    if not mbi:
+        click.echo(f"Failed. (FA mode image: {binary} parsing failed.)")
+        return
+    check_famode_data(mbi)
+    cfg = create_config(mbi, output)
+    yaml_data = CommentedConfig(
+        main_title=(
+            f"Fault Analysis mode Image ({mbi.__class__.__name__}) recreated configuration from :"
+            f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
+        ),
+        schemas=mbi.get_validation_schemas(),
+    ).get_config(cfg)
+
+    write_file(yaml_data, os.path.join(output, "famode_config.yaml"))
+
+    click.echo(f"Success. (FA mode image: {binary} has been parsed and stored into {output} )")
+
+
+@famode_image_group.command("get-templates", no_args_is_help=True)
+@spsdk_family_option(families=get_supported_families())
+@spsdk_output_option(directory=True, force=True)
+def famode_image_get_templates_command(family: str, output: str) -> None:
+    """Create template of Fault Analysis mode image configurations in YAML format."""
+    famode_image_get_templates(family, output)
+
+
+def famode_image_get_templates(family: str, output: str) -> None:
+    """Create template of Fault Analysis mode image configurations in YAML format."""
+    templates = generate_config_templates(family)
+    for file_name, template in templates.items():
+        full_file_name = os.path.join(output, file_name + ".yaml")
+        click.echo(f"Creating {full_file_name} template file.")
+        write_file(template, full_file_name)
 
 
 @catch_spsdk_error

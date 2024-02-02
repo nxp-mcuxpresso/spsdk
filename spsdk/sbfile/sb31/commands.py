@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for creation commands."""
@@ -15,8 +15,8 @@ from typing_extensions import Self
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import align_block, load_binary, value_to_int
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
 # Main Class
@@ -76,7 +76,7 @@ class BaseCmd(MainCmd):
             raise SPSDKError("Invalid length")
         self._length = value
 
-    def __init__(self, address: int, length: int, cmd_tag: int = EnumCmdTag.NONE) -> None:
+    def __init__(self, address: int, length: int, cmd_tag: EnumCmdTag = EnumCmdTag.NONE) -> None:
         """Constructor for Commands header.
 
         :param address: Input address
@@ -99,7 +99,7 @@ class BaseCmd(MainCmd):
 
     def export(self) -> bytes:
         """Export command as bytes."""
-        return pack(self.FORMAT, self.TAG, self.address, self.length, self.cmd_tag)
+        return pack(self.FORMAT, self.TAG, self.address, self.length, self.cmd_tag.tag)
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -107,7 +107,7 @@ class BaseCmd(MainCmd):
         raise NotImplementedError("Derived class has to implement this method.")
 
     @classmethod
-    def header_parse(cls, cmd_tag: int, data: bytes) -> Tuple[int, int]:
+    def header_parse(cls, cmd_tag: EnumCmdTag, data: bytes) -> Tuple[int, int]:
         """Parse header command from bytes array.
 
         :param data: Input data as bytes array
@@ -119,7 +119,7 @@ class BaseCmd(MainCmd):
         tag, address, length, cmd = unpack_from(cls.FORMAT, data)
         if tag != cls.TAG:
             raise SPSDKError("TAG is not valid.")
-        if cmd != cmd_tag:
+        if cmd != cmd_tag.tag:
             raise SPSDKError("Values are not same.")
         return address, length
 
@@ -132,7 +132,7 @@ class CmdLoadBase(BaseCmd):
 
     HAS_MEMORY_ID_BLOCK = True
 
-    def __init__(self, cmd_tag: int, address: int, data: bytes, memory_id: int = 0) -> None:
+    def __init__(self, cmd_tag: EnumCmdTag, address: int, data: bytes, memory_id: int = 0) -> None:
         """Constructor for command.
 
         :param cmd_tag: Command tag for the derived class
@@ -155,7 +155,7 @@ class CmdLoadBase(BaseCmd):
 
     def __str__(self) -> str:
         """Get info about the load command."""
-        msg = f"{EnumCmdTag.name(self.cmd_tag)}: "
+        msg = f"{self.cmd_tag.label}: "
         if self.HAS_MEMORY_ID_BLOCK:
             msg += f"Address=0x{self.address:08X}, Length={self.length}, Memory ID={self.memory_id}"
         else:
@@ -186,7 +186,8 @@ class CmdLoadBase(BaseCmd):
         :raises SPSDKError: Invalid cmd_tag was found
         """
         address, _, data, cmd_tag, memory_id = cls._extract_data(data)
-        if cmd_tag not in [
+        cmd_tag_enum = EnumCmdTag.from_tag(cmd_tag)
+        if cmd_tag_enum not in [
             EnumCmdTag.LOAD,
             EnumCmdTag.LOAD_CMAC,
             EnumCmdTag.LOAD_HASH_LOCKING,
@@ -194,9 +195,9 @@ class CmdLoadBase(BaseCmd):
             EnumCmdTag.PROGRAM_FUSES,
             EnumCmdTag.PROGRAM_IFR,
         ]:
-            raise SPSDKError(f"Invalid cmd_tag found: {cmd_tag}")
+            raise SPSDKError(f"Invalid cmd_tag found: {cmd_tag_enum}")
         if cls == CmdLoadBase:
-            return cls(cmd_tag=cmd_tag, address=address, data=data, memory_id=memory_id)
+            return cls(cmd_tag=cmd_tag_enum, address=address, data=data, memory_id=memory_id)
         # pylint: disable=no-value-for-parameter
         return cls(address=address, data=data, memory_id=memory_id)  # type: ignore
 
@@ -444,7 +445,10 @@ class CmdProgFuses(CmdLoadBase):
         :return: Command object loaded from configuration.
         """
         address = value_to_int(config["address"], 0)
-        fuses = [value_to_int(fuse, 0) for fuse in config["values"].split(",")]
+        if isinstance(config["values"], int):
+            fuses = [config["values"]]
+        else:
+            fuses = [value_to_int(fuse, 0) for fuse in config["values"].split(",")]
         data = pack(f"<{len(fuses)}L", *fuses)
         return CmdProgFuses(address=address, data=data)
 
@@ -704,7 +708,7 @@ class CmdLoadKeyBlob(BaseCmd):
             self.address,
             self.key_wrap_id,
             self.length,
-            self.cmd_tag,
+            self.cmd_tag.tag,
         )
         result_data += self.data
 
@@ -761,7 +765,7 @@ class CmdConfigureMemory(BaseCmd):
 
     def export(self) -> bytes:
         """Export command as bytes."""
-        return pack(self.FORMAT, self.TAG, self.memory_id, self.address, self.cmd_tag)
+        return pack(self.FORMAT, self.TAG, self.memory_id, self.address, self.cmd_tag.tag)
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -845,7 +849,7 @@ class CmdFillMemory(BaseCmd):
 class CmdFwVersionCheck(BaseCmd):
     """Check counter value with stored value, if values are not same, SB file is rejected."""
 
-    class CounterID(Enum):
+    class CounterID(SpsdkEnum):
         """Counter IDs used by the CmdFwVersionCheck command."""
 
         NONE = (0, "none")
@@ -855,7 +859,7 @@ class CmdFwVersionCheck(BaseCmd):
         SNT = (4, "snt")
         BOOTLOADER = (5, "bootloader")
 
-    def __init__(self, value: int, counter_id: int) -> None:
+    def __init__(self, value: int, counter_id: CounterID) -> None:
         """Constructor for command.
 
         :param value: Input value
@@ -871,7 +875,7 @@ class CmdFwVersionCheck(BaseCmd):
 
     def export(self) -> bytes:
         """Export command as bytes."""
-        return pack(self.FORMAT, self.TAG, self.value, self.counter_id, self.cmd_tag)
+        return pack(self.FORMAT, self.TAG, self.value, self.counter_id.tag, self.cmd_tag.tag)
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -881,7 +885,7 @@ class CmdFwVersionCheck(BaseCmd):
         :return: CmdFwVersionCheck
         """
         value, counter_id = cls.header_parse(data=data, cmd_tag=EnumCmdTag.FW_VERSION_CHECK)
-        return cls(value=value, counter_id=counter_id)
+        return cls(value=value, counter_id=cls.CounterID.from_tag(counter_id))
 
     @classmethod
     def load_from_config(
@@ -895,7 +899,7 @@ class CmdFwVersionCheck(BaseCmd):
         """
         value = value_to_int(config["value"], 0)
         counter_id_str = config["counterId"]
-        counter_id = CmdFwVersionCheck.CounterID[counter_id_str]
+        counter_id = CmdFwVersionCheck.CounterID.from_label(counter_id_str)
         return CmdFwVersionCheck(value=value, counter_id=counter_id)
 
 
@@ -990,7 +994,7 @@ class CmdSectionHeader(MainCmd):
         raise SPSDKError("Section header cannot be loaded from configuration.")
 
 
-TAG_TO_CLASS: Mapping[int, Type[BaseCmd]] = {
+TAG_TO_CLASS: Mapping[EnumCmdTag, Type[BaseCmd]] = {
     EnumCmdTag.ERASE: CmdErase,
     EnumCmdTag.LOAD: CmdLoad,
     EnumCmdTag.EXECUTE: CmdExecute,
@@ -1041,6 +1045,7 @@ def parse_command(data: bytes) -> object:
     if tag != BaseCmd.TAG:
         raise SPSDKError("Invalid tag.")
     cmd_tag = unpack_from("<L", data, offset=12)[0]
-    if cmd_tag not in TAG_TO_CLASS:
+    enum_cmd_tag = EnumCmdTag.from_tag(cmd_tag)
+    if enum_cmd_tag not in TAG_TO_CLASS:
         raise SPSDKError(f"Invalid command tag: {cmd_tag}")
-    return TAG_TO_CLASS[cmd_tag].parse(data)
+    return TAG_TO_CLASS[enum_cmd_tag].parse(data)

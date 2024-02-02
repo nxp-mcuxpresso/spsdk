@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -56,7 +56,7 @@ def test_nxpimage_get_template_ahab(cli_runner: CliRunner, tmpdir, device):
         ("k32w1xx", "latest"),
         ("kw45xx", "latest"),
         ("mcxn9xx", "latest"),
-        ("nhs52s04", "latest"),
+        ("nhs52sxx", "latest"),
     ],
 )
 def test_nxpimage_get_template_tz(cli_runner: CliRunner, tmpdir, device, revision):

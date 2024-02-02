@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,6 +16,7 @@ from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import aes_ctr_decrypt, aes_ctr_encrypt, aes_key_unwrap, aes_key_wrap
 from spsdk.exceptions import SPSDKError
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 def test_random_bytes():
@@ -41,8 +42,11 @@ def test_hmac():
 
 
 def test_hmac_invalid():
+    class TestEnumHashAlgorithm(SpsdkEnum):
+        SHA256b = (0, "SHA256b", "SHA256b")
+
     with pytest.raises(SPSDKError):
-        hmac(key=b"1", data=b"t", algorithm="sha256b")
+        hmac(key=b"1", data=b"t", algorithm=TestEnumHashAlgorithm.SHA256b)
 
 
 def test_aes_key_wrap():

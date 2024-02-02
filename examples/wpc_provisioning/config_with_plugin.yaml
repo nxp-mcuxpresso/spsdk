@@ -1,0 +1,33 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =====================================  WPC Certificate injection configuration  ======================================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# --------------------------------===== Name of the WPC service adapter [Required] =====--------------------------------
+# Description: Name of the WPC service adapter
+service_type: mywpc
+# ----------------------------===== Parameters for the WPC service adapter [Required] =====-----------------------------
+# Description: Parameters for the WPC service adapter
+service_parameters:
+  # -------------------------------------------===== Param1 [Required] =====--------------------------------------------
+  # Description: Param1 for MyWPCService
+  param1: something
+  # -------------------------------------------===== Param2 [Required] =====--------------------------------------------
+  # Description: Param2 for MyWPCService
+  param2: 123
+# ----------------------------------===== Name of the target adapter [Required] =====-----------------------------------
+# Description: Name of the target adapter
+target_type: model
+# -------------------------------===== Parameters for the target adapter [Required] =====-------------------------------
+# Description: Parameters for the target adapter
+target_parameters:
+  # ---------------------------------------===== Model directory [Required] =====---------------------------------------
+  # Description: Path to directory containing the model (config.yaml)
+  model_dir: <path/to/model_dir>
+  # ----------------------------------------===== Target family [Required] =====----------------------------------------
+  # Description: Name of the target family
+  # Possible options: <mwct2xxxs>
+  family: mwct2xxxs

@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust Provisioning utilities."""
-from typing import List, Optional, Type, Union
+from typing import List, Optional, Type
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_families
 
-from . import TP_DATABASE
 from .adapters import TP_DEVICES, TP_TARGETS
 from .tp_intf import TpDevInterface, TpIntfDescription, TpTargetInterface
 
@@ -27,14 +26,7 @@ def single_tp_target_adapter() -> bool:
 
 def get_supported_devices() -> List[str]:
     """Return list of supported devices for Trust Provisioning."""
-    database = Database(TP_DATABASE)
-    return [dev.name for dev in database.devices]
-
-
-def get_device_data(key: str, family: Optional[str] = None) -> Union[str, int, bool]:
-    """Return an entry from the Trust Provisioning device database."""
-    database = Database(TP_DATABASE)
-    return database.get_device_value(key=key, device=family)
+    return get_families(DatabaseManager.TP)
 
 
 def get_tp_device_types() -> List[str]:

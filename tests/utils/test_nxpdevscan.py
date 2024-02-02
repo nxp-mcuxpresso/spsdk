@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -277,9 +277,9 @@ def test_path_conversion():
 
 
 PATH_BY_SYSTEM = {
-    "win": (b"some_path", "SOME_PATH", "0a595daf"),
-    "linux": (b"000A:000B:00", "10#11", "6359be0f"),
-    "darwin": (
+    "Windows": (b"some_path", "SOME_PATH", "0a595daf"),
+    "Linux": (b"000A:000B:00", "10#11", "6359be0f"),
+    "Darwin": (
         b"IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
         "IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS02@14200000/SE Blank RT Family @14200000",
         "cafe5e92",
@@ -298,14 +298,7 @@ def mock_libusbsio_GetDeviceInfo(self, dev: int):
     sio_info.serial_number = "sio device"
     sio_info.interface_number = 5
     sio_info.release_number = 125
-
-    system = platform.system()
-    if system == "Windows":
-        sio_info.path = PATH_BY_SYSTEM["win"][0]
-    if system == "Linux":
-        sio_info.path = PATH_BY_SYSTEM["linux"][0]
-    if system == "Darwin":
-        sio_info.path = PATH_BY_SYSTEM["darwin"][0]
+    sio_info.path = PATH_BY_SYSTEM[platform.system()][0]
 
     return sio_info
 
@@ -327,22 +320,11 @@ def test_sio_device_search():
             "Release number: 125"
         )
 
-    if platform.system() != "Darwin":
-        # Windows and Linux libraries cannot be loaded on Mac with Apple Sillicon
-        with patch("platform.system", MagicMock(return_value="Windows")):
-            devices = nds.search_libusbsio_devices()
-            assert len(devices) == 1
-            assert str(devices[0]) == get_return(PATH_BY_SYSTEM["win"])
-
-        with patch("platform.system", MagicMock(return_value="Linux")):
-            devices = nds.search_libusbsio_devices()
-            assert len(devices) == 1
-            assert str(devices[0]) == get_return(PATH_BY_SYSTEM["linux"])
-
-    with patch("platform.system", MagicMock(return_value="Darwin")):
+    system = platform.system()
+    with patch("platform.system", MagicMock(return_value=system)):
         devices = nds.search_libusbsio_devices()
         assert len(devices) == 1
-        assert str(devices[0]) == get_return(PATH_BY_SYSTEM["darwin"])
+        assert str(devices[0]) == get_return(PATH_BY_SYSTEM[system])
 
 
 def mock_libusbsio_GetNumPorts(self, vidpids=None):

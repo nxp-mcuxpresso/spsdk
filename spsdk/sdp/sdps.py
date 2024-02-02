@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -14,9 +14,9 @@ from typing import Mapping, Tuple
 
 from spsdk.exceptions import SPSDKError
 from spsdk.sdp.interfaces import SDPDeviceTypes
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.interfaces.commands import CmdPacketBase
 from spsdk.utils.misc import swap32
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 from .exceptions import SdpConnectionError
 
@@ -33,21 +33,21 @@ ROM_INFO = {
 }
 
 
-class CommandSignature(Enum):
+class CommandSignature(SpsdkEnum):
     """Command signature enum."""
 
     CBW_BLTC_SIGNATURE = (0x43544C42, "CbwBlts", "Command Block Wrapper BLTC")
     CBW_PITC_SIGNATURE = (0x43544950, "CbwPits", "Command Block Wrapper PITC")
 
 
-class CommandFlag(Enum):
+class CommandFlag(SpsdkEnum):
     """Command flag enum."""
 
     DEVICE_TO_HOST_DIR = (0x80, "DataOut", "Data Out")
     HOST_TO_DEVICE_DIR = (0x00, "DataIn", "Data In")
 
 
-class CommandTag(Enum):
+class CommandTag(SpsdkEnum):
     """Command tag enum."""
 
     FW_DOWNLOAD = (2, "FwDownload", "Firmware download")
@@ -110,7 +110,7 @@ class SDPS:
             )
             if not ROM_INFO[self.name]["no_cmd"]:
                 cmd_packet = CmdPacket(
-                    signature=CommandSignature.CBW_BLTC_SIGNATURE,
+                    signature=CommandSignature.CBW_BLTC_SIGNATURE.tag,
                     length=len(data),
                     flags=CommandFlag.HOST_TO_DEVICE_DIR,
                     command=CommandTag.FW_DOWNLOAD,
@@ -162,7 +162,7 @@ class CmdPacket(CmdPacketBase):
             self.signature,
             self.tag,
             self.length,
-            self.flags,
-            self.cdb_command,
+            self.flags.tag,
+            self.cdb_command.tag,
             swap32(self.length),
         )

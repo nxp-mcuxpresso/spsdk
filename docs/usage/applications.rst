@@ -36,7 +36,11 @@ Application Overview
 
 SPSDK applications are used for various functions and not all applications are valid for all NXP MCU device portfolios. The table mapping particular applications to a specific device is below.
 
-.. figure:: ../_static/images/spsdk-applications.png
+
+
+.. include:: ../_prebuild/features_table.inc
+
+.. include:: ../_prebuild/other_features_table.inc
 
 
 :ref:`blhost`
@@ -156,6 +160,22 @@ The *nxpimage* application allows users to:
 .. code:: bash
 
     nxpimage --help
+
+
+:ref:`nxpmemcfg`
+================
+
+The *nxpmemcfg* application allows users to:
+
+- check database of known configuration option words for external memories
+- parse existing configuration option words
+- export option words from configuration
+- generate BLHOST scripts to configure memory
+
+
+.. code:: bash
+
+    nxpmemcfg --help
 
 
 :ref:`pfr`

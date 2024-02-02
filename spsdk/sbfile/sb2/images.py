@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,36 +9,41 @@
 
 import logging
 import os
-from copy import deepcopy
 from datetime import datetime
 from typing import Any, Dict, Iterator, List, Optional
 
 from typing_extensions import Self
 
-from spsdk.apps.utils.utils import get_key
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.hmac import hmac
 from spsdk.crypto.rng import random_bytes
-from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.crypto.signature_provider import (
+    SignatureProvider,
+    get_signature_provider,
+    try_to_verify_public_key,
+)
 from spsdk.crypto.symmetric import Counter, aes_key_unwrap, aes_key_wrap
-from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation
-from spsdk.image import IMG_DATA_FOLDER, MBI_SCH_FILE
+from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.misc import SecBootBlckSize
 from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.crypto.cert_blocks import CertBlockV1
-from spsdk.utils.database import Database
-from spsdk.utils.misc import find_first, load_configuration, load_text, value_to_int, write_file
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
+from spsdk.utils.misc import (
+    find_first,
+    load_configuration,
+    load_hex_string,
+    load_text,
+    value_to_int,
+    write_file,
+)
+from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 from . import sly_bd_parser as bd_parser
 from .commands import CmdHeader
 from .headers import ImageHeaderV2
 from .sections import BootSectionV2, CertSectionV2
-
-SB2_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_sb2.yaml")
-DATABASE_FILE = os.path.join(IMG_DATA_FOLDER, "database_sb21.yaml")
 
 logger = logging.getLogger(__name__)
 
@@ -380,19 +385,8 @@ class BootImageV20(BaseClass):
                 raise SPSDKError("Certificate block is not assigned.")
 
             public_key = self.cert_block.certificates[-1].get_public_key()
-            try:
-                result = self.signature_provider.verify_public_key(public_key.export())
-                if not result:
-                    raise SPSDKError(
-                        "Signature verification failed, public key does not match to certificate"
-                    )
-                logger.debug("The verification of private key pair integrity has been successful.")
-            except SPSDKUnsupportedOperation:
-                logger.warning(
-                    "Signature provider could not verify the integrity of private key pair."
-                )
-
-            data += self.signature_provider.sign(data)
+            try_to_verify_public_key(self.signature_provider, public_key.export())
+            data += self.signature_provider.get_signature(data)
 
         if len(data) != self.raw_size:
             raise SPSDKError("Invalid length of exported data")
@@ -719,7 +713,7 @@ class BootImageV21(BaseClass):
         if self.header.flags & self.FLAGS_SHA_PRESENT_BIT:
             signed_data += get_hash(bs_data)
         # Add Signature data
-        signature = self.signature_provider.sign(signed_data)
+        signature = self.signature_provider.get_signature(signed_data)
 
         return signed_data + signature + bs_data
 
@@ -829,7 +823,7 @@ class BootImageV21(BaseClass):
 
         :return: List of supported families.
         """
-        return Database(DATABASE_FILE).devices.device_names
+        return get_families(DatabaseManager.SB21)
 
     @classmethod
     def get_commands_validation_schemas(cls, family: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -838,14 +832,13 @@ class BootImageV21(BaseClass):
         :param family: Device family filter, if None all commands are returned.
         :return: List of validation schemas.
         """
-        sb2_sch_cfg = ValidationSchemas().get_schema_file(SB2_SCH_FILE)
+        sb2_sch_cfg = get_schema_file(DatabaseManager.SB21)
 
-        schemas: List[Dict[str, Any]] = deepcopy([sb2_sch_cfg["sb2_sections"]])
+        schemas: List[Dict[str, Any]] = [sb2_sch_cfg["sb2_sections"]]
         if family:
+            db = get_db(family, "latest")
             # remove unused command for current family
-            supported_commands = Database(DATABASE_FILE).get_device_value(
-                "supported_commands", family
-            )
+            supported_commands = db.get_list(DatabaseManager.SB21, "supported_commands")
             list_of_commands: List[Dict] = schemas[0]["properties"]["sections"]["items"][
                 "properties"
             ]["commands"]["items"]["oneOf"]
@@ -867,20 +860,29 @@ class BootImageV21(BaseClass):
         :param family: Device family
         :return: List of validation schemas.
         """
-        sb2_schema = ValidationSchemas.get_schema_file(SB2_SCH_FILE)
-        mbi_schema = ValidationSchemas().get_schema_file(MBI_SCH_FILE)
+        sb2_schema = get_schema_file(DatabaseManager.SB21)
+        mbi_schema = get_schema_file(DatabaseManager.MBI)
 
         schemas: List[Dict[str, Any]] = []
         schemas.extend([mbi_schema[x] for x in ["signature_provider", "cert_block_v1"]])
         schemas.extend([sb2_schema[x] for x in ["sb2_output", "sb2_family", "common", "sb2"]])
 
-        if Database(DATABASE_FILE).get_device_value("keyblobs", family, default=True):
+        add_keyblob = True
+
+        if family:
+            add_keyblob = get_db(family, "latest").get_bool(
+                DatabaseManager.SB21, "keyblobs", default=True
+            )
+
+        if add_keyblob:
             schemas.append(sb2_schema["keyblobs"])
         schemas.extend(cls.get_commands_validation_schemas(family))
 
         # find family
         for schema in schemas:
             if "properties" in schema and "family" in schema["properties"]:
+                if family:
+                    schema["properties"]["family"]["template_value"] = family
                 schema["properties"]["family"]["enum"] = cls.get_supported_families()
                 if family:
                     schema["properties"]["family"]["template_value"] = family
@@ -895,16 +897,13 @@ class BootImageV21(BaseClass):
         :param family: Device family.
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
+        title = "Secure Binary v2.1 Configuration template"
         if family in cls.get_supported_families():
-            return CommentedConfig(
-                f"Secure Binary v2.1 Configuration template for {family}.",
-                cls.get_validation_schemas(family),
-            ).export_to_yaml()
-
+            title += f" for {family}"
         return CommentedConfig(
-            "Secure Binary v2.1 Configuration template.",
+            title,
             cls.get_validation_schemas(family),
-        ).export_to_yaml()
+        ).get_template()
 
     @classmethod
     def parse_sb21_config(
@@ -985,7 +984,7 @@ class BootImageV21(BaseClass):
         else:
             key = config["containerKeyBlobEncryptionKey"]
 
-        sb_kek = get_key(key, expected_size=32, search_paths=search_paths)
+        sb_kek = load_hex_string(key, expected_size=32, search_paths=search_paths)
 
         # validate keyblobs and perform appropriate actions
         keyblobs = config.get("keyblobs", [])

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -92,6 +92,8 @@ def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family,
         ("rt118x", ["flexspi_nor"]),
         ("lpc55s3x", ["flexspi_nor"]),
         ("rw61x", ["flexspi_nor"]),
+        ("mcxn9xx", ["flexspi_nor"]),
+        ("lpc553x", ["flexspi_nor"]),
     ],
 )
 def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family, mem_types):

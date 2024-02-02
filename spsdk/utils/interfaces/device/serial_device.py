@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,7 @@
 import logging
 from typing import List, Optional
 
-from serial import Serial, SerialTimeoutException
+from serial import Serial, SerialException, SerialTimeoutException
 from serial.tools.list_ports import comports
 from typing_extensions import Self
 
@@ -47,6 +47,9 @@ class SerialDevice(DeviceBase):
                 port=port, timeout=timeout_s, write_timeout=timeout_s, baudrate=baudrate
             )
             self.expect_status = True
+        except SerialException as se:
+            logger.debug(f"Exception occurred during device opening: {se}")
+            self.expect_status = False
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
 
@@ -66,9 +69,12 @@ class SerialDevice(DeviceBase):
     def is_opened(self) -> bool:
         """Indicates whether device is open.
 
-        :return: True if device is open, False othervise.
+        :return: True if device is open, False otherwise.
         """
-        return self._device.is_open
+        if self.expect_status == False:
+            return False
+        else:
+            return self._device.is_open
 
     def open(self) -> None:
         """Open the UART interface.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -49,11 +49,14 @@ def fix_file(file: str, header_lines: Sequence[str]) -> None:
             f.write("".join(content_lines))
 
 
-def fix_py_headers_in_files(files: Sequence[str], header_lines: Sequence[str]) -> None:
+def fix_py_headers_in_files(
+    files: Sequence[str], header_lines: Optional[Sequence[str]] = None
+) -> None:
     """Fix copyright in list of files."""
+
     files = filter_files(files)
     for file in files:
-        fix_file(file, header_lines)
+        fix_file(file, header_lines or DEFAULT_HEADER)
 
 
 def check_files(files: Sequence[str], header_lines: Sequence[str]) -> int:

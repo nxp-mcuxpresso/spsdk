@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,21 +13,13 @@ import os
 import re
 import sys
 from functools import wraps
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import click
 import hexdump
 
-from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.misc import (
-    find_file,
-    get_abs_path,
-    load_binary,
-    load_file,
-    value_to_bytes,
-    write_file,
-)
+from spsdk.utils.misc import get_abs_path, write_file
 
 WARNING_MSG = """
 This is an experimental utility. Use with caution!
@@ -193,53 +185,6 @@ def parse_hex_data(hex_data: str) -> bytes:
     if not result:
         raise SPSDKError("Incorrect hex-data: Unable to get any data")
     return bytes(byte_pieces)
-
-
-def get_key(
-    key_source: Union[str, int, bytes], expected_size: int, search_paths: Optional[List[str]] = None
-) -> bytes:
-    """Get the key from the command line parameter.
-
-    :param key_source: File path to key file or hexadecimal value. If not specified random value is used.
-    :param expected_size: Expected size of key in bytes.
-    :param search_paths: List of paths where to search for the file, defaults to None
-    :raises SPSDKError: Invalid key
-    :return: Key in bytes.
-    """
-    key = None
-    assert expected_size > 0, "Invalid expected size of key"
-    if isinstance(key_source, (bytes, int)):
-        return value_to_bytes(key_source, byte_cnt=expected_size)
-
-    if not key_source:
-        logger.debug(
-            f"The key source is not specified, the random value is used in size of {expected_size} B."
-        )
-        return random_bytes(expected_size)
-    try:
-        file_path = find_file(key_source, search_paths=search_paths)
-        try:
-            str_key = load_file(file_path)
-            assert isinstance(str_key, str)
-            if not str_key.startswith(("0x", "0X")):
-                str_key = "0x" + str_key
-            key = value_to_bytes(str_key, byte_cnt=expected_size)
-            if len(key) != expected_size:
-                raise SPSDKError("Invalid Key size.")
-        except (SPSDKError, UnicodeDecodeError):
-            key = load_binary(file_path)
-    except Exception:
-        try:
-            if not key_source.startswith(("0x", "0X")):
-                key_source = "0x" + key_source
-            key = value_to_bytes(key_source, byte_cnt=expected_size)
-        except SPSDKError:
-            pass
-
-    if key is None or len(key) != expected_size:
-        raise SPSDKError(f"Invalid key input: {key_source}")
-
-    return key
 
 
 def store_key(file_name: str, key: bytes, reverse: bool = False) -> None:

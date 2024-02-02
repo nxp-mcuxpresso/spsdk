@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,6 +10,7 @@ import pytest
 
 from spsdk.exceptions import SPSDKError
 from spsdk.image.commands import CmdNop, CmdSet, EnumItm
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 def test_set_cmd():
@@ -20,7 +21,7 @@ def test_set_cmd():
     assert "CmdSet" in repr(cmd)
 
     assert cmd_other._header.param == 1
-    cmd_other.itm = 0x03
+    cmd_other.itm = EnumItm.ENG
     assert cmd_other._header.param == 3
 
 
@@ -50,12 +51,13 @@ def test_set_cmd_export_parse():
 
 
 def test_set_cmd_invalid():
+    class TestEnumItm(SpsdkEnum):
+        TEST = (8, "TEST", "Test")
+
     with pytest.raises(SPSDKError):
-        CmdSet(itm=8)
+        CmdSet(itm=TestEnumItm.TEST)
     cmd = CmdSet()
     with pytest.raises(SPSDKError):
-        cmd.hash_algorithm = 55
+        cmd.engine = TestEnumItm.TEST
     with pytest.raises(SPSDKError):
-        cmd.engine = 0xFE
-    with pytest.raises(SPSDKError):
-        cmd.itm = 55
+        cmd.itm = TestEnumItm.TEST

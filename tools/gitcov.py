@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -158,7 +158,7 @@ def parse_input(input_args: Optional[Sequence[str]] = None) -> argparse.Namespac
 def get_changed_files(
     repo_path: str,
     include_merges: bool,
-    parent_branch: Optional[str] = None,
+    parent_branch: str = "origin/master",
     file_extensions: Optional[Iterable[str]] = None,
 ) -> Sequence[str]:
     """Get a list of changed files.
@@ -170,16 +170,14 @@ def get_changed_files(
     :return: List of changed files
     """
     if file_extensions is None:
-        file_extensions = ["py"]
+        file_extensions = [".*"]
     file_extension_regex = "(" + "|".join(file_extensions) + ")"
     file_regex_str = rf"^(?P<op>[AM])\s+(?P<path>[a-zA-Z0-9_/\\]+\.{file_extension_regex})$"
     file_regex = re.compile(file_regex_str)
 
-    parent_branch = parent_branch or get_parent_commit()
-
     # fetch changed files from previous commits
     logger.info("Fetching files from previous commits\n")
-    cmd = f"git log {'' if include_merges else '--no-merges --first-parent'} --name-status {parent_branch}..HEAD"
+    cmd = f"git log {'--first-parent' if include_merges else '--no-merges'} --name-status {parent_branch}..HEAD"
     logger.debug(f"Executing: {cmd}")
     all_files = subprocess.check_output(cmd.split(), cwd=repo_path).decode("utf-8")
     logger.debug(f"Result:\n{all_files}")

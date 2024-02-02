@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -24,15 +24,15 @@ from spsdk.image.fcb.fcb import FCB
 from spsdk.image.mbi.mbi import get_mbi_class
 from spsdk.image.trustzone import TrustZone
 from spsdk.image.xmcd.xmcd import XMCD
-from spsdk.sbfile.sb31.images import SB3_SCH_FILE, SecureBinary31
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
-from spsdk.utils.crypto import CRYPTO_SCH_FILE
+from spsdk.sbfile.sb31.images import SecureBinary31
 from spsdk.utils.crypto.cert_blocks import CertBlockV21
 from spsdk.utils.crypto.iee import IeeNxp
 from spsdk.utils.crypto.otfad import OtfadNxp
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import load_configuration, load_text, write_file
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
+from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 disable_files_dirs_formatters: Dict[str, Callable[[str], bool]] = {
     "dir": lambda x: bool(os.path.basename(x.replace("\\", "/"))),
@@ -90,7 +90,7 @@ def get_schemas_devhsm(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     :param config: Any configuration of DEVHSM
     :return: Validation JSON schemas
     """
-    sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
+    sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
     check_config(config, [sb3_sch_cfg["sb3_family"]])
 
     schemas = DevHsmSB31.get_validation_schemas(config["family"])
@@ -105,7 +105,9 @@ def get_schemas_cert_block(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     :return: Validation JSON schemas
     """
     schemas = CertBlockV21.get_validation_schemas()
-    schemas.append(ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)["cert_block_output"])
+    schemas.append(
+        DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"]
+    )
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -296,11 +298,8 @@ def convert_file(config: str, cfg_type: Optional[str] = None) -> Optional[str]:
 
     if schemas:
         ret = CommentedConfig(
-            main_title=f"{tool_name} converted config.",
-            schemas=schemas,
-            values=configuration,
-            export_template=False,
-        ).export_to_yaml()
+            main_title=f"{tool_name} converted config.", schemas=schemas
+        ).get_config(configuration)
         click.echo(
             colorama.Fore.GREEN + f"Converted {tool_name} configuration" + colorama.Fore.RESET
         )

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,10 +11,12 @@
 
 import ctypes
 from copy import deepcopy
-from typing import List, Optional, Tuple, Type, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
+from spsdk.exceptions import SPSDKKeyError
 from spsdk.mboot.exceptions import McuBootError
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 from .commands import CommandTag
 from .error_codes import StatusCode
@@ -141,10 +143,10 @@ class Version:
 ########################################################################################################################
 
 # fmt: off
-class PropertyTag(Enum):
+class PropertyTag(SpsdkEnum):
     """McuBoot Properties."""
 
-    # LIST_PROPERTIES            = (0x00, 'ListProperties', 'List Properties')
+    LIST_PROPERTIES            = (0x00, 'ListProperties', 'List Properties')
     CURRENT_VERSION            = (0x01, "CurrentVersion", "Current Version")
     AVAILABLE_PERIPHERALS      = (0x02, "AvailablePeripherals", "Available Peripherals")
     FLASH_START_ADDRESS        = (0x03, "FlashStartAddress", "Flash Start Address")
@@ -176,9 +178,10 @@ class PropertyTag(Enum):
     PFR_KEYSTORE_UPDATE_OPT    = (0x1D, "PfrKeystoreUpdateOpt", "PFR Keystore Update Opt")
     BYTE_WRITE_TIMEOUT_MS      = (0x1E, "ByteWriteTimeoutMs", "Byte Write Timeout in ms")
     FUSE_LOCKED_STATUS         = (0x1F, "FuseLockedStatus", "Fuse Locked Status")
+    UNKNOWN                    = (0xFF, "Unknown", "Unknown property")
 
 
-class PropertyTagKw45xx(Enum):
+class PropertyTagKw45xx(SpsdkEnum):
     """McuBoot Properties."""
 
     VERIFY_ERASE               = (0x0A, "VerifyErase", "Verify Erase")
@@ -186,7 +189,7 @@ class PropertyTagKw45xx(Enum):
     FIRMWARE_VERSION           = (0x15, "FirmwareVersion", "Firmware Version",)
     FUSE_PROGRAM_VOLTAGE       = (0x16, "FuseProgramVoltage", "Fuse Program Voltage")
 
-class PeripheryTag(Enum):
+class PeripheryTag(SpsdkEnum):
     """Tags representing peripherals."""
 
     UART      = (0x01, "UART", "UART Interface")
@@ -199,19 +202,19 @@ class PeripheryTag(Enum):
     LIN       = (0x80, "LIN", "LIN Interface")
 
 
-class FlashReadMargin(Enum):
+class FlashReadMargin(SpsdkEnum):
     """Scopes for flash read."""
 
-    NORMAL  = (0, "Normal")
-    USER    = (1, "User")
-    FACTORY = (2, "Factory")
+    NORMAL  = (0, "NORMAL")
+    USER    = (1, "USER")
+    FACTORY = (2, "FACTORY")
 
 
-class PfrKeystoreUpdateOpt(Enum):
+class PfrKeystoreUpdateOpt(SpsdkEnum):
     """Options for PFR updating."""
 
-    KEY_PROVISIONING = (0, "KeyProvisioning")
-    WRITE_MEMORY     = (1, "WriteMemory")
+    KEY_PROVISIONING = (0, "KEY_PROVISIONING", "KeyProvisioning")
+    WRITE_MEMORY     = (1, "WRITE_MEMORY", "WriteMemory")
 # fmt: on
 
 ########################################################################################################################
@@ -232,8 +235,8 @@ class PropertyValueBase:
         :param desc: Optional description for the property
         """
         self.tag = tag
-        self.name = name or PropertyTag.get(tag, "")
-        self.desc = desc or PropertyTag.desc(tag)
+        self.name = name or PropertyTag.get_label(tag) or ""
+        self.desc = desc or PropertyTag.get_description(tag, "")
 
     def __str__(self) -> str:
         return f"{self.desc} = {self.to_str()}"
@@ -344,7 +347,7 @@ class EnumValue(PropertyValueBase):
         self,
         tag: int,
         raw_values: List[int],
-        enum: Type[Enum],
+        enum: Type[SpsdkEnum],
         na_msg: str = "Unknown Item",
     ) -> None:
         """Initialize the enumeration-based property object.
@@ -365,7 +368,10 @@ class EnumValue(PropertyValueBase):
 
     def to_str(self) -> str:
         """Get stringified property representation."""
-        return self.enum.name(self.value, f"{self._na_msg}: {self.value}")
+        try:
+            return self.enum.get_label(self.value)
+        except SPSDKKeyError:
+            return f"{self._na_msg}: {self.value}"
 
 
 class VersionValue(PropertyValueBase):
@@ -404,12 +410,12 @@ class DeviceUidValue(PropertyValueBase):
         """
         super().__init__(tag)
         self.value = b"".join(
-            [int.to_bytes(val, length=4, byteorder="little") for val in raw_values]
+            [int.to_bytes(val, length=4, byteorder=Endianness.LITTLE.value) for val in raw_values]
         )
 
     def to_int(self) -> int:
         """Get the raw integer portion of the property."""
-        return int.from_bytes(self.value, byteorder="big")
+        return int.from_bytes(self.value, byteorder=Endianness.BIG.value)
 
     def to_str(self) -> str:
         """Get stringified property representation."""
@@ -462,7 +468,13 @@ class AvailablePeripheralsValue(PropertyValueBase):
 
     def to_str(self) -> str:
         """Get stringified property representation."""
-        return ", ".join([key for key, value, _ in PeripheryTag if value & self.value])  # type: ignore
+        return ", ".join(
+            [
+                peripheral_tag.label
+                for peripheral_tag in PeripheryTag
+                if peripheral_tag.tag & self.value
+            ]
+        )
 
 
 class AvailableCommandsValue(PropertyValueBase):
@@ -474,9 +486,9 @@ class AvailableCommandsValue(PropertyValueBase):
     def tags(self) -> List[str]:
         """List of tags representing Available commands."""
         return [
-            tag_value  # type: ignore
-            for _, tag_value, _ in CommandTag
-            if tag_value > 0 and (1 << tag_value - 1) & self.value  # type: ignore
+            cmd_tag.tag  # type: ignore
+            for cmd_tag in CommandTag
+            if cmd_tag.tag > 0 and (1 << cmd_tag.tag - 1) & self.value
         ]
 
     def __init__(self, tag: int, raw_values: List[int]) -> None:
@@ -494,9 +506,9 @@ class AvailableCommandsValue(PropertyValueBase):
     def to_str(self) -> str:
         """Get stringified property representation."""
         return [
-            name  # type: ignore
-            for name, value, _ in CommandTag
-            if value > 0 and (1 << value - 1) & self.value  # type: ignore
+            cmd_tag.label  # type: ignore
+            for cmd_tag in CommandTag
+            if cmd_tag.tag > 0 and (1 << cmd_tag.tag - 1) & self.value
         ]
 
 
@@ -561,13 +573,15 @@ class ExternalMemoryAttributesValue(PropertyValueBase):
         """
         super().__init__(tag)
         self.mem_id = mem_id
-        self.start_address = raw_values[1] if raw_values[0] & ExtMemPropTags.START_ADDRESS else None
-        self.total_size = (
-            raw_values[2] * 1024 if raw_values[0] & ExtMemPropTags.SIZE_IN_KBYTES else None
+        self.start_address = (
+            raw_values[1] if raw_values[0] & ExtMemPropTags.START_ADDRESS.tag else None
         )
-        self.page_size = raw_values[3] if raw_values[0] & ExtMemPropTags.PAGE_SIZE else None
-        self.sector_size = raw_values[4] if raw_values[0] & ExtMemPropTags.SECTOR_SIZE else None
-        self.block_size = raw_values[5] if raw_values[0] & ExtMemPropTags.BLOCK_SIZE else None
+        self.total_size = (
+            raw_values[2] * 1024 if raw_values[0] & ExtMemPropTags.SIZE_IN_KBYTES.tag else None
+        )
+        self.page_size = raw_values[3] if raw_values[0] & ExtMemPropTags.PAGE_SIZE.tag else None
+        self.sector_size = raw_values[4] if raw_values[0] & ExtMemPropTags.SECTOR_SIZE.tag else None
+        self.block_size = raw_values[5] if raw_values[0] & ExtMemPropTags.BLOCK_SIZE.tag else None
         self.value = raw_values[0]
 
     def to_str(self) -> str:
@@ -678,7 +692,7 @@ class FuseLockedStatus(PropertyValueBase):
 # McuBoot property response parser
 ########################################################################################################################
 
-PROPERTIES = {
+PROPERTIES: Dict[PropertyTag, Dict] = {
     PropertyTag.CURRENT_VERSION: {"class": VersionValue, "kwargs": {}},
     PropertyTag.AVAILABLE_PERIPHERALS: {
         "class": AvailablePeripheralsValue,
@@ -796,11 +810,8 @@ PROPERTIES_KW45XX = {
     },
 }
 
-PROPERTIES_OVERRIDE = {"kw45xx": PROPERTIES_KW45XX}
-PROPERTIES_OVERRIDE = {"k32w1xx": PROPERTIES_KW45XX}
-
-PROPERTY_TAG_OVERRIDE = {"kw45xx": PropertyTagKw45xx}
-PROPERTY_TAG_OVERRIDE = {"k32w1xx": PropertyTagKw45xx}
+PROPERTIES_OVERRIDE = {"kw45xx": PROPERTIES_KW45XX, "k32w1xx": PROPERTIES_KW45XX}
+PROPERTY_TAG_OVERRIDE = {"kw45xx": PropertyTagKw45xx, "k32w1xx": PropertyTagKw45xx}
 
 
 def parse_property_value(
@@ -822,14 +833,18 @@ def parse_property_value(
     properties_dict = deepcopy(PROPERTIES)
     if family:
         properties_dict.update(PROPERTIES_OVERRIDE[family])  # type: ignore
-    if property_tag not in properties_dict.keys():
+    if property_tag not in list(properties_dict.keys()):
         return None
-    cls = properties_dict[property_tag]["class"]  # type: ignore
-    kwargs: dict = properties_dict[property_tag]["kwargs"]  # type: ignore
+    property_value = next(
+        value for key, value in properties_dict.items() if key.tag == property_tag
+    )
+    cls: Callable = property_value["class"]
+    kwargs: dict = property_value["kwargs"]
     if "mem_id" in kwargs:
         kwargs["mem_id"] = ext_mem_id
-    obj = cls(property_tag, raw_values, **kwargs)  # type: ignore
+    obj = cls(property_tag, raw_values, **kwargs)
     if family:
-        obj.name = PROPERTY_TAG_OVERRIDE[family].name(property_tag)
-        obj.desc = PROPERTY_TAG_OVERRIDE[family].desc(property_tag)
+        property_tag_override = PROPERTY_TAG_OVERRIDE[family].from_tag(property_tag)
+        obj.name = property_tag_override.label
+        obj.desc = property_tag_override.description
     return obj

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust provisioning - TP Device, SW model."""
@@ -17,9 +17,8 @@ from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.types import SPSDKEncoding, SPSDKNameOID
 from spsdk.crypto.utils import extract_public_key
-from spsdk.tp import TP_SCH_FILE
-from spsdk.utils.misc import find_file, load_binary, load_file, write_file
-from spsdk.utils.schema_validator import ValidationSchemas
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.misc import Endianness, find_file, load_binary, load_file, write_file
 
 from ..data_container import (
     AuthenticationType,
@@ -184,7 +183,7 @@ class TpDevSwModel(TpDevInterface):
         container.add_entry(
             DataEntry(
                 payload=self.challenge,
-                payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND,
+                payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND.tag,
                 extra=self.config.data["oem_key_flags"],
             )
         )
@@ -246,28 +245,30 @@ class TpDevSwModel(TpDevInterface):
         prov_data_container.add_entry(
             DataEntry(
                 payload=self.edh_public.export(SPSDKEncoding.NXP),
-                payload_type=PayloadType.NXP_EPH_CARD_KA_PUK,
+                payload_type=PayloadType.NXP_EPH_CARD_KA_PUK.tag,
             )
         )
         prov_data_container.add_entry(
-            DataEntry(payload=initialization_vector, payload_type=PayloadType.TP_WRAP_DATA_IV)
+            DataEntry(payload=initialization_vector, payload_type=PayloadType.TP_WRAP_DATA_IV.tag)
         )
         prov_data_container.add_entry(
-            DataEntry(payload=tag, payload_type=PayloadType.TP_WRAP_DATA_TAG)
+            DataEntry(payload=tag, payload_type=PayloadType.TP_WRAP_DATA_TAG.tag)
         )
         prov_data_container.add_entry(
-            DataEntry(payload=encrypted_data, payload_type=PayloadType.TP_WRAP_DATA_CIPHERTEXT)
+            DataEntry(payload=encrypted_data, payload_type=PayloadType.TP_WRAP_DATA_CIPHERTEXT.tag)
         )
 
         prov_data_container.add_entry(
-            DataEntry(payload=self.nxp_die_id_data, payload_type=PayloadType.NXP_DIE_ID_AUTH_CERT)
+            DataEntry(
+                payload=self.nxp_die_id_data, payload_type=PayloadType.NXP_DIE_ID_AUTH_CERT.tag
+            )
         )
 
         for cert, cert_id in self.oem_certificates:
             prov_data_container.add_entry(
                 DataDestinationEntry(
                     payload=cert,
-                    payload_type=PayloadType.OEM_DIE_DEVATTEST_ID_CERT,
+                    payload_type=PayloadType.OEM_DIE_DEVATTEST_ID_CERT.tag,
                     extra=cert_id,
                     destination=self.config.data[
                         f"oem_cert_{OEMKeyFlags.get_key_name(cert_id)}_addr"
@@ -278,17 +279,17 @@ class TpDevSwModel(TpDevInterface):
 
         prov_data_container.add_entry(
             DataEntry(
-                payload=self.production_counter.to_bytes(length=4, byteorder="big"),
-                payload_type=PayloadType.OEM_PROD_COUNTER,
+                payload=self.production_counter.to_bytes(length=4, byteorder=Endianness.BIG.value),
+                payload_type=PayloadType.OEM_PROD_COUNTER.tag,
             )
         )
 
         prov_data_container.add_entry(
-            DataEntry(payload=self.running_hash, payload_type=PayloadType.OEM_TP_LOG_HASH)
+            DataEntry(payload=self.running_hash, payload_type=PayloadType.OEM_TP_LOG_HASH.tag)
         )
 
         prov_data_container.add_entry(
-            DataEntry(payload=log_signature, payload_type=PayloadType.OEM_TP_LOG_SIGN)
+            DataEntry(payload=log_signature, payload_type=PayloadType.OEM_TP_LOG_SIGN.tag)
         )
 
         prov_data_container.add_auth_entry(
@@ -313,7 +314,7 @@ class TpDevSwModel(TpDevInterface):
         if self.oem_certificates:
             for cert_data, _ in self.oem_certificates:
                 data_to_hash += cert_data
-        data_to_hash += self.production_counter.to_bytes(length=4, byteorder="big")
+        data_to_hash += self.production_counter.to_bytes(length=4, byteorder=Endianness.BIG.value)
         data_to_hash += self.running_hash
         new_hash = get_hash(data_to_hash)
         return new_hash
@@ -362,7 +363,7 @@ class TpDevSwModel(TpDevInterface):
                 cert_meta["scn_offset"], cert_meta["scn_offset"] + cert_meta["scn_length"]
             )
 
-            key_index_bytes = key_index.to_bytes(length=1, byteorder="big")
+            key_index_bytes = key_index.to_bytes(length=1, byteorder=Endianness.BIG.value)
             template_data[scn_slice] = (
                 bytes(new_uuid.hex(), encoding="ascii")
                 + b"-"
@@ -380,11 +381,11 @@ class TpDevSwModel(TpDevInterface):
             data = (
                 template_data[cert_meta["tbs_offset"] : cert_meta["sig_offset"] - 3]
                 + b"\x03"
-                + (len(new_signature) + 1).to_bytes(length=1, byteorder="big")
+                + (len(new_signature) + 1).to_bytes(length=1, byteorder=Endianness.BIG.value)
                 + b"\x00"
                 + new_signature
             )
-            header = b"\x30\x82" + len(data).to_bytes(length=2, byteorder="big")
+            header = b"\x30\x82" + len(data).to_bytes(length=2, byteorder=Endianness.BIG.value)
 
             new_cert_data = header + data
             oem_certificates.append((bytes(new_cert_data), key_index))
@@ -407,7 +408,7 @@ class TpDevSwModel(TpDevInterface):
                     payload=load_binary(
                         self.config.get_abspath(self.config.data["prov_data_path"])
                     ),
-                    payload_type=PayloadType.CUST_PROD_PROV_DATA,
+                    payload_type=PayloadType.CUST_PROD_PROV_DATA.tag,
                 )
             )
             return data_cont
@@ -425,25 +426,25 @@ class TpDevSwModel(TpDevInterface):
         data_cont.add_entry(
             DataEntry(
                 payload=wrapped_sb_kek,
-                payload_type=PayloadType.CUST_PROD_SB_KEK_SK,
+                payload_type=PayloadType.CUST_PROD_SB_KEK_SK.tag,
             )
         )
         data_cont.add_entry(
             DataEntry(
                 payload=wrapped_user_kek,
-                payload_type=PayloadType.CUST_PROD_USER_KEK_SK,
+                payload_type=PayloadType.CUST_PROD_USER_KEK_SK.tag,
             )
         )
         data_cont.add_entry(
             DataEntry(
                 payload=load_binary(self.config.get_abspath(self.config.data["cfpa_path"])),
-                payload_type=PayloadType.CUST_PROD_CFPA_DATA_SECRET,
+                payload_type=PayloadType.CUST_PROD_CFPA_DATA_SECRET.tag,
             )
         )
         data_cont.add_entry(
             DataEntry(
                 payload=load_binary(self.config.get_abspath(self.config.data["cmpa_path"])),
-                payload_type=PayloadType.CUST_PROD_CMPA_DATA_SECRET,
+                payload_type=PayloadType.CUST_PROD_CMPA_DATA_SECRET.tag,
             )
         )
         return data_cont
@@ -464,7 +465,7 @@ class TpDevSwModel(TpDevInterface):
 
         return: List of all additional validation schemas.
         """
-        sch_cfg_file = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+        sch_cfg_file = get_schema_file(DatabaseManager.TP)
 
         return [sch_cfg_file["device_swmodel"]]
 
@@ -545,7 +546,6 @@ class TpDevSwModel(TpDevInterface):
             subject_public_key=public_key,
             issuer_private_key=private_key,
             serial_number=cert_config.get("serial_number"),
-            if_ca=False,
             duration=cert_config["duration"],
         )
         cert_raw = cert.export(SPSDKEncoding.DER)
@@ -564,10 +564,10 @@ class TpDevSwModel(TpDevInterface):
         scn_offset = cert_raw.find(scn) + len(scn) - scn_length
 
         pub_x_start = cert_raw.find(
-            public_key.public_numbers.x.to_bytes(length=32, byteorder="big")
+            public_key.public_numbers.x.to_bytes(length=32, byteorder=Endianness.BIG.value)
         )
         pub_y_start = cert_raw.find(
-            public_key.public_numbers.y.to_bytes(length=32, byteorder="big")
+            public_key.public_numbers.y.to_bytes(length=32, byteorder=Endianness.BIG.value)
         )
 
         sig_offset = cert_raw.find(cert.signature)

@@ -1,37 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module used for generation SecureBinary V3.1."""
 import logging
-import os
-from copy import deepcopy
 from datetime import datetime
 from struct import calcsize, pack, unpack_from
 from typing import Any, Dict, List, Optional
 
 from typing_extensions import Self
 
-from spsdk.apps.utils.utils import get_key
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_length
-from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.crypto.signature_provider import (
+    SignatureProvider,
+    get_signature_provider,
+    try_to_verify_public_key,
+)
 from spsdk.crypto.symmetric import aes_cbc_encrypt
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.image import IMG_DATA_FOLDER, MBI_SCH_FILE
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
 from spsdk.sbfile.sb31.functions import KeyDerivator
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.crypto.cert_blocks import CertBlockV21
-from spsdk.utils.database import Database
-from spsdk.utils.misc import align_block, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
+from spsdk.utils.misc import align_block, load_hex_string, value_to_int
+from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
-
-SB3_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_sb3.yaml")
-DATABASE_FILE = os.path.join(IMG_DATA_FOLDER, "database_sb31.yaml")
 
 
 ########################################################################################################################
@@ -66,7 +63,7 @@ class SecureBinary31Header(BaseClass):
         """
         self.flags = flags
         if hash_type not in [EnumHashAlgorithm.SHA256, EnumHashAlgorithm.SHA384]:
-            raise SPSDKValueError(f"Invalid hash type: {EnumHashAlgorithm.name(hash_type)}")
+            raise SPSDKValueError(f"Invalid hash type: {hash_type.label}")
         self.hash_type = hash_type
         self.block_count = 0
         self.image_type = 7 if is_nxp_container else 6
@@ -458,7 +455,7 @@ class SecureBinary31(BaseClass):
 
         :return: List of validation schemas for SB31 supported families.
         """
-        sch_cfg = ValidationSchemas.get_schema_file(SB3_SCH_FILE)
+        sch_cfg = get_schema_file(DatabaseManager.SB31)
         sch_cfg["sb3_family"]["properties"]["family"]["enum"] = cls.get_supported_families()
         return [sch_cfg["sb3_family"]]
 
@@ -469,10 +466,11 @@ class SecureBinary31(BaseClass):
         :param family: Family description.
         :return: List of validation schemas.
         """
-        sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
-        schemas: List[Dict[str, Any]] = [deepcopy(sb3_sch_cfg["sb3_commands"])]
+        sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
+        db = get_db(family, "latest")
+        schemas: List[Dict[str, Any]] = [sb3_sch_cfg["sb3_commands"]]
         # remove unused command for current family
-        supported_commands = Database(DATABASE_FILE).get_device_value("supported_commands", family)
+        supported_commands = db.get_list(DatabaseManager.SB31, "supported_commands")
         list_of_commands: List[Dict] = schemas[0]["properties"]["commands"]["items"]["oneOf"]
         schemas[0]["properties"]["commands"]["items"]["oneOf"] = [
             command
@@ -489,8 +487,8 @@ class SecureBinary31(BaseClass):
         :param family: Family description.
         :return: List of validation schemas.
         """
-        mbi_sch_cfg = ValidationSchemas().get_schema_file(MBI_SCH_FILE)
-        sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
+        mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
+        sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
 
         schemas: List[Dict[str, Any]] = []
         schemas.extend(
@@ -508,6 +506,7 @@ class SecureBinary31(BaseClass):
         for schema in schemas:
             if "properties" in schema and "family" in schema["properties"]:
                 schema["properties"]["family"]["enum"] = cls.get_supported_families()
+                schema["properties"]["family"]["template_value"] = family
                 break
         return schemas
 
@@ -558,7 +557,7 @@ class SecureBinary31(BaseClass):
                 raise SPSDKError("Invalid value for containerKeyBlobEncryptionKey")
             for size in cls.PCK_SIZES:
                 try:
-                    pck = get_key(container_keyblob_enc_key, size // 8, search_paths)
+                    pck = load_hex_string(container_keyblob_enc_key, size // 8, search_paths)
                 except SPSDKError:
                     logger.debug(
                         f"Failed loading PCK {container_keyblob_enc_key} as key with {size}"
@@ -594,6 +593,12 @@ class SecureBinary31(BaseClass):
             self.signature_provider, SignatureProvider
         ):
             raise SPSDKError(f"SB3.1 signature provider is invalid: {self.signature_provider}")
+        public_key = (
+            self.cert_block.isk_certificate.isk_cert.export()
+            if self.cert_block.isk_certificate and self.cert_block.isk_certificate.isk_cert
+            else self.cert_block.root_key_record.root_public_key
+        )
+        try_to_verify_public_key(self.signature_provider, public_key)
 
         self.cert_block.validate()
         self.sb_header.validate()
@@ -622,7 +627,7 @@ class SecureBinary31(BaseClass):
         final_data += cert_block_data
 
         # SIGNATURE
-        final_data += self.signature_provider.sign(final_data)
+        final_data += self.signature_provider.get_signature(final_data)
 
         # COMMANDS BLOBS DATA
         final_data += sb3_commands_data
@@ -654,7 +659,7 @@ class SecureBinary31(BaseClass):
 
         :return: List of supported families.
         """
-        return Database(DATABASE_FILE).devices.device_names
+        return get_families(DatabaseManager.SB31)
 
     @classmethod
     def generate_config_template(cls, family: str) -> Dict[str, str]:
@@ -667,15 +672,11 @@ class SecureBinary31(BaseClass):
 
         if family in cls.get_supported_families():
             schemas = cls.get_validation_schemas(family)
-            schemas.append(ValidationSchemas.get_schema_file(SB3_SCH_FILE)["sb3_output"])
-            override = {}
-            override["family"] = family
+            schemas.append(DatabaseManager().db.get_schema_file(DatabaseManager.SB31)["sb3_output"])
 
             yaml_data = CommentedConfig(
-                f"Secure Binary v3.1 Configuration template for {family}.",
-                schemas,
-                override,
-            ).export_to_yaml()
+                f"Secure Binary v3.1 Configuration template for {family}.", schemas
+            ).get_template()
 
             ret[f"{family}_sb31"] = yaml_data
 

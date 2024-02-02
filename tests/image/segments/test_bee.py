@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,6 +20,7 @@ from spsdk.image.bee import (
 )
 from spsdk.image.segments import SegBEE
 from spsdk.utils.misc import load_binary
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 def verify_base_class_features(inst: BeeBaseClass, decrypt_key: Optional[bytes] = None) -> None:
@@ -97,6 +98,9 @@ def test_bee_protect_region_block() -> None:
 
 
 def test_bee_invalid_validate():
+    class TestBeeProtectRegionBlockAesMode(SpsdkEnum):
+        TEST = (10, "TEST")
+
     prdb = BeeProtectRegionBlock()
     prdb._start_addr = 0xFFFFFFFFA
     with pytest.raises(SPSDKError, match="Invalid start address"):
@@ -106,7 +110,7 @@ def test_bee_invalid_validate():
     with pytest.raises(SPSDKError, match="Invalid start/end address"):
         prdb.validate()
     prdb = BeeProtectRegionBlock()
-    prdb.mode = 10
+    prdb.mode = TestBeeProtectRegionBlockAesMode.TEST
     with pytest.raises(SPSDKError, match="Only AES/CTR encryption mode supported now"):
         prdb.validate()
     prdb = BeeProtectRegionBlock()

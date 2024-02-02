@@ -1,0 +1,106 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  0a:
+    features:
+      pfr:
+        cfpa:
+          data_file: pfr_cfpa_0a.xml
+        cmpa:
+          data_file: pfr_cmpa_0a.xml
+  1a:
+    features:
+      pfr:
+        cfpa:
+          data_file: pfr_cfpa_1a.xml
+        cmpa:
+          data_file: pfr_cmpa_1a.xml
+latest: 1a
+
+# General MCU information
+info:
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-arm-cortex-m33/lpc553x-s3x-advanced-analog-armcortex-m33-based-mcu-family:LPC553x
+  memory_map: # Memory map basic info
+    internal_flash:
+      base_addr: 0x0
+      size: 0x3DC00
+      external: false
+    sram:
+      base_addr: 0x20000000
+      size: 0x1C000
+      external: false
+    sramx:
+      base_addr: 0x4000000
+      size: 0x4000
+      external: false
+    flexspi:
+      base_addr: 0x8000000
+      size: 0x8000000
+      external: true
+  # isp:
+  #   mboot_interfaces: [usb, uart, spi, i2c]
+  #   usb_rom:
+  #     vid: 0x1FC9
+  #     pid: 0x0025
+
+features:
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinImageVersion
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinApp
+      crc_ram:
+        image_type: CRC_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinImageVersion
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinApp
+          - Mbi_ExportMixinCrcSign
+      crc_xip:
+        image_type: CRC_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinImageVersion
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_ExportMixinApp
+          - Mbi_ExportMixinCrcSign
+
+    images:
+      xip:
+        plain: plain
+        crc: crc_xip
+      load_to_ram:
+        plain: plain
+        crc: crc_ram
+
+  # ======== PFR section ========
+  pfr:
+    cfpa: # CFPA description
+      aaddress: 0x3_DC00
+      seal_start: CFPA_CRC32
+      seal_count: 1
+    cmpa: # CMPA description
+      address: 0x3_E200
+      cert_block_version: 21
+      seal_start: CMPA_CRC32
+      seal_count: 1
+    rules:
+      - ../../common/pfrc_rules.yaml
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor: fcb_flexspi_nor.xml

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -181,7 +181,7 @@ class SDP:
             logger.debug(f"RX-DATA: {str(hab_response)}")
             self._hab_status = hab_response.value
             if hab_response.value != ResponseValue.UNLOCKED:
-                self._hab_status = StatusCode.HAB_IS_LOCKED
+                self._hab_status = StatusCode.HAB_IS_LOCKED.tag
 
             # Read Command Status
             cmd_response = self._interface.read()
@@ -211,7 +211,7 @@ class SDP:
             raise SdpConnectionError(str(exc)) from exc
 
         if not ret_val and self._cmd_exception:
-            raise SdpCommandError("SendData", self.status_code)
+            raise SdpCommandError("SendData", self.status_code.tag)
 
         return ret_val
 
@@ -283,7 +283,7 @@ class SDP:
         if status != ResponseValue.WRITE_DATA_OK:
             self._status_code = StatusCode.WRITE_REGISTER_FAILURE
             if self._cmd_exception:
-                raise SdpCommandError("WriteRegister", self.status_code)
+                raise SdpCommandError("WriteRegister", self.status_code.tag)
             return False
         return True
 
@@ -359,7 +359,7 @@ class SDP:
         if status != ResponseValue.SKIP_DCD_HEADER_OK:
             self._status_code = StatusCode.SKIP_DCD_HEADER_FAILURE
             if self._cmd_exception:
-                raise SdpCommandError("SkipDcdHeader", self.status_code)
+                raise SdpCommandError("SkipDcdHeader", self.status_code.tag)
             return False
         return True
 

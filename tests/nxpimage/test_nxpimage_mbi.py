@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Test MBI part of nxpimage app."""
 import filecmp
+import json
 import os
 import shutil
 
-import commentjson as json
 import pytest
 import yaml
 from crcmod.predefined import mkPredefinedCrcFun
@@ -21,10 +21,11 @@ from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
 from spsdk.exceptions import SPSDKError
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeyStore
-from spsdk.image.mbi.mbi import DEVICE_FILE, create_mbi_class, get_mbi_class
+from spsdk.image.mbi.mbi import create_mbi_class, get_mbi_class
 from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestMcxNx, Mbi_MixinHmac, Mbi_MixinIvt
 from spsdk.utils.crypto.cert_blocks import CertBlockV21, CertBlockVx
-from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
+from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.misc import Endianness, load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
 mbi_basic_tests = [
@@ -230,11 +231,15 @@ def test_nxpimage_mbi_signed(
         ):
             # Check CRC
             assert (
-                mkPredefinedCrcFun("crc-32-mpeg")(ref_data[:-4]).to_bytes(4, "little")
+                mkPredefinedCrcFun("crc-32-mpeg")(ref_data[:-4]).to_bytes(
+                    4, Endianness.LITTLE.value
+                )
                 == ref_data[-4:]
             )
             assert (
-                mkPredefinedCrcFun("crc-32-mpeg")(new_data[:-4]).to_bytes(4, "little")
+                mkPredefinedCrcFun("crc-32-mpeg")(new_data[:-4]).to_bytes(
+                    4, Endianness.LITTLE.value
+                )
                 == new_data[-4:]
             )
             # Remove CRC
@@ -691,16 +696,8 @@ def test_mbi_parser_legacy_encrypted(
         assert filecmp.cmp(input_image, parsed_app)
 
 
-def test_nxpimage_mbi_lower():
-    mbi = create_mbi_class("Mbi_PlainRamLpc55s3x")(
-        app=bytes(100), load_address=0, firmware_version=0
-    )
-    assert mbi.app
-    assert mbi.export()
-
-
 def test_mbi_lpc55s3x_invalid():
-    mbi = create_mbi_class("Mbi_PlainXipSignedLpc55s3x")(app=bytes(100), firmware_version=0)
+    mbi = create_mbi_class("signed", "lpc55s3x")(app=bytes(100), firmware_version=0)
     with pytest.raises(SPSDKError):
         mbi.validate()
 
@@ -730,9 +727,10 @@ def test_mbi_lpc55s3x_invalid():
 )
 def test_mbi_get_templates(cli_runner: CliRunner, tmpdir, family):
     cmd = f"mbi get-templates -f {family} --output {tmpdir}"
-    cli_runner.invoke(nxpimage.main, cmd.split())
-    device_data = load_configuration(path=DEVICE_FILE)
-    images = device_data["devices"][family]["images"]
+    result = cli_runner.invoke(nxpimage.main, cmd.split())
+    assert result.exit_code == 0
+    images = get_db(family).get_dict(DatabaseManager.MBI, "images")
+
     for image in images:
         for config in images[image]:
             file_path = os.path.join(tmpdir, f"{family}_{image}_{config}.yaml")

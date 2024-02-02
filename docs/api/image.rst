@@ -117,6 +117,14 @@ AHAB Container
    :show-inheritance:
    :member-order: bysource
 
+AHAB Utilities
+------------------
+.. automodule:: spsdk.image.ahab.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 AHAB Container Interface
 ------------------------
 .. automodule:: spsdk.image.ahab.ahab_abstract_interfaces
@@ -124,6 +132,13 @@ AHAB Container Interface
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
+
+Signed Messages
+------------------
+.. automodule:: spsdk.image.ahab.signed_msg
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Bootable image
 ----------------
@@ -153,27 +168,6 @@ HAB - High Assurance Boot
    :undoc-members:
    :show-inheritance:
 
-HAB CSF Builder
-----------------------------
-.. automodule:: spsdk.image.hab.csf_builder
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-HAB Config Parser
-----------------------------
-.. automodule:: spsdk.image.hab.config_parser
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-HAB Binary Image
-----------------------------
-.. automodule:: spsdk.image.hab.hab_binary_image
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 HAB Container
 ----------------------------
 .. automodule:: spsdk.image.hab.hab_container
@@ -183,7 +177,7 @@ HAB Container
 
 XMCD
 ----------------------------
-.. automodule:: spsdk.image.xmcd
+.. automodule:: spsdk.image.xmcd.xmcd
    :members:
    :undoc-members:
    :show-inheritance:

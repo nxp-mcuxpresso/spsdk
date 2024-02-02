@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -42,7 +42,7 @@ def main(
     log_level: int,
     timeout: int,
 ) -> int:
-    """Utility for communication with ROM on i.MX targets using SDP protocol (i.MX RT1xxx)."""
+    """Utility for communication with ROM on i.MX targets using SDP protocol."""
     spsdk_logger.install(level=log_level)
     # if --help is provided anywhere on command line, skip interface lookup and display help message
     if not is_click_help(ctx, sys.argv):
@@ -206,7 +206,13 @@ def decode_status_code(status_code: Optional[int] = None) -> str:
     """
     if not status_code:
         return "UNKNOWN ERROR"
-    return f"{status_code} ({status_code:#x}) {ResponseValue.desc(status_code)}"
+    no_desc = "NO DESCRIPTION"
+    desc = (
+        ResponseValue.get_description(status_code, no_desc)
+        if ResponseValue.contains(status_code)
+        else no_desc
+    )
+    return f"{status_code} ({status_code:#x}) {desc}"
 
 
 @catch_spsdk_error

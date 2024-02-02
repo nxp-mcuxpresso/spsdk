@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """DK6 Communication protocol."""
@@ -10,7 +10,8 @@ import struct
 import time
 from typing import Union
 
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 from .commands import (
     CmdPacket,
@@ -36,13 +37,13 @@ logger = logging.getLogger(__name__)
 DEFAULT_KEY = b"\x11\x22\x33\x44\x55\x66\x77\x88\x11\x22\x33\x44\x55\x66\x77\x88"
 
 
-class IspMode(Enum):
+class IspMode(SpsdkEnum):
     """DK6 ISP modes."""
 
-    DEFAULT = (0x00, "Default")
-    START_ISP = (0x01, "Start ISP Functionality")
-    UNLOCK_DEVICE = (0x7F, "Unlock device")
-    EXTENDED_ISP_UNLOCK = (0x80, "Extended unlock")
+    DEFAULT = (0x00, "default", "Default")
+    START_ISP = (0x01, "start_isp", "Start ISP Functionality")
+    UNLOCK_DEVICE = (0x7F, "unlock_device", "Unlock device")
+    EXTENDED_ISP_UNLOCK = (0x80, "extend_unlock", "Extended unlock")
 
 
 class DK6Protocol:
@@ -110,6 +111,7 @@ class DK6Protocol:
         :param memory_id: memory ID, defaults to MemoryId.FLASH
         :return: MemGetInfoResponse containing information like size, length etc.
         """
+        memory_id = memory_id if isinstance(memory_id, int) else memory_id.tag
         data = struct.pack(
             "<B",
             memory_id,
@@ -134,8 +136,8 @@ class DK6Protocol:
         """
         data = struct.pack(
             "<BB",
-            memory_id,
-            access,
+            memory_id.tag,
+            access.tag,
         )
         packet = CmdPacket(data)
         self.uart.write(CommandTag.MEM_OPEN, packet)
@@ -190,7 +192,7 @@ class DK6Protocol:
         :param handle: handle returned by open memory command, defaults to 0
         :return: MemCloseResponse
         """
-        self.uart.write(CommandTag.MEM_CLOSE, handle.to_bytes(1, "big"))
+        self.uart.write(CommandTag.MEM_CLOSE, handle.to_bytes(1, Endianness.BIG.value))
         response = self.uart.read()
         logger.debug(response.info())
 

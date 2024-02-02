@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -37,11 +37,7 @@ def test_invalid_cmd_write_data():
     with pytest.raises(SPSDKError):
         cmd.num_bytes = 16
     with pytest.raises(SPSDKError):
-        cmd.ops = 10
-    with pytest.raises(SPSDKError):
         cmd = CmdWriteData(numbytes=8)
-    with pytest.raises(SPSDKError):
-        cmd = CmdWriteData(ops=9)
     cmd = CmdWriteData()
     with pytest.raises(SPSDKError):
         cmd.append(address=0xFFFFFFFFF, value=0)

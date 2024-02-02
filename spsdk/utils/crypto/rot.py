@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """The module provides support for RoT hash calculation ."""
 
-import os
+
 from abc import abstractmethod
 from typing import List, Optional, Sequence, Type, Union
 
-from spsdk.crypto import CRYPTO_DATA_FOLDER
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.keys import PrivateKey, PublicKey
 from spsdk.exceptions import SPSDKError
@@ -20,10 +19,8 @@ from spsdk.image.ahab.ahab_container import SRKTable as AhabSrkTable
 from spsdk.image.secret import SrkItem
 from spsdk.image.secret import SrkTable as HabSrkTable
 from spsdk.utils.crypto.rkht import RKHT, RKHTv1, RKHTv21
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.misc import load_binary
-
-DATABASE_FILE = os.path.join(CRYPTO_DATA_FOLDER, "rot", "database.yaml")
 
 
 class Rot:
@@ -52,20 +49,13 @@ class Rot:
     @classmethod
     def get_supported_families(cls) -> List[str]:
         """Get all supported families."""
-        database = Database(DATABASE_FILE)
-        rot_types = [sub_class.rot_type for sub_class in RotBase.__subclasses__()]
-        return [
-            device
-            for device in database.devices.device_names
-            if database.get_device_value("rot_type", device) in rot_types
-        ]
+        return get_families(DatabaseManager.CERT_BLOCK)
 
     @classmethod
     def get_rot_class(cls, family: str) -> Type["RotBase"]:
         """Get RoT class."""
-        if family not in cls.get_supported_families():
-            raise SPSDKError(f"Unsupported family for ROT {family}")
-        rot_type = Database(DATABASE_FILE).get_device_value("rot_type", family)
+        db = get_db(family, "latest")
+        rot_type = db.get_str(DatabaseManager.CERT_BLOCK, "rot_type")
         for subclass in RotBase.__subclasses__():
             if subclass.rot_type == rot_type:
                 return subclass

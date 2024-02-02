@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Utilities used by adapters."""
@@ -12,11 +12,10 @@ from typing import List, Literal, Optional, Set, Union, overload
 
 from spsdk.crypto.certificate import X509NameConfig
 from spsdk.mboot.interfaces.usb import MbootUSBInterface
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.interfaces.device.usb_device import UsbDevice
-from spsdk.utils.misc import Timeout, value_to_int
+from spsdk.utils.misc import Endianness, Timeout
 
-from .. import TP_DATABASE
 from ..exceptions import SPSDKTpError
 from .tptarget_blhost import TpTargetBlHost
 
@@ -127,14 +126,10 @@ class TPFlags:
     @staticmethod
     def for_family(family: str) -> "TPFlags":
         """Create TPFlags for given chip family."""
-        database = Database(TP_DATABASE)
-        key_flags_version = value_to_int(
-            database.get_device_value("key_flags_version", device=family, default=0),
-        )
-        die_id_cert_version = value_to_int(
-            database.get_device_value("die_id_cert_version", device=family, default=0),
-        )
-        use_prov_data: bool = database.get_device_value("use_prov_data", device=family)
+        db = get_db(family, "latest")
+        key_flags_version = db.get_int(DatabaseManager.TP, "key_flags_version", default=0)
+        die_id_cert_version = db.get_int(DatabaseManager.TP, "die_id_cert_version", default=0)
+        use_prov_data = db.get_bool(DatabaseManager.TP, "use_prov_data")
         return TPFlags(
             die_id_cert_version=die_id_cert_version,
             key_flags_version=key_flags_version,
@@ -156,7 +151,7 @@ class TPFlags:
         flags |= (self.key_flags_version & 0x03) << 4
         flags |= self.use_prov_data
         if as_bytes:
-            return flags.to_bytes(length=1, byteorder="big")
+            return flags.to_bytes(length=1, byteorder=Endianness.BIG.value)
         return flags
 
     @staticmethod
@@ -185,10 +180,9 @@ class OEMKeyFlags:
     def from_config(config_data: dict) -> "OEMKeyFlags":
         """Create OEMKeyFlags from configuration data."""
         family = config_data["family"]
+        db = get_db(family, "latest")
         oem_id_count = config_data.get("oem_id_count", 0)
-        key_flags_version = value_to_int(
-            Database(TP_DATABASE).get_device_value("key_flags_version", device=family)
-        )
+        key_flags_version = db.get_int(DatabaseManager.TP, "key_flags_version")
         oem_id_ca_cert = config_data.get("oem_id_ca_cert_address", 0)
         oem_id_rtf_cert = config_data.get("oem_id_rtf_cert_address", 0)
 
@@ -225,15 +219,13 @@ class OEMKeyFlags:
             if self.use_rtf_key:
                 flags |= 0x20
         if as_bytes:
-            return flags.to_bytes(length=1, byteorder="big")
+            return flags.to_bytes(length=1, byteorder=Endianness.BIG.value)
         return flags
 
     @staticmethod
     def parse(flags: int, family: str) -> "OEMKeyFlags":
         """Parse OEMKeyFlags for given chip family."""
-        version = value_to_int(
-            Database(TP_DATABASE).get_device_value("key_flags_version", device=family)
-        )
+        version = get_db(family, "latest").get_int(DatabaseManager.TP, "key_flags_version")
 
         if version == 0:
             return OEMKeyFlags(
@@ -275,9 +267,10 @@ class OEMCertInfo:
     def from_config(config_data: dict) -> "OEMCertInfo":
         """Create OEMCertInfo from configuration data."""
         family = config_data["family"]
-        key_flags_version = value_to_int(
-            Database(TP_DATABASE).get_device_value("key_flags_version", device=family)
+        key_flags_version = get_db(family, "latest").get_int(
+            DatabaseManager.TP, "key_flags_version"
         )
+
         oem_cert_count = config_data.get("oem_id_count", 0)
         if oem_cert_count > 0:
             oem_cert_addresses = config_data["oem_id_addresses"][:oem_cert_count]

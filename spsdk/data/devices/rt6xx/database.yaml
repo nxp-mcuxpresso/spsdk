@@ -1,0 +1,26 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: rt5xx
+
+revisions:
+  a0:
+    features:
+      tz:
+        data_file: tz_a0.yaml
+
+  b0:
+    features:
+      tz:
+        data_file: tz_b0.yaml
+
+# General MCU information
+info:
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt600-crossover-mcu-with-arm-cortex-m33-and-dsp-cores:i.MX-RT600
+
+features:
+  otfad:
+    byte_swap: true

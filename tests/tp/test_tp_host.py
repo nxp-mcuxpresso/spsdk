@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 from unittest.mock import MagicMock
@@ -9,7 +9,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from spsdk.apps import tphost
-from spsdk.tp.tphost import SPSDKTpError, TrustProvisioningHost
+from spsdk.tp.tphost import TrustProvisioningHost
+from spsdk.utils.database import SPSDKErrorMissingDevice
 from tests.cli_runner import CliRunner
 
 
@@ -56,5 +57,5 @@ def test_tphost_with_unsupported_family():
     tp_dev.descriptor.get_id = MagicMock(return_value="fake-id")
 
     tp = TrustProvisioningHost(tpdev=tp_dev, tptarget=None, info_print=lambda x: None)
-    with pytest.raises(SPSDKTpError):
+    with pytest.raises(SPSDKErrorMissingDevice):
         tp.load_provisioning_fw(b"", "non-existing-family")

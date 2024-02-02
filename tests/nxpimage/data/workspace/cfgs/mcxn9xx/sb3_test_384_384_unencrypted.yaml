@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  Secure Binary v3.1 converted config.  ===========
@@ -58,6 +58,9 @@ commands: # [Required], SB3.1 Commands; Secure Binary v3.1 commands block, list 
   - programFuses:  # [Required], Program Fuses; Address is OTP index of fuses to be programmed (Check the reference manual for more information). Values is a comma separated list of 32bit values.
       address: '0x2588'  # [Required], Address; OTP Index of fuses to be programmed. Depends on the chip ROM.
       values: 0x138498, 0x0, 0x5, 0x1ab, 0x1ab, 0xffffffff, 0xfffffff1 # [Required], Binary values; 32bit binary values delimited by comma to be programmed.
+  - programFuses:  # [Required], Program Fuses; Address is OTP index of fuses to be programmed (Check the reference manual for more information). Values is a comma separated list of 32bit values.
+      address: '0x2588'  # [Required], Address; OTP Index of fuses to be programmed. Depends on the chip ROM.
+      values: 0x138498 # [Required], Binary values; 32bit binary values delimited by comma to be programmed.
   - programIFR:  # [Required], Program IFR; The startAddress will be the address into the IFR region, length will be in number of bytes to write to IFR region. The data to write to IFR region at the given address will immediately follow the header
       address: '0x1384'  # [Required], Address of IFR region to be programmed.
       file: .\workspace\input_ifr\ifr1.bin # [Required], Binary file to be programmed.

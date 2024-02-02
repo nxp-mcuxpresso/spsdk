@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module containing helper functions for nxpimage."""
@@ -12,7 +12,7 @@ from numbers import Number
 from typing import Callable, Dict, List, Optional, Union
 
 from spsdk.exceptions import SPSDKError
-from spsdk.mboot.memories import MemId
+from spsdk.mboot.memories import ExtMemId, MemId
 from spsdk.sbfile.sb2.commands import (
     CmdBaseClass,
     CmdErase,
@@ -24,6 +24,7 @@ from spsdk.sbfile.sb2.commands import (
     CmdMemEnable,
     CmdProg,
     CmdVersionCheck,
+    VersionCheckType,
 )
 from spsdk.utils.crypto.otfad import KeyBlob
 from spsdk.utils.misc import (
@@ -384,7 +385,7 @@ class SB21Helper:
         """
         mem_opt = cmd_args["mem_opt"]
         address = value_to_int(cmd_args["address"])
-        return CmdKeyStoreRestore(address, mem_opt)
+        return CmdKeyStoreRestore(address, ExtMemId.from_tag(mem_opt))
 
     def _keystore_from_nv(self, cmd_args: dict) -> CmdKeyStoreBackup:
         """Returns a CmdKeyStoreRestore object initialized with memory type and address.
@@ -401,7 +402,7 @@ class SB21Helper:
         """
         mem_opt = cmd_args["mem_opt"]
         address = value_to_int(cmd_args["address"])
-        return CmdKeyStoreBackup(address, mem_opt)
+        return CmdKeyStoreBackup(address, ExtMemId.from_tag(mem_opt))
 
     def _version_check(self, cmd_args: dict) -> CmdVersionCheck:
         """Returns a CmdVersionCheck object initialized with version check type and version.
@@ -421,7 +422,7 @@ class SB21Helper:
         """
         ver_type = cmd_args["ver_type"]
         fw_version = cmd_args["fw_version"]
-        return CmdVersionCheck(ver_type, fw_version)
+        return CmdVersionCheck(VersionCheckType.from_tag(ver_type), fw_version)
 
     def _validate_keyblob(self, keyblobs: List, keyblob_id: Number) -> Optional[Dict]:
         """Checks, whether a keyblob is valid.

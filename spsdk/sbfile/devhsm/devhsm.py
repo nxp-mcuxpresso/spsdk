@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,20 +13,18 @@ from typing import Any, Dict, List, Optional
 
 from typing_extensions import Self
 
-from spsdk import SPSDK_DATA_FOLDER
 from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKNotImplementedError, SPSDKValueError
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import Database
-from spsdk.utils.misc import load_binary, value_to_bool, value_to_int, write_file
-
-NXPDEVHSM_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpdevhsm")
-NXPDEVHSM_DATABASE_FILE: str = os.path.join(NXPDEVHSM_DATA_FOLDER, "database.yaml")
+from spsdk.utils.database import DatabaseManager, get_families
+from spsdk.utils.misc import load_binary, write_file
 
 
 class DevHsm(BaseClass):
     """Base class for DEVHSM."""
 
+    F_DEVHSM = DatabaseManager.DEVHSM
+    F_BUFFER = DatabaseManager.COMM_BUFFER
     DEVBUFF_SIZE = 0x100
 
     DEVBUFF_GEN_MASTER_SHARE_INPUT_SIZE = 16
@@ -48,12 +46,11 @@ class DevHsm(BaseClass):
         :param family: chip family
         :workspace: optional path to workspace
         """
-        self.database = Database(NXPDEVHSM_DATABASE_FILE)
+        self.database = DatabaseManager().db.devices.get(family).revisions.get("latest")
+
         self.workspace = workspace
         self.family = family
-        self.devbuff_base = value_to_int(
-            self.database.get_device_value("devbuff_base_address", self.family)
-        )
+        self.devbuff_base = self.database.get_int(self.F_BUFFER, "address")
 
         if self.workspace and not os.path.isdir(self.workspace):
             os.mkdir(self.workspace)
@@ -94,7 +91,7 @@ class DevHsm(BaseClass):
 
         :return: List of supported families.
         """
-        return Database(NXPDEVHSM_DATABASE_FILE).devices.device_names
+        return get_families(DatabaseManager.DEVHSM)
 
     def store_temp_res(self, file_name: str, data: bytes, group: Optional[str] = None) -> None:
         """Storing temporary files into workspace.
@@ -119,17 +116,15 @@ class DevHsm(BaseClass):
 
     def update_keyblob_offset(self) -> int:
         """Update keyblob offset based on family."""
-        return value_to_int(self.database.get_device_value("key_blob_offset", self.family))
+        return self.database.get_int(self.F_DEVHSM, "key_blob_offset")
 
     def command_order(self) -> bool:
         """Update command order based on family."""
-        return value_to_bool(self.database.get_device_value("order", self.family))
+        return self.database.get_bool(self.F_DEVHSM, "order")
 
     def get_keyblob_position(self) -> int:
         """Get keyblob position from database."""
-        return value_to_int(
-            self.database.get_device_value("key_blob_command_position", self.family)
-        )
+        return self.database.get_int(self.F_DEVHSM, "key_blob_command_position")
 
     @staticmethod
     def get_cust_mk_sk(key: str) -> bytes:

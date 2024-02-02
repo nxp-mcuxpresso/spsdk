@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -28,8 +28,7 @@ from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.mboot.scanner import get_mboot_interface
 from spsdk.pfr import pfr
-from spsdk.pfr.exceptions import SPSDKPfrConfigError
-from spsdk.utils.misc import load_binary, size_fmt, write_file
+from spsdk.utils.misc import load_binary, load_configuration, size_fmt, write_file
 from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
@@ -37,24 +36,25 @@ logger = logging.getLogger(__name__)
 
 def _parse_binary_data(
     data: bytes,
-    device: str,
-    revision: Optional[str] = None,
-    show_calc: bool = False,
+    family: str,
+    revision: str = "latest",
     show_diff: bool = False,
 ) -> str:
     """Parse binary data and extract YAML configuration.
 
     :param data: Data to parse
-    :param device: Device to use
+    :param family: Family to use
     :param revision: Revision to use, defaults to 'latest'
-    :param show_calc: Also show calculated fields
     :param show_diff: Show only difference to default
     :return: IFR YAML configuration as a string
     """
-    ifr_obj = pfr.ROMCFG(device=device, revision=revision)
+    ifr_obj = pfr.ROMCFG(family=family, revision=revision)
     ifr_obj.parse(data)
-    parsed = ifr_obj.get_yaml_config(exclude_computed=not show_calc, diff=show_diff)
-    yaml_data = CommentedConfig.convert_cm_to_yaml(parsed)
+    parsed = ifr_obj.get_config(diff=show_diff)
+    schemas = ifr_obj.get_validation_schemas(family=family, revision=revision)
+    yaml_data = CommentedConfig("IFR configuration from parsed binary", schemas=schemas).get_config(
+        parsed
+    )
     return yaml_data
 
 
@@ -77,11 +77,12 @@ def ifr_device_type_options(options: FC) -> FC:
         "-r",
         "--revision",
         help="Chip revision; if not specified, most recent one will be used",
+        default="latest",
     )(options)
     options = click.option(
         "-f",
         "--family",
-        type=click.Choice(pfr.ROMCFG.devices()),
+        type=click.Choice(pfr.ROMCFG.get_supported_families()),
         help="Device to use",
         required=True,
     )(options)
@@ -106,9 +107,8 @@ def main(log_level: int) -> int:
 @click.option("--full", is_flag=True, help="Show full config, including computed values")
 def get_template(family: str, revision: str, output: str, full: bool) -> None:
     """Generate user configuration template file."""
-    ifr_obj = pfr.ROMCFG(device=family, revision=revision)
-    data = ifr_obj.get_yaml_config(not full)
-    yaml_data = CommentedConfig.convert_cm_to_yaml(data)
+    schemas = pfr.ROMCFG.get_validation_schemas(family=family, revision=revision)
+    yaml_data = CommentedConfig("IFR configuration template", schemas).get_template()
     _store_output(yaml_data, output, msg="IFR configuration template has been created.")
 
 
@@ -128,11 +128,9 @@ def get_template(family: str, revision: str, output: str, full: bool) -> None:
 @click.option("-d", "--show-diff", is_flag=True, help="Show differences comparing to defaults")
 def parse_binary(revision: str, output: str, binary: str, show_diff: bool, family: str) -> None:
     """Parse binary and extract configuration."""
-    ifr_obj = pfr.ROMCFG(device=family, revision=revision)
-    data = load_binary(binary)
-    ifr_obj.parse(data)
-    parsed = ifr_obj.get_yaml_config(exclude_computed=False, diff=show_diff)
-    yaml_data = CommentedConfig.convert_cm_to_yaml(parsed)
+    yaml_data = _parse_binary_data(
+        data=load_binary(binary), family=family, revision=revision, show_diff=show_diff
+    )
     _store_output(yaml_data, output, msg=f"Success. (IFR: {binary} has been parsed.")
 
 
@@ -145,19 +143,9 @@ def parse_binary(revision: str, output: str, binary: str, show_diff: bool, famil
 )
 def generate_binary(output: str, config: str, family: str, revision: str) -> None:
     """Generate binary data."""
-    ifr_config = pfr.PfrConfiguration(str(config), revision=revision)
-    invalid_reason = ifr_config.is_invalid()
-    if invalid_reason:
-        raise SPSDKPfrConfigError(
-            f"The configuration file is not valid. The reason is: {invalid_reason}"
-        )
-    assert ifr_config.type
-
-    ifr_obj = pfr.ROMCFG(device=family, revision=ifr_config.revision)
-    if not ifr_config.revision:
-        ifr_config.revision = ifr_obj.revision
-    ifr_obj.set_config(ifr_config, raw=False)
-
+    ifr_config = load_configuration(str(config))
+    pfr.ROMCFG.validate_config(ifr_config)
+    ifr_obj = pfr.ROMCFG.load_from_config(ifr_config)
     data = ifr_obj.export()
     _store_output(data, output, "wb", msg="Success. (IFR binary has been generated)")
 
@@ -190,8 +178,8 @@ def write(
     binary: str,
 ) -> None:
     """Write IFR page to the device."""
-    ifr_obj = pfr.ROMCFG(device=family, revision=revision)
-    ifr_page_address = ifr_obj.config.get_address(family)
+    ifr_obj = pfr.ROMCFG(family=family, revision=revision)
+    ifr_page_address = ifr_obj.reg_config.get_address()
     ifr_page_length = ifr_obj.BINARY_SIZE
 
     click.echo(f"{ifr_obj.__class__.__name__} page address on {family} is {ifr_page_address:#x}")
@@ -244,6 +232,7 @@ def write(
     "-c",
     "--show-calc",
     is_flag=True,
+    hidden=True,
     help="(applicable for parsing) Show also calculated fields when displaying difference to "
     "defaults (--show-diff)",
 )
@@ -253,7 +242,7 @@ def read(
     buspal: str,
     lpcusbsio: str,
     timeout: int,
-    device: str,
+    family: str,
     revision: str,
     output: str,
     yaml_output: str,
@@ -261,12 +250,17 @@ def read(
     show_calc: bool,
 ) -> None:
     """Read IFR page from the device."""
-    ifr_obj = pfr.ROMCFG(device=device, revision=revision)
-    ifr_page_address = ifr_obj.config.get_address(device)
+    if show_calc:
+        logger.warning(
+            "Show calculated fields is obsolete function for configuration YAML files."
+            " In case of debugging those values check the binary data."
+        )
+    ifr_obj = pfr.ROMCFG(family=family, revision=revision)
+    ifr_page_address = ifr_obj.reg_config.get_address()
     ifr_page_length = ifr_obj.BINARY_SIZE
     ifr_page_name = ifr_obj.__class__.__name__
 
-    click.echo(f"{ifr_page_name} page address on {device} is {ifr_page_address:#x}")
+    click.echo(f"{ifr_page_name} page address on {family} is {ifr_page_address:#x}")
 
     interface = get_mboot_interface(
         port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
@@ -283,9 +277,8 @@ def read(
     if yaml_output:
         yaml_data = _parse_binary_data(
             data=data,
-            device=device,
+            family=family,
             revision=revision,
-            show_calc=show_calc,
             show_diff=show_diff,
         )
         write_file(yaml_data, yaml_output)

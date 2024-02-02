@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -18,14 +18,14 @@ SCHEMA = {
     Required("Properties"): {
         Required("CurrentVersion"): Any(int, All(str, lambda v: Version(v).to_int())),
         Required("AvailablePeripherals"): All(
-            list, [Any(*[item[0] for item in PeripheryTag])], lambda v: tuple(set(v))
+            list, [Any(*[item.label for item in PeripheryTag])], lambda v: tuple(set(v))
         ),
         Optional("FlashStartAddress"): Any(int, All(str, lambda v: int(v, 0))),
         Optional("FlashSize"): Any(int, All(str, lambda v: int(v, 0))),
         Optional("FlashSectorSize"): Any(int, All(str, lambda v: int(v, 0))),
         Optional("FlashBlockCount"): Any(int, All(str, lambda v: int(v, 0))),
         Required("AvailableCommands"): All(
-            list, [Any(*[item[0] for item in CommandTag])], lambda v: tuple(set(v))
+            list, [Any(*[item.label for item in CommandTag])], lambda v: tuple(set(v))
         ),
         Optional("CrcCheckStatus"): Any(int, All(str, lambda v: int(v, 0))),
         Optional("VerifyWrites"): All(
@@ -62,7 +62,7 @@ SCHEMA = {
             [
                 {
                     Required("MemoryType"): All(
-                        list, Any(*[item[0] for item in ExtMemId]), lambda v: tuple(set(v))
+                        list, Any(*[item.label for item in ExtMemId]), lambda v: tuple(set(v))
                     ),
                     Required("StartAddress"): Any(int, All(str, lambda v: int(v, 0))),
                     Required("Size"): Any(int, All(str, lambda v: int(v, 0))),
@@ -95,7 +95,7 @@ class DevConfig:
         assert "AvailablePeripherals" in self._props
         value = 0
         for name in self._props["AvailablePeripherals"]:
-            value |= PeripheryTag[name]
+            value |= PeripheryTag.get_tag(name)
         return value
 
     @property
@@ -123,7 +123,7 @@ class DevConfig:
         assert "AvailableCommands" in self._props
         value = 0
         for cmd_name in self._props["AvailableCommands"]:
-            value |= 1 << CommandTag[cmd_name]
+            value |= 1 << CommandTag.get_tag(cmd_name)
         return value
 
     @property
@@ -240,26 +240,26 @@ class DevConfig:
         self._other = dev_cfg.get("Others", {})
 
     def valid_cmd(self, tag):
-        assert tag in CommandTag
-        return CommandTag[tag] in self._props["AvailableCommands"]
+        assert tag in CommandTag.tags()
+        return CommandTag.get_label(tag) in self._props["AvailableCommands"]
 
     def get_properties_count(self):
         return len(self._props)
 
-    def get_property_values(self, tag):
-        assert tag in PropertyTag
-        pname = PropertyTag[tag]
+    def get_property_values(self, tag: int):
+        assert tag in PropertyTag.tags()
+        pname = PropertyTag.get_label(tag)
         if pname not in self._props:
             return None
         if tag == PropertyTag.AVAILABLE_COMMANDS:
             value = 0
             for cmd_name in self._props["AvailableCommands"]:
-                value |= 1 << CommandTag[cmd_name]
+                value |= 1 << CommandTag.get_tag(cmd_name)
             return [value]
         elif tag == PropertyTag.AVAILABLE_PERIPHERALS:
             value = 0
             for name in self._props["AvailablePeripherals"]:
-                value |= PeripheryTag[name]
+                value |= PeripheryTag.get_tag(name)
             return [value]
         elif tag == PropertyTag.UNIQUE_DEVICE_IDENT:
             return [

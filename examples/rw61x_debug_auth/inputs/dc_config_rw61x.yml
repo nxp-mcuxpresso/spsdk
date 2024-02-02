@@ -1,0 +1,121 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =================================  Debug Credential file template for rw61x family.  =================================
+
+
+# -------------------------------------------------------- Note --------------------------------------------------------
+
+# Debug credential file has following binary structure:
+#  ============================================
+#  ============================================
+#  ===              Version                 ===
+#  ============================================
+#  ===             Soc Class                ===
+#  ============================================
+#  ===                UUID                  ===
+#  ============================================
+#  ===    RoT Meta SHA256 of following:     ===
+#  ===          RoT Key0 SHA256             ===
+#  ===          RoT Key1 SHA256             ===
+#  ===          RoT Key2 SHA256             ===
+#  ===          RoT Key3 SHA256             ===
+#  ============================================
+#  ===        Debugger Key DCK (Pub):       ===
+#  ===                                      ===
+#  ============================================
+#  ===              CC SOCU                 ===
+#  ============================================
+#  ===               CC VU                  ===
+#  ============================================
+#  ===                 CB                   ===
+#  ============================================
+#  ===            RoT Key (pub)             ===
+#  ===                                      ===
+#  ============================================
+#  ============================================
+#  ===       Signature of all block         ===
+#  ===  SHA256 of whole block => Sign(RoTK) ===
+#  ============================================
+#  ============================================
+
+
+#  ============================================
+#  Debug Credential Signature
+#  ============================================
+#  There are two ways how sign the final DC data blob.
+
+#  1. In case that you is available private pair for rot_meta with index rot_id just use first simple style
+#  to use it by rotk key. As a second way to do same is use sign_provider (or signProvider - both are accepted) option
+# with 'type=file'.
+
+#  2. For case that Debug Credential files are generated in untrusted environment (without access to RoT private keys),
+#  there is option to use plugin (example how to create own plugin is in: ./SPSDK/examples/dat/hsm/). The plugin
+#  has simple interface that allows handle DC data blob into plugin with index of RoT meta public key to get back signed
+#  DC image.
+
+#  Those options are exclusive, so only one option could be used to sign the DC.
+
+#  ---==== Supported SOCC ====---
+# 0x00000000: rt6xx[a0,b0]
+# 0x00000001: lpc55s6x[a0,a1]
+# 0x00000004: lpc55s3x[a0,a1]
+# 0x00000005: k32w1xx[a0,a1]
+# 0x00000006: mcxn9xx[a0]
+# 0x00000007: mcxn9xx[a1]
+# 0x0000000A: rw61x[a1,a2]
+# 0x4D580008: mx8ulp[a0]
+# 0x4D58005D: mx95[a0]
+# 0x4D58005F: mx93[a0,a1]
+# 0x5254049C: rt118x[a0,b0]
+# ======================================================================================================================
+#                                             == Debug Credential Content ==
+# ======================================================================================================================
+# ---------------------------------------===== Device SoC Class [Required] =====----------------------------------------
+# Description: A unique identifier for a set of SoCs that require no SoC-specific differentiation in their debug
+# authentication. The main usage is to allow a different set of debug domains and options to be negotiated between the
+# device configuration and credentials. A class can contain just a single revision of a single SoC model, if the
+# granularity of debug control warrants it.
+# Possible options: <0, 1, 4, 5, 6, 7, 10, 1297612808, 1297612893, 1297612895, 1381237916>
+socc: 0x4
+# ------------------------------------------===== Device UUID [Required] =====------------------------------------------
+# Description: 128-bit IETF RFC4122 compliant non-sequential Universally Unique Identifier (UUID)
+uuid: '00000000000000000000000000000000'
+# -------------------------------------------===== SoC Usage [Required] =====-------------------------------------------
+# Description: A CC (constraint) value that is a bit mask, and whose bits are used in an SoCC-specific manner. These
+# bits are typically used for controlling which debug domains are accessed via the authentication protocol, but device-
+# specific debug options can be managed in this way also.
+cc_socu: 0xFFFF
+# -----------------------------------------===== Vendor Usage [Required] =====------------------------------------------
+# Description: A CC (constraint) value that is opaque to the debug authentication protocol itself but which can be
+# leveraged by vendors in product-specific ways.
+cc_vu: 0
+# ---------------------------------------===== Credential Beacon [Required] =====---------------------------------------
+# Description: A value that is passed through the authentication protocol, which is not interpreted by the protocol but
+# is instead made visible to the application being debugged. A credential beacon is associated with a DC and is
+# therefore vendor/RoT-signed. An authentication beacon is provided and signed by the debugger during the authentication
+# process.
+cc_beacon: 0
+# -----------------------------------------===== RoT meta-data [Required] =====-----------------------------------------
+# Description: The RoT meta-data required by the device to corroborate; the ROTID sent in the DAC, the field in this DC,
+# and any additional RoT state that is not stored within the device. This allows different RoT identification,
+# management and revocation solutions to be handled.
+rot_meta:
+  - ../_data/keys/ecc256/srk0_ecc256.pub
+# ----------------------------------------===== RoT Identifier [Required] =====-----------------------------------------
+# Description: RoTID allows the debugger to infer which RoT public key(s) are acceptable to the device. If the debugger
+# cannot or does not provide such a credential, the authentication process will fail.
+rot_id: 0
+# -------------------------------------===== Debug Credential Key [Required] =====--------------------------------------
+# Description: A user-owned key pair. The public part of the key is associated with a DC, the private part is held by
+# the user and used to produce signatures during authentication.
+dck: ../_data/keys/ecc256/dck_ecc256.pub
+# ======================================================================================================================
+#                                         == Debug Credential Signature part ==
+# ======================================================================================================================
+# ----------------------------===== RoT signature private key [Conditionally required] =====----------------------------
+# Description: Private key for for the RoT meta chosen by rot_id to sign the image.
+rotk: ../_data/keys/ecc256/srk0_ecc256.pem
+# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
+# Description: Private key for for the RoT meta chosen by rot_id to sign the image.
+# sign_provider: type=sasp;key_number=0

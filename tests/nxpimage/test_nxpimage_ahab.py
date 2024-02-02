@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +16,7 @@ from spsdk.apps import nxpimage
 from spsdk.crypto.keys import IS_OSCCA_SUPPORTED
 from spsdk.exceptions import SPSDKValueError
 from spsdk.image.ahab.ahab_container import AHABImage
-from spsdk.image.ahab.signed_msg import SignedMessage
+from spsdk.image.ahab.signed_msg import MessageCommands, SignedMessage
 from spsdk.utils.misc import load_binary, use_working_directory
 from tests.cli_runner import CliRunner
 from tests.nxpimage.test_nxpimage_cert_block import process_config_file
@@ -246,10 +246,14 @@ def test_nxpimage_signed_message_parse_cli(cli_runner: CliRunner, tmpdir, data_d
 
 @pytest.mark.parametrize(
     "family",
-    ["mx8ulp", "mx93", "mx95", "rt118x"],
+    AHABImage.get_supported_families(),
 )
-def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family):
-    cmd = f"signed-msg get-template -f {family} --output {tmpdir}/signed_msg.yml"
+@pytest.mark.parametrize(
+    "message",
+    MessageCommands.labels() + [None],
+)
+def test_nxpimage_signed_msg_template_cli(cli_runner: CliRunner, tmpdir, family, message):
+    cmd = f"signed-msg get-template -f {family} {f'-m {message}' if message else ''} --output {tmpdir}/signed_msg.yml"
     cli_runner.invoke(nxpimage.main, cmd.split())
     assert os.path.isfile(f"{tmpdir}/signed_msg.yml")
 
@@ -272,8 +276,9 @@ def test_nxpimage_ahab_update_keyblob(cli_runner: CliRunner, tmpdir, data_dir):
 
         ref_bin = load_binary(ref_bin_path)
 
-        cmd = f"ahab update-keyblob -b {new_bin_path} -i 1 -k ahab/keyblobs/container1_dek_keyblob.bin"
-        cli_runner.invoke(nxpimage.main, cmd.split())
+        cmd = f"ahab update-keyblob -f rt118x -b {new_bin_path} -i 1 -k ahab/keyblobs/container1_dek_keyblob.bin"
+        result = cli_runner.invoke(nxpimage.main, cmd.split())
+        assert result.exit_code == 0
 
         new_bin = load_binary(new_bin_path)
         assert len(new_bin) == len(ref_bin)
@@ -299,7 +304,7 @@ def test_nxpimage_ahab_update_keyblob_bootable(cli_runner: CliRunner, tmpdir, da
 
 def test_nxpimage_ahab_update_keyblob_invalid(cli_runner: CliRunner, data_dir):
     with use_working_directory(data_dir):
-        cmd = f"ahab update-keyblob -b ahab/cntr_encrypted_ctcm_cm33.bin -i 0 -k ahab/keyblobs/container1_dek_keyblob.bin"
+        cmd = f"ahab update-keyblob -f rt118x -b ahab/cntr_encrypted_ctcm_cm33.bin -i 0 -k ahab/keyblobs/container1_dek_keyblob.bin"
         cli_runner.invoke(nxpimage.main, cmd.split(), expected_code=1)
 
 

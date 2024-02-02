@@ -1,6 +1,6 @@
 {
     "device": "lpc55s6x",
-    "revision": "1b",
+    "revision": "a1",
     "type": "cmpa",
     "settings": {
         "BOOT_CFG": {

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -39,7 +39,6 @@ from spsdk.apps.utils.utils import (
     SPSDKAppError,
     catch_spsdk_error,
     format_raw_data,
-    get_key,
     parse_file_and_size,
     parse_hex_data,
     progress_bar,
@@ -48,7 +47,7 @@ from spsdk.exceptions import SPSDKError
 from spsdk.mboot.error_codes import stringify_status_code
 from spsdk.mboot.mcuboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_property_value
 from spsdk.mboot.scanner import get_mboot_interface
-from spsdk.utils.images import BinaryImage
+from spsdk.utils.misc import Endianness, load_hex_string
 
 
 @click.group(name="blhost", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -317,6 +316,8 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
     ERASE      - string 'erase' determines if flash is erased before writing
     MEMORY_ID  - id of memory to erase (default: 0)
     """
+    from spsdk.utils.images import BinaryImage
+
     ALIGNMENT = 1024
 
     if not os.path.isfile(image_file_path):
@@ -379,8 +380,8 @@ def flash_program_once(
     DATA        - 4 or 8-byte-hex according to <byte_count>
     ENDIANNESS   - output sequence is specified by LSB (Default) or MSB
     """
-    byte_order = "big" if endianness == "MSB" else "little"
-    input_data = data.to_bytes(int(byte_count), byteorder=byte_order)  # type: ignore[arg-type]
+    byte_order = Endianness.BIG if endianness == "MSB" else Endianness.LITTLE
+    input_data = data.to_bytes(int(byte_count), byteorder=byte_order.value)
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.flash_program_once(index=index, data=input_data)
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
@@ -400,7 +401,9 @@ def flash_read_once(ctx: click.Context, index: int, byte_count: str) -> None:
     with McuBoot(ctx.obj["interface"]) as mboot:
         response = mboot.flash_read_once(index=index, count=int(byte_count))
         display_output(
-            None if response is None else [len(response), int.from_bytes(response, "little")],
+            None
+            if response is None
+            else [len(response), int.from_bytes(response, Endianness.LITTLE.value)],
             mboot.status_code,
             ctx.obj["use_json"],
             ctx.obj["silent"],
@@ -678,11 +681,11 @@ def get_property(
     \b
     Note: Not all the properties are available for all devices.
     """
-    property_tag_int = parse_property_tag(property_tag, family)
+    property_tag_enum = parse_property_tag(property_tag, family)
     with McuBoot(ctx.obj["interface"]) as mboot:
-        response = mboot.get_property(property_tag_int, index=index)  # type: ignore
+        response = mboot.get_property(property_tag_enum, index=index)
         property_text = (
-            str(parse_property_value(property_tag_int, response, None, family))
+            str(parse_property_value(property_tag_enum.tag, response, None, family))
             if response
             else None
         )
@@ -727,7 +730,7 @@ def set_property(
     """
     property_tag_int = parse_property_tag(property_tag, family)
     with McuBoot(ctx.obj["interface"]) as mboot:
-        mboot.set_property(prop_tag=property_tag_int, value=value)  # type: ignore
+        mboot.set_property(prop_tag=property_tag_int, value=value)
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
@@ -917,7 +920,9 @@ def generate_key_blob(
     """
     with McuBoot(ctx.obj["interface"]) as mboot:
         data = dek_file.read()  # type: ignore
-        key_sel_int = int(key_sel) if key_sel.isnumeric() else GenerateKeyBlobSelect.get(key_sel)
+        key_sel_int = (
+            int(key_sel) if key_sel.isnumeric() else GenerateKeyBlobSelect.get_tag(key_sel)
+        )
         assert isinstance(key_sel_int, int)
         write_response = mboot.generate_key_blob(data, key_sel=key_sel_int)
         if write_response:
@@ -1015,10 +1020,10 @@ def set_user_key(ctx: click.Context, key_type: str, file_and_size: str, key_size
     if not key_size:
         key_size = (size if size > 0 else os.path.getsize(file_path)) * 8
 
-    key_data = get_key(file_path, expected_size=key_size // 8)
+    key_data = load_hex_string(file_path, expected_size=key_size // 8)
 
     with McuBoot(ctx.obj["interface"]) as mboot:
-        mboot.kp_set_user_key(key_type=key_type_int, key_data=key_data)  # type: ignore
+        mboot.kp_set_user_key(key_type=key_type_int, key_data=key_data)
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 
 
@@ -1587,6 +1592,37 @@ def wpc_insert_cert(
             wpc_cert_len,
             ec_id_offset,
             wpc_puk_offset,
+        )
+        display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
+
+
+@trust_provisioning.command(name="wpc_sign_csr", no_args_is_help=True)
+@click.argument("csr_tbs_addr", type=INT(), required=True)
+@click.argument("csr_tbs_len", type=INT(), required=True)
+@click.argument("signature_addr", type=INT(), required=True)
+@click.argument("signature_len", type=INT(), required=True)
+@click.pass_context
+def wpc_sign_csr(
+    ctx: click.Context,
+    csr_tbs_addr: int,
+    csr_tbs_len: int,
+    signature_addr: int,
+    signature_len: int,
+) -> None:
+    """Command used for signing CSR data (TBS portion).
+
+    \b
+    CSR_TBS_ADDR   - address of CSR-TBS data
+    CSR_TBS_LEN    - length in bytes of CSR-TBS data
+    SIGNATURE_ADDR - address where to store signature
+    SIGNATURE_LEN  - expected length of signature
+    """
+    with McuBoot(ctx.obj["interface"]) as mboot:
+        mboot.wpc_sign_csr(
+            csr_tbs_addr,
+            csr_tbs_len,
+            signature_addr,
+            signature_len,
         )
         display_output([], mboot.status_code, ctx.obj["use_json"], ctx.obj["silent"])
 

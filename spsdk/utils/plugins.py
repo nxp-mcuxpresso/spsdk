@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """SPSDK plugins manager."""
@@ -17,17 +17,19 @@ from typing import Dict, List, Optional
 import importlib_metadata
 
 from spsdk.exceptions import SPSDKError, SPSDKTypeError
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import SingletonMeta
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 
 
-class PluginType(Enum):
+class PluginType(SpsdkEnum):
     """Contains commands tags."""
 
     SIGNATURE_PROVIDER = (0, "spsdk.sp", "Signature provider")
     DEVICE_INTERFACE = (1, "spsdk.device.interface", "Device interface")
+    DEBUG_PROBE = (2, "spsdk.debug_probe", "Debug Probe")
+    WPC_SERVICE = (3, "spsdk.wpc.service", "WPC Service")
 
 
 class PluginsManager(metaclass=SingletonMeta):
@@ -49,7 +51,7 @@ class PluginsManager(metaclass=SingletonMeta):
         group_names = (
             [group_name]
             if group_name is not None
-            else [PluginType.name(tag) for tag in PluginType.tags()]
+            else [PluginType.get_label(tag) for tag in PluginType.tags()]
         )
 
         entry_points: List[importlib_metadata.EntryPoint] = []
@@ -69,14 +71,15 @@ class PluginsManager(metaclass=SingletonMeta):
             count += 1
         return count
 
-    def load_from_source_file(self, source_file: str) -> None:
+    def load_from_source_file(self, source_file: str, module_name: Optional[str] = None) -> None:
         """Import Python source file directly.
 
         :param source_file: Path to python source file: absolute or relative to cwd
+        :param module_name: Name for the new module, default is basename of the source file
         :raises SPSDKError: If importing of source file failed
         """
-        module_name = os.path.splitext(os.path.basename(source_file))[0]
-        spec = spec_from_file_location(name=module_name, location=source_file)
+        name = module_name or os.path.splitext(os.path.basename(source_file))[0]
+        spec = spec_from_file_location(name=name, location=source_file)
         if not spec:
             raise SPSDKError(
                 f"Source '{source_file}' does not exist. Check if it is valid file path name"
@@ -121,7 +124,7 @@ class PluginsManager(metaclass=SingletonMeta):
         """
         plugin_name = self.get_plugin_name(plugin)
         if plugin_name in self.plugins:
-            logger.debug(f"Plugin {plugin_name} has been aready registered.")
+            logger.debug(f"Plugin {plugin_name} has been already registered.")
             return
         self.plugins[plugin_name] = plugin
         logger.debug(f"A plugin {plugin_name} has been registered.")
@@ -146,7 +149,7 @@ class PluginsManager(metaclass=SingletonMeta):
         return name
 
 
-def load_plugin_from_source(source: str) -> None:
+def load_plugin_from_source(source: str, name: Optional[str] = None) -> None:
     """Load plugin from source.
 
     :param source: The source to be loaded
@@ -154,8 +157,12 @@ def load_plugin_from_source(source: str) -> None:
             - Path to source file
             - Existing module name
             - Existing entrypoint
+    :param name: Name for the new module/plugin
     """
     manager = PluginsManager()
+    if name and name in manager.plugins:
+        logger.debug(f"Plugin {name} has been already registered.")
+        return
     try:
         return manager.load_from_source_file(source)
     except SPSDKError:

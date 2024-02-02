@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +16,7 @@ from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKeyEcc
 from spsdk.dat.debug_credential import DebugCredential
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.misc import load_binary, use_working_directory
+from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 
 
 @pytest.mark.parametrize(
@@ -241,8 +241,7 @@ def test_debugcredential_invalid(data_dir):
 def test_debugcredential_rot_meta_as_cert(data_dir):
     """Verifies the info message for debug authentication."""
     with use_working_directory(data_dir):
-        with open("dck_rsa2048_rot_meta_cert.yml", "r") as f:
-            yaml_config = yaml.safe_load(f)
+        yaml_config = load_configuration("dck_rsa2048_rot_meta_cert.yaml")
         dc = DebugCredential.create_from_yaml_config(version="1.0", yaml_config=yaml_config)
         dc.sign()
         assert dc.VERSION == "1.0"
@@ -251,6 +250,16 @@ def test_debugcredential_rot_meta_as_cert(data_dir):
         assert dc.cc_vu == 22136
         assert dc.socc == 1
         assert dc.uuid == b"\xe0\x04\t\x0ek\xdd!U\xbb\xce\x9e\x06e\x80[\xe3"
+
+
+def test_debugcredential_rot_meta_as_cert_not_matching(data_dir):
+    """Verifies is the signing fails on the RoT key-pair not matching."""
+    with use_working_directory(data_dir):
+        yaml_config = load_configuration("dck_rsa2048_rot_meta_cert.yaml")
+        yaml_config["rot_meta"][0] = "2048b-rsa-example-cert.der"
+        dc = DebugCredential.create_from_yaml_config(version="1.0", yaml_config=yaml_config)
+        with pytest.raises(SPSDKError):
+            dc.sign()
 
 
 @pytest.mark.parametrize("dc_file_name", ["rt1180_256.dc"])

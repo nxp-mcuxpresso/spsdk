@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,8 @@ import os
 
 import pytest
 
-from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
+from spsdk.crypto.keys import EccCurve, ECDSASignature, PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
+from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKValueError
 
 
@@ -154,3 +155,41 @@ def test_keys_generation_ec(tmpdir, ec_name):
 def test_keys_generation_ec_invalid():
     with pytest.raises(SPSDKValueError):
         PrivateKeyEcc.generate_key(curve_name="invalid")
+
+
+@pytest.mark.parametrize(
+    "encoding",
+    [SPSDKEncoding.DER, SPSDKEncoding.NXP],
+)
+@pytest.mark.parametrize(
+    "ec_curve",
+    [EccCurve.SECP256R1, EccCurve.SECP384R1, EccCurve.SECP521R1],
+)
+def test_ecdsa_signature(ec_curve, encoding):
+    priv_key = PrivateKeyEcc.generate_key(curve_name=ec_curve)
+    is_der = encoding == SPSDKEncoding.DER
+    signature = priv_key.sign(b"", der_format=is_der)
+    ecdsa_sig = ECDSASignature.parse(signature)
+    exported = ecdsa_sig.export(encoding)
+    assert signature == exported
+
+
+@pytest.mark.parametrize(
+    "ec_curve",
+    [EccCurve.SECP256R1, EccCurve.SECP384R1, EccCurve.SECP521R1],
+)
+def test_ecdsa_signature_get_encoding(ec_curve):
+    priv_key = PrivateKeyEcc.generate_key(curve_name=ec_curve)
+    signature = priv_key.sign(b"", der_format=True)
+    ECDSASignature.get_encoding(signature) == SPSDKEncoding.DER
+    signature = priv_key.sign(b"")
+    ECDSASignature.get_encoding(signature) == SPSDKEncoding.NXP
+
+
+def test_ecdsa_signature_get_encoding_rsa():
+    key_sizes = [2048, 4096]
+    for key_size in key_sizes:
+        rsa_key = PrivateKeyRsa.generate_key()
+        signature = rsa_key.sign(b"")
+        with pytest.raises(SPSDKValueError):
+            ECDSASignature.get_encoding(signature)

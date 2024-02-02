@@ -1,0 +1,158 @@
+# Copyright 2022-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+family_rev:
+  type: object
+  required: [family, memory_type]
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      template_value: rt5xx
+
+    revision:
+      type: string
+      title: Chip silicon revision
+      description: If needed this could be used to specify silicon revision of device.
+      template_value: latest
+
+    memory_type:
+      type: string
+      title: Memory type
+      description: Specify type of memory used by bootable image description.
+      template_value: flexspi_nor
+
+keyblob:
+  title: Bootable Segments definition
+  properties:
+    keyblob:
+      type: string
+      format: optional_file
+      title: Key Blob block path
+      description: Key blob block path
+      template_value: keyblob.bin
+
+fcb:
+  title: Bootable Segments definition
+  properties:
+    fcb:
+      type: string
+      title: FCB block path
+      format: optional_file
+      description:
+        Flash Configuration block Image path. It could be used as pre-prepared binary form of FCB and also YAML configuration file for FCB.
+        In case that YAML configuration file is used, the Bootable image tool build the FCB itself.
+      template_value: fcb.bin
+
+image_version:
+  title: Bootable Segments definition
+  properties:
+    image_version:
+      type: [number, string]
+      title: Image version
+      format: number
+      description: Image version
+      template_value: 0x00
+
+image_version_ap:
+  title: Bootable Segments definition
+  properties:
+    image_version:
+      type: [number, string]
+      title: Image version
+      format: number
+      description: Image version
+      template_value: 0x00
+
+keystore:
+  title: Bootable Segments definition
+  properties:
+    keystore:
+      type: string
+      format: optional_file
+      title: Key Store block path
+      description: Key store block path
+      template_value: keystore.bin
+
+bee_header_0:
+  title: Bootable Segments definition
+  properties:
+    bee_header_0:
+      type: string
+      title: BEE encryption header 0
+      format: optional_file
+      description: BEE encryption header 0 path
+      template_value: bee_header_0.bin
+
+bee_header_1:
+  title: Bootable Segments definition
+  properties:
+    bee_header_1:
+      type: string
+      title: BEE encryption header 1
+      format: optional_file
+      description: BEE encryption header 1 path
+      template_value: bee_header_1.bin
+
+xmcd:
+  title: Bootable Segments definition
+  properties:
+    xmcd:
+      type: string
+      title: XMCD block path
+      format: optional_file
+      description:
+        External Memory Configuration Data Segment Image path. It could be used as pre-prepared binary form of XMCD and also YAML configuration file for XMCD.
+        In case that YAML configuration file is used, the Bootable image tool build the XMCD itself.
+      template_value: xmcd.bin
+
+mbi:
+  oneOf:
+    - required: [mbi]
+    - required: [application]
+  title: Executable Segment definition
+  properties:
+    mbi:
+      type: string
+      format: file
+      title: Master Boot Image
+      description:
+        Master Boot Image path. It could be used as pre-prepared binary form of MBI and also YAML configuration file for MBI.
+        In case that YAML configuration file is used, the Bootable image tool build the MBI itself.
+      template_value: mbi.bin
+    application:
+      type: string
+      format: file
+      title: Application
+      description: Application image path
+      template_value: application.yaml
+      skip_in_template: True
+
+hab_container:
+  required: [hab_container]
+  title: Executable Segment definition
+  properties:
+    hab_container:
+      type: string
+      title: HAB container
+      format: file
+      description:
+        HAB container image path. It could be used as pre-prepared binary form of HAB and also YAML configuration file for HAB.
+        In case that YAML configuration file is used, the Bootable image tool build the HAB itself.
+      template_value: hab_container.yaml
+
+ahab_container:
+  required: [ahab_container]
+  title: Executable Segment definition
+  properties:
+    ahab_container:
+      type: string
+      title: AHAB container
+      format: file
+      description:
+        AHAB container image path. It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
+        In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+      template_value: ahab_container.yaml
+

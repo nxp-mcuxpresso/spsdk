@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for certificate management (generating certificate, CSR, validating certificate, chains)
@@ -18,6 +18,7 @@ from spsdk.crypto.certificate import (
     Certificate,
     SPSDKExtensionOID,
     SPSDKNameOID,
+    generate_extensions,
     generate_name,
     validate_ca_flag_in_cert_chain,
     validate_certificate_chain,
@@ -200,7 +201,15 @@ def test_certificate_generation(tmpdir):
         """
     )
     subject = issuer = generate_name(data)
-    ca_cert = Certificate.generate_certificate(subject, issuer, ca_pub_key, ca_priv_key, if_ca=True)
+    ca_cert = Certificate.generate_certificate(
+        subject,
+        issuer,
+        ca_pub_key,
+        ca_priv_key,
+        extensions=generate_extensions(
+            {"BASIC_CONSTRAINTS": {"ca": True, "path_length": 3}},
+        ),
+    )
     ca_cert.save(path.join(tmpdir, "ca_cert.pem"))
     assert path.isfile(path.join(tmpdir, "ca_cert.pem"))
 
@@ -216,7 +225,13 @@ def test_certificate_generation(tmpdir):
     )
     subject = issuer = generate_name(data)
     ca_cert1 = Certificate.generate_certificate(
-        subject, issuer, ca_pub_key, ca_priv_key, if_ca=True
+        subject,
+        issuer,
+        ca_pub_key,
+        ca_priv_key,
+        extensions=generate_extensions(
+            {"BASIC_CONSTRAINTS": {"ca": True, "path_length": 3}},
+        ),
     )
     ca_cert1.save(path.join(tmpdir, "ca_cert_1.pem"))
     assert path.isfile(path.join(tmpdir, "ca_cert_1.pem"))

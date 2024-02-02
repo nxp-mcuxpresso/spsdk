@@ -1,0 +1,277 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions: {}
+latest: latest
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com
+  memory_map: {} # Memory map basic info
+  isp:
+    rom_protocol: mboot # Possible options:[mboot, sdps, sdp]
+    mboot_interfaces: []
+    using_flashloader: False
+    usb_rom: {}
+    usb_flashloader:
+      pid: 0x15A2
+      vid: 0x0073
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x2000_8000
+    size: 0x1000
+
+  # ======== Blhost section ========
+  # blhost:
+  #   properties:
+  #     0: list-properties
+  #     1: current-version
+  #     2: available-peripherals
+  #     3: flash-start-address
+  #     4: flash-size-in-bytes
+  #     5: flash-sector-size
+  #     6: flash-block-count
+  #     7: available-commands
+  #     8: check-status
+  #     9: reserved
+  #     10: verify-writes
+  #     11: max-packet-size
+  #     12: reserved-regions
+  #     13: reserved_1
+  #     14: ram-start-address
+  #     15: ram-size-in-bytes
+  #     16: system-device-id
+  #     17: security-state
+  #     18: unique-device-id
+  #     19: flash-fac-support
+  #     20: flash-access-segment-size
+  #     21: flash-access-segment-count
+  #     22: flash-read-margin
+  #     23: qspi/otfad-init-status
+  #     24: target-version
+  #     25: external-memory-attributes
+  #     26: reliable-update-status
+  #     27: flash-page-size
+  #     28: irq-notify-pin
+  #     29: pfr-keystore_update-opt
+  #     30: byte-write-timeout-ms
+  #     31: fuse-locked-status
+
+  # ======== Certificate block section ========
+  cert_block:
+    rot_type: "cert_block_1"
+    isk_data_alignment: 4
+    isk_data_limit: 96
+
+  # ======== DAT section ========
+  dat:
+    socc: 0 # SOCC identification
+    based_on_ele: False # Flag if the implementation of DAT is based on EdgeLock Enclave
+    # famode_cert: [] # List of Fault analysis Mode certificates (names of MBI classes)
+    # famode_cfg_defaults: {} # Dictionary of default values of standard MBI members for FAmode image
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes: {}
+    images: {}
+    fixed_image_type: 0
+
+  # ======== HABv4 section ========
+  hab: {}
+
+  # ======== AHAB section ========
+  ahab:
+    srkh_sha_supports: ["sha256", "sha384", "sha512", "sm3"]
+    ahab_map: [0x0000, 0x0400]
+    containers_max_cnt: 2
+    oem_images_max_cnt: 8
+    oem_srkh_fuses_start: 0x80
+    oem_srkh_fuses_count: 8
+    oem_srkh_fuses_size: 4
+    valid_offset_minimal_alignment: 4
+    core_ids:
+      0: "undefined"
+      1: "cortex-m33"
+      2: "cortex-m7"
+      3: "cortex-m4_1"
+      4: "cortex-a53"
+      5: "cortex-a72"
+      6: "seco"
+      7: "hdmi-tx"
+      8: "hdmi-rx"
+      9: "v2x-1"
+      10: "v2x-2"
+
+  # ======== PFR section ========
+  pfr: {}
+
+  # ======== IFR section ========
+  ifr:
+    address: 0x200_0000
+    data_file: ifr.xml
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types: {}
+
+  # ======== FCB section ========
+  fcb:
+    mem_types: {}
+
+  # ======== XMCD section ========
+  xmcd:
+    header: ../common/xmcd/header.xml
+    mem_types: {}
+
+  # ======== BEE section ========
+  bee: {}
+
+  # ======== IEE section ========
+  iee:
+    key_blob_rec_size: 96
+    key_blob_max_cnt: 4
+    key_blob_min_cnt: 4
+    sb_21_supported: True
+    has_kek_fuses: False
+    additional_template: []
+    additional_template_text: ""
+    generate_keyblob: True
+
+  # ======== OTFAD section ========
+  otfad:
+    key_blob_rec_size: 64
+    key_blob_max_cnt: 4
+    key_blob_min_cnt: 4
+    byte_swap: false
+    keyblob_byte_swap_cnt: 0
+    sb_21_supported: True
+    has_kek_fuses: False
+    peripheral_list: [""]
+    additional_template: []
+    additional_template_text: ""
+    supports_key_scrambling: False
+    otfad_key_fuse: "OTFAD_KEY"
+    otfad_cfg_fuse: "OTFAD_CFG"
+    otfad_enable_bitfield: "OTFAD_ENABLE"
+    otfad_scramble_enable_bitfield: "OTFAD_SCRAMBLE_ENABLE"
+    otfad_scramble_align_bitfield: "OTFAD_SCRAMBLE_ALIGN"
+    otfad_scramble_key: "OTFAD{index}_KEY_SCRAMBLE"
+    otfad_scramble_align_fuse_standalone: False
+
+  # ======== Secure binary v2.1 section ========
+  sb21:
+    keyblobs: true
+    supported_commands: []
+
+  # ======== Secure binary v3.1 section ========
+  sb31:
+    supported_commands: []
+
+  # ======== Secure binary vX section ========
+  sbx: {}
+
+  # ======== Shadow registers section ========
+  shadow_regs:
+    data_file: shadow_regs.xml
+    address: 0x4000_0000
+    inverted_regs: {}
+    computed_fields: {}
+    grouped_registers: []
+    reset_type: hw_reset # possible options: [hw_reset, nvic_reset]
+
+  # ======== Device Hardware Security Module (HSM) section ========
+  devhsm:
+    key_blob_offset: 0x4
+    key_blob_command_position: 0
+    devhsm_class: DevHsm
+
+  # ======== Trust provisioning section ========
+  tp:
+    erase_memory: false
+    need_tp_fw: true
+    need_cfpa_update: true
+    need_revoke_update: true
+    version_offset: 0x4
+    revoke_offset: 0x18
+    max_oem_cert_size: 1000
+    use_prov_data: false
+    key_flags_version: 0
+    die_id_cert_version: 0
+
+  # ======== Trust Zone section ========
+  tz:
+    data_file: tz.yaml
+
+  # ======== EdgeLock Enclave section ========
+  ele:
+    ele_device: uboot
+
+  # ======== Memory configuration ========
+  memcfg:
+    data_file: ../../common/memcfg/memcfg_data.yaml
+    peripherals:
+      flexspi_nor:
+        description_file: ../../common/memcfg/opt_word_flexspi_nor.xml
+        region_number: 0x09
+        ow_counts_rule: OptionSize
+        runtime_instance: True
+        instances: []
+      flexspi_nand:
+        description_file: ../../common/memcfg/opt_word_flexspi_nand.xml
+        region_number: 0x101
+        ow_counts_rule: OptionSize
+        runtime_instance: True
+        instances: []
+      semc_nor:
+        description_file: ../../common/memcfg/opt_word_semc_nor.xml
+        region_number: 0x08
+        ow_counts_rule: AcTimingMode
+        instances: []
+      semc_nand:
+        description_file: ../../common/memcfg/opt_word_semc_nand.xml
+        region_number: 0x100
+        ow_counts_rule: All
+        instances: []
+      spi_nor:
+        description_file: ../../common/memcfg/opt_word_spi_nor.xml
+        region_number: 0x110
+        ow_counts_rule: OptionSize
+        instances: []
+      # spi_nand:
+      #   region_number: 0x101
+      #   instances: []
+      mmc:
+        description_file: ../../common/memcfg/opt_word_mmc.xml
+        region_number: 0x121
+        ow_counts_rule: All
+        instances: []
+      sd:
+        description_file: ../../common/memcfg/opt_word_sd.xml
+        region_number: 0x120
+        ow_counts_rule: All
+        instances: []
+    # XIP Memories in internal memory address range
+    # mem_region_internal = 0x0  # Internal memory (include all on chip memory)
+    # mem_region_quad_spi0 = 0x1  # Quad SPI memory 0
+    # mem_region_ifr0_fuse = 0x4  # Nonvolatile information register 0. Only used by SB loader.
+    # mem_region_semc_nor = 0x8  # SEMC Nor memory
+    # mem_region_flexspi_nor = 0x9  # Flex SPI Nor memory
+    # mem_region_spifi_nor = 0xA  # SPIFI Nor memory
+    # mem_region_flash_execute_only = 0x10  # Execute-only region on internal Flash
+
+    # # NON-XIP Memories in external memory address range
+    # mem_region_semc_nand = 0x100 + 0x0  # SEMC NAND memory
+    # mem_region_spi_nand = 0x100 + 0x1  # SPI NAND memory
+    # mem_region_spi_nor_eeprom = 0x100 + 0x10  # SPI NOR/EEPROM memory
+    # mem_region_i2c_nor_eeprom = 0x100 + 0x11  # I2C NOR/EEPROM memory
+    # mem_region_sd = 0x100 + 0x20  # eSD, SD, SDHC, SDXC memory Card
+    # mem_region_mmc = 0x100 + 0x21  # MMC, eMMC memory Card
+
+  # ======== Wireless Power section ========
+  wpc: {}

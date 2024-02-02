@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """File including helping functions."""
@@ -9,10 +9,11 @@ import functools
 
 from spsdk.crypto.cmac import cmac
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
-class KeyDerivationMode(Enum):
+class KeyDerivationMode(SpsdkEnum):
     """Modes for Key derivation."""
 
     KDK = (1, "KDK", "Key Derivation Key mode")
@@ -87,7 +88,7 @@ def _derive_key(
     key: bytes,
     derivation_constant: int,
     kdk_access_rights: int,
-    mode: int,
+    mode: KeyDerivationMode,
     key_length: int,
 ) -> bytes:
     """Derive new AES key from the provided key.
@@ -117,7 +118,7 @@ def _derive_key(
 def _get_key_derivation_data(
     derivation_constant: int,
     kdk_access_rights: int,
-    mode: int,
+    mode: KeyDerivationMode,
     key_length: int,
     iteration: int,
 ) -> bytes:
@@ -133,22 +134,22 @@ def _get_key_derivation_data(
     :raises SPSDKError: Invalid kdk access rights.
     :raises SPSDKError: Invalid key length.
     """
-    if mode not in KeyDerivationMode.tags():
+    if mode not in KeyDerivationMode:
         raise SPSDKError("Invalid mode")
     if kdk_access_rights not in [0, 1, 2, 3]:
         raise SPSDKError("Invalid kdk access rights")
     if key_length not in [128, 256]:
         raise SPSDKError("Invalid key length")
 
-    label = int.to_bytes(derivation_constant, length=12, byteorder="little")
+    label = int.to_bytes(derivation_constant, length=12, byteorder=Endianness.LITTLE.value)
     context = bytes(8)
-    context += int.to_bytes(kdk_access_rights << 6, length=1, byteorder="big")
+    context += int.to_bytes(kdk_access_rights << 6, length=1, byteorder=Endianness.BIG.value)
     context += b"\x01" if mode == KeyDerivationMode.KDK else b"\x10"
     context += bytes(1)
     key_option = 0x20 if key_length == 128 else 0x21
-    context += int.to_bytes(key_option, length=1, byteorder="big")
-    length = int.to_bytes(key_length, length=4, byteorder="big")
-    i = int.to_bytes(iteration, length=4, byteorder="big")
+    context += int.to_bytes(key_option, length=1, byteorder=Endianness.BIG.value)
+    length = int.to_bytes(key_length, length=4, byteorder=Endianness.BIG.value)
+    i = int.to_bytes(iteration, length=4, byteorder=Endianness.BIG.value)
     result = label + context + length + i
     return result
 

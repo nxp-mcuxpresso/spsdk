@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust Provisioning HOST application support."""
@@ -22,10 +22,9 @@ from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
 from spsdk.tp.data_container import AuditLog, DataEntry, PayloadType
-from spsdk.utils.database import Database
-from spsdk.utils.misc import Timeout, value_to_int, write_file
+from spsdk.utils.database import DatabaseManager, Features, get_db, get_families
+from spsdk.utils.misc import Timeout, write_file
 
-from . import TP_DATABASE
 from .adapters.tptarget_blhost import TpTargetBlHost
 from .adapters.utils import detect_new_usb_path, get_current_usb_paths, update_usb_path
 from .data_container import AuditLogCounter, AuditLogRecord, Container
@@ -62,7 +61,6 @@ class TrustProvisioningHost:
         prov_fw: bytes,
         family: str,
         timeout: int = 60,
-        database: Optional[Database] = None,
         skip_test: bool = True,
         keep_target_open: bool = True,
         skip_usb_enumeration: bool = False,
@@ -72,24 +70,19 @@ class TrustProvisioningHost:
         :param prov_fw: Provisioning Firmware data
         :param family: Chip family
         :param timeout: Timeout for loading provisioning firmware operation in seconds.
-        :param database: Database of all supported devices (automatic lookup if not specified)
         :param skip_test: Skip test for checking that OEM Provisioning Firmware booted-up
         :param keep_target_open: Keep target device open
         :param skip_usb_enumeration: Skip USB enumeration after loading the Provisioning firmware
         :raises SPSDKTpError: The Provisioning firmware doesn't boot
         """
-        if database is None:
-            logger.debug("Looking up device in database")
-            database = Database(TP_DATABASE)
-        if family not in database.devices.device_names:
-            raise SPSDKTpError(f"Database info missing for '{family}'")
+        db = get_db(family, "latest")
         try:
             if not self.tptarget.is_open:
                 self.tptarget.open()
             self.info_print("1.1.Step - Updating CFPA page")
-            self.update_cfpa_page(family=family, database=database)
+            self.update_cfpa_page(family=family, database=db)
             self.info_print("1.2.Step - Erase memory for provisioning firmware")
-            self.erase_memory(family=family, database=database)
+            self.erase_memory(database=db)
             self.info_print("1.3.Step - Loading OEM provisioning firmware")
         except SPSDKError as e:
             self.tptarget.close()
@@ -127,22 +120,22 @@ class TrustProvisioningHost:
                 "Please make sure your device supports TrustProvisioning."
             ) from e
 
-    def update_cfpa_page(self, family: str, database: Database) -> None:
+    def update_cfpa_page(self, family: str, database: Features) -> None:
         """Update CFPA page according to chip family."""
-        if not database.get_device_value("need_cfpa_update", family):
+        if not database.get_bool(DatabaseManager.TP, "need_cfpa_update"):
             logger.info("CFPA update not required")
             return
 
-        cfpa_address = value_to_int(database.get_device_value("cfpa_address", family))
-        cfpa_size = value_to_int(database.get_device_value("cfpa_size", family))
-        cfpa_version_offset = value_to_int(database.get_device_value("version_offset", family))
-        cfpa_revoke_offset = value_to_int(database.get_device_value("revoke_offset", family))
+        cfpa_address = database.get_int(DatabaseManager.PFR, ["cfpa", "address"])
+        cfpa_size = database.get_int(DatabaseManager.PFR, ["cfpa", "size"])
+        cfpa_version_offset = database.get_int(DatabaseManager.TP, "version_offset")
+        cfpa_revoke_offset = database.get_int(DatabaseManager.TP, "revoke_offset")
 
         # change bytes to bytearray to make it writeable
         cfpa_data = bytearray(self.tptarget.read_memory(cfpa_address, cfpa_size))
 
         # CFPA REVOKE field update
-        if database.get_device_value("need_revoke_update", family):
+        if database.get_bool(DatabaseManager.TP, "need_revoke_update"):
             cfpa_revoke: int = struct.unpack_from("<L", cfpa_data, offset=cfpa_revoke_offset)[0]
             if cfpa_revoke & 0x55 == 0x55:
                 logger.info("RKTH_REVOKE is already set, no need to update CFPA")
@@ -161,14 +154,14 @@ class TrustProvisioningHost:
         self.tptarget.write_memory(cfpa_address, data=bytes(cfpa_data))
         logger.info("CFPA update completed")
 
-    def erase_memory(self, family: str, database: Database) -> None:
+    def erase_memory(self, database: Features) -> None:
         """Erase part(s) of flash memory if needed."""
-        if not database.get_device_value("erase_memory", family):
+        if not database.get_bool(DatabaseManager.TP, "erase_memory"):
             logger.info("Erasing memory is not needed")
             return
 
-        start = value_to_int(database.get_device_value("erase_memory_start", family))
-        length = value_to_int(database.get_device_value("erase_memory_length", family))
+        start = database.get_int(DatabaseManager.TP, "erase_memory_start")
+        length = database.get_int(DatabaseManager.TP, "erase_memory_length")
 
         self.tptarget.erase_memory(address=start, length=length)
         logger.info("Erasing memory completed")
@@ -197,8 +190,8 @@ class TrustProvisioningHost:
             loc_timeout = Timeout(timeout, "s")
 
             logger.debug("Looking up device in database")
-            database = Database(TP_DATABASE)
-            if family not in database.devices.device_names:
+
+            if family not in get_families(DatabaseManager.TP):
                 raise SPSDKTpError(f"Database info missing for '{family}'")
 
             logger.debug("Opening TP DEVICE interface")
@@ -222,7 +215,6 @@ class TrustProvisioningHost:
                     prov_fw=prov_fw,
                     family=family,
                     timeout=loc_timeout.get_rest_time_ms(True),
-                    database=database,
                     skip_test=True,
                     keep_target_open=True,
                     skip_usb_enumeration=False,
@@ -469,7 +461,7 @@ class TrustProvisioningHost:
             challenge_container.add_entry(
                 DataEntry(
                     payload=challenge,
-                    payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND,
+                    payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND.tag,
                     extra=oem_key_flags,
                 )
             )

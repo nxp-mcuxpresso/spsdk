@@ -1,22 +1,23 @@
 # Plugins
 
-SPSDK allows user to install additional plugins and integrate them with SPSDK functionality. They allow uset ot extend the normal SPSDK funtionality with additional features.
+SPSDK allows user to install additional plugins and integrate them with SPSDK functionality. They allow to extend the normal SPSDK functionality with additional features.
 
 ## Supported plugin types
 
-The table bellow shows the list of support plugin types with associated package entrypoints, cokiecutter templates and base class they are derived from.
+The table bellow shows the list of support plugin types with associated package entrypoints, cookiecutter templates and base class they are derived from.
 
 | Plugin                 | Entrypoint             | Template name                                  | Base class                                    |
 |:-----------------------|:-----------------------|:-----------------------------------------------|-----------------------------------------------|
-| Signature Provider     | spsdk.sp               | cookiecutter-spsdk-sp-plugin.zip               | spsdk.crypto.SignatureProvider                |
+| Signature Provider     | spsdk.sp               | cookiecutter-spsdk-sp-plugin.zip               | spsdk.crypto.signature_provider.SignatureProvider                |
 | Mboot Device Interface | spsdk.device.interface | cookiecutter-spsdk-device-interface-plugin.zip | spsdk.mboot.protocol.base.MbootProtocolBase   |
 | SDP Device Interface   | spsdk.device.interface | cookiecutter-spsdk-device-interface-plugin.zip | spsdk.sdp.protocol.base.SDPProtocolBase       |
+| WPC Service            | spsdk.wpc.service      | cookiecutter-spsdk-wpc-service-plugin.zip      | spsdk.wpc.utils.WPCCertificateService
 
 ## Plugin implementation
 
 There are basically two ways how a plugin can be implemented.
 
-- A Python package installed in the environment (preffered)
+- A Python package installed in the environment (preferred)
 - A single Python module with the plugin implementation in it
 
 The actual implementation depends on actual plugin type. 
@@ -32,11 +33,11 @@ In order to make the implementation of the plugins easier, a cookiecutter templa
 You can find all the cookiecutter templates in the `/templates` folder.
 
 The instructions for generating plugin package from cookiecutter template:
-- Unzip plugin template: `plugins/<plugin_template>.zip`
 - Install cookiecutter: `pip install cookiecutter`
-- Create plugin: `cookiecutter <unzipped_template_dir>`
+- Create plugin: `cookiecutter <spsdk_root>/examples/plugins/templates/<plugin_template>.zip`
 - Follow the instructions in the command prompt
-- A new plugin package is cretaed
+- A new plugin package is created in current folder
+- Install plugin: `pip install <my_project_path>` (for development use `-e/--editable` flag)
 
 ### Plugin as a single Python module
 In some situations the installation into the Python environment is not possible.

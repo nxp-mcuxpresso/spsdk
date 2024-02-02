@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Common parts used by both Device and Target SW models."""
@@ -15,7 +15,7 @@ import yaml
 from spsdk.crypto.cmac import cmac, cmac_validate
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc, PublicKeyEcc
 from spsdk.crypto.symmetric import aes_ctr_decrypt, aes_ctr_encrypt, aes_key_unwrap, aes_key_wrap
-from spsdk.utils.misc import load_file, write_file
+from spsdk.utils.misc import Endianness, load_file, write_file
 
 from ..tp_intf import TpIntfDescription
 
@@ -191,7 +191,7 @@ class ModelConfig(TpIntfDescription):
         # first 12 bytes (24 characters) serves as seed for counter
         mac_const_label = self.config_data["prov_mac_const"][:24]
         nonce = bytes.fromhex(mac_const_label)
-        nonce += counter.to_bytes(length=4, byteorder="big")
+        nonce += counter.to_bytes(length=4, byteorder=Endianness.BIG.value)
         return nonce
 
     def encrypt_data_ctr(self, data: bytes, key: bytes, nonce: bytes) -> bytes:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -132,7 +132,7 @@ class MbootSdioInterface(MbootSerialProtocol):
             return parse_cmd_response(data)
         return data
 
-    def _read_frame_header(self, expected_frame_type: Optional[int] = None) -> Tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> Tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected
@@ -145,7 +145,7 @@ class MbootSdioInterface(MbootSerialProtocol):
         return self._parse_frame_header(data, FPType.ACK)
 
     def _parse_frame_header(
-        self, frame: bytes, expected_frame_type: Optional[int] = None
+        self, frame: bytes, expected_frame_type: Optional[FPType] = None
     ) -> Tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
@@ -165,6 +165,6 @@ class MbootSdioInterface(MbootSerialProtocol):
         if expected_frame_type:
             if frame_type != expected_frame_type:
                 raise McuBootConnectionError(
-                    f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type:#X}'"
+                    f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type.tag:#X}'"
                 )
         return header, frame_type

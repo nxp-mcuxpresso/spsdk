@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -29,7 +29,6 @@ from spsdk.apps.utils.utils import (
     SPSDKAppError,
     catch_spsdk_error,
     filepath_from_config,
-    get_key,
     store_key,
 )
 from spsdk.crypto.signature_provider import get_signature_provider
@@ -37,11 +36,12 @@ from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKError
 from spsdk.image.ahab import ahab_container
 from spsdk.image.ahab.ahab_container import AHABImage
-from spsdk.image.ahab.signed_msg import SignedMessage
+from spsdk.image.ahab.signed_msg import MessageCommands, SignedMessage
 from spsdk.image.ahab.utils import ahab_update_keyblob
 from spsdk.image.bee import BeeNxp
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.fcb.fcb import FCB
+from spsdk.image.hab import segments as hab_segments
 from spsdk.image.hab.hab_container import HabContainer
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbi.mbi import (
@@ -59,13 +59,16 @@ from spsdk.sbfile.sb31.images import SecureBinary31
 from spsdk.utils.crypto.cert_blocks import CertBlock, CertBlockV1, CertBlockVx
 from spsdk.utils.crypto.iee import IeeNxp
 from spsdk.utils.crypto.otfad import OtfadNxp
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.images import BinaryImage, BinaryPattern
 from spsdk.utils.misc import (
+    Endianness,
     align,
     align_block,
     get_abs_path,
     load_binary,
     load_configuration,
+    load_hex_string,
     load_text,
     value_to_int,
     write_file,
@@ -152,14 +155,23 @@ def mbi_parse_command(family: str, binary: str, dek: str, output: str) -> None:
 
 
 def mbi_parse(family: str, binary: str, dek: str, output: str) -> None:
-    """Parse AHAB Image into YAML configuration and binary images."""
+    """Parse MBI Image into YAML configuration and binary images."""
     mbi = MasterBootImage.parse(family=family, data=load_binary(binary), dek=dek)
 
     if not mbi:
         click.echo(f"Failed. (MBI: {binary} parsing failed.)")
         return
 
-    mbi.create_config(output_folder=output)
+    cfg = mbi.create_config(output_folder=output)
+    yaml_data = CommentedConfig(
+        main_title=(
+            f"Master Boot Image ({mbi.__class__.__name__}) recreated configuration from :"
+            f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
+        ),
+        schemas=mbi.get_validation_schemas(),
+    ).get_config(cfg)
+
+    write_file(yaml_data, os.path.join(output, "mbi_config.yaml"))
 
     click.echo(f"Success. (MBI: {binary} has been parsed and stored into {output} )")
 
@@ -328,7 +340,7 @@ def sb21_parse(binary: str, key: str, output: str) -> None:
         for cert_idx, certificate in enumerate(parsed_sb.cert_block.certificates):
             file_name = os.path.join(output, f"certificate_{cert_idx}_der.cer")
             logger.debug(f"Dumping certificate {file_name}")
-            write_file(certificate.export(SPSDKEncoding.PEM), file_name, mode="wb")
+            write_file(certificate.export(SPSDKEncoding.DER), file_name, mode="wb")
 
     for section_idx, boot_sections in enumerate(parsed_sb.boot_sections):
         for command_idx, command in enumerate(boot_sections._commands):
@@ -368,7 +380,7 @@ def get_sbkek_command(master_key: str, output: str) -> None:
     SBKEK is AES-256 symmetric key used for encryption and decryption of SB.
     Plain text version is used for SB generation.
     Binary format is to be written to the keystore.
-    The same format is also used for USERKEK.
+    The same format is also used for USER KEK.
 
     For OTP, the SBKEK is derived from OTP master key:
     SB2_KEK = AES256(OTP_MASTER_KEY,
@@ -384,7 +396,7 @@ def get_sbkek_command(master_key: str, output: str) -> None:
 
 def get_sbkek(master_key: str, output_folder: str) -> None:
     """Compute SBKEK (AES-256) value and optionally store it as plain text and as binary."""
-    otp_master_key = get_key(master_key, KeyStore.OTP_MASTER_KEY_SIZE)
+    otp_master_key = load_hex_string(master_key, KeyStore.OTP_MASTER_KEY_SIZE)
     sbkek = KeyStore.derive_sb_kek_key(otp_master_key)
 
     click.echo(f"SBKEK: {sbkek.hex()}")
@@ -494,21 +506,15 @@ def convert_bd_conf(
     config["family"] = family
 
     schemas = BootImageV21.get_validation_schemas()
-    ret = CommentedConfig(
-        main_title="SB 2.1 converted configuration",
-        schemas=schemas,
-        values=config,
-        export_template=False,
-    ).export_to_yaml()
+    ret = CommentedConfig(main_title="SB 2.1 converted configuration", schemas=schemas).get_config(
+        config
+    )
     write_file(ret, output_conf)
 
     schemas = CertBlockV1.get_validation_schemas()
-    ret = CommentedConfig(
-        main_title="Certificate Block V1",
-        schemas=schemas,
-        values=cert_config,
-        export_template=False,
-    ).export_to_yaml()
+    ret = CommentedConfig(main_title="Certificate Block V1", schemas=schemas).get_config(
+        cert_config
+    )
     write_file(ret, os.path.join(os.path.dirname(output_conf), cert_block_file))
     click.echo(f"Converted YAML configuration written to {output_conf}")
 
@@ -598,7 +604,7 @@ def cert_block_get_template(output: str, family: str) -> None:
     """Create template of configuration in YAML format."""
     click.echo(f"Creating {output} template file.")
     cert_block_class = CertBlock.get_cert_block_class(family)
-    write_file(cert_block_class.generate_config_template(), output)
+    write_file(cert_block_class.generate_config_template(family), output)
 
 
 @cert_block_group.command(name="export", no_args_is_help=True)
@@ -618,6 +624,7 @@ def cert_block_export(config: str, family: str, plugin: Optional[str] = None) ->
     if plugin:
         load_plugin_from_source(plugin)
     config_data = load_configuration(config)
+    config_data["family"] = family
     config_dir = os.path.dirname(config)
     cert_block_class = CertBlock.get_cert_block_class(family)
     schemas = cert_block_class.get_validation_schemas()
@@ -754,19 +761,19 @@ def ahab_export(config: str, plugin: Optional[str] = None) -> None:
     config_dir = os.path.dirname(config)
     schemas = AHABImage.get_validation_schemas()
     check_config(config_data, schemas, search_paths=[config_dir])
-    ahab_cnt = AHABImage.load_from_config(config_data, search_paths=[config_dir])
-    ahab_data = ahab_cnt.export()
+    ahab = AHABImage.load_from_config(config_data, search_paths=[config_dir])
+    ahab_data = ahab.export()
 
     ahab_output_file_path = get_abs_path(config_data["output"], config_dir)
     write_file(ahab_data, ahab_output_file_path, mode="wb")
 
-    logger.info(f"Created AHAB Image:\n{str(ahab_cnt.image_info())}")
-    logger.info(f"Created AHAB Image memory map:\n{ahab_cnt.image_info().draw()}")
+    logger.info(f"Created AHAB Image:\n{str(ahab.image_info())}")
+    logger.info(f"Created AHAB Image memory map:\n{ahab.image_info().draw()}")
     click.echo(f"Success. (AHAB: {ahab_output_file_path} created.)")
 
     ahab_output_dir, ahab_output_file = os.path.split(ahab_output_file_path)
     ahab_output_file_no_ext, _ = os.path.splitext(ahab_output_file)
-    for cnt_ix, container in enumerate(ahab_cnt.ahab_containers):
+    for cnt_ix, container in enumerate(ahab.ahab_containers):
         if container.flag_srk_set == "nxp":
             logger.debug("Skipping generating hashes for NXP container")
             continue
@@ -776,7 +783,7 @@ def ahab_export(config: str, plugin: Optional[str] = None) -> None:
             srkh = srk_table.compute_srk_hash()
             write_file(srkh.hex().upper(), get_abs_path(f"{file_name}.txt", ahab_output_dir))
             try:
-                blhost_script = ahab_cnt.create_srk_hash_blhost_script(cnt_ix)
+                blhost_script = ahab.create_srk_hash_blhost_script(cnt_ix)
                 write_file(blhost_script, get_abs_path(f"{file_name}_blhost.bcf", ahab_output_dir))
             except SPSDKError:
                 pass
@@ -856,7 +863,7 @@ def ahab_parse(family: str, binary: str, dek: str, output: str) -> None:
             for container in ahab_image.ahab_containers:
                 if container.flag_srk_set != "nxp":
                     if container.signature_block.blob:
-                        container.signature_block.blob.dek = get_key(
+                        container.signature_block.blob.dek = load_hex_string(
                             dek, container.signature_block.blob._size // 8
                         )
                         container.decrypt_data()
@@ -871,9 +878,7 @@ def ahab_parse(family: str, binary: str, dek: str, output: str) -> None:
                     f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
                 ),
                 schemas=AHABImage.get_validation_schemas(),
-                values=config,
-                export_template=False,
-            ).export_to_yaml(),
+            ).get_config(config),
             os.path.join(parsed_folder, "parsed_config.yaml"),
         )
         click.echo(f"Success. (AHAB: {binary} has been parsed and stored into {parsed_folder}.)")
@@ -898,7 +903,6 @@ def ahab_parse(family: str, binary: str, dek: str, output: str) -> None:
 @click.option(
     "-f",
     "--family",
-    default="rt118x",
     type=click.Choice(AHABImage.get_supported_families(), case_sensitive=False),
     required=True,
     help="Select the chip family.",
@@ -930,7 +934,7 @@ def ahab_parse(family: str, binary: str, dek: str, output: str) -> None:
     "-m",
     "--mem-type",
     type=click.Choice(
-        ["serial_downloader", "flexspi_nor", "flexspi_nand", "semc_nand"],
+        BootableImage.get_supported_memory_types(),
         case_sensitive=False,
     ),
     required=False,
@@ -1036,11 +1040,8 @@ def ahab_cert_block_parse(binary: str, srk_set: str, output: str) -> None:
     cert_block = ahab_container.Certificate.parse(load_binary(binary))
     logger.info(str(cert_block))
     parsed_cfg = CommentedConfig(
-        "Parsed AHAB Certificate",
-        ahab_container.Certificate.get_validation_schemas(),
-        cert_block.create_config(0, output, srk_set),
-        export_template=False,
-    ).export_to_yaml()
+        "Parsed AHAB Certificate", ahab_container.Certificate.get_validation_schemas()
+    ).get_config(cert_block.create_config(0, output, srk_set))
     write_file(
         parsed_cfg,
         os.path.join(output, "certificate_config.yaml"),
@@ -1109,9 +1110,7 @@ def signed_msg_parse(binary: str, output: str) -> None:
             f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
         ),
         schemas=SignedMessage.get_validation_schemas(),
-        values=config,
-        export_template=False,
-    ).export_to_yaml()
+    ).get_config(config)
 
     write_file(
         yaml_config,
@@ -1128,14 +1127,26 @@ def signed_msg_parse(binary: str, output: str) -> None:
 
 @signed_msg.command(name="get-template", no_args_is_help=True)
 @spsdk_family_option(families=AHABImage.get_supported_families())
+@click.option(
+    "-m",
+    "--message",
+    required=False,
+    type=click.Choice(MessageCommands.labels()),
+    help="Select only one signed message to generate specific template if needed",
+)
 @spsdk_output_option(force=True)
-def signed_msg_get_template(family: str, output: str) -> None:
+def signed_msg_get_template(family: str, message: Optional[str], output: str) -> None:
     """Create template of configuration in YAML format.
 
     The template file name is specified as argument of this command.
     """
     click.echo(f"Creating {output} template file.")
-    write_file(SignedMessage.generate_config_template(family)[f"{family}_signed_msg"], output)
+    write_file(
+        SignedMessage.generate_config_template(
+            family, MessageCommands.from_attr(message) if message else None
+        )[f"{family}_signed_msg"],
+        output,
+    )
 
 
 @main.group(name="otfad", no_args_is_help=True)
@@ -1195,7 +1206,7 @@ def otfad_export(alignment: int, config: str, index: Optional[int] = None) -> No
         logger.info(f"Created OTFAD Image:\n{otfad_all}")
     else:
         logger.info("Skipping export of OTFAD image")
-    sb21_supported = otfad.database.get_device_value("sb_21_supported", otfad.family, default=False)
+    sb21_supported = otfad.db.get_bool(DatabaseManager.OTFAD, "sb_21_supported", default=False)
     memory_map = (
         "In folder is stored two kind of files:\n"
         "  -  Binary file that contains whole image data including "
@@ -1253,7 +1264,7 @@ def otfad_export(alignment: int, config: str, index: Optional[int] = None) -> No
         write_file(bd_file, bd_file_name)
         logger.info(f"Created OTFAD BD file example:\n{bd_file_name}")
 
-    if otfad.database.get_device_value("has_kek_fuses", otfad.family, default=False) and index:
+    if otfad.db.get_bool(DatabaseManager.OTFAD, "has_kek_fuses", default=False) and index:
         blhost_script = None
         blhost_script = otfad.get_blhost_script_otp_kek(index)
         if blhost_script:
@@ -1302,8 +1313,8 @@ def otfad_get_kek_command(otp_master_key: str, otfad_key: str, family: str, outp
 
 def otfad_get_kek(otp_master_key: str, otfad_key: str, family: str, output_folder: str) -> None:
     """Compute OTFAD KEK value and optionally store it into folder in various formats."""
-    omk = get_key(otp_master_key, KeyStore.OTP_MASTER_KEY_SIZE)
-    ok = get_key(otfad_key, KeyStore.OTFAD_KEY_SIZE)  # pylint:disable=invalid-name
+    omk = load_hex_string(otp_master_key, KeyStore.OTP_MASTER_KEY_SIZE)
+    ok = load_hex_string(otfad_key, KeyStore.OTFAD_KEY_SIZE)  # pylint:disable=invalid-name
 
     otfad_kek = KeyStore.derive_otfad_kek_key(omk, ok)
 
@@ -1410,7 +1421,7 @@ def iee_export(config: str) -> None:
     else:
         logger.info("Skipping generation of IEE readme file")
 
-    if iee.database.get_device_value("has_kek_fuses", iee.family) and config_data.get(
+    if iee.db.get_bool(DatabaseManager.IEE, "has_kek_fuses") and config_data.get(
         "generate_fuses_script"
     ):
         blhost_script = iee.get_blhost_script_otp_kek()
@@ -1532,7 +1543,7 @@ def bootable_image_merge(config: str, output: str, plugin: Optional[str] = None)
     "-m",
     "--mem-type",
     type=click.Choice(
-        ["serial_downloader", "flexspi_nor", "flexspi_nand", "semc_nand", "internal"],
+        BootableImage.get_supported_memory_types(),
         case_sensitive=False,
     ),
     required=False,
@@ -1672,12 +1683,9 @@ def hab_convert(command: str, external: List[str]) -> str:
         config = HabContainer.transform_configuration(bd_data)
         schemas = HabContainer.get_validation_schemas()
         check_config(bd_data, schemas)
-        ret = CommentedConfig(
-            main_title="HAB converted configuration",
-            values=config,
-            schemas=schemas,
-            export_template=False,
-        ).export_to_yaml()
+        ret = CommentedConfig(main_title="HAB converted configuration", schemas=schemas).get_config(
+            config
+        )
         return ret
 
     except SPSDKError as exc:
@@ -1705,13 +1713,15 @@ def hab_parse_command(binary: str, output: str) -> None:
 def hab_parse(binary: bytes, output: str) -> List[str]:
     """Generate HAB container from configuration."""
     hab_container = HabContainer.parse(binary)
-    created_files = []
-    for sub_image in hab_container.hab_image.sub_images:
-        sub_image_data = sub_image.export()
-        sub_image_path = os.path.join(output, f"{sub_image.name.lower()}.bin")
-        write_file(sub_image_data, sub_image_path, mode="wb")
-        created_files.append(sub_image_path)
-    return created_files
+    generated_bins = []
+    for seg_name in hab_segments.SEGMENTS_MAPPING.keys():
+        segment = hab_container.get_segment(seg_name)
+        if segment:
+            seg_data = segment.export()
+            seg_out = os.path.join(output, f"{seg_name.label}.bin")
+            write_file(seg_data, seg_out, mode="wb")
+            generated_bins.append(seg_out)
+    return generated_bins
 
 
 @bootable_image_group.group(name="fcb", no_args_is_help=True)
@@ -1824,8 +1834,8 @@ def xmcd_export(config: str, output: str) -> None:
     check_config(config_data, XMCD.get_validation_schemas_family())
     schemas = XMCD.get_validation_schemas(
         config_data["family"],
-        MemoryType.from_int(MemoryType[config_data["mem_type"]]),
-        ConfigurationBlockType.from_int(ConfigurationBlockType[config_data["config_type"]]),
+        MemoryType.from_label(config_data["mem_type"]),
+        ConfigurationBlockType.from_label(config_data["config_type"]),
         config_data.get("revision", "latest"),
     )
     check_config(config_data, schemas, search_paths=[config_dir])
@@ -1878,7 +1888,7 @@ def xmcd_get_templates(family: str, output: str) -> None:
     mem_types = XMCD.get_supported_memory_types(family)
     for mem_type in mem_types:
         config_types = XMCD.get_supported_configuration_types(
-            family, MemoryType.from_int(MemoryType[mem_type])
+            family, MemoryType.from_label(mem_type)
         )
         for config_type in config_types:
             output_file = os.path.join(output, f"xmcd_{family}_{mem_type}_{config_type}.yaml")
@@ -1886,8 +1896,8 @@ def xmcd_get_templates(family: str, output: str) -> None:
             write_file(
                 XMCD.generate_config_template(
                     family,
-                    MemoryType.from_int(MemoryType[mem_type]),
-                    ConfigurationBlockType.from_int(ConfigurationBlockType[config_type]),
+                    MemoryType.from_label(mem_type),
+                    ConfigurationBlockType.from_label(config_type),
                 ),
                 output_file,
             )
@@ -2277,8 +2287,8 @@ def convert_bin2hex(input_file: str, reverse: bool, output: str) -> None:
 @click.option(
     "-e",
     "--endian",
-    type=click.Choice(["big", "little"]),
-    default="big",
+    type=click.Choice(Endianness.values()),
+    default=Endianness.BIG.value,
     help="The binary input file endian.",
 )
 @click.option(
@@ -2342,7 +2352,7 @@ def convert_bin2carr(
         ret += " " * tab
         for _ in range(line_cnt):
             data = bytearray(binary[index : index + width])
-            if endian.lower() == "little":
+            if endian.lower() == Endianness.LITTLE:
                 data.reverse()
             ret += "0x" + data.hex() + ", "
             index += width

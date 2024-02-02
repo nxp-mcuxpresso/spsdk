@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,14 +13,15 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 import click
 import colorama
 import prettytable
 
 from tools import gitcov
-from tools.checker_copyright_year import COPYRIGHT_EXTENSIONS, fix_copyright_in_files
+from tools.checker_copyright_year import fix_copyright_in_files
+from tools.checker_py_headers import fix_py_headers_in_files
 from tools.task_scheduler import PrettyProcessRunner, TaskInfo, TaskList, TaskResult
 
 OUTPUT_FOLDER = "reports"
@@ -33,16 +34,15 @@ CHECK_LIST = [
     "PYLINT",
     "PYLINT_DOCS",
     "MYPY",
-    "MYPY_TOOLS",
     "DEPENDENCIES",
     "PYDOCSTYLE",
-    "RADON_ALL",
     "RADON_C",
     "RADON_D",
     "BLACK",
     "ISORT",
     "COPYRIGHT",
     "PY_HEADERS",
+    "JUPYTER",
 ]
 log = logging.getLogger(__name__)
 colorama.init()
@@ -101,12 +101,13 @@ def check_results(tasks: List[TaskInfo], output: str = "reports") -> int:
     return ret
 
 
-def check_pytest(output: str = OUTPUT_FOLDER, disable_xdist: bool = False) -> TaskResult:
+def check_pytest(output: str, disable_xdist: bool = False) -> TaskResult:
     """Get the code coverage."""
     output_folder = os.path.join(output, "htmlcov")
     output_xml = os.path.join(output, "coverage.xml")
     output_log = os.path.join(output, "coverage.txt")
     junit_report = os.path.join(output, "tests.xml")
+    coverage_file = os.path.join(output, ".coverage")
 
     if os.path.isdir(output_folder):
         shutil.rmtree(output_folder, ignore_errors=True)
@@ -117,17 +118,19 @@ def check_pytest(output: str = OUTPUT_FOLDER, disable_xdist: bool = False) -> Ta
         f" --cov-report term --cov-report html:{output_folder} --cov-report xml:{output_xml}"
     )
     with open(output_log, "w", encoding="utf-8") as f:
-        res = subprocess.call(args.split(), stdout=f, stderr=f)
+        res = subprocess.call(
+            args.split(), stdout=f, stderr=f, env=dict(os.environ, COVERAGE_FILE=coverage_file)
+        )
 
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_gitcov(output: str = OUTPUT_FOLDER) -> TaskResult:
+def check_gitcov(output: str) -> TaskResult:
     """Get the code coverage."""
     output_log = os.path.join(output, "gitcov.txt")
     with open(output_log, "w", encoding="utf-8") as f:
         res = subprocess.call(
-            f"python tools/gitcov.py --coverage-report {os.path.join(output, 'coverage.xml')}".split(),
+            f"{sys.executable} tools/gitcov.py --coverage-report {os.path.join(output, 'coverage.xml')}".split(),
             stdout=f,
             stderr=f,
         )
@@ -135,20 +138,20 @@ def check_gitcov(output: str = OUTPUT_FOLDER) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_dependencies(output: str = OUTPUT_FOLDER) -> TaskResult:
+def check_dependencies(output: str) -> TaskResult:
     """Check the dependencies and their licenses."""
     output_log = os.path.join(output, "dependencies.txt")
     with open(output_log, "w", encoding="utf-8") as f:
         res = subprocess.call(
-            "python tools/checker_dependencies.py check", stdout=f, stderr=f, shell=True
+            f"{sys.executable} tools/checker_dependencies.py check".split(), stdout=f, stderr=f
         )
+
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_pydocstyle(output: str = OUTPUT_FOLDER) -> TaskResult:
+def check_pydocstyle(output: str) -> TaskResult:
     """Check the dependencies and their licenses."""
     output_log = os.path.join(output, "pydocstyle.txt")
-
     with open(output_log, "w", encoding="utf-8") as f:
         res = subprocess.call("pydocstyle spsdk".split(), stdout=f, stderr=f)
 
@@ -160,11 +163,11 @@ def check_pydocstyle(output: str = OUTPUT_FOLDER) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_mypy(args: List[str], output_log: str) -> TaskResult:
+def check_mypy(output: str, args: str) -> TaskResult:
     """Check the project against mypy tool."""
-    res = 0
+    output_log = os.path.join(output, "mypy.txt")
     with open(output_log, "w", encoding="utf-8") as f:
-        res = subprocess.call(f"mypy {' '.join(args)}".split(), stdout=f, stderr=f)
+        res = subprocess.call(f"mypy {args}".split(), stdout=f, stderr=f)
 
     with open(output_log, "r", encoding="utf-8") as f:
         err_cnt = re.findall(r"Found \d+ error", f.read())
@@ -174,11 +177,11 @@ def check_mypy(args: List[str], output_log: str) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_pylint_all(args: str, output_log: str) -> TaskResult:
+def check_pylint_all(output: str, args: str) -> TaskResult:
     """Call pylint with given configuration and output log."""
-    cmd = f"pylint {args} -j {CPU_CNT//2 or 1}"
+    output_log = os.path.join(output, "pylint_docs.txt")
     with open(output_log, "w", encoding="utf-8") as f:
-        subprocess.call(cmd.split(), stdout=f, stderr=f)
+        subprocess.call(f"pylint {args} -j {CPU_CNT//2 or 1}".split(), stdout=f, stderr=f)
 
     with open(output_log, "r", encoding="utf-8") as f:
         err_cnt = re.findall(r": [IRCWEF]\d{4}:", f.read())
@@ -187,12 +190,13 @@ def check_pylint_all(args: str, output_log: str) -> TaskResult:
 
 
 def check_pylint(
+    output: str,
     args: str,
-    output_log: str,
     disable: Optional[List[str]] = None,
     enable: Optional[List[str]] = None,
 ) -> TaskResult:
     """Check Pylint log for errors."""
+    output_log = os.path.join(output, "pylint.txt")
     cmd = f"pylint {args} -j {CPU_CNT//2 or 1}"
     if disable:
         cmd += f" --disable {','.join(disable)}"
@@ -208,8 +212,8 @@ def check_pylint(
 
 
 def check_radon(
-    paths: List[str],
     output_log: str,
+    paths: List[str],
     min_rank: Optional[str] = None,
     max_rank: Optional[str] = None,
 ) -> TaskResult:
@@ -229,29 +233,20 @@ def check_radon(
     return TaskResult(error_count=len(err_cnt), output_log=output_log)
 
 
-def check_black(output: str = OUTPUT_FOLDER) -> TaskResult:
+def check_black(output: str, args: str) -> TaskResult:
     """Check the project against black formatter rules."""
     output_log = os.path.join(output, "black.txt")
-    res = 0
     with open(output_log, "w", encoding="utf-8") as f:
-        res = subprocess.call(
-            "black --check --diff spsdk examples tests".split(), stdout=f, stderr=f
-        )
+        res = subprocess.call(f"black --check --diff {args}".split(), stdout=f, stderr=f)
 
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def fix_black() -> None:
-    """Fix the project by black formatter rules."""
-    subprocess.call("black spsdk examples tests".split())
-
-
-def check_isort(output: str = OUTPUT_FOLDER) -> TaskResult:
+def check_isort(output: str, args: str) -> TaskResult:
     """Check the project against isort imports formatter rules."""
     output_log = os.path.join(output, "isort.txt")
-    res = 0
     with open(output_log, "w", encoding="utf-8") as f:
-        res = subprocess.call("isort -c spsdk examples tests".split(), stdout=f, stderr=f)
+        res = subprocess.call(f"isort -c {args}".split(), stdout=f, stderr=f)
 
     if res:
         with open(output_log, "r", encoding="utf-8") as f:
@@ -260,21 +255,15 @@ def check_isort(output: str = OUTPUT_FOLDER) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def fix_isort() -> None:
-    """Fix the project by isort imports formatter rules."""
-    subprocess.call("isort spsdk examples tests".split())
-
-
-def check_copyright_year(output: str = OUTPUT_FOLDER) -> TaskResult:
+def check_copyright_year(
+    output: str,
+    changed_files: Sequence[str],
+) -> TaskResult:
     """Check the project against copy right year rules."""
     output_log = os.path.join(output, "copyright_year.txt")
-    res = 0
-    changed_files = gitcov.get_changed_files(
-        repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
-    )
     with open(output_log, "w", encoding="utf-8") as f:
         res = subprocess.call(
-            f"python tools/checker_copyright_year.py {' '.join(changed_files)}".split(),
+            f"{sys.executable} tools/checker_copyright_year.py {' '.join(changed_files)}".split(),
             stdout=f,
             stderr=f,
         )
@@ -286,16 +275,12 @@ def check_copyright_year(output: str = OUTPUT_FOLDER) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def check_py_file_headers(output: str = OUTPUT_FOLDER) -> TaskResult:
+def check_py_file_headers(output: str, changed_files: Sequence[str]) -> TaskResult:
     """Check that python files have valid header."""
     output_log = os.path.join(output, "py_header.txt")
-    res = 0
-    changed_files = gitcov.get_changed_files(
-        repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
-    )
     with open(output_log, "w", encoding="utf-8") as f:
         res = subprocess.call(
-            f"python tools/checker_py_headers.py {' '.join(changed_files)}".split(),
+            f"{sys.executable} tools/checker_py_headers.py {' '.join(changed_files)}".split(),
             stdout=f,
             stderr=f,
         )
@@ -307,38 +292,26 @@ def check_py_file_headers(output: str = OUTPUT_FOLDER) -> TaskResult:
     return TaskResult(error_count=res, output_log=output_log)
 
 
-def fix_copyright_year() -> None:
-    """Find all changed files and fix the copyright year in them."""
-    changed_files = gitcov.get_changed_files(
-        repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
-    )
-    fix_copyright_in_files(changed_files)
-
-
-def fix_py_file_headers() -> None:
-    changed_files = gitcov.get_changed_files(
-        repo_path=".", include_merges=True, file_extensions=COPYRIGHT_EXTENSIONS
-    )
-    subprocess.call(
-        f"python tools/checker_py_headers.py --fix {' '.join(changed_files)}".split(),
-    )
+def check_jupyter_outputs(output: str, changed_files: Sequence[str]) -> TaskResult:
+    output_log = os.path.join(output, "jupyter_outputs.txt")
+    with open(output_log, "w", encoding="utf-8") as f:
+        res = subprocess.call(
+            f"{sys.executable} tools/checker_jupyter.py outputs {' '.join(changed_files)}".split(),
+            stdout=f,
+            stderr=f,
+        )
+    return TaskResult(error_count=res, output_log=output_log)
 
 
 def fix_found_problems(checks: TaskList, silence: int = 0, run_check_again: bool = True) -> None:
     """Fix the failed checks automatically is possible."""
     re_checks = TaskList()
-    fixers = {
-        "BLACK": fix_black,
-        "COPYRIGHT": fix_copyright_year,
-        "ISORT": fix_isort,
-        "PY_HEADERS": fix_py_file_headers,
-    }
     for check in checks:
-        if check.name not in fixers:
+        if not check.fixer:
             continue
         if check.result and check.result.error_count != 0:
-            fixers[check.name]()
-            click.echo(f"{colorama.Fore.GREEN}{check.name} problems fixed .{colorama.Fore.RESET}")
+            check.fixer()
+            click.echo(f"{colorama.Fore.GREEN}{check.name} problems fixed.{colorama.Fore.RESET}")
             check.reset()
             re_checks.append(check)
     if run_check_again and len(re_checks) > 0:
@@ -360,7 +333,7 @@ def fix_found_problems(checks: TaskList, silence: int = 0, run_check_again: bool
         case_sensitive=False,
     ),
     multiple=True,
-    help="Run just selected test(s) instead of all. Can be specify multiple.",
+    help="Run only selected test instead of all. Can be specified multiple times.",
 )
 @click.option(
     "-ic",
@@ -370,7 +343,14 @@ def fix_found_problems(checks: TaskList, silence: int = 0, run_check_again: bool
         case_sensitive=False,
     ),
     multiple=True,
-    help="Just select tests that result won't be added to final exit code. Can be specify multiple.",
+    help="Mark selected test as INFO ONLY. Test's result won't be added to final exit code. Can be specified multiple times.",
+)
+@click.option(
+    "-dc",
+    "--disable-check",
+    type=click.Choice(CHECK_LIST, case_sensitive=False),
+    multiple=True,
+    help="Disable selected test. Can be specified multiple times.",
 )
 @click.option(
     "-j",
@@ -401,6 +381,7 @@ def fix_found_problems(checks: TaskList, silence: int = 0, run_check_again: bool
     help="Fix the problems automatically if possible.",
 )
 @click.option(
+    "-dx",
     "--disable-xdist",
     is_flag=True,
     default=False,
@@ -409,14 +390,30 @@ def fix_found_problems(checks: TaskList, silence: int = 0, run_check_again: bool
         "This is useful on Linux machines with lower CPU count."
     ),
 )
+@click.option(
+    "-dm",
+    "--disable-merges",
+    is_flag=True,
+    default=False,
+    help="Disable scan for files which were introduced via merge into development branch.",
+)
+@click.option(
+    "-pb",
+    "--parent-branch",
+    default="origin/master",
+    help="Name of the upstream branch for PR integration/merge.",
+)
 def main(
     check: List[str],
     info_check: List[str],
+    disable_check: List[str],
     job_cnt: int,
     silence: int,
     output: click.Path,
     fix: bool,
     disable_xdist: bool,
+    disable_merges: bool,
+    parent_branch: str,
 ) -> None:
     """Simple tool to check the SPSDK development rules.
 
@@ -426,8 +423,11 @@ def main(
     logging.basicConfig(level=logging.INFO)
     output_dir = str(output) if output else OUTPUT_FOLDER
     ret = 1
-    # the baseline RADON_ALL, and RADON_C checkers are always just informative
     info_check = [x.upper() for x in list(info_check)]
+    disable_check = [x.upper() for x in list(disable_check)]
+    changed_files = gitcov.get_changed_files(
+        repo_path=".", include_merges=not disable_merges, parent_branch=parent_branch
+    )
     try:
         available_checks = TaskList(
             [
@@ -449,7 +449,7 @@ def main(
                     "PYLINT",
                     check_pylint,
                     args="spsdk examples tools codecheck.py",
-                    output_log=os.path.join(output_dir, "pylint.txt"),
+                    output=output_dir,
                     disable=[
                         "R",
                         "C",
@@ -468,22 +468,15 @@ def main(
                     "PYLINT_DOCS",
                     check_pylint_all,
                     args="spsdk --rcfile pylint-doc-rules.ini",
-                    output_log=os.path.join(output_dir, "pylint_docs.txt"),
+                    output=output_dir,
                     info_only="PYLINT_DOCS" in info_check,
                 ),
                 TaskInfo(
                     "MYPY",
                     check_mypy,
-                    args=["spsdk", "examples"],
-                    output_log=os.path.join(output_dir, "mypy.txt"),
+                    args="spsdk examples tools codecheck.py",
+                    output=output_dir,
                     info_only="MYPY" in info_check,
-                ),
-                TaskInfo(
-                    "MYPY_TOOLS",
-                    check_mypy,
-                    args=["tools", "codecheck.py"],
-                    output_log=os.path.join(output_dir, "mypy_tools.txt"),
-                    info_only="MYPY_TOOLS" in info_check,
                 ),
                 TaskInfo(
                     "DEPENDENCIES",
@@ -517,41 +510,68 @@ def main(
                     "BLACK",
                     check_black,
                     output=output_dir,
+                    args="spsdk examples tools codecheck.py tests",
                     info_only="BLACK" in info_check,
+                    fixer=lambda: subprocess.call(
+                        "black spsdk examples tools codecheck.py tests".split()
+                    ),
                 ),
                 TaskInfo(
                     "ISORT",
                     check_isort,
+                    args="spsdk examples tools codecheck.py tests",
                     output=output_dir,
                     info_only="ISORT" in info_check,
+                    fixer=lambda: subprocess.call(
+                        "isort spsdk examples tools codecheck.py tests".split()
+                    ),
                 ),
                 TaskInfo(
                     "COPYRIGHT",
                     check_copyright_year,
-                    output=output_dir,
                     info_only="COPYRIGHT" in info_check,
+                    output=output_dir,
+                    changed_files=changed_files,
+                    fixer=lambda: fix_copyright_in_files(files=changed_files),
                 ),
                 TaskInfo(
                     "PY_HEADERS",
                     check_py_file_headers,
                     output=output_dir,
+                    changed_files=changed_files,
                     info_only="PY_HEADERS" in info_check,
+                    fixer=lambda: fix_py_headers_in_files(files=changed_files),
+                ),
+                TaskInfo(
+                    "JUPYTER",
+                    check_jupyter_outputs,
+                    output=output_dir,
+                    changed_files=changed_files,
+                    info_only="JUPYTER" in info_check,
                 ),
             ]
         )
         checks = TaskList()
         # pylint: disable=not-an-iterable,unsupported-membership-test   # TaskList is a list
         for task in available_checks:
+            if disable_check and task.name in disable_check:
+                continue
+            if (
+                disable_check
+                and task.dependencies
+                and any(dependency in disable_check for dependency in task.dependencies)
+            ):
+                continue
+
             if check and task.name not in check:
-                pass
-            else:
-                if check and task.dependencies and len(set(task.dependencies) - set(check)) != 0:
-                    # insert missing dependencies
-                    for dependency_name in task.dependencies:
-                        extra_task = available_checks.get_task_by_name(dependency_name)
-                        if extra_task not in checks:
-                            checks.append(extra_task)
-                checks.append(task)
+                continue
+            if check and task.dependencies and len(set(task.dependencies) - set(check)) != 0:
+                # insert missing dependencies
+                for dependency_name in task.dependencies:
+                    extra_task = available_checks.get_task_by_name(dependency_name)
+                    if extra_task not in checks:
+                        checks.append(extra_task)
+            checks.append(task)
 
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)

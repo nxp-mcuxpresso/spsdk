@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """The test file for Translator API."""
@@ -10,15 +10,16 @@ import os
 import pytest
 
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError
-from spsdk.pfr.pfr import CFPA, CMPA, PfrConfiguration
+from spsdk.pfr.pfr import CFPA, CMPA
 from spsdk.pfr.translator import Translator
+from spsdk.utils.misc import load_configuration
 
 
 def test_cfpa_translation(data_dir):
     """Test Translation of CFPA."""
     cfpa_config_path = os.path.join(data_dir, "cfpa_pfrc_lpc55s3x.yml")
-    cfpa_config = PfrConfiguration(cfpa_config_path)
-    cfpa = CFPA(device=cfpa_config.device, revision=cfpa_config.revision, user_config=cfpa_config)
+    cfpa_config = load_configuration(cfpa_config_path)
+    cfpa = CFPA.load_from_config(cfpa_config)
     translator = Translator(cfpa=cfpa)
     assert translator.translate("CFPA.IMG0_CMAC0") == 0
 
@@ -26,8 +27,8 @@ def test_cfpa_translation(data_dir):
 def test_cmpa_translation(data_dir):
     """Test Translation of CMPA."""
     cmpa_config_path = os.path.join(data_dir, "cmpa_pfrc_lpc55s3x.yml")
-    cmpa_config = PfrConfiguration(cmpa_config_path)
-    cmpa = CMPA(device=cmpa_config.device, revision=cmpa_config.revision, user_config=cmpa_config)
+    cmpa_config = load_configuration(cmpa_config_path)
+    cmpa = CMPA.load_from_config(cmpa_config)
     translator = Translator(cmpa=cmpa)
     assert translator.translate("CMPA.BOOT_CFG") == 0
 

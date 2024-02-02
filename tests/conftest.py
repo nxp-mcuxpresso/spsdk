@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-from os import path
+from os import environ, path
 
 import pytest
 from cryptography.hazmat.backends.openssl import backend
@@ -22,6 +22,13 @@ try:
     import smartcard
 except ImportError:
     collect_ignore_glob = ["tp*"]
+
+environ["SPSDK_ENV_CACHE_DISABLED"] = "False"
+
+
+@pytest.fixture
+def cli_runner():
+    return CliRunner()
 
 
 @pytest.fixture

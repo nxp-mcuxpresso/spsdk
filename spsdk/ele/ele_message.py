@@ -1,32 +1,39 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """EdgeLock Enclave Message."""
 
 
+import logging
 from struct import pack, unpack
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk.ele.ele_constants import (
     EleCsalState,
     EleFwStatus,
+    EleInfo2Commit,
     EleTrngState,
     KeyBlobEncryptionAlgorithm,
     KeyBlobEncryptionIeeCtrModes,
     LifeCycle,
+    LifeCycleToSwitch,
     MessageIDs,
+    MessageUnitId,
     ResponseIndication,
     ResponseStatus,
 )
 from spsdk.exceptions import SPSDKParsingError, SPSDKValueError
 from spsdk.image.ahab.signed_msg import SignedMessage
-from spsdk.utils.misc import align, align_block
+from spsdk.utils.misc import Endianness, align, align_block
+from spsdk.utils.spsdk_enum import SpsdkEnum
+
+logger = logging.getLogger(__name__)
 
 LITTLE_ENDIAN = "<"
 UINT8 = "B"
@@ -125,13 +132,30 @@ class EleMessage:
         return align(self._response_data_size, self.ELE_MSG_ALIGN)
 
     @property
+    def free_space_address(self) -> int:
+        """First free address after ele message in target memory space."""
+        return align(self.response_data_address + self._response_data_size, self.ELE_MSG_ALIGN)
+
+    @property
+    def free_space_size(self) -> int:
+        """Free space size after ele message in target memory space."""
+        return align(
+            self.buff_size - (self.free_space_address - self.buff_addr), self.ELE_MSG_ALIGN
+        )
+
+    @property
     def status_string(self) -> str:
         """Get status in readable string format."""
         if self.status not in ResponseStatus:
             return "Invalid status!"
         if self.status == ResponseStatus.ELE_SUCCESS_IND:
             return "Succeeded"
-        return f"Failed: {ResponseIndication.name(self.indication, f'Invalid indication code: {self.indication:02X}')}"
+        indication = (
+            ResponseIndication.get_label(self.indication)
+            if ResponseIndication.contains(self.indication)
+            else f"Invalid indication code: {self.indication:02X}"
+        )
+        return f"Failed: {indication}"
 
     def set_buffer_params(self, buff_addr: int, buff_size: int) -> None:
         """Set the communication buffer parameters to allow command update addresses inside command payload.
@@ -156,7 +180,8 @@ class EleMessage:
 
         if self.buff_size < needed_space - self.buff_addr:
             raise SPSDKValueError(
-                f"ELE Message: Communication buffer is to small to fit message. ({needed_space} > {self.buff_size})"
+                "ELE Message: Communication buffer is to small to fit message. "
+                f"({needed_space-self.buff_addr} > {self.buff_size})"
             )
 
     def validate(self) -> None:
@@ -235,18 +260,18 @@ class EleMessage:
         assert len(payload) % 4 == 0
         res = 0
         for i in range(0, len(payload), 4):
-            res ^= int.from_bytes(payload[i : i + 4], "little")
-        return res.to_bytes(4, "little")
+            res ^= int.from_bytes(payload[i : i + 4], Endianness.LITTLE.value)
+        return res.to_bytes(4, Endianness.LITTLE.value)
 
     def response_status(self) -> str:
         """Print the response status information.
 
         :return: String with response status.
         """
-        ret = f"Response status: {ResponseStatus.name(self.status, f'Unknown: {self.status}')}\n"
+        ret = f"Response status: {ResponseStatus.get_label(self.status)}\n"
         if self.status == ResponseStatus.ELE_FAILURE_IND:
             ret += (
-                f"   Response indication: {ResponseIndication.name(self.indication, 'Unknown')}"
+                f"   Response indication: {ResponseIndication.get_label(self.indication)}"
                 f" - ({hex(self.indication)})\n"
             )
             ret += f"   Response abort code: {hex(self.abort_code)}\n"
@@ -257,9 +282,7 @@ class EleMessage:
 
         :return: Information about the message.
         """
-        ret = (
-            f"Command:         {MessageIDs.name(self.command, 'Unknown')} - ({hex(self.command)})\n"
-        )
+        ret = f"Command:         {MessageIDs.get_label(self.command)} - ({hex(self.command)})\n"
         ret += f"Command words:   {self.command_words_count}\n"
         ret += f"Command data:    {self.has_command_data}\n"
         ret += f"Response words:  {self.response_words_count}\n"
@@ -273,20 +296,52 @@ class EleMessage:
 class EleMessagePing(EleMessage):
     """ELE Message Ping."""
 
-    CMD = MessageIDs.PING_REQ
+    CMD = MessageIDs.PING_REQ.tag
+
+
+class EleMessageDumpDebugBuffer(EleMessage):
+    """ELE Message Dump Debug buffer."""
+
+    CMD = MessageIDs.ELE_DUMP_DEBUG_BUFFER_REQ.tag
+    RESPONSE_PAYLOAD_WORDS_COUNT = 21
+
+    def __init__(self) -> None:
+        """Class object initialized."""
+        super().__init__()
+        self.debug_words: List[int] = [0] * 20
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        super().decode_response(response)
+        *self.debug_words, crc = unpack(LITTLE_ENDIAN + "20L4s", response[8:92])
+        crc_computed = self.get_msg_crc(response[0:88])
+        if crc != crc_computed:
+            raise SPSDKParsingError("Invalid message CRC for dump debug buffer")
+
+    def response_info(self) -> str:
+        """Print Dumped data of debug buffer."""
+        ret = ""
+        for i, dump_data in enumerate(self.debug_words):
+            ret += f"Dump debug word[{i}]: {dump_data:08X}\n"
+
+        return ret
 
 
 class EleMessageReset(EleMessage):
     """ELE Message Reset."""
 
-    CMD = MessageIDs.RESET_REQ
+    CMD = MessageIDs.RESET_REQ.tag
     RESPONSE_HEADER_WORDS_COUNT = 0
 
 
 class EleMessageEleFwAuthenticate(EleMessage):
     """Ele firmware authenticate request."""
 
-    CMD = MessageIDs.ELE_FW_AUTH_REQ
+    CMD = MessageIDs.ELE_FW_AUTH_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 3
 
     def __init__(self, ele_fw_address: int) -> None:
@@ -305,36 +360,233 @@ class EleMessageEleFwAuthenticate(EleMessage):
 
         :return: Bytes representation of message object.
         """
-        ret = super().export()
+        ret = self.header_export()
         ret += pack(
             LITTLE_ENDIAN + UINT32 + UINT32 + UINT32, self.ele_fw_address, 0, self.ele_fw_address
         )
         return ret
 
 
+class EleMessageOemContainerAuthenticate(EleMessage):
+    """OEM container authenticate request."""
+
+    CMD = MessageIDs.ELE_OEM_CNTN_AUTH_REQ.tag
+    COMMAND_PAYLOAD_WORDS_COUNT = 2
+
+    def __init__(self, oem_cntn_addr: int) -> None:
+        """Constructor.
+
+        Be aware to have OEM Container in accessible memory for ROM.
+
+        :param oem_cntn_addr: Address in target memory with oem container.
+        """
+        super().__init__()
+        self.oem_cntn_addr = oem_cntn_addr
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        ret = self.header_export()
+        ret += pack(LITTLE_ENDIAN + UINT32 + UINT32, 0, self.oem_cntn_addr)
+        return ret
+
+
+class EleMessageVerifyImage(EleMessage):
+    """Verify image request."""
+
+    CMD = MessageIDs.ELE_VERIFY_IMAGE_REQ.tag
+    COMMAND_PAYLOAD_WORDS_COUNT = 1
+    RESPONSE_PAYLOAD_WORDS_COUNT = 2
+
+    def __init__(self, image_mask: int = 0x0000_0001) -> None:
+        """Constructor.
+
+        The Verify Image message is sent to the ELE after a container has been
+        loaded into memory and processed with an Authenticate Container message.
+        This commands the ELE to check the hash on one or more images.
+
+        :param image_mask: Used to indicate which images are to be checked. There must be at least
+            one image. Each bit corresponds to a particular image index in the header, for example,
+            bit 0 is for image 0, and bit 1 is for image 1, and so on.
+        """
+        super().__init__()
+        self.image_mask = image_mask
+        self.valid_image_mask = 0
+        self.invalid_image_mask = 0xFFFF_FFFF
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        ret = self.header_export()
+        ret += pack(LITTLE_ENDIAN + UINT32, self.image_mask)
+        return ret
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        super().decode_response(response)
+        self.valid_image_mask, self.invalid_image_mask = unpack(
+            LITTLE_ENDIAN + "LL", response[8:16]
+        )
+        checked_mask = self.valid_image_mask | self.invalid_image_mask
+        if self.image_mask != checked_mask:
+            logger.error(
+                "The invalid&valid mask doesn't cover requested mask to check! "
+                f"valid: 0x{self.valid_image_mask:08X} | invalid: 0x{self.invalid_image_mask:08X}"
+                f" != requested: 0x{self.image_mask:08X}"
+            )
+
+    def response_info(self) -> str:
+        """Print Dumped data of debug buffer."""
+        ret = f"Valid image mask    : 0x{self.valid_image_mask:08X}\n"
+        ret += f"Invalid image mask  : 0x{self.invalid_image_mask:08X}"
+        return ret
+
+
 class EleMessageReleaseContainer(EleMessage):
     """ELE Message Release container."""
 
-    CMD = MessageIDs.ELE_RELEASE_CONTAINER_REQ
+    CMD = MessageIDs.ELE_RELEASE_CONTAINER_REQ.tag
+
+
+class EleMessageForwardLifeCycleUpdate(EleMessage):
+    """Forward Life cycle update request."""
+
+    CMD = MessageIDs.ELE_FWD_LIFECYCLE_UP_REQ.tag
+    COMMAND_PAYLOAD_WORDS_COUNT = 1
+
+    def __init__(self, lifecycle_update: LifeCycleToSwitch) -> None:
+        """Constructor.
+
+        Be aware that this is non-revertible operation.
+
+        :param lifecycle_update: New life cycle value.
+        """
+        super().__init__()
+        self.lifecycle_update = lifecycle_update
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        ret = self.header_export()
+        ret += pack(LITTLE_ENDIAN + UINT16 + UINT8 + UINT8, self.lifecycle_update.tag, 0, 0)
+        return ret
+
+
+class EleMessageGetEvents(EleMessage):
+    """Get events request.
+
+    \b
+    Event layout:
+    -------------------------
+    - TAG - CMD - IND - STS -
+    -------------------------
+    \b
+    """
+
+    CMD = MessageIDs.ELE_GET_EVENTS_REQ.tag
+    RESPONSE_PAYLOAD_WORDS_COUNT = 10
+
+    MAX_EVENT_CNT = 8
+
+    def __init__(self) -> None:
+        """Constructor.
+
+        This message is used to retrieve any singular event that has occurred since the FW has
+         started. A singular event occurs when the second word of a response to any request is
+         different from ELE_SUCCESS_IND. That includes commands with failure response as well as
+         commands with successful response containing an indication (i.e. warning response).
+        The events are stored by the ELE in a fixed sized buffer. When the capacity of the buffer
+         is exceeded, new occurring events are lost.
+        The event buffer is systematically returned in full to the requester independently of
+         the actual numbers of events stored.
+        """
+        super().__init__()
+        self.event_cnt = 0
+        self.events: List[int] = [0] * self.MAX_EVENT_CNT
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        super().decode_response(response)
+        self.event_cnt, max_events, *self.events, crc = unpack(
+            LITTLE_ENDIAN + UINT16 + UINT16 + "8L4s", response[8:48]
+        )
+        if max_events != self.MAX_EVENT_CNT:
+            logger.error(f"Invalid maximal events count: {max_events}!={self.MAX_EVENT_CNT}")
+
+        crc_computed = self.get_msg_crc(response[0:44])
+        if crc != crc_computed:
+            logger.error("Invalid message CRC for get events message")
+
+    @staticmethod
+    def get_ipc_id(event: int) -> str:
+        """Get IPC ID in string from event."""
+        ipc_id = (event >> 24) & 0xFF
+        return MessageUnitId.get_description(ipc_id, f"Unknown MU: ({ipc_id})") or ""
+
+    @staticmethod
+    def get_cmd(event: int) -> str:
+        """Get Command in string from event."""
+        cmd = (event >> 16) & 0xFF
+        return MessageIDs.get_description(cmd, f"Unknown Command: (0x{cmd:02})") or ""
+
+    @staticmethod
+    def get_ind(event: int) -> str:
+        """Get Indication in string from event."""
+        ind = (event >> 8) & 0xFF
+        return ResponseIndication.get_description(ind, f"Unknown Indication: (0x{ind:02})") or ""
+
+    @staticmethod
+    def get_sts(event: int) -> str:
+        """Get Status in string from event."""
+        sts = event & 0xFF
+        return ResponseStatus.get_description(sts, f"Unknown Status: (0x{sts:02})") or ""
+
+    def response_info(self) -> str:
+        """Print events info."""
+        ret = f"Event count:     {self.event_cnt}"
+        for i, event in enumerate(self.events[: min(self.event_cnt, self.MAX_EVENT_CNT)]):
+            ret += f"\nEvent[{i}]:      0x{event:08X}"
+            ret += f"\n  IPC ID:        {self.get_ipc_id(event)}"
+            ret += f"\n  Command:       {self.get_cmd(event)}"
+            ret += f"\n  Indication:    {self.get_ind(event)}"
+            ret += f"\n  Status:        {self.get_sts(event)}"
+        if self.event_cnt > self.MAX_EVENT_CNT:
+            ret += "\nEvent count is bigger than maximal supported, "
+            ret += f"only first {self.MAX_EVENT_CNT} events are listed."
+        return ret
 
 
 class EleMessageStartTrng(EleMessage):
     """ELE Message Start True Random Generator."""
 
-    CMD = MessageIDs.START_RNG_REQ
+    CMD = MessageIDs.START_RNG_REQ.tag
 
 
 class EleMessageGetTrngState(EleMessage):
     """ELE Message Get True Random Generator State."""
 
-    CMD = MessageIDs.GET_TRNG_STATE_REQ
+    CMD = MessageIDs.GET_TRNG_STATE_REQ.tag
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self) -> None:
         """Class object initialized."""
         super().__init__()
-        self.ele_trng_state = EleTrngState.ELE_TRNG_PROGRAM
-        self.ele_csal_state = EleCsalState.ELE_CSAL_NOT_READY
+        self.ele_trng_state = EleTrngState.ELE_TRNG_PROGRAM.tag
+        self.ele_csal_state = EleCsalState.ELE_CSAL_NOT_READY.tag
 
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
@@ -353,21 +605,74 @@ class EleMessageGetTrngState(EleMessage):
         :return: Information about the TRNG.
         """
         return (
-            f"EdgeLock Enclave TRNG state: {EleTrngState.name(self.ele_trng_state, 'Unknown')}"
-            + f"\nEdgeLock Enclave CSAL state: {EleCsalState.name(self.ele_csal_state, 'Unknown')}"
+            f"EdgeLock Enclave TRNG state: {EleTrngState.get_description(self.ele_trng_state)}"
+            + f"\nEdgeLock Enclave CSAL state: {EleCsalState.get_description(self.ele_csal_state)}"
         )
+
+
+class EleMessageCommit(EleMessage):
+    """ELE Message Get FW status."""
+
+    CMD = MessageIDs.ELE_COMMIT_REQ.tag
+    COMMAND_PAYLOAD_WORDS_COUNT = 1
+    RESPONSE_PAYLOAD_WORDS_COUNT = 1
+
+    def __init__(self, info_to_commit: List[EleInfo2Commit]) -> None:
+        """Class object initialized."""
+        super().__init__()
+        self.info_to_commit = info_to_commit
+
+    @property
+    def info2commit_mask(self) -> int:
+        """Get info to commit mask used in command."""
+        ret = 0
+        for rule in self.info_to_commit:
+            ret |= rule.tag
+        return ret
+
+    def mask_to_info2commit(self, mask: int) -> List[EleInfo2Commit]:
+        """Get list of info to commit from mask."""
+        ret = []
+        for bit in range(32):
+            bit_mask = 1 << bit
+            if mask and bit_mask:
+                ret.append(EleInfo2Commit.from_tag(bit))
+        return ret
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        ret = self.header_export()
+        ret += pack(LITTLE_ENDIAN + UINT32, self.info2commit_mask)
+        return ret
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        super().decode_response(response)
+        mask = int.from_bytes(response[8:12], Endianness.LITTLE.value)
+        if mask != self.info2commit_mask:
+            logger.error(
+                f"Only those information has been committed: {[x.label for x in self.mask_to_info2commit(mask)]},"
+                f" from those:{[x.label for x in self.info_to_commit]}"
+            )
 
 
 class EleMessageGetFwStatus(EleMessage):
     """ELE Message Get FW status."""
 
-    CMD = MessageIDs.GET_FW_STATUS_REQ
+    CMD = MessageIDs.GET_FW_STATUS_REQ.tag
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self) -> None:
         """Class object initialized."""
         super().__init__()
-        self.ele_fw_status = EleFwStatus.ELE_FW_STATUS_NOT_IN_PLACE
+        self.ele_fw_status = EleFwStatus.ELE_FW_STATUS_NOT_IN_PLACE.tag
 
     def decode_response(self, response: bytes) -> None:
         """Decode response from target.
@@ -383,13 +688,13 @@ class EleMessageGetFwStatus(EleMessage):
 
         :return: Information about the ELE.
         """
-        return f"EdgeLock Enclave firmware state: {EleFwStatus.name(self.ele_fw_status, 'Unknown')}"
+        return f"EdgeLock Enclave firmware state: {EleFwStatus.get_label(self.ele_fw_status)}"
 
 
 class EleMessageGetFwVersion(EleMessage):
     """ELE Message Get FW version."""
 
-    CMD = MessageIDs.GET_FW_VERSION_REQ
+    CMD = MessageIDs.GET_FW_VERSION_REQ.tag
     RESPONSE_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self) -> None:
@@ -405,8 +710,8 @@ class EleMessageGetFwVersion(EleMessage):
         :raises SPSDKParsingError: Response parse detect some error.
         """
         super().decode_response(response)
-        self.ele_fw_version_raw = int.from_bytes(response[8:12], "little")
-        self.ele_fw_version_sha1 = int.from_bytes(response[12:16], "little")
+        self.ele_fw_version_raw = int.from_bytes(response[8:12], Endianness.LITTLE.value)
+        self.ele_fw_version_sha1 = int.from_bytes(response[12:16], Endianness.LITTLE.value)
 
     def response_info(self) -> str:
         """Print specific information of ELE.
@@ -427,7 +732,7 @@ class EleMessageGetFwVersion(EleMessage):
 class EleMessageReadCommonFuse(EleMessage):
     """ELE Message Read common fuse."""
 
-    CMD = MessageIDs.READ_COMMON_FUSE
+    CMD = MessageIDs.READ_COMMON_FUSE.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 1
     RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
@@ -447,7 +752,7 @@ class EleMessageReadCommonFuse(EleMessage):
 
         :return: Bytes representation of message object.
         """
-        ret = super().export()
+        ret = self.header_export()
         ret += pack(LITTLE_ENDIAN + UINT16 + UINT16, self.index, 0)
         return ret
 
@@ -458,7 +763,7 @@ class EleMessageReadCommonFuse(EleMessage):
         :raises SPSDKParsingError: Response parse detect some error.
         """
         super().decode_response(response)
-        self.fuse_value = int.from_bytes(response[8:12], "little")
+        self.fuse_value = int.from_bytes(response[8:12], Endianness.LITTLE.value)
 
     def response_info(self) -> str:
         """Print fuse value.
@@ -471,14 +776,14 @@ class EleMessageReadCommonFuse(EleMessage):
 class EleMessageReadShadowFuse(EleMessageReadCommonFuse):
     """ELE Message Read shadow fuse."""
 
-    CMD = MessageIDs.READ_SHADOW_FUSE
+    CMD = MessageIDs.READ_SHADOW_FUSE.tag
 
     def export(self) -> bytes:
         """Exports message to final bytes array.
 
         :return: Bytes representation of message object.
         """
-        ret = super().export()
+        ret = self.header_export()
         ret += pack(LITTLE_ENDIAN + UINT32, self.index)
         return ret
 
@@ -486,7 +791,7 @@ class EleMessageReadShadowFuse(EleMessageReadCommonFuse):
 class EleMessageGetInfo(EleMessage):
     """ELE Message Get Info."""
 
-    CMD = MessageIDs.GET_INFO_REQ
+    CMD = MessageIDs.GET_INFO_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 3
     MAX_RESPONSE_DATA_SIZE = 256
 
@@ -558,7 +863,7 @@ class EleMessageGetInfo(EleMessage):
         ret += f"Length:           {self.info_length}\n"
         ret += f"SoC ID:           {self.info_soc_id:04X}\n"
         ret += f"SoC version:      {self.info_soc_rev:04X}\n"
-        ret += f"Life Cycle:       {LifeCycle.name(self.info_life_cycle, 'Unknown')} - 0x{self.info_life_cycle:04X}\n"
+        ret += f"Life Cycle:       {LifeCycle.get_label(self.info_life_cycle)} - 0x{self.info_life_cycle:04X}\n"
         ret += f"SSSM state:       {self.info_sssm_state}\n"
         ret += f"UUID:             {self.info_uuid.hex()}\n"
         ret += f"SHA256 ROM PATCH: {self.info_sha256_rom_patch.hex()}\n"
@@ -569,14 +874,78 @@ class EleMessageGetInfo(EleMessage):
             ret += f"  IMEM state:     {self.info_imem_state}\n"
             ret += (
                 f"  CSAL state:     "
-                f"{EleCsalState.name(self.info_csal_state, f'Unknown: {hex(self.info_csal_state)}')}\n"
+                f"{EleCsalState.get_description(self.info_csal_state, str(self.info_csal_state))}\n"
             )
             ret += (
                 f"  TRNG state:     "
-                f"{EleTrngState.name(self.info_trng_state, f'Unknown: {hex(self.info_trng_state)}')}\n"
+                f"{EleTrngState.get_description(self.info_trng_state, str(self.info_trng_state))}\n"
             )
 
         return ret
+
+
+class EleMessageDeriveKey(EleMessage):
+    """ELE Message Derive Key."""
+
+    CMD = MessageIDs.ELE_DERIVE_KEY_REQ.tag
+    COMMAND_PAYLOAD_WORDS_COUNT = 6
+    MAX_RESPONSE_DATA_SIZE = 32
+    _MAX_COMMAND_DATA_SIZE = 65536
+    SUPPORTED_KEY_SIZES = [16, 32]
+
+    def __init__(self, key_size: int, context: Optional[bytes]) -> None:
+        """Class object initialized.
+
+        :param key_size: Output key size [16,32] is valid
+        :param context:  User's context to be used for key diversification
+        """
+        if key_size not in self.SUPPORTED_KEY_SIZES:
+            raise SPSDKValueError(
+                f"Output Key size ({key_size}) must be in {self.SUPPORTED_KEY_SIZES}"
+            )
+        if context and len(context) > self._MAX_COMMAND_DATA_SIZE:
+            raise SPSDKValueError(
+                f"User context length ({len(context)}) <= {self._MAX_COMMAND_DATA_SIZE}"
+            )
+        super().__init__()
+        self.key_size = key_size
+        self._response_data_size = key_size
+        self.context = context
+        self.derived_key = b""
+
+    def export(self) -> bytes:
+        """Exports message to final bytes array.
+
+        :return: Bytes representation of message object.
+        """
+        payload = pack(
+            LITTLE_ENDIAN + UINT32 + UINT32 + UINT32 + UINT32 + UINT16 + UINT16,
+            0,
+            self.response_data_address,
+            0,
+            self.command_data_address if self.context else 0,
+            self.key_size,
+            self.command_data_size,
+        )
+        header = self.header_export()
+        return header + payload + self.get_msg_crc(header + payload)
+
+    @property
+    def command_data(self) -> bytes:
+        """Command data to be loaded into target memory space."""
+        return self.context if self.context else b""
+
+    def decode_response_data(self, response_data: bytes) -> None:
+        """Decode response data from target.
+
+        :note: The response data are specific per command.
+        :param response_data: Data of response.
+        """
+        self.derived_key = response_data[: self.key_size]
+
+    def get_key(self) -> bytes:
+        """Get derived key."""
+        return self.derived_key
 
 
 class EleMessageSigned(EleMessage):
@@ -626,20 +995,22 @@ class EleMessageSigned(EleMessage):
         return ret
 
 
-class EleMessageGenerateKeyBLob(EleMessage):
+class EleMessageGenerateKeyBlob(EleMessage):
     """ELE Message Generate KeyBlob."""
 
     KEYBLOB_NAME = "Unknown"
     # List of supported algorithms and theirs key sizes
-    SUPPORTED_ALGORITHMS: Dict[int, List[int]] = {}
+    SUPPORTED_ALGORITHMS: Dict[SpsdkEnum, List[int]] = {}
 
     KEYBLOB_TAG = 0x81
     KEYBLOB_VERSION = 0x00
-    CMD = MessageIDs.GENERATE_KEY_BLOB_REQ
+    CMD = MessageIDs.GENERATE_KEY_BLOB_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 7
     MAX_RESPONSE_DATA_SIZE = 512
 
-    def __init__(self, key_identifier: int, algorithm: int, key: bytes) -> None:
+    def __init__(
+        self, key_identifier: int, algorithm: KeyBlobEncryptionAlgorithm, key: bytes
+    ) -> None:
         """Constructor of Generate Key Blob class.
 
         :param key_identifier: ID of key
@@ -679,14 +1050,13 @@ class EleMessageGenerateKeyBLob(EleMessage):
         """
         if self.algorithm not in self.SUPPORTED_ALGORITHMS:
             raise SPSDKValueError(
-                f"{KeyBlobEncryptionAlgorithm.name(self.algorithm, f'Unknown algorithm ({self.algorithm})')} "
-                f"in not supported by {self.KEYBLOB_NAME} keyblob in ELE."
+                f"{self.algorithm} is not supported by {self.KEYBLOB_NAME} keyblob in ELE."
             )
 
         if len(self.key) * 8 not in self.SUPPORTED_ALGORITHMS[self.algorithm]:
             raise SPSDKValueError(
                 f"Unsupported size of input key by {self.KEYBLOB_NAME} keyblob"
-                f" for {KeyBlobEncryptionAlgorithm.name(self.algorithm, 'Unknown')} algorithm."
+                f" for {self.algorithm.label} algorithm."
                 f"The list of supported keys in bit count: {self.SUPPORTED_ALGORITHMS[self.algorithm]}"
             )
 
@@ -699,7 +1069,7 @@ class EleMessageGenerateKeyBLob(EleMessage):
         ret += "\n"
         ret += f"KeyBlob type:    {self.KEYBLOB_NAME}\n"
         ret += f"Key ID:          {self.key_id}\n"
-        ret += f"Algorithm:       {KeyBlobEncryptionAlgorithm.name(self.algorithm, f'Unknown: {self.algorithm}')}\n"
+        ret += f"Algorithm:       {self.algorithm.label}\n"
         ret += f"Key size:        {len(self.key)*8} bits\n"
         return ret
 
@@ -709,7 +1079,7 @@ class EleMessageGenerateKeyBLob(EleMessage):
 
         :return: List of supported algorithm names.
         """
-        return list(KeyBlobEncryptionAlgorithm.name(x) for x in cls.SUPPORTED_ALGORITHMS)
+        return list(x.label for x in cls.SUPPORTED_ALGORITHMS)
 
     @classmethod
     def get_supported_key_sizes(cls) -> str:
@@ -719,7 +1089,7 @@ class EleMessageGenerateKeyBLob(EleMessage):
         """
         ret = ""
         for key, value in cls.SUPPORTED_ALGORITHMS.items():
-            ret += KeyBlobEncryptionAlgorithm.name(key) + ": " + str(value) + ",\n"
+            ret += key.label + ": " + str(value) + ",\n"
         return ret
 
     def decode_response_data(self, response_data: bytes) -> None:
@@ -740,7 +1110,7 @@ class EleMessageGenerateKeyBLob(EleMessage):
         self.key_blob = response_data[:length]
 
 
-class EleMessageGenerateKeyBLobDek(EleMessageGenerateKeyBLob):
+class EleMessageGenerateKeyBlobDek(EleMessageGenerateKeyBlob):
     """ELE Message Generate DEK KeyBlob."""
 
     KEYBLOB_NAME = "DEK"
@@ -763,13 +1133,13 @@ class EleMessageGenerateKeyBLobDek(EleMessageGenerateKeyBLob):
             LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8,
             0x01,  # Flags - DEK
             len(self.key),
-            self.algorithm,
+            self.algorithm.tag,
             0,
         )
         return header + options + self.key
 
 
-class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBLob):
+class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBlob):
     """ELE Message Generate OTFAD KeyBlob."""
 
     KEYBLOB_NAME = "OTFAD"
@@ -859,7 +1229,7 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBLob):
             LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8,
             0x02,  # Flags - OTFAD
             0x28,
-            self.algorithm,
+            self.algorithm.tag,
             0,
         )
         end_address = self.end_address
@@ -880,7 +1250,7 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBLob):
         )
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         crc: int = crc32_function(otfad_config)
-        return header + options + otfad_config + crc.to_bytes(4, "little")
+        return header + options + otfad_config + crc.to_bytes(4, Endianness.LITTLE.value)
 
     def info(self) -> str:
         """Print information including live data.
@@ -897,7 +1267,7 @@ class EleMessageGenerateKeyBLobOtfad(EleMessageGenerateKeyBLob):
         return ret
 
 
-class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
+class EleMessageGenerateKeyBlobIee(EleMessageGenerateKeyBlob):
     """ELE Message Generate IEE KeyBlob."""
 
     KEYBLOB_NAME = "IEE"
@@ -910,9 +1280,9 @@ class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
     def __init__(
         self,
         key_identifier: int,
-        algorithm: int,
+        algorithm: KeyBlobEncryptionAlgorithm,
         key: bytes,
-        ctr_mode: int,
+        ctr_mode: KeyBlobEncryptionIeeCtrModes,
         aes_counter: bytes,
         page_offset: int,
         region_number: int,
@@ -952,7 +1322,7 @@ class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
             LITTLE_ENDIAN + UINT8 + UINT8 + UINT8 + UINT8,
             0x03,  # Flags - IEE
             len(self.key),
-            self.algorithm,
+            self.algorithm.tag,
             0,
         )
         region_attribute = 0
@@ -963,7 +1333,7 @@ class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
             if len(self.key) == 64:
                 region_attribute |= 0x01
         else:
-            region_attribute |= self.ctr_mode << 4
+            region_attribute |= self.ctr_mode.tag << 4
             if len(self.key) == 32:
                 region_attribute |= 0x01
 
@@ -992,8 +1362,7 @@ class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
         )
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
         crc: int = crc32_function(iee_config)
-
-        return header + options + iee_config + crc.to_bytes(4, "little")
+        return header + options + iee_config + crc.to_bytes(4, Endianness.LITTLE.value)
 
     def info(self) -> str:
         """Print information including live data.
@@ -1009,7 +1378,7 @@ class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
             key2 = align_block(self.key[key_len // 2 :], 32, 0)
         ret = super().info()
         if self.algorithm == KeyBlobEncryptionAlgorithm.AES_CTR:
-            ret += f"AES Counter mode:{KeyBlobEncryptionIeeCtrModes.desc(self.ctr_mode)}\n"
+            ret += f"AES Counter mode:{KeyBlobEncryptionIeeCtrModes.get_description(self.ctr_mode.tag)}\n"
             ret += f"AES Counter:     {self.aes_counter.hex()}\n"
         ret += f"Key1:            {key1.hex()}\n"
         ret += f"Key2:            {key2.hex()}\n"
@@ -1023,7 +1392,7 @@ class EleMessageGenerateKeyBLobIee(EleMessageGenerateKeyBLob):
 class EleMessageLoadKeyBLob(EleMessage):
     """ELE Message Load KeyBlob."""
 
-    CMD = MessageIDs.LOAD_KEY_BLOB_REQ
+    CMD = MessageIDs.LOAD_KEY_BLOB_REQ.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 3
 
     def __init__(self, key_identifier: int, keyblob: bytes) -> None:
@@ -1069,7 +1438,7 @@ class EleMessageLoadKeyBLob(EleMessage):
 class EleMessageWriteFuse(EleMessage):
     """Write Fuse request."""
 
-    CMD = MessageIDs.WRITE_FUSE
+    CMD = MessageIDs.WRITE_FUSE.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self, bit_position: int, bit_length: int, lock: bool, payload: int) -> None:
@@ -1094,7 +1463,7 @@ class EleMessageWriteFuse(EleMessage):
 
         :return: Bytes representation of message object.
         """
-        ret = super().export()
+        ret = self.header_export()
 
         ret += pack(
             LITTLE_ENDIAN + UINT16 + UINT16 + UINT32,
@@ -1108,7 +1477,7 @@ class EleMessageWriteFuse(EleMessage):
 class EleMessageWriteShadowFuse(EleMessage):
     """Write shadow fuse request."""
 
-    CMD = MessageIDs.WRITE_SHADOW_FUSE
+    CMD = MessageIDs.WRITE_SHADOW_FUSE.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 2
 
     def __init__(self, index: int, value: int) -> None:
@@ -1128,7 +1497,7 @@ class EleMessageWriteShadowFuse(EleMessage):
 
         :return: Bytes representation of message object.
         """
-        ret = super().export()
+        ret = self.header_export()
 
         ret += pack(
             LITTLE_ENDIAN + UINT32 + UINT32,
@@ -1136,3 +1505,21 @@ class EleMessageWriteShadowFuse(EleMessage):
             self.value,
         )
         return ret
+
+
+class EleMessageEnableApc(EleMessage):
+    """Enable APC (Application core) ELE Message."""
+
+    CMD = MessageIDs.ELE_ENABLE_APC_REQ.tag
+
+
+class EleMessageEnableRtc(EleMessage):
+    """Enable RTC (Real time core) ELE Message."""
+
+    CMD = MessageIDs.ELE_ENABLE_RTC_REQ.tag
+
+
+class EleMessageResetApcContext(EleMessage):
+    """Send request to reset APC context ELE Message."""
+
+    CMD = MessageIDs.ELE_RESET_APC_CTX_REQ.tag

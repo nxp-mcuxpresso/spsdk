@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives import keywrap
 from cryptography.hazmat.primitives.ciphers import Cipher, aead, algorithms, modes
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.misc import align_block
+from spsdk.utils.misc import Endianness, align_block
 
 
 class Counter:
@@ -24,27 +24,25 @@ class Counter:
     @property
     def value(self) -> bytes:
         """Initial vector for AES encryption."""
-        return self._nonce + self._ctr.to_bytes(4, self._ctr_byteorder_encoding)  # type: ignore[arg-type]
+        return self._nonce + self._ctr.to_bytes(4, self._ctr_byteorder_encoding.value)
 
     def __init__(
         self,
         nonce: bytes,
         ctr_value: Optional[int] = None,
-        ctr_byteorder_encoding: str = "little",
+        ctr_byteorder_encoding: Endianness = Endianness.LITTLE,
     ):
         """Constructor.
 
         :param nonce: last four bytes are used as initial value for counter
         :param ctr_value: counter initial value; it is added to counter value retrieved from nonce
-        :param ctr_byteorder_encoding: way how the counter is encoded into output value: either 'little' or 'big'
+        :param ctr_byteorder_encoding: way how the counter is encoded into output value
         :raises SPSDKError: When invalid byteorder is provided
         """
         assert isinstance(nonce, bytes) and len(nonce) == 16
-        if ctr_byteorder_encoding not in ["little", "big"]:
-            raise SPSDKError("Wrong byte order")
         self._nonce = nonce[:-4]
         self._ctr_byteorder_encoding = ctr_byteorder_encoding
-        self._ctr = int.from_bytes(nonce[-4:], ctr_byteorder_encoding)  # type: ignore[arg-type]
+        self._ctr = int.from_bytes(nonce[-4:], ctr_byteorder_encoding.value)
         if ctr_value is not None:
             self._ctr += ctr_value
 

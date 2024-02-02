@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2022 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
@@ -10,6 +10,7 @@ from spsdk.tp.data_container import AuthenticationType, Container
 from spsdk.tp.data_container.data_container_auth import get_auth_data_len
 from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.utils.misc import load_binary
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 KEY_STR = "0123456789ABCDEF0123456789ABCDEF"
 KEY = bytes.fromhex(KEY_STR)
@@ -23,7 +24,7 @@ KEY = bytes.fromhex(KEY_STR)
         (AuthenticationType.CRC32, None),
     ],
 )
-def test_auth(sample_container: Container, auth_type: int, key: bytes):
+def test_auth(sample_container: Container, auth_type: AuthenticationType, key: bytes):
     sample_container.add_auth_entry(auth_type=auth_type, key=key)
     assert sample_container.validate(key=key)
 
@@ -60,6 +61,11 @@ def test_auth_multiple_dataauth_entries(sample_container: Container):
 
 
 def test_unknown_authenticators():
+    class TestAuthenticationType(SpsdkEnum):
+        """Available Authentication types."""
+
+        NON_EXISTING = (1, "non_existing", "Non existing")
+
     with pytest.raises(SPSDKTpError) as error:
-        get_auth_data_len(1)
+        get_auth_data_len(TestAuthenticationType.NON_EXISTING)
     assert "Unknown AUTH TYPE" in error.value.description

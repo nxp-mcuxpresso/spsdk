@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
@@ -11,9 +11,13 @@ from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb31 import commands
 from spsdk.sbfile.sb31.images import SecureBinary31Commands, SecureBinary31Header
 from spsdk.utils.misc import load_binary
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 def test_sb31_header_error():
+    class TestEnumHashAlgorithm(SpsdkEnum):
+        SHA256b = (0, "SHA256b", "SHA256b")
+
     # invalid MAGIC
     with pytest.raises(SPSDKError):
         SecureBinary31Header.parse(bytes(100))
@@ -28,11 +32,11 @@ def test_sb31_header_error():
 
     # invalid CURVE_NAME
     with pytest.raises(SPSDKError):
-        SecureBinary31Header(firmware_version=1, hash_type="totally-legit-hash-type")
+        SecureBinary31Header(firmware_version=1, hash_type=EnumHashAlgorithm.MD5)
 
     # invalid CURVE_NAME
     header = SecureBinary31Header(1, EnumHashAlgorithm.SHA256)
-    header.hash_type = "wrong-name"
+    header.hash_type = TestEnumHashAlgorithm.SHA256b
     with pytest.raises(SPSDKError):
         header.block_size
     with pytest.raises(SPSDKError):

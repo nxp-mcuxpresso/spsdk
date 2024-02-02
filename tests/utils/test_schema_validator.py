@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,9 +12,9 @@ import pytest
 import yaml
 
 from spsdk.exceptions import SPSDKError
-from spsdk.image import TZ_SCH_FILE
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import use_working_directory
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
+from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 # schema for testing commented YAML configuration
 _TEST_CONFIG_SCHEMA = {
@@ -248,12 +248,9 @@ def _is_yaml_comment(yaml_data: str, comment: str, key: str = None) -> bool:
     return False
 
 
-@pytest.mark.parametrize("override_values", [None, {"n2": "override"}])
-def test_config_template(override_values: Optional[Dict[str, Any]]) -> None:
+def test_config_template() -> None:
     """Test export of commented configuration template"""
-    my_yml_template = CommentedConfig(
-        "Super Main Title", [_TEST_CONFIG_SCHEMA], values=override_values, export_template=True
-    ).export_to_yaml()
+    my_yml_template = CommentedConfig("Super Main Title", [_TEST_CONFIG_SCHEMA]).get_template()
 
     assert _is_yaml_comment(my_yml_template, "main_description")
     assert _is_yaml_comment(my_yml_template, "n1_description", "n1")
@@ -273,10 +270,8 @@ def test_config_template(override_values: Optional[Dict[str, Any]]) -> None:
 
 def test_config() -> None:
     """Test export of custom commented configuration"""
-    c_cfg = CommentedConfig(
-        "Super Main Title", [_TEST_CONFIG_SCHEMA], _TEST_CONFIG, export_template=False
-    )
-    yml_cfg_str = c_cfg.export_to_yaml()
+    c_cfg = CommentedConfig("Super Main Title", [_TEST_CONFIG_SCHEMA])
+    yml_cfg_str = c_cfg.get_config(_TEST_CONFIG)
 
     assert yml_cfg_str == _EXP_CONFIG_RESULT
 
@@ -308,7 +303,7 @@ def test_validate_oneof() -> None:
 def test_load_schema_file() -> None:
     """Test class ValidationSchemas"""
 
-    assert isinstance(ValidationSchemas.get_schema_file(TZ_SCH_FILE), dict)
+    assert isinstance(DatabaseManager().db.get_schema_file(DatabaseManager.TZ), dict)
 
     with pytest.raises(SPSDKError):
-        ValidationSchemas.get_schema_file("total_invalid_name")
+        DatabaseManager().db.get_schema_file("total_invalid_name")

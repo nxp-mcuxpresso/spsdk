@@ -26,7 +26,7 @@ APIs Usage
 
 Please check *SPSDK* examples:
 
-- :ref:`General examples`
+- :ref:`Jupyter notebooks`
 - :ref:`Crypto examples`
 
 Development guides for various SPSDK modules are bellow:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,14 +14,14 @@ import pytest
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKError
-from spsdk.image import MBI_SCH_FILE
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.mbi.mbi import MasterBootImage, create_mbi_class, get_all_mbi_classes
 from spsdk.image.mbi.mbi_mixin import Mbi_MixinRelocTable, MultipleImageEntry, MultipleImageTable
 from spsdk.image.trustzone import TrustZone
 from spsdk.utils.crypto.cert_blocks import CertBlockV1
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import load_binary, load_configuration, write_file
-from spsdk.utils.schema_validator import ValidationSchemas, check_config
+from spsdk.utils.schema_validator import check_config
 
 #################################################################
 # To create data sets for Master Boot Image (MBI)
@@ -76,7 +76,7 @@ def certificate_block(data_dir, der_file_names, index=0, chain_der_file_names=No
 )
 def test_lpc55s3x_image_version(img_ver, expected_val):
     """Test of generating of various image versions into binary MBI"""
-    mbi = create_mbi_class("Mbi_CrcXipLpc55s3x")(
+    mbi = create_mbi_class("crc_xip", "lpc55s3x")(
         app=bytes(range(256)),
         image_version=img_ver,
     )
@@ -122,7 +122,7 @@ def test_plain_xip_crc_no_tz(data_dir, input_img, expected_mbi: str):
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
 
-    mbi = create_mbi_class("Mbi_CrcXip")(
+    mbi = create_mbi_class("crc_xip", "lpc55s6x")(
         app=org_data,
         trust_zone=TrustZone.disabled(),
     )
@@ -167,7 +167,7 @@ def test_signed_xip_single_certificate_no_tz(data_dir, priv_key, der_certificate
 
     priv_key = os.path.join(data_dir, "keys_and_certs", priv_key)
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
-    mbi = create_mbi_class("Mbi_SignedXip")(
+    mbi = create_mbi_class("signed_xip", "rt6xx")(
         app=org_data,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
@@ -215,7 +215,7 @@ def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filen
             key_store_bin = f.read()
         key_store = KeyStore(KeySourceType.KEYSTORE, key_store_bin)
 
-    mbi = create_mbi_class("Mbi_PlainSignedRamRtxxx")(
+    mbi = create_mbi_class("signed_ram", "rt6xx")(
         app=org_data,
         load_address=0x12345678,
         trust_zone=TrustZone.disabled(),
@@ -272,7 +272,7 @@ def test_encrypted_ram_single_certificate_no_tz(
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
-    mbi = create_mbi_class("Mbi_EncryptedRamRtxxx")(
+    mbi = create_mbi_class("encrypted_signed_ram", "rt6xx")(
         app=org_data,
         load_address=0x12345678,
         trust_zone=TrustZone.disabled(),
@@ -295,7 +295,7 @@ def test_encrypted_random_ctr_single_certificate_no_tz(data_dir):
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
-    mbi = create_mbi_class("Mbi_EncryptedRamRtxxx")(
+    mbi = create_mbi_class("encrypted_signed_ram", "rt6xx")(
         app=org_data,
         load_address=0x12345678,
         trust_zone=TrustZone.disabled(),
@@ -351,7 +351,7 @@ def test_signed_xip_multiple_certificates_no_tz(
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
-    mbi = create_mbi_class("Mbi_SignedXip")(
+    mbi = create_mbi_class("signed_xip", "rt6xx")(
         app=org_data,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
@@ -388,7 +388,7 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
     with pytest.raises(SPSDKError):
-        create_mbi_class("Mbi_SignedXip")(
+        create_mbi_class("signed_xip", "rt6xx")(
             app=bytes(range(128)),
             trust_zone=TrustZone.disabled(),
             cert_block=cert_block,
@@ -438,7 +438,7 @@ def test_signed_xip_certificates_chain_no_tz(
     priv_key = os.path.join(data_dir, "keys_and_certs", priv_key)
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
 
-    mbi = create_mbi_class("Mbi_SignedXip")(
+    mbi = create_mbi_class("signed_xip", "rt6xx")(
         app=org_data,
         trust_zone=TrustZone.disabled(),
         cert_block=cert_block,
@@ -465,7 +465,7 @@ def test_plain_xip_crc_default_tz(data_dir, input_img, expected_mbi):
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
 
-    mbi = create_mbi_class("Mbi_CrcXip")(
+    mbi = create_mbi_class("crc_xip", "rt6xx")(
         app=org_data,
         trust_zone=TrustZone.enabled(),
     )
@@ -493,7 +493,7 @@ def test_plain_ram_crc_default_tz(data_dir, input_img, load_address, expected_mb
     with open(os.path.join(data_dir, input_img), "rb") as f:
         org_data = f.read()
 
-    mbi = create_mbi_class("Mbi_CrcRamRtxxx")(
+    mbi = create_mbi_class("crc_ram", "rt6xx")(
         app=org_data,
         load_address=load_address,
         trust_zone=TrustZone.enabled(),
@@ -591,7 +591,7 @@ def test_plain_xip_crc_custom_tz(data_dir, input_img, tz_config, family, expecte
     # expected_data = load_binary(os.path.join(data_dir, expected_mbi))
     tz_presets = load_configuration(os.path.join(data_dir, tz_config))["trustZonePreset"]
 
-    mbi = create_mbi_class("Mbi_CrcXip")(
+    mbi = create_mbi_class("crc_xip", "rt6xx")(
         app=org_data,
         trust_zone=TrustZone(family=family, customizations=tz_presets),
     )
@@ -615,7 +615,7 @@ def test_multiple_images_with_relocation_table(data_dir):
     table.add_entry(MultipleImageEntry(img1_data, 0x80000))
     table.add_entry(MultipleImageEntry(img2_data, 0x80600))
 
-    mbi = create_mbi_class("Mbi_CrcRamRtxxx")(
+    mbi = create_mbi_class("crc_ram", "rt6xx")(
         app=img_data,
         app_table=table,
         load_address=0,
@@ -638,7 +638,7 @@ def test_loading_relocation_table(data_dir):
     cfg = load_configuration(os.path.join(data_dir, "test_app_table.yaml"))
     # Test validation by JSON SCHEMA
     schemas = []
-    schema_cfg = ValidationSchemas.get_schema_file(MBI_SCH_FILE)
+    schema_cfg = get_schema_file(DatabaseManager.MBI)
     schemas.append(schema_cfg["app_table"])
     check_config(cfg, schemas)
     # Test Load
@@ -667,7 +667,7 @@ def test_master_boot_image_invalid_hmac(data_dir):
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
-    mbi = create_mbi_class("Mbi_EncryptedRamRtxxx")(
+    mbi = create_mbi_class("encrypted_signed_ram", "rt6xx")(
         app=org_data,
         load_address=0x12345678,
         trust_zone=TrustZone.disabled(),
@@ -689,7 +689,7 @@ def test_invalid_export_mbi(data_dir):
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
     priv_key = os.path.join(data_dir, "keys_and_certs", "selfsign_privatekey_rsa2048.pem")
     signature_provider = SignatureProvider.create(f"type=file;file_path={priv_key}")
-    mbi = create_mbi_class("Mbi_EncryptedRamRtxxx")(
+    mbi = create_mbi_class("encrypted_signed_ram", "rt6xx")(
         app=org_data,
         load_address=0x12345678,
         trust_zone=TrustZone.disabled(),
@@ -709,7 +709,7 @@ def test_invalid_export_mbi(data_dir):
 
 
 def test_invalid_image_base_address(data_dir):
-    mbi = create_mbi_class("Mbi_PlainXip")()
+    mbi = create_mbi_class("plain_xip", "rt6xx")()
     with pytest.raises(SPSDKError):
         mbi.load_from_config(
             load_configuration(os.path.join(data_dir, "lpc55s6x_int_xip_plain.yml"))

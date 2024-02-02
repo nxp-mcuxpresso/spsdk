@@ -1,7 +1,7 @@
 NXP Software Content Register
 
 Package:                   NXP SPSDK
-Version:                   2.0.1
+Version:                   2.1.0
 Outgoing License:          BSD-3-Clause
 License Files:             LICENSE
 Type of content:           Source code
@@ -21,13 +21,6 @@ PyMBoot             Name: PyMBoot
                     Location: spsdk/mboot
                     Type: Source
                     URL: https://github.com/molejar/pyMBoot
-
-PyEnum              Name: PyEnum
-                    Version: 0.3.0
-                    License: Apache-2
-                    Location: spsdk/utils
-                    Type: Source
-                    URL: https://github.com/molejar/pyEnum
 
 Flashloader         Name: Flashloader
                     Version: 2.4

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Segments within image module."""
@@ -694,7 +694,7 @@ class SegIVT2(BaseSegment):
         :param version: The version of IVT and Image format
         """
         super().__init__()
-        self._header = Header(SegTag.IVT2, version)
+        self._header = Header(SegTag.IVT2.tag, version)
         self._header.length = self.SIZE
         self.app_address = 0
         self.rs1 = 0
@@ -768,7 +768,7 @@ class SegIVT2(BaseSegment):
         :param data: The bytes array of IVT2 segment
         :return: SegIVT2 object
         """
-        header = Header.parse(data, SegTag.IVT2)
+        header = Header.parse(data, SegTag.IVT2.tag)
         obj = cls(header.param)
         # Parse IVT items
         (
@@ -953,7 +953,7 @@ class SegDCD(BaseSegment):
         """Initialize DCD segment."""
         super().__init__()
         self.enabled = enabled
-        self._header = Header(SegTag.DCD, param)
+        self._header = Header(SegTag.DCD.tag, param)
         self._header.length = self._header.size
         self._commands: List[CmdBase] = []
 
@@ -1012,16 +1012,16 @@ class SegDCD(BaseSegment):
             if isinstance(cmd, CmdWriteData):
                 for address, value in cmd:
                     txt_data += (
-                        f"{write_ops[cmd.ops]} {cmd.num_bytes} 0x{address:08X} 0x{value:08X}\n"
+                        f"{write_ops[cmd.ops.tag]} {cmd.num_bytes} 0x{address:08X} 0x{value:08X}\n"
                     )
             elif isinstance(cmd, CmdCheckData):
                 txt_data += (
-                    f"{check_ops[cmd.ops]} {cmd.num_bytes} 0x{cmd.address:08X} 0x{cmd.mask:08X}"
+                    f"{check_ops[cmd.ops.tag]} {cmd.num_bytes} 0x{cmd.address:08X} 0x{cmd.mask:08X}"
                 )
                 txt_data += f" {cmd.count}\n" if cmd.count else "\n"
 
             elif isinstance(cmd, CmdUnlock):
-                txt_data += f"Unlock {EnumEngine[cmd.engine]}"  # type: ignore
+                txt_data += f"Unlock {cmd.engine.label}"
                 cnt = 1
                 for value in cmd:
                     if cnt > 6:
@@ -1072,7 +1072,7 @@ class SegDCD(BaseSegment):
         :raises SPSDKCorruptedException: Exception caused by corrupted data
         :return: SegDCD object
         """
-        header = Header.parse(data, SegTag.DCD)
+        header = Header.parse(data, SegTag.DCD.tag)
         index = header.size
         obj = cls(header.param, True)
         while index < header.length:
@@ -1126,7 +1126,7 @@ class SegDcdBuilder:
                         f"Unlock CMD: wrong engine parameter at line {self.line_cnt - 1}"
                     )
 
-                engine = EnumEngine.from_int(EnumEngine[cmd[1]])
+                engine = EnumEngine.from_label(cmd[1])
                 args = [int(value, 0) for value in cmd[2:]]
                 dcd_obj.append(CmdUnlock(engine, *args))
             else:
@@ -1138,6 +1138,7 @@ class SegDcdBuilder:
                 raise SPSDKError(f"Write CMD: not enough arguments at line {self.line_cnt - 1}")
 
             ops = cmd_tuple[1]
+            assert isinstance(ops, EnumWriteOps)
             numbytes = int(cmd[1])
             addr = int(cmd[2], 0)
             value = int(cmd[3], 0)
@@ -1163,6 +1164,7 @@ class SegDcdBuilder:
                 self.cmd_write = None
 
             ops = cmd_tuple[1]
+            assert isinstance(ops, EnumCheckOps)
             numbytes = int(cmd[1])
             addr = int(cmd[2], 0)
             mask = int(cmd[3], 0)
@@ -1239,7 +1241,7 @@ class SegCSF(BaseSegment):
     def __init__(self, version: int = 0x40, enabled: bool = False):
         """Initialize CSF segment."""
         super().__init__()
-        self._header = Header(SegTag.CSF, version)
+        self._header = Header(SegTag.CSF.tag, version)
         self.enabled = enabled
         self._commands: List[CmdBase] = []
         # additional command data: keys and certificates; these data are stored after the commands
@@ -1432,7 +1434,7 @@ class SegCSF(BaseSegment):
         :raises SPSDKCorruptedException: When command can not be parsed
         :return: SegCSF instance
         """
-        header = Header.parse(data, SegTag.CSF)
+        header = Header.parse(data, SegTag.CSF.tag)
         index = header.size
         obj = cls(header.param, True)
         obj.no_signature_updates = True
@@ -1597,7 +1599,7 @@ class SegIVT3a(BaseSegment):
         :param param: The version of IVT and Image format
         """
         super().__init__()
-        self._header = Header(SegTag.IVT3, param)
+        self._header = Header(SegTag.IVT3.tag, param)
         self._header.length = self.SIZE
         self.version = 0
         self.dcd_address = 0
@@ -1660,7 +1662,7 @@ class SegIVT3a(BaseSegment):
         :param data: The bytes array of IVT3a segment
         :return: SegIVT3a object
         """
-        header = Header.parse(data, SegTag.IVT3)
+        header = Header.parse(data, SegTag.IVT3.tag)
         obj = cls(header.param)
 
         (
@@ -1702,7 +1704,7 @@ class SegIVT3b(BaseSegment):
         :param version: The version of IVT and Image format
         """
         super().__init__()
-        self._header = Header(SegTag.IVT2, version)
+        self._header = Header(SegTag.IVT2.tag, version)
         self._header.length = self.SIZE
         self.rs1 = 0
         self.dcd_address = 0
@@ -1769,7 +1771,7 @@ class SegIVT3b(BaseSegment):
         :param data: The bytes array of IVT3b segment
         :return: SegIVT3b object
         """
-        header = Header.parse(data, SegTag.IVT2)
+        header = Header.parse(data, SegTag.IVT2.tag)
         obj = cls(header.param)
 
         (
@@ -2247,7 +2249,7 @@ class SegSIGB(BaseSegment):
     def __init__(self, version: int = 0) -> None:
         """Initialize SignatureBlock segment."""
         super().__init__()
-        self._header = Header2(SegTag.SIGB, version)
+        self._header = Header2(SegTag.SIGB.tag, version)
         self._header.length = self.SIZE
         self.srk_table_offset = 0
         self.cert_offset = 0
@@ -2295,7 +2297,7 @@ class SegSIGB(BaseSegment):
         :param data: The bytes array of SignatureBlock segment
         :return: SegSigBlk object
         """
-        header = Header2.parse(data, SegTag.SIGB)
+        header = Header2.parse(data, SegTag.SIGB.tag)
         obj = cls(header.param)
 
         (
@@ -2339,7 +2341,7 @@ class SegBIC1(BaseSegment):
         :param version: The version of Header for Boot Images Container
         """
         super().__init__()
-        self._header = Header2(SegTag.BIC1, version)
+        self._header = Header2(SegTag.BIC1.tag, version)
         self._header.length = self.SIZE
         self.flags = 0
         self.sw_version = 0
@@ -2411,7 +2413,7 @@ class SegBIC1(BaseSegment):
         :param data: The bytes array of BIC1 segment
         :return: SegBIC1 object
         """
-        header = Header2.parse(data, SegTag.BIC1)
+        header = Header2.parse(data, SegTag.BIC1.tag)
         offset = header.size
         obj = cls(header.param)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,6 @@ import sys
 
 import click
 
-from spsdk import SPSDK_DATA_FOLDER
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
@@ -23,7 +22,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.apps.utils.utils import catch_spsdk_error
+from spsdk.apps.utils.utils import INT, catch_spsdk_error
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
@@ -33,9 +32,6 @@ from spsdk.sbfile.devhsm.utils import get_devhsm_class
 from spsdk.utils.misc import load_configuration, write_file
 
 logger = logging.getLogger(__name__)
-
-NXPDEVHSM_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpdevhsm")
-NXPDEVHSM_DATABASE_FILE: str = os.path.join(NXPDEVHSM_DATA_FOLDER, "database.yaml")
 
 
 @click.group(name="nxpdevhsm", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -90,6 +86,12 @@ def main(log_level: int) -> int:
         "By default this reset is ENABLED."
     ),
 )
+@click.option(
+    "-ba",
+    "--buffer-address",
+    type=INT(),
+    help="Override the communication buffer base address. The default address is family-specific.",
+)
 @spsdk_output_option(required=False)
 @spsdk_config_option(required=False)
 def generate(
@@ -107,6 +109,7 @@ def generate(
     family: str,
     initial_reset: bool,
     final_reset: bool,
+    buffer_address: int,
 ) -> None:
     """Generate provisioning SB file."""
     interface = get_mboot_interface(
@@ -148,6 +151,7 @@ def generate(
             family=family,
             initial_reset=initial_reset,
             final_reset=final_reset,
+            buffer_address=buffer_address,
         )
         devhsm.create_sb()
         write_file(devhsm.export(), out_file, "wb")

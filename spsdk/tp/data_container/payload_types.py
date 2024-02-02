@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module holding all supported Payload types."""
 
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
-class PayloadType(Enum):
+class PayloadType(SpsdkEnum):
     """Enumeration of all supported Payload types."""
 
     # fmt: off

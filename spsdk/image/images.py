@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,8 +19,8 @@ from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import aes_ccm_decrypt, aes_ccm_encrypt
 from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKError, SPSDKParsingError
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import align, align_block, extend_block
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 from .commands import (
     CmdAuthData,
@@ -59,15 +59,15 @@ from .segments import (
 ########################################################################################################################
 
 
-class EnumAppType(Enum):
+class EnumAppType(SpsdkEnum):
     """Type of the application image."""
 
-    SCFW = 1
-    M4_0 = 2
-    M4_1 = 3
-    APP = 4  # actually this means APP or A35 or A53
-    A72 = 5
-    SCD = 6
+    SCFW = (1, "SCFW")
+    M4_0 = (2, "M4_0")
+    M4_1 = (3, "M4_1")
+    APP = (4, "APP")  # actually this means APP or A35 or A53
+    A72 = (5, "A72")
+    SCD = (6, "SCD")
 
 
 class BootImgBase:
@@ -1022,7 +1022,7 @@ class BootImgRT(BootImgBase):
             strm.seek(start_pos + ivt_ofs)
             header_data = read_raw_data(strm, Header.SIZE, no_seek=True)
             try:
-                header = Header.parse(header_data, required_tag=SegTag.IVT2)
+                header = Header.parse(header_data, required_tag=SegTag.IVT2.tag)
                 if (header.length == SegIVT2.SIZE) and (header.param in cls.VERSIONS):
                     return header, start_pos + ivt_ofs, end_pos
             except SPSDKParsingError:  # ignore different header tags
@@ -1086,7 +1086,7 @@ class BootImgRT(BootImgBase):
             obj.ivt_offset = start_pos
 
         # Parse IVT
-        obj.ivt = SegIVT2.parse(read_raw_segment(stream, SegTag.IVT2))
+        obj.ivt = SegIVT2.parse(read_raw_segment(stream, SegTag.IVT2.tag))
 
         # Try to find XMCD segment
         stream.seek(start_pos + cls.XMCD_IVT_OFFSET)
@@ -1105,7 +1105,7 @@ class BootImgRT(BootImgBase):
         # Parse DCD
         if obj.ivt.dcd_address:
             stream.seek(start_pos + obj.ivt.dcd_address - obj.ivt.ivt_address)
-            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD))
+            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD.tag))
         # Parse APP
         if obj.ivt.csf_address > 0:
             app_size = obj.ivt.csf_address - obj.ivt.ivt_address - (obj.app_offset - obj.ivt_offset)
@@ -1393,7 +1393,7 @@ class BootImg2(BootImgBase):
             obj.offset = start_index
 
         # Parse IVT
-        obj.ivt = SegIVT2.parse(read_raw_segment(stream, SegTag.IVT2))
+        obj.ivt = SegIVT2.parse(read_raw_segment(stream, SegTag.IVT2.tag))
         # Parse BDT
         obj.bdt = SegBDT.parse(read_raw_data(stream, SegBDT.SIZE))
         obj.offset = obj.ivt.ivt_address - obj.bdt.app_start
@@ -1401,7 +1401,7 @@ class BootImg2(BootImgBase):
         obj.plugin = bool(obj.bdt.plugin)
         # Parse DCD
         if obj.ivt.dcd_address:
-            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD))
+            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD.tag))
             obj.dcd.padding = (obj.ivt.app_address - obj.ivt.dcd_address) - obj.dcd.size
         # Parse APP
         app_start = start_index + (obj.ivt.app_address - obj.ivt.ivt_address)
@@ -1679,7 +1679,7 @@ class BootImg8m(BootImgBase):
             obj.offset = start_index
 
         # Parse IVT
-        obj.ivt = SegIVT2.parse(read_raw_segment(stream, SegTag.IVT2))
+        obj.ivt = SegIVT2.parse(read_raw_segment(stream, SegTag.IVT2.tag))
         # Parse BDT
         obj.bdt = SegBDT.parse(read_raw_data(stream, SegBDT.SIZE))
         obj.offset = obj.ivt.ivt_address - obj.bdt.app_start
@@ -1687,7 +1687,7 @@ class BootImg8m(BootImgBase):
         obj.plugin = bool(obj.bdt.plugin)
         # Parse DCD
         if obj.ivt.dcd_address:
-            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD))
+            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD.tag))
             obj.dcd.padding = (obj.ivt.app_address - obj.ivt.dcd_address) - obj.dcd.size
         # Parse APP
         app_start = start_index + (obj.ivt.app_address - obj.ivt.ivt_address)
@@ -2062,19 +2062,19 @@ class BootImg3a(BootImgBase):
         if start_index > 0:
             obj.offset = start_index
         # Parse IVT
-        obj.ivt[0] = SegIVT3a.parse(read_raw_segment(stream, SegTag.IVT3))
-        obj.ivt[1] = SegIVT3a.parse(read_raw_segment(stream, SegTag.IVT3))
+        obj.ivt[0] = SegIVT3a.parse(read_raw_segment(stream, SegTag.IVT3.tag))
+        obj.ivt[1] = SegIVT3a.parse(read_raw_segment(stream, SegTag.IVT3.tag))
         # Parse BDT
         obj.bdt[0] = SegBDS3a.parse(read_raw_data(stream, SegBDS3a.SIZE))
         obj.bdt[1] = SegBDS3a.parse(read_raw_data(stream, SegBDS3a.SIZE))
         # Parse DCD
         if obj.ivt[0].dcd_address:
             stream.seek(start_index + (obj.ivt[0].dcd_address - obj.ivt[0].ivt_address), 0)
-            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD))
+            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD.tag))
         # Parse CSF
         if obj.ivt[0].csf_address:
             stream.seek(start_index + (obj.ivt[0].csf_address - obj.ivt[0].ivt_address), 0)
-            obj.csf = SegCSF.parse(read_raw_segment(stream, SegTag.CSF))
+            obj.csf = SegCSF.parse(read_raw_segment(stream, SegTag.CSF.tag))
         # Parse IMAGES
         for container in range(obj.COUNT_OF_CONTAINERS):
             for i in range(obj.bdt[container].images_count):
@@ -2474,15 +2474,15 @@ class BootImg3b(BootImgBase):
         if start_index > 0:
             obj.offset = start_index
         # Parse IVT
-        obj.ivt[0] = SegIVT3b.parse(read_raw_segment(stream, SegTag.IVT2))
-        obj.ivt[1] = SegIVT3b.parse(read_raw_segment(stream, SegTag.IVT2))
+        obj.ivt[0] = SegIVT3b.parse(read_raw_segment(stream, SegTag.IVT2.tag))
+        obj.ivt[1] = SegIVT3b.parse(read_raw_segment(stream, SegTag.IVT2.tag))
         # Parse BDT
         obj.bdt[0] = SegBDS3b.parse(read_raw_data(stream, SegBDS3b.SIZE))
         obj.bdt[1] = SegBDS3b.parse(read_raw_data(stream, SegBDS3b.SIZE))
         # Parse DCD
         if obj.ivt[0].dcd_address:
             stream.seek(start_index + (obj.ivt[0].dcd_address - obj.ivt[0].ivt_address), 0)
-            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD))
+            obj.dcd = SegDCD.parse(read_raw_segment(stream, SegTag.DCD.tag))
         # Parse IMAGES
         for container in range(obj.COUNT_OF_CONTAINERS):
             for i in range(obj.bdt[container].images_count):
@@ -2497,7 +2497,7 @@ class BootImg3b(BootImgBase):
         # Parse CSF
         if obj.bdt[0].csf.image_source != 0:
             stream.seek(obj.bdt[0].csf.image_source - obj.offset, 0)
-            obj.csf = SegCSF.parse(read_raw_segment(stream, SegTag.CSF))
+            obj.csf = SegCSF.parse(read_raw_segment(stream, SegTag.CSF.tag))
 
         return obj
 
@@ -2547,7 +2547,7 @@ class BootImg4(BootImgBase):
                 msg += str(self.dcd)
         return msg
 
-    def add_image(self, data: bytes, img_type: int, address: int) -> None:
+    def add_image(self, data: bytes, img_type: EnumAppType, address: int) -> None:
         """Add image.
 
         :raises NotImplementedError: Not yet implemented
@@ -2738,27 +2738,27 @@ def parse(
         raw = read_raw_data(stream, Header.SIZE, no_seek=True)
 
         if (
-            raw[0] == SegTag.IVT2
+            raw[0] == SegTag.IVT2.tag
             and ((raw[1] << 8) | raw[2]) == SegIVT2.SIZE
             and raw[3] in (0x40, 0x41, 0x42)
         ):
             return BootImg2.parse(stream)
 
         if (
-            raw[0] == SegTag.IVT2
+            raw[0] == SegTag.IVT2.tag
             and ((raw[1] << 8) | raw[2]) == SegIVT3b.SIZE
             and raw[3] in (0x43,)
         ):
             return BootImg3b.parse(stream)
 
         if (
-            raw[0] == SegTag.IVT3
+            raw[0] == SegTag.IVT3.tag
             and ((raw[1] << 8) | raw[2]) == SegIVT3a.SIZE
             and raw[3] in (0x43,)
         ):
             return BootImg3a.parse(stream)
 
-        if raw[3] == SegTag.BIC1:
+        if raw[3] == SegTag.BIC1.tag:
             return BootImg4.parse(stream)
 
         start_index = stream.seek(step, SEEK_CUR)

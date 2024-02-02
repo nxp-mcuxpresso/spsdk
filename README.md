@@ -4,6 +4,9 @@
 
 <img src="docs/_static/images/spsdk-architecture.png" alt="drawing" width="600"/>
 
+## Links
+
+* [GitHub](https://github.com/NXPmicro/spsdk)
 * [PyPi](https://pypi.org/project/spsdk/)
 * [Documentation](https://spsdk.readthedocs.io)
 * [Project page](https://www.nxp.com/design/software/development-software/secure-provisioning-sdk-spsdk:SPSDK)
@@ -21,27 +24,20 @@ Following NXP devices are supported:
 - [MCXN9xx](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X)
 - [RW610](https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radiobr1x1-wi-fi-6-plus-bluetooth-low-energy-5-3-802-15-4:RW612)
 - [NHS52Sxx](https://www.nxp.com/products/wireless-connectivity/bluetooth-low-energy/nhs52sx4-ultra-low-power-bluetooth-low-energy-solution-with-arm-cortex-m33-trustzone-for-medical-iot:NHS52Sx4)
+- [MCXA1xx] (https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m:MCX-MCUS)
+- [MCXN23x] (https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m:MCX-MCUS)
 
 ## Supported environments
 
-- Windows 10 and 11, 64bit
-- Ubuntu 18.04 or above, 64bit
-- Mac OS 10.15 or above, x64, ARM64
+Windows 10 and 11, 64bit
+Ubuntu 22.04.1 LTS
+Mac OS Sonoma 14
 
 ## Usage
 
 - See [installation](https://spsdk.readthedocs.io/en/latest/usage/installation.html) guide
 - See [examples](examples) directory
 - See [application](spsdk/apps) directory
-
----
-**i.Mx RT 1050**
-
-To run examples using i.MX RT 1050 you need to download a flashloader:
-- Go to: https://www.nxp.com/webapp/sps/download/license.jsp?colCode=IMX-RT1050-FLASHLOADER
-- Review the license agreement, download and unzip the package
-- Convert the elf file into bin (For this operation you need to have MCUXpresso IDE, IAR or Keil)
-  - run ```python tools\flashloader_converter.py --elf-path <path/to/flashloader.elf> --ide-type <mcux | iar | keil> --ide-path <path/to/IDE/install/folder```
 
 ---
 

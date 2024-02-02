@@ -3,18 +3,59 @@ Utils Module API
 
 Module containing various functions/modules used throughout the SPSDK.
 
-Utils easy enum
-------------------
+Abstract class template
+--------------------------
 
-.. automodule:: spsdk.utils.easy_enum
+.. automodule:: spsdk.utils.abstract
    :members:
    :undoc-members:
    :show-inheritance:
 
-Utils crypto
---------------
 
-.. automodule:: spsdk.utils.crypto
+Utils easy enum
+------------------
+
+.. automodule:: spsdk.utils.spsdk_enum
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Utils crypto - Certification blocks
+-------------------------------------
+
+.. automodule:: spsdk.utils.crypto.cert_blocks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Utils crypto - Inline Encryption Engine (IEE)
+----------------------------------------------
+
+.. automodule:: spsdk.utils.crypto.iee
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Utils crypto - On-the-Fly AES Decryption (OTFAD)
+-------------------------------------------------
+
+.. automodule:: spsdk.utils.crypto.otfad
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Utils crypto - Root Keys Hash Table (RKHT)
+------------------------------------------------
+
+.. automodule:: spsdk.utils.crypto.rkht
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Utils crypto - Root Of Trust (RoT)
+------------------------------------------------
+
+.. automodule:: spsdk.utils.crypto.rot
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Miscellaneous functions used throughout the SPSDK."""
 import contextlib
 import hashlib
+import json
 import logging
 import math
 import os
 import re
+import textwrap
 import time
+from enum import Enum
 from math import ceil
 from struct import pack, unpack
 from typing import (
@@ -36,6 +39,18 @@ from spsdk.utils.exceptions import SPSDKTimeoutError
 T = TypeVar("T")  # pylint: disable=invalid-name
 
 logger = logging.getLogger(__name__)
+
+
+class Endianness(str, Enum):
+    """Endianness enum."""
+
+    BIG = "big"
+    LITTLE = "little"
+
+    @classmethod
+    def values(cls) -> List[str]:
+        """Get enumeration values."""
+        return [mem.value for mem in Endianness.__members__.values()]
 
 
 class BinaryPattern:
@@ -256,6 +271,80 @@ def get_abs_path(file_path: str, base_dir: Optional[str] = None) -> str:
     return os.path.abspath(os.path.join(base_dir or os.getcwd(), file_path)).replace("\\", "/")
 
 
+def _find_path(
+    path: str,
+    check_func: Callable[[str], bool],
+    use_cwd: bool = True,
+    search_paths: Optional[List[str]] = None,
+    raise_exc: bool = True,
+) -> str:
+    """Return a full path to the file.
+
+    `search_paths` takes precedence over `CWD` if used (default)
+
+    :param path: File name, part of file path or full path
+    :param use_cwd: Try current working directory to find the file, defaults to True
+    :param search_paths: List of paths where to search for the file, defaults to None
+    :param raise_exc: Raise exception if file is not found, defaults to True
+    :return: Full path to the file
+    :raises SPSDKError: File not found
+    """
+    path = path.replace("\\", "/")
+
+    if os.path.isabs(path):
+        if not check_func(path):
+            raise SPSDKError(f"Path '{path}' not found")
+        return path
+    if search_paths:
+        for dir_candidate in search_paths:
+            if not dir_candidate:
+                continue
+            dir_candidate = dir_candidate.replace("\\", "/")
+            path_candidate = get_abs_path(path, base_dir=dir_candidate)
+            if check_func(path_candidate):
+                return path_candidate
+    if use_cwd and check_func(path):
+        return get_abs_path(path)
+    # list all directories in error message
+    searched_in: List[str] = []
+    if use_cwd:
+        searched_in.append(os.path.abspath(os.curdir))
+    if search_paths:
+        searched_in.extend(filter(None, search_paths))
+    searched_in = [s.replace("\\", "/") for s in searched_in]
+    err_str = f"Path '{path}' not found, Searched in: {', '.join(searched_in)}"
+    if not raise_exc:
+        logger.debug(err_str)
+        return ""
+    raise SPSDKError(err_str)
+
+
+def find_dir(
+    dir_path: str,
+    use_cwd: bool = True,
+    search_paths: Optional[List[str]] = None,
+    raise_exc: bool = True,
+) -> str:
+    """Return a full path to the directory.
+
+    `search_paths` takes precedence over `CWD` if used (default)
+
+    :param dir_path: Directory name, part of directory path or full path
+    :param use_cwd: Try current working directory to find the directory, defaults to True
+    :param search_paths: List of paths where to search for the directory, defaults to None
+    :param raise_exc: Raise exception if directory is not found, defaults to True
+    :return: Full path to the directory
+    :raises SPSDKError: File not found
+    """
+    return _find_path(
+        path=dir_path,
+        check_func=os.path.isdir,
+        use_cwd=use_cwd,
+        search_paths=search_paths,
+        raise_exc=raise_exc,
+    )
+
+
 def find_file(
     file_path: str,
     use_cwd: bool = True,
@@ -273,34 +362,13 @@ def find_file(
     :return: Full path to the file
     :raises SPSDKError: File not found
     """
-    file_path = file_path.replace("\\", "/")
-
-    if os.path.isabs(file_path):
-        if not os.path.isfile(file_path):
-            raise SPSDKError(f"File '{file_path}' not found")
-        return file_path
-    if search_paths:
-        for dir_candidate in search_paths:
-            if not dir_candidate:
-                continue
-            dir_candidate = dir_candidate.replace("\\", "/")
-            path_candidate = get_abs_path(file_path, base_dir=dir_candidate)
-            if os.path.isfile(path_candidate):
-                return path_candidate
-    if use_cwd and os.path.isfile(file_path):
-        return get_abs_path(file_path)
-    # list all directories in error message
-    searched_in: List[str] = []
-    if use_cwd:
-        searched_in.append(os.path.abspath(os.curdir))
-    if search_paths:
-        searched_in.extend(filter(None, search_paths))
-    searched_in = [s.replace("\\", "/") for s in searched_in]
-    err_str = f"File '{file_path}' not found, Searched in: {', '.join(searched_in)}"
-    if not raise_exc:
-        logger.debug(err_str)
-        return ""
-    raise SPSDKError(err_str)
+    return _find_path(
+        path=file_path,
+        check_func=os.path.isfile,
+        use_cwd=use_cwd,
+        search_paths=search_paths,
+        raise_exc=raise_exc,
+    )
 
 
 @contextlib.contextmanager
@@ -382,7 +450,7 @@ def value_to_int(value: Union[bytes, bytearray, int, str], default: Optional[int
         return value
 
     if isinstance(value, (bytes, bytearray)):
-        return int.from_bytes(value, "big")
+        return int.from_bytes(value, Endianness.BIG.value)
 
     if isinstance(value, str) and value != "":
         match = re.match(
@@ -405,7 +473,7 @@ def value_to_bytes(
     value: Union[bytes, bytearray, int, str],
     align_to_2n: bool = True,
     byte_cnt: Optional[int] = None,
-    endianness: str = "big",
+    endianness: Endianness = Endianness.BIG,
 ) -> bytes:
     """Function loads value from lot of formats.
 
@@ -423,8 +491,7 @@ def value_to_bytes(
 
     value = value_to_int(value)
     return value.to_bytes(
-        get_bytes_cnt_of_int(value, align_to_2n, byte_cnt=byte_cnt),
-        endianness,  # type: ignore[arg-type]
+        get_bytes_cnt_of_int(value, align_to_2n, byte_cnt=byte_cnt), endianness.value
     )
 
 
@@ -445,6 +512,56 @@ def value_to_bool(value: Union[bool, int, str]) -> bool:
         return value in ("True", "T", "1")
 
     raise SPSDKError(f"Invalid input Boolean type({type(value)}) with value ({value})")
+
+
+def load_hex_string(
+    source: Optional[Union[str, int, bytes]],
+    expected_size: int,
+    search_paths: Optional[List[str]] = None,
+) -> bytes:
+    """Get the HEX string from the command line parameter (Keys, digests, etc).
+
+    :param source: File path to key file or hexadecimal value. If not specified random value is used.
+    :param expected_size: Expected size of key in bytes.
+    :param search_paths: List of paths where to search for the file, defaults to None
+    :raises SPSDKError: Invalid key
+    :return: Key in bytes.
+    """
+    if not source:
+        logger.warning(
+            f"The key source is not specified, the random value is used in size of {expected_size} B."
+        )
+        return random_bytes(expected_size)
+
+    key = None
+    assert expected_size > 0, "Invalid expected size of key"
+    if isinstance(source, (bytes, int)):
+        return value_to_bytes(source, byte_cnt=expected_size)
+
+    try:
+        file_path = find_file(source, search_paths=search_paths)
+        try:
+            str_key = load_file(file_path)
+            assert isinstance(str_key, str)
+            if not str_key.startswith(("0x", "0X")):
+                str_key = "0x" + str_key
+            key = value_to_bytes(str_key, byte_cnt=expected_size)
+            if len(key) != expected_size:
+                raise SPSDKError("Invalid Key size.")
+        except (SPSDKError, UnicodeDecodeError):
+            key = load_binary(file_path)
+    except Exception:
+        try:
+            if not source.startswith(("0x", "0X")):
+                source = "0x" + source
+            key = value_to_bytes(source, byte_cnt=expected_size)
+        except SPSDKError:
+            pass
+
+    if key is None or len(key) != expected_size:
+        raise SPSDKError(f"Invalid key input: {source}")
+
+    return key
 
 
 def reverse_bytes_in_longs(arr: bytes) -> bytes:
@@ -721,24 +838,17 @@ def load_configuration(path: str, search_paths: Optional[List[str]] = None) -> D
         config = load_text(path, search_paths=search_paths)
     except Exception as exc:
         raise SPSDKError(f"Can't load configuration file: {str(exc)}") from exc
-    # import YAML only if needed to save startup time
-    from jinja2 import Template, TemplateError  # pylint: disable=import-outside-toplevel
-    from ruamel.yaml import YAML, YAMLError  # pylint: disable=import-outside-toplevel
 
     try:
-        template = Template(config)
-        return YAML(typ="safe").load(template.render())
+        return json.loads(config)
+    except json.JSONDecodeError:
+        # import YAML only if needed to save startup time
+        from yaml import YAMLError, safe_load  # pylint: disable=import-outside-toplevel
 
-    except (YAMLError, UnicodeDecodeError, TemplateError):
-        pass
-
-    # import json only if needed to save startup time
-    import commentjson as json  # pylint: disable=import-outside-toplevel
-
-    try:
-        return json.load(config)
-    except json.JSONLibraryException:
-        pass
+        try:
+            return safe_load(config)
+        except (YAMLError, UnicodeDecodeError):
+            pass
 
     raise SPSDKError(f"Unable to load '{path}'.")
 
@@ -759,6 +869,34 @@ def get_hash(text: Union[str, bytes]) -> str:
     if isinstance(text, str):
         text = text.encode("utf-8")
     return hashlib.sha1(text).digest().hex()[:8]
+
+
+def deep_update(d: Dict, u: Dict) -> Dict:
+    """Deep update nested dictionaries.
+
+    :param d: Dictionary that will be updated
+    :param u: Dictionary with update information
+    :returns: Updated dictionary.
+    """
+    for k, v in u.items():
+        if isinstance(v, dict):
+            d[k] = deep_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
+
+def wrap_text(text: str, max_line: int = 100) -> str:
+    """Wrap text in SPSDK standard.
+
+    Count with new lines in input string and do wrapping after that.
+
+    :param text: Text to wrap
+    :param max_line: Max line in output, defaults to 100
+    :return: Wrapped text (added new lines characters on right places)
+    """
+    lines = text.splitlines()
+    return "\n".join([textwrap.fill(text=line, width=max_line) for line in lines])
 
 
 TS = TypeVar("TS", bound="SingletonMeta")  # pylint: disable=invalid-name

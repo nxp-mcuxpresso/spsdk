@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -52,6 +52,7 @@ USB_DEVICES = {
     "LPC553x": (0x1FC9, 0x0025),
     "MCXN9xx": (0x1FC9, 0x014F),
     "MCXA1xx": (0x1FC9, 0x0155),
+    "MCXN23x": (0x1FC9, 0x0158),
 }
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,7 @@ import os
 import pytest
 
 from spsdk.apps import nxpimage
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.misc import Endianness, use_working_directory
 from tests.cli_runner import CliRunner
 
 
@@ -61,7 +61,7 @@ def test_nxpimage_convert_hexbin_invalid(cli_runner: CliRunner, tmpdir, data_dir
             "0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,",
             None,
             None,
-            "little",
+            Endianness.LITTLE,
             False,
         ),
         (
@@ -85,7 +85,7 @@ def test_nxpimage_convert_hexbin_invalid(cli_runner: CliRunner, tmpdir, data_dir
             "0x0100, 0x0302, 0x0504, 0x0706, 0xaa08,",
             "uint16_t",
             "0xAA",
-            "little",
+            Endianness.LITTLE,
             False,
         ),
         (
@@ -109,7 +109,7 @@ def test_nxpimage_convert_hexbin_invalid(cli_runner: CliRunner, tmpdir, data_dir
             "0x03020100, 0x07060504, 0xccbbaa08,",
             "uint32_t",
             "0xAABBCC",
-            "little",
+            Endianness.LITTLE,
             False,
         ),
         (
@@ -117,7 +117,7 @@ def test_nxpimage_convert_hexbin_invalid(cli_runner: CliRunner, tmpdir, data_dir
             "0x03020100, 0x07060504,",
             "uint32_t",
             None,
-            "little",
+            Endianness.LITTLE,
             False,
         ),
         (
@@ -125,7 +125,7 @@ def test_nxpimage_convert_hexbin_invalid(cli_runner: CliRunner, tmpdir, data_dir
             "0x00010203, 0x04050607,",
             "uint32_t",
             None,
-            "big",
+            Endianness.BIG,
             False,
         ),
     ],
@@ -140,8 +140,8 @@ def test_nxpimage_convert_bin2carr(
             cmd.extend(["-t", type])
         if padding:
             cmd.extend(["-p", padding])
-        if endian:
-            cmd.extend(["-e", endian])
+        if endian is not None:
+            cmd.extend(["-e", endian.value])
         result = cli_runner.invoke(nxpimage.main, cmd, expected_code=-1 if error else 0)
         if not error:
             assert out_str in result.output
@@ -163,7 +163,7 @@ def test_nxpimage_convert_bin2carr_file(cli_runner: CliRunner, tmpdir, data_dir)
             "-p",
             "0xAABBCC",
             "-e",
-            "little",
+            Endianness.LITTLE,
             "-o",
             output,
         ]

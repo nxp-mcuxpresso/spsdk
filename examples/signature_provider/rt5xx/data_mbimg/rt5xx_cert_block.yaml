@@ -1,0 +1,7 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+containerOutputFile: cert_block.bin
+imageBuildNumber: 0
+mainRootCertId: 0
+rootCertificate0File: root_k0_signed_cert0_noca.der.cert

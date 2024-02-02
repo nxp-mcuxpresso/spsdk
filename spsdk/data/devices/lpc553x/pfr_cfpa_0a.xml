@@ -1,0 +1,228 @@
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
+  <register offset="0" width="32" name="HEADER" description="Header">
+    <alias type="CMSIS" value="CFPA.HEADER"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="FLASH_CFPA_HEADER_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x4" width="32" name="CFPA_PAGE_VERSION" description="CFPA Page Version">
+    <alias type="CMSIS" value="CFPA.CFPA_PAGE_VERSION"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="FLASH_CFPA_CFPA_PAGE_VERSION_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x8" width="32" name="FW_Version" description="Firmware Version">
+    <alias type="CMSIS" value="CFPA.FW_VERSION"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Firmware Version (Monotonic counter)">
+      <alias type="CMSIS" value="FLASH_CFPA_FW_VERSION_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0xC" width="32" name="MCTR_NXP_CTR0" description="Monotonic counter 0">
+    <alias type="CMSIS" value="CFPA.MCTR_NXP_CTR0"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Monotonic counter">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_NXP_CTR0_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x10" width="32" name="MFLAG_CUST_0" description="Customer defined Monotonic flags">
+    <alias type="CMSIS" value="CFPA.MFLAG_CUST_0"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Customer defined Monotonic flags">
+      <alias type="CMSIS" value="FLASH_CFPA_MFLAG_CUST_0_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x14" width="32" name="MCTR_NXP_CTR1" description="Monotonic counter 1">
+    <alias type="CMSIS" value="CFPA.MCTR_NXP_CTR[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Monotonic counter 1">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_NXP_CTR_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x18" width="32" name="MCTR_NXP_CTR2" description="Monotonic counter 2">
+    <alias type="CMSIS" value="CFPA.MCTR_NXP_CTR[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Monotonic counter 2">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_NXP_CTR_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1C" width="32" name="MCTR_NXP_CTR3" description="Monotonic counter 3">
+    <alias type="CMSIS" value="CFPA.MCTR_NXP_CTR[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Monotonic counter 3">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_NXP_CTR_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x20" width="32" name="MCTR_NXP_CTR4" description="Monotonic counter 4">
+    <alias type="CMSIS" value="CFPA.MCTR_NXP_CTR[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Monotonic counter 4">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_NXP_CTR_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x24" width="32" name="MCTR_NXP_CTR5" description="Monotonic counter 5">
+    <alias type="CMSIS" value="CFPA.MCTR_NXP_CTR[4]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Monotonic counter 5">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_NXP_CTR_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x28" width="32" name="MCTR_NXP_CTR6" description="Monotonic counter 6">
+    <alias type="CMSIS" value="CFPA.MCTR_NXP_CTR[5]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Monotonic counter 6">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_NXP_CTR_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x2C" width="32" name="MCTR_NXP_CTR7" description="Monotonic counter 7">
+    <alias type="CMSIS" value="CFPA.MCTR_NXP_CTR[6]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Monotonic counter 7">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_NXP_CTR_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x30" width="32" name="MCTR_CUST_CTR0" description="Customer defined Monotonic counter 0.">
+    <alias type="CMSIS" value="CFPA.MCTR_CUST_CTR[0]"/>
+    <bit_field offset="0" width="32" name="COUNTER" access="RO" reset_value="0" description="Customer defined Monotonic counter 0">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_CUST_CTR_COUNTER(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x34" width="32" name="MCTR_CUST_CTR1" description="Customer defined Monotonic counter 1.">
+    <alias type="CMSIS" value="CFPA.MCTR_CUST_CTR[1]"/>
+    <bit_field offset="0" width="32" name="COUNTER" access="RO" reset_value="0" description="Customer defined Monotonic counter 1">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_CUST_CTR_COUNTER(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x38" width="32" name="MCTR_CUST_CTR2" description="Customer defined Monotonic counter 2.">
+    <alias type="CMSIS" value="CFPA.MCTR_CUST_CTR[2]"/>
+    <bit_field offset="0" width="32" name="COUNTER" access="RO" reset_value="0" description="Customer defined Monotonic counter 2">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_CUST_CTR_COUNTER(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x3C" width="32" name="MCTR_CUST_CTR3" description="Customer defined Monotonic counter 3.">
+    <alias type="CMSIS" value="CFPA.MCTR_CUST_CTR[3]"/>
+    <bit_field offset="0" width="32" name="COUNTER" access="RO" reset_value="0" description="Customer defined Monotonic counter 3">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_CUST_CTR_COUNTER(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x40" width="32" name="MCTR_CUST_CTR4" description="Customer defined Monotonic counter 4.">
+    <alias type="CMSIS" value="CFPA.MCTR_CUST_CTR[4]"/>
+    <bit_field offset="0" width="32" name="COUNTER" access="RO" reset_value="0" description="Customer defined Monotonic counter 4">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_CUST_CTR_COUNTER(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x44" width="32" name="MCTR_CUST_CTR5" description="Customer defined Monotonic counter 5.">
+    <alias type="CMSIS" value="CFPA.MCTR_CUST_CTR[5]"/>
+    <bit_field offset="0" width="32" name="COUNTER" access="RO" reset_value="0" description="Customer defined Monotonic counter 5">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_CUST_CTR_COUNTER(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x48" width="32" name="MCTR_CUST_CTR6" description="Customer defined Monotonic counter 6.">
+    <alias type="CMSIS" value="CFPA.MCTR_CUST_CTR[6]"/>
+    <bit_field offset="0" width="32" name="COUNTER" access="RO" reset_value="0" description="Customer defined Monotonic counter 6">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_CUST_CTR_COUNTER(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x4C" width="32" name="MCTR_CUST_CTR7" description="Customer defined Monotonic counter 7.">
+    <alias type="CMSIS" value="CFPA.MCTR_CUST_CTR[7]"/>
+    <bit_field offset="0" width="32" name="COUNTER" access="RO" reset_value="0" description="Customer defined Monotonic counter 7">
+      <alias type="CMSIS" value="FLASH_CFPA_MCTR_CUST_CTR_COUNTER(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x50" width="32" name="MFLAG_CUST_1" description="Customer defined Monotonic flags">
+    <alias type="CMSIS" value="CFPA.MFLAG_CUST_1"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Customer defined Monotonic flags">
+      <alias type="CMSIS" value="FLASH_CFPA_MFLAG_CUST_1_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x58" width="32" name="DCFG_CC_SOCU_NS_PIN" description="Device Configuration Credential Constraints for SoC specific Use Pinned">
+    <alias type="CMSIS" value="CFPA.DCFG_CC_SOCU_NS_PIN"/>
+    <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Enable">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_NIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_NIDEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_NIDEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RO" reset_value="0" description="Non-secure Debug Enable">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_DBGEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DBGEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DBGEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <reserved_bit_field offset="2" width="3" reset_value="0"/>
+    <bit_field offset="5" width="1" name="DSP_DBGEN" access="RO" reset_value="0" description="DSP Debug Enable">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_DSP_DBGEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_DSP_DBGEN_FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RO" reset_value="0" description="ISP Boot Command Enable">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RO" reset_value="0" description="FA Command Enable">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_FA_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_FA_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RO" reset_value="0" description="Flash Mass Erase Command Enable">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_ME_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN_FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <reserved_bit_field offset="9" width="7" reset_value="0"/>
+    <reserved_bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value of Bits [15:0]">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_PIN_INVERSE_VALUE(x)"/>
+    </reserved_bit_field>
+  </register>
+  <register offset="0x5C" width="32" name="DCFG_CC_SOCU_NS_DFLT" description="Device Configuration Credential Constraints for SoC specific Use Debug Filter">
+    <alias type="CMSIS" value="CFPA.DCFG_CC_SOCU_NS_DFLT"/>
+    <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Fixed State">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_NIDEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_NIDEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_NIDEN_ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RO" reset_value="0" description="Non-secure Debug Fixed State">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_DBGEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DBGEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DBGEN_ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="2" width="3" reset_value="0"/>
+    <bit_field offset="5" width="1" name="DSP_DBGEN" access="RO" reset_value="0" description="DSP Debug Fixed State">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN_ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RO" reset_value="0" description="ISP Boot Command Fixed State">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RO" reset_value="0" description="FA Command Fixed State">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RO" reset_value="0" description="Flash Mass Erase Command Fixed State">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN(x)"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN_ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="9" width="7" reset_value="0"/>
+    <reserved_bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value">
+      <alias type="CMSIS" value="FLASH_CFPA_DCFG_CC_SOCU_NS_DFLT_INVERSE_VALUE(x)"/>
+    </reserved_bit_field>
+  </register>
+  <register offset="0x60" width="32" name="ENABLE_FA_MODE" description="Enable FA Mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.">
+    <alias type="CMSIS" value="CFPA.ENABLE_FA_MODE"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="FLASH_CFPA_ENABLE_FA_MODE_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x64" width="32" name="CMPA_PROG_IN_PROGRESS" description="CMPA Page Programming On Going. Set this field to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.">
+    <alias type="CMSIS" value="CFPA.CMPA_PROG_IN_PROGRESS"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="FLASH_CFPA_CMPA_PROG_IN_PROGRESS_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1EC" width="32" name="CFPA_CRC32" description="CFPA CRC32">
+    <alias type="CMSIS" value="CFPA.CFPA_CRC32"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="FLASH_CFPA_CFPA_CRC32_FIELD(x)"/>
+    </bit_field>
+  </register>
+</regs:peripheral>

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for generating, processing and verifying TP Audit Log."""
@@ -12,6 +12,7 @@ from typing import Iterator, List, NamedTuple, Optional, Tuple
 
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.keys import PublicKeyEcc
+from spsdk.utils.misc import Endianness
 
 from ..exceptions import SPSDKTpError
 from .data_container import Container
@@ -152,7 +153,7 @@ class AuditLogRecord(NamedTuple):
     @property
     def prod_counter_int(self) -> int:
         """Return production counter as an integer."""
-        return int.from_bytes(self.prod_counter, byteorder="big")
+        return int.from_bytes(self.prod_counter, byteorder=Endianness.BIG.value)
 
     def as_dict(self) -> dict:
         """Return dictionary suitable for writing into log file."""

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
@@ -12,9 +12,9 @@ from spsdk.dk6.commands import *
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (CommandTag.GET_CHIPID, b"\x21\x4a\x04\x94"),
+        (CommandTag.GET_CHIPID.tag, b"\x21\x4a\x04\x94"),
         (
-            CommandTag.UNLOCK_ISP,
+            CommandTag.UNLOCK_ISP.tag,
             b"\x01\x11\x22\x33\x44\x55\x66\x77\x88\x11\x22\x33\x44\x55\x66\x77\x88",
         ),
     ],
@@ -28,9 +28,9 @@ def test_cmd_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (CommandTag.GET_CHIPID, b"\x21\x4a\x04\x94"),
+        (CommandTag.GET_CHIPID.tag, b"\x21\x4a\x04\x94"),
         (
-            CommandTag.UNLOCK_ISP,
+            CommandTag.UNLOCK_ISP.tag,
             b"\x01\x11\x22\x33\x44\x55\x66\x77\x88\x11\x22\x33\x44\x55\x66\x77\x88",
         ),
     ],
@@ -43,7 +43,7 @@ def test_generic_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (ResponseTag.UNLOCK_ISP, b"\x00"),
+        (ResponseTag.UNLOCK_ISP.tag, b"\x00"),
     ],
 )
 def test_isp_unlock_response(type, raw_data):
@@ -55,7 +55,7 @@ def test_isp_unlock_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (ResponseTag.GET_CHIPID, b"\x00\x88\x88\x88\x88\xcc\x00\x00\x14"),
+        (ResponseTag.GET_CHIPID.tag, b"\x00\x88\x88\x88\x88\xcc\x00\x00\x14"),
     ],
 )
 def test_get_chip_id_response(type, raw_data):
@@ -69,7 +69,7 @@ def test_get_chip_id_response(type, raw_data):
     "type,raw_data",
     [
         (
-            ResponseTag.MEM_GET_INFO,
+            ResponseTag.MEM_GET_INFO.tag,
             b"\x00\x00\x00\x00\x00\x00\x00\xde\x09\x00\x00\x02\x00\x00\x01\x0f\x46\x4c\x41\x53\x48",
         )
     ],
@@ -90,7 +90,7 @@ def test_mem_get_info_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (ResponseTag.MEM_OPEN, b"\x00\x00"),
+        (ResponseTag.MEM_OPEN.tag, b"\x00\x00"),
     ],
 )
 def test_mem_open_response(type, raw_data):
@@ -102,7 +102,7 @@ def test_mem_open_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (ResponseTag.MEM_READ, b"\x00\xff\xff\xff\xff\xff\xff\xff\xff"),
+        (ResponseTag.MEM_READ.tag, b"\x00\xff\xff\xff\xff\xff\xff\xff\xff"),
     ],
 )
 def test_mem_read_response(type, raw_data):
@@ -114,7 +114,7 @@ def test_mem_read_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (ResponseTag.MEM_WRITE, b"\x00\x00\x00\x00\x00\x00\x00\x00\x00"),
+        (ResponseTag.MEM_WRITE.tag, b"\x00\x00\x00\x00\x00\x00\x00\x00\x00"),
     ],
 )
 def test_mem_write_response(type, raw_data):
@@ -125,7 +125,7 @@ def test_mem_write_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (ResponseTag.MEM_ERASE, b"\x00\x00\x09\x43\x00\x12\xa7\xd0\x54"),
+        (ResponseTag.MEM_ERASE.tag, b"\x00\x00\x09\x43\x00\x12\xa7\xd0\x54"),
     ],
 )
 def test_mem_erase_response(type, raw_data):
@@ -136,7 +136,7 @@ def test_mem_erase_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (ResponseTag.MEM_BLANK_CHECK, b"\x00\x00\x09\x45\x00\x44\xfd\x77\xd2"),
+        (ResponseTag.MEM_BLANK_CHECK.tag, b"\x00\x00\x09\x45\x00\x44\xfd\x77\xd2"),
     ],
 )
 def test_mem_check_response(type, raw_data):
@@ -147,7 +147,7 @@ def test_mem_check_response(type, raw_data):
 @pytest.mark.parametrize(
     "type,raw_data",
     [
-        (ResponseTag.MEM_CLOSE, b"\x00"),
+        (ResponseTag.MEM_CLOSE.tag, b"\x00"),
     ],
 )
 def test_mem_close_response(type, raw_data):

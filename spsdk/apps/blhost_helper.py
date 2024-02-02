@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Helper module for blhost application."""
 
 from copy import deepcopy
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 import click
 
@@ -19,7 +19,9 @@ from spsdk.mboot.commands import (
     TrustProvOemKeyType,
     TrustProvWrappingKeyType,
 )
+from spsdk.mboot.properties import PropertyTag
 from spsdk.utils.misc import value_to_int
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class OemGenMasterShareHelp(click.Command):
@@ -97,7 +99,7 @@ KW45XX = {
 PROPERTIES_OVERRIDE = {"kw45xx": KW45XX, "k32w1xx": KW45XX}
 
 
-def parse_property_tag(property_tag: str, family: Optional[str] = None) -> int:
+def parse_property_tag(property_tag: str, family: Optional[str] = None) -> PropertyTag:
     """Convert the property as name or stringified number into integer.
 
     :param property_tag: Name or number of the property tag
@@ -108,12 +110,12 @@ def parse_property_tag(property_tag: str, family: Optional[str] = None) -> int:
     if family and family in PROPERTIES_OVERRIDE.keys():
         properties_dict.update(PROPERTIES_OVERRIDE[family])
     try:
-        return value_to_int(property_tag)
+        return PropertyTag.from_tag(value_to_int(property_tag))
     except SPSDKError:
         for key, value in properties_dict.items():
             if value == property_tag:
-                return key
-        return 0xFF
+                return PropertyTag.from_tag(key)
+        return PropertyTag.UNKNOWN
 
 
 def parse_key_prov_key_type(key_type: str) -> int:
@@ -152,12 +154,14 @@ def parse_trust_prov_wrapping_key_type(key_type: str) -> int:
     return _parse_key_type(key_type, TrustProvWrappingKeyType)
 
 
-def _parse_key_type(user_input: str, collection: Any, default: Optional[int] = None) -> int:
+def _parse_key_type(
+    user_input: str, collection: Type[SpsdkEnum], default: Optional[int] = None
+) -> int:
     try:
         return value_to_int(user_input)
     except SPSDKError:
         key_type = user_input.upper()
-        key_type_int = collection.get(key_type, default)
+        key_type_int = collection.get_tag(key_type) if collection.contains(key_type) else default
         if key_type_int is None:
             raise SPSDKError(  # pylint: disable=raise-missing-from
                 f"Unable to find '{user_input}' in '{collection.__name__}'"

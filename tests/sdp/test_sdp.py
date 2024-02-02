@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -98,14 +98,14 @@ def test_sdp_hab_locked():
         VirtualSDPInterface(
             VirtualDevice(
                 respond_sequence=[
-                    CmdResponse(True, pack(">I", ResponseValue.LOCKED)),
-                    CmdResponse(True, pack(">I", ResponseValue.HAB_SUCCESS)),
+                    CmdResponse(True, pack(">I", ResponseValue.LOCKED.tag)),
+                    CmdResponse(True, pack(">I", ResponseValue.HAB_SUCCESS.tag)),
                 ]
             )
         )
     )
     assert sdp.is_opened
-    assert sdp._send_data(CmdPacket(0, 0, 0, 0), b"")
+    assert sdp._send_data(CmdPacket(CommandTag.READ_REGISTER, 0, 0, 0), b"")
     assert sdp.hab_status == StatusCode.HAB_IS_LOCKED
     assert sdp.status_code == StatusCode.SUCCESS
 
@@ -116,9 +116,9 @@ def test_sdp_read_hab_locked():
         VirtualSDPInterface(
             VirtualDevice(
                 respond_sequence=[
-                    CmdResponse(True, pack(">I", ResponseValue.LOCKED)),
+                    CmdResponse(True, pack(">I", ResponseValue.LOCKED.tag)),
                     CmdResponse(False, b"0000"),
-                    CmdResponse(True, pack(">I", ResponseValue.HAB_SUCCESS)),
+                    CmdResponse(True, pack(">I", ResponseValue.HAB_SUCCESS.tag)),
                 ]
             )
         )
@@ -133,7 +133,9 @@ def test_sdp_jump_and_run_hab_locked():
     """Test `jump_and_run` returns False if HAB locked (even the operation works)"""
     sdp = SDP(
         VirtualSDPInterface(
-            VirtualDevice(respond_sequence=[CmdResponse(True, pack(">I", ResponseValue.LOCKED))])
+            VirtualDevice(
+                respond_sequence=[CmdResponse(True, pack(">I", ResponseValue.LOCKED.tag))]
+            )
         )
     )
     assert sdp.is_opened
@@ -144,7 +146,7 @@ def test_sdp_jump_and_run_hab_locked():
 
 def test_sdp_send_data_errors():
     error_response = [
-        CmdResponse(True, pack(">I", ResponseValue.UNLOCKED)),
+        CmdResponse(True, pack(">I", ResponseValue.UNLOCKED.tag)),
         CmdResponse(True, pack(">I", 0x12345678)),
     ]
 

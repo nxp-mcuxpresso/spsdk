@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -65,6 +65,7 @@ def test_export_has_plugin():
         "nxpimage otfad export",
         "nxpimage tz export",
         "nxpcrypto rot export",
+        "nxpmemcfg export",
     ]
 
     def export_has_plugin(group: click.Command, command_name: str) -> bool:

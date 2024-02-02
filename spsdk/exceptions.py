@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -88,3 +88,7 @@ class SPSDKAttributeError(SPSDKError, AttributeError):
 
 class SPSDKConnectionError(SPSDKError, ConnectionError):
     """SPSDK standard connection error."""
+
+
+class SPSDKIndexError(SPSDKError, IndexError):
+    """SPSDK standard index error."""

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -54,8 +54,4 @@ def test_checkdata_invalid():
     with pytest.raises(SPSDKError):
         cmd.num_bytes = 6
     with pytest.raises(SPSDKError):
-        cmd.ops = 99
-    with pytest.raises(SPSDKError):
         cmd = CmdCheckData(numbytes=8)
-    with pytest.raises(SPSDKError):
-        cmd = CmdCheckData(ops=80)

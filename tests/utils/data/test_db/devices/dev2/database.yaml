@@ -1,0 +1,54 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  rev1: {}
+  rev_test_invalid_computed:
+    features:
+      shadow_regs:
+        computed_fields:
+          REG1:
+            DEV_TEST_EN: comalg_dcfg_cc_socu_invalid
+  rev_test_invalid_flush_func:
+    features:
+      shadow_regs:
+        flush_func: flush_func_invalid
+
+latest: rev1
+
+info: {}
+
+features:
+  # ======== Feature 1 ========
+  feature1:
+    sub_feature1: Yeah
+
+  # ======== Feature Reg Config Testing ========
+  reg_config:
+    data_file: test_device2_b0.xml
+    address: 0x4000_0000
+    inverted_regs:
+      INVERTED_REG: INVERTED_REG_AP
+    computed_fields:
+      COMPUTED_REG:
+        TEST_FIELD1: computed_reg_test_field1
+        TEST_FIELD2: computed_reg_test_field2
+      COMPUTED_REG2:
+        TEST_FIELD1: computed_reg2_test_field1
+        TEST_FIELD2: computed_reg2_test_field2
+
+  # ======== Feature Shadow registers Testing ========
+  shadow_regs:
+    address: 0x4000_0000
+    read_address: 0x4000_0000
+    data_file: sh_test_dev_x0.xml
+    inverted_regs:
+      REG1: REG_INVERTED_AP
+    flush_func: rw61x_update_scratch_reg
+    computed_fields:
+      REG1:
+        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
+        CRC8: comalg_dcfg_cc_socu_crc8
+      REG2:
+        RESERVED: comalg_do_nothing

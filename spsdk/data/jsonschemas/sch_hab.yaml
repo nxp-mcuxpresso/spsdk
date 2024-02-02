@@ -1,0 +1,518 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-2-Clause
+
+hab_input:
+  type: object
+  title: HAB Input
+  properties:
+    inputImageFile:
+      type: string
+      title: Plain application image
+      description: The input application image in plain BIN, S-REC or ELF.
+      format: file_name
+      template_value: my_application.bin
+  required: ["inputImageFile"]
+
+hab:
+  type: object
+  required: [options]
+  properties:
+    options:
+      type: object
+      title: HAB Options
+      description: An options block contains zero or more name/value pairs and the option settings that assign values to global options used by the nxpimage to control the generation of the output file.
+      properties:
+        flags:
+          type:
+            - number
+            - string
+          title: HAB flags
+          description: HAB flags. 0x0 for unsigned, 0x08 signed, 0x0C encrypted.
+          template_value: 0x8
+        startAddress:
+          type:
+            - number
+            - string
+          title: Image start address
+          description: "First address of the bootable image in the target memory."
+          template_value: 0x60000000
+        ivtOffset:
+          type:
+            - number
+            - string
+          title: IVT Offset
+          description: "Offset of IVT table(beggining of HAB container) from startAddress."
+          template_value: 0x1000
+        initialLoadSize:
+          type:
+            - number
+            - string
+          title: Initial Load size
+          description: "Size of the segments(such as IVT, BDT, DCD, XMCD) placed before the actual application image. The value does not have to be exactly the same as the segments size, but it must be large enough to accommodate all the segments."
+          template_value: 0x2000
+        entryPointAddress:
+          type:
+            - number
+            - string
+          title: Entry Point address
+          description: "Reset vector of the application."
+          template_value: 0x800041f5
+        signatureTimestamp:
+          type: string
+          title: Timestamp of the signature
+          description: ""
+          template_value: "04/05/2023 11:27:43"
+        DCDFilePath:
+          type: string
+          title: DCD file path
+          description: "Optional path to DCD data."
+          template_value: "dcd.bin"
+
+hab_sections:
+  type: object
+  title: CSF Sections
+  properties:
+    sections:
+      type: array
+      title: CSF Sections
+      description: CSF Sections.
+      items:
+        oneOf:
+          - type: object
+            required:
+              - Header
+            properties:
+              Header:
+                type: object
+                title: Header
+                description: >-
+                  The Header command contains data used in the CSF header as well as default values used by the CST for other commands throughout the remaining CSF.
+                  There must be exactly one Header command and it must appear first in the CSF.
+                properties:
+                  Header_Version:
+                    type:
+                      - string
+                      - number
+                    title: Version
+                    description: Version of HAB.
+                    template_value: "4.2"
+                  Header_HashAlgorithm:
+                    type:
+                      - string
+                    title: Hash algorithm
+                    description: Default hash algorithm.
+                    template_value: "sha256"
+                    enum: ["sha256"]
+                  Header_Engine:
+                    type: string
+                    title: Engine
+                    description: Default engine.
+                    template_value: "ANY"
+                    enum:
+                      - ANY
+                      - SAHARA
+                      - RTIC
+                      - DCP
+                      - CAAM
+                      - SW
+                  Header_EngineConfiguration:
+                    type:
+                      - string
+                      - number
+                    title: Engine configuration
+                    description: Default engine configuration. See the CST manual for more info.
+                    template_value: 0
+                  Header_CertificateFormat:
+                    type:
+                      - string
+                    title: Certificate format
+                    description: Default certificate format.
+                    template_value: "x509"
+                    enum:
+                      - x509
+                      - WTLS
+                  Header_SignatureFormat:
+                    type:
+                      - string
+                      - number
+                    title: Signature format
+                    description: Default signature format.
+                    template_value: "CMS"
+                    enum:
+                      - PKCS1
+                      - CMS
+                required:
+                  - Header_Version
+          - type: object
+            required:
+              - InstallSRK
+            properties:
+              InstallSRK:
+                type: object
+                title: Install SRK
+                description: >-
+                  The Install SRK command authenticates and installs the root public key for use in subsequent Install CSFK (HAB only) or Install Key (HAB4 only) commands.
+                  HAB or AHAB authenticates the SRK using the SRK hash (SRK_HASH) fuses. HAB4 or AHAB allows revocation of individual keys within the SRK table using the SRK revocation (SRK_REVOKE) fuses.
+                  HAB installs the SRK in slot 0 of its internal public key store.
+                  There must be exactly one Install SRK command in a CSF, and it must occur before the Install
+                  CSFK (HAB only) command.
+                properties:
+                  InstallSRK_Table:
+                    type: string
+                    title: SRK table binary file
+                    description: Valid file path
+                    template_value: "srk_table.bin"
+                  InstallSRK_SourceIndex:
+                    type: number
+                    title: InstallSRK SourceIndex
+                    description: SRK index within SRK table. Installation fails if the SRK revocation fuse with this index is burned.
+                    enum:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                    template_value: 0
+                required:
+                  - InstallSRK_Table
+                  - InstallSRK_SourceIndex
+          - type: object
+            required:
+              - InstallCSFK
+            properties:
+              InstallCSFK:
+                type: object
+                title: Install CSFK
+                description:
+                  The Install CSFK command authenticates and installs a public key for use in subsequent Install Key (HAB3 only) or Authenticate CSF commands.
+                  HAB authenticates the CSFK from the CSFK certificate using the SRK.
+                  HAB installs the CSFK in slot 1 of its internal public key store.
+                  There must be exactly one Install CSFK command in a CSF, and it must occur before the Authenticate CSF command.
+                properties:
+                  InstallCSFK_File:
+                    type: string
+                    title: CSFK Certificate
+                    description: Valid path.
+                    template_value: "csf.der"
+                  InstallCSFK_CertificateFormat:
+                    type: string
+                    title: Certificate Format
+                    description: CSFK certificate format.
+                    enum:
+                      - x509
+                      - WTLS
+                    template_value: x509
+                required:
+                  - InstallCSFK_File
+          - type: object
+            required:
+              - AuthenticateCSF
+            properties:
+              AuthenticateCSF:
+                type: object
+                title: Authenticate CSF
+                description:
+                  The Authenticate CSF command authenticates the CSF from which it is executed.
+                  HAB authenticates the CSF using the CSFK public key, from a digital signature generated automatically by the CST.
+                  There must be exactly one Authenticate CSF command in a CSF file, and it must occur after the Install CSFK command. Most other CSF commands are allowed only after the Authenticate CSF command.
+                properties:
+                  AuthenticateCSF_EngineConfiguration:
+                    type:
+                      - string
+                      - number
+                    title: Engine configuration
+                    description: Default engine configuration. See the CST manual for more info.
+                    template_value: 0
+                  AuthenticateCSF_CertificateFormat:
+                    type:
+                      - string
+                    title: Certificate format
+                    description: Default certificate format.
+                    template_value: "x509"
+                    enum:
+                      - x509
+                      - WTLS
+                  AuthenticateCSF_SignatureFormat:
+                    type:
+                      - string
+                      - number
+                    title: Signature format
+                    description: Default signature format.
+                    template_value: "CMS"
+                    enum:
+                      - PKCS1
+                      - CMS
+                  AuthenticateCsf_SignProvider:
+                    type:
+                      - string
+                    title: Signature Provider
+                    description: Signature provider configuration string. If not set, the value from AuthenticateCsf_PrivateKeyFile parameter will be used.
+                    template_value: "type=file;file_path=keys/CSF1_1_sha256_2048_65537_v3_usr_key.pem;password=PrivateKeyPwd"
+                  AuthenticateCsf_PrivateKeyFile:
+                    type: string
+                    format: file_name
+                    title: Private Key File
+                    description: Path to authenticate CSF private key file. If not set, the file will be determined from InstallCSFK_File parameter.
+                    template_value: "keys/CSF1_1_sha256_2048_65537_v3_usr_key.pem"
+          - type: object
+            required:
+              - InstallKey
+            properties:
+              InstallKey:
+                type: object
+                title: Install Key
+                description:
+                  The Install Key command authenticates and installs a public key for use in subsequent Install Key or Authenticate Data commands.
+                  HAB authenticates a public key from a public key certificate using a previously installed verifying key and a hash of the public key certificate.
+                  HAB installs the authenticated public key in an internal public key store with a zero-based array of key slots.
+                  The CSF author is responsible for managing the key slots in the internal public key store to establish the desired public key hierarchy and determine the keys used in authentication operations. Overwriting occupied key slots is not allowed, although a repeat command to re- install the same public key occupying the target slot will be skipped and not generate an error.
+                properties:
+                  InstallKey_File:
+                    type: string
+                    title: Public key certificate
+                    description: Valid file path.
+                    template_value: "imgk.pem"
+                  InstallKey_VerificationIndex:
+                    type: number
+                    title: Verification Index
+                    description: Verification key index in key store. CSFK not supported.
+                    enum:
+                      - 0
+                      - 2
+                      - 4
+                    template_value: 0
+                  InstallKey_TargetIndex:
+                    type: number
+                    title: Target Index
+                    description: Target key index in key store. SRK, CSFK slots reserved.
+                    enum:
+                      - 2
+                      - 4
+                    template_value: 2
+                required:
+                  - InstallKey_File
+                  - InstallKey_VerificationIndex
+                  - InstallKey_TargetIndex
+          - type: object
+            required:
+              - AuthenticateData
+            properties:
+              AuthenticateData:
+                type: object
+                title: Authenticate Data
+                description:
+                  The Authenticate Data command verifies the authenticity of pre-loaded data in memory. The data may include executable SW instructions and may be spread across multiple non-contiguous address ranges drawn from multiple object files.
+                  HAB authenticates the pre-loaded data using a previously installed public key from a digital signature generated automatically by the CST.
+                properties:
+                  AuthenticateData_VerificationIndex:
+                    type: number
+                    title: Verification Index
+                    description: Verification key index in key store. SRK, CSFK not supported. NOTE For HAB4 Fast Authentication, this must be 0
+                    enum:
+                      - 0
+                      - 2
+                      - 4
+                    template_value: 2
+                  AuthenticateData_Engine:
+                    type: string
+                    title: Engine
+                    description: Data signature hash engine.
+                    enum:
+                      - ANY
+                      - SAHARA
+                      - RTIC
+                      - DCP
+                      - CAAM
+                      - SW
+                    template_value: ANY
+                  AuthenticateData_EngineConfiguration:
+                    type:
+                      - string
+                      - number
+                    title: Engine Configuration
+                    description: Configuration flags for the engine. See the CSF manual.
+                    template_value: 0
+                  AuthenticateData_SignProvider:
+                    type:
+                      - string
+                    title: Signature Provider
+                    description: Signature provider configuration string. If not set, the value from AuthenticateData_PrivateKeyFile parameter will be used.
+                    template_value: "type=file;file_path=keys/IMG1_1_sha256_2048_65537_v3_usr_key.pem;password=PrivateKeyPwd"
+                  AuthenticateData_PrivateKeyFile:
+                    type: string
+                    format: file_name
+                    title: Private Key File
+                    description: Path to authenticate IMG private key file. If not set, the file will be determined from InstallCSFK_File parameter.
+                    template_value: "keys/IMG1_1_sha256_2048_65537_v3_usr_key.pem"
+                required:
+                  - AuthenticateData_VerificationIndex
+          - type: object
+            required:
+              - SetEngine
+            properties:
+              SetEngine:
+                type: object
+                title: Set Engine
+                description:
+                  The Set Engine command selects the default engine and engine configuration for a given algorithm. HAB3 does not support the Set Engine command.
+                  Some CSF commands allow the CSF author to select the engine used for an algorithm by specifying an argument other than ANY. However, if the engine argument is ANY, then HAB selects the engine to use based on internal criteria. The Set Engine command overrides the HAB internal criteria and selects the engine and configuration to use when ANY is specified.
+
+                  Some algorithm types do not have an associated engine argument in the CSF commands (e.g. the signature algorithm in Authenticate Data commands). By default, HAB selects the engine to use for such algorithms based on internal criteria. The Set Engine command overrides the HAB internal criteria in such cases as well.
+                  Multiple Set Engine commands may appear anywhere in a CSF after the Header command. Subsequent commands use the engine selected by the most recent Set Engine command
+                properties:
+                  SetEngine_HashAlgorithm:
+                    type: string
+                    title: Hash Algorithm
+                    description: Hash algorithm.
+                    enum:
+                      - sha256
+                    template_value: sha256
+                  SetEngine_Engine:
+                    type: string
+                    title: Engine
+                    description: Engine, use ANY to restore internal HAB criteria.
+                    template_value: "ANY"
+                    enum:
+                      - ANY
+                      - SAHARA
+                      - RTIC
+                      - DCP
+                      - CAAM
+                      - SW
+                  SetEngine_EngineConfiguration:
+                    type:
+                      - string
+                      - number
+                    title: Engine configuration
+                    description: Default engine configuration. See the CST manual for more info.
+                    template_value: 0
+                required:
+                  - SetEngine_HashAlgorithm
+                  - SetEngine_Engine
+          - type: object
+            required:
+              - Unlock
+            properties:
+              Unlock:
+                type: object
+                title: Unlock
+                description:
+                  The Unlock command prevents specified engine features from being locked when exiting the internal boot ROM. HAB3 does not support the Unlock command.
+                  Multiple Unlock commands may appear after the Authenticate CSF command. A feature will be unlocked if specified in one or more Unlock commands.
+                properties:
+                  Unlock_Engine:
+                    type: string
+                    title: Engine
+                    description: Engine to unlock.
+                    enum:
+                      - SRTC
+                      - CAAM
+                      - SNVS
+                      - OCOTP
+                    template_value: OCOTP
+                  Unlock_Features:
+                    type: string
+                    title: Features
+                    description: Comma-separated list of features to unlock.
+                    template_value: JTAG, SRK REVOKE
+          - type: object
+            required:
+              - SecretKey
+            properties:
+              SecretKey:
+                type: object
+                title: Install Secret Key
+                description:
+                  This command is applicable from HAB 4.1 onwards and only on processors which include CAAM and SNVS. Each instance of this command generates a CSF command to install a secret key in CAAM's secret key store.
+                properties:
+                  SecretKey_Name:
+                    type: string
+                    title: Key
+                    description: CMS encrypted data encryption key.
+                    template_value: "dek.bin"
+                  SecretKey_Length:
+                    type: number
+                    title: Key length
+                    description: Key length in bits
+                    enum:
+                      - 128
+                      - 192
+                      - 256
+                    template_value: 128
+                  SecretKey_VerifyIndex:
+                    type: number
+                    title: Verification index
+                    description: Master KEK index. 0 or 1 OTPMK from fuses. 2 ZMK from SNVS, 3 CMK from SNVS.
+                    enum:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                    template_value: 0
+                  SecretKey_TargetIndex:
+                    type: number
+                    title: Target index
+                    description: Target secret key store index.
+                    enum:
+                      - 0
+                      - 1
+                      - 2
+                      - 3
+                    template_value: 0
+                  SecretKey_ReuseDek:
+                    type:
+                      - boolean
+                      - number
+                    title: Reuse DEK
+                    description: If set, the secret key from SecretKey_Name parameter will be used. If not, a random key will be generated and stored.
+                    template_value: false
+                required:
+                  - SecretKey_TargetIndex
+          - type: object
+            required:
+              - Decrypt
+            properties:
+              Decrypt:
+                type: object
+                title: Decrypt Data
+                description: This command is applicable from HAB4.1 onwards. Each instance generates a CSF command to decrypt and authenticate a list of code/data blocks using secret key stored in the secret key store. CST will generate a corresponding AUT_DAT command. CST will encrypt the data blocks in- place in the given files using a secret key and generate MAC data which is appended to the CSF. The secret key index must have been the target key index in a preceding Install Secret Key command. The same secret key must never be used more than once. The secret key used is removed from the secret key store by the Decrypt Data command. A separate Install Secret Key command (which generates a fresh secret key) is required for another Decrypt Data command.
+                properties:
+                  Decrypt_VerifyIndex:
+                    type: number
+                    title: Verification Index
+                    description: Secret key index in Secret key store.
+                    enum:
+                      - 0
+                      - 1
+                      - 2
+                      - 4
+                    template_value: 0
+                  Decrypt_Engine:
+                    type: string
+                    title: Engine
+                    description: MAC Engine.
+                    enum:
+                      - CAAM
+                      - ANY
+                    template_value: ANY
+                  Decrypt_EngineConfiguration:
+                    type:
+                      - string
+                      - number
+                    title: Engine Configuration
+                    description: Configuration flags for the engine. See the CSF manual.
+                    template_value: 0
+                  Decrypt_MacBytes:
+                    type:
+                      - string
+                      - number
+                    title: Mac Bytes
+                    description: Size of MAC in bytes. Even value between 4 and 16.
+                    template_value: 16
+                  Decrypt_Nonce:
+                    type: string
+                    title: Nonce
+                    description: If set, the nonce from the given file will be used. If not, a random nonce will be generated.
+                    template_value: "nonce.bin"
+                required:
+                  - Decrypt_VerifyIndex

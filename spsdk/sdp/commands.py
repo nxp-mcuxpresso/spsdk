@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,14 +10,14 @@
 
 from struct import pack, unpack_from
 
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.interfaces.commands import CmdPacketBase, CmdResponseBase
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 ########################################################################################################################
 # SDP Command Tags
 ########################################################################################################################
-class CommandTag(Enum):
+class CommandTag(SpsdkEnum):
     """SDP Commands."""
 
     READ_REGISTER = (0x0101, "ReadRegister", "Read data from memory or registers")
@@ -39,18 +39,18 @@ class CommandTag(Enum):
 ########################################################################################################################
 # SDP Response Values
 ########################################################################################################################
-class ResponseValue(Enum):
+class ResponseValue(SpsdkEnum):
     """SDP Response Values."""
 
-    WRITE_DATA_OK = (0x128A8A12, "Write Data Success")
-    WRITE_FILE_OK = (0x88888888, "Write File Success")
-    SKIP_DCD_HEADER_OK = (0x900DD009, "Skip DCD Header Success")
+    WRITE_DATA_OK = (0x128A8A12, "WRITE_DATA_OK", "Write Data Success")
+    WRITE_FILE_OK = (0x88888888, "WRITE_FILE_OK", "Write File Success")
+    SKIP_DCD_HEADER_OK = (0x900DD009, "SKIP_DCD_HEADER_OK", "Skip DCD Header Success")
 
-    LOCKED = (0x12343412, "HAB Is Enabled (Locked)")
-    UNLOCKED = (0x56787856, "Hab Is Disabled (Unlocked)")
+    LOCKED = (0x12343412, "LOCKED", "HAB Is Enabled (Locked)")
+    UNLOCKED = (0x56787856, "UNLOCKED", "Hab Is Disabled (Unlocked)")
 
-    HAB_SUCCESS = (0xF0F0F0F0, "HAB_Success", "HAB Success")
-    BAUDRATE_SET = (0x09D00D90, "Baudrate Setup Success")
+    HAB_SUCCESS = (0xF0F0F0F0, "HAB_SUCCESS", "HAB Success")
+    BAUDRATE_SET = (0x09D00D90, "BAUDRATE_SET", "Baudrate Setup Success")
 
 
 ########################################################################################################################
@@ -73,7 +73,7 @@ class CmdPacket(CmdPacketBase):
         :param count: Count used by individual command
         :param value: Value to use in a particular command, defaults to 0
         """
-        self.tag = tag
+        self.tag = tag.tag
         self.address = address
         self.format = pformat
         self.count = count
@@ -82,8 +82,8 @@ class CmdPacket(CmdPacketBase):
     def __str__(self) -> str:
         """String representation of the command packet."""
         return (
-            f"Tag={CommandTag.get(self.tag, f'0x{self.tag:04X}')}, Address=0x{self.address:04X},"
-            f" Format={self.format}, Count={self.count}, Value=0x{self.value:08X}"
+            f"Tag={CommandTag.get_label(self.tag) if self.tag in CommandTag.tags() else f'0x{self.tag:04X}'}, "
+            f"Address=0x{self.address:04X}, Format={self.format}, Count={self.count}, Value=0x{self.value:08X}"
         )
 
     def to_bytes(self, padding: bool = True) -> bytes:
@@ -110,4 +110,9 @@ class CmdResponse(CmdResponseBase):
 
     def __str__(self) -> str:
         """Return stringified information about the command response."""
-        return f"Response: {ResponseValue.get(self.value, f'0x{self.value:08X}')}"
+        label = (
+            ResponseValue.get_label(self.value)
+            if self.value in ResponseValue.tags()
+            else f"0x{self.value:08X}"
+        )
+        return f"Response: {label}"

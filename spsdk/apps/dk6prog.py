@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """DK6 Prog CLI interface."""
@@ -25,7 +25,7 @@ from spsdk.apps.utils.utils import (
     parse_hex_data,
     progress_bar,
 )
-from spsdk.dk6.commands import MemoryAccessValues, MemoryId, MemoryType
+from spsdk.dk6.commands import MemoryId
 from spsdk.dk6.dk6device import DK6Device, DK6Memory
 from spsdk.dk6.driver import Backend, DriverInterface
 from spsdk.exceptions import SPSDKError
@@ -72,13 +72,13 @@ def print_memory_table(memories: Dict[int, DK6Memory]) -> str:
     table.vrules = prettytable.NONE
     for memory_id, memory in memories.items():
         fields = [
-            colorama.Fore.YELLOW + str(MemoryId.get(memory_id)),
+            colorama.Fore.YELLOW + str(MemoryId.get_label(memory_id)),
             colorama.Fore.MAGENTA + str(memory.mem_id),
             colorama.Fore.GREEN + hex(memory.base_address),
             colorama.Fore.RED + hex(memory.length),
             colorama.Fore.MAGENTA + hex(memory.sector_size),
-            colorama.Fore.CYAN + str(MemoryType.get(memory.mem_type)),
-            colorama.Fore.BLUE + str(MemoryAccessValues.get(memory.access)),
+            colorama.Fore.CYAN + str(memory.mem_type.label),
+            colorama.Fore.BLUE + str(memory.access.label),
         ]
 
         table.add_row(fields)
@@ -94,9 +94,9 @@ def parse_memory_id(memory_id: str) -> MemoryId:
     """
     try:
         value = value_to_int(memory_id)
-        return MemoryId.from_int(value) if value in MEMORY_IDS.values() else MemoryId.FLASH
+        return MemoryId.from_tag(value) if value in MEMORY_IDS.values() else MemoryId.FLASH
     except SPSDKError:
-        return MemoryId.from_int(MEMORY_IDS.get(memory_id.lower(), 0))
+        return MemoryId.from_tag(MEMORY_IDS.get(memory_id.lower(), 0))
 
 
 def _split_string(string: str, length: int) -> List:

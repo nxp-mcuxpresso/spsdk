@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,7 +16,6 @@ import spsdk.apps.nxpimage as nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb2.images import BootImageV21
 from spsdk.utils.misc import load_configuration, use_working_directory
-from spsdk.utils.schema_validator import ValidationSchemas
 from tests.cli_runner import CliRunner
 
 SB21_TEST_CONFIGURATIONS = [

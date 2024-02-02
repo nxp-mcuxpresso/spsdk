@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,37 +16,37 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar
 from crcmod.predefined import mkPredefinedCrcFun
 from typing_extensions import Self
 
-from spsdk.apps.utils.utils import get_key
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.hmac import hmac
 from spsdk.crypto.rng import random_bytes
-from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
-from spsdk.crypto.symmetric import aes_ctr_decrypt, aes_ctr_encrypt
-from spsdk.exceptions import (
-    SPSDKError,
-    SPSDKParsingError,
-    SPSDKUnsupportedOperation,
-    SPSDKValueError,
+from spsdk.crypto.signature_provider import (
+    SignatureProvider,
+    get_signature_provider,
+    try_to_verify_public_key,
 )
+from spsdk.crypto.symmetric import aes_ctr_decrypt, aes_ctr_encrypt
+from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
 from spsdk.image.keystore import KeySourceType, KeyStore
 from spsdk.image.trustzone import TrustZone, TrustZoneType
 from spsdk.utils.crypto.cert_blocks import CertBlockV1, CertBlockV21, CertBlockVx
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
+    Endianness,
     align_block,
     find_file,
     load_binary,
     load_configuration,
+    load_hex_string,
     value_to_int,
     write_file,
 )
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 
 
 class MasterBootImageManifest:
-    """MasterBootImage Manifest used in LPC55s3x."""
+    """MasterBootImage Manifest."""
 
     MAGIC = b"imgm"
     FORMAT = "<4s4L"
@@ -210,7 +210,7 @@ class MasterBootImageManifestMcxNx(MasterBootImageManifest):
         if len(extra_data) < 4:
             raise SPSDKParsingError("Extra data must contain crc.")
 
-        crc = int.from_bytes(extra_data[-4:], "little")
+        crc = int.from_bytes(extra_data[-4:], Endianness.LITTLE.value)
         trust_zone = None
         if extra_data[:-4]:
             trust_zone = TrustZone.from_binary(family=family, raw_data=extra_data[:-4])
@@ -511,11 +511,11 @@ class Mbi_MixinApp(Mbi_Mixin):
 
         :param output_folder: Output folder to store files.
         """
-        filename = "application.bin"
-        assert self.app
-        write_file(self.app, os.path.join(output_folder, filename), mode="wb")
         config: Dict[str, Any] = {}
-        config["inputImageFile"] = filename
+        if self.app:
+            filename = "application.bin"
+            write_file(self.app, os.path.join(output_folder, filename), mode="wb")
+            config["inputImageFile"] = filename
         return config
 
     def load_binary_image_file(self, path: str) -> None:
@@ -596,7 +596,7 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
         :param data: Final Image in bytes.
         """
         tz_type = Mbi_MixinIvt.get_tz_type(data)
-        if tz_type not in TrustZoneType:
+        if tz_type not in TrustZoneType.tags():
             raise SPSDKParsingError("Invalid TrustZone type")
 
         if tz_type == TrustZoneType.CUSTOM:
@@ -618,7 +618,7 @@ class Mbi_MixinTrustZone(Mbi_Mixin):
 
 
 class Mbi_MixinTrustZoneMandatory(Mbi_MixinTrustZone):
-    """Master Boot Image Trust Zone class for LPC55s3x family."""
+    """Master Boot Image Trust Zone class for devices where is Trustzone mandatory."""
 
     def mix_load_from_config(self, config: Dict[str, Any]) -> None:
         """Load configuration from dictionary.
@@ -736,13 +736,13 @@ class Mbi_MixinImageVersion(Mbi_Mixin):
 class Mbi_MixinImageSubType(Mbi_Mixin):
     """Master Boot Image SubType class."""
 
-    class Mbi_ImageSubTypeKw45xx(Enum):
+    class Mbi_ImageSubTypeKw45xx(SpsdkEnum):
         """Supported MAIN and NBU subtypes for KW45xx and K32W1xx."""
 
         MAIN = (0x00, "MAIN", "Default (main) application image")
         NBU = (0x01, "NBU", "NBU (Narrowband Unit) image")
 
-    class Mbi_ImageSubTypeMcxn9xx(Enum):
+    class Mbi_ImageSubTypeMcxn9xx(SpsdkEnum):
         """Supported MAIN and NBU subtypes for MCXN9xx."""
 
         MAIN = (0x00, "MAIN", "Default (main) application image")
@@ -767,29 +767,27 @@ class Mbi_MixinImageSubType(Mbi_Mixin):
         """
         config: Dict[str, Any] = {}
         assert self.image_subtype is not None
-        config["outputImageSubtype"] = Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.name(
+        config["outputImageSubtype"] = Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.from_tag(
             self.image_subtype
-        )
+        ).label
         return config
 
     def set_image_subtype(self, image_subtype: Optional[Union[str, int]]) -> None:
         """Convert string value to int by enum table and store to class."""
         if image_subtype is None:
-            self.image_subtype = (
-                Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.MAIN
-                or Mbi_MixinImageSubType.Mbi_ImageSubTypeMcxn9xx.MAIN
+            image_subtype_int = (
+                Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.MAIN.tag
+                or Mbi_MixinImageSubType.Mbi_ImageSubTypeMcxn9xx.MAIN.tag
+            )
+        elif isinstance(image_subtype, str):
+            image_subtype_int = (
+                Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.get_tag(image_subtype)
+                if image_subtype.upper() in Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.labels()
+                else Mbi_MixinImageSubType.Mbi_ImageSubTypeMcxn9xx.get_tag(image_subtype)
             )
         else:
-            image_subtype = Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.get(
-                image_subtype
-            ) or Mbi_MixinImageSubType.Mbi_ImageSubTypeMcxn9xx.get(image_subtype)
-
-            self.image_subtype = (
-                image_subtype
-                if isinstance(image_subtype, int)
-                else Mbi_MixinImageSubType.Mbi_ImageSubTypeKw45xx.MAIN
-                or Mbi_MixinImageSubType.Mbi_ImageSubTypeMcxn9xx.MAIN
-            )
+            image_subtype_int = image_subtype
+        self.image_subtype = image_subtype_int
 
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary to individual fields.
@@ -816,7 +814,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
     IVT_IMAGE_FLAGS_SUB_TYPE_MASK = 0x03
     IVT_IMAGE_FLAGS_SUB_TYPE_SHIFT = 6
 
-    # flag indication presence of boot image version (Used by LPC55s3x)
+    # flag indication presence of boot image version (Used by some devices)
     _BOOT_IMAGE_VERSION_FLAG = 0x400
     # flag that image contains relocation table
     _RELOC_TABLE_FLAG = 0x800
@@ -843,7 +841,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         """
         flags = int(self.IMAGE_TYPE[0])
         if hasattr(self, "trust_zone"):
-            flags |= self.trust_zone.type << self.IVT_IMAGE_FLAGS_TZ_TYPE_SHIFT
+            flags |= self.trust_zone.type.tag << self.IVT_IMAGE_FLAGS_TZ_TYPE_SHIFT
 
         if hasattr(self, "image_subtype"):
             assert self.image_subtype is not None
@@ -942,7 +940,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
         """
         total_len = int.from_bytes(
             data[Mbi_MixinIvt.IVT_IMAGE_LENGTH_OFFSET : Mbi_MixinIvt.IVT_IMAGE_LENGTH_OFFSET + 4],
-            "little",
+            Endianness.LITTLE.value,
         )
 
         if total_len < len(data):
@@ -961,7 +959,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
         flags = int.from_bytes(
             data[Mbi_MixinIvt.IVT_IMAGE_FLAGS_OFFSET : Mbi_MixinIvt.IVT_IMAGE_FLAGS_OFFSET + 4],
-            "little",
+            Endianness.LITTLE.value,
         )
 
         return flags
@@ -982,7 +980,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
                 Mbi_MixinIvt.IVT_CRC_CERTIFICATE_OFFSET : Mbi_MixinIvt.IVT_CRC_CERTIFICATE_OFFSET
                 + 4
             ],
-            "little",
+            Endianness.LITTLE.value,
         )
 
     @staticmethod
@@ -998,7 +996,7 @@ class Mbi_MixinIvt(Mbi_Mixin):
 
         return int.from_bytes(
             data[Mbi_MixinIvt.IVT_LOAD_ADDR_OFFSET : Mbi_MixinIvt.IVT_LOAD_ADDR_OFFSET + 4],
-            "little",
+            Endianness.LITTLE.value,
         )
 
     @staticmethod
@@ -1297,7 +1295,7 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
         super().mix_load_from_config(config)
         self.firmware_version = value_to_int(config.get("firmwareVersion", 0))
         digest_hash_algorithm = (
-            EnumHashAlgorithm[config["manifestDigestHashAlgorithm"]]
+            EnumHashAlgorithm.from_label(config["manifestDigestHashAlgorithm"])
             if "manifestDigestHashAlgorithm" in config
             and "digest_hash_algo" in self.VALIDATION_SCHEMAS
             else None
@@ -1350,7 +1348,7 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
         if self.manifest.trust_zone:
             self.trust_zone = self.manifest.trust_zone
         else:
-            super().mix_parse(data)
+            self.trust_zone = TrustZone.disabled()
 
 
 class Mbi_MixinManifestMcxNx(Mbi_MixinManifest):
@@ -1372,7 +1370,7 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
     VALIDATION_SCHEMAS: List[str] = ["cert_block_v1", "signature_provider"]
     NEEDED_MEMBERS: Dict[str, Any] = {"cert_block": None, "signature_provider": None}
 
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
+    cert_block: Optional[CertBlockV1]
     signature_provider: Optional[SignatureProvider]
     search_paths: Optional[List[str]]
     total_len: Any
@@ -1409,7 +1407,11 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
         :param output_folder: Output folder to store files.
         """
         assert self.cert_block
-        config = self.cert_block.get_config(output_folder=output_folder)
+        filename = "cert_block_v1.yaml"
+        crt_blck_cfg = self.cert_block.create_config(output_folder)
+        write_file(crt_blck_cfg, os.path.join(output_folder, filename))
+        config = {}
+        config["certBlock"] = filename
         config["signPrivateKey"] = "Cannot get from parse"
         return config
 
@@ -1424,15 +1426,7 @@ class Mbi_MixinCertBlockV1(Mbi_Mixin):
             raise SPSDKError("Signature provider is not defined")
 
         public_key = self.cert_block.certificates[-1].get_public_key()
-        try:
-            result = self.signature_provider.verify_public_key(public_key.export())
-            if not result:
-                raise SPSDKError(
-                    "Signature verification failed, public key does not match to private key"
-                )
-            logger.debug("The verification of private key pair integrity has been successful.")
-        except SPSDKUnsupportedOperation:
-            logger.warning("Signature provider could not verify the integrity of private key pair.")
+        try_to_verify_public_key(self.signature_provider, public_key.export())
 
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary to individual fields.
@@ -1456,7 +1450,7 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
     VALIDATION_SCHEMAS: List[str] = ["cert_block_v21", "signature_provider"]
     NEEDED_MEMBERS: Dict[str, Any] = {"cert_block": None, "signature_provider": None}
 
-    cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
+    cert_block: Optional[CertBlockV21]
     signature_provider: Optional[SignatureProvider]
     search_paths: Optional[List[str]]
 
@@ -1492,7 +1486,12 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
         :param output_folder: Output folder to store files.
         """
         assert self.cert_block
-        config = self.cert_block.get_config(output_folder)
+        filename = "cert_block_v21.yaml"
+        crt_blck_cfg = self.cert_block.create_config(output_folder)
+        write_file(crt_blck_cfg, os.path.join(output_folder, filename))
+        config = {}
+        config["certBlock"] = filename
+        config["signPrivateKey"] = "Cannot get from parse"
         return config
 
     def mix_validate(self) -> None:
@@ -1505,6 +1504,12 @@ class Mbi_MixinCertBlockV21(Mbi_Mixin):
 
         if not self.signature_provider:
             raise SPSDKError("Signature provider is missing")
+        public_key = (
+            self.cert_block.isk_certificate.isk_cert.export()
+            if self.cert_block.isk_certificate and self.cert_block.isk_certificate.isk_cert
+            else self.cert_block.root_key_record.root_public_key
+        )
+        try_to_verify_public_key(self.signature_provider, public_key)
 
     def mix_parse(self, data: bytes) -> None:
         """Parse the binary to individual fields.
@@ -1728,7 +1733,7 @@ class Mbi_MixinHmac(Mbi_Mixin):
         """
         hmac_key_raw = config.get("outputImageEncryptionKeyFile")
         if hmac_key_raw:
-            self.hmac_key = get_key(
+            self.hmac_key = load_hex_string(
                 hmac_key_raw, expected_size=self.HMAC_SIZE, search_paths=self.search_paths
             )
 
@@ -1771,8 +1776,8 @@ class Mbi_MixinHmac(Mbi_Mixin):
         :param data: Final Image in bytes.
         """
         if self.dek:
-            self.hmac_key = get_key(
-                key_source=self.dek,
+            self.hmac_key = load_hex_string(
+                source=self.dek,
                 expected_size=self._HMAC_KEY_LENGTH,
                 search_paths=self.search_paths,
             )
@@ -1830,7 +1835,7 @@ class Mbi_MixinCtrInitVector(Mbi_Mixin):
         """
         ctr_init_vector_cfg = config.get("CtrInitVector", None)
         ctr_init_vector = (
-            get_key(ctr_init_vector_cfg, self._CTR_INIT_VECTOR_SIZE, self.search_paths)
+            load_hex_string(ctr_init_vector_cfg, self._CTR_INIT_VECTOR_SIZE, self.search_paths)
             if ctr_init_vector_cfg
             else None
         )
@@ -2088,7 +2093,8 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
 
         :param image: Image.
         """
-        image = image[: -Mbi_MixinIvt.get_cert_block_offset(image)]
+        if self.cert_block:
+            image = image[: Mbi_MixinIvt.get_cert_block_offset(image)]
         if hasattr(self, "disassembly_app_data"):
             image = self.disassembly_app_data(image)
         self.app = self.clean_ivt(image)
@@ -2162,7 +2168,7 @@ class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
             return image[: -self.cert_block.signature_size]
 
         assert self.signature_provider
-        signature = self.signature_provider.sign(image)
+        signature = self.signature_provider.get_signature(image)
         return image + signature
 
 
@@ -2191,7 +2197,7 @@ class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
             return image[: -self.cert_block.signature_size]
 
         assert self.signature_provider
-        signature = self.signature_provider.sign(image)
+        signature = self.signature_provider.get_signature(image)
         assert signature
         return image + signature
 
@@ -2286,7 +2292,7 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
 
         image_digest = get_hash(data_to_sign)
 
-        signature = self.signature_provider.sign(data_to_sign)
+        signature = self.signature_provider.get_signature(data_to_sign)
         assert signature
 
         # Inject image digest and signature

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,9 +11,12 @@ import logging
 import os
 import sys
 from struct import pack
+from typing import List, Optional
 
 import click
+from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 
+from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
     is_click_help,
@@ -23,19 +26,31 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, get_key
+from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
 from spsdk.ele import ele_message
-from spsdk.ele.ele_comm import EleMessageHandler
-from spsdk.ele.ele_constants import KeyBlobEncryptionAlgorithm, KeyBlobEncryptionIeeCtrModes
+from spsdk.ele.ele_comm import EleMessageHandler, EleMessageHandlerMBoot, EleMessageHandlerUBoot
+from spsdk.ele.ele_constants import (
+    EleInfo2Commit,
+    KeyBlobEncryptionAlgorithm,
+    KeyBlobEncryptionIeeCtrModes,
+    LifeCycleToSwitch,
+)
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootCommandError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.mboot.scanner import get_mboot_interface
+from spsdk.uboot.uboot import Uboot
 from spsdk.utils.crypto.iee import IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes, IeeNxp
 from spsdk.utils.crypto.otfad import KeyBlob, OtfadNxp
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import BinaryPattern, load_binary, load_configuration, write_file
+from spsdk.utils.misc import (
+    BinaryPattern,
+    load_binary,
+    load_configuration,
+    load_hex_string,
+    write_file,
+)
 from spsdk.utils.schema_validator import check_config
 
 logger = logging.getLogger(__name__)
@@ -65,7 +80,7 @@ def main(
 ) -> int:
     """Utility for communication with the EdgeLock Enclave on target over BLHOST."""
     log_level = log_level or logging.WARNING
-    logging.basicConfig(level=log_level)
+    spsdk_logger.install(level=log_level)
 
     ctx.obj = None
 
@@ -75,13 +90,19 @@ def main(
         if not family:
             click.echo("Missing family option !")
             ctx.exit(-1)
-        mboot_interface = get_mboot_interface(
-            port=port, usb=usb, timeout=timeout, buspal=buspal, lpcusbsio=lpcusbsio
-        )
-        assert isinstance(mboot_interface, MbootProtocolBase)
-        mboot = McuBoot(mboot_interface, cmd_exception=True)
-        ele_handler = EleMessageHandler(mboot=mboot, family=family, revision=revision)
-        ctx.obj = ele_handler
+        default_device = EleMessageHandler.get_ele_device(family)
+        if default_device == "uboot":
+            if not port:
+                raise SPSDKAppError("Only UART is supported for U-Boot")
+            device = Uboot(port, timeout // 5000)
+            ctx.obj = EleMessageHandlerUBoot(device=device, family=family, revision=revision)
+        else:
+            mboot_interface = mboot_interface = get_mboot_interface(
+                port=port, usb=usb, timeout=timeout, buspal=buspal, lpcusbsio=lpcusbsio
+            )
+            assert isinstance(mboot_interface, MbootProtocolBase)
+            mboot = McuBoot(mboot_interface, cmd_exception=True)
+            ctx.obj = EleMessageHandlerMBoot(device=mboot, family=family, revision=revision)
 
     return 0
 
@@ -104,6 +125,66 @@ def ele_ping(ele_handler: EleMessageHandler) -> None:
     with ele_handler:
         ele_handler.send_message(ping)
     click.echo("ELE Ping ends successfully")
+
+
+@main.command(name="enable-apc", no_args_is_help=False)
+@click.pass_obj
+def cmd_enable_apc(
+    handler: EleMessageHandler,
+) -> None:
+    """Send request to enable APC to EdgeLock Enclave."""
+    ele_enable_apc(handler)
+
+
+def ele_enable_apc(ele_handler: EleMessageHandler) -> None:
+    """ELE Enable APC Request  command.
+
+    :param ele_handler: ELE handler class
+    """
+    enable_apc = ele_message.EleMessageEnableApc()
+    with ele_handler:
+        ele_handler.send_message(enable_apc)
+    click.echo("ELE Enable APC request ends successfully")
+
+
+@main.command(name="enable-rtc", no_args_is_help=False)
+@click.pass_obj
+def cmd_enable_rtc(
+    handler: EleMessageHandler,
+) -> None:
+    """Send request to enable RTC to EdgeLock Enclave."""
+    ele_enable_rtc(handler)
+
+
+def ele_enable_rtc(ele_handler: EleMessageHandler) -> None:
+    """ELE Enable RTC Request  command.
+
+    :param ele_handler: ELE handler class
+    """
+    enable_rtc = ele_message.EleMessageEnableRtc()
+    with ele_handler:
+        ele_handler.send_message(enable_rtc)
+    click.echo("ELE Enable RTC request ends successfully")
+
+
+@main.command(name="reset-apc-context", no_args_is_help=False)
+@click.pass_obj
+def cmd_reset_apc_context(
+    handler: EleMessageHandler,
+) -> None:
+    """Send request to reset APC context in EdgeLock Enclave."""
+    ele_reset_apc_context(handler)
+
+
+def ele_reset_apc_context(ele_handler: EleMessageHandler) -> None:
+    """Send request to reset APC context in EdgeLock Enclave.
+
+    :param ele_handler: ELE handler class
+    """
+    reset_apc_context = ele_message.EleMessageResetApcContext()
+    with ele_handler:
+        ele_handler.send_message(reset_apc_context)
+    click.echo("ELE Reset APC context ends successfully")
 
 
 @main.command(name="reset", no_args_is_help=False)
@@ -210,32 +291,82 @@ def ele_get_info(ele_handler: EleMessageHandler) -> None:
 
 
 @main.command(name="ele-fw-auth", no_args_is_help=True)
-@click.option(
+@optgroup("EdgeLock Enclave firmware Source", cls=RequiredMutuallyExclusiveOptionGroup)
+@optgroup.option(
     "-a",
     "--address",
     type=INT(),
-    required=True,
-    help="Address of EdgeLock Enclave firmware container.",
+    help="Address of EdgeLock Enclave firmware container in target memory.",
+)
+@optgroup.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True),
+    help="File name with binary of EdgeLock Enclave firmware.",
 )
 @click.pass_obj
-def cmd_ele_fw_auth(handler: EleMessageHandler, address: int) -> None:
+def cmd_ele_fw_auth(
+    handler: EleMessageHandler, address: Optional[int], binary: Optional[str]
+) -> None:
     """Authenticate and execute EdgeLock Enclave firmware.
 
-    Firmware could be placed in any memory accessible by ROM code.
+    Firmware should be placed in any memory accessible by ROM code if '-a' is used, otherwise
+    the correct address will be used.
     """
-    ele_ele_fw_auth(handler, address)
+    ele_ele_fw_auth(handler, address, binary)
 
 
-def ele_ele_fw_auth(ele_handler: EleMessageHandler, address: int) -> None:
+def ele_ele_fw_auth(
+    ele_handler: EleMessageHandler, address: Optional[int], binary: Optional[str]
+) -> None:
     """Authenticate and execute EdgeLock Enclave firmware command.
 
     :param ele_handler: ELE handler class
-    :param address: Address of ele firmware container
+    :param address: Address of ele firmware container, this is optionally to binary
+    :param binary: File path to binary file with ELE FW, this is optionally to address
     """
+    if binary:
+        # Create temporary message just to get space where to load FW
+        msg = ele_message.EleMessageEleFwAuthenticate(0)
+        msg.set_buffer_params(ele_handler.comm_buff_addr, ele_handler.comm_buff_size)
+        address = msg.free_space_address
+        max_size = msg.free_space_size
+        ele_fw = load_binary(binary)
+        if len(ele_fw) > max_size:
+            raise SPSDKAppError(
+                f"ELE firmware size doesn't fit into communication buffer: {len(ele_fw)} > {max_size}"
+            )
+        logger.info(
+            f"The download ELE FW address: 0x{address:08X}, size: {len(ele_fw)}B. Max size for ELE FW is {max_size}B"
+        )
+        with ele_handler:
+            ele_handler.device.write_memory(address, ele_fw)
+
+    assert address
     ele_fw_auth_msg = ele_message.EleMessageEleFwAuthenticate(address)
     with ele_handler:
         ele_handler.send_message(ele_fw_auth_msg)
     click.echo("ELE firmware authentication and execution ends successfully.")
+
+
+@main.command(name="dump-debug-data", no_args_is_help=False)
+@click.pass_obj
+def cmd_dump_debug_data(
+    handler: EleMessageHandler,
+) -> None:
+    """Dump ELE debug buffer data of EdgeLock Enclave firmware."""
+    ele_dump_debug_data(handler)
+
+
+def ele_dump_debug_data(ele_handler: EleMessageHandler) -> None:
+    """Dump ELE debug buffer data command.
+
+    :param ele_handler: ELE handler class
+    """
+    dump_debug_data = ele_message.EleMessageDumpDebugBuffer()
+    with ele_handler:
+        ele_handler.send_message(dump_debug_data)
+    click.echo(f"Dump debug buffer ends successfully:\n{dump_debug_data.response_info()}")
 
 
 @main.command(name="read-common-fuse", no_args_is_help=True)
@@ -300,6 +431,154 @@ def ele_read_shadow_fuse(ele_handler: EleMessageHandler, index: int) -> None:
     click.echo(f"Read shadow fuse ends successfully.\n{read_shadow_fuse_msg.response_info()}")
 
 
+@main.command(name="oem-cntn-auth", no_args_is_help=True)
+@click.option(
+    "-a",
+    "--address",
+    type=INT(),
+    help="Address of OEM container in target memory.",
+)
+@click.pass_obj
+def cmd_oem_cntn_auth(handler: EleMessageHandler, address: int) -> None:
+    """Authenticate OEM container.
+
+    Container should be placed in any memory accessible by ROM code
+    """
+    ele_oem_cntn_auth(handler, address)
+
+
+def ele_oem_cntn_auth(ele_handler: EleMessageHandler, address: int) -> None:
+    """Authenticate OEM container.
+
+    :param ele_handler: ELE handler class
+    :param address: Address of OEM container to be authenticated
+    """
+    oem_cntn_auth_msg = ele_message.EleMessageOemContainerAuthenticate(address)
+    with ele_handler:
+        ele_handler.send_message(oem_cntn_auth_msg)
+    click.echo("OEM container authentication ends successfully.")
+    click.echo(
+        "Be aware that 'release-container' must be called to allow another OEM container authentication."
+    )
+
+
+@main.command(name="commit", no_args_is_help=True)
+@click.option(
+    "-i",
+    "--commit-info",
+    type=click.Choice(EleInfo2Commit.labels()),
+    help="Info to be committed. It could be used multiple",
+    required=True,
+    multiple=True,
+)
+@click.pass_obj
+def cmd_commit(handler: EleMessageHandler, commit_info: List[str]) -> None:
+    """Commit information."""
+    ele_commit(handler, [EleInfo2Commit.from_label(i) for i in commit_info])
+    click.echo("Commit ends successfully.")
+
+
+def ele_commit(ele_handler: EleMessageHandler, commit_info: List[EleInfo2Commit]) -> None:
+    """Commit info.
+
+    :param ele_handler: ELE handler class
+    :param commit_info: List of information to be committed
+    """
+    commit_msg = ele_message.EleMessageCommit(commit_info)
+    with ele_handler:
+        ele_handler.send_message(commit_msg)
+
+
+@main.command(name="derive-key", no_args_is_help=True)
+@click.option(
+    "-s",
+    "--size",
+    type=click.Choice(["16", "32"]),
+    help="Size of output key",
+    default=16,
+)
+@click.option(
+    "-c",
+    "--key-diversification-context",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="File path to Key diversification context binary file",
+)
+@spsdk_output_option(required=False, help="Derived key output file.")
+@click.pass_obj
+def cmd_derive_key(
+    handler: EleMessageHandler,
+    size: str,
+    key_diversification_context: Optional[str],
+    output: Optional[str],
+) -> None:
+    """Derive key.
+
+    Allowed sizes are 16 and 32 bytes.
+    """
+    context = None
+    if key_diversification_context:
+        context = load_binary(key_diversification_context)
+    derived_key = ele_derive_key(handler, int(size), context)
+
+    if output:
+        write_file(derived_key, output, "wb")
+
+    click.echo("Key derivation ends successfully.")
+    click.echo(f"Key: {derived_key.hex()}")
+
+
+def ele_derive_key(
+    ele_handler: EleMessageHandler, size: int, key_diversification_context: Optional[bytes]
+) -> bytes:
+    """Derive key.
+
+    :param ele_handler: ELE handler class
+    :param size: Size of derived key [16,32]
+    :param key_diversification_context: Key diversification context if used
+    :returns: Derived key
+    """
+    derive_key_msg = ele_message.EleMessageDeriveKey(size, key_diversification_context)
+    with ele_handler:
+        ele_handler.send_message(derive_key_msg)
+
+    return derive_key_msg.get_key()
+
+
+@main.command(name="verify-image", no_args_is_help=False)
+@click.option(
+    "-m",
+    "--mask",
+    type=INT(),
+    help=(
+        "Used to indicate which images are to be checked. There must be at least one image."
+        " If not defined Image_0 will be checked."
+    ),
+    default="0x0000_0001",
+)
+@click.pass_obj
+def cmd_verify_image(handler: EleMessageHandler, mask: int) -> None:
+    """Verify OEM image.
+
+    The Verify Image message is sent to the ELE after a container has been loaded into memory
+    and processed with an Authenticate Container message. This commands the ELE to check the hash
+    on one or more images.
+    """
+    ele_verify_image(handler, mask)
+
+
+def ele_verify_image(ele_handler: EleMessageHandler, mask: int = 0x0000_0001) -> None:
+    """Verify OEM image.
+
+    :param ele_handler: ELE handler class
+    :param mask: Used to indicate which images are to be checked. There must be at least one image.
+        If not defined Image_0 will be checked
+    """
+    verify_image_msg = ele_message.EleMessageVerifyImage(mask)
+    with ele_handler:
+        ele_handler.send_message(verify_image_msg)
+    click.echo(f"Verify image ends successfully.\n{verify_image_msg.response_info()}")
+
+
 @main.command(name="release-container", no_args_is_help=False)
 @click.pass_obj
 def cmd_release_container(
@@ -318,6 +597,39 @@ def ele_release_container(ele_handler: EleMessageHandler) -> None:
     with ele_handler:
         ele_handler.send_message(release_container)
     click.echo("ELE Release container ends successfully")
+
+
+@main.command(name="forward-lifecycle-update", no_args_is_help=False)
+@click.option(
+    "-l",
+    "--lifecycle",
+    type=click.Choice(LifeCycleToSwitch.labels()),
+    required=True,
+    help="Lifecycle to switch to value",
+)
+@click.pass_obj
+def cmd_fwd_lc_update(handler: EleMessageHandler, lifecycle: str) -> None:
+    """Forward Lifecycle update to Closed or Locked state.
+
+    The Forward Lifecycle update message is used to change the chip lifecycle.
+    It is used for updating the lifecycle state to OEM Closed or OEM Locked.
+    """
+    ele_fwd_lc_update(handler, LifeCycleToSwitch.from_label(lifecycle))
+
+
+def ele_fwd_lc_update(ele_handler: EleMessageHandler, lifecycle: LifeCycleToSwitch) -> None:
+    """Forward Lifecycle update to Closed or Locked state.
+
+    The Forward Lifecycle update message is used to change the chip lifecycle.
+    It is used for updating the lifecycle state to OEM Closed or OEM Locked.
+
+    :param ele_handler: ELE handler class
+    :param lifecycle: Life cycle new value
+    """
+    fwd_lc_update_msg = ele_message.EleMessageForwardLifeCycleUpdate(lifecycle)
+    with ele_handler:
+        ele_handler.send_message(fwd_lc_update_msg)
+    click.echo("Forward Lifecycle update ends successfully.")
 
 
 @main.command(name="signed-message", no_args_is_help=True)
@@ -347,6 +659,26 @@ def ele_signed_message(ele_handler: EleMessageHandler, signed_msg_path: str) -> 
     with ele_handler:
         ele_handler.send_message(signed_msg)
     click.echo(f"ELE signed message ends successfully:\n{signed_msg.info()}")
+
+
+@main.command(name="get-events", no_args_is_help=False)
+@click.pass_obj
+def cmd_get_events(
+    handler: EleMessageHandler,
+) -> None:
+    """Get stored events in EdgeLock Enclave."""
+    ele_get_events(handler)
+
+
+def ele_get_events(ele_handler: EleMessageHandler) -> None:
+    """Get events command.
+
+    :param ele_handler: ELE handler class
+    """
+    get_events = ele_message.EleMessageGetEvents()
+    with ele_handler:
+        ele_handler.send_message(get_events)
+    click.echo(f"ELE get events ends successfully.\n{get_events.response_info()}")
 
 
 @main.command(name="start-trng", no_args_is_help=False)
@@ -420,7 +752,7 @@ def gen_keyblob_group() -> None:
 @click.option(
     "-a",
     "--algorithm",
-    type=click.Choice(ele_message.EleMessageGenerateKeyBLobDek.get_supported_algorithms()),
+    type=click.Choice(ele_message.EleMessageGenerateKeyBlobDek.get_supported_algorithms()),
     required=True,
     help="Encryption algorithm to wrap key.",
 )
@@ -447,7 +779,7 @@ def gen_keyblob_group() -> None:
     type=INT(),
     required=True,
     help="Key size in bits. Table with allowed combination:\n"
-    + ele_message.EleMessageGenerateKeyBLobDek.get_supported_key_sizes(),
+    + ele_message.EleMessageGenerateKeyBlobDek.get_supported_key_sizes(),
 )
 @spsdk_output_option(
     required=False,
@@ -455,7 +787,12 @@ def gen_keyblob_group() -> None:
 )
 @click.pass_obj
 def cmd_gen_keyblob_dek(
-    handler: EleMessageHandler, algorithm: str, key_id: int, key: str, key_size: int, output: str
+    handler: EleMessageHandler,
+    algorithm: str,
+    key_id: int,
+    key: str,
+    key_size: int,
+    output: str,
 ) -> None:
     """Generate DEK keyblob on EdgeLock Enclave."""
     ele_gen_keyblob_dek(handler, algorithm, key_id, key, key_size, output)
@@ -479,16 +816,15 @@ def ele_gen_keyblob_dek(
     :param output: Output keyblob file name
     :raises SPSDKAppError: Invalid input key size.
     """
-    enum_algorithm = KeyBlobEncryptionAlgorithm.get(algorithm)
-    assert isinstance(enum_algorithm, int)
+    enum_algorithm = KeyBlobEncryptionAlgorithm.from_label(algorithm)
     if (
         key_size
-        not in ele_message.EleMessageGenerateKeyBLobDek.SUPPORTED_ALGORITHMS[enum_algorithm]
+        not in ele_message.EleMessageGenerateKeyBlobDek.SUPPORTED_ALGORITHMS[enum_algorithm]
     ):
         raise SPSDKAppError("Invalid key size")
 
-    gen_keyblob_dek_msg = ele_message.EleMessageGenerateKeyBLobDek(
-        key_id, enum_algorithm, get_key(key, key_size // 8)
+    gen_keyblob_dek_msg = ele_message.EleMessageGenerateKeyBlobDek(
+        key_id, enum_algorithm, load_hex_string(key, key_size // 8)
     )
     with ele_handler:
         ele_handler.send_message(gen_keyblob_dek_msg)
@@ -590,8 +926,8 @@ def cmd_gen_keyblob_otfad(
     otfad_keyblob = ele_gen_keyblob_otfad(
         handler,
         key_id,
-        get_key(key, 16),
-        get_key(counter, 8),
+        load_hex_string(key, 16),
+        load_hex_string(counter, 8),
         start_address,
         end_address,
         read_only,
@@ -749,7 +1085,7 @@ def ele_gen_keyblob_otfad_whole_keyblob(
 @click.option(
     "-a",
     "--algorithm",
-    type=click.Choice(ele_message.EleMessageGenerateKeyBLobIee.get_supported_algorithms()),
+    type=click.Choice(ele_message.EleMessageGenerateKeyBlobIee.get_supported_algorithms()),
     required=True,
     help="Encryption algorithm to wrap key.",
 )
@@ -766,7 +1102,7 @@ def ele_gen_keyblob_otfad_whole_keyblob(
     type=INT(),
     required=True,
     help="Key size in bits. Table with allowed combination:\n"
-    + ele_message.EleMessageGenerateKeyBLobIee.get_supported_key_sizes(),
+    + ele_message.EleMessageGenerateKeyBlobIee.get_supported_key_sizes(),
 )
 @click.option(
     "-c",
@@ -778,9 +1114,7 @@ def ele_gen_keyblob_otfad_whole_keyblob(
 @click.option(
     "-m",
     "--ctr-mode",
-    type=click.Choice(
-        [KeyBlobEncryptionIeeCtrModes.name(x) for x in KeyBlobEncryptionIeeCtrModes.tags()]
-    ),
+    type=click.Choice(KeyBlobEncryptionIeeCtrModes.labels()),
     required=False,
     default="CTR_WITH_ADDRESS",
     help="AES CTR mode in case that is used",
@@ -824,11 +1158,11 @@ def ele_gen_keyblob_otfad_whole_keyblob(
 def cmd_gen_keyblob_iee(
     handler: EleMessageHandler,
     key_id: int,
-    algorithm: KeyBlobEncryptionAlgorithm,
+    algorithm: str,
     key: str,
     key_size: int,
     counter: str,
-    ctr_mode: KeyBlobEncryptionIeeCtrModes,
+    ctr_mode: str,
     page_offset: int,
     region_number: int,
     bypass: bool,
@@ -836,14 +1170,11 @@ def cmd_gen_keyblob_iee(
     output: str,
 ) -> None:
     """Generate IEE keyblob atomic command on EdgeLock Enclave."""
-    enum_algorithm = KeyBlobEncryptionAlgorithm.get(algorithm)
-    assert isinstance(enum_algorithm, int)
-    enum_ctr_mode = KeyBlobEncryptionIeeCtrModes.get(ctr_mode)
-    assert isinstance(enum_ctr_mode, int)
-
+    enum_algorithm = KeyBlobEncryptionAlgorithm.from_label(algorithm)
+    enum_ctr_mode = KeyBlobEncryptionIeeCtrModes.from_label(ctr_mode)
     if (
         key_size
-        not in ele_message.EleMessageGenerateKeyBLobIee.SUPPORTED_ALGORITHMS[enum_algorithm]
+        not in ele_message.EleMessageGenerateKeyBlobIee.SUPPORTED_ALGORITHMS[enum_algorithm]
     ):
         raise SPSDKAppError("Invalid key size")
 
@@ -851,8 +1182,8 @@ def cmd_gen_keyblob_iee(
         handler,
         key_id,
         enum_algorithm,
-        key=get_key(key, key_size // 8),
-        counter=get_key(counter, 16) if counter else b"",
+        key=load_hex_string(key, key_size // 8),
+        counter=load_hex_string(counter, 16) if counter else b"",
         ctr_mode=enum_ctr_mode,
         page_offset=page_offset,
         region_number=region_number,
@@ -868,10 +1199,10 @@ def cmd_gen_keyblob_iee(
 def ele_gen_keyblob_iee(
     ele_handler: EleMessageHandler,
     key_id: int,
-    algorithm: int,
+    algorithm: KeyBlobEncryptionAlgorithm,
     key: bytes,
     counter: bytes,
-    ctr_mode: int,
+    ctr_mode: KeyBlobEncryptionIeeCtrModes,
     page_offset: int,
     region_number: int,
     bypass: bool,
@@ -892,7 +1223,7 @@ def ele_gen_keyblob_iee(
     :raises SPSDKAppError: Invalid input key length
     :returns: Wrapped IEE keyblob
     """
-    gen_keyblob_iee_msg = ele_message.EleMessageGenerateKeyBLobIee(
+    gen_keyblob_iee_msg = ele_message.EleMessageGenerateKeyBlobIee(
         key_identifier=key_id,
         algorithm=algorithm,
         key=key,

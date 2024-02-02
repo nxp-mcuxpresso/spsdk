@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -114,7 +114,7 @@ class ProtocolBase(ABC):
     def _load_plugins() -> Dict[str, ModuleType]:
         """Load all installed interface plugins."""
         plugins_manager = PluginsManager()
-        plugins_manager.load_from_entrypoints(PluginType.name(PluginType.DEVICE_INTERFACE))
+        plugins_manager.load_from_entrypoints(PluginType.DEVICE_INTERFACE.label)
         return plugins_manager.plugins
 
     @classmethod

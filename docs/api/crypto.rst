@@ -112,3 +112,11 @@ Crypto module RNG
    :undoc-members:
    :show-inheritance:
 
+Crypto exceptions
+--------------------------------------
+
+.. automodule:: spsdk.crypto.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

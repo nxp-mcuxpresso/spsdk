@@ -1,0 +1,51 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  rev1:
+    features:
+      reg_config:
+        data_file: test_device1_x0.xml
+  rev2:
+    features:
+      feature2:
+        atrribute_int1: 4
+      reg_config:
+        data_file: test_device1_x1.xml
+latest: rev2
+
+info: {}
+
+features:
+  # ======== Feature 1 ========
+  feature1: {}
+
+  # ======== Feature 2 ========
+  feature2:
+    atrribute_int1: 3
+
+  # ======== Feature 2 ========
+  feature3:
+    atribute__int1: 10
+
+  # ======== Feature Reg Config Testing ========
+  reg_config:
+    address: 0xA5A5_1234
+    inverted_regs:
+      INVERTED_REG: INVERTED_REG_AP
+    computed_registers:
+      COMPUTED_REG: ""
+    computed_fields:
+      COMPUTED_REG:
+        TEST_FIELD1: computed_reg_test_field1
+        TEST_FIELD2: computed_reg_test_field2
+      COMPUTED_REG2:
+        TEST_FIELD1: computed_reg2_test_field1
+        TEST_FIELD2: computed_reg2_test_field2
+    ignored_fields:
+      - FIELD
+    grouped_registers:
+      - name: DeviceTest
+    seal_start: COMPUTED_REG
+    seal_count: 4

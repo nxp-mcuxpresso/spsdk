@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@
 import logging
 from struct import calcsize, pack, unpack_from
 
-from spsdk.dat.debug_credential import DebugCredential, DebugCredentialEdgeLockEnclave
+from spsdk.dat.debug_credential import DebugCredential
 from spsdk.exceptions import SPSDKValueError
 
 logger = logging.getLogger(__name__)
@@ -54,12 +54,12 @@ class DebugAuthenticationChallenge:
         self.challenge = challenge
 
     def __repr__(self) -> str:
-        return f"DAC v{self.version}, SOCC: {DebugCredential.get_socc_description(self.version, self.socc)}"
+        return f"DAC v{self.version}, SOCC: 0x{self.socc:08X}"
 
     def __str__(self) -> str:
         """String representation of DebugCredential."""
         msg = f"Version                : {self.version}\n"
-        msg += f"SOCC                   : {DebugCredential.get_socc_description(self.version, self.socc)}\n"
+        msg += f"SOCC                   : 0x{self.socc:08X}\n"
         msg += f"UUID                   : {self.uuid.hex().upper()}\n"
         msg += f"CC_VU                  : {self.cc_vu}\n"
         msg += f"ROTID_rkh_revocation   : {format(self.rotid_rkh_revocation, '08X')}\n"
@@ -75,10 +75,7 @@ class DebugAuthenticationChallenge:
         :param dc: Debug Credential class to be validated by DAC
         :raises SPSDKValueError: In case of invalid configuration detected.
         """
-        if (
-            self.version != dc.VERSION
-            and self.socc not in DebugCredentialEdgeLockEnclave.SUPPORTED_SOCC
-        ):
+        if self.version != dc.VERSION and not DebugCredential._dat_based_on_ele(self.socc):
             raise SPSDKValueError(
                 f"DAC Verification failed: Invalid protocol version.\nDAC: {self.version}\nDC:  {dc.VERSION}"
             )
@@ -100,7 +97,7 @@ class DebugAuthenticationChallenge:
             if self.socc == 0x4:
                 logger.warning(
                     "The DAC(Debug Authentication Challenge) RKTH doesn't match with DC(Debug Credential)."
-                    "For RW61x devices, this is correct behaviour. For LPC55S3x it indicates incorrect DC file,"
+                    "For RW61x devices, this is correct behavior. For LPC55S3x it indicates incorrect DC file,"
                     "and needs to be fixed."
                 )
             else:
@@ -134,7 +131,9 @@ class DebugAuthenticationChallenge:
             format_head, data
         )
         # Note: EdgeLock is always 256b SRKH - if P384 these are the first 256b of SHA384(SRKT)
-        hash_length = 48 if (socc in [4, 6] and version_minor == 1 and version_major == 2) else 32
+        hash_length = (
+            48 if (socc in [4, 6, 7] and version_minor == 1 and version_major == 2) else 32
+        )
 
         format_tail = f"<{hash_length}s3L32s"
         (

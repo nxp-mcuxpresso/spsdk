@@ -1,9 +1,0 @@
-# Copyright 2022-2023 NXP
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-devices:
-  rt101x: {}
-  rt102x: {}
-  rt105x: {}
-  rt106x: {}

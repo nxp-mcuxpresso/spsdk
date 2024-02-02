@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!--
-  Copyright 2023 NXP
+  Copyright 2023-2024 NXP
 
-  SPDX-License-Identifier: BSD-3-Clause 
+  SPDX-License-Identifier: BSD-3-Clause
 -->
 <regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/5.0/regsPeripheral.xsd">
   <register offset="0" width="32" name="BOOT_CFG" description="Boot Configuration">
@@ -111,9 +111,9 @@
       <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
       <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
-    <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
+    <reserved_bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
       <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_PIN_INVERSE_VALUE(x)"/>
-    </bit_field>
+    </reserved_bit_field>
   </register>
   <register offset="0x14" width="32" name="DCFG_CC_SOCU_DFLT" description="Device Configuration Credential Constraints for SoC specific Use Debug Filter">
     <alias type="CMSIS" value="DCFG_CC_SOCU_DFLT"/>
@@ -164,9 +164,9 @@
       <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
     </bit_field>
     <reserved_bit_field offset="10" width="6" reset_value="0"/>
-    <bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
+    <reserved_bit_field offset="16" width="16" name="INVERSE_VALUE" access="RW" reset_value="0" description="inverse value of bits [15:0]">
       <alias type="CMSIS" value="FLASH_CMPA_DCFG_CC_SOCU_DFLT_INVERSE_VALUE(x)"/>
-    </bit_field>
+    </reserved_bit_field>
   </register>
   <register offset="0x18" width="32" name="VENDOR_USAGE" description="Vendor Usage">
     <alias type="CMSIS" value="VENDOR_USAGE"/>

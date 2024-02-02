@@ -1,0 +1,87 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+el2go:
+  type: object
+  properties:
+    url:
+      type: string
+      title: "EdgeLock2Go URL"
+      description: "URL pointing to the root of EL2GO server"
+      template_value: "https://api.qa.sb.edgelock2go.com"
+    qi_id:
+      type: [number, string]
+      title: "Customer Qi ID"
+      description: "Customer's (product line) Qi ID registered in EL2GO"
+      template_value: 123456
+    api_key:
+      type: string
+      title: "EL2GO API Key"
+      description: "REST API key used for user authentication in EL2GO.
+        You may use:
+        1) path to a file with the key on the first line: ~/.el2go/wpc_token.txt (~ is interpreted as your HOME)
+        2) environment variable with the key: $MY_EL2GO_KEY
+        3) environment variable containing a path to the key file: $MY_KEY_FILE
+        4) directly your API key in plain text (not recommended)"
+      template_value: abcxyz123
+    timeout:
+      type: number
+      title: "Timeout for EL2GO API"
+      description: "Timeout for EL2GO API in seconds. Default is 60 seconds"
+      template_value: 60
+  required: [url, qi_id, api_key]
+
+mboot:
+  type: object
+  properties:
+    port:
+      type: string
+      title: "Target COM port"
+      description: "COM port connecting to the target"
+      template_value: com1
+    family:
+      type: string
+      title: "Target family"
+      description: "Name of the target family"
+      template_value: mwct2xxxs
+  required: [port, family]
+
+model:
+  type: object
+  properties:
+    model_dir:
+      type: string
+      format: dir
+      title: "Model directory"
+      description: "Path to directory containing the model (config.yaml)"
+      template_value: <path/to/model_dir>
+    family:
+      type: string
+      title: "Target family"
+      description: "Name of the target family"
+      template_value: mwct2xxxs
+  required: [model_dir, family]
+
+full_config:
+  type: object
+  properties:
+    service_type:
+      type: string
+      title: "Name of the WPC service adapter"
+      description: "Name of the WPC service adapter"
+    service_parameters:
+      type: object
+      title: "Parameters for the WPC service adapter"
+      description: "Parameters for the WPC service adapter"
+      properties: {}
+    target_type:
+      type: string
+      title: "Name of the target adapter"
+      description: "Name of the target adapter"
+    target_parameters:
+      type: object
+      title: "Parameters for the target adapter"
+      description: "Parameters for the target adapter"
+      properties: {}
+  required: [service_type, service_parameters, target_type, target_parameters]

@@ -2,27 +2,27 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Header."""
 
 from struct import calcsize, pack, unpack_from
-from typing import Optional
+from typing import Optional, Union
 
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKParsingError
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
 # Enums
 ########################################################################################################################
 
 
-class SegTag(Enum):
+class SegTag(SpsdkEnum):
     """Segments Tag."""
 
     XMCD = (0xC0, "XMCD", "External Memory Configuration Data")
@@ -43,7 +43,7 @@ class SegTag(Enum):
     SIGB = (0x90, "SIGB", "Signature block")
 
 
-class CmdTag(Enum):
+class CmdTag(SpsdkEnum):
     """CSF/DCD Command Tag."""
 
     SET = (0xB1, "SET", "Set")
@@ -94,7 +94,7 @@ class Header(BaseClass):
     @property
     def tag_name(self) -> str:
         """Returns the header's tag name."""
-        return SegTag.name(self.tag)
+        return SegTag.get_label(self.tag)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.tag_name}, {self.param}, {self.length})"
@@ -130,7 +130,9 @@ class Header(BaseClass):
 class CmdHeader(Header):
     """Command header."""
 
-    def __init__(self, tag: CmdTag, param: int = 0, length: Optional[int] = None) -> None:
+    def __init__(
+        self, tag: Union[CmdTag, int], param: int = 0, length: Optional[int] = None
+    ) -> None:
         """Constructor.
 
         :param tag: command tag
@@ -138,14 +140,15 @@ class CmdHeader(Header):
         :param length: of the command binary section, in bytes
         :raises SPSDKError: If invalid command tag
         """
+        tag = tag.tag if isinstance(tag, CmdTag) else tag
         super().__init__(tag, param, length)
         if tag not in CmdTag.tags():
             raise SPSDKError("Invalid command tag")
 
     @property
-    def tag(self) -> CmdTag:
+    def tag(self) -> int:
         """Command tag."""
-        return CmdTag.from_int(self._tag)
+        return self._tag
 
     @classmethod
     def parse(cls, data: bytes, required_tag: Optional[int] = None) -> Self:

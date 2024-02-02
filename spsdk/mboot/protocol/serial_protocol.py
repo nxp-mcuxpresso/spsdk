@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -20,9 +20,9 @@ from spsdk.exceptions import SPSDKAttributeError
 from spsdk.mboot.commands import CmdResponse, parse_cmd_response
 from spsdk.mboot.exceptions import McuBootConnectionError, McuBootDataAbortError
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.interfaces.commands import CmdPacketBase
-from spsdk.utils.misc import Timeout
+from spsdk.utils.misc import Endianness, Timeout
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 
@@ -50,16 +50,16 @@ class PingResponse(NamedTuple):
         return cls(version, options, crc)
 
 
-class FPType(Enum):
+class FPType(SpsdkEnum):
     """Type of frames used in serial communication."""
 
-    ACK = 0xA1
-    NACK = 0xA2
-    ABORT = 0xA3
-    CMD = 0xA4
-    DATA = 0xA5
-    PING = 0xA6
-    PINGR = 0xA7
+    ACK = (0xA1, "ACK")
+    NACK = (0xA2, "NACK")
+    ABORT = (0xA3, "ABORT")
+    CMD = (0xA4, "CMD")
+    DATA = (0xA5, "DATA")
+    PING = (0xA6, "PING")
+    PINGR = (0xA7, "PINGR")
 
 
 def to_int(data: bytes, little_endian: bool = True) -> int:
@@ -69,8 +69,8 @@ def to_int(data: bytes, little_endian: bool = True) -> int:
     :param little_endian: indicate byte ordering in data, defaults to True
     :return: integer
     """
-    byte_order = "little" if little_endian else "big"
-    return int.from_bytes(data, byteorder=byte_order)  # type: ignore[arg-type]
+    byte_order = Endianness.LITTLE if little_endian else Endianness.BIG
+    return int.from_bytes(data, byteorder=byte_order.value)
 
 
 class MbootSerialProtocol(MbootProtocolBase):
@@ -166,7 +166,7 @@ class MbootSerialProtocol(MbootProtocolBase):
 
     def _send_ack(self) -> None:
         """Send ACK command."""
-        ack_frame = struct.pack("<BB", self.FRAME_START_BYTE, FPType.ACK)
+        ack_frame = struct.pack("<BB", self.FRAME_START_BYTE, FPType.ACK.tag)
         self._send_frame(ack_frame, wait_for_ack=False)
 
     def _send_frame(self, frame: bytes, wait_for_ack: bool = True) -> None:
@@ -180,11 +180,11 @@ class MbootSerialProtocol(MbootProtocolBase):
 
     def _create_frame(self, data: bytes, frame_type: FPType) -> bytes:
         """Encapsulate data into frame."""
-        crc = self._calc_frame_crc(data, frame_type)
+        crc = self._calc_frame_crc(data, frame_type.tag)
         frame = struct.pack(
             f"<BBHH{len(data)}B",
             self.FRAME_START_BYTE,
-            frame_type,
+            frame_type.tag,
             len(data),
             crc,
             *data,
@@ -213,7 +213,7 @@ class MbootSerialProtocol(MbootProtocolBase):
         crc_function = mkPredefinedCrcFun("xmodem")
         return crc_function(data)
 
-    def _read_frame_header(self, expected_frame_type: Optional[int] = None) -> Tuple[int, int]:
+    def _read_frame_header(self, expected_frame_type: Optional[FPType] = None) -> Tuple[int, int]:
         """Read frame header and frame type. Return them as tuple of integers.
 
         :param expected_frame_type: Check if the frame_type is exactly as expected
@@ -246,7 +246,7 @@ class MbootSerialProtocol(MbootProtocolBase):
                 frame_type = header
             if frame_type != expected_frame_type:
                 raise McuBootConnectionError(
-                    f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type:#X}'"
+                    f"received invalid ACK '{frame_type:#X}' expected '{expected_frame_type.tag:#X}'"
                 )
         return header, frame_type
 
@@ -261,7 +261,7 @@ class MbootSerialProtocol(MbootProtocolBase):
         :raises McuBootConnectionError: If crc does not match
         """
         with self.ping_timeout(timeout=self.PING_TIMEOUT_MS):
-            ping = struct.pack("<BB", self.FRAME_START_BYTE, FPType.PING)
+            ping = struct.pack("<BB", self.FRAME_START_BYTE, FPType.PING.tag)
 
             self._send_frame(ping, wait_for_ack=False)
 
@@ -273,7 +273,9 @@ class MbootSerialProtocol(MbootProtocolBase):
                 if start_byte is None:
                     raise McuBootConnectionError("Failed to receive initial byte")
 
-                if start_byte == self.FRAME_START_BYTE.to_bytes(length=1, byteorder="little"):
+                if start_byte == self.FRAME_START_BYTE.to_bytes(
+                    length=1, byteorder=Endianness.LITTLE.value
+                ):
                     logger.debug(f"FRAME_START_BYTE received in {i + 1}. attempt.")
                     break
             else:
@@ -283,7 +285,7 @@ class MbootSerialProtocol(MbootProtocolBase):
             if header != self.FRAME_START_BYTE:
                 raise McuBootConnectionError("Header is invalid")
             frame_type = to_int(self._read(1))
-            if frame_type != FPType.PINGR:
+            if FPType.from_tag(frame_type) != FPType.PINGR:
                 raise McuBootConnectionError("Frame type is invalid")
 
             response_data = self._read(8)

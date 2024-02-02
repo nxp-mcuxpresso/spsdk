@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import os
@@ -9,9 +9,9 @@ import secrets
 import sys
 
 import click
-from spsdk.crypto.certificate import Certificate, generate_name
-from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
 
+from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
+from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
 from spsdk.crypto.types import SPSDKEncoding
 from spsdk.tp.data_container import AuthenticationType, Container, DataEntry, PayloadType
 from spsdk.tp.utils import get_supported_devices
@@ -64,7 +64,9 @@ def gen_pc_cert(glob_key: str, output_folder: str) -> None:
             issuer=generate_name({"COMMON_NAME": "NXP GLOB TEST"}),
             subject_public_key=glob_public_key,
             issuer_private_key=glob_private_key,
-            if_ca=True,
+            extensions=generate_extensions(
+                {"BASIC_CONSTRAINTS": {"ca": True, "path_length": None}}
+            ),
         )
         dest_path = os.path.join(output_folder, "nxp_glob_devattest_cert.crt")
         glob_cert.save(dest_path)
@@ -149,7 +151,7 @@ def gen_die_cert(uuid: str, ecid: str, family: str, prod_key: str, output_folder
     die_cert = Container()
     die_cert.add_entry(
         DataEntry(
-            payload_type=PayloadType.NXP_DIE_ID_AUTH_PUK,
+            payload_type=PayloadType.NXP_DIE_ID_AUTH_PUK.tag,
             payload=id_auth_public_key.export(SPSDKEncoding.NXP),
         )
     )
@@ -160,19 +162,19 @@ def gen_die_cert(uuid: str, ecid: str, family: str, prod_key: str, output_folder
         id_attest_public_key.save(os.path.join(output_folder, "nxp_die_id_attest_puk.pem"))
         die_cert.add_entry(
             DataEntry(
-                payload_type=PayloadType.NXP_DIE_ATTEST_AUTH_PUK,
+                payload_type=PayloadType.NXP_DIE_ATTEST_AUTH_PUK.tag,
                 payload=id_attest_public_key.export(SPSDKEncoding.NXP),
             )
         )
     die_cert.add_entry(
         DataEntry(
-            payload_type=PayloadType.NXP_DIE_ECID_ID_UID,
+            payload_type=PayloadType.NXP_DIE_ECID_ID_UID.tag,
             payload=bytes.fromhex(ecid),
         )
     )
     die_cert.add_entry(
         DataEntry(
-            payload_type=PayloadType.NXP_DIE_RFC4122v4_ID_UUID,
+            payload_type=PayloadType.NXP_DIE_RFC4122v4_ID_UUID.tag,
             payload=bytes.fromhex(uuid),
         )
     )

@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module used for generation SecureBinary X."""
 import logging
-import os
 from datetime import datetime
 from enum import Enum
 from struct import calcsize, pack, unpack_from
@@ -16,15 +15,13 @@ from spsdk.crypto.hash import get_hash
 from spsdk.crypto.hmac import hmac
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.exceptions import SPSDKError, SPSDKParsingError
-from spsdk.image import IMG_DATA_FOLDER, MBI_SCH_FILE
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
 from spsdk.utils.abstract import BaseClass
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import align_block, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
-
-SBX_SCH_FILE: str = os.path.join(IMG_DATA_FOLDER, "sch_sbx.yml")
 
 
 ########################################################################################################################
@@ -493,8 +490,8 @@ class SecureBinaryX(BaseClass):
         :param include_test_configuration: Add also testing configuration schemas.
         :return: List of validation schemas.
         """
-        mbi_sch_cfg = ValidationSchemas().get_schema_file(MBI_SCH_FILE)
-        sbx_sch_cfg = ValidationSchemas().get_schema_file(SBX_SCH_FILE)
+        mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
+        sbx_sch_cfg = get_schema_file(DatabaseManager.SBX)
 
         ret: List[Dict[str, Any]] = []
         ret.extend(
@@ -521,6 +518,12 @@ class SecureBinaryX(BaseClass):
         )
         if include_test_configuration:
             ret.append(sbx_sch_cfg["sbx_test"])
+
+        # find family
+        for schema in ret:
+            if "properties" in schema and "family" in schema["properties"]:
+                schema["properties"]["family"]["enum"] = cls.get_supported_families()
+                break
         return ret
 
     @classmethod
@@ -656,7 +659,7 @@ class SecureBinaryX(BaseClass):
 
         :return: List of supported families.
         """
-        sbx_sch_cfg = ValidationSchemas().get_schema_file(SBX_SCH_FILE)
+        sbx_sch_cfg = get_schema_file(DatabaseManager.SBX)
         sbx_families = sbx_sch_cfg["sbx_family"]
 
         return sbx_families["properties"]["family"]["enum"]
@@ -672,15 +675,16 @@ class SecureBinaryX(BaseClass):
 
         if family in cls.get_supported_families():
             schemas = cls.get_validation_schemas()
-            schemas.append(ValidationSchemas.get_schema_file(SBX_SCH_FILE)["sbx_output"])
-            override = {}
-            override["family"] = family
+            schemas.append(DatabaseManager().db.get_schema_file(DatabaseManager.SBX)["sbx_output"])
+            # find family
+            for schema in schemas:
+                if "properties" in schema and "family" in schema["properties"]:
+                    schema["properties"]["family"]["template_value"] = family
+                    break
 
             yaml_data = CommentedConfig(
-                f"Secure Binary X Configuration template for {family}.",
-                schemas,
-                override,
-            ).export_to_yaml()
+                f"Secure Binary X Configuration template for {family}.", schemas
+            ).get_template()
 
             ret[f"sb_{family}_devhsm"] = yaml_data
 

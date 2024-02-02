@@ -1,0 +1,166 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1160-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m4:i.MX-RT1160
+  memory_map:
+    # Memory map basic info
+    itcm:
+      base_addr: 0x00000000
+      size: 0x40000
+      external: false
+    itcm_cm4:
+      base_addr: 0x1FFE0000
+      size: 0x20000
+      external: false
+    dtcm:
+      base_addr: 0x20000000
+      size: 0x40000
+      external: false
+    ocram1:
+      base_addr: 0x20240000
+      size: 0x10000
+      external: false
+    ocram2:
+      base_addr: 0x202C0000
+      size: 0x8000
+      external: false
+    flexspi1:
+      base_addr: 0x30000000
+      size: 0x1000000
+      external: true
+    flexspi2:
+      base_addr: 0x60000000
+      size: 0x1000000
+      external: true
+
+  # isp:
+  #   rom_protocol: sdp
+  #   mboot_interfaces: [usb, uart, spi, i2c]
+  #   usb_rom:
+  #     vid: 0x1FC9
+  #     pid: 0x013D
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x0000_2000
+    size: 0x1000
+
+  # ======== Certificate block section ========
+  cert_block:
+    rot_type: "srk_table_hab"
+
+  # ======== HABv4 section ========
+  hab: {}
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor: fcb_flexspi_nor.xml
+
+  # ======== XMCD section ========
+  xmcd:
+    header: ../../common/xmcd/header.xml
+    mem_types:
+      flexspi_ram:
+        simplified: ../../common/xmcd/flexspi_ram_simplified.xml
+        full: ../../common/xmcd/flexspi_ram_full.xml
+      semc_sdram:
+        simplified: ../../common/xmcd/semc_sdram_simplified.xml
+        full: ../../common/xmcd/semc_sdram_full.xml
+
+  # ======== IEE section ========
+  iee:
+    reg_fuses: iee_fuses.xml
+    sb_21_supported: False
+    has_kek_fuses: True
+    additional_template: ["ibkek", "key_blobs"]
+    additional_template_text: |
+      Refer to the Security Reference Manual for RT117x and Application Note 13250 for more information.
+      In case blank string is used, the output is not generated. If the filename contains directory,
+      the output folder will be ignored and the full path from filename will be used.
+    grouped_registers:
+      - name: USER_KEY1
+        width: 512
+        reverse_subregs_order: True
+        config_as_hexstring: true
+        description: USER KEY 1 (IBKEK).
+      - name: USER_KEY2
+        width: 512
+        reverse_subregs_order: True
+        config_as_hexstring: true
+        description: USER KEY 2 (IBKEK).
+
+  # ======== OTFAD section ========
+  otfad:
+    reg_fuses: otfad_fuses.xml
+    sb_21_supported: False
+    has_kek_fuses: True
+    peripheral_list: ["1", "2"]
+    supports_key_scrambling: True
+    additional_template: ["otfad_scramble"]
+    otfad_scramble_align_fuse_standalone: True
+    otfad_scramble_enable_bitfield: "OTFAD{index}_SCRAMBLE_ENABLE"
+    otfad_scramble_align_bitfield: "OTFAD{index}_SCRAMBLE_ALIGN"
+    additional_template_text: |
+      Is important to use physical addresses (non-secure) in settings of OTFAD to proper run the decryption on device.
+
+      The fuse word 0x47 on address 0xC70 uses error-correcting codes.
+      The fuse word can only be written one time, so you must set all of the desired bits within the word at the same time.
+      Refer to the SRM to get familiar with the functionality of all bitfields.
+      The ENCRYPT_XIP_EN fuse is part of the BOOT_CFG1 fuse. If this bit is set, all BOOT_CFG fuses must be configured accordingly.
+      The encrypted XiP can be also enabled by the BOOT_CFG pin
+
+      It is recommended to set the USER_KEY5_RLOCK and OTFAD1/2_KEY_SEL_LOCK fuses for production to protect sensitive data stored in the USER_KEY5 fuse (if used) and to prevent a modification of the OTFAD key selection by malicious software.
+
+      In case blank string is used, the output is not generated. If the filename contains directory,
+      the output folder will be ignored and the full path from filename will be used.
+    grouped_registers:
+      - name: OTFAD_KEY
+        width: 128
+        reverse_subregs_order: True
+        config_as_hexstring: true
+        description: OTFAD Key known as KEK.
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      flexspi_nor:
+        segments:
+          keyblob: 0x0000
+          fcb: 0x0400
+          keystore: 0x0800
+          hab_container: 0x1000
+      flexspi_nand:
+        segments:
+          hab_container: 0x400
+      semc_nand:
+        segments:
+          hab_container: 0x400
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        instances: [1, 2]
+      flexspi_nand:
+        instances: [1, 2]
+      semc_nor:
+        instances: [0] # probably not supported in latest version of Flashloader
+      sd:
+        instances: [0, 1]
+      mmc:
+        instances: [0, 1]
+      semc_nand:
+        instances: [0] # probably not supported in latest version of Flashloader
+      spi_nor:
+        instances: [0, 1, 2, 3, 4, 5]

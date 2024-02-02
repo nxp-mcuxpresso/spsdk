@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox PyOCD Debug probes support."""
@@ -19,7 +19,9 @@ from pyocd.coresight.dap import DPConnector
 from pyocd.probe.debug_probe import DebugProbe as PyOCDDebugProbe
 
 from spsdk.debuggers.debug_probe import (
-    DebugProbe,
+    DebugProbeLocal,
+    DebugProbes,
+    ProbeDescription,
     SPSDKDebugProbeError,
     SPSDKDebugProbeNotOpenError,
     SPSDKDebugProbeTransferError,
@@ -30,8 +32,10 @@ TRACE_ENABLE = True
 logger = logging.getLogger(__name__)
 
 
-class DebugProbePyOCD(DebugProbe):
+class DebugProbePyOCD(DebugProbeLocal):
     """Class to define PyOCD package interface for NXP SPSDK."""
+
+    NAME = "pyocd"
 
     def __init__(self, hardware_id: str, options: Optional[Dict] = None) -> None:
         """The PyOCD class initialization.
@@ -46,7 +50,7 @@ class DebugProbePyOCD(DebugProbe):
     @classmethod
     def get_connected_probes(
         cls, hardware_id: Optional[str] = None, options: Optional[Dict] = None
-    ) -> list:
+    ) -> DebugProbes:
         """Get all connected probes over PyOCD.
 
         This functions returns the list of all connected probes in system by PyOCD package.
@@ -56,9 +60,6 @@ class DebugProbePyOCD(DebugProbe):
         :param options: The options dictionary
         :return: probe_description
         """
-        # pylint: disable=import-outside-toplevel
-        from .utils import DebugProbes, ProbeDescription
-
         probes = DebugProbes()
         try:
             connected_probes: List[PyOCDDebugProbe] = ConnectHelper.get_all_connected_probes(
@@ -93,7 +94,7 @@ class DebugProbePyOCD(DebugProbe):
                 unique_id=self.hardware_id,
             )
 
-            self.probe.session = Session(self.probe)
+            self.probe.session = Session(self.probe, options={"target_override": "cortex_m"})
             self.probe.open()
             if self.options.get("use_jtag") is None:
                 self.probe.connect(pyocd.probe.debug_probe.DebugProbe.Protocol.SWD)

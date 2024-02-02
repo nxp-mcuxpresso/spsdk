@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,19 +17,19 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 import colorama
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 colorama.just_fix_windows_console()
 
 
-class TaskState(Enum):
+class TaskState(SpsdkEnum):
     """States of tasks."""
 
-    READY = (0, "Ready")
-    BLOCKED = (1, "Blocked")
-    RUNNING = (2, "Running")
-    PASSED = (3, "Passed")
-    FAILED = (4, "Failed")
+    READY = (0, "READY")
+    BLOCKED = (1, "BLOCKED")
+    RUNNING = (2, "RUNNING")
+    PASSED = (3, "PASSED")
+    FAILED = (4, "FAILED")
 
 
 @dataclass
@@ -50,6 +50,7 @@ class TaskInfo:
         dependencies: Optional[List[str]] = None,
         inherit_failure: bool = True,
         info_only: bool = False,
+        fixer: Optional[Callable[[], Any]] = None,
         **kwargs: Any,
     ) -> None:
         """Task info initialization.
@@ -73,6 +74,7 @@ class TaskInfo:
         self.exec_start = 0.0
         self.exec_time = 0.0
         self.exception: Optional[BaseException] = None
+        self.fixer = fixer
 
     def __str__(self) -> str:
         """Print Task information."""
@@ -103,7 +105,7 @@ class TaskInfo:
 
         :return: Task state.
         """
-        ret = f"{self.get_color_by_status()}{TaskState.name(self._state)}"
+        ret = f"{self.get_color_by_status()}{self._state.label}"
         if self.info_only:
             ret += f"{colorama.Fore.CYAN} [INFO ONLY]"
         ret += colorama.Fore.RESET

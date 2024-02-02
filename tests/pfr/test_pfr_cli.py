@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,8 +14,7 @@ import pytest
 from ruamel.yaml import YAML
 
 from spsdk.apps import pfr as cli
-from spsdk.apps import spsdk_apps
-from spsdk.pfr.pfr import CMPA, PfrConfiguration
+from spsdk.pfr.pfr import CMPA
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -169,9 +168,11 @@ def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
 
     logging.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
-    new_cfg = PfrConfiguration(f"{tmpdir}/config.yml")
-    expected_cfg = PfrConfiguration(f"{data_dir}/cmpa_96mhz_rotkh.yml")
-    assert new_cfg.settings == expected_cfg.settings
+    new_cfg = load_configuration(f"{tmpdir}/config.yml")
+    expected_cfg = load_configuration(f"{data_dir}/cmpa_96mhz_rotkh.yml")
+    created = CMPA.load_from_config(new_cfg)
+    expected = CMPA.load_from_config(expected_cfg)
+    assert created == expected
 
 
 @pytest.mark.parametrize(
@@ -214,29 +215,20 @@ def test_user_config(cli_runner: CliRunner, tmpdir, family, type):
     ]
     logging.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
-    pfr_config = PfrConfiguration(f"{tmpdir}/pfr.yml")
+    pfr_config = load_configuration(f"{tmpdir}/pfr.yml")
     assert pfr_config
-    assert pfr_config.type == "CMPA" or pfr_config.type == "CFPA"
-
-
-def test_info(cli_runner: CliRunner, tmpdir):
-    """Test PFR CLI - Creating HTML fields information."""
-    cmd = f"info --family lpc55s6x --type cmpa --output {tmpdir}/cmpa.html"
-    logging.debug(cmd)
-    cli_runner.invoke(cli.main, cmd.split())
-    assert os.path.isfile(f"{tmpdir}/cmpa.html")
+    assert pfr_config["type"] == type.upper()
+    assert pfr_config["family"] == family
 
 
 @pytest.mark.parametrize(
-    "test_pass,dfl_niden,dfl_inverse,force,calc_inverse",
+    "test_pass,dfl_niden,dfl_inverse,force",
     [
-        (True, 0x0, 0xFFFF, False, False),  # OK
-        (True, 0x0, 0xFFFE, False, True),  # breaking rule 1.4
-        (True, 0x0, 0xFFFE, True, False),  # breaking rule 1.4
-        (True, 0x1, 0xFFFE, True, False),  # breaking rule 1.7
-        (False, 0x0, 0xFFFE, False, False),  # breaking rule 1.4
-        (False, 0x1, 0xFFFE, False, False),  # breaking rule 1.7
-        (False, 0x1, 0xFFFE, False, True),  # breaking rule 1.7
+        (True, 0x0, 0xFFFF, False),  # OK
+        (True, 0x0, 0xFFFE, False),  # breaking rule 1.4
+        (True, 0x0, 0xFFFE, True),  # breaking rule 1.4
+        (True, 0x1, 0xFFFE, True),  # breaking rule 1.7
+        (False, 0x1, 0xFFFE, False),  # breaking rule 1.7
     ],
 )
 def test_pfrc_integration_1(
@@ -247,7 +239,6 @@ def test_pfrc_integration_1(
     dfl_niden,
     dfl_inverse,
     force,
-    calc_inverse,
 ):
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     config = load_configuration(cmpa_config_template)
@@ -262,8 +253,6 @@ def test_pfrc_integration_1(
     cmd = f"generate-binary --config {cmpa_config_path} --output {output_bin}"
     if force:
         cmd += " --force"
-    if calc_inverse:
-        cmd += " --calc-inverse"
     logging.debug(cmd)
     cli_runner.invoke(cli.main, cmd.split(), expected_code=0 if test_pass else 1)
 

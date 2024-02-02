@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Support for OSCCA SM2/SM3."""
+
+from spsdk import SPSDK_DATA_FOLDER_COMMON
+from spsdk.utils.misc import Endianness
 
 try:
     # this import is to find out whether OSCCA support is installed or not
@@ -23,9 +26,8 @@ if IS_OSCCA_SUPPORTED:
     from typing import Any, NamedTuple, Optional, Type, TypeVar
 
     from ..exceptions import SPSDKError
-    from . import CRYPTO_DATA_FOLDER
 
-    OSCCA_ASN_DEFINITION_FILE = os.path.join(CRYPTO_DATA_FOLDER, "oscca.asn")
+    OSCCA_ASN_DEFINITION_FILE = os.path.join(SPSDK_DATA_FOLDER_COMMON, "crypto", "oscca.asn")
     SM2_OID = "1.2.156.10197.1.301"
 
     class SM2KeySet(NamedTuple):
@@ -108,16 +110,16 @@ if IS_OSCCA_SUPPORTED:
         def decode_signature(self, data: bytes) -> bytes:
             """Decode BER signature into r||s coordinates."""
             result = self.parser.decode("Signature", data)
-            r = int.to_bytes(result["r"], length=32, byteorder="big")
-            s = int.to_bytes(result["s"], length=32, byteorder="big")
+            r = int.to_bytes(result["r"], length=32, byteorder=Endianness.BIG.value)
+            s = int.to_bytes(result["s"], length=32, byteorder=Endianness.BIG.value)
             return r + s
 
         def encode_signature(self, data: bytes) -> bytes:
             """Encode raw r||s signature into BER format."""
             if len(data) != 64:
                 raise SPSDKError("SM2 signature must be 64B long.")
-            r = int.from_bytes(data[:32], byteorder="big")
-            s = int.from_bytes(data[32:], byteorder="big")
+            r = int.from_bytes(data[:32], byteorder=Endianness.BIG.value)
+            s = int.from_bytes(data[32:], byteorder=Endianness.BIG.value)
             ber_signature = self.parser.encode("Signature", data={"r": r, "s": s})
             return ber_signature
 

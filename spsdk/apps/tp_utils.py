@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -17,12 +17,10 @@ from typing_extensions import Literal
 
 from spsdk.apps.utils.common_cli_options import FC, spsdk_config_option
 from spsdk.exceptions import SPSDKError
-from spsdk.tp import TP_DATA_FOLDER, TP_SCH_FILE
 from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tp_intf import TpDevInterface, TpIntfDescription
 from spsdk.tp.tphost import TrustProvisioningHost
 from spsdk.tp.utils import (
-    get_device_data,
     get_tp_device_class,
     get_tp_device_types,
     get_tp_target_class,
@@ -32,14 +30,14 @@ from spsdk.tp.utils import (
     single_tp_device_adapter,
     single_tp_target_adapter,
 )
+from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
 from spsdk.utils.misc import find_file, load_binary, load_configuration
-from spsdk.utils.schema_validator import ValidationSchemas, check_config
+from spsdk.utils.schema_validator import check_config
 
 
 class TPBaseConfig:
     """Base class for TP app configs."""
 
-    SCHEMA_FILE_DIR = TP_DATA_FOLDER
     SCHEMA_MEMBERS: List[str] = []
 
     def __init__(self, config_data: dict, config_dir: Optional[str] = None) -> None:
@@ -56,7 +54,7 @@ class TPBaseConfig:
 
         :param schema_members: Explicit schema members to check (default: self.SCHEMA_MEMBERS)
         """
-        schema_cfg = ValidationSchemas.get_schema_file(TP_SCH_FILE)
+        schema_cfg = get_schema_file(DatabaseManager.TP)
         schema_members_int = schema_members or self.SCHEMA_MEMBERS
         # Get this app type scheme pieces
         sch_list = [schema_cfg[x] for x in schema_members_int]
@@ -271,9 +269,10 @@ class TPConfigConfig(TPBaseConfig):
             "tp_device_parameter", tp_device_parameter, self.config_data, self.config_dir
         )
 
-        self._validate()
         # first we need to validate family, after that we check family-specific settings
-        if get_device_data(key="use_prov_data", family=self.family):
+        self._validate()
+        db = get_db(self.family, revision="latest")
+        if db.get_bool(DatabaseManager.TP, "use_prov_data"):
             extra_checks = ["provisioning_data"]
         else:
             extra_checks = ["cmpa", "cfpa", "sb_kek", "user_kek"]

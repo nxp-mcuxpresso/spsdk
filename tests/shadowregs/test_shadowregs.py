@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for shadow registers support API."""
@@ -13,15 +13,17 @@ import yaml
 
 import spsdk.shadowregs.shadowregs as SR
 import spsdk.utils.registers as REGS
-from spsdk.apps.shadowregs import CONFIG_DATABASE, main
+from spsdk.apps.shadowregs import main
 from spsdk.exceptions import SPSDKError
+from spsdk.utils import database, reg_config
+from spsdk.utils.database import Database, DatabaseManager
 from spsdk.utils.exceptions import SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound
-from spsdk.utils.misc import use_working_directory
+from spsdk.utils.misc import Endianness, load_configuration, use_working_directory
 from spsdk.utils.reg_config import RegConfig
 from tests.cli_runner import CliRunner
 from tests.debuggers.debug_probe_virtual import DebugProbeVirtual
 
-TEST_DEV_NAME = "sh_test_dev"
+TEST_DEV_NAME = "dev2"
 TEST_DATABASE = "test_database.yaml"
 TEST_DATABASE_BAD_COMPUTED_FUNC = "test_database_invalid_computed.yaml"
 TEST_DATABASE_INVALID_FLUSH_FUNC = "test_database_invalid_flush_func.yaml"
@@ -47,21 +49,41 @@ def get_config(database_filename):
     return config
 
 
-def test_shadowreg_basic(data_dir):
+class TestDatabaseManager:
+    """Main SPSDK database."""
+
+    db: Database = None
+
+    """List all SPSDK supported features"""
+    FEATURE1 = "feature1"
+    FEATURE2 = "feature2"
+    FEATURE3 = "feature3"
+    REG_CONFIG = "reg_config"
+    SHADOW_REGS = "shadow_regs"
+
+
+@pytest.fixture
+def mock_test_database(monkeypatch, data_dir):
+    """Change the SPSDK Database"""
+    TestDatabaseManager.db = Database(os.path.join(data_dir, "../../utils/data/test_db"))
+    monkeypatch.setattr(database, "DatabaseManager", TestDatabaseManager)
+
+
+def test_shadowreg_basic(mock_test_database, data_dir):
     """Test Shadow Registers - Basic test."""
     probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS)
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
     assert shadowregs.device == TEST_DEV_NAME
 
 
-def test_shadowreg_set_get_reg(data_dir):
+def test_shadowreg_set_get_reg(mock_test_database, data_dir):
     """Test Shadow Registers - Setting and getting register."""
     probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS)
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
 
     test_val = bytearray(32)
     for i in range(32):
@@ -73,19 +95,21 @@ def test_shadowreg_set_get_reg(data_dir):
     shadowregs.set_register("REG_BIG", test_val)
     shadowregs.set_register("REG_BIG_REV", test_val)
 
-    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, "big")
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
+    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, Endianness.BIG.value)
+    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
+    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(
+        4, Endianness.BIG.value
+    )
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 
 
-def test_shadowreg_set_reg_invalid(data_dir):
+def test_shadowreg_set_reg_invalid(mock_test_database, data_dir):
     """Test Shadow Registers - INVALID cases of set and get registers."""
     probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS)
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
     with pytest.raises(SPSDKError):
         shadowregs.set_register("REG1", 0x1234567800004321)
 
@@ -93,22 +117,22 @@ def test_shadowreg_set_reg_invalid(data_dir):
         shadowregs.set_register("REG1_Invalid", 0x12345678)
 
 
-def test_shadowreg_get_reg_invalid(data_dir):
+def test_shadowreg_get_reg_invalid(mock_test_database, data_dir):
     """Test Shadow Registers - another INVALID cases of get registers."""
     probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS)
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
     with pytest.raises(SPSDKError):
         shadowregs.get_register("REG1_Invalid")
 
 
-def test_shadowreg_invalid_probe(data_dir):
+def test_shadowreg_invalid_probe(mock_test_database, data_dir):
     """Test Shadow Registers - INVALID probe used for constructor."""
     probe = None
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS)
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
 
     with pytest.raises(SPSDKError):
         shadowregs.set_register("REG1", 0x12345678)
@@ -118,12 +142,12 @@ def test_shadowreg_invalid_probe(data_dir):
 
 
 # pylint: disable=protected-access
-def test_shadowreg_verify_write(data_dir):
+def test_shadowreg_verify_write(mock_test_database, data_dir):
     """Test Shadow Registers - Verify write to register test."""
     probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS)
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
 
     shadowregs._write_shadow_reg(1, 0x12345678, verify_mask=0xFFFFFFFF)
     shadowregs._write_shadow_reg(1, 0x87654321, verify_mask=0)
@@ -137,12 +161,12 @@ def test_shadowreg_verify_write(data_dir):
     assert probe.mem_reg_read(1) == 0x5555AAAA
 
 
-def test_shadowreg_yml(data_dir, tmpdir):
+def test_shadowreg_yml(mock_test_database, data_dir, tmpdir):
     """Test Shadow Registers - Load YML configuration test."""
     probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS)
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
 
     test_val = bytearray(32)
     for i in range(32):
@@ -156,82 +180,52 @@ def test_shadowreg_yml(data_dir, tmpdir):
     shadowregs.set_register("REG_BIG", test_val)
     shadowregs.set_register("REG_BIG_REV", test_val)
 
-    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, "big")
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xEDCBA987.to_bytes(4, "big")
+    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, Endianness.BIG.value)
+    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
+    assert shadowregs.get_register("REG_INVERTED_AP") == 0xEDCBA987.to_bytes(
+        4, Endianness.BIG.value
+    )
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 
-    shadowregs.create_yaml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
-    shadowregs.create_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=True)
+    cfg = shadowregs.get_config()
 
     probe.clear()
 
-    shadowregs_load_raw = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
-    shadowregs_load_raw.load_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=True)
-    shadowregs_load_raw.sets_all_registers(verify=True)
-
-    assert shadowregs_load_raw.get_register("REG1") == 0x12345678.to_bytes(4, "big")
-    assert shadowregs_load_raw.get_register("REG2") == 0x4321.to_bytes(2, "big")
-    assert shadowregs_load_raw.get_register("REG_INVERTED_AP") == 0xEDCBA987.to_bytes(4, "big")
-    assert shadowregs_load_raw.get_register("REG_BIG") == test_val
-    assert shadowregs_load_raw.get_register("REG_BIG_REV") == test_val
-
-    probe.clear()
-
-    shadowregs_load = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
-    shadowregs_load.load_yaml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
+    shadowregs_load = SR.ShadowRegisters(probe, config)
+    shadowregs_load.load_config(cfg)
     shadowregs_load.sets_all_registers(verify=True)
-
-    assert shadowregs_load.get_register("REG1") == b"\x92\x34\x56\x56"
-    assert shadowregs_load.get_register("REG2") == b"\x03!"
-    assert shadowregs_load.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
+    # VAlue with updated CRC RESERVED field and DEV TEST BIT
+    assert shadowregs_load.get_register("REG1") == 0x80345628.to_bytes(4, Endianness.BIG.value)
+    # Stored just usable part
+    assert shadowregs_load.get_register("REG2") == 0x0321.to_bytes(2, Endianness.BIG.value)
+    assert shadowregs_load.get_register("REG_INVERTED_AP") == 0x7FCBA9D7.to_bytes(
+        4, Endianness.BIG.value
+    )
     assert shadowregs_load.get_register("REG_BIG") == test_val
-    assert shadowregs_load.get_register("REG_BIG_REV") == test_val_rev
-
-    probe.clear()
-
-    shadowregs_load2 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
-    shadowregs_load2.load_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=False)
-    shadowregs_load2.sets_all_registers(verify=True)
-
-    assert shadowregs_load2.get_register("REG1") == b"\x92\x34\x56\x56"
-    assert shadowregs_load2.get_register("REG2") == b"\x03!"
-    assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
-    assert shadowregs_load2.get_register("REG_BIG") == test_val
-    assert shadowregs_load2.get_register("REG_BIG_REV") == test_val_rev
-
-    shadowregs_load2 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
-    shadowregs_load2.load_yaml_config(os.path.join(tmpdir, "sh_regs_raw.yml"), raw=False)
-    shadowregs_load2.sets_all_registers(verify=False)
-
-    assert shadowregs_load2.get_register("REG1") == b"\x92\x34\x56\x56"
-    assert shadowregs_load2.get_register("REG2") == b"\x03!"
-    assert shadowregs_load2.get_register("REG_INVERTED_AP") == b"m\xcb\xa9\xa9"
-    assert shadowregs_load2.get_register("REG_BIG") == test_val
-    assert shadowregs_load2.get_register("REG_BIG_REV") == test_val_rev
+    assert shadowregs_load.get_register("REG_BIG_REV") == test_val
 
 
-def test_shadowreg_yml_corrupted(data_dir):
+def test_shadowreg_yml_corrupted(mock_test_database, data_dir):
     """Test Shadow Registers - Corrupted YML configuration."""
     probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS)
 
     test_val = bytearray(32)
     for i in range(32):
         test_val[i] = i
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
     with pytest.raises((SPSDKRegsErrorBitfieldNotFound, SPSDKRegsErrorRegisterNotFound)):
-        shadowregs.load_yaml_config(os.path.join(data_dir, "sh_regs_corrupted.yml"), raw=True)
+        shadowregs.load_config(load_configuration(os.path.join(data_dir, "sh_regs_corrupted.yml")))
 
 
-def test_shadowreg_yml_invalid_computed(tmpdir, data_dir):
+def test_shadowreg_yml_invalid_computed(mock_test_database, tmpdir):
     """Test Shadow Registers - INVALID computed configuration."""
     probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE_BAD_COMPUTED_FUNC))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS, "rev_test_invalid_computed")
 
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(probe, config)
 
     test_val = bytearray(32)
     for i in range(32):
@@ -243,32 +237,20 @@ def test_shadowreg_yml_invalid_computed(tmpdir, data_dir):
     shadowregs.set_register("REG_BIG", test_val)
     shadowregs.set_register("REG_BIG_REV", test_val)
 
-    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, "big")
-    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, "big")
-    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(4, "big")
+    assert shadowregs.get_register("REG1") == 0x12345678.to_bytes(4, Endianness.BIG.value)
+    assert shadowregs.get_register("REG2") == 0x4321.to_bytes(2, Endianness.BIG.value)
+    assert shadowregs.get_register("REG_INVERTED_AP") == 0xA5A5A5A5.to_bytes(
+        4, Endianness.BIG.value
+    )
     assert shadowregs.get_register("REG_BIG") == test_val
     assert shadowregs.get_register("REG_BIG_REV") == test_val
 
-    shadowregs.create_yaml_config(os.path.join(tmpdir, "sh_regs.yml"), raw=False)
+    cfg = shadowregs.get_config()
 
-    shadowregs1 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs1 = SR.ShadowRegisters(probe, config)
 
     with pytest.raises(SPSDKError):
-        shadowregs1.load_yaml_config(os.path.join(tmpdir, "sh_regs.yml"))
-
-
-def test_shadowreg_yml_none_existing(data_dir):
-    """Test Shadow Registers - None existing YML configuration."""
-    probe = get_probe()
-    config = get_config(os.path.join(data_dir, TEST_DATABASE))
-
-    test_val = bytearray(32)
-    for i in range(32):
-        test_val[i] = i
-
-    shadowregs = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
-    with pytest.raises(SPSDKError):
-        shadowregs.load_yaml_config(os.path.join(data_dir, "sh_regs_none.yml"), raw=True)
+        shadowregs1.load_config(cfg)
 
 
 def test_shadow_register_crc8():
@@ -278,20 +260,20 @@ def test_shadow_register_crc8():
     assert crc == 0x29
 
 
-def test_shadow_register_crc8_hook(data_dir):
+def test_shadow_register_crc8_hook(mock_test_database):
     """Test Shadow Registers - CRC8 algorithm hook test."""
-    config = get_config(os.path.join(data_dir, TEST_DATABASE_BAD_COMPUTED_FUNC))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS, "rev_test_invalid_computed")
 
-    shadowregs = SR.ShadowRegisters(None, config, TEST_DEV_NAME)
+    shadowregs = SR.ShadowRegisters(None, config)
     assert shadowregs.comalg_dcfg_cc_socu_crc8(0x03020100) == 0x0302011D
     assert shadowregs.comalg_dcfg_cc_socu_crc8(0x80FFFF00) == 0x80FFFF20
 
 
-def test_shadow_register_invalid_flush_hook(data_dir):
+def test_shadow_register_invalid_flush_hook(mock_test_database):
     """Test Shadow Registers - invalid flush hook test."""
-    config = get_config(os.path.join(data_dir, TEST_DATABASE_INVALID_FLUSH_FUNC))
+    config = RegConfig("dev2", TestDatabaseManager.SHADOW_REGS, "rev_test_invalid_flush_func")
     probe = get_probe()
-    shadowregs1 = SR.ShadowRegisters(probe, config, TEST_DEV_NAME)
+    shadowregs1 = SR.ShadowRegisters(probe, config)
 
     with pytest.raises(SPSDKError):
         shadowregs1.set_register("REG1", 0x12345678)
@@ -349,7 +331,7 @@ def test_generate_template(cli_runner: CliRunner, tmpdir):
     with use_working_directory(tmpdir):
         cli_runner.invoke(main, f"--family {family} get-template --output {template}")
         assert os.path.isfile(template)
-        cli_runner.invoke(main, f"--family {family} get-template --output {template} --raw --force")
+        cli_runner.invoke(main, f"--family {family} get-template --output {template} --force")
         assert os.path.isfile(template)
         with open(template) as f:
             assert yaml.safe_load(f)
@@ -366,11 +348,11 @@ def test_generate_template(cli_runner: CliRunner, tmpdir):
 def test_rkth_order(family, data_dir):
     """Test for rkth right order in shadowregs."""
     probe = get_probe()
-    config = RegConfig(CONFIG_DATABASE)
-    sr = SR.ShadowRegisters(debug_probe=probe, config=config, device=family)
+    config = RegConfig(family=family, feature=DatabaseManager.SHADOW_REGS)
+    sr = SR.ShadowRegisters(debug_probe=probe, config=config)
     # to simplify HW differencies unify offsets
     sr.offset_for_read = sr.offset
-    sr.load_yaml_config(os.path.join(data_dir, "cfg_rkth.yaml"))
+    sr.load_config(load_configuration(os.path.join(data_dir, "cfg_rkth.yaml")))
     sr.sets_all_registers()
 
     # validate expected results

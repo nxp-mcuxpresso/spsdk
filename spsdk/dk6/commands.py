@@ -1,40 +1,40 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """DK6 Device Commands."""
 from struct import unpack_from
 from typing import Dict, Type, Union
 
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
-class StatusCode(Enum):
+class StatusCode(SpsdkEnum):
     """DK6 Command Status Codes."""
 
-    OK = (0x00, "Success")
-    MEMORY_INVALID_MODE = (0xEF, "Memory invalid mode")
-    MEMORY_BAD_STATE = (0xF0, "Memory bad state")
-    MEMORY_TOO_LONG = (0xF1, "Memory too long")
-    MEMORY_OUT_OF_RANGE = (0xF2, "Memory out of range")
-    MEMORY_ACCESS_INVALID = (0xF3, "Memory access invalid")
-    MEMORY_NOT_SUPPORTED = (0xF4, "Memory not supported")
-    MEMORY_INVALID = (0xF5, "Memory invalid")
-    NO_RESPONSE = (0xF6, "No response")
-    AUTH_ERROR = (0xF7, "Not authorized")
-    TEST_ERROR = (0xF8, "Test Error")
-    READ_FAIL = (0xF9, "Read fail")
-    USER_INTERRUPT = (0xFA, "User interrupt")
-    ASSERT_FAIL = (0xFB, "Assertion fail")
-    CRC_ERROR = (0xFC, "CRC Error")
-    INVALID_RESPONSE = (0xFD, "Invalid response")
-    WRITE_FAIL = (0xFE, "Write fail")
-    NOT_SUPPORTED = (0xFF, "Not supported")
+    OK = (0x00, "OK", "Success")
+    MEMORY_INVALID_MODE = (0xEF, "MEMORY_INVALID_MODE", "Memory invalid mode")
+    MEMORY_BAD_STATE = (0xF0, "MEMORY_BAD_STATE", "Memory bad state")
+    MEMORY_TOO_LONG = (0xF1, "MEMORY_TOO_LONG", "Memory too long")
+    MEMORY_OUT_OF_RANGE = (0xF2, "MEMORY_OUT_OF_RANGE", "Memory out of range")
+    MEMORY_ACCESS_INVALID = (0xF3, "MEMORY_ACCESS_INVALID", "Memory access invalid")
+    MEMORY_NOT_SUPPORTED = (0xF4, "MEMORY_NOT_SUPPORTED", "Memory not supported")
+    MEMORY_INVALID = (0xF5, "MEMORY_INVALID", "Memory invalid")
+    NO_RESPONSE = (0xF6, "NO_RESPONSE", "No response")
+    AUTH_ERROR = (0xF7, "AUTH_ERROR", "Not authorized")
+    TEST_ERROR = (0xF8, "TEST_ERROR", "Test Error")
+    READ_FAIL = (0xF9, "READ_FAIL", "Read fail")
+    USER_INTERRUPT = (0xFA, "USER_INTERRUPT", "User interrupt")
+    ASSERT_FAIL = (0xFB, "ASSERT_FAIL", "Assertion fail")
+    CRC_ERROR = (0xFC, "CRC_ERROR", "CRC Error")
+    INVALID_RESPONSE = (0xFD, "INVALID_RESPONSE", "Invalid response")
+    WRITE_FAIL = (0xFE, "WRITE_FAIL", "Write fail")
+    NOT_SUPPORTED = (0xFF, "NOT_SUPPORTED", "Not supported")
 
 
-class ResponseTag(Enum):
+class ResponseTag(SpsdkEnum):
     """DK6 Responses to Commands."""
 
     RESET = (0x15, "ResetResponse", "Reset Response")
@@ -51,7 +51,7 @@ class ResponseTag(Enum):
     UNLOCK_ISP = (0x4F, "UnlockISPResponse", "Unlock ISP Response")
 
 
-class CommandTag(Enum):
+class CommandTag(SpsdkEnum):
     """DK6 Commands."""
 
     RESET = (0x14, "ResetCommand", "Reset Command")
@@ -68,7 +68,7 @@ class CommandTag(Enum):
     UNLOCK_ISP = (0x4E, "UnlockISPCommand", "Unlock ISP Command")
 
 
-class MemoryId(Enum):
+class MemoryId(SpsdkEnum):
     """DK6 Memory IDs."""
 
     FLASH = (0x00, "FLASH")
@@ -81,7 +81,7 @@ class MemoryId(Enum):
     RAM1 = (0x07, "RAM1")
 
 
-class MemoryType(Enum):
+class MemoryType(SpsdkEnum):
     """DK6 Memory Types."""
 
     ROM = (0x00, "ROM", "Read only memory")
@@ -90,7 +90,7 @@ class MemoryType(Enum):
     EFUSE = (0x05, "EFUSE (OTP)", "EFUSE (OTP)")
 
 
-class MemoryAccessValues(Enum):
+class MemoryAccessValues(SpsdkEnum):
     """DK6 Memory Access Values."""
 
     READ = (0x00, "Read Enabled")
@@ -167,14 +167,21 @@ class CmdResponse:
             + "]"
         )
 
+    def _get_status_label(self) -> str:
+        return (
+            StatusCode.get_label(self.status)
+            if StatusCode.contains(self.status)
+            else f"Unknown[0x{self.status:08X}]"
+        )
+
 
 class GenericResponse(CmdResponse):
     """DK6 generic response format class."""
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
@@ -192,8 +199,8 @@ class IspUnlockResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         return f"Tag={tag}, Status={status}, Authenticated={self.authenticated}"
 
 
@@ -214,8 +221,8 @@ class GetChipIdResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         if self.status == StatusCode.OK:
             return f"Tag={tag}, Status={status}, ChipID={hex(self.chip_id)}, ChipVersion={hex(self.chip_version)}"
         return f"Tag={tag}, Status={status}"
@@ -247,12 +254,12 @@ class MemGetInfoResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         if self.status == StatusCode.OK:
-            memory_id = MemoryId.get(self.memory_id)
-            mem_type = MemoryType.get(self.mem_type)
-            access = MemoryAccessValues.get(self.access)
+            memory_id = MemoryId.get_label(self.memory_id)
+            mem_type = MemoryType.get_label(self.mem_type)
+            access = MemoryAccessValues.get_label(self.access)
             return (
                 f"Tag={tag}, Status={status}, MemName = {self.mem_name}, "
                 + f"MemoryId={memory_id}, BaseAddress={hex(self.base_addr)}, "
@@ -279,8 +286,8 @@ class MemOpenResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         if self.status == StatusCode.OK:
             return f"Tag={tag}, Status={status}, Handle={self.handle}"
         return f"Tag={tag}, Status={status}"
@@ -302,8 +309,8 @@ class MemReadResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         data = ", ".join(f"{b:02X}" for b in self.data)
         return f"Tag={tag}, Status={status}, Data={data}"
 
@@ -313,8 +320,8 @@ class MemWriteResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
@@ -323,8 +330,8 @@ class MemEraseResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
@@ -333,8 +340,8 @@ class MemBlankCheckResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
@@ -343,8 +350,8 @@ class MemCloseResponse(CmdResponse):
 
     def info(self) -> str:
         """Get object info."""
-        tag = ResponseTag.name(self.type)
-        status = StatusCode.get(self.status, f"Unknown[0x{self.status:08X}]")
+        tag = ResponseTag.get_label(self.type)
+        status = self._get_status_label()
         return f"Tag={tag}, Status={status}"
 
 
@@ -369,7 +376,7 @@ def parse_cmd_response(
     :param frame_type: Frame Type
     :return: De-serialized object from data
     """
-    known_response: Dict[int, Type[CmdResponse]] = {
+    known_response: Dict[ResponseTag, Type[CmdResponse]] = {
         ResponseTag.RESET: GenericResponse,
         ResponseTag.EXECUTE: GenericResponse,
         ResponseTag.SET_BAUD: GenericResponse,
@@ -383,7 +390,7 @@ def parse_cmd_response(
         ResponseTag.MEM_GET_INFO: MemGetInfoResponse,
         ResponseTag.UNLOCK_ISP: IspUnlockResponse,
     }
-
-    if frame_type in known_response:
-        return known_response[frame_type](frame_type, data)
+    for tag, cmd_response in known_response.items():
+        if tag == frame_type:
+            return cmd_response(frame_type, data)
     return CmdResponse(frame_type, data)

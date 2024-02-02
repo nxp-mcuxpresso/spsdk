@@ -1,0 +1,803 @@
+<?xml version="1.0"?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+<regs:peripheral xmlns:regs="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd http://swtools.freescale.net/XSD/registers/4.0/regsPeripheral.xsd">
+  <register offset="0x0" width="32" name="HEADER" description="Description of Header register">
+    <alias type="CMSIS" value="HEADER"/>
+    <bit_field offset="0" width="8" name="CFPA_LC_STATE" access="RO" reset_value="0" description="CFPA_LC_STATE.">
+      <alias type="CMSIS" value="CFPA_LC_STATE"/>
+    </bit_field>
+    <reserved_bit_field offset="8" width="8" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value"/>
+    <bit_field offset="16" width="16" name="HEADER" access="RO" reset_value="0x9635" description="CFPA Header marker should be set to 0x9635">
+      <alias type="CMSIS" value="0x9635"/>
+    </bit_field>
+  </register>
+  <register name="CFPA_PAGE_VERSION" offset="0x4" width="32" description="Description of CFPA_PAGE_VERSION register">
+    <alias type="CMSIS" value="CFPA_PAGE_VERSION"/>
+    <bit_field offset="0" width="24" name="CFPA_PAGE_VERSION" access="RO" reset_value="0" description="CFPA page version">
+    </bit_field>
+    <bit_field offset="24" width="2" name="IMG_UPD" access="RO" reset_value="0" description="Image_updated">
+      <alias type="CMSIS" value="IMG_UPD"/>
+      <bit_field_value name="NOTHING_CHANGED" value="0b00" description="No action"/>
+      <bit_field_value name="IMAGE0_CMAC_UPDATE" value="0b01" description="Update image 0 CMAC"/>
+      <bit_field_value name="IMAGE1_CMAC_UPDATE" value="0b10" description="Update image 1 CMAC"/>
+      <bit_field_value name="SBL_IMG_CMAC_UPDATE" value="0b11" description="Update SBL Image CMAC"/>
+    </bit_field>
+    <reserved_bit_field offset="26" width="1" reset_value="0"/>
+    <bit_field offset="27" width="3" name="CMPA_UPD" access="RO" reset_value="0" description="CMPA page updated through ROM API. Thus compute CMAC on sub-sequent boot. This field is checked only in OEM_OPEN (0x3)  LC state.">
+      <alias type="CMSIS" value="CFPA_CMAC_UPD_CMPA_UPD(x)"/>
+      <bit_field_value name="NO_ACTION" value="0b000" description="No action"/>
+      <bit_field_value name="RESERVED_0b001" value="0b001" description="Combination is ignored."/>
+      <bit_field_value name="UPDATE_IN_CMPA" value="0b010" description="Update CMAC field in CMPA page. "/>
+      <bit_field_value name="TO_OEM_SECURE" value="0b011" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_SECURE (0x7)"/>
+      <bit_field_value name="RESERVED_0b100" value="0b100" description="Combination is ignored."/>
+      <bit_field_value name="TO_OEM_CLOSED" value="0b101" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_CLOSED (0xF)."/>
+      <bit_field_value name="TO_OEM_LOCKED" value="0b110" description="Update CMAC field in CMPA page and OTP. Advance OTP_LC_STATE to OEM_LOCKED (0xCF)."/>
+      <bit_field_value name="RESERVED_0b111" value="0b111" description="Combination is ignored."/>
+    </bit_field>
+    <reserved_bit_field offset="30" width="1" reset_value="0"/>
+    <bit_field offset="31" width="1" name="DICE_UPD" access="RO" reset_value="0" description="Update DICE certificate during next boot.">
+      <alias type="CMSIS" value="DICE_UPD"/>
+      <bit_field_value name="NO_ACTION" value="0b0" description="No action"/>
+      <bit_field_value name="GENERATE_CERTIFICATE" value="0b1" description="Generate certificate. "/>
+    </bit_field>
+  </register>
+  <register name="Secure_FW_Version" offset="0x8" width="32" description="Description of Secure_FW_Version register">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="Secure_FW_Version"/>
+    </bit_field>
+  </register>
+  <register name="NS_FW_Version" offset="0xc" width="32" description="Description of NS_FW_Version register">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="NS_FW_Version"/>
+    </bit_field>
+  </register>
+  <register name="Recovery_FW_Version" offset="0x10" width="32" description="Description of Recovery_FW_Version register">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="Recovery_FW_Version"/>
+    </bit_field>
+  </register>
+  <register name="SECBOOT_FLAGS" offset="0x14" width="32" description="Description of SECBOOT_FLAGS register">
+    <bit_field offset="0" width="2" name="RoTK0_EN" access="RO" reset_value="0" description="Root of Trust Key 0 Enable">
+      <alias type="CMSIS" value="ROTKH_REVOKE_RoTK0_EN(x)"/>
+      <bit_field_value name="ENABLED_0" value="0b00" description="Enabled"/>
+      <bit_field_value name="ENABLED_1" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_2" value="0b10" description="Key Revoked"/>
+      <bit_field_value name="REVOKED_3" value="0b11" description="Key Revoked"/>
+    </bit_field>
+    <bit_field offset="2" width="2" name="RoTK1_EN" access="RO" reset_value="0" description="Root of Trust Key 1 Enable">
+      <alias type="CMSIS" value="ROTKH_REVOKE_RoTK1_EN(x)"/>
+      <bit_field_value name="ENABLED_0" value="0b00" description="Enabled"/>
+      <bit_field_value name="ENABLED_1" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_2" value="0b10" description="Key Revoked"/>
+      <bit_field_value name="REVOKED_3" value="0b11" description="Key Revoked"/>
+    </bit_field>
+    <bit_field offset="4" width="2" name="RoTK2_EN" access="RO" reset_value="0" description="Root of Trust Key 2 Enable">
+      <alias type="CMSIS" value="ROTKH_REVOKE_RoTK2_EN(x)"/>
+      <bit_field_value name="ENABLED_0" value="0b00" description="Enabled"/>
+      <bit_field_value name="ENABLED_1" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_2" value="0b10" description="Key Revoked"/>
+      <bit_field_value name="REVOKED_3" value="0b11" description="Key Revoked"/>
+    </bit_field>
+    <bit_field offset="6" width="2" name="RoTK3_EN" access="RO" reset_value="0" description="Root of Trust Key 3 Enable">
+      <alias type="CMSIS" value="ROTKH_REVOKE_RoTK3_EN(x)"/>
+      <bit_field_value name="ENABLED_0" value="0b00" description="Enabled"/>
+      <bit_field_value name="ENABLED_1" value="0b01" description="Enabled"/>
+      <bit_field_value name="REVOKED_2" value="0b10" description="Key Revoked"/>
+      <bit_field_value name="REVOKED_3" value="0b11" description="Key Revoked"/>
+    </bit_field>
+    <reserved_bit_field offset="8" width="20" reset_value="0"/>
+    <bit_field offset="28" width="4" name="OEM_RETURN_ERASE_DONE" access="RO" reset_value="0" description="OEM_RETURN_ERASE_DONE">
+      <alias type="CMSIS" value="OEM_RETURN_ERASE_DONE"/>
+    </bit_field>
+  </register>
+  <register name="IMAGE_KEY_REVOKE" offset="0x18" width="32" description="Image Key Revoke">
+    <alias type="CMSIS" value="IMAGE_KEY_REVOKE"/>
+    <bit_field offset="0" width="24" name="IMAGE_KEY_REVOKE_ID" access="RO" reset_value="0" description="Image Key Revocation ID (Monotonic counter)">
+    </bit_field>
+    <reserved_bit_field offset="24" width="8" reset_value="0"/>
+  </register>
+  <register name="LP_VECTOR_ADDR" offset="0x1c" width="32" description="Description of LP_VECTOR_ADDR register">
+    <alias type="CMSIS" value="LP_VECTOR_ADDR"/>
+    <bit_field offset="0" width="32" name="LP_VECTOR_ADDR" access="RO" reset_value="0" description="Vector address when waking from power-down and deep power down states.">
+      <alias type="CMSIS" value="LP_VECTOR_ADDR"/>
+    </bit_field>
+  </register>
+  <register name="DBG_REVOKE_VU" offset="0x20" width="32" description="Debug Revoke Vendor Usage">
+    <bit_field offset="0" width="16" name="VENDOR_USAGE" access="RO" reset_value="0" description="Debug Vendor Usage">
+    </bit_field>
+    <reserved_bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value">
+    </reserved_bit_field>
+  </register>
+  <register name="DCFG_CC_SOCU_NS_PIN" offset="0x24" width="32" description="Device Configuration Credential Constraints for SoC specific Use Pinned">
+    <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN"/>
+    <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_NIDEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RO" reset_value="0" description="Non-secure Debug Enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_DBGEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="SPNIDEN" access="RO" reset_value="0" description="Secure Non-invasive Debug Enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_SPNIDEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="SPIDEN" access="RO" reset_value="0" description="Secure Invasive Debug Enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_SPIDEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <reserved_bit_field offset="4" width="1" reset_value="0"/>
+    <bit_field offset="5" width="1" name="DSP_DBGEN" access="RO" reset_value="0" description="DSP Debug Enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_DSP_DBGEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RO" reset_value="0" description="ISP Boot Command Enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_ISP_CMD_EN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RO" reset_value="0" description="FA Command Enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_FA_CMD_EN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RO" reset_value="0" description="Flash Mass Erase Command Enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_ME_CMD_EN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="9" width="1" name="CPU1_NIDEN" access="RO" reset_value="0" description="Second CM33 debug enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_CPU1_NIDEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Use DAP to enable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Fixed state"/>
+    </bit_field>
+    <bit_field offset="10" width="1" name="CPU1_DBGEN" access="RO" reset_value="0" description="Second CM33 debug">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_CPU1_DBGEN(x)"/>
+      <bit_field_value name="USE_DAP" value="0b0" description="Disable"/>
+      <bit_field_value name="FIXED_STATE" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="4" reset_value="0"/>
+    <bit_field offset="15" width="1" name="UUID_CHECK" access="RO" reset_value="0" description="UUID Check">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_UUID_CHECK(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value of Bits [15:0]">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_PIN_INVERSE_VALUE(x)"/>
+    </reserved_bit_field>
+  </register>
+  <register name="DCFG_CC_SOCU_NS_DFLT" offset="0x28" width="32" description="Device Configuration Credential Constraints for SoC specific Use Debug Filter">
+    <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT"/>
+    <bit_field offset="0" width="1" name="NIDEN" access="RO" reset_value="0" description="Non-secure Non-invasive Debug Fixed State">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_NIDEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="1" width="1" name="DBGEN" access="RO" reset_value="0" description="Non-secure Debug Fixed State">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_DBGEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="2" width="1" name="SPNIDEN" access="RO" reset_value="0" description="Secure Non-invasive Debug Fixed State">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_SPNIDEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="3" width="1" name="SPIDEN" access="RO" reset_value="0" description="Secure Invasive Debug Fixed State">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_SPIDEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="4" width="1" reset_value="0"/>
+    <bit_field offset="5" width="1" name="DSP_DBGEN" access="RO" reset_value="0" description="DSP Debug Fixed State">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_DSP_DBGEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="6" width="1" name="ISP_CMD_EN" access="RO" reset_value="0" description="ISP Boot Command Fixed State">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_ISP_CMD_EN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="7" width="1" name="FA_CMD_EN" access="RO" reset_value="0" description="FA Command Fixed State">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_FA_CMD_EN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="8" width="1" name="ME_CMD_EN" access="RO" reset_value="0" description="Flash Mass Erase Command Fixed State">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_ME_CMD_EN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disabled"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="9" width="1" name="CPU1_NIDEN" access="RO" reset_value="0" description="Second CM33 debug enable">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_CPU1_NIDEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disable"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <bit_field offset="10" width="1" name="CPU1_DBGEN" access="RO" reset_value="0" description="Second CM33 debug">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_CPU1_DBGEN(x)"/>
+      <bit_field_value name="DISABLED" value="0b0" description="Disable"/>
+      <bit_field_value name="ENABLED" value="0b1" description="Enabled"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="5" reset_value="0"/>
+    <reserved_bit_field offset="16" width="16" name="INVERSE_VALUE" access="RO" reset_value="0" description="Inverse Value">
+      <alias type="CMSIS" value="DCFG_CC_SOCU_NS_DFLT_INVERSE_VALUE(x)"/>
+    </reserved_bit_field>
+  </register>
+  <register name="MCTR_NPX_CTX0" offset="0x30" width="32" description="Erase count for internal Prince region 0 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_NPX_CTX0"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_NPX_CTX1" offset="0x34" width="32" description="Erase count for internal Prince region 1 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_NPX_CTX1"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_NPX_CTX2" offset="0x38" width="32" description="Erase count for internal Prince region 2 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_NPX_CTX2"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_NPX_CTX3" offset="0x3c" width="32" description="Erase count for internal Prince region 3 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_NPX_CTX3"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_IPED_CTX0" offset="0x40" width="32" description="Erase count for external Prince region 0 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_IPED_CTX0"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_IPED_CTX1" offset="0x44" width="32" description="Erase count for external Prince region 1 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_IPED_CTX1"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_IPED_CTX2" offset="0x48" width="32" description="Erase count for external Prince region 2 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_IPED_CTX2"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_IPED_CTX3" offset="0x4c" width="32" description="Erase count for external Prince region 3 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_IPED_CTX3"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_IPED_CTX4" offset="0x50" width="32" description="Erase count for external Prince region 4 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_IPED_CTX4"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_IPED_CTX5" offset="0x54" width="32" description="Erase count for external Prince region 5 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_IPED_CTX5"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_IPED_CTX6" offset="0x58" width="32" description="Erase count for external Prince region 6 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_IPED_CTX6"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_IPED_CTX7" offset="0x5c" width="32" description="Erase count for external Prince region 7 (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_IPED_CTX7"/>
+    </bit_field>
+  </register>
+  <register name="ERR_AUTH_FAIL_COUNT" offset="0x60" width="32" description="Authentication failure counter during boot, SB3, debug authentication (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="ERR_AUTH_FAIL_COUNT"/>
+    </bit_field>
+  </register>
+  <register name="ERR_ITRC_COUNT" offset="0x64" width="32" description="Tamper event counter (ITRC reset, WDT reset, WDT reset, GDET reset, Tamper pin) (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="ERR_ITRC_COUNT"/>
+    </bit_field>
+  </register>
+  <register name="ERR_CFG_FAIL_COUNT" offset="0x68" width="32" description="Configuration check failure counter during CMPA, CFPA, ROM patch, TRNG, PUF start (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="ERR_CFG_FAIL_COUNT"/>
+    </bit_field>
+  </register>
+  <register name="ERR_CONT3" offset="0x6c" width="32" description="Reserved error counter (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="ERR_CONT3"/>
+    </bit_field>
+  </register>
+  <register name="ERR_CONT4" offset="0x70" width="32" description="Reserved error counter (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="ERR_CONT4"/>
+    </bit_field>
+  </register>
+  <register name="ERR_CONT5" offset="0x74" width="32" description="Reserved error counter (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="ERR_CONT5"/>
+    </bit_field>
+  </register>
+  <register name="ERR_CONT6" offset="0x78" width="32" description="Reserved error counter (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="ERR_CONT6"/>
+    </bit_field>
+  </register>
+  <register name="ERR_CONT7" offset="0x7c" width="32" description="Reserved error counter (Monotonic counter)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="ERR_CONT7"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_CUST_CTR0" offset="0x80" width="32" description="Customer defined Monotonic counter 0">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_CUST_CTR0"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_CUST_CTR1" offset="0x84" width="32" description="Customer defined Monotonic counter 1">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_CUST_CTR1"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_CUST_CTR2" offset="0x88" width="32" description="Customer defined Monotonic counter 2">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_CUST_CTR2"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_CUST_CTR3" offset="0x8c" width="32" description="Customer defined Monotonic counter 3">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_CUST_CTR3"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_CUST_CTR4" offset="0x90" width="32" description="Customer defined Monotonic counter 4">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_CUST_CTR4"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_CUST_CTR5" offset="0x94" width="32" description="Customer defined Monotonic counter 5">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_CUST_CTR5"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_CUST_CTR6" offset="0x98" width="32" description="Customer defined Monotonic counter 6">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_CUST_CTR6"/>
+    </bit_field>
+  </register>
+  <register name="MCTR_CUST_CTR7" offset="0x9c" width="32" description="Customer defined Monotonic counter 7">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MCTR_CUST_CTR7"/>
+    </bit_field>
+  </register>
+  <register name="MFLAG_CUST_0" offset="0xa0" width="32" description="Customer defined Monotonic flags 0 (once a bit is set the newer version of the page should have the flag set.)">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MFLAG_CUST_0"/>
+    </bit_field>
+  </register>
+  <register name="MFLAG_CUST_1" offset="0xa4" width="32" description="Customer defined Monotonic flags 1">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MFLAG_CUST_1"/>
+    </bit_field>
+  </register>
+  <register name="MFLAG_CUST_2" offset="0xa8" width="32" description="Customer defined Monotonic flags 2">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MFLAG_CUST_2"/>
+    </bit_field>
+  </register>
+  <register name="MFLAG_CUST_3" offset="0xac" width="32" description="Customer defined Monotonic flags 3">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MFLAG_CUST_3"/>
+    </bit_field>
+  </register>
+  <register name="MFLAG_CUST_4" offset="0xb0" width="32" description="Customer defined Monotonic flags 4">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MFLAG_CUST_4"/>
+    </bit_field>
+  </register>
+  <register name="MFLAG_CUST_5" offset="0xb4" width="32" description="Customer defined Monotonic flags 5">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MFLAG_CUST_5"/>
+    </bit_field>
+  </register>
+  <register name="MFLAG_CUST_6" offset="0xb8" width="32" description="Customer defined Monotonic flags 6">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MFLAG_CUST_6"/>
+    </bit_field>
+  </register>
+  <register name="MFLAG_CUST_7" offset="0xbc" width="32" description="Customer defined Monotonic flags 7">
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Field.">
+      <alias type="CMSIS" value="MFLAG_CUST_7"/>
+    </bit_field>
+  </register>
+  <register name="FLASH_ACL_0_7" offset="0xc0" width="32" description="Description of FLASH_ACL_0_7 register">
+    <bit_field offset="0" width="3" name="ACL_SEC_0" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_0"/>
+    </bit_field>
+    <reserved_bit_field offset="3" width="1" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ACL_SEC_1" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_1"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="3" name="ACL_SEC_2" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_2"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="1" reset_value="0"/>
+    <bit_field offset="12" width="3" name="ACL_SEC_3" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_3"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="3" name="ACL_SEC_4" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_4"/>
+    </bit_field>
+    <reserved_bit_field offset="19" width="1" reset_value="0"/>
+    <bit_field offset="20" width="3" name="ACL_SEC_5" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_5"/>
+    </bit_field>
+    <reserved_bit_field offset="23" width="1" reset_value="0"/>
+    <bit_field offset="24" width="3" name="ACL_SEC_6" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_6"/>
+    </bit_field>
+    <reserved_bit_field offset="27" width="1" reset_value="0"/>
+    <bit_field offset="28" width="3" name="ACL_SEC_7" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_7"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register name="FLASH_ACL_8_15" offset="0xc4" width="32" description="Description of FLASH_ACL_8_15 register">
+    <bit_field offset="0" width="3" name="ACL_SEC_8" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_8"/>
+    </bit_field>
+    <reserved_bit_field offset="3" width="1" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ACL_SEC_9" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_9"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="3" name="ACL_SEC_10" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_10"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="1" reset_value="0"/>
+    <bit_field offset="12" width="3" name="ACL_SEC_11" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_11"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="3" name="ACL_SEC_12" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_12"/>
+    </bit_field>
+    <reserved_bit_field offset="19" width="1" reset_value="0"/>
+    <bit_field offset="20" width="3" name="ACL_SEC_13" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_14"/>
+    </bit_field>
+    <reserved_bit_field offset="23" width="1" reset_value="0"/>
+    <bit_field offset="24" width="3" name="ACL_SEC_14" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_14"/>
+    </bit_field>
+    <reserved_bit_field offset="27" width="1" reset_value="0"/>
+    <bit_field offset="28" width="3" name="ACL_SEC_15" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_15"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register name="FLASH_ACL_16_23" offset="0xc8" width="32" description="Description of FLASH_ACL_16_23 register">
+    <bit_field offset="0" width="3" name="ACL_SEC_16" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_16"/>
+    </bit_field>
+    <reserved_bit_field offset="3" width="1" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ACL_SEC_17" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_17"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="3" name="ACL_SEC_18" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_18"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="1" reset_value="0"/>
+    <bit_field offset="12" width="3" name="ACL_SEC_19" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_19"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="3" name="ACL_SEC_20" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_20"/>
+    </bit_field>
+    <reserved_bit_field offset="19" width="1" reset_value="0"/>
+    <bit_field offset="20" width="3" name="ACL_SEC_21" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_21"/>
+    </bit_field>
+    <reserved_bit_field offset="23" width="1" reset_value="0"/>
+    <bit_field offset="24" width="3" name="ACL_SEC_22" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_22"/>
+    </bit_field>
+    <reserved_bit_field offset="27" width="1" reset_value="0"/>
+    <bit_field offset="28" width="3" name="ACL_SEC_23" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_23"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register name="FLASH_ACL_24_31" offset="0xcc" width="32" description="Description of FLASH_ACL_24_31 register">
+    <bit_field offset="0" width="3" name="ACL_SEC_24" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_24"/>
+    </bit_field>
+    <reserved_bit_field offset="3" width="1" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ACL_SEC_25" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_25"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="3" name="ACL_SEC_26" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_26"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="1" reset_value="0"/>
+    <bit_field offset="12" width="3" name="ACL_SEC_27" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_27"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="3" name="ACL_SEC_28" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_28"/>
+    </bit_field>
+    <reserved_bit_field offset="19" width="1" reset_value="0"/>
+    <bit_field offset="20" width="3" name="ACL_SEC_29" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_29"/>
+    </bit_field>
+    <reserved_bit_field offset="23" width="1" reset_value="0"/>
+    <bit_field offset="24" width="3" name="ACL_SEC_30" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_30"/>
+    </bit_field>
+    <reserved_bit_field offset="27" width="1" reset_value="0"/>
+    <bit_field offset="28" width="3" name="ACL_SEC_31" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_31"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register name="FLASH_ACL_32_39" offset="0xd0" width="32" description="Description of FLASH_ACL_32_39 register">
+    <bit_field offset="0" width="3" name="ACL_SEC_32" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_32"/>
+    </bit_field>
+    <reserved_bit_field offset="3" width="1" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ACL_SEC_33" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_33"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="3" name="ACL_SEC_34" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_34"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="1" reset_value="0"/>
+    <bit_field offset="12" width="3" name="ACL_SEC_35" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_35"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="3" name="ACL_SEC_36" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_36"/>
+    </bit_field>
+    <reserved_bit_field offset="19" width="1" reset_value="0"/>
+    <bit_field offset="20" width="3" name="ACL_SEC_37" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_37"/>
+    </bit_field>
+    <reserved_bit_field offset="23" width="1" reset_value="0"/>
+    <bit_field offset="24" width="3" name="ACL_SEC_38" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_38"/>
+    </bit_field>
+    <reserved_bit_field offset="27" width="1" reset_value="0"/>
+    <bit_field offset="28" width="3" name="ACL_SEC_39" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_39"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register name="FLASH_ACL_40_47" offset="0xd4" width="32" description="Description of FLASH_ACL_40_47 register">
+    <bit_field offset="0" width="3" name="ACL_SEC_40" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_40"/>
+    </bit_field>
+    <reserved_bit_field offset="3" width="1" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ACL_SEC_41" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_41"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="3" name="ACL_SEC_42" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_42"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="1" reset_value="0"/>
+    <bit_field offset="12" width="3" name="ACL_SEC_43" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_43"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="3" name="ACL_SEC_44" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_44"/>
+    </bit_field>
+    <reserved_bit_field offset="19" width="1" reset_value="0"/>
+    <bit_field offset="20" width="3" name="ACL_SEC_45" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_45"/>
+    </bit_field>
+    <reserved_bit_field offset="23" width="1" reset_value="0"/>
+    <bit_field offset="24" width="3" name="ACL_SEC_46" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_46"/>
+    </bit_field>
+    <reserved_bit_field offset="27" width="1" reset_value="0"/>
+    <bit_field offset="28" width="3" name="ACL_SEC_47" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_47"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register name="FLASH_ACL_48_55" offset="0xd8" width="32" description="Description of FLASH_ACL_48_55 register">
+    <bit_field offset="0" width="3" name="ACL_SEC_48" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_48"/>
+    </bit_field>
+    <reserved_bit_field offset="3" width="1" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ACL_SEC_49" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_49"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="3" name="ACL_SEC_50" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_50"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="1" reset_value="0"/>
+    <bit_field offset="12" width="3" name="ACL_SEC_51" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_51"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="3" name="ACL_SEC_52" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_52"/>
+    </bit_field>
+    <reserved_bit_field offset="19" width="1" reset_value="0"/>
+    <bit_field offset="20" width="3" name="ACL_SEC_53" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_53"/>
+    </bit_field>
+    <reserved_bit_field offset="23" width="1" reset_value="0"/>
+    <bit_field offset="24" width="3" name="ACL_SEC_54" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_54"/>
+    </bit_field>
+    <reserved_bit_field offset="27" width="1" reset_value="0"/>
+    <bit_field offset="28" width="3" name="ACL_SEC_55" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_55"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register name="FLASH_ACL_56_63" offset="0xdc" width="32" description="Description of FLASH_ACL_55_63 register">
+    <bit_field offset="0" width="3" name="ACL_SEC_56" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_56"/>
+    </bit_field>
+    <reserved_bit_field offset="3" width="1" reset_value="0"/>
+    <bit_field offset="4" width="3" name="ACL_SEC_57" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_57"/>
+    </bit_field>
+    <reserved_bit_field offset="7" width="1" reset_value="0"/>
+    <bit_field offset="8" width="3" name="ACL_SEC_58" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_58"/>
+    </bit_field>
+    <reserved_bit_field offset="11" width="1" reset_value="0"/>
+    <bit_field offset="12" width="3" name="ACL_SEC_59" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_59"/>
+    </bit_field>
+    <reserved_bit_field offset="15" width="1" reset_value="0"/>
+    <bit_field offset="16" width="3" name="ACL_SEC_60" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_60"/>
+    </bit_field>
+    <reserved_bit_field offset="19" width="1" reset_value="0"/>
+    <bit_field offset="20" width="3" name="ACL_SEC_61" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_61"/>
+    </bit_field>
+    <reserved_bit_field offset="23" width="1" reset_value="0"/>
+    <bit_field offset="24" width="3" name="ACL_SEC_62" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_62"/>
+    </bit_field>
+    <reserved_bit_field offset="27" width="1" reset_value="0"/>
+    <bit_field offset="28" width="3" name="ACL_SEC_63" access="RO" reset_value="0" description="Access control for flash sector.">
+      <alias type="CMSIS" value="ACL_SEC_63"/>
+    </bit_field>
+    <reserved_bit_field offset="31" width="1" reset_value="0"/>
+  </register>
+  <register name="SBL_IMG0_CMAC0" offset="0xe0" width="32" description="IMG0_CMAC0">
+    <alias type="CMSIS" value="IMG0_CMAC[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 0 CMAC 0">
+    </bit_field>
+  </register>
+  <register name="SBL_IMG0_CMAC1" offset="0xe4" width="32" description="IMG0_CMAC1">
+    <alias type="CMSIS" value="IMG0_CMAC[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 0 CMAC 1">
+    </bit_field>
+  </register>
+  <register name="SBL_IMG0_CMAC2" offset="0xe8" width="32" description="IMG0_CMAC2">
+    <alias type="CMSIS" value="IMG0_CMAC[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 0 CMAC 2">
+    </bit_field>
+  </register>
+  <register name="SBL_IMG0_CMAC3" offset="0xec" width="32" description="IMG0_CMAC3">
+    <alias type="CMSIS" value="IMG0_CMAC[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 0 CMAC 3">
+    </bit_field>
+  </register>
+  <register name="IMG1_CMAC0" offset="0xf0" width="32" description="IMG1_CMAC0">
+    <alias type="CMSIS" value="IMG1_CMAC[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 1 CMAC 0">
+    </bit_field>
+  </register>
+  <register name="IMG1_CMAC1" offset="0xf4" width="32" description="IMG1_CMAC1">
+    <alias type="CMSIS" value="IMG1_CMAC[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 1 CMAC 1">
+    </bit_field>
+  </register>
+  <register name="IMG1_CMAC2" offset="0xf8" width="32" description="IMG1_CMAC2">
+    <alias type="CMSIS" value="IMG1_CMAC[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 1 CMAC 2">
+    </bit_field>
+  </register>
+  <register name="IMG1_CMAC3" offset="0xfc" width="32" description="IMG1_CMAC3">
+    <alias type="CMSIS" value="IMG1_CMAC[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Image 1 CMAC 3">
+    </bit_field>
+  </register>
+  <register name="DICE_Certificate" offset="0x100" width="1152" description="DICE Certificate register">
+    <alias type="CMSIS" value="DICE"/>
+    <bit_field offset="0" width="1152" name="FIELD" access="RO" reset_value="0" description="DICE Certificate register">
+    </bit_field>
+  </register>
+  <register name="IPED_GCM_AAD_CTX0" offset="0x190" width="32" description="Additional Authentication Data for IPED context 0">
+    <alias type="CMSIS" value="IPED_GCM_AAD_CTX0"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 0">
+    </bit_field>
+  </register>
+  <register name="IPED_GCM_AAD_CTX1" offset="0x194" width="32" description="Additional Authentication Data for IPED context 1">
+    <alias type="CMSIS" value="IPED_GCM_AAD_CTX1"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 1">
+    </bit_field>
+  </register>
+  <register name="IPED_GCM_AAD_CTX2" offset="0x198" width="32" description="Additional Authentication Data for IPED context 2">
+    <alias type="CMSIS" value="IPED_GCM_AAD_CTX2"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 2">
+    </bit_field>
+  </register>
+  <register name="IPED_GCM_AAD_CTX3" offset="0x19c" width="32" description="Additional Authentication Data for IPED context 3">
+    <alias type="CMSIS" value="IPED_GCM_AAD_CTX3"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 3">
+    </bit_field>
+  </register>
+  <register name="IPED_GCM_AAD_CTX4" offset="0x1a0" width="32" description="Additional Authentication Data for IPED context 4">
+    <alias type="CMSIS" value="IPED_GCM_AAD_CTX4"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 4">
+    </bit_field>
+  </register>
+  <register name="IPED_GCM_AAD_CTX5" offset="0x1a4" width="32" description="Additional Authentication Data for IPED context 5">
+    <alias type="CMSIS" value="IPED_GCM_AAD_CTX5"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 5">
+    </bit_field>
+  </register>
+  <register name="IPED_GCM_AAD_CTX6" offset="0x1a8" width="32" description="Additional Authentication Data for IPED context 6">
+    <alias type="CMSIS" value="IPED_GCM_AAD_CTX6"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 6">
+    </bit_field>
+  </register>
+  <register name="IPED_GCM_AAD_CTX7" offset="0x1ac" width="32" description="Additional Authentication Data for IPED context 7">
+    <alias type="CMSIS" value="IPED_GCM_AAD_CTX7"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="Additional Authentication Data for IPED context 7">
+    </bit_field>
+  </register>
+  <register name="CFPA_CRC32" offset="0x1ec" width="32" description="CFPA _CRC[31:0] used during low-power wake.">
+    <alias type="CMSIS" value="CFPA_CRC32"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CFPA _CRC[31:0] used during low-power wake.">
+    </bit_field>
+  </register>
+  <register offset="0x1F0" width="32" name="CFPA0_CMAC0" description="CFPA0 CMAC 0">
+    <alias type="CMSIS" value="CFPA0_CMAC[0]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CFPA0_CMAC0">
+      <alias type="CMSIS" value="CFPA0_CMAC_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1F4" width="32" name="CFPA0_CMAC1" description="CFPA0 CMAC 1">
+    <alias type="CMSIS" value="CFPA0_CMAC[1]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CFPA0_CMAC1">
+      <alias type="CMSIS" value="CFPA0_CMAC_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1F8" width="32" name="CFPA0_CMAC2" description="CFPA0 CMAC 2">
+    <alias type="CMSIS" value="CFPA0_CMAC[2]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CFPA0_CMAC2">
+      <alias type="CMSIS" value="CFPA0_CMAC_FIELD(x)"/>
+    </bit_field>
+  </register>
+  <register offset="0x1FC" width="32" name="CFPA0_CMAC3" description="CFPA0 CMAC 3">
+    <alias type="CMSIS" value="CFPA0_CMAC[3]"/>
+    <bit_field offset="0" width="32" name="FIELD" access="RO" reset_value="0" description="CFPA0_CMAC3">
+      <alias type="CMSIS" value="CFPA0_CMAC_FIELD(x)"/>
+    </bit_field>
+  </register>
+</regs:peripheral>

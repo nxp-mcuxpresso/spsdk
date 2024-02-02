@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -84,6 +84,8 @@ setup(
             "nxpdevhsm=spsdk.apps.nxpdevhsm:safe_main",
             "nxpele=spsdk.apps.nxpele:safe_main",
             "nxpimage=spsdk.apps.nxpimage:safe_main",
+            "nxpmemcfg=spsdk.apps.nxpmemcfg:safe_main",
+            "nxpwpc=spsdk.apps.nxpwpc:safe_main",
             "shadowregs=spsdk.apps.shadowregs:safe_main",
             "ifr=spsdk.apps.ifr:safe_main",
             "tpconfig=spsdk.apps.tpconfig:safe_main",

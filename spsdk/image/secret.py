@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -19,43 +19,44 @@ from spsdk.crypto.keys import EccCurve, PublicKeyEcc, PublicKeyRsa, get_ecc_curv
 from spsdk.crypto.types import SPSDKKeyUsage
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 from .header import Header, SegTag
 from .misc import hexdump_fmt, modulus_fmt
 
 
-class EnumAlgorithm(Enum):
+class EnumAlgorithm(SpsdkEnum):
     """Algorithm types."""
 
-    ANY = (0x00, "Algorithm type ANY")
-    HASH = (0x01, "Hash algorithm type")
-    SIG = (0x02, "Signature algorithm type")
-    F = (0x03, "Finite field arithmetic")
-    EC = (0x04, "Elliptic curve arithmetic")
-    CIPHER = (0x05, "Cipher algorithm type")
-    MODE = (0x06, "Cipher/hash modes")
-    WRAP = (0x07, "Key wrap algorithm type")
+    ANY = (0x00, "ANY", "Algorithm type ANY")
+    HASH = (0x01, "HASH", "Hash algorithm type")
+    SIG = (0x02, "SIG", "Signature algorithm type")
+    F = (0x03, "F", "Finite field arithmetic")
+    EC = (0x04, "EC", "Elliptic curve arithmetic")
+    CIPHER = (0x05, "CIPHER", "Cipher algorithm type")
+    MODE = (0x06, "MODE", "Cipher/hash modes")
+    WRAP = (0x07, "WRAP", "Key wrap algorithm type")
     # Hash algorithms
-    SHA1 = (0x11, "SHA-1 algorithm ID")
-    SHA256 = (0x17, "SHA-256 algorithm ID")
-    SHA512 = (0x1B, "SHA-512 algorithm ID")
+    SHA1 = (0x11, "SHA1", "SHA-1 algorithm ID")
+    SHA256 = (0x17, "SHA256", "SHA-256 algorithm ID")
+    SHA512 = (0x1B, "SHA512", "SHA-512 algorithm ID")
     # Signature algorithms
-    PKCS1 = (0x21, "PKCS#1 RSA signature algorithm")
-    ECDSA = (0x27, "NIST ECDSA signature algorithm")
+    PKCS1 = (0x21, "PKCS1", "PKCS#1 RSA signature algorithm")
+    ECDSA = (0x27, "ECDSA", "NIST ECDSA signature algorithm")
     # Cipher algorithms
-    AES = (0x55, "AES algorithm ID")
+    AES = (0x55, "AES", "AES algorithm ID")
     # Cipher or hash modes
-    CCM = (0x66, "Counter with CBC-MAC")
+    CCM = (0x66, "CCM", "Counter with CBC-MAC")
     # Key wrap algorithms
-    BLOB = (0x71, "SHW-specific key wrap")
+    BLOB = (0x71, "BLOB", "SHW-specific key wrap")
 
 
-class EnumSRK(Enum):
+class EnumSRK(SpsdkEnum):
     """Entry type in the System Root Key Table."""
 
-    KEY_PUBLIC = (0xE1, "Public key type: data present")
-    KEY_HASH = (0xEE, "Any key: hash only")
+    KEY_PUBLIC = (0xE1, "KEY_PUBLIC", "Public key type: data present")
+    KEY_HASH = (0xEE, "KEY_HASH", "Any key: hash only")
 
 
 class BaseSecretClass(BaseClass):
@@ -67,7 +68,7 @@ class BaseSecretClass(BaseClass):
         :param tag: section TAG
         :param version: format version
         """
-        self._header = Header(tag=tag, param=version)
+        self._header = Header(tag=tag.tag, param=version)
 
     @property
     def version(self) -> int:
@@ -206,7 +207,7 @@ class CertificateImg(BaseSecretClass):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         """Parse."""
-        header = Header.parse(data, SegTag.CRT)
+        header = Header.parse(data, SegTag.CRT.tag)
         return cls(header.param, data[Header.SIZE : header.length])
 
 
@@ -265,7 +266,7 @@ class Signature(BaseSecretClass):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         """Parse."""
-        header = Header.parse(data, SegTag.SIG)
+        header = Header.parse(data, SegTag.SIG.tag)
         return cls(header.param, data[Header.SIZE : header.length])
 
 
@@ -398,7 +399,7 @@ class MAC(BaseSecretClass):
         :param data: being parsed
         :return: the instance
         """
-        header = Header.parse(data, SegTag.MAC)
+        header = Header.parse(data, SegTag.MAC.tag)
         (_, nonce_bytes, _, mac_bytes) = unpack_from(">4B", data, Header.SIZE)
         return cls(
             header.param,
@@ -536,17 +537,17 @@ class SrkItemHash(SrkItem):
         """
         if algorithm != EnumAlgorithm.SHA256:
             raise SPSDKError("Incorrect algorithm")
-        self._header = Header(tag=EnumSRK.KEY_HASH, param=algorithm)
+        self._header = Header(tag=EnumSRK.KEY_HASH.tag, param=algorithm)
         self.digest = digest
         self._header.length += len(digest)
 
     def __repr__(self) -> str:
-        return f"SRK Hash <Algorithm: {EnumAlgorithm[self._header.param]}>"  # type: ignore
+        return f"SRK Hash <Algorithm: {EnumAlgorithm.from_tag(self._header.param)}>"
 
     def __str__(self) -> str:
         """String representation of SrkItemHash."""
         msg = str()
-        msg += f"Hash algorithm: {EnumAlgorithm[self._header.param]}\n"  # type: ignore
+        msg += f"Hash algorithm: {EnumAlgorithm.from_tag(self._header.param)}\n"
         msg += "Hash value:\n"
         msg += hexdump_fmt(self.digest)
         return msg
@@ -573,11 +574,11 @@ class SrkItemHash(SrkItem):
         :return: SrkItemHash: SrkItemHash object
         :raises NotImplementedSRKItem: Unknown tag
         """
-        header = Header.parse(data, EnumSRK.KEY_HASH)
+        header = Header.parse(data, EnumSRK.KEY_HASH.tag)
         rest = data[header.SIZE :]
         if header.param == EnumAlgorithm.SHA256:
             digest = rest[: sha256().digest_size]
-            return cls(EnumAlgorithm.SHA256, digest)
+            return cls(EnumAlgorithm.SHA256.tag, digest)
         raise NotImplementedSRKItem(f"TAG = {header.tag}, PARAM = {header.param}")
 
 
@@ -614,7 +615,7 @@ class SrkItemRSA(SrkItem):
         """Initialize the srk table item."""
         assert isinstance(modulus, bytes)
         assert isinstance(exponent, bytes)
-        self._header = Header(tag=EnumSRK.KEY_PUBLIC, param=EnumAlgorithm.PKCS1)
+        self._header = Header(tag=EnumSRK.KEY_PUBLIC.tag, param=EnumAlgorithm.PKCS1.tag)
         self.flag = flag
         self.modulus = modulus
         self.exponent = exponent
@@ -622,15 +623,15 @@ class SrkItemRSA(SrkItem):
 
     def __repr__(self) -> str:
         return (
-            f"SRK <Algorithm: {EnumAlgorithm[self.algorithm]}, "  # type: ignore
+            f"SRK <Algorithm: {EnumAlgorithm.from_tag(self.algorithm)}, "
             f"CA: {'YES' if self.flag == 0x80 else 'NO'}>"
         )
 
     def __str__(self) -> str:
         """String representation of SrkItemRSA."""
-        exp = int.from_bytes(self.exponent, "big")
+        exp = int.from_bytes(self.exponent, Endianness.BIG.value)
         return (
-            f"Algorithm: {EnumAlgorithm[self.algorithm]}\n"  # type: ignore
+            f"Algorithm: {EnumAlgorithm.from_tag(self.algorithm)}\n"
             f"Flag:      0x{self.flag:02X} {'(CA)' if self.flag == 0x80 else ''}\n"
             f"Length:    {self.key_length} bit\n"
             "Modulus:\n"
@@ -645,7 +646,7 @@ class SrkItemRSA(SrkItem):
 
     def hashed_entry(self) -> "SrkItemHash":
         """This SRK item should be replaced with an incomplete entry with its digest."""
-        return SrkItemHash(EnumAlgorithm.SHA256, self.sha256())
+        return SrkItemHash(EnumAlgorithm.SHA256.tag, self.sha256())
 
     def export(self) -> bytes:
         """Export."""
@@ -662,7 +663,7 @@ class SrkItemRSA(SrkItem):
         :param data: The bytes array of SRK segment
         :return: SrkItemRSA: SrkItemRSA object
         """
-        Header.parse(data, EnumSRK.KEY_PUBLIC)
+        Header.parse(data, EnumSRK.KEY_PUBLIC.tag)
         (flag, modulus_len, exponent_len) = unpack_from(">B2H", data, Header.SIZE + 3)
         offset = 5 + Header.SIZE + 3
         modulus = data[offset : offset + modulus_len]
@@ -689,8 +690,8 @@ class SrkItemRSA(SrkItem):
             # get modulus and exponent of public key since we are RSA
             modulus_len = math.ceil(public_key.n.bit_length() / 8)
             exponent_len = math.ceil(public_key.e.bit_length() / 8)
-            modulus = public_key.n.to_bytes(modulus_len, "big")
-            exponent = public_key.e.to_bytes(exponent_len, "big")
+            modulus = public_key.n.to_bytes(modulus_len, Endianness.BIG.value)
+            exponent = public_key.e.to_bytes(exponent_len, Endianness.BIG.value)
 
             return cls(modulus, exponent, flag)
         except SPSDKError as exc:
@@ -730,7 +731,7 @@ class SrkItemEcc(SrkItem):
 
     def __init__(self, key_size: int, x_coordinate: int, y_coordinate: int, flag: int = 0) -> None:
         """Initialize the srk table item."""
-        self._header = Header(tag=EnumSRK.KEY_PUBLIC, param=EnumAlgorithm.ECDSA)
+        self._header = Header(tag=EnumSRK.KEY_PUBLIC.tag, param=EnumAlgorithm.ECDSA.tag)
         self.x_coordinate = x_coordinate
         self.y_coordinate = y_coordinate
         self.key_size = key_size
@@ -738,20 +739,20 @@ class SrkItemEcc(SrkItem):
         self.flag = flag
         self._header.length += (
             8
-            + len(self.x_coordinate.to_bytes(self.coordinate_size, byteorder="big"))
-            + len(self.y_coordinate.to_bytes(self.coordinate_size, byteorder="big"))
+            + len(self.x_coordinate.to_bytes(self.coordinate_size, byteorder=Endianness.BIG.value))
+            + len(self.y_coordinate.to_bytes(self.coordinate_size, byteorder=Endianness.BIG.value))
         )
 
     def __repr__(self) -> str:
         return (
-            f"SRK <Algorithm: {EnumAlgorithm[self.algorithm]}, "  # type: ignore
+            f"SRK <Algorithm: {EnumAlgorithm.from_tag(self.algorithm)}, "
             f"CA: {'YES' if self.flag == 0x80 else 'NO'}>"
         )
 
     def __str__(self) -> str:
         """String representation of SrkItemEcc."""
         return (
-            f"Algorithm: {EnumAlgorithm[self.algorithm]}\n"  # type: ignore
+            f"Algorithm: {EnumAlgorithm.from_tag(self.algorithm)}\n"
             f"Flag:      0x{self.flag:02X} {'(CA)' if self.flag == 0x80 else ''}\n"
             f"Key size:    {self.key_size} bit\n"
             f"X coordinate:    {self.x_coordinate}\n"
@@ -765,7 +766,7 @@ class SrkItemEcc(SrkItem):
 
     def hashed_entry(self) -> "SrkItemHash":
         """This SRK item should be replaced with an incomplete entry with its digest."""
-        return SrkItemHash(EnumAlgorithm.SHA256, self.sha256())
+        return SrkItemHash(EnumAlgorithm.SHA256.tag, self.sha256())
 
     def export(self) -> bytes:
         """Export."""
@@ -774,8 +775,8 @@ class SrkItemEcc(SrkItem):
         data += pack(
             ">8B", 0, 0, 0, self.flag, curve_id, 0, self.key_size >> 8 & 0xFF, self.key_size & 0xFF
         )
-        data += self.x_coordinate.to_bytes(self.coordinate_size, byteorder="big")
-        data += self.y_coordinate.to_bytes(self.coordinate_size, byteorder="big")
+        data += self.x_coordinate.to_bytes(self.coordinate_size, byteorder=Endianness.BIG.value)
+        data += self.y_coordinate.to_bytes(self.coordinate_size, byteorder=Endianness.BIG.value)
         return data
 
     @classmethod
@@ -785,7 +786,7 @@ class SrkItemEcc(SrkItem):
         :param data: The bytes array of SRK segment
         :return: SrkItemEcc: SrkItemEcc object
         """
-        Header.parse(data, EnumSRK.KEY_PUBLIC)
+        Header.parse(data, EnumSRK.KEY_PUBLIC.tag)
         (flag, curve_id, _, key_size) = unpack_from(">3BH", data, Header.SIZE + 3)
         if curve_id not in list(cls.ECC_KEY_TYPE.values()):
             raise SPSDKError(f"Unknown curve with id {curve_id}")
@@ -795,7 +796,10 @@ class SrkItemEcc(SrkItem):
         offset += coordinate_size
         y_coordinate = data[offset : offset + coordinate_size]
         return cls(
-            key_size, int.from_bytes(x_coordinate, "big"), int.from_bytes(y_coordinate, "big"), flag
+            key_size,
+            int.from_bytes(x_coordinate, Endianness.BIG.value),
+            int.from_bytes(y_coordinate, Endianness.BIG.value),
+            flag,
         )
 
     @classmethod
@@ -915,7 +919,7 @@ class SrkTable(BaseSecretClass):
     @classmethod
     def parse(cls, data: bytes) -> Self:
         """Parse of SRK table."""
-        header = Header.parse(data, SegTag.CRT)
+        header = Header.parse(data, SegTag.CRT.tag)
         offset = Header.SIZE
         obj = cls(header.param)
         obj._header.length = header.length  # pylint: disable=protected-access

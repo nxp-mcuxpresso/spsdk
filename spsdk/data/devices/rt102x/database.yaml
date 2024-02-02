@@ -1,0 +1,87 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1020-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1020
+  memory_map:
+    # Memory map basic info
+    itcm:
+      base_addr: 0x00000000
+      size: 0x40000
+      external: false
+    dtcm:
+      base_addr: 0x20000000
+      size: 0x40000
+      external: false
+    ocram:
+      base_addr: 0x20200000
+      size: 0x40000
+      external: false
+    flexspi:
+      base_addr: 0x60000000
+      size: 0x10000000
+      external: true
+
+  # isp:
+  #   rom_protocol: sdp
+  #   mboot_interfaces: [usb, uart, spi, i2c]
+  #   usb_rom:
+  #     vid: 0x1FC9
+  #     pid: 0x0130
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x0000_2000
+    size: 0x1000
+
+  # ======== Certificate block section ========
+  cert_block:
+    rot_type: "srk_table_hab"
+
+  # ======== HABv4 section ========
+  hab: {}
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor: fcb_flexspi_nor.xml
+
+  # ======== BEE section ========
+  bee: {}
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      flexspi_nor:
+        segments:
+          fcb: 0x0000
+          bee_header_0: 0x0400
+          bee_header_1: 0x0800
+          hab_container: 0x1000
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        instances: [0]
+      flexspi_nand:
+        instances: [0]
+      semc_nor:
+        instances: [0] # probably not supported in latest version of Flashloader
+      sd:
+        instances: [0, 1]
+      mmc:
+        instances: [0, 1]
+      semc_nand:
+        instances: [0] # probably not supported in latest version of Flashloader
+      spi_nor:
+        instances: [0, 1, 2, 3]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Commands used in SmartCard."""
@@ -11,7 +11,8 @@ from struct import pack
 from typing import Optional, Tuple
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 try:
     from smartcard.CardConnection import CardConnection
@@ -26,7 +27,7 @@ from ..exceptions import SPSDKTpError
 logger = logging.getLogger(__name__)
 
 
-class StatusCodes(Enum):
+class StatusCodes(SpsdkEnum):
     """SmartCard APDU general status codes."""
 
     SEC_COND_NOT_SATISFIED = (0x6982, "SecCondNotSatisfied", "Security condition not satisfied")
@@ -96,18 +97,22 @@ class SmartCardAPDU:
         fmt = "<BBBB"
         ret = pack(fmt, self.cla, self.ins, self.p1, self.p2)
         if self.data:
-            ret += self.lc.to_bytes(length=3 if self.is_extended else 1, byteorder="big")
+            ret += self.lc.to_bytes(
+                length=3 if self.is_extended else 1, byteorder=Endianness.BIG.value
+            )
             ret += self.data
         if self.le:
-            ret += self.le.to_bytes(length=2 if self.is_extended else 1, byteorder="big")
+            ret += self.le.to_bytes(
+                length=2 if self.is_extended else 1, byteorder=Endianness.BIG.value
+            )
         return ret
 
     @classmethod
     def get_status_description(cls, code: int) -> str:
         """Return text description of status code."""
-        desc = StatusCodes.desc(code)
+        desc = StatusCodes.get_description(code)
         if not desc:
-            desc = StatusCodes.desc(code & 0xFF00, "Unknown")
+            desc = StatusCodes.get_description(code & 0xFF00, "Unknown")
         return f"{hex(code)}: {desc}"
 
     @classmethod
@@ -180,7 +185,7 @@ class GetProductionCounter(SmartCardAPDU):
     @staticmethod
     def format(response: bytes) -> int:
         """Format the `transmit` response into `int`."""
-        return int.from_bytes(response, byteorder="big")
+        return int.from_bytes(response, byteorder=Endianness.BIG.value)
 
 
 class GetProductionRemainder(SmartCardAPDU):
@@ -193,7 +198,7 @@ class GetProductionRemainder(SmartCardAPDU):
     @staticmethod
     def format(response: bytes) -> int:
         """Format the `transmit` response into `int`."""
-        return int.from_bytes(response, byteorder="big")
+        return int.from_bytes(response, byteorder=Endianness.BIG.value)
 
 
 class GetSealState(SmartCardAPDU):
@@ -259,7 +264,7 @@ class GetSerialNumber(SmartCardAPDU):
     @staticmethod
     def format(response: bytes) -> int:
         """Format the `transmit` response into `int`."""
-        return int.from_bytes(response, byteorder="big")
+        return int.from_bytes(response, byteorder=Endianness.BIG.value)
 
 
 class GetAppletVersion(SmartCardAPDU):
@@ -288,7 +293,7 @@ class GetFreeMemory(SmartCardAPDU):
     @staticmethod
     def format(response: bytes) -> int:
         """Format the `transmit` response into `int`."""
-        return int.from_bytes(response, byteorder="big")
+        return int.from_bytes(response, byteorder=Endianness.BIG.value)
 
 
 class Echo(SmartCardAPDU):
@@ -309,7 +314,7 @@ class ResizeNVMBuffer(SmartCardAPDU):
 
     def __init__(self, new_length: int) -> None:
         """Resize NVM buffer to `new_length`."""
-        length_data = new_length.to_bytes(length=2, byteorder="big")
+        length_data = new_length.to_bytes(length=2, byteorder=Endianness.BIG.value)
         super().__init__(cla=0x80, ins=0x84, p1=0x00, p2=0x00, data=length_data)
 
 
@@ -326,7 +331,7 @@ class ResizeTransientBuffer(SmartCardAPDU):
 
     def __init__(self, new_length: int) -> None:
         """Resize NVM buffer to `new_length`."""
-        length_data = new_length.to_bytes(length=2, byteorder="big")
+        length_data = new_length.to_bytes(length=2, byteorder=Endianness.BIG.value)
         super().__init__(cla=0x80, ins=0x84, p1=0x00, p2=0x01, data=length_data)
 
 

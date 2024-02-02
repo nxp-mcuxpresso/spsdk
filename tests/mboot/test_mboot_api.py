@@ -1,23 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
 from spsdk.exceptions import SPSDKError
+from spsdk.mboot.commands import KeyProvUserKeyType
 from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootCommandError, McuBootConnectionError, McuBootError
-from spsdk.mboot.mcuboot import (
-    CmdPacket,
-    CommandTag,
-    KeyProvUserKeyType,
-    McuBoot,
-    PropertyTag,
-    StatusCode,
-)
+from spsdk.mboot.mcuboot import CmdPacket, CommandTag, McuBoot, PropertyTag, StatusCode
 
 
 def test_class(mcuboot: McuBoot, target, config):
@@ -68,7 +62,7 @@ def test_cmd_read_memory_callback(mcuboot: McuBoot, target):
 
 
 def test_cmd_read_memory_data_abort(mcuboot: McuBoot, target):
-    mcuboot._interface.device.fail_step = StatusCode.FLASH_OUT_OF_DATE_CFPA_PAGE
+    mcuboot._interface.device.fail_step = StatusCode.FLASH_OUT_OF_DATE_CFPA_PAGE.tag
     mcuboot.read_memory(0, 1000)
     assert mcuboot.status_code == StatusCode.FLASH_OUT_OF_DATE_CFPA_PAGE
 
@@ -117,10 +111,10 @@ def test_cmd_flash_security_disable(mcuboot: McuBoot, target):
 
 
 def test_cmd_get_property(mcuboot: McuBoot, target, config):
-    for _, tag, _ in PropertyTag:
-        values = mcuboot.get_property(tag)
+    for property_tag in PropertyTag:
+        values = mcuboot.get_property(property_tag)
         assert mcuboot.status_code == StatusCode.SUCCESS if values else StatusCode.UNKNOWN_PROPERTY
-        assert values == config.get_property_values(tag)
+        assert values == config.get_property_values(property_tag.tag)
 
 
 def test_cmd_set_property(mcuboot: McuBoot, target):
@@ -133,7 +127,7 @@ def test_cmd_receive_sb_file(mcuboot: McuBoot, target):
     assert mcuboot.receive_sb_file(bytes(1000))
     assert mcuboot.status_code == StatusCode.SUCCESS
 
-    mcuboot._interface.device.fail_step = StatusCode.ROMLDR_SIGNATURE
+    mcuboot._interface.device.fail_step = StatusCode.ROMLDR_SIGNATURE.tag
     assert not mcuboot.receive_sb_file(bytes(1000))
     assert mcuboot.status_code == StatusCode.ROMLDR_SIGNATURE
 
@@ -257,9 +251,9 @@ def test_cmd_key_provisioning_enroll(mcuboot: McuBoot):
 
 def test_cmd_key_provisioning_set_intrinsic(mcuboot: McuBoot):
     mcuboot._interface.device.fail_step = None
-    assert mcuboot.kp_set_intrinsic_key(KeyProvUserKeyType.OTFADKEK, 100)
+    assert mcuboot.kp_set_intrinsic_key(KeyProvUserKeyType.OTFADKEK.tag, 100)
     mcuboot._interface.device.fail_step = 0
-    assert not mcuboot.kp_set_intrinsic_key(KeyProvUserKeyType.OTFADKEK, 100)
+    assert not mcuboot.kp_set_intrinsic_key(KeyProvUserKeyType.OTFADKEK.tag, 100)
 
 
 def test_cmd_key_provisioning_write_nonvolatile(mcuboot: McuBoot):
@@ -279,11 +273,11 @@ def test_cmd_key_provisioning_read_nonvolatile(mcuboot: McuBoot):
 def test_cmd_key_provisioning_set_user_key(mcuboot: McuBoot, target):
     mcuboot._interface.device.fail_step = None
     data = bytes(100)
-    assert mcuboot.kp_set_user_key(KeyProvUserKeyType.SBKEK, data)
+    assert mcuboot.kp_set_user_key(KeyProvUserKeyType.SBKEK.tag, data)
 
     mcuboot._interface.device.fail_step = 0
     data = bytes(100)
-    assert not mcuboot.kp_set_user_key(KeyProvUserKeyType.SBKEK, data)
+    assert not mcuboot.kp_set_user_key(KeyProvUserKeyType.SBKEK.tag, data)
 
 
 def test_cmd_key_provisioning_write_key_store(mcuboot: McuBoot, target):

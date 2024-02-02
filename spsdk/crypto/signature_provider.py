@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,7 +14,6 @@ Each concrete signature provider needs to implement:
 """
 
 import abc
-import getpass
 import json
 import logging
 from types import ModuleType
@@ -23,8 +22,10 @@ from typing import Any, Dict, List, Optional, Tuple, Type, Union
 import requests
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 
+from spsdk.crypto.exceptions import SPSDKKeysNotMatchingError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash_algorithm
 from spsdk.crypto.keys import (
+    ECDSASignature,
     PrivateKey,
     PrivateKeyEcc,
     PrivateKeyRsa,
@@ -33,8 +34,10 @@ from spsdk.crypto.keys import (
     PublicKeyRsa,
     PublicKeySM2,
     SPSDKKeyPassphraseMissing,
+    prompt_for_passphrase,
 )
-from spsdk.exceptions import SPSDKError, SPSDKUnsupportedOperation, SPSDKValueError
+from spsdk.crypto.types import SPSDKEncoding
+from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKUnsupportedOperation, SPSDKValueError
 from spsdk.utils.misc import find_file
 from spsdk.utils.plugins import PluginsManager, PluginType
 
@@ -46,6 +49,7 @@ class SignatureProvider(abc.ABC):
 
     # Subclasses override the following signature provider type
     sp_type = "INVALID"
+    reserved_keys = ["type", "search_paths"]
 
     @abc.abstractmethod
     def sign(self, data: bytes) -> bytes:
@@ -60,6 +64,25 @@ class SignatureProvider(abc.ABC):
         """Verify if given public key matches private key."""
         raise SPSDKUnsupportedOperation("Verify method is not supported.")
 
+    def get_signature(self, data: bytes) -> bytes:
+        """Get signature. In case of ECC signature, the NXP format(r+s) is used.
+
+        :param data: Data to be signed.
+        :return: Signature of the data
+
+        """
+        signature = self.sign(data)
+        try:
+            ecdsa_sig = ECDSASignature.parse(signature)
+            signature = ecdsa_sig.export(SPSDKEncoding.NXP)
+        except SPSDKValueError:
+            pass  # Not an ECC signature
+        if len(signature) != self.signature_length:
+            logger.warning(
+                f"Signature has unexpected length: {len(signature)}. Expected length: {self.signature_length}"
+            )
+        return signature
+
     def info(self) -> str:
         """Provide information about the Signature provider."""
         return self.__class__.__name__
@@ -69,19 +92,47 @@ class SignatureProvider(abc.ABC):
         """Coverts creation params from string into dictionary.
 
         e.g.: "type=file;file_path=some_path" -> {'type': 'file', 'file_path': 'some_path'}
+        :param params: Params in the mentioned format.
+        :raises: SPSDKKeyError: Duplicate key found.
+        :raises: SPSDKValueError: Parameter must meet the following pattern: type=file;file_path=some_path.
+        :return: Converted dictionary of parameters.
         """
+        result: Dict[str, str] = {}
         try:
-            result = dict([tuple(p.split("=")) for p in params.split(";")])  # type: ignore  #oh dear Mypy
+            for p in params.split(";"):
+                key, value = p.split("=")
+
+                # Check for duplicate keys
+                if key in result:
+                    raise SPSDKKeyError(f"Duplicate key found: {key}")
+
+                result[key] = value
+
         except ValueError as e:
             raise SPSDKValueError(
-                "Parameter must meet following pattern: type=file;file_path=some_path"
+                "Parameter must meet the following pattern: type=file;file_path=some_path"
             ) from e
+
         return result
 
     @classmethod
     def get_types(cls) -> List[str]:
         """Returns a list of all available signature provider types."""
         return [sub_class.sp_type for sub_class in cls.__subclasses__()]
+
+    @classmethod
+    def filter_params(cls, klass: Any, params: Dict[str, str]) -> Dict[str, str]:
+        """Remove unused parameters from the given dictionary based on the class constructor.
+
+        :param klass: Signature provider class.
+        :param params: Dictionary of parameters.
+        :return: Filtered dictionary of parameters.
+        """
+        unused_params = set(params) - set(klass.__init__.__code__.co_varnames)
+        for key in cls.reserved_keys:
+            if key in unused_params:
+                del params[key]
+        return params
 
     @classmethod
     def create(cls, params: Union[str, dict]) -> Optional["SignatureProvider"]:
@@ -92,11 +143,9 @@ class SignatureProvider(abc.ABC):
         sp_classes = cls.get_all_signature_providers()
         for klass in sp_classes:  # pragma: no branch  # there always be at least one subclass
             if klass.sp_type == params["type"]:
-                del params["type"]
-                unused_params = set(params) - set(klass.__init__.__code__.co_varnames)
-                if "search_paths" in unused_params:
-                    del params["search_paths"]
+                klass.filter_params(klass, params)
                 return klass(**params)
+
         logger.info(f"Signature provider of type {params['type']} was not found.")
         return None
 
@@ -158,7 +207,7 @@ class PlainFileSP(SignatureProvider):
                     hash_size = 384
                 else:
                     hash_size = 512
-                hash_alg_name = EnumHashAlgorithm[f"sha{hash_size}"]
+                hash_alg_name = EnumHashAlgorithm.from_label(f"sha{hash_size}")
 
             elif isinstance(self.private_key, PrivateKeySM2):
                 hash_alg_name = EnumHashAlgorithm.SM3
@@ -225,9 +274,7 @@ class InteractivePlainFileSP(PlainFileSP):
         try:
             self.private_key = PrivateKey.load(self.file_path)
         except SPSDKKeyPassphraseMissing:
-            password = getpass.getpass(
-                prompt="Private key is encrypted.Enter password: ", stream=None
-            )
+            password = prompt_for_passphrase()
             self.private_key = PrivateKey.load(self.file_path, password=password)
         self.hash_alg = self._get_hash_algorithm(hash_alg)
 
@@ -236,6 +283,7 @@ class HttpProxySP(SignatureProvider):
     """Signature Provider implementation that delegates all operations to a proxy server."""
 
     sp_type = "proxy"
+    reserved_keys = ["type", "search_paths", "data"]
 
     def __init__(
         self,
@@ -355,5 +403,24 @@ def get_signature_provider(
 def load_plugins() -> Dict[str, ModuleType]:
     """Load all installed signature provider plugins."""
     plugins_manager = PluginsManager()
-    plugins_manager.load_from_entrypoints(PluginType.name(PluginType.SIGNATURE_PROVIDER))
+    plugins_manager.load_from_entrypoints(PluginType.SIGNATURE_PROVIDER.label)
     return plugins_manager.plugins
+
+
+def try_to_verify_public_key(signature_provider: SignatureProvider, public_key_data: bytes) -> None:
+    """Verify public key by signature provider if verify method is implemented.
+
+    :param signature_provider: Signature provider used for verification.
+    :param public_key_data: Public key data to be verified.
+    :raises SPSDKUnsupportedOperation: The verify_public_key method si nto implemented
+    :raises SPSDKError: The verification of key-pair integrity failed
+    """
+    try:
+        result = signature_provider.verify_public_key(public_key_data)
+        if not result:
+            raise SPSDKKeysNotMatchingError(
+                "Signature verification failed, public key does not match to private key"
+            )
+        logger.debug("The verification of private key pair integrity has been successful.")
+    except SPSDKUnsupportedOperation:
+        logger.warning("Signature provider could not verify the integrity of private key pair.")

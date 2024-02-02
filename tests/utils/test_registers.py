@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Tests for registers utility."""
@@ -20,7 +20,13 @@ from spsdk.utils.exceptions import (
     SPSDKRegsErrorRegisterGroupMishmash,
     SPSDKRegsErrorRegisterNotFound,
 )
-from spsdk.utils.misc import load_configuration, use_working_directory, value_to_bytes, value_to_int
+from spsdk.utils.misc import (
+    Endianness,
+    load_configuration,
+    use_working_directory,
+    value_to_bytes,
+    value_to_int,
+)
 from spsdk.utils.registers import Registers, RegsBitField, RegsEnum, RegsRegister
 
 TEST_DEVICE_NAME = "TestDevice1"
@@ -131,16 +137,8 @@ def test_basic_regs(tmpdir):
     # The Registers MUST return empty array
     assert regs.get_reg_names() == []
 
-    with pytest.raises(SPSDKError):
-        regs.remove_register("String")
-
-    with pytest.raises(ValueError):
-        regs.remove_register(reg1)
-
     # Now we could do tests with a register added to list
     regs.add_register(reg1)
-
-    regs.remove_register_by_name(["String"])
 
     assert TEST_REG_NAME in regs.get_reg_names()
 
@@ -162,12 +160,6 @@ def test_basic_regs(tmpdir):
 
     assert TEST_DEVICE_NAME in printed_str
     assert TEST_REG_NAME in printed_str
-
-    regs.remove_register_by_name([TEST_REG_NAME])
-
-    with pytest.raises(SPSDKRegsErrorRegisterNotFound):
-        regs.find_reg(TEST_REG_NAME)
-        assert False
 
 
 def test_register():
@@ -773,58 +765,15 @@ def test_load_grouped_register_value_compatibility(data_dir):
 def test_create_yml():
     """Simple test to create YML record."""
     regs = create_simple_regs()
-    yml = regs.create_yml_config()
+    yml = regs.get_config()
 
     assert TEST_REG_NAME in yml.keys()
     assert TEST_REG_NAME + "_2" in yml.keys()
-    assert "value" in yml[TEST_REG_NAME].keys()
-    assert yml[TEST_REG_NAME]["value"] == "0x00000000"
-    assert "bitfields" in yml[TEST_REG_NAME + "_2"].keys()
-    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
-    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == "0x1E"
-    assert TEST_BITFIELD_NAME + "_2" in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
-    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME + "_2"] == TEST_ENUM_NAME
-
-
-def test_create_yml_excluded_regs():
-    """Simple test to create YML record."""
-    regs = create_simple_regs()
-    yml = regs.create_yml_config(exclude_regs=[TEST_REG_NAME + "_2"])
-
-    assert TEST_REG_NAME in yml.keys()
-    assert "value" in yml[TEST_REG_NAME].keys()
-    assert yml[TEST_REG_NAME]["value"] == "0x00000000"
-    assert TEST_REG_NAME + "_2" not in yml.keys()
-
-
-def test_create_yml_excluded_fields():
-    """Simple test to create YML record."""
-    regs = create_simple_regs()
-    yml = regs.create_yml_config(
-        exclude_fields={TEST_REG_NAME + "_2": {TEST_BITFIELD_NAME + "_2": ""}}
-    )
-
-    assert TEST_REG_NAME in yml.keys()
-    assert "value" in yml[TEST_REG_NAME].keys()
-    assert yml[TEST_REG_NAME]["value"] == "0x00000000"
-    assert TEST_REG_NAME + "_2" in yml.keys()
-    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
-    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == "0x1E"
-    assert TEST_BITFIELD_NAME + "_2" not in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
-
-
-def test_create_yml_ignored_fields():
-    """Simple test to create YML record."""
-    regs = create_simple_regs()
-    yml = regs.create_yml_config(ignored_fields=[TEST_BITFIELD_NAME + "_2"])
-
-    assert TEST_REG_NAME in yml.keys()
-    assert "value" in yml[TEST_REG_NAME].keys()
-    assert yml[TEST_REG_NAME]["value"] == "0x00000000"
-    assert TEST_REG_NAME + "_2" in yml.keys()
-    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
-    assert yml[TEST_REG_NAME + "_2"]["bitfields"][TEST_BITFIELD_NAME] == "0x1E"
-    assert TEST_BITFIELD_NAME + "_2" not in yml[TEST_REG_NAME + "_2"]["bitfields"].keys()
+    assert yml[TEST_REG_NAME] == "0x00000000"
+    assert TEST_BITFIELD_NAME in yml[TEST_REG_NAME + "_2"].keys()
+    assert yml[TEST_REG_NAME + "_2"][TEST_BITFIELD_NAME] == "0x1E"
+    assert TEST_BITFIELD_NAME + "_2" in yml[TEST_REG_NAME + "_2"].keys()
+    assert yml[TEST_REG_NAME + "_2"][TEST_BITFIELD_NAME + "_2"] == TEST_ENUM_NAME
 
 
 REG0 = 0x00112233  # ADDR 0
@@ -985,7 +934,7 @@ def test_regs(
     group: Dict[str, Any],
     reg_group_val: int,
 ):
-    regs = Registers("Test device", "little")
+    regs = Registers("Test device", Endianness.LITTLE)
     regs.load_registers_from_xml(os.path.join(data_dir, xml), grouped_regs=[group])
 
     grp_reg = regs.find_reg(group["name"], True)

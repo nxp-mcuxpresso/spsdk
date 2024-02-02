@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<regs>
+	<register offset="0x0" width="32" name="ConfigOption0" reversed="False" description="SD card Configuration Option 0">
+		<bit_field offset="0x0" width="4" name="Instance" access="R/W" reset_value="0x0" description="SD peripheral instance"/>
+    <reserved_bit_field offset="0x4" width="4" name="Reserved0" access="R/W" reset_value="0b0000" description="Reserved for future use"/>
+    <bit_field offset="0x8" width="1" name="BusWidth" access="R/W" reset_value="0b0" description="SD interface BUS width">
+      <bit_field_value name="1bit" value="0b0" description="BUS width 1 bit"/>
+      <bit_field_value name="4bit" value="0b1" description="BUS width 4 bit"/>
+    </bit_field>
+		<bit_field offset="0x9" width="3" name="TunningStart" access="R/W" reset_value="0b000" description="Tunning start - the final value will be multiplicated by 32"/>
+		<bit_field offset="0x0C" width="3" name="TimingMode" access="R/W" reset_value="0b000" description="SD card timing mode flags">
+      <bit_field_value name="SDR12DefaultMode" value="0b000" description="Identification mode and SDR12"/>
+      <bit_field_value name="SDR25HighSpeedMode" value="0b001" description="High speed mode and SDR25"/>
+      <bit_field_value name="SDR50Mode" value="0b010" description="SDR50 mode"/>
+      <bit_field_value name="SDR104Mode" value="0b011" description="SDR104 mode"/>
+      <bit_field_value name="DDR50Mode" value="0b100" description="DDR50 mode"/>
+		</bit_field>
+    <reserved_bit_field offset="0xF" width="4" name="Reserved1" access="R/W" reset_value="0b0000" description="Reserved for future use"/>
+    <bit_field offset="0x13" width="1" name="EnablePowerCycle" access="R/W" reset_value="0b0" description="Execute power cycle before initialization">
+      <bit_field_value name="Disabled" value="0b0" description="Power cycle disabled"/>
+      <bit_field_value name="Enabled" value="0b1" description="Execute power cycle before initialization"/>
+    </bit_field>
+    <bit_field offset="0x14" width="1" name="PowerUpDelay" access="R/W" reset_value="0b0" description="Set power up delay">
+      <bit_field_value name="5ms" value="0b0" description="Power up delay 5ms"/>
+      <bit_field_value name="2.5ms" value="0b1" description="Power up delay 2.5ms"/>
+    </bit_field>
+    <bit_field offset="0x15" width="2" name="TunningStep" access="R/W" reset_value="0b00" description="Tunning step - the final value will be multiplicated by 2. In case of zero it used value 1"/>
+    <bit_field offset="0x17" width="1" name="PowerUpPolarity" access="R/W" reset_value="0b0" description="Power up polarity - May vary on different devices"/>
+    <bit_field offset="0x18" width="2" name="PowerDownTime" access="R/W" reset_value="0b00" description="Set power down time">
+      <bit_field_value name="20ms" value="0b00" description="Power up delay 20ms"/>
+      <bit_field_value name="10ms" value="0b01" description="Power up delay 10ms"/>
+      <bit_field_value name="5ms" value="0b10" description="Power up delay 5ms"/>
+      <bit_field_value name="2.5ms" value="0b11" description="Power up delay 2.5ms"/>
+    </bit_field>
+    <reserved_bit_field offset="0x1A" width="2" name="Reserved2" access="R/W" reset_value="0b00" description="Reserved for future use"/>
+    <reserved_bit_field offset="0x1C" width="4" name="Tag" access="R/W" reset_value="0b1101" description="Tag, fixed value 0xD"/>
+	</register>
+</regs>

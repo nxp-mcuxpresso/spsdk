@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to keep additional utilities for binary images."""
@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import colorama
 
-from spsdk import SPSDK_DATA_FOLDER
 from spsdk.exceptions import SPSDKError, SPSDKOverlapError, SPSDKValueError
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import (
     BinaryPattern,
     align,
@@ -26,13 +26,11 @@ from spsdk.utils.misc import (
     size_fmt,
     write_file,
 )
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig
 
 if TYPE_CHECKING:
     # bincopy will be loaded lazily as needed, this is just to satisfy type-hint checkers
     import bincopy
-
-BINARY_SCH_FILE = os.path.join(SPSDK_DATA_FOLDER, "image", "sch_binary.yaml")
 
 logger = logging.getLogger(__name__)
 
@@ -205,10 +203,8 @@ class BinaryImage:
             raise SPSDKValueError(
                 f"Image offset of {self.image_name} cannot be in negative numbers."
             )
-        if len(self) <= 0:
-            raise SPSDKValueError(
-                f"Image size of {self.image_name} cannot be in negative numbers or zero."
-            )
+        if len(self) < 0:
+            raise SPSDKValueError(f"Image size of {self.image_name} cannot be in negative numbers.")
         for image in self.sub_images:
             image.validate()
             begin = image.offset
@@ -424,7 +420,7 @@ class BinaryImage:
 
         :return: Validation schemas.
         """
-        return [ValidationSchemas.get_schema_file(BINARY_SCH_FILE)]
+        return [DatabaseManager().db.get_schema_file("binary")]
 
     @staticmethod
     def load_from_config(
@@ -522,9 +518,8 @@ class BinaryImage:
         :return: Template to create binary merge..
         """
         return CommentedConfig(
-            "Binary Image Configuration template.",
-            BinaryImage.get_validation_schemas(),
-        ).export_to_yaml()
+            "Binary Image Configuration template.", BinaryImage.get_validation_schemas()
+        ).get_template()
 
     @staticmethod
     def load_binary_image(

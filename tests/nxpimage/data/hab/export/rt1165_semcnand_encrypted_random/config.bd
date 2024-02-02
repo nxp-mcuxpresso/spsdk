@@ -3,7 +3,7 @@ options {
     startAddress = 0x80001000;
     ivtOffset = 0x400;
     initialLoadSize = 0x1000;
-    DCDFilePath = "dcd_files\evkmimxrt1166_SDRAM_dcd.bin";
+    DCDFilePath = "dcd_files/evkmimxrt1166_SDRAM_dcd.bin";
     entryPointAddress = 0x800041f5;
 }
 
@@ -40,25 +40,27 @@ section (SEC_CSF_HEADER;
 }
 
 section (SEC_CSF_INSTALL_SRK;
-    InstallSRK_Table="gen_hab_certs\SRK_hash.bin",
+    InstallSRK_Table="gen_hab_certs/SRK_hash.bin",
     InstallSRK_SourceIndex=0
     )
 {
 }
 
 section (SEC_CSF_INSTALL_CSFK;
-    InstallCSFK_File="crts\CSF1_1_sha256_2048_65537_v3_usr_crt.pem",
+    InstallCSFK_File="crts/CSF1_1_sha256_2048_65537_v3_usr_crt.pem",
     InstallCSFK_CertificateFormat="x509"
     )
 {
 }
 
-section (SEC_CSF_AUTHENTICATE_CSF)
+section (SEC_CSF_AUTHENTICATE_CSF;
+    AuthenticateCsf_SignProvider="type=file;file_path=keys/CSF1_1_sha256_2048_65537_v3_usr_key.pem"
+	)
 {
 }
 
 section (SEC_CSF_INSTALL_KEY;
-    InstallKey_File="crts\IMG1_1_sha256_2048_65537_v3_usr_crt.pem",
+    InstallKey_File="crts/IMG1_1_sha256_2048_65537_v3_usr_crt.pem",
     InstallKey_VerificationIndex=0,
     InstallKey_TargetIndex=2)
 {
@@ -67,12 +69,13 @@ section (SEC_CSF_INSTALL_KEY;
 section (SEC_CSF_AUTHENTICATE_DATA;
     AuthenticateData_VerificationIndex=2,
     AuthenticateData_Engine="ANY",
-    AuthenticateData_EngineConfiguration=0)
+    AuthenticateData_EngineConfiguration=0,
+	AuthenticateData_SignProvider="type=file;file_path=keys/IMG1_1_sha256_2048_65537_v3_usr_key.pem")
 {
 }
 
 section (SEC_CSF_INSTALL_SECRET_KEY;
-    SecretKey_Name="gen_hab_encrypt\evkmimxrt1064_iled_blinky_SDRAM_hab_dek.bin",
+    SecretKey_Name="gen_hab_encrypt/evkmimxrt1064_iled_blinky_SDRAM_hab_dek.bin",
     SecretKey_Length=256,
     SecretKey_VerifyIndex=0,
     SecretKey_TargetIndex=0)

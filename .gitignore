@@ -79,13 +79,15 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/_prebuild/
-docs/examples/img/**
+docs/examples/**
+# docs examples are copied from spsdk/examples
 
 # PyBuilder
 target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+workspace
 
 # pyenv
 .python-version
@@ -120,11 +122,11 @@ venv*
 /site
 
 # mypy
-.mypy_cache/
+.mypy_cache
 
 # IDE
-.vscode
 .idea
+.vscode
 
 # PyPI
 pip-wheel-metadata
@@ -139,10 +141,7 @@ pip-wheel-metadata
 # loggin config
 logging.yaml
 
-# jupyter examples
-examples/jupyter_examples/**/workspace
-examples/jupyter_examples/**/.ipynb_checkpoints
-examples/jupyter_examples/**/.ipynb_checkpoints/*
 
 # Git merge-conflict files
 *.orig
+

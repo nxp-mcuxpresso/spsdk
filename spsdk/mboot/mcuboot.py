@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2016-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,7 +12,7 @@ import logging
 import struct
 import time
 from types import TracebackType
-from typing import Callable, Dict, List, Optional, Sequence, Type, cast
+from typing import Callable, Dict, List, Optional, Sequence, Type
 
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.interfaces.device.usb_device import UsbDevice
@@ -29,7 +29,6 @@ from .commands import (
     GetPropertyResponse,
     KeyProvisioningResponse,
     KeyProvOperation,
-    KeyProvUserKeyType,
     NoResponse,
     ReadMemoryResponse,
     TrustProvDevHsmDsc,
@@ -84,8 +83,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         """
         self._cmd_exception = cmd_exception
-        # trick mypy to believe StatusCode really is just an integer
-        self._status_code = cast(int, StatusCode.SUCCESS)
+        self._status_code = StatusCode.SUCCESS.tag
         self._interface = interface
         self.reopen = False
         self.enable_data_abort = False
@@ -122,7 +120,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             self._interface.write_command(cmd_packet)
             response = self._interface.read()
         except TimeoutError:
-            self._status_code = StatusCode.NO_RESPONSE
+            self._status_code = StatusCode.NO_RESPONSE.tag
             logger.debug("RX-PACKET: No Response, Timeout Error !")
             response = NoResponse(cmd_tag=cmd_packet.header.tag)
 
@@ -131,13 +129,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         self._status_code = response.status
 
         if self._cmd_exception and self._status_code != StatusCode.SUCCESS:
-            raise McuBootCommandError(CommandTag.name(cmd_packet.header.tag), response.status)
-
+            raise McuBootCommandError(CommandTag.get_label(cmd_packet.header.tag), response.status)
+        logger.info(f"CMD: Status: {self.status_string}")
         return response
 
     def _read_data(
         self,
-        cmd_tag: int,
+        cmd_tag: CommandTag,
         length: int,
         progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> bytes:
@@ -163,9 +161,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                 logger.info("Try increasing the timeout value")
                 response = self._interface.read()
             except TimeoutError:
-                self._status_code = StatusCode.NO_RESPONSE
+                self._status_code = StatusCode.NO_RESPONSE.tag
                 logger.error("RX: No Response, Timeout Error !")
-                response = NoResponse(cmd_tag=cmd_tag)
+                response = NoResponse(cmd_tag=cmd_tag.tag)
                 break
 
             if isinstance(response, bytes):
@@ -180,11 +178,15 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                     break
 
         if len(data) < length or self.status_code != StatusCode.SUCCESS:
-            status_info = StatusCode.get(self._status_code, f"0x{self._status_code:08X}")
+            status_info = (
+                StatusCode.get_label(self._status_code)
+                if self._status_code in StatusCode.tags()
+                else f"0x{self._status_code:08X}"
+            )
             logger.debug(f"CMD: Received {len(data)} from {length} Bytes, {status_info}")
             if self._cmd_exception:
                 assert isinstance(response, CmdResponse)
-                raise McuBootCommandError(CommandTag.name(cmd_tag), response.status)
+                raise McuBootCommandError(cmd_tag.label, response.status)
         else:
             logger.info(f"CMD: Successfully Received {len(data)} from {length} Bytes")
 
@@ -192,7 +194,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
     def _send_data(
         self,
-        cmd_tag: int,
+        cmd_tag: CommandTag,
         data: List[bytes],
         progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> bool:
@@ -227,7 +229,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             if expect_response:
                 response = self._interface.read()
         except TimeoutError as e:
-            self._status_code = StatusCode.NO_RESPONSE
+            self._status_code = StatusCode.NO_RESPONSE.tag
             logger.error("RX: No Response, Timeout Error !")
             raise McuBootConnectionError("No Response from Device") from e
         except SPSDKError as e:
@@ -235,17 +237,21 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             if expect_response:
                 response = self._interface.read()
             else:
-                self._status_code = StatusCode.SENDING_OPERATION_CONDITION_ERROR
+                self._status_code = StatusCode.SENDING_OPERATION_CONDITION_ERROR.tag
 
         if expect_response:
             assert isinstance(response, CmdResponse)
             logger.debug(f"RX-PACKET: {str(response)}")
             self._status_code = response.status
             if response.status != StatusCode.SUCCESS:
-                status_info = StatusCode.get(self._status_code, f"0x{self._status_code:08X}")
+                status_info = (
+                    StatusCode.get_label(self._status_code)
+                    if self._status_code in StatusCode.tags()
+                    else f"0x{self._status_code:08X}"
+                )
                 logger.debug(f"CMD: Send Error, {status_info}")
                 if self._cmd_exception:
-                    raise McuBootCommandError(CommandTag.name(cmd_tag), response.status)
+                    raise McuBootCommandError(cmd_tag.label, response.status)
                 return False
 
         logger.info(f"CMD: Successfully Send {total_sent} out of {total_to_send} Bytes")
@@ -297,20 +303,20 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :raises McuBootCommandError: Failure to read properties list
         """
         property_list: List[PropertyValueBase] = []
-        for tag in PropertyTag.tags():
+        for property_tag in PropertyTag:
             try:
-                values = self.get_property(tag)
+                values = self.get_property(property_tag)
             except McuBootCommandError:
                 continue
 
             if values:
-                prop = parse_property_value(tag, values)
+                prop = parse_property_value(property_tag.tag, values)
                 assert prop is not None, "Property values cannot be parsed"
                 property_list.append(prop)
 
-        self._status_code = StatusCode.SUCCESS
+        self._status_code = StatusCode.SUCCESS.tag
         if not property_list:
-            self._status_code = StatusCode.FAIL
+            self._status_code = StatusCode.FAIL.tag
             if self._cmd_exception:
                 raise McuBootCommandError("GetPropertyList", self.status_code)
 
@@ -400,7 +406,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             values = None
 
         if not values and self._status_code == StatusCode.UNKNOWN_PROPERTY:
-            self._status_code = StatusCode.SUCCESS
+            self._status_code = StatusCode.SUCCESS.tag
             return ext_mem_list
 
         if not values:
@@ -408,7 +414,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         if Version(values[0]) <= Version("2.0.0"):
             # old versions mboot support only Quad SPI memory
-            ext_mem_ids = [ExtMemId.QUAD_SPI0]
+            ext_mem_ids = [ExtMemId.QUAD_SPI0.tag]
 
         for mem_id in ext_mem_ids:
             try:
@@ -460,9 +466,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if ext_mem_list:
             memory_list["external_mems"] = ext_mem_list
 
-        self._status_code = StatusCode.SUCCESS
+        self._status_code = StatusCode.SUCCESS.tag
         if not memory_list:
-            self._status_code = StatusCode.FAIL
+            self._status_code = StatusCode.FAIL.tag
             if self._cmd_exception:
                 raise McuBootCommandError("GetMemoryList", self.status_code)
 
@@ -475,7 +481,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problem; True otherwise
         """
         logger.info(f"CMD: FlashEraseAll(mem_id={mem_id})")
-        cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_ALL, CommandFlag.NONE, mem_id)
+        cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_ALL, CommandFlag.NONE.tag, mem_id)
         response = self._process_cmd(cmd_packet)
         return response.status == StatusCode.SUCCESS
 
@@ -492,7 +498,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         )
         mem_id = _clamp_down_memory_id(memory_id=mem_id)
         cmd_packet = CmdPacket(
-            CommandTag.FLASH_ERASE_REGION, CommandFlag.NONE, address, length, mem_id
+            CommandTag.FLASH_ERASE_REGION, CommandFlag.NONE.tag, address, length, mem_id
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
@@ -534,7 +540,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
                 cmd_packet = CmdPacket(
                     CommandTag.READ_MEMORY,
-                    CommandFlag.NONE,
+                    CommandFlag.NONE.tag,
                     address + idx * payload_size,
                     data_len,
                     mem_id,
@@ -552,7 +558,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
             return data
 
-        cmd_packet = CmdPacket(CommandTag.READ_MEMORY, CommandFlag.NONE, address, length, mem_id)
+        cmd_packet = CmdPacket(
+            CommandTag.READ_MEMORY, CommandFlag.NONE.tag, address, length, mem_id
+        )
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             assert isinstance(cmd_response, ReadMemoryResponse)
@@ -580,7 +588,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         data_chunks = self._split_data(data=data)
         mem_id = _clamp_down_memory_id(memory_id=mem_id)
         cmd_packet = CmdPacket(
-            CommandTag.WRITE_MEMORY, CommandFlag.HAS_DATA_PHASE, address, len(data), mem_id
+            CommandTag.WRITE_MEMORY, CommandFlag.HAS_DATA_PHASE.tag, address, len(data), mem_id
         )
         if self._process_cmd(cmd_packet).status == StatusCode.SUCCESS:
             return self._send_data(CommandTag.WRITE_MEMORY, data_chunks, progress_callback)
@@ -597,7 +605,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info(
             f"CMD: FillMemory(address=0x{address:08X}, length={length}, pattern=0x{pattern:08X})"
         )
-        cmd_packet = CmdPacket(CommandTag.FILL_MEMORY, CommandFlag.NONE, address, length, pattern)
+        cmd_packet = CmdPacket(
+            CommandTag.FILL_MEMORY, CommandFlag.NONE.tag, address, length, pattern
+        )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def flash_security_disable(self, backdoor_key: bytes) -> bool:
@@ -613,7 +623,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         key_high = backdoor_key[0:4][::-1]
         key_low = backdoor_key[4:8][::-1]
         cmd_packet = CmdPacket(
-            CommandTag.FLASH_SECURITY_DISABLE, CommandFlag.NONE, data=key_high + key_low
+            CommandTag.FLASH_SECURITY_DISABLE, CommandFlag.NONE.tag, data=key_high + key_low
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
@@ -625,8 +635,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: list integers representing the property; None in case no response from device
         :raises McuBootError: If received invalid get-property response
         """
-        logger.info(f"CMD: GetProperty({PropertyTag.name(prop_tag, 'UNKNOWN')!r}, index={index!r})")
-        cmd_packet = CmdPacket(CommandTag.GET_PROPERTY, CommandFlag.NONE, prop_tag, index)
+        logger.info(f"CMD: GetProperty({prop_tag.label}, index={index!r})")
+        cmd_packet = CmdPacket(CommandTag.GET_PROPERTY, CommandFlag.NONE.tag, prop_tag.tag, index)
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             if isinstance(cmd_response, GetPropertyResponse):
@@ -641,8 +651,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :param  value: The value of selected property
         :return: False in case of any problem; True otherwise
         """
-        logger.info(f"CMD: SetProperty({PropertyTag.name(prop_tag)}, value=0x{value:08X})")
-        cmd_packet = CmdPacket(CommandTag.SET_PROPERTY, CommandFlag.NONE, prop_tag, value)
+        logger.info(f"CMD: SetProperty({prop_tag.label}, value=0x{value:08X})")
+        cmd_packet = CmdPacket(CommandTag.SET_PROPERTY, CommandFlag.NONE.tag, prop_tag.tag, value)
         cmd_response = self._process_cmd(cmd_packet)
         return cmd_response.status == StatusCode.SUCCESS
 
@@ -664,7 +674,9 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         logger.info(f"CMD: ReceiveSBfile(data_length={len(data)})")
         data_chunks = self._split_data(data=data)
-        cmd_packet = CmdPacket(CommandTag.RECEIVE_SB_FILE, CommandFlag.HAS_DATA_PHASE, len(data))
+        cmd_packet = CmdPacket(
+            CommandTag.RECEIVE_SB_FILE, CommandFlag.HAS_DATA_PHASE.tag, len(data)
+        )
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             self.enable_data_abort = check_errors
@@ -701,7 +713,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info(
             f"CMD: Execute(address=0x{address:08X}, argument=0x{argument:08X}, SP=0x{sp:08X})"
         )
-        cmd_packet = CmdPacket(CommandTag.EXECUTE, CommandFlag.NONE, address, argument, sp)
+        cmd_packet = CmdPacket(CommandTag.EXECUTE, CommandFlag.NONE.tag, address, argument, sp)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def call(self, address: int, argument: int) -> bool:
@@ -712,7 +724,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problem; True otherwise
         """
         logger.info(f"CMD: Call(address=0x{address:08X}, argument=0x{argument:08X})")
-        cmd_packet = CmdPacket(CommandTag.CALL, CommandFlag.NONE, address, argument)
+        cmd_packet = CmdPacket(CommandTag.CALL, CommandFlag.NONE.tag, address, argument)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def reset(self, timeout: int = 2000, reopen: bool = True) -> bool:
@@ -725,7 +737,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :raises McuBootConnectionError: Failure to reopen the device
         """
         logger.info("CMD: Reset MCU")
-        cmd_packet = CmdPacket(CommandTag.RESET, CommandFlag.NONE)
+        cmd_packet = CmdPacket(CommandTag.RESET, CommandFlag.NONE.tag)
         ret_val = False
         status = self._process_cmd(cmd_packet).status
         self.close()
@@ -738,7 +750,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         if status == StatusCode.NO_RESPONSE:
             logger.warning("Did not receive response from reset command, ignoring it")
-            self._status_code = 0
+            self._status_code = StatusCode.SUCCESS.tag
 
         if reopen:
             if not self.reopen:
@@ -759,7 +771,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problem; True otherwise
         """
         logger.info("CMD: FlashEraseAllUnsecure")
-        cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_ALL_UNSECURE, CommandFlag.NONE)
+        cmd_packet = CmdPacket(CommandTag.FLASH_ERASE_ALL_UNSECURE, CommandFlag.NONE.tag)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def efuse_read_once(self, index: int) -> Optional[int]:
@@ -769,7 +781,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: read value (32-bit int); None if operation failed
         """
         logger.info(f"CMD: FlashReadOnce(index={index})")
-        cmd_packet = CmdPacket(CommandTag.FLASH_READ_ONCE, CommandFlag.NONE, index, 4)
+        cmd_packet = CmdPacket(CommandTag.FLASH_READ_ONCE, CommandFlag.NONE.tag, index, 4)
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             assert isinstance(cmd_response, FlashReadOnceResponse)
@@ -788,7 +800,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             f"CMD: FlashProgramOnce(index={index}, value=0x{value:X}) "
             f"with{'' if verify else 'out'} verification."
         )
-        cmd_packet = CmdPacket(CommandTag.FLASH_PROGRAM_ONCE, CommandFlag.NONE, index, 4, value)
+        cmd_packet = CmdPacket(CommandTag.FLASH_PROGRAM_ONCE, CommandFlag.NONE.tag, index, 4, value)
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status != StatusCode.SUCCESS:
             return False
@@ -802,7 +814,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
                 return True
             # It may happen that ROM will not report error when attempting to write into locked OTP
             # In such case we substitute the original SUCCESS code with custom-made OTP_VERIFY_FAIL
-            self._status_code = StatusCode.OTP_VERIFY_FAIL
+            self._status_code = StatusCode.OTP_VERIFY_FAIL.tag
             return False
         return cmd_response.status == StatusCode.SUCCESS
 
@@ -817,7 +829,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if count not in (4, 8):
             raise SPSDKError("Invalid count of bytes. Must be 4 or 8")
         logger.info(f"CMD: FlashReadOnce(index={index}, bytes={count})")
-        cmd_packet = CmdPacket(CommandTag.FLASH_READ_ONCE, CommandFlag.NONE, index, count)
+        cmd_packet = CmdPacket(CommandTag.FLASH_READ_ONCE, CommandFlag.NONE.tag, index, count)
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             assert isinstance(cmd_response, FlashReadOnceResponse)
@@ -836,7 +848,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             raise SPSDKError("Invalid length of data. Must be aligned to 4 or 8 bytes")
         logger.info(f"CMD: FlashProgramOnce(index={index!r}, data={data!r})")
         cmd_packet = CmdPacket(
-            CommandTag.FLASH_PROGRAM_ONCE, CommandFlag.NONE, index, len(data), data=data
+            CommandTag.FLASH_PROGRAM_ONCE, CommandFlag.NONE.tag, index, len(data), data=data
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
@@ -855,7 +867,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             f"CMD: FlashReadResource(address=0x{address:08X}, length={length}, option={option})"
         )
         cmd_packet = CmdPacket(
-            CommandTag.FLASH_READ_RESOURCE, CommandFlag.NONE, address, length, option
+            CommandTag.FLASH_READ_RESOURCE, CommandFlag.NONE.tag, address, length, option
         )
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
@@ -871,7 +883,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problem; True otherwise
         """
         logger.info(f"CMD: ConfigureMemory({mem_id}, address=0x{address:08X})")
-        cmd_packet = CmdPacket(CommandTag.CONFIGURE_MEMORY, CommandFlag.NONE, mem_id, address)
+        cmd_packet = CmdPacket(CommandTag.CONFIGURE_MEMORY, CommandFlag.NONE.tag, mem_id, address)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def reliable_update(self, address: int) -> bool:
@@ -881,13 +893,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problem; True otherwise
         """
         logger.info(f"CMD: ReliableUpdate(address=0x{address:08X})")
-        cmd_packet = CmdPacket(CommandTag.RELIABLE_UPDATE, CommandFlag.NONE, address)
+        cmd_packet = CmdPacket(CommandTag.RELIABLE_UPDATE, CommandFlag.NONE.tag, address)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def generate_key_blob(
         self,
         dek_data: bytes,
-        key_sel: int = GenerateKeyBlobSelect.OPTMK,
+        key_sel: int = GenerateKeyBlobSelect.OPTMK.tag,
         count: int = 72,
     ) -> Optional[bytes]:
         """Generate Key Blob.
@@ -903,7 +915,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         data_chunks = self._split_data(data=dek_data)
         cmd_response = self._process_cmd(
             CmdPacket(
-                CommandTag.GENERATE_KEY_BLOB, CommandFlag.HAS_DATA_PHASE, key_sel, len(dek_data), 0
+                CommandTag.GENERATE_KEY_BLOB,
+                CommandFlag.HAS_DATA_PHASE.tag,
+                key_sel,
+                len(dek_data),
+                0,
             )
         )
         if cmd_response.status != StatusCode.SUCCESS:
@@ -911,7 +927,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         if not self._send_data(CommandTag.GENERATE_KEY_BLOB, data_chunks):
             return None
         cmd_response = self._process_cmd(
-            CmdPacket(CommandTag.GENERATE_KEY_BLOB, CommandFlag.NONE, key_sel, count, 1)
+            CmdPacket(CommandTag.GENERATE_KEY_BLOB, CommandFlag.NONE.tag, key_sel, count, 1)
         )
         if cmd_response.status == StatusCode.SUCCESS:
             assert isinstance(cmd_response, ReadMemoryResponse)
@@ -925,7 +941,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         logger.info("CMD: [KeyProvisioning] Enroll")
         cmd_packet = CmdPacket(
-            CommandTag.KEY_PROVISIONING, CommandFlag.NONE, KeyProvOperation.ENROLL
+            CommandTag.KEY_PROVISIONING, CommandFlag.NONE.tag, KeyProvOperation.ENROLL.tag
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
@@ -939,8 +955,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info(f"CMD: [KeyProvisioning] SetIntrinsicKey(type={key_type}, key_size={key_size})")
         cmd_packet = CmdPacket(
             CommandTag.KEY_PROVISIONING,
-            CommandFlag.NONE,
-            KeyProvOperation.SET_INTRINSIC_KEY,
+            CommandFlag.NONE.tag,
+            KeyProvOperation.SET_INTRINSIC_KEY.tag,
             key_type,
             key_size,
         )
@@ -955,8 +971,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info(f"CMD: [KeyProvisioning] WriteNonVolatileMemory(mem_id={mem_id})")
         cmd_packet = CmdPacket(
             CommandTag.KEY_PROVISIONING,
-            CommandFlag.NONE,
-            KeyProvOperation.WRITE_NON_VOLATILE,
+            CommandFlag.NONE.tag,
+            KeyProvOperation.WRITE_NON_VOLATILE.tag,
             mem_id,
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
@@ -970,13 +986,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info(f"CMD: [KeyProvisioning] ReadNonVolatileMemory(mem_id={mem_id})")
         cmd_packet = CmdPacket(
             CommandTag.KEY_PROVISIONING,
-            CommandFlag.NONE,
-            KeyProvOperation.READ_NON_VOLATILE,
+            CommandFlag.NONE.tag,
+            KeyProvOperation.READ_NON_VOLATILE.tag,
             mem_id,
         )
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
-    def kp_set_user_key(self, key_type: KeyProvUserKeyType, key_data: bytes) -> bool:
+    def kp_set_user_key(self, key_type: int, key_data: bytes) -> bool:
         """Key provisioning: Send the user key specified by <key_type> to bootloader.
 
         :param key_type: type of the user key, see enumeration for details
@@ -984,14 +1000,13 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problem; True otherwise
         """
         logger.info(
-            f"CMD: [KeyProvisioning] SetUserKey(key_type={KeyProvUserKeyType.name(key_type)}, "
-            f"key_len={len(key_data)})"
+            f"CMD: [KeyProvisioning] SetUserKey(key_type={key_type}, " f"key_len={len(key_data)})"
         )
         data_chunks = self._split_data(data=key_data)
         cmd_packet = CmdPacket(
             CommandTag.KEY_PROVISIONING,
-            CommandFlag.HAS_DATA_PHASE,
-            KeyProvOperation.SET_USER_KEY,
+            CommandFlag.HAS_DATA_PHASE.tag,
+            KeyProvOperation.SET_USER_KEY.tag,
             key_type,
             len(key_data),
         )
@@ -1010,8 +1025,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         data_chunks = self._split_data(data=key_data)
         cmd_packet = CmdPacket(
             CommandTag.KEY_PROVISIONING,
-            CommandFlag.HAS_DATA_PHASE,
-            KeyProvOperation.WRITE_KEY_STORE,
+            CommandFlag.HAS_DATA_PHASE.tag,
+            KeyProvOperation.WRITE_KEY_STORE.tag,
             0,
             len(key_data),
         )
@@ -1024,7 +1039,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """Key provisioning: Read key data from key store area."""
         logger.info("CMD: [KeyProvisioning] ReadKeyStore")
         cmd_packet = CmdPacket(
-            CommandTag.KEY_PROVISIONING, CommandFlag.NONE, KeyProvOperation.READ_KEY_STORE
+            CommandTag.KEY_PROVISIONING, CommandFlag.NONE.tag, KeyProvOperation.READ_KEY_STORE.tag
         )
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
@@ -1044,7 +1059,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info(f"CMD: LoadImage(length={len(data)})")
         data_chunks = self._split_data(data)
         # there's no command in this case
-        self._status_code = StatusCode.SUCCESS
+        self._status_code = StatusCode.SUCCESS.tag
         return self._send_data(CommandTag.NO_COMMAND, data_chunks, progress_callback)
 
     def tp_prove_genuinity(self, address: int, buffer_size: int) -> Optional[int]:
@@ -1064,9 +1079,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         address_msb = (address >> 32) & 0xFFFF_FFFF
         address_lsb = address & 0xFFFF_FFFF
         sentinel_cmd = _tp_sentinel_frame(
-            TrustProvOperation.PROVE_GENUINITY, args=[address_msb, address_lsb, buffer_size]
+            TrustProvOperation.PROVE_GENUINITY.tag, args=[address_msb, address_lsb, buffer_size]
         )
-        cmd_packet = CmdPacket(CommandTag.TRUST_PROVISIONING, CommandFlag.NONE, data=sentinel_cmd)
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING, CommandFlag.NONE.tag, data=sentinel_cmd
+        )
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             assert isinstance(cmd_response, TrustProvisioningResponse)
@@ -1089,9 +1106,12 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         address_lsb = address & 0xFFFF_FFFF
         stage_control = control << 8 | stage
         sentinel_cmd = _tp_sentinel_frame(
-            TrustProvOperation.ISP_SET_WRAPPED_DATA, args=[stage_control, address_msb, address_lsb]
+            TrustProvOperation.ISP_SET_WRAPPED_DATA.tag,
+            args=[stage_control, address_msb, address_lsb],
         )
-        cmd_packet = CmdPacket(CommandTag.TRUST_PROVISIONING, CommandFlag.NONE, data=sentinel_cmd)
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING, CommandFlag.NONE.tag, data=sentinel_cmd
+        )
         cmd_response = self._process_cmd(cmd_packet)
         return cmd_response.status == StatusCode.SUCCESS
 
@@ -1109,11 +1129,11 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         data_chunks = self._split_data(data=data)
         mem_id = _clamp_down_memory_id(memory_id=mem_id)
         cmd_packet = CmdPacket(
-            CommandTag.FUSE_PROGRAM, CommandFlag.HAS_DATA_PHASE, address, len(data), mem_id
+            CommandTag.FUSE_PROGRAM, CommandFlag.HAS_DATA_PHASE.tag, address, len(data), mem_id
         )
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:  # pragma: no cover
-            # command is not supported in any device (LPC55xx family, RTxxx, RTxxxx) thus we can't measure coverage
+            # command is not supported in any device, thus we can't measure coverage
             return self._send_data(CommandTag.FUSE_PROGRAM, data_chunks)
         return False
 
@@ -1127,10 +1147,10 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         """
         logger.info(f"CMD: ReadFuse(address=0x{address:08X}, length={length}, mem_id={mem_id})")
         mem_id = _clamp_down_memory_id(memory_id=mem_id)
-        cmd_packet = CmdPacket(CommandTag.FUSE_READ, CommandFlag.NONE, address, length, mem_id)
+        cmd_packet = CmdPacket(CommandTag.FUSE_READ, CommandFlag.NONE.tag, address, length, mem_id)
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:  # pragma: no cover
-            # command is not supported in any device (LPC55xx family, RTxxx, RTxxxx) thus we can't measure coverage
+            # command is not supported in any device, thus we can't measure coverage
             assert isinstance(cmd_response, ReadMemoryResponse)
             return self._read_data(CommandTag.FUSE_READ, cmd_response.length)
         return None
@@ -1142,7 +1162,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :return: False in case of any problems, True otherwise.
         """
         logger.info(f"CMD: UpdateLifeCycle (life cycle=0x{life_cycle:02X})")
-        cmd_packet = CmdPacket(CommandTag.UPDATE_LIFE_CYCLE, CommandFlag.NONE, life_cycle)
+        cmd_packet = CmdPacket(CommandTag.UPDATE_LIFE_CYCLE, CommandFlag.NONE.tag, life_cycle)
         return self._process_cmd(cmd_packet).status == StatusCode.SUCCESS
 
     def ele_message(
@@ -1166,7 +1186,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             )
         cmd_packet = CmdPacket(
             CommandTag.ELE_MESSAGE,
-            CommandFlag.NONE,
+            CommandFlag.NONE.tag,
             0,  # reserved for future use as a sub command ID or anything else
             cmdMsgAddr,
             cmdMsgCnt,
@@ -1198,8 +1218,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] OEM generate common keys")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvOperation.HSM_GEN_KEY,
+            CommandFlag.NONE.tag,
+            TrustProvOperation.HSM_GEN_KEY.tag,
             key_type,
             reserved,
             key_blob_output_addr,
@@ -1243,8 +1263,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] OEM generate master share")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvOperation.OEM_GEN_MASTER_SHARE,
+            CommandFlag.NONE.tag,
+            TrustProvOperation.OEM_GEN_MASTER_SHARE.tag,
             oem_share_input_addr,
             oem_share_input_size,
             oem_enc_share_output_addr,
@@ -1281,8 +1301,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         )
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvOperation.OEM_SET_MASTER_SHARE,
+            CommandFlag.NONE.tag,
+            TrustProvOperation.OEM_SET_MASTER_SHARE.tag,
             oem_share_input_addr,
             oem_share_input_size,
             oem_enc_master_share_input_addr,
@@ -1309,8 +1329,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] Creates the initial trust provisioning keys")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvOperation.OEM_GET_CUST_CERT_DICE_PUK,
+            CommandFlag.NONE.tag,
+            TrustProvOperation.OEM_GET_CUST_CERT_DICE_PUK.tag,
             oem_rkth_input_addr,
             oem_rkth_input_size,
             oem_cust_cert_dice_puk_output_addr,
@@ -1345,8 +1365,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] OEM generate common keys")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvOperation.HSM_STORE_KEY,
+            CommandFlag.NONE.tag,
+            TrustProvOperation.HSM_STORE_KEY.tag,
             key_type,
             key_property,
             key_input_addr,
@@ -1389,8 +1409,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] Encrypt the given SB3 data block")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvOperation.HSM_ENC_BLOCK,
+            CommandFlag.NONE.tag,
+            TrustProvOperation.HSM_ENC_BLOCK.tag,
             mfg_cust_mk_sk_0_blob_input_addr,
             mfg_cust_mk_sk_0_blob_input_size,
             kek_id,
@@ -1424,8 +1444,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] HSM ENC SIGN")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvOperation.HSM_ENC_SIGN,
+            CommandFlag.NONE.tag,
+            TrustProvOperation.HSM_ENC_SIGN.tag,
             key_blob_input_addr,
             key_blob_input_size,
             block_data_input_addr,
@@ -1451,8 +1471,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] WPC GET ID")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvWpc.WPC_GET_ID,
+            CommandFlag.NONE.tag,
+            TrustProvWpc.WPC_GET_ID.tag,
             wpc_id_blob_addr,
             wpc_id_blob_size,
         )
@@ -1474,8 +1494,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] NXP GET ID")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvWpc.NXP_GET_ID,
+            CommandFlag.NONE.tag,
+            TrustProvWpc.NXP_GET_ID.tag,
             id_blob_addr,
             id_blob_size,
         )
@@ -1505,8 +1525,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] WPC INSERT CERT")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvWpc.WPC_INSERT_CERT,
+            CommandFlag.NONE.tag,
+            TrustProvWpc.WPC_INSERT_CERT.tag,
             wpc_cert_addr,
             wpc_cert_len,
             ec_id_offset,
@@ -1515,6 +1535,36 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         cmd_response = self._process_cmd(cmd_packet)
         if cmd_response.status == StatusCode.SUCCESS:
             return 0
+        return None
+
+    def wpc_sign_csr(
+        self,
+        csr_tbs_addr: int,
+        csr_tbs_len: int,
+        signature_addr: int,
+        signature_len: int,
+    ) -> Optional[int]:
+        """Command used sign CSR data (TBS portion).
+
+        :param csr_tbs_addr: address of CSR-TBS data
+        :param csr_tbs_len: length in bytes of CSR-TBS data
+        :param signature_addr: address where to store signature
+        :param signature_len: expected length of signature
+        :return: actual signature length
+        """
+        logger.info("CMD: [TrustProvisioning] WPC SIGN CSR-TBS DATA")
+        cmd_packet = CmdPacket(
+            CommandTag.TRUST_PROVISIONING,
+            CommandFlag.NONE.tag,
+            TrustProvWpc.WPC_SIGN_CSR.tag,
+            csr_tbs_addr,
+            csr_tbs_len,
+            signature_addr,
+            signature_len,
+        )
+        cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
         return None
 
     def dsc_hsm_create_session(
@@ -1534,8 +1584,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] DSC HSM CREATE SESSION")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvDevHsmDsc.DSC_HSM_CREATE_SESSION,
+            CommandFlag.NONE.tag,
+            TrustProvDevHsmDsc.DSC_HSM_CREATE_SESSION.tag,
             oem_seed_input_addr,
             oem_seed_input_size,
             oem_share_output_addr,
@@ -1568,8 +1618,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] DSC HSM ENC BLK")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvDevHsmDsc.DSC_HSM_ENC_BLK,
+            CommandFlag.NONE.tag,
+            TrustProvDevHsmDsc.DSC_HSM_ENC_BLK.tag,
             sbx_header_input_addr,
             sbx_header_input_size,
             block_num,
@@ -1600,8 +1650,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         logger.info("CMD: [TrustProvisioning] DSC HSM ENC SIGN")
         cmd_packet = CmdPacket(
             CommandTag.TRUST_PROVISIONING,
-            CommandFlag.NONE,
-            TrustProvDevHsmDsc.DSC_HSM_ENC_SIGN,
+            CommandFlag.NONE.tag,
+            TrustProvDevHsmDsc.DSC_HSM_ENC_SIGN.tag,
             block_data_input_addr,
             block_data_input_size,
             signature_output_addr,

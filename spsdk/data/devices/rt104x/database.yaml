@@ -1,0 +1,10 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+alias: rt102x
+
+# General MCU information
+info:
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1040-crossover-mcu-with-arm-cortex-m7-core-operating-up-to-600-mhz-and-extended-temperature-range:i.MX-RT1040

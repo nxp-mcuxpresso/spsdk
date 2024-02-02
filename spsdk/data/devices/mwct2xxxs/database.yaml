@@ -1,0 +1,30 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com
+  memory_map: {} # Memory map basic info
+  isp:
+    rom_protocol: mboot # Possible options:[mboot, sdps, sdp]
+    mboot_interfaces: [uart]
+    using_flashloader: True
+    # usb_rom: {}
+    # usb_flashloader:
+    #   pid: 0x15A2
+    #   vid: 0x0073
+
+features:
+  comm_buffer:
+    address: 0x2000_0000
+  wpc:
+    id_type: computed_csr

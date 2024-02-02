@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,6 @@ import copy
 import io
 import logging
 import os
-import textwrap
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -19,14 +18,21 @@ from deepmerge import Merger, always_merger
 from deepmerge.strategy.dict import DictStrategies
 from deepmerge.strategy.list import ListStrategies
 from deepmerge.strategy.set import SetStrategies
-from ruamel.yaml import YAML, YAMLError
+from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap as CMap
 from ruamel.yaml.comments import CommentedSeq as CSeq
 
 from spsdk import SPSDK_YML_INDENT
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.easy_enum import Enum
-from spsdk.utils.misc import find_file, load_configuration, value_to_int, write_file
+from spsdk.utils.misc import (
+    find_dir,
+    find_file,
+    load_configuration,
+    value_to_int,
+    wrap_text,
+    write_file,
+)
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ENABLE_DEBUG = False
 
@@ -43,12 +49,12 @@ def cmap_update(cmap: CMap, updater: CMap) -> None:
     cmap.ca.items.update(updater.ca.items)
 
 
-class PropertyRequired(Enum):
+class PropertyRequired(SpsdkEnum):
     """Enum describing if the property is required or optional."""
 
-    REQUIRED = (0, "Required")
-    CONDITIONALLY_REQUIRED = (1, "Conditionally required")
-    OPTIONAL = (2, "Optional")
+    REQUIRED = (0, "REQUIRED", "Required")
+    CONDITIONALLY_REQUIRED = (1, "CONDITIONALLY_REQUIRED", "Conditionally required")
+    OPTIONAL = (2, "OPTIONAL", "Optional")
 
 
 class SPSDKListStrategies(ListStrategies):
@@ -131,6 +137,7 @@ def _print_validation_fail_reason(
             try:
                 validator = fastjsonschema.compile(rule_def, formats=extra_formatters)
                 validator(exception.value)
+                message += f"\nRule#{rule_def_ix} passed.\n"
             except fastjsonschema.JsonSchemaValueException as _exc:
                 message += (
                     f"\nReason of fail for {exception.rule} rule#{rule_def_ix}: "
@@ -172,7 +179,7 @@ def check_config(
     :raises SPSDKError: Invalid validation schema or configuration
     """
     custom_formatters: Dict[str, Callable[[str], bool]] = {
-        "dir": lambda x: os.path.isdir(x.replace("\\", "/")),
+        "dir": lambda x: bool(find_dir(x, search_paths=search_paths, raise_exc=False)),
         "file": lambda x: bool(find_file(x, search_paths=search_paths, raise_exc=False)),
         "file_name": lambda x: os.path.basename(x.replace("\\", "/")) not in ("", None),
         "optional_file": lambda x: not x
@@ -226,27 +233,19 @@ class CommentedConfig:
         self,
         main_title: str,
         schemas: List[Dict[str, Any]],
-        values: Optional[Dict[str, Any]] = None,
         note: Optional[str] = None,
-        export_template: bool = True,
     ):
         """Constructor for Config templates.
 
         :param main_title: Main title of final template.
         :param schemas: Main description of final template.
-        :param values:
-            - for configuration, this is dictionary of values to be saved
-            - for schema, this is dictionary of override values (overriding default values)
         :param note: Additional Note after title test.
-        :param export_template: True to export schema template; False to export custom configuration
         """
         self.main_title = main_title
         self.schemas = schemas
-        self.values = values
         self.indent = 0
         self.note = note
-        self.export_template = export_template
-        assert export_template or values, "values must be defined for configuration export"
+        self.creating_configuration = False
 
     @property
     def max_line(self) -> int:
@@ -263,18 +262,13 @@ class CommentedConfig:
         delimiter = "=" * self.max_line
         title_str = f" == {title} == "
         title_str = title_str.center(self.max_line)
-        descr_list = (
-            [
-                text.center(self.max_line) + "\n"
-                for text in textwrap.wrap(description, self.max_line)
-            ]
-            if description
-            else []
-        )
 
         ret = delimiter + "\n" + title_str + "\n"
-        for descr in descr_list:
-            ret += descr
+        if description:
+            wrapped_description = wrap_text(description, self.max_line)
+            lines = wrapped_description.splitlines()
+            ret += "\n".join([line.center(self.max_line) for line in lines])
+            ret += "\n"
         ret += delimiter
         return ret
 
@@ -361,26 +355,24 @@ class CommentedConfig:
             # Skip the record in case that custom value key is defined,
             # but it has None value as a mark to not use this record
             value = custom_value.get(key, None) if custom_value else None  # type: ignore
-            if not self.export_template and value is None:
+            if custom_value and value is None:
                 continue
 
             val_p: Dict = block["properties"][key]
+            value_to_add = self._get_schema_value(val_p, value)
+            if value_to_add is None:
+                raise SPSDKError(f"Cannot create the value for {key}")
 
-            if key == "oneOf":
-                cmap_update(cfg_m, self._handle_one_of_block(val_p, value))
-            else:
-                value_to_add = self._get_schema_value(val_p, value)
-
-                if value_to_add is None:
-                    continue
-                cfg_m[key] = value_to_add
-                self._add_comment(
-                    cfg_m,
-                    val_p,
-                    key,
-                    value_to_add,
-                    PropertyRequired.desc(self.get_property_optional_required(key, block)),
-                )
+            cfg_m[key] = value_to_add
+            required = self.get_property_optional_required(key, block).description
+            assert required
+            self._add_comment(
+                cfg_m,
+                val_p,
+                key,
+                value_to_add,
+                required,
+            )
 
         self.indent -= 1
         return cfg_m
@@ -400,14 +392,14 @@ class CommentedConfig:
         val_i: Dict = block["items"]
 
         cfg_s = CSeq()
-        if custom_value:
+        if custom_value is not None:
             for cust_val in custom_value:
                 value = self._get_schema_value(val_i, cust_val)
                 if isinstance(value, (CSeq, List)):
                     cfg_s.extend(value)
                 else:
                     cfg_s.append(value)
-        elif self.export_template:
+        else:
             value = self._get_schema_value(val_i, None)
             # the template_value can be the actual list(not only one element)
             if isinstance(value, (CSeq, List)):
@@ -475,10 +467,22 @@ class CommentedConfig:
                 if not self._check_matching_oneof_option(one_option, custom_value):
                     continue
                 return self._get_schema_value(one_option, custom_value)
+            raise SPSDKError("Any allowed option matching the configuration data")
 
-        option_types = ", ".join([get_help_name(x) for x in one_of])
-        title = f"List of possible {len(one_of)} options. Options [{option_types}]"
-        for i, option in enumerate(one_of):
+        # Check the restriction into templates in oneOf block
+        one_of_mod = []
+        for x in one_of:
+            skip = x.get("skip_in_template", False)
+            if not skip:
+                one_of_mod.append(x)
+
+        # In case that only one oneOf option left just return simple value
+        if len(one_of_mod) == 1:
+            return self._get_schema_value(one_of_mod[0], custom_value)
+
+        option_types = ", ".join([get_help_name(x) for x in one_of_mod])
+        title = f"List of possible {len(one_of_mod)} options."
+        for i, option in enumerate(one_of_mod):
             if option.get("type") != "object":
                 continue
             value = self._get_schema_value(option, None)
@@ -488,7 +492,7 @@ class CommentedConfig:
             key = list(value.keys())[0]
             comment = ""
             if i == 0:
-                comment = self._get_title_block(title) + "\n"
+                comment = self._get_title_block(title, f"Options [{option_types}]") + "\n"
             comment += "\n " + (
                 f" [Example of possible configuration #{i}] ".center(self.max_line, "=")
             )
@@ -556,7 +560,6 @@ class CommentedConfig:
         :param value: Value of config key
         :param required: Required text description
         """
-        comment = []
         value_len = len(str(key) + ": ")
         if value and isinstance(value, (str, int)):
             value_len += len(str(value))
@@ -576,14 +579,13 @@ class CommentedConfig:
             # https://sourceforge.net/p/ruamel-yaml/tickets/475/ will be solved
             # if True:  # len(one_line_comment) > self.max_line - value_len:
             # Too long comment split it into comment block
-            comment.append(f"===== {title} [{required}] =====".center(self.max_line, "-"))
-            comment.extend(textwrap.wrap("Description: " + descr, width=self.max_line))
+            comment = f"===== {title} [{required}] =====".center(self.max_line, "-")
+            if descr:
+                comment += wrap_text("\nDescription: " + descr, max_line=self.max_line)
             if enum:
-                comment.extend(textwrap.wrap(enum, width=self.max_line))
+                comment += wrap_text("\n" + enum, max_line=self.max_line)
             cfg.yaml_set_comment_before_after_key(
-                key,
-                "\n".join(comment),
-                indent=SPSDK_YML_INDENT * (self.indent - 1),
+                key, comment, indent=SPSDK_YML_INDENT * (self.indent - 1)
             )
             # else:
             #     cfg.yaml_add_eol_comment(
@@ -607,8 +609,7 @@ class CommentedConfig:
         return [
             key
             for key in schema["properties"]
-            if "skip_in_template" not in schema["properties"][key]
-            or schema["properties"][key]["skip_in_template"] is False
+            if schema["properties"][key].get("skip_in_template", False) == False
         ]
 
     def _update_before_comment(
@@ -636,12 +637,15 @@ class CommentedConfig:
         for c in new_lines:
             comments[1].insert(0, comment_token(c, start_mark))
 
-    def export(self) -> CMap:
+    def export(self, config: Optional[Dict[str, Any]] = None) -> CMap:
         """Export configuration template into CommentedMap.
 
+        :param config: Configuration to be applied to template.
         :raises SPSDKError: Error
         :return: Configuration template in CM.
         """
+        self.indent = 0
+        self.creating_configuration = bool(config)
         loc_schemas = copy.deepcopy(self.schemas)
         # 1. Get blocks with their titles and lists of their keys
         block_list: Dict[str, Any] = {}
@@ -690,12 +694,13 @@ class CommentedConfig:
         try:
             self.indent = 0
             # 4. Go through all individual logic blocks
-            cfg = self._create_object_block(merged, self.values)
+            cfg = self._create_object_block(merged, config)
             assert isinstance(cfg, CMap)
             # 5. Add main title of configuration
             title = f"  {self.main_title}  ".center(self.MAX_LINE_LENGTH, "=") + "\n\n"
             if self.note:
-                title += f"\n{' Note '.center(self.MAX_LINE_LENGTH, '-')}\n{self.note}\n\n"
+                title += f"\n{' Note '.center(self.MAX_LINE_LENGTH, '-')}\n"
+                title += wrap_text(self.note, self.max_line) + "\n"
             cfg.yaml_set_start_comment(title)
             for title, info in block_list.items():
                 description = info["description"]
@@ -712,17 +717,26 @@ class CommentedConfig:
                         cfg, first_key, self._get_title_block(title, description)
                     )
 
+            self.creating_configuration = False
             return cfg
 
         except Exception as exc:
+            self.creating_configuration = False
             raise SPSDKError(f"Template generation failed: {str(exc)}") from exc
 
-    def export_to_yaml(self) -> str:
+    def get_template(self) -> str:
         """Export Configuration template directly into YAML string format.
 
         :return: YAML string.
         """
         return self.convert_cm_to_yaml(self.export())
+
+    def get_config(self, config: Dict[str, Any]) -> str:
+        """Export Configuration directly into YAML string format.
+
+        :return: YAML string.
+        """
+        return self.convert_cm_to_yaml(self.export(config))
 
     @staticmethod
     def convert_cm_to_yaml(config: CMap) -> str:
@@ -741,27 +755,3 @@ class CommentedConfig:
         yaml_data = stream.getvalue()
 
         return yaml_data
-
-
-class ValidationSchemas:
-    """Manager for validation schemas."""
-
-    _instancies: Dict[str, Dict[str, Any]] = {}
-
-    @staticmethod
-    def get_schema_file(sch_file: str) -> Dict[str, Any]:
-        """Return load schema file. Use SingleTon behavior.
-
-        :param sch_file: Path to schema config file.
-        :raises SPSDKError: Invalid schema config file.
-        :return: Loaded schema file.
-        """
-        abs_path = os.path.abspath(sch_file)
-        if abs_path not in ValidationSchemas._instancies:
-            try:
-                schema_cfg = load_configuration(abs_path)
-            except (FileNotFoundError, YAMLError, UnicodeDecodeError) as exc:
-                raise SPSDKError("Invalid validation scheme configuration file.") from exc
-            ValidationSchemas._instancies[abs_path] = schema_cfg
-
-        return ValidationSchemas._instancies[abs_path]

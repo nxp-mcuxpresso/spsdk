@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to handle registers descriptions with support for XML files."""
@@ -9,13 +9,9 @@
 import logging
 import re
 import xml.etree.ElementTree as ET
-from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union
 from xml.dom import minidom
 
-from jinja2 import Environment, FileSystemLoader
-from ruamel.yaml.comments import CommentedMap as CM
-
-from spsdk import SPSDK_YML_INDENT, utils
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import (
     SPSDKRegsError,
@@ -26,6 +22,7 @@ from spsdk.utils.exceptions import (
 )
 from spsdk.utils.images import BinaryImage, BinaryPattern
 from spsdk.utils.misc import (
+    Endianness,
     format_value,
     get_bytes_cnt_of_int,
     value_to_bool,
@@ -79,7 +76,7 @@ class RegsEnum:
         except (TypeError, ValueError, SPSDKError) as exc:
             raise SPSDKRegsError(f"Invalid Enum Value: {raw_val}") from exc
 
-        description = xml_element.attrib.get("description", "N/A")
+        description = xml_element.attrib.get("description", "N/A").replace("&#10;", "\n")
 
         return cls(name, value, description, maxwidth)
 
@@ -284,7 +281,7 @@ class RegsBitField:
         name = xml_element.attrib.get("name", "N/A")
         offset = value_to_int(xml_element.attrib.get("offset", 0))
         width = value_to_int(xml_element.attrib.get("width", 0))
-        description = xml_element.attrib.get("description", "N/A")
+        description = xml_element.attrib.get("description", "N/A").replace("&#10;", "\n")
         access = xml_element.attrib.get("access", "R/W")
         reset_value = value_to_int(xml_element.attrib.get("reset_value", 0))
         hidden = xml_element.tag != "bit_field"
@@ -350,7 +347,7 @@ class RegsBitField:
         new_val_int = self.config_processor.pre_process(new_val_int)
         if new_val_int > 1 << self.width:
             raise SPSDKValueError("The input value is out of bitfield range")
-        reg_val = self.parent.get_value(raw=False)
+        reg_val = self.parent.get_value(raw=raw)
 
         mask = ((1 << self.width) - 1) << self.offset
         reg_val = reg_val & ~mask
@@ -430,23 +427,6 @@ class RegsBitField:
         for enum in self._enums:
             enum.add_et_subelement(element)
 
-    def get_html_data_element(self) -> HTMLDataElement:
-        """Returns HTML element of bitfield.
-
-        :return: HTML element.
-        """
-        enum_desc = {}
-        for enum in self.get_enums():
-            enum_desc[enum.get_value_str()] = enum.description
-
-        return {
-            "name": self.name,
-            "desc": self.description,
-            "width": str(self.width),
-            "offset": str(self.offset),
-            "bit_values": enum_desc,
-        }
-
     def __str__(self) -> str:
         """Override 'ToString()' to print register.
 
@@ -484,7 +464,7 @@ class RegsRegister:
         config_as_hexstring: bool = False,
         otp_index: Optional[int] = None,
         reverse_subregs_order: bool = False,
-        base_endianness: Literal["little", "big"] = "big",
+        base_endianness: Endianness = Endianness.BIG,
         alt_widths: Optional[List[int]] = None,
     ) -> None:
         """Constructor of RegsRegister class. Used to store register information.
@@ -525,6 +505,22 @@ class RegsRegister:
         self._sub_regs_width_init = False
         self._sub_regs_width = 0
 
+    def __eq__(self, obj: Any) -> bool:
+        """Compare if the objects has same settings."""
+        if not isinstance(obj, self.__class__):
+            return False
+        if obj.name != self.name:
+            return False
+        if obj.width != self.width:
+            return False
+        if obj.reverse != self.reverse:
+            return False
+        if obj._value != self._value:
+            return False
+        if obj._reset_value != self._reset_value:
+            return False
+        return True
+
     @classmethod
     def from_xml_element(cls, xml_element: ET.Element) -> "RegsRegister":
         """Initialization register by XML ET element.
@@ -535,7 +531,7 @@ class RegsRegister:
         name = xml_element.attrib.get("name", "N/A")
         offset = value_to_int(xml_element.attrib.get("offset", 0))
         width = value_to_int(xml_element.attrib.get("width", 0))
-        description = xml_element.attrib.get("description", "N/A")
+        description = xml_element.attrib.get("description", "N/A").replace("&#10;", "\n")
         reverse = (xml_element.attrib.get("reversed", "False")) == "True"
         access = xml_element.attrib.get("access", "N/A")
         otp_index_raw = xml_element.attrib.get("otp_index")
@@ -653,23 +649,6 @@ class RegsRegister:
         for bitfield in self._bitfields:
             bitfield.add_et_subelement(element)
 
-    def get_html_data_element(self, exclude: Optional[List[str]] = None) -> HTMLDataElement:
-        """Returns HTML element of register.
-
-        :return: HTML element.
-        """
-        bitfield_desc = []
-        for bitfield in self.get_bitfields(exclude):
-            bitfield_desc.append(bitfield.get_html_data_element())
-
-        return {
-            "name": self.name,
-            "desc": self.description,
-            "width": str(self.width),
-            "offset": hex(self.offset),
-            "bitfields": bitfield_desc,
-        }
-
     def set_value(self, val: Any, raw: bool = False) -> None:
         """Set the new value of register.
 
@@ -679,7 +658,7 @@ class RegsRegister:
         """
         try:
             if isinstance(val, (bytes, bytearray)):
-                value = int.from_bytes(val, self.base_endianness)
+                value = int.from_bytes(val, self.base_endianness.value)
             else:
                 value = value_to_int(val)
             if value >= 1 << self.width:
@@ -698,9 +677,9 @@ class RegsRegister:
                         value,
                         align_to_2n=False,
                         byte_cnt=alt_width // 8,
-                        endianness="big",
+                        endianness=Endianness.BIG,
                     )
-                    value = value.from_bytes(val_bytes, "little")
+                    value = value.from_bytes(val_bytes, Endianness.LITTLE.value)
 
             if self.has_group_registers():
                 # Update also values in sub registers
@@ -734,7 +713,7 @@ class RegsRegister:
         """
         alt_width = self.width
         if self.alt_widths:
-            real_byte_cnt = get_bytes_cnt_of_int(value)
+            real_byte_cnt = get_bytes_cnt_of_int(value, align_to_2n=False)
             self.alt_widths.sort()
             for alt in self.alt_widths:
                 if real_byte_cnt <= alt // 8:
@@ -761,7 +740,7 @@ class RegsRegister:
         else:
             value = self._value
 
-        alt_width = self.get_alt_width(self._value)
+        alt_width = self.get_alt_width(value)
 
         if not raw and self.reverse:
             val_bytes = value_to_bytes(
@@ -771,7 +750,10 @@ class RegsRegister:
                 endianness=self.base_endianness,
             )
             value = value.from_bytes(
-                val_bytes, "big" if self.base_endianness == "little" else "little"
+                val_bytes,
+                Endianness.BIG.value
+                if self.base_endianness == Endianness.LITTLE
+                else Endianness.LITTLE.value,
             )
 
         return value
@@ -894,11 +876,27 @@ class RegsRegister:
 class Registers:
     """SPSDK Class for registers handling."""
 
-    def __init__(self, device_name: str, base_endianness: Literal["little", "big"] = "big") -> None:
+    TEMPLATE_NOTE = (
+        "All registers is possible to define also as one value although the bitfields are used. "
+        "Instead of bitfields: ... field, the value: ... definition works as well."
+    )
+
+    def __init__(self, device_name: str, base_endianness: Endianness = Endianness.BIG) -> None:
         """Initialization of Registers class."""
         self._registers: List[RegsRegister] = []
         self.dev_name = device_name
         self.base_endianness = base_endianness
+
+    def __eq__(self, obj: Any) -> bool:
+        """Compare if the objects has same settings."""
+        if not (
+            isinstance(obj, self.__class__)
+            and obj.dev_name == self.dev_name
+            and obj.base_endianness == self.base_endianness
+        ):
+            return False
+        ret = obj._registers == self._registers
+        return ret
 
     def find_reg(self, name: str, include_group_regs: bool = False) -> RegsRegister:
         """Returns the instance of the register by its name.
@@ -949,25 +947,9 @@ class Registers:
         reg.base_endianness = self.base_endianness
         self._registers.append(reg)
 
-    def remove_register(self, reg: RegsRegister) -> None:
-        """Remove register from register list by its instance reference.
-
-        :reg: Instance of register that should be removed.
-        :raises SPSDKError: Invalid type has been provided.
-        """
-        if not isinstance(reg, RegsRegister):
-            raise SPSDKError("The 'reg' has invalid type.")
-
-        self._registers.remove(reg)
-
-    def remove_register_by_name(self, reg_names: List[str]) -> None:
-        """Removes register from register list by List of its names.
-
-        :reg_names: List of names of registers that should be removed.
-        """
-        for reg in self._registers:
-            if any(reg.name in name for name in reg_names):
-                self._registers.remove(reg)
+    def remove_registers(self) -> None:
+        """Remove all registers."""
+        self._registers.clear()
 
     def get_registers(
         self, exclude: Optional[List[str]] = None, include_group_regs: bool = False
@@ -1002,14 +984,6 @@ class Registers:
         :return: List of register names.
         """
         return [x.name for x in self.get_registers(exclude, include_group_regs)]
-
-    def run_hooks(self, exclude: Optional[List[str]] = None) -> None:
-        """The method run hooks on all regular registers.
-
-        :param exclude: The list of register names to be excluded.
-        """
-        for reg in self.get_registers(exclude):
-            reg.set_value(reg.get_value(raw=True), False)
 
     def reset_values(self, exclude: Optional[List[str]] = None) -> None:
         """The method reset values in registers.
@@ -1083,12 +1057,34 @@ class Registers:
 
         :param binary: Binary data to parse.
         """
-        if len(binary) < len(self.image_info()):
-            raise SPSDKValueError(
-                f"Invalid length of input binary: {len(binary)} != {len(self.image_info())}"
+        bin_len = len(binary)
+        if bin_len < len(self.image_info()):
+            logger.info(
+                f"Input binary is smaller than registers supports: {bin_len} != {len(self.image_info())}"
             )
         for reg in self.get_registers():
+            if bin_len < reg.offset + reg.width // 8:
+                logger.debug(f"Parsing of binary block ends at {reg.name}")
+                break
             reg.set_value(binary[reg.offset : reg.offset + reg.width // 8], raw=True)
+
+    def _get_bitfield_yaml_description(self, bitfield: RegsBitField) -> str:
+        """Create the valuable comment for bitfield.
+
+        :param bitfield: Bitfield used to generate description.
+        :return: Bitfield description.
+        """
+        description = f"Offset: {bitfield.offset}b, Width: {bitfield.config_width}b"
+        if bitfield.description not in ("", "."):
+            description += ", " + bitfield.description.replace("&#10;", "\n")
+        if bitfield.config_processor.description:
+            description += ".\n NOTE: " + bitfield.config_processor.description
+        if bitfield.has_enums():
+            for enum in bitfield.get_enums():
+                descr = enum.description if enum.description != "." else enum.name
+                enum_description = descr.replace("&#10;", "\n")
+                description += f"\n- {enum.name}, ({enum.get_value_int()}): {enum_description}"
+        return description
 
     def get_validation_schema(self) -> Dict:
         """Get the JSON SCHEMA for registers.
@@ -1097,85 +1093,79 @@ class Registers:
         """
         properties: Dict[str, Any] = {}
         for reg in self.get_registers():
-            reg_schema = {
-                "type": "object",
-                "title": f"{reg.name}",
-                "description": f"{reg.description}",
-                "required": ["value"],
-                "properties": {
-                    "value": {
-                        "type": ["string", "number"],
-                        "title": f"{reg.name}",
-                        "description": f"{reg.description}",
-                        "format": "number",
-                        "template_value": f"{reg.get_hex_value()}",
-                    }
-                },
-            }
             bitfields = reg.get_bitfields()
+            reg_schema = [
+                {
+                    "type": ["string", "number"],
+                    "skip_in_template": len(bitfields) > 0,
+                    # "format": "number", # TODO add option to hexstring
+                    "template_value": f"{reg.get_hex_value()}",
+                },
+                {  # Obsolete type
+                    "type": "object",
+                    "required": ["value"],
+                    "skip_in_template": True,
+                    "additionalProperties": False,
+                    "properties": {
+                        "value": {
+                            "type": ["string", "number"],
+                            # "format": "number", # TODO add option to hexstring
+                            "template_value": f"{reg.get_hex_value()}",
+                        }
+                    },
+                },
+            ]
+
             if bitfields:
                 bitfields_schema = {}
                 for bitfield in bitfields:
-                    bitfield_std = {
-                        "type": "number",
-                        "title": f"{bitfield.name}",
-                        "description": f"{bitfield.description}",
-                        "template_value": bitfield.get_value(),
-                    }
                     if not bitfield.has_enums():
-                        bitfields_schema[bitfield.name] = bitfield_std
+                        bitfields_schema[bitfield.name] = {
+                            "type": ["string", "number"],
+                            "title": f"{bitfield.name}",
+                            "description": self._get_bitfield_yaml_description(bitfield),
+                            "template_value": bitfield.get_value(),
+                        }
                     else:
                         bitfields_schema[bitfield.name] = {
                             "type": ["string", "number"],
                             "title": f"{bitfield.name}",
-                            "description": f"{bitfield.description}",
+                            "description": self._get_bitfield_yaml_description(bitfield),
                             "enum_template": bitfield.get_enum_names(),
                             "minimum": 0,
                             "maximum": (1 << bitfield.width) - 1,
                             "template_value": bitfield.get_enum_value(),
                         }
-
-                properties[reg.name] = {
-                    "oneOf": [
-                        reg_schema,
-                        {
-                            "type": "object",
-                            "title": f"{reg.name}",
-                            "description": f"{reg.description}",
-                            "required": ["bitfields"],
-                            "properties": {
-                                "bitfields": {"type": "object", "properties": bitfields_schema}
-                            },
+                # Extend register schema by obsolete style
+                reg_schema.append(
+                    {
+                        "type": "object",
+                        "required": ["bitfields"],
+                        "skip_in_template": True,
+                        "additionalProperties": False,
+                        "properties": {
+                            "bitfields": {"type": "object", "properties": bitfields_schema}
                         },
-                    ]
-                }
-            else:
-                properties[reg.name] = reg_schema
+                    }
+                )
+                # Extend by new style of bitfields
+                reg_schema.append(
+                    {
+                        "type": "object",
+                        "skip_in_template": False,
+                        "required": [],
+                        "additionalProperties": False,
+                        "properties": bitfields_schema,
+                    },
+                )
+
+            properties[reg.name] = {
+                "title": f"{reg.name}",
+                "description": f"{reg.description}",
+                "oneOf": reg_schema,
+            }
 
         return {"type": "object", "title": self.dev_name, "properties": properties}
-
-    def generate_html(
-        self,
-        heading1: str,
-        heading2: str,
-        regs_exclude: Optional[List[str]] = None,
-        fields_exclude: Optional[List[str]] = None,
-    ) -> str:
-        """Generate describing HTML file with registers.
-
-        :param heading1: The main title in HTML.
-        :param heading2: The sub-title in HTML.
-        :param regs_exclude: The exclude registers list.
-        :param fields_exclude: The exclude bitfield list.
-        :return: The content of HTML file.
-        """
-        data: HTMLData = []
-        for reg in self.get_registers(regs_exclude):
-            data.append(reg.get_html_data_element(fields_exclude))
-
-        jinja_env = Environment(loader=FileSystemLoader(utils.REGS_DATA_FOLDER), autoescape=True)
-        template = jinja_env.get_template("regs_desc_template.html")
-        return template.render(heading1=heading1, heading2=heading2, data=data)
 
     # pylint: disable=no-self-use   #It's better to have this function visually close to callies
     def _filter_by_names(self, items: List[ET.Element], names: List[str]) -> List[ET.Element]:
@@ -1243,191 +1233,91 @@ class Registers:
             else:
                 self.add_register(RegsRegister.from_xml_element(xml_reg))
 
-    def load_yml_config(
-        self,
-        yml_data: Any,
-        exclude_regs: Optional[List[str]] = None,
-        exclude_fields: Optional[Dict[str, Dict[str, str]]] = None,
-    ) -> None:
+    def load_yml_config(self, yml_data: Dict[str, Any]) -> None:
         """The function loads the configuration from YML file.
 
         :param yml_data: The YAML commented data with register values.
-        :param exclude_regs: List of excluded registers
-        :param exclude_fields: Dictionary with lists of excluded bitfields
         """
         for reg_name in yml_data.keys():
-            if exclude_regs and reg_name in exclude_regs:
-                continue
-            reg_dict = yml_data[reg_name]
+            reg_value = yml_data[reg_name]
             register = self.find_reg(reg_name, include_group_regs=True)
-            if "value" in reg_dict.keys():
-                raw_val = reg_dict["value"]
+            if isinstance(reg_value, dict):
+                if "value" in reg_value.keys():
+                    raw_val = reg_value["value"]
+                    val = (
+                        int(raw_val, 16)
+                        if register.config_as_hexstring and isinstance(raw_val, str)
+                        else value_to_int(raw_val)
+                    )
+                    register.set_value(val, False)
+                else:
+                    bitfields = (
+                        reg_value["bitfields"] if "bitfields" in reg_value.keys() else reg_value
+                    )
+                    for bitfield_name in bitfields:
+                        bitfield_val = bitfields[bitfield_name]
+                        try:
+                            bitfield = register.find_bitfield(bitfield_name)
+                        except SPSDKRegsErrorBitfieldNotFound:
+                            logger.error(
+                                f"The {bitfield_name} is not found in register {register.name}."
+                            )
+                            continue
+                        try:
+                            bitfield.set_enum_value(bitfield_val, True)
+                        except SPSDKValueError as e:
+                            raise SPSDKError(
+                                f"Bitfield value: {hex(bitfield_val)} of {bitfield.name} is out of range."
+                                + f"\nBitfield width is {bitfield.width} bits"
+                            ) from e
+                        except SPSDKError:
+                            # New versions of register data do not contain register and bitfield value in enum
+                            old_bitfield = bitfield_val
+                            bitfield_val = bitfield_val.replace(bitfield.name + "_", "").replace(
+                                register.name + "_", ""
+                            )
+                            # Some bitfield were renamed from ENABLE to ALLOW
+                            bitfield_val = "ALLOW" if bitfield_val == "ENABLE" else bitfield_val
+                            logger.warning(
+                                f"Bitfield {old_bitfield} not found, trying backward"
+                                " compatibility mode with {bitfield_val}"
+                            )
+                            bitfield.set_enum_value(bitfield_val, True)
+
+                    # Run the processing of loaded register value
+                    register.set_value(register.get_value(True), False)
+            elif isinstance(reg_value, (int, str)):
                 val = (
-                    int(raw_val, 16)
-                    if register.config_as_hexstring and isinstance(raw_val, str)
-                    else value_to_int(raw_val)
+                    int(reg_value, 16)
+                    if register.config_as_hexstring and isinstance(reg_value, str)
+                    else value_to_int(reg_value)
                 )
                 register.set_value(val, False)
-            elif "bitfields" in reg_dict.keys():
-                for bitfield_name in reg_dict["bitfields"]:
-                    bitfield_val = reg_dict["bitfields"][bitfield_name]
-                    try:
-                        bitfield = register.find_bitfield(bitfield_name)
-                    except SPSDKRegsErrorBitfieldNotFound:
-                        logger.error(
-                            f"The {bitfield_name} is not found in register {register.name}."
-                        )
-                        continue
-                    if (
-                        exclude_fields
-                        and reg_name in exclude_fields.keys()
-                        and bitfield_name in exclude_fields[reg_name]
-                    ):
-                        continue
 
-                    try:
-                        bitfield.set_enum_value(bitfield_val, True)
-                    except SPSDKValueError as e:
-                        raise SPSDKError(
-                            f"Bitfield value: {hex(bitfield_val)} of {bitfield.name} is out of range."
-                            + f"\nBitfield width is {bitfield.width} bits"
-                        ) from e
-                    except SPSDKError:
-                        # New versions of register data do not contain register and bitfield value in enum
-                        old_bitfield = bitfield_val
-                        bitfield_val = bitfield_val.replace(bitfield.name + "_", "").replace(
-                            register.name + "_", ""
-                        )
-                        # Some bitfield were renamed from ENABLE to ALLOW
-                        bitfield_val = "ALLOW" if bitfield_val == "ENABLE" else bitfield_val
-                        logger.warning(
-                            f"Bitfield {old_bitfield} not found, trying backward compatibility mode with {bitfield_val}"
-                        )
-                        bitfield.set_enum_value(bitfield_val, True)
             else:
                 logger.error(f"There are no data for {reg_name} register.")
 
             logger.debug(f"The register {reg_name} has been loaded from configuration.")
 
-    def _get_bitfield_yaml_description(self, bitfield: RegsBitField, indent: int) -> str:
-        """Create the valuable comment for bitfield.
+    def get_config(self, diff: bool = False) -> Dict[str, Any]:
+        """Get the whole configuration in dictionary.
 
-        :param bitfield: Bitfield used to generate description.
-        :param indent: Indent for multiline comment.
-        :return: Bitfield YAML description.
-        """
-
-        def new_line(comment: str) -> str:
-            return f"\n{' '*indent}# {comment}"
-
-        description = f"Offset: {bitfield.offset}b, Width: {bitfield.config_width}b"
-        if bitfield.description not in ("", "."):
-            description += ", Description: " + bitfield.description.replace(
-                "&#10;", f"\n{' '*indent}# "
-            )
-        if bitfield.config_processor.description:
-            description += ". NOTE: " + bitfield.config_processor.description
-        if bitfield.has_enums():
-            for enum in bitfield.get_enums():
-                descr = enum.description if enum.description != "." else enum.name
-                enum_description = descr.replace("&#10;", f"\n{' '*indent}# ")
-                description += new_line(
-                    f"- {enum.name}, ({enum.get_value_int()}): {enum_description}"
-                )
-        return description
-
-    def create_yml_config_white_list(
-        self, white_list: Optional[Dict[str, Any]] = None, diff: bool = False, indent: int = 0
-    ) -> Any:
-        """The function creates the configuration YML file.
-
-        :param white_list: Dictionary with lists of registers and its bitfields
         :param diff: Get only configuration with difference value to reset state.
-        :param indent: Indent in space to generate YML.
-        :return: YAML commented map of registers value.
+        :return: Dictionary of registers values.
         """
-        data = CM()
-        index = 0
+        ret: Dict[str, Any] = {}
         for reg in self.get_registers():
-            if white_list and reg.name not in white_list.keys():
+            if diff and reg.get_value(raw=True) == reg.get_reset_value():
                 continue
-            reg_yml = CM()
-            if diff and reg.get_value(raw=False) == reg.get_reset_value():
-                continue
-            descr = reg.description if reg.description != "." else reg.name
-            descr = descr.replace("&#10;", "\n# ")
-            data.insert(
-                index,
-                reg.name,
-                reg_yml,
-                comment=descr,
-            )
-            index += 1
             bitfields = reg.get_bitfields()
-            if len(bitfields) > 0 and white_list and white_list[reg.name]:
-                btf_yml = CM()
-                for i, bitfield in enumerate(bitfields):
+            if bitfields:
+                btf = {}
+                for bitfield in bitfields:
                     if diff and bitfield.get_value() == bitfield.get_reset_value():
                         continue
-                    if (
-                        white_list
-                        and isinstance(white_list[reg.name], list)
-                        and bitfield.name not in white_list[reg.name]
-                    ):
-                        continue
-                    btf_yml.insert(
-                        pos=i,
-                        key=bitfield.name,
-                        value=bitfield.get_enum_value(),
-                        comment=self._get_bitfield_yaml_description(
-                            bitfield, indent + SPSDK_YML_INDENT + SPSDK_YML_INDENT
-                        ),
-                    )
-                reg_yml.insert(1, "bitfields", btf_yml, comment="The register bitfields")
+                    btf[bitfield.name] = bitfield.get_enum_value()
+                ret[reg.name] = btf
             else:
-                reg_yml.insert(
-                    1,
-                    "value",
-                    reg.get_hex_value(),
-                    comment=f"The value width: {reg.width}b",
-                )
+                ret[reg.name] = reg.get_hex_value()
 
-        return data
-
-    # pylint: disable=(useless-param-doc, useless-type-doc)
-    def create_yml_config(
-        self,
-        exclude_regs: Optional[List[str]] = None,
-        exclude_fields: Optional[Dict[str, Dict[str, str]]] = None,
-        ignored_fields: Optional[List[str]] = None,
-        diff: bool = False,
-        indent: int = 0,
-    ) -> Any:
-        """The function creates the configuration YML file.
-
-        :param exclude_regs: List of excluded registers
-        :param exclude_fields: Dictionary with lists of excluded bitfields per register
-        :param ignored_fields: List of ignored names in fields.
-        :param diff: Get only configuration with difference value to reset state.
-        :param indent: Indent in space to generate YML.
-        :return: YAML commented map of registers value.
-        """
-        white_list = {}
-        for reg in self._registers:
-            if exclude_regs and reg.name.startswith(tuple(exclude_regs)):
-                continue
-            value = []
-            for bitfield in reg.get_bitfields():
-                if ignored_fields and bitfield.name.startswith(tuple(ignored_fields)):
-                    continue
-                if (
-                    exclude_fields
-                    and reg.name in exclude_fields.keys()
-                    and exclude_fields[reg.name]
-                ):
-                    if bitfield.name.startswith(tuple(exclude_fields[reg.name])):
-                        continue
-                value.append(bitfield.name)
-            white_list[reg.name] = value if len(value) > 0 else None
-
-        return self.create_yml_config_white_list(white_list if white_list else None, diff, indent)
+        return ret

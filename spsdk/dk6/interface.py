@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """DK6 UART communication interface."""
@@ -12,6 +12,7 @@ from typing import Any, Union
 from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk.exceptions import SPSDKError
+from spsdk.utils.misc import Endianness
 
 from .commands import CmdPacket, CommandTag, parse_cmd_response
 from .serial_device import SerialDevice
@@ -36,8 +37,8 @@ def to_int(data: bytes, little_endian: bool = False) -> int:
     :param little_endian: indicate byte ordering in data, defaults to True
     :return: integer
     """
-    byte_order = "little" if little_endian else "big"
-    return int.from_bytes(data, byteorder=byte_order)  # type: ignore[arg-type]
+    byte_order = Endianness.LITTLE if little_endian else Endianness.BIG
+    return int.from_bytes(data, byteorder=byte_order.value)
 
 
 class Uart:
@@ -127,7 +128,7 @@ class Uart:
         if isinstance(packet, CmdPacket):
             packet = packet.to_bytes()
 
-        frame = self.create_frame(packet, frame_type)
+        frame = self.create_frame(packet, frame_type.tag)
         # logger.debug(f"Packet {packet}, frame type; {frame_type}")
         # logger.debug(f"->WRITE: frame: {frame}")
         self._send_frame(frame)
@@ -187,6 +188,7 @@ class Uart:
         :param frame_type: frame type
         :return: frame
         """
+        frame_type = frame_type if isinstance(frame_type, int) else frame_type.tag
         crc = Uart.calc_frame_crc(data, frame_type)
         if data:
             # print(f"Data length {len(data) + Uart.HEADER_SIZE}")
@@ -217,6 +219,7 @@ class Uart:
         :param frame_type: frame type
         :return: calculated CRC
         """
+        frame_type = frame_type if isinstance(frame_type, int) else frame_type.tag
         if data:
             crc_data = struct.pack(
                 f">BHB{len(data)}B",

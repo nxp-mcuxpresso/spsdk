@@ -1,132 +1,118 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module to handle registers configuration."""
 
-import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.database import Database
-from spsdk.utils.misc import value_to_int
+from spsdk.utils.database import get_db
 
 
-class RegConfig(Database):
+class RegConfig:
     """Class that helps manage the registers configuration."""
 
-    def get_address(self, device: str, alt_read_address: bool = False) -> int:
+    def __init__(
+        self,
+        family: str,
+        feature: str,
+        revision: str = "latest",
+        db_path: Optional[List[str]] = None,
+    ) -> None:
+        """Initialize the class that handles information regarding register settings.
+
+        :param family: Family name
+        :param feature: Feature name
+        :param revision: Revision of family
+        :param db_path: Optional database path list of nested information
+        """
+        self.family = family
+        self.feature = feature
+        self.db = get_db(device=family, revision=revision)
+        self.revision = self.db.name
+        self.db_path = db_path
+
+    def _get_path(self, key: str) -> Union[str, List[str]]:
+        """Get the key path in revision.
+
+        :param key: The requested key.
+        :return: Key or key path to item.
+        """
+        if self.db_path:
+            return self.db_path + [key]
+
+        return key
+
+    def get_address(self, alt_read_address: bool = False) -> int:
         """Get the area address in chip memory.
 
-        :param device: The device name.
         :param alt_read_address: The flag is used if an alternate read address applies.
         :return: Base address of registers.
         """
-        address = self.devices.get_by_name(device).attributes["address"]
+        address = self.db.get_int(self.feature, self._get_path("address"))
         if alt_read_address:
-            address = self.devices.get_by_name(device).attributes.get("read_address", address)
-        return value_to_int(address)
+            return self.db.get_int(self.feature, self._get_path("read_address"), address)
+        return address
 
-    def get_data_file(self, device: str, revision: str) -> str:
+    def get_data_file(self) -> str:
         """Return the full path to data file (xml).
 
-        :param device: The device name.
-        :param revision: The chip revision.
         :raises SPSDKValueError: When datafile is not defined in the database
         :return: The path to data file.
         """
-        file_name = self.devices.get_by_name(device).revisions.get(revision).data_file
-        if not file_name:
-            raise SPSDKValueError(
-                f"Datafile is not defined in database: {self.path} for device {device} and revision {revision}"
-            )
-        dir_path = os.path.dirname(os.path.abspath(self.path))
-        return os.path.join(dir_path, file_name)
+        return self.db.get_file_path(self.feature, self._get_path("data_file"))
 
-    def get_antipole_regs(self, device: Optional[str] = None) -> Dict[str, str]:
+    def get_antipole_regs(self) -> Dict[str, str]:
         """Return the list of inverted registers.
 
-        :param device: The device name.
         :return: The dictionary of antipole registers.
         """
-        val = self.get_value("inverted_regs", device, default={})
-        assert isinstance(val, dict)
-        return dict(val)
+        return self.db.get_dict(self.feature, self._get_path("inverted_regs"), {})
 
-    def get_computed_fields(self, device: Optional[str] = None) -> Dict[str, Dict[str, str]]:
+    def get_computed_fields(self) -> Dict[str, Dict[str, str]]:
         """Return the list of computed fields (not used in config YML files).
 
-        :param device: The device name, if not specified, the general value is used.
         :return: The dictionary of computed fields.
         """
-        val = self.get_value("computed_fields", device, default={})
-        assert isinstance(val, dict)
-        return dict(val)
+        return self.db.get_dict(self.feature, self._get_path("computed_fields"), {})
 
-    def get_computed_registers(self, device: Optional[str] = None) -> Dict[str, Any]:
+    def get_computed_registers(self) -> Dict[str, Any]:
         """Return the dictionary of computed registers.
 
-        :param device: The device name, if not specified, the general value is used.
         :return: The dictionary of computed registers.
         """
-        val = self.get_value("computed_registers", device, default={})
-        assert isinstance(val, dict)
-        return val
+        return self.db.get_dict(self.feature, self._get_path("computed_registers"), {})
 
-    def get_grouped_registers(self, device: Optional[str] = None) -> List[dict]:
+    def get_grouped_registers(self) -> List[dict]:
         """Return the list of grouped registers description.
 
-        :param device: The device name, if not specified, the general value is used.
         :return: The list of grouped registers descriptions.
         """
-        val = self.get_value("grouped_registers", device, default=[])
-        assert isinstance(val, list)
-        return list(val)
+        return self.db.get_list(self.feature, self._get_path("grouped_registers"), [])
 
-    def get_ignored_fields(self, device: Optional[str] = None) -> List[str]:
-        """Return the list of ignored fields.
-
-        :param device: The device name, if not specified, the general value is used.
-        :return: The list of ignored fields.
-        """
-        val = self.get_value("ignored_fields", device, default=[])
-        assert isinstance(val, list)
-        return val
-
-    def get_seal_start_address(self, device: Optional[str] = None) -> Optional[str]:
+    def get_seal_start_address(self) -> Optional[str]:
         """Return the seal start address.
 
-        :param device: The device name, if not specified, the general value is used.
         :return: The seal start register name.
         :raises SPSDKError: When seal start address has invalid name
         """
-        val = self.get_value("seal_start", device)
-        if not (val is None or isinstance(val, str)):
-            raise SPSDKError("Invalid seal start address name")
-        return val
+        return self.db.get_str(self.feature, self._get_path("seal_start"))
 
-    def get_seal_count(self, device: Optional[str] = None) -> Optional[int]:
+    def get_seal_count(self) -> Optional[int]:
         """Return the seal count.
 
-        :param device: The device name, if not specified, the general value is used.
         :return: The seal count.
         :raises SPSDKError: When there is invalid seal count
         """
-        val = self.get_value("seal_count", device)
-        if not (val is None or isinstance(val, int)):
-            raise SPSDKError("Invalid seal count")
-        return val
+        return self.db.get_int(self.feature, self._get_path("seal_count"))
 
-    def get_value(
-        self, key: str, device: Optional[str] = None, default: Optional[Any] = None
-    ) -> Any:
+    def get_value(self, key: str, default: Optional[Any] = None) -> Any:
         """Return any parameter by key.
 
         :param key: The Key of the parameter to be returned.
-        :param device: The device name.
         :param default: The default Value in case that is not specified in config file.
         :return: The Value of parameter by handled Key.
         """
-        return self.get_device_value(key=key, device=device, default=default)
+        return self.db.get_value(self.feature, self._get_path(key), default)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,23 +10,30 @@
 
 # Used security modules
 from datetime import datetime
+from typing import Optional
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
-from spsdk.crypto.keys import PrivateKey, PrivateKeyEcc, PrivateKeyRsa
+from spsdk.crypto.keys import ECDSASignature, PrivateKey, PrivateKeyEcc, PrivateKeyRsa
+from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.crypto.types import SPSDKEncoding
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKTypeError, SPSDKValueError
 
 
 def cms_sign(
-    zulu: datetime, data: bytes, certificate: Certificate, signing_key: PrivateKey
+    zulu: datetime,
+    data: bytes,
+    certificate: Certificate,
+    signing_key: Optional[PrivateKey],
+    signature_provider: Optional[SignatureProvider],
 ) -> bytes:
     """Sign provided data and return CMS signature.
 
     :param zulu: current UTC time+date
     :param data: to be signed
     :param certificate: Certificate with issuer information
-    :param signing_key: Signing key
+    :param signing_key: Signing key, is mutually exclusive with signature_provider parameter
+    :param signature_provider: Signature provider, is mutually exclusive with signing_key parameter
     :return: CMS signature (binary)
     :raises SPSDKError: If certificate is not present
     :raises SPSDKError: If private key is not present
@@ -36,11 +43,13 @@ def cms_sign(
     from asn1crypto import cms, util, x509
 
     if certificate is None:
-        raise SPSDKError("Certificate is not present")
-    if signing_key is None:
-        raise SPSDKError("Private key is not present")
-    if not isinstance(signing_key, (PrivateKeyEcc, PrivateKeyRsa)):
-        raise SPSDKError(f"Unsupported private key type {type(signing_key)}.")
+        raise SPSDKValueError("Certificate is not present")
+    if not (signing_key or signature_provider):
+        raise SPSDKValueError("Private key or signature provider is not present")
+    if signing_key and signature_provider:
+        raise SPSDKValueError("Only one of private key and signature provider must be specified")
+    if signing_key and not isinstance(signing_key, (PrivateKeyEcc, PrivateKeyRsa)):
+        raise SPSDKTypeError(f"Unsupported private key type {type(signing_key)}.")
 
     # signed data (main section)
     signed_data = cms.SignedData()
@@ -58,7 +67,8 @@ def cms_sign(
     )
     signer_info["signature_algorithm"] = (
         util.OrderedDict([("algorithm", "rsassa_pkcs1v15"), ("parameters", b"")])
-        if isinstance(signing_key, PrivateKeyRsa)
+        if (signing_key and isinstance(signing_key, PrivateKeyRsa))
+        or (signature_provider and signature_provider.signature_length >= 256)
         else util.OrderedDict([("algorithm", "sha256_ecdsa")])
     )
     # signed identifier: issuer amd serial number
@@ -108,11 +118,7 @@ def cms_sign(
 
     # create signature
     data_to_sign = signed_attrs.dump()
-    signature = (
-        signing_key.sign(data_to_sign)
-        if isinstance(signing_key, PrivateKeyRsa)
-        else signing_key.sign(data_to_sign, algorithm=EnumHashAlgorithm.SHA256, der_format=True)
-    )
+    signature = sign_data(data_to_sign, signing_key, signature_provider)
 
     signer_info["signature"] = signature
     # Adding SignerInfo object to SignedData object
@@ -124,3 +130,32 @@ def cms_sign(
     content_info["content"] = signed_data
 
     return content_info.dump()
+
+
+def sign_data(
+    data_to_sign: bytes,
+    signing_key: Optional[PrivateKey],
+    signature_provider: Optional[SignatureProvider],
+) -> bytes:
+    """Sign the data.
+
+    :param data_to_sign: Data to be signed
+    :param signing_key: Signing key, is mutually exclusive with signature_provider parameter
+    :param signature_provider: Signature provider, is mutually exclusive with signing_key parameter
+    """
+    assert signing_key or signature_provider
+    if signing_key and signature_provider:
+        raise SPSDKValueError("Only one of private key and signature provider must be specified")
+    if signing_key:
+        return (
+            signing_key.sign(data_to_sign, algorithm=EnumHashAlgorithm.SHA256, der_format=True)
+            if isinstance(signing_key, PrivateKeyEcc)
+            else signing_key.sign(data_to_sign)
+        )
+    assert signature_provider
+    signature = signature_provider.get_signature(data_to_sign)
+    # convert to DER format
+    if signature_provider.signature_length < 256:
+        ecdsa_signature = ECDSASignature.parse(signature)
+        signature = ecdsa_signature.export(encoding=SPSDKEncoding.DER)
+    return signature

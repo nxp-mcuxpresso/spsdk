@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,6 @@ import pytest
 
 from spsdk.exceptions import SPSDKError
 from spsdk.image.trustzone import TrustZone, TrustZoneType
-from spsdk.utils.database import Database
 from spsdk.utils.misc import load_binary, load_configuration
 
 
@@ -21,16 +20,9 @@ def sample_tz_data(data_dir):
     return load_configuration(preset_file)["trustZonePreset"]
 
 
-def test_integrity():
-    database = Database(TrustZone.CONFIG_FILE)
-    for device in database.devices:
-        for revision in device.revisions:
-            assert os.path.isfile(os.path.join(TrustZone.PRESET_DIR, revision.data_file))
-
-
 def test_tz_types(sample_tz_data):
     # TZ is enabled by default
-    tz = TrustZone()
+    tz = TrustZone(family="lpc55s6x")
     assert tz.type == TrustZoneType.ENABLED
     tz = TrustZone.enabled()
     assert tz.type == TrustZoneType.ENABLED
@@ -67,7 +59,7 @@ def test_errors(sample_tz_data):
     with pytest.raises(SPSDKError):
         TrustZone(family="lpc55s6x", customizations={"fake": "this is fake"})
     # throw error when TZ  type is custom and family is not set
-    with pytest.raises(SPSDKError, match="Need to provide 'family' parameter"):
+    with pytest.raises(SPSDKError, match="The device with name None is not in the database."):
         TrustZone(tz_type=TrustZoneType.CUSTOM, family=None)
 
 

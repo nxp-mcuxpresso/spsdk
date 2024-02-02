@@ -1,0 +1,277 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+  b0: {}
+latest: b0
+
+# General MCU information
+info:
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500
+  memory_map:
+    # Memory map basic info
+    flexspi0:
+      base_addr: 0x08000000
+      size: 0x08000000
+      external: true
+    flexspi1:
+      base_addr: 0x28000000
+      size: 0x08000000
+      external: true
+    sram:
+      base_addr: 0x0000_0000
+      size: 0x0050_0000
+      external: false
+
+  # isp:
+  #   mboot_interfaces: [usb, uart, spi, i2c]
+  #   usb_rom:
+  #     vid: 0x1FC9
+  #     pid: 0x0023
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x0010_C000
+    size: 0x1000
+  # ======== Certificate block section ========
+  cert_block:
+    rot_type: "cert_block_1"
+
+  # ======== DAT section ========
+  dat:
+    socc: 0 # SOCC identification
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain_ram:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZone
+      signed_ram:
+        image_type: SIGNED_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinRelocTable
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinCertBlockV1
+          - Mbi_MixinHmacMandatory
+          - Mbi_MixinKeyStore
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZoneCertBlock
+          - Mbi_ExportMixinRsaSign
+          - Mbi_ExportMixinHmacKeyStoreFinalize
+      crc_ram:
+        image_type: CRC_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinRelocTable
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+      encrypted_signed_ram:
+        image_type: ENCRYPTED_RAM_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinRelocTable
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinCertBlockV1
+          - Mbi_MixinHwKey
+          - Mbi_MixinKeyStore
+          - Mbi_MixinHmacMandatory
+          - Mbi_MixinCtrInitVector
+          - Mbi_ExportMixinAppTrustZoneCertBlockEncrypt
+          - Mbi_ExportMixinEncrypt
+          - Mbi_ExportMixinRsaSign
+          - Mbi_ExportMixinHmacKeyStoreFinalize
+      plain_xip:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinTrustZone
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZone
+      signed_xip:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinTrustZone
+          - Mbi_MixinCertBlockV1
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZoneCertBlock
+          - Mbi_ExportMixinRsaSign
+      crc_xip:
+        image_type: CRC_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinLoadAddress
+          - Mbi_MixinTrustZone
+          - Mbi_MixinHwKey
+          - Mbi_ExportMixinAppTrustZone
+          - Mbi_ExportMixinCrcSign
+    images:
+      xip:
+        plain: plain_xip
+        crc: crc_xip
+        signed: signed_xip
+      load_to_ram:
+        plain: plain_ram
+        crc: crc_ram
+        signed: signed_ram
+        encrypted: encrypted_signed_ram
+
+  # ======== FCB section ========
+  fcb:
+    mem_types:
+      flexspi_nor: fcb_flexspi_nor.xml
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      flexspi_nor:
+        segments:
+          keyblob: 0x0000
+          fcb: 0x0400
+          image_version: 0x0600
+          keystore: 0x0800
+          mbi: 0x1000
+        remap_align: 0x40000 # 256 KB
+
+  # ======== Secure binary v2.1 section ========
+  sb21:
+    keyblobs: true
+    supported_commands:
+      [
+        erase,
+        load,
+        enable,
+        keywrap,
+        encrypt,
+        fill,
+        jump,
+        version_check,
+        keystore_to_nv,
+        keystore_from_nv,
+        programFuses,
+      ]
+
+  # ======== Shadow registers section ========
+  shadow_regs:
+    data_file: shadow_regs.xml
+    address: 0x4013_0000
+    inverted_regs:
+      DCFG_CC_SOCU: DCFG_CC_SOCU_AP
+    computed_fields:
+      DCFG_CC_SOCU:
+        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
+        CRC8: comalg_dcfg_cc_socu_crc8
+      DCFG_CC_SOCU_NS:
+        CRC8: comalg_dcfg_cc_socu_crc8
+      "SEC_BOOT_CFG[5]":
+        RESERVED: comalg_do_nothing
+    grouped_registers:
+      - name: OTFAD_KEK_SEED
+        width: 128
+        reversed: True
+        config_as_hexstring: True
+        description:
+          "When OTP key store is used (USE_PUF = 0), this 128-bit user
+          programmed value is used to derive OTFAD_KEK.\n\nOTFAD_KEK[127:0] =
+          AES_ENCRYPT (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0])"
+      - name: OTP_MASTER_KEY
+        width: 256
+        config_as_hexstring: True
+        description: "Master Key used to derive different usage keys (HMAC_KEY,
+          ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). \n- ENC_BOOT_HMAC_KEY[127:0] =
+          AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)\n-
+          ENC_BOOT_AES_KEY[256:0] = AES_ENCRYPT (OTP_MASTER_KEK,
+          0x00000000000000000000000000000001) ||  AES_ENCRYPT (OTP_MASTER_KEK,
+          0x00000000000000000000000000000002)\n- SB_KEK[256:0] = AES_ENCRYPT
+          (OTP_MASTER_KEK, 0x00000000000000000000000000000003) ||  AES_ENCRYPT
+          (OTP_MASTER_KEK, 0x00000000000000000000000000000004) OR if
+          SBKEK_SEED != 0 then SB_KEK[255:0] = AES_ENCRYPT (OTP_MASTER_KEK,
+          SBKEK_SEED[255:0])\n- OTFAD_KEK[127:0] = AES_ENCRYPT
+          (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0])"
+      - name: RKTH
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description:
+          "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||
+          exponent).\nFor i in 0..3:\n  Let M[i] = BE(Modulus i)\n  Let
+          E[i] = BE(Exponent i)\n  Let RKH[i] = SHA256( M[i] || E[i] )\n  Let
+          RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )\nNote:
+          Documentation update needed when using blhost due to endianness issue."
+
+  # ======== Trust Zone section ========
+  tz:
+    data_file: tz.yaml
+
+  # ======== OTFAD section ========
+  otfad:
+    reg_fuses: otfad_fuses.xml
+    key_blob_rec_size: 64
+    key_blob_max_cnt: 4
+    key_blob_min_cnt: 4
+    byte_swap: false
+    keyblob_byte_swap_cnt: 0
+    sb_21_supported: True
+    has_kek_fuses: False
+    peripheral_list: [""]
+    additional_template: []
+    additional_template_text: ""
+    supports_key_scrambling: False
+    otfad_key_fuse: OTFAD_KEY
+    otfad_cfg_fuse: OTFAD_CFG
+    otfad_enable_bitfield: OTFAD_ENABLE
+    otfad_scramble_enable_bitfield: OTFAD_SCRAMBLE_ENABLE
+    otfad_scramble_align_bitfield: OTFAD_SCRAMBLE_ALIGN
+    otfad_scramble_key: OTFAD{index}_KEY_SCRAMBLE
+    otfad_scramble_align_fuse_standalone: False
+    grouped_registers:
+      - name: OTP_MASTER_KEY
+        width: 256
+        config_as_hexstring: true
+        reverse_subregs_order: True
+        description: OTP MASTER KEY
+      - name: OTFAD_KEK_SEED
+        width: 128
+        config_as_hexstring: true
+        description: OTFAD KEK SEED
+
+  # ======== Memory configuration ========
+  memcfg:
+    peripherals:
+      flexspi_nor:
+        # description_file: ../../common/memcfg/opt_word_flexspi_nor_legacy.xml
+        instances: [0, 1]
+      flexspi_nand:
+        instances: [0, 1]
+      sd:
+        instances: [0, 1]
+      mmc:
+        instances: [0, 1]
+      spi_nor:
+        description_file: ../../common/memcfg/opt_word_spi_nor_legacy.xml
+        instances: [0, 1, 2, 3, 4, 5]

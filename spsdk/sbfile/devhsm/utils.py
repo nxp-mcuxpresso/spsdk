@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Utils for DevHSM."""
@@ -10,10 +10,10 @@ from inspect import isclass
 from typing import Type, Union
 
 from spsdk.exceptions import SPSDKError
-from spsdk.sbfile.devhsm.devhsm import NXPDEVHSM_DATABASE_FILE, DevHsm
+from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sbx.devhsm import DevHsmSBx
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db
 
 
 def get_devhsm_class(family: str) -> Type[Union["DevHsmSB31", "DevHsmSBx"]]:
@@ -23,7 +23,7 @@ def get_devhsm_class(family: str) -> Type[Union["DevHsmSB31", "DevHsmSBx"]]:
     :raises SPSDKError: If the class is not found
     :return: name of the class that supports given family
     """
-    devhsm_cls = Database(NXPDEVHSM_DATABASE_FILE).get_device_value("devhsm_class", family)
+    devhsm_cls = get_db(family, "latest").get_str(DatabaseManager.DEVHSM, "devhsm_class")
     try:
         obj = globals()[devhsm_cls]
     except KeyError as exc:

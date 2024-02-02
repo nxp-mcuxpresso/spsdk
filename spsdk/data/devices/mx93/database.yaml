@@ -1,0 +1,67 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+  a1: {}
+latest: a1
+
+# General MCU information
+info:
+  use_in_doc: False # Include this MCU in generated documentation
+  purpose: Application Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com
+  memory_map:
+    {} # Memory map basic info
+    # internal_flash:
+    #   base_addr: 0x0
+    #   size: 0x80000
+    #   external: false
+    # sram:
+    #   base_addr: 0x20000000
+    #   size: 0x10000
+    #   external: false
+    # sram4:
+    #   base_addr: 0x20040000
+    #   size: 0x4000
+    #   external: false
+    # sramx:
+    #   base_addr: 0x4000000
+    #   size: 0x8000
+    #   external: false
+  # isp:
+  #   rom_protocol: sdps
+  #   mboot_interfaces: [usb]
+  #   usb_rom:
+  #     vid: 0x1FC9
+  #     pid: 0x014e
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x2048_0000 # OCRAM for uboot
+    size: 0x8000
+
+  # ======== Certificate block section ========
+  cert_block:
+    rot_type: "srk_table_ahab"
+
+  # ======== DAT section ========
+  dat:
+    socc: 0x4D58005F # SOCC identification
+    based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
+
+  # ======== AHAB section ========
+  ahab:
+    valid_offset_minimal_alignment: 0x400
+    ahab_map: [0x0000, 0x0400, 0x800]
+    containers_max_cnt: 3
+    oem_images_max_cnt: 8
+    oem_srkh_fuses_start: 0x80
+    oem_srkh_fuses_count: 8
+    oem_srkh_fuses_size: 4
+
+  # ======== EdgeLock Enclave section ========
+  ele: {}

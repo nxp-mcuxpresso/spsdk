@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -32,11 +32,10 @@ from spsdk.exceptions import (
     SPSDKValueError,
 )
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.crypto import CRYPTO_SCH_FILE
 from spsdk.utils.crypto.rkht import RKHTv1, RKHTv21
-from spsdk.utils.crypto.rot import DATABASE_FILE as ROT_DATABASE_FILE
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import (
+    Endianness,
     align,
     align_block,
     change_endianness,
@@ -47,7 +46,7 @@ from spsdk.utils.misc import (
     value_to_int,
     write_file,
 )
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,7 @@ class CertBlock(BaseClass):
 
     @staticmethod
     @abstractmethod
-    def generate_config_template() -> str:
+    def generate_config_template(family: Optional[str] = None) -> str:
         """Generate configuration for certification block."""
 
     @classmethod
@@ -100,26 +99,40 @@ class CertBlock(BaseClass):
 
     @classmethod
     def get_all_supported_families(cls) -> List[str]:
-        """Get supported families for all certification blocks."""
-        families = []
-        for cert_block_class in cls.get_cert_block_classes():
-            families.extend(cert_block_class.get_supported_families())
-        return families
+        """Get supported families for all certification blocks except for SRK."""
+        families = get_families(DatabaseManager.CERT_BLOCK)
+
+        return [
+            family
+            for family in families
+            if "srk" not in get_db(family, "latest").get_str(DatabaseManager.CERT_BLOCK, "rot_type")
+        ]
 
     @classmethod
     def get_cert_block_classes(cls) -> List[Type["CertBlock"]]:
         """Get list of all cert block classes."""
         return CertBlock.__subclasses__()
 
-    @classmethod
-    def load_rot_database(cls) -> Database:
-        """Load ROT database."""
-        return Database(ROT_DATABASE_FILE)
-
     @property
     def rkth(self) -> bytes:
         """Root Key Table Hash 32-byte hash (SHA-256) of SHA-256 hashes of up to four root public keys."""
         return bytes()
+
+    @classmethod
+    def _get_supported_families(cls, cert_block_type: str) -> List[str]:
+        """Get list of supported families.
+
+        :param cert_block_type: Type of certification block to look for
+        :return: List of devices that supports this cert block
+        """
+        families = cls.get_all_supported_families()
+
+        return [
+            family
+            for family in families
+            if get_db(family, "latest").get_str(DatabaseManager.CERT_BLOCK, "rot_type")
+            == cert_block_type
+        ]
 
     @classmethod
     def get_root_private_key_file(cls, config: Dict[str, Any]) -> Optional[str]:
@@ -333,7 +346,7 @@ class CertBlockV1(CertBlock):
         result = []
         rkht = self.rkth
         while rkht:
-            fuse = int.from_bytes(rkht[:4], byteorder="little")
+            fuse = int.from_bytes(rkht[:4], byteorder=Endianness.LITTLE.value)
             result.append(fuse)
             rkht = rkht[4:]
         return result
@@ -564,26 +577,33 @@ class CertBlockV1(CertBlock):
 
         :return: List of validation schemas.
         """
-        sch_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
+        sch_cfg = get_schema_file(DatabaseManager.CERT_BLOCK)
         return [
             sch_cfg["certificate_v1"],
             sch_cfg["certificate_root_keys"],
         ]
 
     @staticmethod
-    def generate_config_template() -> str:
+    def generate_config_template(_family: Optional[str] = None) -> str:
         """Generate configuration for certification block v1."""
         val_schemas = CertBlockV1.get_validation_schemas()
-        val_schemas.append(ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)["cert_block_output"])
-        yaml_data = CommentedConfig(
-            "Certification Block V1 template",
-            val_schemas,
-        ).export_to_yaml()
-        return yaml_data
+        val_schemas.append(
+            DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"]
+        )
+        return CommentedConfig("Certification Block V1 template", val_schemas).get_template()
 
     def create_config(self, data_path: str) -> str:
         """Create configuration of the Certification block Image."""
-        raise SPSDKNotImplementedError("Parsing of Cert Block V1 is not supported")
+        cfg = self.get_config(data_path)
+        val_schemas = CertBlockV1.get_validation_schemas()
+
+        return CommentedConfig(
+            main_title=(
+                "Certification block v1 recreated configuration from :"
+                f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
+            ),
+            schemas=val_schemas,
+        ).get_config(cfg)
 
     @classmethod
     def get_root_private_key_file(cls, config: Dict[str, Any]) -> Optional[str]:
@@ -698,12 +718,7 @@ class CertBlockV1(CertBlock):
     @classmethod
     def get_supported_families(cls) -> List[str]:
         """Get list of supported families."""
-        database = cls.load_rot_database()
-        return [
-            family
-            for family in database.devices.device_names
-            if database.get_device_value("rot_type", family) == "cert_block_1"
-        ]
+        return super()._get_supported_families("cert_block_1")
 
 
 ########################################################################################################################
@@ -943,6 +958,7 @@ class IskCertificate(BaseClass):
         isk_cert: Optional[Union[PublicKeyEcc, bytes]] = None,
         user_data: Optional[bytes] = None,
         offset_present: bool = True,
+        family: Optional[str] = None,
     ) -> None:
         """Constructor for ISK certificate.
 
@@ -957,6 +973,16 @@ class IskCertificate(BaseClass):
         self.signature_provider = signature_provider
         self.isk_cert = convert_to_ecc_key(isk_cert) if isk_cert else None
         self.user_data = user_data or bytes()
+        if family:
+            db = get_db(device=family)
+            isk_data_limit = db.get_int(DatabaseManager.CERT_BLOCK, "isk_data_limit")
+            if len(self.user_data) > isk_data_limit:
+                raise SPSDKError(
+                    f"ISK user data is too big ({len(self.user_data)} B). Max size is: {isk_data_limit} B."
+                )
+            isk_data_alignment = db.get_int(DatabaseManager.CERT_BLOCK, "isk_data_alignment")
+            if len(self.user_data) % isk_data_alignment:
+                raise SPSDKError(f"ISK user data is not aligned to {isk_data_alignment} B.")
         self.signature = bytes()
         self.coordinate_length = (
             self.signature_provider.signature_length // 2 if self.signature_provider else 0
@@ -1041,7 +1067,7 @@ class IskCertificate(BaseClass):
         else:
             data = key_record_data + pack("<2L", self.constraints, self.flags)
         data += self.isk_public_key_data + self.user_data
-        self.signature = self.signature_provider.sign(data)
+        self.signature = self.signature_provider.get_signature(data)
 
     def export(self) -> bytes:
         """Export ISK certificate as bytes array."""
@@ -1154,7 +1180,7 @@ class IskCertificateLite(BaseClass):
 
         data = pack(self.HEADER_FORMAT, self.MAGIC, self.VERSION, self.constraints)
         data += self.isk_public_key_data
-        self.signature = signature_provider.sign(data)
+        self.signature = signature_provider.get_signature(data)
 
     def export(self) -> bytes:
         """Export ISK certificate as bytes array."""
@@ -1207,6 +1233,7 @@ class CertBlockV21(CertBlock):
         signature_provider: Optional[SignatureProvider] = None,
         isk_cert: Optional[Union[PublicKeyEcc, bytes]] = None,
         user_data: Optional[bytes] = None,
+        family: Optional[str] = None,
     ) -> None:
         """The Constructor for Certificate block."""
         self.header = CertificateBlockHeader(version)
@@ -1221,6 +1248,7 @@ class CertBlockV21(CertBlock):
                 signature_provider=signature_provider,
                 isk_cert=isk_cert,
                 user_data=user_data,
+                family=family,
             )
 
     def _set_ca_flag(self, value: bool) -> None:
@@ -1308,7 +1336,7 @@ class CertBlockV21(CertBlock):
 
         :return: List of validation schemas.
         """
-        sch_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
+        sch_cfg = get_schema_file(DatabaseManager.CERT_BLOCK)
         return [sch_cfg["certificate_v21"], sch_cfg["certificate_root_keys"]]
 
     @classmethod
@@ -1333,7 +1361,10 @@ class CertBlockV21(CertBlock):
                     search_paths.append(os.path.dirname(cert_block))
                 else:
                     search_paths = [os.path.dirname(cert_block)]
-                return cls.from_config(load_configuration(cert_block, search_paths), search_paths)
+                cert_block_data = load_configuration(cert_block, search_paths)
+                # temporarily pass-down family to cert-block config data
+                cert_block_data["family"] = config["family"]
+                return cls.from_config(cert_block_data, search_paths)
 
         root_certificates = find_root_certificates(config)
         main_root_cert_id = cls.get_main_cert_index(config, search_paths=search_paths)
@@ -1372,6 +1403,7 @@ class CertBlockV21(CertBlock):
         isk_constraint = value_to_int(
             config.get("iskCertificateConstraint", config.get("signingCertificateConstraint", "0"))
         )
+        family = config.get("family")
         cert_block = cls(
             root_certs=root_certs,
             used_root_cert=main_root_cert_id,
@@ -1380,6 +1412,7 @@ class CertBlockV21(CertBlock):
             isk_cert=isk_cert,
             ca_flag=not use_isk,
             signature_provider=signature_provider,
+            family=family,
         )
         cert_block.calculate()
 
@@ -1396,15 +1429,20 @@ class CertBlockV21(CertBlock):
                 raise SPSDKError("Invalid ISK certificate.")
 
     @staticmethod
-    def generate_config_template() -> str:
+    def generate_config_template(family: Optional[str] = None) -> str:
         """Generate configuration for certification block v21."""
         val_schemas = CertBlockV21.get_validation_schemas()
-        val_schemas.append(ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)["cert_block_output"])
-        yaml_data = CommentedConfig(
-            "Certification Block V21 template",
-            val_schemas,
-        ).export_to_yaml()
-        return yaml_data
+        val_schemas.append(
+            DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"]
+        )
+
+        if family:
+            # find family
+            for schema in val_schemas:
+                if "properties" in schema and "family" in schema["properties"]:
+                    schema["properties"]["family"]["template_value"] = family
+                    break
+        return CommentedConfig("Certification Block V21 template", val_schemas).get_template()
 
     def get_config(self, output_folder: str) -> Dict[str, Any]:
         """Create configuration dictionary of the Certification block Image.
@@ -1459,25 +1497,23 @@ class CertBlockV21(CertBlock):
         cfg = self.get_config(data_path)
         val_schemas = CertBlockV21.get_validation_schemas()
 
-        yaml_data = CommentedConfig(
+        return CommentedConfig(
             main_title=(
                 "Certification block v2.1 recreated configuration from :"
                 f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}."
             ),
             schemas=val_schemas,
-            values=cfg,
-        ).export_to_yaml()
-        return yaml_data
+        ).get_config(cfg)
 
     @classmethod
     def get_supported_families(cls) -> List[str]:
         """Get list of supported families."""
-        database = cls.load_rot_database()
-        return [
-            family
-            for family in database.devices.device_names
-            if database.get_device_value("rot_type", family) == "cert_block_21"
-        ]
+        return super()._get_supported_families("cert_block_21")
+
+
+########################################################################################################################
+# Certificate Block Class for SB X
+########################################################################################################################
 
 
 ########################################################################################################################
@@ -1552,7 +1588,7 @@ class CertBlockVx(CertBlock):
 
         :return: List of validation schemas.
         """
-        sch_cfg = ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)
+        sch_cfg = get_schema_file(DatabaseManager.CERT_BLOCK)
         return [sch_cfg["certificate_vx"]]
 
     def create_config(self, data_path: str) -> str:
@@ -1608,25 +1644,18 @@ class CertBlockVx(CertBlock):
                 raise SPSDKError("Invalid ISK certificate.")
 
     @staticmethod
-    def generate_config_template() -> str:
+    def generate_config_template(_family: Optional[str] = None) -> str:
         """Generate configuration for certification block vX."""
         val_schemas = CertBlockVx.get_validation_schemas()
-        val_schemas.append(ValidationSchemas.get_schema_file(CRYPTO_SCH_FILE)["cert_block_output"])
-        yaml_data = CommentedConfig(
-            "Certification Block Vx template",
-            val_schemas,
-        ).export_to_yaml()
-        return yaml_data
+        val_schemas.append(
+            DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"]
+        )
+        return CommentedConfig("Certification Block Vx template", val_schemas).get_template()
 
     @classmethod
     def get_supported_families(cls) -> List[str]:
         """Get list of supported families."""
-        database = cls.load_rot_database()
-        return [
-            family
-            for family in database.devices.device_names
-            if database.get_device_value("rot_type", family) == "cert_block_x"
-        ]
+        return super()._get_supported_families("cert_block_x")
 
     def get_otp_script(self) -> str:
         """Return script for writing certificate hash to OTP.
@@ -1673,17 +1702,18 @@ def get_keys_or_rotkh_from_certblock_config(
 
     ROT config might be cert block config or MBI config.
     There are four cases how cert block might be configured.
-    1) MBI with certBlock property pointing to YAML file
-    2) MBI with certBlock property pointing to BIN file
-    3) YAML configuration of cert block
-    4) Binary cert block
+
+    1. MBI with certBlock property pointing to YAML file
+    2. MBI with certBlock property pointing to BIN file
+    3. YAML configuration of cert block
+    4. Binary cert block
 
     :param rot: Path to ROT configuration (MBI or cert block)
-    or path to binary cert block
+        or path to binary cert block
     :param family: MCU family
     :raises SPSDKError: In case the ROTKH or keys cannot be parsed
     :return: Tuple containing root of trust (list of paths to keys)
-    or ROTKH in case of binary cert block
+        or ROTKH in case of binary cert block
     """
     root_of_trust = None
     rotkh = None

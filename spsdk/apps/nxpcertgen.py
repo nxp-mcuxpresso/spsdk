@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,7 +13,7 @@ import sys
 import click
 from click_option_group import optgroup
 
-from spsdk import SPSDK_DATA_FOLDER
+from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
@@ -22,15 +22,18 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
-from spsdk.crypto.certificate import Certificate, generate_name
+from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.keys import PrivateKey, PublicKey, PublicKeyEcc
+from spsdk.crypto.keys import (
+    PrivateKey,
+    PublicKeyEcc,
+    SPSDKKeyPassphraseMissing,
+    prompt_for_passphrase,
+)
 from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import find_file, load_configuration, load_text, write_file
-
-NXPCERTGEN_DATA_FOLDER: str = os.path.join(SPSDK_DATA_FOLDER, "nxpcertgen")
 
 logger = logging.getLogger(__name__)
 
@@ -43,14 +46,13 @@ class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
         try:
             self.issuer_private_key = config_data["issuer_private_key"]
             self.subject_public_key = config_data["subject_public_key"]
-            self.serial_number = config_data["serial_number"]
-            self.duration = config_data["duration"]
-            self.basic_constrains_ca = config_data["extensions"]["BASIC_CONSTRAINTS"]["ca"]
-            self.basic_constrains_path_length = config_data["extensions"]["BASIC_CONSTRAINTS"][
-                "path_length"
-            ]
+            self.serial_number = config_data.get("serial_number")
+            self.duration = config_data.get("duration")
             self.issuer_name = generate_name(config_data["issuer"])
             self.subject_name = generate_name(config_data["subject"])
+            self.extensions = None
+            if "extensions" in config_data:
+                self.extensions = generate_extensions(config_data["extensions"])
         except KeyError as e:
             raise SPSDKError(f"Error found in configuration: {e} not found") from e
 
@@ -88,9 +90,16 @@ def generate(config: str, output: str, encoding: str) -> None:
     config_data = load_configuration(config)
     cert_config = CertificateParametersConfig(config_data)
     search_paths = [os.path.dirname(config)]
-
-    priv_key = PrivateKey.load(find_file(cert_config.issuer_private_key, search_paths=search_paths))
-    pub_key = PublicKey.load(find_file(cert_config.subject_public_key, search_paths=search_paths))
+    try:
+        priv_key = PrivateKey.load(
+            find_file(cert_config.issuer_private_key, search_paths=search_paths)
+        )
+    except SPSDKKeyPassphraseMissing:
+        password = prompt_for_passphrase()
+        priv_key = PrivateKey.load(
+            find_file(cert_config.issuer_private_key, search_paths=search_paths), password=password
+        )
+    pub_key = extract_public_key(cert_config.subject_public_key, search_paths=search_paths)
 
     certificate = Certificate.generate_certificate(
         subject=cert_config.subject_name,
@@ -99,8 +108,7 @@ def generate(config: str, output: str, encoding: str) -> None:
         issuer_private_key=priv_key,
         serial_number=cert_config.serial_number,
         duration=cert_config.duration,
-        if_ca=cert_config.basic_constrains_ca,
-        path_length=cert_config.basic_constrains_path_length,
+        extensions=cert_config.extensions,
     )
     logger.info("Saving the generated certificate to the specified path...")
     encoding_type = SPSDKEncoding.PEM if encoding.lower() == "pem" else SPSDKEncoding.DER
@@ -114,7 +122,7 @@ def generate(config: str, output: str, encoding: str) -> None:
 def get_template(output: str) -> None:
     """Generate the template of Certificate generation YML configuration file."""
     logger.info("Creating Certificate template...")
-    write_file(load_text(os.path.join(NXPCERTGEN_DATA_FOLDER, "certgen_config.yaml")), output)
+    write_file(load_text(os.path.join(SPSDK_DATA_FOLDER_COMMON, "certgen_config.yaml")), output)
     click.echo(f"The configuration template file has been created: {output}")
 
 
@@ -161,7 +169,7 @@ def verify(certificate: str, sign: str, puk: str) -> None:
         if not verification_key.verify_signature(
             cert.signature,
             cert.tbs_certificate_bytes,
-            EnumHashAlgorithm[cert.signature_hash_algorithm.name],
+            EnumHashAlgorithm.from_label(cert.signature_hash_algorithm.name),
         ):
             raise SPSDKAppError("Invalid signature")
         click.echo("Signature is OK")

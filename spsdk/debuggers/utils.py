@@ -1,191 +1,106 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for DebugMailbox Debug probes support."""
 
 import contextlib
 import logging
-from typing import Callable, Dict, Iterator, List, Optional, Type
+from types import ModuleType
+from typing import Callable, Dict, Iterator, Optional, Type
 
-import colorama
-import prettytable
-
-from spsdk.debuggers.debug_probe import DebugProbe, SPSDKDebugProbeError, SPSDKProbeNotFoundError
-from spsdk.debuggers.debug_probe_jlink import DebugProbePyLink
-from spsdk.debuggers.debug_probe_pemicro import DebugProbePemicro
-
-# Import all supported debug probe classes
-from spsdk.debuggers.debug_probe_pyocd import DebugProbePyOCD
+from spsdk.debuggers.debug_probe import (
+    DebugProbe,
+    DebugProbes,
+    ProbeDescription,
+    SPSDKDebugProbeError,
+    SPSDKProbeNotFoundError,
+)
 from spsdk.exceptions import SPSDKError
-
-PROBES: Dict[str, Type[DebugProbe]] = {
-    "pyocd": DebugProbePyOCD,
-    "jlink": DebugProbePyLink,
-    "pemicro": DebugProbePemicro,
-}
+from spsdk.utils.plugins import PluginsManager, PluginType
 
 logger = logging.getLogger(__name__)
 
-
-class ProbeDescription:
-    """NamedTuple for DAT record of debug probe description."""
-
-    def __init__(
-        self,
-        interface: str,
-        hardware_id: str,
-        description: str,
-        probe: Type[DebugProbe],
-    ) -> None:
-        """Initialization of Debug probe description class.
-
-        param interface: Probe Interface.
-        param hardware_id: Probe Hardware ID(Identification).
-        param description: Probe Text description.
-        param probe: Probe name of the class.
-        """
-        self.interface = interface
-        self.hardware_id = hardware_id
-        self.description = description
-        self.probe = probe
-
-    def get_probe(self, options: Optional[Dict] = None) -> DebugProbe:
-        """Get instance of probe.
-
-        :param options: The dictionary with options
-        :return: Instance of described probe.
-        """
-        return self.probe(hardware_id=self.hardware_id, options=options)
-
-    def __str__(self) -> str:
-        """Provide string representation of debug probe."""
-        return f"Debug probe: {self.interface}; {self.description}. S/N:{self.hardware_id}"
+PROBES: Dict[str, Type[DebugProbe]] = {}
 
 
-class DebugProbes(List[ProbeDescription]):
-    """Helper class for debug probe selection. This class accepts only ProbeDescription object."""
+def get_connected_probes(
+    interface: Optional[str] = None,
+    hardware_id: Optional[str] = None,
+    options: Optional[Dict] = None,
+) -> DebugProbes:
+    """Functions returns the list of all connected probes in system.
 
-    def append(self, item: ProbeDescription) -> None:
-        """Overriding build-in function by check the type.
+    The caller could restrict the scanned interfaces by specification of hardware ID.
 
-        :param item: ProbeDescription item.
-        :raises SPSDKError: Invalid input types has been used.
-        """
-        if isinstance(item, ProbeDescription):
-            super().append(item)
-        else:
-            raise SPSDKError("The list accepts only ProbeDescription object")
-
-    def insert(self, index: int, item: ProbeDescription) -> None:  # type: ignore[override]
-        """Overriding build-in function by check the type.
-
-        :param item: ProbeDescription item.
-        :param index: Index in list to insert.
-        :raises SPSDKError: Invalid input types has been used.
-        """
-        if isinstance(item, ProbeDescription):
-            super().insert(index, item)
-        else:
-            raise SPSDKError("The list accepts only ProbeDescription object")
-
-    def select_probe(
-        self,
-        silent: bool = False,
-        # pylint: disable=used-before-assignment # PyLint thinks print is a variable
-        print_func: Callable[[str], None] = print,
-        input_func: Callable[[], str] = input,
-    ) -> ProbeDescription:
-        """Perform Probe selection.
-
-        :param silent: When it True, the functions select the probe if applicable without any prints to log
-        :param print_func: Custom function to print data, defaults to print
-        :param input_func: Custom function to handle user input, defaults to input
-        :return: The record of selected DebugProbe
-        :raises SPSDKProbeNotFoundError: No probe has been founded
-        """
-        if len(self) == 0:
-            raise SPSDKProbeNotFoundError("There is no debug probe connected in system!")
-
-        if not silent or len(self) > 1:  # pragma: no cover
-            self.print(print_func=print_func)
-
-        if len(self) == 1:
-            # Automatically gets and use only one option\
-            i_selected = 0
-        else:  # pragma: no cover
-            print("Please choose the debug probe: ", end="")
-            i_selected = int(input_func())
-            if i_selected > len(self) - 1:
-                raise SPSDKProbeNotFoundError("The chosen probe index is out of range")
-
-        return self[i_selected]
-
-    def print(self, print_func: Callable[[str], None] = print) -> None:
-        """Prints the List of Probes to nice colored table."""
-        # Print all PyOCD probes and then Pemicro with local index
-        table = prettytable.PrettyTable(["#", "Interface", "Id", "Description"])
-        table.align = "l"
-        table.header = True
-        table.border = True
-        table.hrules = prettytable.HEADER
-        table.vrules = prettytable.NONE
-        i = 0
-        for probe in self:
-            table.add_row(
-                [
-                    colorama.Fore.YELLOW + str(i),
-                    colorama.Fore.WHITE + probe.interface,
-                    colorama.Fore.CYAN + probe.hardware_id,
-                    colorama.Fore.GREEN + probe.description,
-                ]
-            )
-            i += 1
-        print_func(table.get_string() + colorama.Style.RESET_ALL)
-
-
-class DebugProbeUtils:
-    """The SPSDK debug probes utilities class.
-
-    The SPSDK debug probes utilities, that helps user to find and open the real
-    hardware debug probe to establish connection with hardware.
+    :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
+    :param hardware_id: None to list all probes, otherwise the the only probe with matching
+    :param options: The dictionary with optional options
+        hardware id is listed.
+    :return: list of probe_description's
     """
+    probes = DebugProbes()
+    for key, probe in PROBES.items():
+        if (interface is None) or (interface.lower() == key):
+            try:
+                probes.extend(probe.get_connected_probes(hardware_id, options))
+            except SPSDKDebugProbeError as exc:
+                logger.warning(f"The {key} debug probe support is not ready({str(exc)}).")
 
-    @staticmethod
-    def get_connected_probes(
-        interface: Optional[str] = None,
-        hardware_id: Optional[str] = None,
-        options: Optional[Dict] = None,
-    ) -> DebugProbes:
-        """Functions returns the list of all connected probes in system.
-
-        The caller could restrict the scanned interfaces by specification of hardware ID.
-
-        :param interface: None to scan all interfaces, otherwise the selected interface is scanned only.
-        :param hardware_id: None to list all probes, otherwise the the only probe with matching
-        :param options: The dictionary with optional options
-            hardware id is listed.
-        :return: list of probe_description's
-        """
-        probes = DebugProbes()
-        for key, probe in PROBES.items():
-            if (interface is None) or (interface.lower() == key):
-                try:
-                    probes.extend(probe.get_connected_probes(hardware_id, options))
-                except SPSDKDebugProbeError as exc:
-                    logger.warning(f"The {key} debug probe support is not ready({str(exc)}).")
-
-        return probes
+    return probes
 
 
-def test_ahb_access(probe: DebugProbe, ap_mem: Optional[int] = None, invasive: bool = True) -> bool:
+def select_probe(
+    probes: DebugProbes,
+    silent: bool = False,
+    # pylint: disable=used-before-assignment # PyLint thinks print is a variable
+    print_func: Callable = print,
+    input_func: Callable[[], str] = input,
+) -> ProbeDescription:
+    """Perform Probe selection.
+
+    :param probes: The input list of probes
+    :param silent: When it True, the functions select the probe if applicable without any prints to log
+    :param print_func: Custom function to print data, defaults to print
+    :param input_func: Custom function to handle user input, defaults to input
+    :return: The record of selected DebugProbe
+    :raises SPSDKProbeNotFoundError: No probe has been founded
+    """
+    probe_len = len(probes)
+    if probe_len == 0:
+        raise SPSDKProbeNotFoundError(
+            "Debug probe with defined parameters is not connected in system!"
+        )
+
+    if not silent or probe_len > 1:  # pragma: no cover
+        print_func(str(probes))
+
+    if probe_len == 1:
+        # Automatically gets and use only one option\
+        i_selected = 0
+    else:  # pragma: no cover
+        print_func("Please choose the debug probe: ")
+        i_selected = int(input_func())
+        if i_selected > probe_len - 1:
+            raise SPSDKProbeNotFoundError("The chosen probe index is out of range")
+
+    return probes[i_selected]
+
+
+def test_ahb_access(
+    probe: DebugProbe,
+    ap_mem: Optional[int] = None,
+    invasive: bool = True,
+    test_mem_address: int = 0x2000_0000,
+) -> bool:
     """The function safely test the access of debug probe to AHB in target.
 
     :param probe: Probe object to use for test.
     :param ap_mem: Index of memory access port, defaults to 0
     :param invasive: Invasive type of test (temporary changed destination RAM value)
+    :param test_mem_address: The address in volatile memory usable to test AHB memory access.
     :return: True is access to AHB is granted, False otherwise.
     """
     ahb_enabled = False
@@ -198,14 +113,12 @@ def test_ahb_access(probe: DebugProbe, ap_mem: Optional[int] = None, invasive: b
             addr=probe.DHCSR_REG,
             data=(probe.DHCSR_DEBUGKEY | probe.DHCSR_C_HALT | probe.DHCSR_C_DEBUGEN),
         )
-        test_value = probe.mem_reg_read(probe.TEST_MEM_AP_ADDRESS)
-        logger.debug(
-            f"Test Connection: Read value at {hex(probe.TEST_MEM_AP_ADDRESS)} is {test_value:08X}"
-        )
+        test_value = probe.mem_reg_read(test_mem_address)
+        logger.debug(f"Test Connection: Read value at {hex(test_mem_address)} is {test_value:08X}")
         if invasive:
-            probe.mem_reg_write(addr=probe.TEST_MEM_AP_ADDRESS, data=test_value ^ 0xAAAAAAAA)
-            test_read = probe.mem_reg_read(probe.TEST_MEM_AP_ADDRESS)
-            probe.mem_reg_write(addr=probe.TEST_MEM_AP_ADDRESS, data=test_value)
+            probe.mem_reg_write(addr=test_mem_address, data=test_value ^ 0xAAAAAAAA)
+            test_read = probe.mem_reg_read(test_mem_address)
+            probe.mem_reg_write(addr=test_mem_address, data=test_value)
             if test_read != test_value ^ 0xAAAAAAAA:
                 raise SPSDKError("Test connection verification failed")
         ahb_enabled = True
@@ -244,10 +157,10 @@ def open_debug_probe(
     :return: Active DebugProbe object.
     :raises SPSDKError: Raised with any kind of problems with debug probe.
     """
-    debug_probes = DebugProbeUtils.get_connected_probes(
+    debug_probes = get_connected_probes(
         interface=interface, hardware_id=serial_no, options=debug_probe_params
     )
-    selected_probe = debug_probes.select_probe(print_func=print_func, input_func=input_func)
+    selected_probe = select_probe(debug_probes, print_func=print_func, input_func=input_func)
     debug_probe = selected_probe.get_probe(debug_probe_params)
     debug_probe.open()
 
@@ -257,3 +170,41 @@ def open_debug_probe(
         raise exc
     finally:
         debug_probe.close()
+
+
+def get_all_debug_probe_plugins() -> Dict[str, Type[DebugProbe]]:
+    """Get dictionary of all available debug probe types."""
+
+    def get_subclasses(
+        base_class: Type,
+    ) -> Dict[str, Type[DebugProbe]]:
+        """Recursively find all subclasses."""
+        subclasses = {}
+        for subclass in base_class.__subclasses__():
+            subclasses_dict = get_subclasses(subclass)
+            if subclasses_dict:
+                subclasses.update(subclasses_dict)
+            else:
+                # Do NOT add inner level of classes - just last one
+                subclasses[subclass.NAME] = subclass
+        return subclasses
+
+    load_debug_probe_plugins()
+    return get_subclasses(DebugProbe)
+
+
+def load_debug_probe_plugins() -> Dict[str, ModuleType]:
+    """Load all installed signature provider plugins."""
+    plugins_manager = PluginsManager()
+    plugins_manager.load_from_entrypoints(PluginType.DEBUG_PROBE.label)
+    return plugins_manager.plugins
+
+
+def load_all_probe_types() -> None:
+    """Method to load the current list of all debug probe types."""
+    global PROBES  # pylint: disable=global-statement
+    PROBES = get_all_debug_probe_plugins()
+
+
+# Do initial fill up
+load_all_probe_types()

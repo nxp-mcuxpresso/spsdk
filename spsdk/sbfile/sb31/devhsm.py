@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,23 +14,17 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from spsdk.apps.utils.utils import format_raw_data
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError
-from spsdk.image import MBI_SCH_FILE
 from spsdk.mboot.commands import TrustProvKeyType, TrustProvOemKeyType
 from spsdk.mboot.mcuboot import McuBoot
+from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
-from spsdk.sbfile.sb31.images import (
-    SB3_SCH_FILE,
-    SecureBinary31,
-    SecureBinary31Commands,
-    SecureBinary31Header,
-)
+from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands, SecureBinary31Header
 from spsdk.utils.crypto.cert_blocks import CertificateBlockHeader
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import load_configuration, value_to_int
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas, check_config
+from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 logger = logging.getLogger(__name__)
-
-from spsdk.sbfile.devhsm.devhsm import DevHsm
 
 
 class DevHsmSB31(DevHsm):
@@ -47,6 +41,7 @@ class DevHsmSB31(DevHsm):
         workspace: Optional[str] = None,
         initial_reset: bool = False,
         final_reset: bool = True,
+        buffer_address: Optional[int] = None,
     ) -> None:
         """Initialization of device HSM class. Its design to create provisioned SB3 file.
 
@@ -58,6 +53,7 @@ class DevHsmSB31(DevHsm):
         :param workspace: Optional folder to store middle results.
         :param initial_reset: Reset device before DevHSM creation of SB3 file.
         :param final_reset: Reset device after DevHSM creation of SB3 file.
+        :param buffer_address: Override the default buffer address.
         :raises SPSDKError: In case of any problem.
         """
         if cust_mk_sk is None:
@@ -72,7 +68,9 @@ class DevHsmSB31(DevHsm):
         self.container_conf_dir = os.path.dirname(container_conf) if container_conf else None
         self.family = family
         super().__init__(family, workspace)
-
+        # Override the default buffer address
+        if buffer_address is not None:
+            self.devbuff_base = buffer_address
         # store input of OEM_SHARE_INPUT to workspace in case that is generated randomly
         self.store_temp_res("OEM_SHARE_INPUT.BIN", self.oem_share_input)
 
@@ -116,8 +114,8 @@ class DevHsmSB31(DevHsm):
         :param include_test_configuration: Add also testing configuration schemas.
         :return: List of validation schemas.
         """
-        mbi_sch_cfg = ValidationSchemas().get_schema_file(MBI_SCH_FILE)
-        sb3_sch_cfg = ValidationSchemas().get_schema_file(SB3_SCH_FILE)
+        mbi_sch_cfg = get_schema_file(DatabaseManager.MBI)
+        sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
 
         schemas: List[Dict[str, Any]] = []
         schemas.append(mbi_sch_cfg["firmware_version"])
@@ -130,6 +128,7 @@ class DevHsmSB31(DevHsm):
         for schema in schemas:
             if "properties" in schema and "family" in schema["properties"]:
                 schema["properties"]["family"]["enum"] = cls.get_supported_families()
+                schema["properties"]["family"]["template_value"] = family
                 break
         return schemas
 
@@ -144,14 +143,11 @@ class DevHsmSB31(DevHsm):
 
         if family in cls.get_supported_families():
             schemas = cls.get_validation_schemas(family)
-            override = {}
-            override["family"] = family
 
             yaml_data = CommentedConfig(
                 f"DEVHSM procedure Secure Binary v3.1 Configuration template for {family}.",
                 schemas,
-                override,
-            ).export_to_yaml()
+            ).get_template()
 
             ret[f"sb_{family}_devhsm"] = yaml_data
 
@@ -216,8 +212,8 @@ class DevHsmSB31(DevHsm):
             sb3_data.load_from_config(
                 self.get_cmd_from_config(), search_paths=[self.container_conf_dir]
             )
-        key_blob_command_position = value_to_int(
-            self.database.get_device_value("key_blob_command_position", self.family)
+        key_blob_command_position = self.database.get_int(
+            self.F_DEVHSM, "key_blob_command_position"
         )
         sb3_data.insert_command(
             index=key_blob_command_position,
@@ -387,7 +383,7 @@ class DevHsmSB31(DevHsm):
         :return: Tuple with Private and Public key.
         """
         hsm_gen_key_res = self.mboot.tp_hsm_gen_key(
-            key_type,
+            key_type.tag,
             0,
             self.devbuff_base,
             self.DEVBUFF_SIZE,
@@ -422,8 +418,8 @@ class DevHsmSB31(DevHsm):
                 f"Cannot read generated public key from device. Error: {self.mboot.status_string}"
             )
 
-        self.store_temp_res((key_name or str(TrustProvOemKeyType[str(key_type)])) + "_PRK.bin", prk)
-        self.store_temp_res((key_name or str(TrustProvOemKeyType[str(key_type)])) + "_PUK.bin", puk)
+        self.store_temp_res((key_name or key_type.label) + "_PRK.bin", prk)
+        self.store_temp_res((key_name or key_type.label) + "_PUK.bin", puk)
 
         return prk, puk
 
@@ -440,7 +436,7 @@ class DevHsmSB31(DevHsm):
             )
 
         hsm_store_key_res = self.mboot.tp_hsm_store_key(
-            TrustProvKeyType.CKDFK,
+            TrustProvKeyType.CKDFK.tag,
             0x01,
             self.devbuff_base,
             self.DEVBUFF_CUST_MK_SK_KEY_SIZE,

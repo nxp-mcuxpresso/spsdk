@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -142,7 +142,8 @@ class ImgTable:
                     outline=self.outline_color,
                 )
 
-                text_w, text_h = self.draw.textsize(command, font=self.table_text_font)
+                text_w = self.draw.textlength(command, font=self.table_text_font)
+                text_h = self.table_font_size
 
                 text_offset_x = (self.rect_width - text_w) / 2
                 text_offset_y = (self.rect_height - text_h) / 2
@@ -168,7 +169,7 @@ class ImgTable:
             outline=self.outline_color,
         )
 
-        text_w, _ = self.draw.textsize(self.header_text, font=self.header_text_font)
+        text_w = self.draw.textlength(self.header_text, font=self.header_text_font)
 
         text_offset_x = (x2 - x1 - text_w) / 2 + self.offset
 
@@ -273,6 +274,7 @@ def main():
     img_apps.save(IMG_APPS_PATH)
     img_api.save(IMG_APIS_PATH)
     img_architecture.save(IMG_ARCHITECTURE_PATH)
+    print("Generation done")
 
 
 def setup(app):

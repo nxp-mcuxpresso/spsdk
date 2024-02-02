@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -22,7 +22,7 @@ from spsdk.image.hab.hab_container import HabContainer
 from spsdk.image.mbi.mbi import MasterBootImage, get_mbi_class
 from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.misc import BinaryPattern, load_binary, load_configuration, write_file
+from spsdk.utils.misc import BinaryPattern, Endianness, load_binary, load_configuration, write_file
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class Segment(BaseClass):
     NAME = "Base"
     CFG_NAME: Optional[str] = None
     SIZE = -1
-    IMAGE_PATTERNS = [BinaryPattern("zeros"), BinaryPattern("ones")]
+    IMAGE_PATTERNS = ["zeros", "ones"]
 
     def __init__(self, raw_block: Optional[bytes] = None) -> None:
         """Segment initialization, at least raw data are stored.
@@ -82,7 +82,7 @@ class Segment(BaseClass):
         if cls.SIZE > 0 and len(binary) < cls.SIZE:
             raise SPSDKParsingError("The input binary block is smaller than parsed segment.")
         if cls.SIZE > 0 and binary[: cls.SIZE] in [
-            pattern.get_block(cls.SIZE) for pattern in cls.IMAGE_PATTERNS
+            BinaryPattern(pattern).get_block(cls.SIZE) for pattern in cls.IMAGE_PATTERNS
         ]:
             return cls()
         return cls(raw_block=binary[: cls.SIZE] if cls.SIZE > 0 else binary)
@@ -225,7 +225,7 @@ class SegmentImageVersion(Segment):
         :param path: Path where the information should be stored
         :returns: Value of segment to configuration file
         """
-        return int.from_bytes(self.raw_block[:4], "little")
+        return int.from_bytes(self.raw_block[:4], Endianness.LITTLE.value)
 
     @classmethod
     def load_from_config(
@@ -241,7 +241,7 @@ class SegmentImageVersion(Segment):
             raise SPSDKValueError(
                 f"Invalid value for image version. It should be integer, and is: {cfg_value}"
             )
-        return cls(raw_block=cfg_value.to_bytes(length=cls.SIZE, byteorder="little"))
+        return cls(raw_block=cfg_value.to_bytes(length=cls.SIZE, byteorder=Endianness.LITTLE.value))
 
 
 class SegmentImageVersionAntiPole(Segment):
@@ -257,7 +257,7 @@ class SegmentImageVersionAntiPole(Segment):
         :param path: Path where the information should be stored
         :returns: Value of segment to configuration file
         """
-        return int.from_bytes(self.raw_block[:2], "little")
+        return int.from_bytes(self.raw_block[:2], Endianness.LITTLE.value)
 
     @classmethod
     def load_from_config(
@@ -275,7 +275,9 @@ class SegmentImageVersionAntiPole(Segment):
             )
         image_version = (cfg_value or 0) & 0xFFFF
         image_version |= (image_version ^ 0xFFFF) << 16
-        return cls(raw_block=image_version.to_bytes(length=cls.SIZE, byteorder="little"))
+        return cls(
+            raw_block=image_version.to_bytes(length=cls.SIZE, byteorder=Endianness.LITTLE.value)
+        )
 
 
 class SegmentKeyStore(Segment):
@@ -467,9 +469,10 @@ class SegmentHab(Segment):
         """
         super().__init__(raw_block)
         self.hab = hab
-        if hab:
+        if self.hab:
             for pattern in self.IMAGE_PATTERNS:
-                if self.raw_block == hab.export(pattern):
+                self.hab.image_pattern = pattern
+                if self.raw_block == self.hab.export():
                     return
             raise SPSDKValueError("The HAB block doesn't match the raw data.")
 
@@ -562,11 +565,8 @@ class SegmentAhab(Segment):
         ret = super().create_config(path)
         if self.ahab:
             yaml = CommentedConfig(
-                "AHAB configuration",
-                self.ahab.get_validation_schemas(),
-                self.ahab.create_config(path),
-                export_template=False,
-            ).export_to_yaml()
+                "AHAB configuration", self.ahab.get_validation_schemas()
+            ).get_config(self.ahab.create_config(path))
             write_file(yaml, os.path.join(path, "segment_ahab_container.yaml"))
         return ret
 

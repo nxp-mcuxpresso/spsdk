@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module implementing the TrustProvisioning Data Container."""
@@ -13,8 +13,8 @@ from typing import Any, List, Mapping, Type
 import hexdump
 from typing_extensions import Self
 
-from spsdk.utils.easy_enum import Enum
 from spsdk.utils.misc import align, align_block
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 from ..exceptions import SPSDKTpError
 from .data_container_auth import AuthenticationType, get_auth_data_len, sign, validate
@@ -23,7 +23,7 @@ from .payload_types import PayloadType
 ALIGNMENT = 8
 
 
-class EntryType(Enum):
+class EntryType(SpsdkEnum):
     """Enumeration of all supported Entry types."""
 
     STANDARD = (0xA0, "standard", "Standard Entry")
@@ -31,7 +31,7 @@ class EntryType(Enum):
     AUTHENTICATION = (0xC0, "authentication", "Authentication Entry")
 
 
-class DestinationType(Enum):
+class DestinationType(SpsdkEnum):
     """Destination type setting for DataDestinationEntry."""
 
     MEMORY = (0, "memory", "Address in memory")
@@ -87,11 +87,11 @@ class EntryHeader(BaseElement):
     def stringify_payload_type(self) -> str:
         """Return a stringified payload type."""
         enum = AuthenticationType if self.tag == EntryType.AUTHENTICATION else PayloadType
-        return f"{self.payload_type:#06x} - {enum.desc(self.payload_type)}"
+        return f"{self.payload_type:#06x} - {enum.from_tag(self.payload_type).description}"
 
     def __str__(self) -> str:
         info = (
-            f"Entry type:   {self.tag:#x} - {EntryType.desc(self.tag)}\n"
+            f"Entry type:   {self.tag:#x} - {EntryType.get_description(self.tag)}\n"
             f"Entry size:   {self.payload_size:#06x} - {self.payload_size}\n"
             f"Entry extra:  {self.entry_extra:#06x} - {self.entry_extra}\n"
         )
@@ -135,27 +135,27 @@ class DestinationHeader(BaseElement):
 
     def __str__(self) -> str:
         info = (
-            f"Dest. type:   {DestinationType.desc(self.destination_type)}\n"
+            f"Dest. type:   {self.destination_type.description}\n"
             f"Destination:  {self.destination:#010x}\n"
         )
         return info
 
     def export(self) -> bytes:
         """Serialize the destination record."""
-        data = struct.pack(self.FORMAT, self.destination_type, 0, 0, 0, self.destination)
+        data = struct.pack(self.FORMAT, self.destination_type.tag, 0, 0, 0, self.destination)
         return data
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
         """Reconstruct the destination record from binary data."""
         dest_type, _, _, _, dest = struct.unpack_from(cls.FORMAT, data)
-        return cls(destination=dest, destination_type=dest_type)
+        return cls(destination=dest, destination_type=DestinationType.from_tag(dest_type))
 
 
 class DataEntry(BaseElement):
     """Standard data entry."""
 
-    TAG = EntryType.STANDARD
+    TAG = EntryType.STANDARD.tag
 
     def __init__(self, payload: bytes, payload_type: int, extra: int = 0) -> None:
         """Initialize Standard Data Entry.
@@ -212,7 +212,7 @@ class DataEntry(BaseElement):
 class DataDestinationEntry(DataEntry):
     """Data entry including destination information."""
 
-    TAG = EntryType.DESTINATION
+    TAG = EntryType.DESTINATION.tag
 
     def __init__(
         self,
@@ -274,22 +274,23 @@ class DataDestinationEntry(DataEntry):
 class DataAuthenticationEntry(DataEntry):
     """Final Data entry used for integrity check."""
 
-    TAG = EntryType.AUTHENTICATION
+    TAG = EntryType.AUTHENTICATION.tag
 
-    def get_auth_type(self) -> int:
+    def get_auth_type(self) -> AuthenticationType:
         """Get appropriate Authentication type."""
-        return self.header.payload_type
+        return AuthenticationType.from_tag(self.header.payload_type)
 
 
 class DataAuthenticationEntryV2(DataAuthenticationEntry):
     """Final Data entry V2 used for integrity check."""
 
-    def get_auth_type(self) -> int:
+    def get_auth_type(self) -> AuthenticationType:
         """Get appropriate Authentication type."""
-        return self.header.entry_extra
+        return AuthenticationType.from_tag(self.header.entry_extra)
 
     def _stringify_payload_type(self) -> str:
-        return AuthenticationType.desc(self.header.entry_extra)
+        auth_type = AuthenticationType.from_tag(self.header.entry_extra)
+        return auth_type.description or auth_type.label
 
 
 class ContainerHeader(BaseElement):
@@ -385,9 +386,7 @@ class Container(BaseElement):
         for entry in self._entries:
             if entry.header.payload_type == payload_type:
                 return entry
-        raise SPSDKTpError(
-            f"Container doesn't have an entry with type {PayloadType.name(payload_type)}"
-        )
+        raise SPSDKTpError(f"Container doesn't have an entry with type {payload_type.label}")
 
     def get_entries(self, payload_type: PayloadType) -> List[DataEntry]:
         """Get all entries for given payload type."""
@@ -408,13 +407,13 @@ class Container(BaseElement):
         if self.header.major == 2:
             self.add_entry(
                 DataAuthenticationEntryV2(
-                    payload=bytes(auth_data_len), payload_type=0x0, extra=auth_type
+                    payload=bytes(auth_data_len), payload_type=0x0, extra=auth_type.tag
                 )
             )
         else:
             self.add_entry(
                 DataAuthenticationEntry(
-                    payload=bytes(auth_data_len), payload_type=auth_type, extra=0x0
+                    payload=bytes(auth_data_len), payload_type=auth_type.tag, extra=0x0
                 )
             )
         data = self.export()
@@ -450,7 +449,7 @@ class Container(BaseElement):
         return validate(
             data=data_to_validate,
             signature=auth_entry.payload,
-            auth_type=auth_entry.get_auth_type(),  # type: ignore
+            auth_type=auth_entry.get_auth_type(),
             key=key,
         )
 
@@ -468,7 +467,7 @@ class Container(BaseElement):
 
 
 #: Mapping between entry type and its corresponding DataEntry class
-_ENTRY_CLASSES: Mapping[int, Type[DataEntry]] = {
+_ENTRY_CLASSES: Mapping[EntryType, Type[DataEntry]] = {
     EntryType.STANDARD: DataEntry,
     EntryType.DESTINATION: DataDestinationEntry,
     EntryType.AUTHENTICATION: DataAuthenticationEntry,
@@ -478,4 +477,4 @@ _ENTRY_CLASSES: Mapping[int, Type[DataEntry]] = {
 def parse_entry(data: bytes) -> "DataEntry":
     """Common parser for all known DataEntry classes."""
     tag = data[3]
-    return _ENTRY_CLASSES[tag].parse(data=data)
+    return _ENTRY_CLASSES[EntryType.from_tag(tag)].parse(data=data)

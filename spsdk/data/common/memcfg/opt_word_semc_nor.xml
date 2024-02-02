@@ -1,0 +1,63 @@
+<?xml version="1.0" ?>
+<!--
+  Copyright 2023 NXP
+
+  SPDX-License-Identifier: BSD-3-Clause
+-->
+<regs>
+	<register offset="0x0" width="32" name="ConfigOption0" reversed="False" description="SEMC NOR Configuration Option 0">
+		<bit_field offset="0x0" width="2" name="CommandSet" access="R/W" reset_value="0b00" description="SEMC Parallel NOR Flash command set">
+      <bit_field_value name="EPSCD" value="0b0" description="As Micron MT28EW Embedded Parallel NOR Standard Command Definitions"/>
+			<bit_field_value name="SFMCD" value="0b1" description="As Micron MT28GU StrataFlash Memory Command Definitions"/>
+    </bit_field>
+		<bit_field offset="0x02" width="2" name="AcTimingMode" access="R/W" reset_value="0b00" description="SEMC Parallel NOR AC timing mode (Async read mode)">
+			<bit_field_value name="DefaultSafe" value="0b00" description="Timing default safe"/>
+			<bit_field_value name="DefaultSast" value="0b01" description="Timing default fast"/>
+      <bit_field_value name="UserDefined" value="0b10" description="Timing user defined. The definition (next 6 option words) MUST follow this option word"/>
+    </bit_field>
+    <reserved_bit_field offset="0x04" width="4" name="Reserved0" access="R/W" reset_value="0b0000" description="Reserved for future use"/>
+		<bit_field offset="0x08" width="2" name="IoPortDiv8" access="R/W" reset_value="0b01" description="IO port size, Minimum is 1"/>
+    <bit_field offset="0x0A" width="1" name="AdvPortPolarity" access="R/W" reset_value="0b0" description="ADV# polarity">
+			<bit_field_value name="Low" value="0b0" description="ADV polarity low"/>
+			<bit_field_value name="High" value="0b1" description="ADV polarity high"/>
+		</bit_field>
+    <reserved_bit_field offset="0x0B" width="1" name="Reserved1" access="R/W" reset_value="0b0" description="Reserved for future use"/>
+    <bit_field offset="0x0C" width="3" name="PcsSelection" access="R/W" reset_value="0b000" description="SEMC NOR PCS selection">
+			<bit_field_value name="CSX0" value="0b000" description="SEMC NOR CSX0"/>
+			<bit_field_value name="CSX1" value="0b001" description="SEMC NOR CSX1"/>
+      <bit_field_value name="CSX2" value="0b010" description="SEMC NOR CSX2"/>
+      <bit_field_value name="CSX3" value="0b011" description="SEMC NOR CSX3"/>
+      <bit_field_value name="A8" value="0b100" description="SEMC NOR A8"/>
+      <bit_field_value name="RDY" value="0b101" description="SEMC NOR RDY"/>
+		</bit_field>
+    <reserved_bit_field offset="0x0F" width="1" name="Reserved2" access="R/W" reset_value="0b0" description="Reserved for future use"/>
+    <reserved_bit_field offset="0x10" width="8" name="Reserved3" access="R/W" reset_value="0x00" description="Reserved for future use"/>
+    <reserved_bit_field offset="0x18" width="4" name="Reserved4" access="R/W" reset_value="0b0000" description="Reserved for future use"/>
+		<reserved_bit_field offset="0x1c" width="4" name="Tag" access="R/W" reset_value="0b1101" description="Tag, fixed value 0xD"/>
+	</register>
+  <register offset="0x04" width="32" name="ConfigOption1" reversed="False" description="SEMC NOR Configuration Option 1 - User definition - Optional">
+    <bit_field offset="0x00" width="16" name="min_tCEH_ns" access="R/W" reset_value="0x00" description="User definition min_tCEH_ns"/>
+    <bit_field offset="0x10" width="16" name="min_tCES_ns" access="R/W" reset_value="0x00" description="User definition min_tCES_ns"/>
+  </register>
+  <register offset="0x08" width="32" name="ConfigOption2" reversed="False" description="SEMC NOR Configuration Option 2 - User definition - Optional">
+    <bit_field offset="0x00" width="16" name="min_tAS_ns" access="R/W" reset_value="0x00" description="User definition min_tAS_ns"/>
+    <bit_field offset="0x10" width="16" name="min_tCEITV_ns" access="R/W" reset_value="0x00" description="User definition min_tCEITV_ns"/>
+  </register>
+  <register offset="0x0C" width="32" name="ConfigOption3" reversed="False" description="SEMC NOR Configuration Option 3 - User definition - Optional">
+    <bit_field offset="0x00" width="16" name="min_tTA_ns" access="R/W" reset_value="0x00" description="User definition min_tTA_ns"/>
+    <bit_field offset="0x10" width="16" name="min_tAH_ns" access="R/W" reset_value="0x00" description="User definition min_tAH_ns"/>
+  </register>
+  <register offset="0x10" width="32" name="ConfigOption4" reversed="False" description="SEMC NOR Configuration Option 4 - User definition - Optional">
+    <bit_field offset="0x00" width="16" name="min_tWEH_ns" access="R/W" reset_value="0x00" description="User definition min_tWEH_ns"/>
+    <bit_field offset="0x10" width="16" name="min_tWEL_ns" access="R/W" reset_value="0x00" description="User definition min_tWEL_ns"/>
+  </register>
+  <register offset="0x14" width="32" name="ConfigOption5" reversed="False" description="SEMC NOR Configuration Option 5 - User definition - Optional">
+    <bit_field offset="0x00" width="16" name="min_tREL_ns" access="R/W" reset_value="0x00" description="User definition min_tREL_ns"/>
+    <bit_field offset="0x10" width="16" name="min_tAWDH_ns" access="R/W" reset_value="0x00" description="User definition min_tAWDH_ns"/>
+  </register>
+  <register offset="0x18" width="32" name="ConfigOption6" reversed="False" description="SEMC NOR Configuration Option 6 - User definition - Optional">
+    <reserved_bit_field offset="0x00" width="16" name="Reserved" access="R/W" reset_value="0x00" description="Reserved for future use"/>
+    <bit_field offset="0x10" width="16" name="max_tREH_ns" access="R/W" reset_value="0x00" description="User definition max_tREH_ns"/>
+  </register>
+
+</regs>

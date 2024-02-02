@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 import os
@@ -21,7 +21,9 @@ from spsdk.utils.misc import load_binary, use_working_directory
 def sample_challenge() -> bytes:
     challenge_container = Container()
     challenge_container.add_entry(
-        DataEntry(payload=bytes(range(128)), payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND)
+        DataEntry(
+            payload=bytes(range(128)), payload_type=PayloadType.NXP_EPH_CHALLENGE_DATA_RND.tag
+        )
     )
     return challenge_container.export()
 

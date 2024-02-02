@@ -1,0 +1,68 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions: {}
+latest: latest
+
+info:
+  purpose: Test Device
+  web: Interesting web page
+  memory_map: {}
+  isp: {}
+
+features:
+  # ======== Feature 1 ========
+  feature1:
+    atrribute_int1: 1
+    atrribute_str1: Database text
+    atrribute_boolT: True
+    atrribute_boolF: False
+    atrribute_dict:
+      dict_attribute_int: 1
+      dict_attribute_str: Dict text
+    atrribute_list:
+      - 1
+      - 2
+      - 3
+
+  # ======== Feature 2 ========
+  feature2:
+    atrribute_int1: 2
+    atrribute_str1: Database text feature 2
+    atrribute_boolT: True
+    atrribute_boolF: False
+    atrribute_dict:
+      dict_attribute_int: 2
+      dict_attribute_str: Dict text feature 2
+    atrribute_list:
+      - Hello
+      - GoodBye
+      - Good morning
+
+  # ======== Feature 2 ========
+  feature3: {}
+
+  # ======== Feature Reg Config Testing ========
+  reg_config:
+    inverted_regs:
+      INVERTED_REG: INVERTED_REG_AP
+    computed_registers:
+      COMPUTED_REG_GENERAL: Hello
+    ignored_fields:
+      - FIELD_GENERAL
+    grouped_registers:
+      - name: Test
+    seal_start: COMPUTED_REG2
+    seal_count: 8
+
+  # ======== Feature Shadow registers Testing ========
+  shadow_regs:
+    grouped_registers:
+      - name: REG_BIG
+        width: 256
+        description: Just Big register
+      - name: REG_BIG_REV
+        width: 256
+        reversed: 1
+        description: Just Big register in reversed order

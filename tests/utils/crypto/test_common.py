@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """ Test of common crypto utilities module."""
@@ -14,6 +14,7 @@ from spsdk.crypto.signature_provider import PlainFileSP
 from spsdk.crypto.symmetric import Counter
 from spsdk.crypto.utils import get_matching_key_id
 from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.utils.misc import Endianness
 
 
 def test_counter():
@@ -23,7 +24,7 @@ def test_counter():
     assert cntr.value == bytes([0] * 16)
 
     # counter with nonce and counter encoded as little endian
-    cntr = Counter(bytes([0] * 16), ctr_value=0x01234567, ctr_byteorder_encoding="little")
+    cntr = Counter(bytes([0] * 16), ctr_value=0x01234567, ctr_byteorder_encoding=Endianness.LITTLE)
     assert cntr.value == bytes([0] * 12 + [0x67, 0x45, 0x23, 0x01])
 
     # counter with nonce and counter encoded as little endian
@@ -31,7 +32,7 @@ def test_counter():
     assert cntr.value == bytes([0] * 12 + [0x67, 0x45, 0x23, 0x01])
 
     # counter with nonce and counter encoded as big endian
-    cntr = Counter(bytes([0] * 16), ctr_value=1, ctr_byteorder_encoding="big")
+    cntr = Counter(bytes([0] * 16), ctr_value=1, ctr_byteorder_encoding=Endianness.BIG)
     assert cntr.value == bytes([0] * 15 + [1])
 
     # increment
@@ -41,11 +42,6 @@ def test_counter():
     assert cntr.value == bytes([0] * 15 + [4])
     cntr.increment(256)
     assert cntr.value == bytes([0] * 14 + [1, 4])
-
-
-def test_counter_invalid():
-    with pytest.raises(SPSDKError, match="Wrong byte order"):
-        Counter(nonce=bytes(16), ctr_byteorder_encoding="BIG")
 
 
 @pytest.mark.parametrize("length", [(2048), (3072), (4096)])

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,10 +16,10 @@ from InquirerPy.utils import get_style
 from InquirerPy.validator import NumberValidator, ValidationError
 from prompt_toolkit.validation import Document
 
-from spsdk.tp import TP_DATA_FOLDER
+from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.tp.adapters import TpDevSmartCard
 from spsdk.tp.utils import get_tp_devices
-from spsdk.utils.database import Database
+from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.nxpdevscan import UartDeviceDescription, search_nxp_uart_devices
 
 # import logging
@@ -30,8 +30,6 @@ VERBOSITY = {"normal": "", "verbose": "--verbose", "debug": "--debug"}
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_DATA_DIR_NAME = "sample_config_data"
 SAMPLE_DATA_DIR = os.path.join(THIS_DIR, SAMPLE_DATA_DIR_NAME)
-DATABASE_FILE = os.path.join(TP_DATA_FOLDER, "database.yaml")
-DATABASE = Database(DATABASE_FILE)
 
 
 class HexNumberValidator(NumberValidator):
@@ -98,7 +96,7 @@ def setup_tp_config_file(
     template_name = (
         "tpconfig_cfg_data_template.yaml" if use_prov_data else "tpconfig_cfg_template.yaml"
     )
-    shutil.copy(f"{TP_DATA_FOLDER}/{template_name}", "tp_config.yaml")
+    shutil.copy(os.path.join(SPSDK_DATA_FOLDER_COMMON, "tp", template_name), "tp_config.yaml")
     yaml = ruamel.yaml.YAML()
     with open("tp_config.yaml") as f:
         data: dict = yaml.load(f)
@@ -126,7 +124,9 @@ def setup_tp_host_file(
     tp_target_parameter: dict,
     family: str,
 ) -> None:
-    shutil.copy(f"{TP_DATA_FOLDER}/tphost_cfg_template.yaml", "tp_host.yaml")
+    shutil.copy(
+        os.path.join(SPSDK_DATA_FOLDER_COMMON, "tp", "tphost_cfg_template.yaml"), "tp_host.yaml"
+    )
     yaml = ruamel.yaml.YAML()
     with open("tp_host.yaml") as f:
         data: dict = yaml.load(f)
@@ -230,9 +230,8 @@ def main() -> None:
             sys.exit()
     family = inquirer.rawlist(
         message="Select family",
-        # choices=Database.get_devices(DATABASE_FILE).device_names,
-        choices=DATABASE.devices.device_names,
-        default="lpc55s6x",
+        choices=get_families(DatabaseManager.TP),
+        default="lpc55s3x",
     ).execute()
     tp_device_type = inquirer.rawlist(
         message="Which type of TPDevice to use:",
@@ -330,8 +329,7 @@ def main() -> None:
     os.makedirs(dest_path, exist_ok=False)
     os.chdir(dest_path)
 
-    # use_prov_data = Database(DATABASE_FILE).get_device_value("use_prov_data", device=family)
-    use_prov_data = DATABASE.get_device_value("use_prov_data", device=family)
+    use_prov_data = get_db(family, "latest").get_bool(DatabaseManager.TP, "use_prov_data")
 
     tp_device_params = {"id": tp_device_id}
     if tp_device_type == "swmodel":

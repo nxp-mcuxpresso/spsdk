@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -52,33 +52,33 @@ def test_none_value():
 
 
 def test_bool_value():
-    value = parse_property_value(PropertyTag.VERIFY_WRITES, [0])
+    value = parse_property_value(PropertyTag.VERIFY_WRITES.tag, [0])
     assert isinstance(value, BoolValue)
     assert value.tag == PropertyTag.VERIFY_WRITES
-    assert value.name == PropertyTag[PropertyTag.VERIFY_WRITES]
-    assert value.desc == PropertyTag.desc(PropertyTag.VERIFY_WRITES)
+    assert value.name == PropertyTag.VERIFY_WRITES.label
+    assert value.desc == PropertyTag.VERIFY_WRITES.description
     assert not value
     assert value.to_int() == 0
     assert value.to_str() == "OFF"
 
 
 def test_enum_value():
-    value = parse_property_value(PropertyTag.FLASH_READ_MARGIN, [0])
+    value = parse_property_value(PropertyTag.FLASH_READ_MARGIN.tag, [0])
     assert isinstance(value, EnumValue)
     assert value.tag == PropertyTag.FLASH_READ_MARGIN
-    assert value.name == PropertyTag[PropertyTag.FLASH_READ_MARGIN]
-    assert value.desc == PropertyTag.desc(PropertyTag.FLASH_READ_MARGIN)
+    assert value.name == PropertyTag.FLASH_READ_MARGIN.label
+    assert value.desc == PropertyTag.FLASH_READ_MARGIN.description
     assert value.value == 0
     assert value.to_int() == 0
     assert value.to_str() == "NORMAL"
 
 
 def test_int_value():
-    value = parse_property_value(PropertyTag.FLASH_SIZE, [1024])
+    value = parse_property_value(PropertyTag.FLASH_SIZE.tag, [1024])
     assert isinstance(value, IntValue)
     assert value.tag == PropertyTag.FLASH_SIZE
-    assert value.name == PropertyTag[PropertyTag.FLASH_SIZE]
-    assert value.desc == PropertyTag.desc(PropertyTag.FLASH_SIZE)
+    assert value.name == PropertyTag.FLASH_SIZE.label
+    assert value.desc == PropertyTag.FLASH_SIZE.description
     assert value.value == 1024
     assert value.to_str() == "1.0 kiB"
     assert value.to_int() == 1024
@@ -106,11 +106,11 @@ def test_int_value_fmt():
 
 
 def test_version_value():
-    value = parse_property_value(PropertyTag.CURRENT_VERSION, [0x4B000102])
+    value = parse_property_value(PropertyTag.CURRENT_VERSION.tag, [0x4B000102])
     assert isinstance(value, VersionValue)
     assert value.tag == PropertyTag.CURRENT_VERSION
-    assert value.name == PropertyTag[PropertyTag.CURRENT_VERSION]
-    assert value.desc == PropertyTag.desc(PropertyTag.CURRENT_VERSION)
+    assert value.name == PropertyTag.CURRENT_VERSION.label
+    assert value.desc == PropertyTag.CURRENT_VERSION.description
     assert value.value == Version(0x4B000102)
     assert value.to_int() == 0x4B000102
     assert value.to_str() == "K0.1.2"
@@ -128,26 +128,26 @@ def test_version_value():
     ],
 )
 def test_device_uid_value(input_numbers, out_string, out_int):
-    value = parse_property_value(PropertyTag.UNIQUE_DEVICE_IDENT, input_numbers)
+    value = parse_property_value(PropertyTag.UNIQUE_DEVICE_IDENT.tag, input_numbers)
     assert isinstance(value, DeviceUidValue)
     assert value.tag == PropertyTag.UNIQUE_DEVICE_IDENT
-    assert value.name == PropertyTag[PropertyTag.UNIQUE_DEVICE_IDENT]
-    assert value.desc == PropertyTag.desc(PropertyTag.UNIQUE_DEVICE_IDENT)
+    assert value.name == PropertyTag.UNIQUE_DEVICE_IDENT.label
+    assert value.desc == PropertyTag.UNIQUE_DEVICE_IDENT.description
     assert value.to_int() == out_int
     assert value.to_str() == out_string
 
 
 def test_available_commands():
-    value = parse_property_value(PropertyTag.AVAILABLE_COMMANDS, [0xF])
+    value = parse_property_value(PropertyTag.AVAILABLE_COMMANDS.tag, [0xF])
     assert value.tags == [1, 2, 3, 4]
     assert all(index in value for index in [1, 2, 3, 4])
-    command_names = [CommandTag.name(i) for i in [1, 2, 3, 4]]
+    command_names = [CommandTag.get_label(i) for i in [1, 2, 3, 4]]
     assert all(name in value.to_str() for name in command_names)
 
 
 def test_reserved_regions():
     value = parse_property_value(
-        PropertyTag.RESERVED_REGIONS,
+        PropertyTag.RESERVED_REGIONS.tag,
         [
             0,
             0,

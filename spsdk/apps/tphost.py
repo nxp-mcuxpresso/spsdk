@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,6 +13,7 @@ from typing import List
 
 import click
 
+from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.apps.tp_utils import (
     TPHostConfig,
     device_help,
@@ -39,7 +40,6 @@ from spsdk.crypto.keys import PublicKeyEcc
 from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
-from spsdk.tp import TP_DATA_FOLDER
 from spsdk.tp.data_container import Container
 from spsdk.tp.data_container.payload_types import PayloadType
 from spsdk.tp.exceptions import SPSDKTpError
@@ -231,7 +231,7 @@ def get_template(
 ) -> None:
     """Command to generate tphost template of configuration YML file."""
     template_name = "tphost_cfg_template.yaml"
-    template = load_text(os.path.join(TP_DATA_FOLDER, template_name))
+    template = load_text(os.path.join(SPSDK_DATA_FOLDER_COMMON, "tp", template_name))
     template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 
@@ -512,7 +512,7 @@ def check_cot(root_cert: str, intermediate_cert: str, tp_response: str) -> None:
             nxp_glob_puk.verify_signature(
                 nxp_prod_cert.signature,
                 nxp_prod_cert.tbs_certificate_bytes,
-                EnumHashAlgorithm[nxp_prod_cert.signature_hash_algorithm.name],
+                EnumHashAlgorithm.from_label(nxp_prod_cert.signature_hash_algorithm.name),
             )
             message += "OK"
         except Exception:

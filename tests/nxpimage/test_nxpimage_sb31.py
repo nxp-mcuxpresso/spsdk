@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,6 +12,7 @@ import os
 import pytest
 
 from spsdk.apps import nxpimage
+from spsdk.crypto.exceptions import SPSDKKeysNotMatchingError
 from spsdk.crypto.keys import PrivateKeyEcc
 from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Header
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
@@ -152,3 +153,13 @@ def test_nxpimage_sb31_notime(cli_runner: CliRunner, nxpimage_data_dir, tmpdir):
         assert len(ref_data) == len(new_data)
         assert ref_data[:20] == new_data[:20]
         assert ref_data[0x1C:0x3C] == new_data[0x1C:0x3C]
+
+
+def test_nxpimage_sb31_kaypair_not_matching(nxpimage_data_dir):
+    config_file = f"{nxpimage_data_dir}/workspace/cfgs/lpc55s3x/sb3_256_256_keys_dont_match.yaml"
+    sb31 = SecureBinary31.load_from_config(
+        config=load_configuration(config_file),
+        search_paths=[f"{nxpimage_data_dir}/workspace/cfgs/lpc55s3x", nxpimage_data_dir],
+    )
+    with pytest.raises(SPSDKKeysNotMatchingError):
+        sb31.export()

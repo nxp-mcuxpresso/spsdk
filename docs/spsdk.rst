@@ -22,6 +22,8 @@
 .. _KW45_link: https://www.nxp.com/products/wireless/bluetooth-low-energy/32-bit-bluetooth-5-3-long-range-mcus-with-can-fd-and-lin-bus-options-arm-cortex-m33-core:KW45
 .. _K32W1_link: https://www.nxp.com/products/wireless/multiprotocol-mcus/tri-core-secure-and-ultra-low-power-mcu-for-matter-over-thread-and-bluetooth-le-5-3:K32W148
 .. _MCXN9xx_link: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-n-series/mcx-n94x-and-n54x-mcus-with-dual-core-arm-cortex-m33-edgelock-secure-subsystem-and-neural-processing-unit:MCX-N94X-N54X
+.. _MCXA1xx_link: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m:MCX-MCUS
+.. _MCXN23x_link: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m:MCX-MCUS
 .. _RW61x_link: https://www.nxp.com/products/wireless/wi-fi-plus-bluetooth-plus-802-15-4/wireless-mcu-with-integrated-tri-radiobr1x1-wi-fi-6-plus-bluetooth-low-energy-5-3-802-15-4:RW612
 .. _NHS52Sxx_link: https://www.nxp.com/products/wireless-connectivity/bluetooth-low-energy/nhs52sx4-ultra-low-power-bluetooth-low-energy-solution-with-arm-cortex-m33-trustzone-for-medical-iot:NHS52Sx4
 
@@ -78,14 +80,16 @@ Supported Devices
 - `RW61x <RW61x_link_>`__
 - `NHS52Sxx <NHS52Sxx_link_>`__
 - `MCXN9xx <MCXN9xx_link_>`__
+- `MCXA1xx <MCXA1xx_link_>`__
+- `MCXN23x <MCXN23x_link_>`__
 
 ============
 Supported OS
 ============
 
-- Windows 10 and 11, 64-bit
-- Ubuntu 18.04 or above, 64-bit
-- Mac OS 10.15 or above, x64, ARM64
+- Windows 10 and 11, 64bit
+- Ubuntu 22.04.1 LTS
+- Mac OS Sonoma 14
 
 =====================
 Supported Environment
@@ -111,3 +115,9 @@ CLI/API stability notice
 * Patch release will not break backward compatibility (any occurrence is treated as a bug)
 
 New features might be implemented in both patch and minor releases.
+
+==========
+Disclaimer
+==========
+
+All products, including those with advanced security features, may be subject to unidentified vulnerabilities. Customers are responsible for the design and operation of their applications and products to reduce the effect of these vulnerabilities on the customer's applications and products.  NXP accepts no liability for any security vulnerability.  Customers are responsible for the design and operation of their applications and products and are responsible to implement appropriate design and operating safeguards to minimize the risk of potential security vulnerabilities associated with their applications and products.

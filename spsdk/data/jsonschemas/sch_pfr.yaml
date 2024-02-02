@@ -1,0 +1,38 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+pfr_base:
+  type: object
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      template_value: lpc55s3x
+    device:
+      type: string
+      title: MCU family
+      description: MCU family name.
+      template_value: lpc55s3x
+      skip_in_template: True
+
+    revision:
+      type: string
+      title: Chip silicon revision
+      description: If needed this could be used to specify silicon revision of device.
+      template_value: latest
+
+    type:
+      type: string
+      title: Configuration area type
+      description: PFR / IFR type
+      template_value: CMPA
+
+pfr_settings:
+  type: object
+  required: [settings]
+  properties:
+    settings:
+      type: object
+      title: Configuration area Settings

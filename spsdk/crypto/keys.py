@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for key generation and saving keys to file."""
 
 import abc
+import getpass
 import math
 from enum import Enum
 from typing import Any, Callable, Dict, Optional, Tuple, Union
@@ -35,7 +36,7 @@ from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKValueError
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.misc import load_binary, write_file
+from spsdk.utils.misc import Endianness, load_binary, write_file
 
 from .hash import EnumHashAlgorithm, get_hash, get_hash_algorithm
 from .oscca import IS_OSCCA_SUPPORTED
@@ -59,7 +60,7 @@ def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
     """
     last_error: Exception
     try:
-        return crypto_load_pem_private_key(data, password)
+        return _crypto_load_private_key(SPSDKEncoding.PEM, data, password)
     except (UnsupportedAlgorithm, ValueError) as exc:
         last_error = exc
     if IS_OSCCA_SUPPORTED:
@@ -82,7 +83,7 @@ def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
     """
     last_error: Exception
     try:
-        return crypto_load_der_private_key(data, password)
+        return _crypto_load_private_key(SPSDKEncoding.DER, data, password)
     except (UnsupportedAlgorithm, ValueError) as exc:
         last_error = exc
     if IS_OSCCA_SUPPORTED:
@@ -92,6 +93,39 @@ def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
         except (SPSDKError, DecodeError) as exc:
             last_error = exc
     raise SPSDKError(f"Cannot load DER private key: {last_error}")
+
+
+def _crypto_load_private_key(
+    encoding: SPSDKEncoding, data: bytes, password: Optional[bytes]
+) -> Union[ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey]:
+    """Load Private key.
+
+    :param encoding: Encoding of input data
+    :param data: Key data
+    :param password: Optional password
+    :raises SPSDKValueError: Unsupported encoding
+    :raises SPSDKWrongKeyPassphrase: Private key is encrypted and passphrase is incorrect
+    :raises SPSDKKeyPassphraseMissing: Private key is encrypted and passphrase is missing
+    :return: Key
+    """
+    if encoding not in [SPSDKEncoding.DER, SPSDKEncoding.PEM]:
+        raise SPSDKValueError(f"Unsupported encoding: {encoding}")
+    crypto_load_function = {
+        SPSDKEncoding.DER: crypto_load_der_private_key,
+        SPSDKEncoding.PEM: crypto_load_pem_private_key,
+    }[encoding]
+    try:
+        private_key = crypto_load_function(data, password)
+        assert isinstance(private_key, (ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey))
+        return private_key
+    except ValueError as exc:
+        if "Incorrect password" in exc.args[0]:
+            raise SPSDKWrongKeyPassphrase("Provided password was incorrect.") from exc
+        raise exc
+    except TypeError as exc:
+        if "Password was not given but private key is encrypted" in str(exc):
+            raise SPSDKKeyPassphraseMissing(str(exc)) from exc
+        raise exc
 
 
 def _load_pem_public_key(data: bytes) -> Any:
@@ -143,6 +177,10 @@ class SPSDKInvalidKeyType(SPSDKError):
 
 class SPSDKKeyPassphraseMissing(SPSDKError):
     """Passphrase for decryption of private key is missing."""
+
+
+class SPSDKWrongKeyPassphrase(SPSDKError):
+    """Passphrase for decryption of private key is wrong."""
 
 
 class PrivateKey(BaseClass, abc.ABC):
@@ -256,10 +294,6 @@ class PrivateKey(BaseClass, abc.ABC):
                 return cls.create(private_key)
         except (ValueError, SPSDKInvalidKeyType) as exc:
             raise SPSDKError(f"Cannot load private key: ({str(exc)})") from exc
-        except TypeError as exc:
-            raise SPSDKKeyPassphraseMissing(
-                "Password was not given but private key is encrypted"
-            ) from exc
         raise SPSDKError(f"Unsupported private key: ({str(private_key)})")
 
     @classmethod
@@ -583,8 +617,8 @@ class PublicKeyRsa(PublicKey):
             mod_rotk = self.n
             exp_length = exp_length or math.ceil(exp_rotk.bit_length() / 8)
             modulus_length = modulus_length or math.ceil(mod_rotk.bit_length() / 8)
-            exp_rotk_bytes = exp_rotk.to_bytes(exp_length, "big")
-            mod_rotk_bytes = mod_rotk.to_bytes(modulus_length, "big")
+            exp_rotk_bytes = exp_rotk.to_bytes(exp_length, Endianness.BIG.value)
+            mod_rotk_bytes = mod_rotk.to_bytes(modulus_length, Endianness.BIG.value)
             return mod_rotk_bytes + exp_rotk_bytes
 
         return self.key.public_bytes(
@@ -651,8 +685,8 @@ class PublicKeyRsa(PublicKey):
         for key_size in PrivateKeyRsa.SUPPORTED_KEY_SIZES:
             key_size_bytes = key_size // 8
             if key_size_bytes + 3 <= data_len <= key_size_bytes + 4:
-                n = int.from_bytes(data[:key_size_bytes], "big")
-                e = int.from_bytes(data[key_size_bytes:], "big")
+                n = int.from_bytes(data[:key_size_bytes], Endianness.BIG.value)
+                e = int.from_bytes(data[key_size_bytes:], Endianness.BIG.value)
                 return rsa.RSAPublicNumbers(e=e, n=n)
 
         raise SPSDKError(f"Unsupported RSA key to recreate with data size {data_len}")
@@ -742,8 +776,8 @@ class KeyEccCommon:
         """Re-format ECC ANS.1 DER signature into the format used by ROM code."""
         r, s = utils.decode_dss_signature(signature)
 
-        r_bytes = r.to_bytes(coordinate_length, "big")
-        s_bytes = s.to_bytes(coordinate_length, "big")
+        r_bytes = r.to_bytes(coordinate_length, Endianness.BIG.value)
+        s_bytes = s.to_bytes(coordinate_length, Endianness.BIG.value)
         return r_bytes + s_bytes
 
 
@@ -904,8 +938,8 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         :returns: Public key in bytes
         """
         if encoding == SPSDKEncoding.NXP:
-            x_bytes = self.x.to_bytes(self.coordinate_size, "big")
-            y_bytes = self.y.to_bytes(self.coordinate_size, "big")
+            x_bytes = self.x.to_bytes(self.coordinate_size, Endianness.BIG.value)
+            y_bytes = self.y.to_bytes(self.coordinate_size, Endianness.BIG.value)
             return x_bytes + y_bytes
 
         return self.key.public_bytes(
@@ -945,8 +979,8 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
 
         if len(signature) == self.signature_size:
             der_signature = utils.encode_dss_signature(
-                int.from_bytes(signature[:coordinate_size], byteorder="big"),
-                int.from_bytes(signature[coordinate_size:], byteorder="big"),
+                int.from_bytes(signature[:coordinate_size], byteorder=Endianness.BIG.value),
+                int.from_bytes(signature[coordinate_size:], byteorder=Endianness.BIG.value),
             )
         else:
             der_signature = signature
@@ -1028,8 +1062,8 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
             return cls(der)
 
         coordinate_length = data_length // 2
-        coor_x = int.from_bytes(data[:coordinate_length], byteorder="big")
-        coor_y = int.from_bytes(data[coordinate_length:], byteorder="big")
+        coor_x = int.from_bytes(data[:coordinate_length], byteorder=Endianness.BIG.value)
+        coor_y = int.from_bytes(data[coordinate_length:], byteorder=Endianness.BIG.value)
         return cls.recreate(coor_x=coor_x, coor_y=coor_y, curve=curve)
 
     @classmethod
@@ -1250,6 +1284,90 @@ else:
     PublicKeySM2 = PublicKey  # type: ignore
 
 
+class ECDSASignature:
+    """ECDSA Signature."""
+
+    COORDINATE_LENGTHS = {EccCurve.SECP256R1: 32, EccCurve.SECP384R1: 48, EccCurve.SECP521R1: 66}
+
+    def __init__(self, r: int, s: int, ecc_curve: EccCurve) -> None:
+        """ECDSA Signature constructor.
+
+        :param r: r value of signature
+        :param s: s value of signature
+        :param ecc_curve: ECC Curve enum
+        """
+        self.r = r
+        self.s = s
+        self.ecc_curve = ecc_curve
+
+    @classmethod
+    def parse(cls, signature: bytes) -> Self:
+        """Parse signature in DER or NXP format.
+
+        :param signature: Signature binary
+        """
+        encoding = cls.get_encoding(signature)
+        if encoding == SPSDKEncoding.DER:
+            r, s = utils.decode_dss_signature(signature)
+            ecc_curve = cls.get_ecc_curve(len(signature))
+            return cls(r, s, ecc_curve)
+        if encoding == SPSDKEncoding.NXP:
+            r = int.from_bytes(signature[: len(signature) // 2], Endianness.BIG.value)
+            s = int.from_bytes(signature[len(signature) // 2 :], Endianness.BIG.value)
+            ecc_curve = cls.get_ecc_curve(len(signature))
+            return cls(r, s, ecc_curve)
+        raise SPSDKValueError(f"Invalid signature encoding {encoding.value}")
+
+    def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
+        """Export signature in DER or NXP format.
+
+        :param encoding: Signature encoding
+        :return: Signature as bytes
+        """
+        if encoding == SPSDKEncoding.NXP:
+            r_bytes = self.r.to_bytes(self.COORDINATE_LENGTHS[self.ecc_curve], Endianness.BIG.value)
+            s_bytes = self.s.to_bytes(self.COORDINATE_LENGTHS[self.ecc_curve], Endianness.BIG.value)
+            return r_bytes + s_bytes
+        if encoding == SPSDKEncoding.DER:
+            return utils.encode_dss_signature(self.r, self.s)
+        raise SPSDKValueError(f"Invalid signature encoding {encoding.value}")
+
+    @classmethod
+    def get_encoding(cls, signature: bytes) -> SPSDKEncoding:
+        """Get encoding of signature.
+
+        :param signature: Signature
+        """
+        signature_length = len(signature)
+        # Try detect the NXP format by data length
+        if signature_length // 2 in cls.COORDINATE_LENGTHS.values():
+            return SPSDKEncoding.NXP
+        # Try detect the DER format by decode of header
+        try:
+            utils.decode_dss_signature(signature)
+            return SPSDKEncoding.DER
+        except ValueError:
+            pass
+        raise SPSDKValueError(
+            f"The given signature with length {signature_length} does not match any encoding"
+        )
+
+    @classmethod
+    def get_ecc_curve(cls, signature_length: int) -> EccCurve:
+        """Get the Elliptic Curve of signature.
+
+        :param signature_length: Signature length
+        """
+        for curve, coord_len in cls.COORDINATE_LENGTHS.items():
+            if signature_length == coord_len * 2:
+                return curve
+            if signature_length in range(coord_len * 2 + 3, coord_len * 2 + 9):
+                return curve
+        raise SPSDKValueError(
+            f"The given signature with length {signature_length} does not match any ecc curve"
+        )
+
+
 # # ===================================================================================================
 # # ===================================================================================================
 # #
@@ -1295,3 +1413,9 @@ def get_ecc_curve(key_length: int) -> EccCurve:
     if key_length <= 66:
         return EccCurve.SECP521R1
     raise SPSDKError(f"Not sure what curve corresponds to {key_length} data")
+
+
+def prompt_for_passphrase() -> str:
+    """Prompt interactively for private key passphrase."""
+    password = getpass.getpass(prompt="Private key is encrypted. Enter password: ", stream=None)
+    return password

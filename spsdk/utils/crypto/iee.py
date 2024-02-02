@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """The module provides support for IEE for RTxxxx devices."""
 
 import logging
-import os
 from copy import deepcopy
 from struct import pack
 from typing import Any, Dict, List, Optional, Union
@@ -16,68 +15,69 @@ from typing import Any, Dict, List, Optional, Union
 from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk import version as spsdk_version
-from spsdk.apps.utils.utils import filepath_from_config, get_key
+from spsdk.apps.utils.utils import filepath_from_config
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import Counter, aes_ctr_encrypt, aes_xts_encrypt
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.utils.crypto import IEE_DATA_FOLDER, IEE_DATABASE_FILE, IEE_SCH_FILE
-from spsdk.utils.database import Database
-from spsdk.utils.easy_enum import Enum
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
+    Endianness,
     align_block,
+    load_hex_string,
     reverse_bytes_in_longs,
     split_data,
     value_to_bytes,
     value_to_int,
 )
 from spsdk.utils.registers import Registers
-from spsdk.utils.schema_validator import CommentedConfig, ValidationSchemas
+from spsdk.utils.schema_validator import CommentedConfig
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 
 
-class IeeKeyBlobLockAttributes(Enum):
+class IeeKeyBlobLockAttributes(SpsdkEnum):
     """IEE keyblob lock attributes."""
 
-    LOCK = 0x95  #  IEE region lock.
-    UNLOCK = 0x59  #  IEE region unlock.
+    LOCK = (0x95, "LOCK")  #  IEE region lock.
+    UNLOCK = (0x59, "UNLOCK")  #  IEE region unlock.
 
 
-class IeeKeyBlobKeyAttributes(Enum):
+class IeeKeyBlobKeyAttributes(SpsdkEnum):
     """IEE keyblob key attributes."""
 
-    CTR128XTS256 = 0x5A  # AES 128 bits (CTR), 256 bits (XTS)
-    CTR256XTS512 = 0xA5  # AES 256 bits (CTR), 512 bits (XTS)
+    CTR128XTS256 = (0x5A, "CTR128XTS256")  # AES 128 bits (CTR), 256 bits (XTS)
+    CTR256XTS512 = (0xA5, "CTR256XTS512")  # AES 256 bits (CTR), 512 bits (XTS)
 
 
-class IeeKeyBlobModeAttributes(Enum):
+class IeeKeyBlobModeAttributes(SpsdkEnum):
     """IEE Keyblob mode attributes."""
 
-    Bypass = 0x6A  # AES encryption/decryption bypass
-    AesXTS = 0xA6  # AES XTS mode
-    AesCTRWAddress = 0x66  # AES CTR w address binding mode
-    AesCTRWOAddress = 0xAA  # AES CTR w/o address binding mode
-    AesCTRkeystream = 0x19  # AES CTR keystream only
+    Bypass = (0x6A, "Bypass")  # AES encryption/decryption bypass
+    AesXTS = (0xA6, "AesXTS")  # AES XTS mode
+    AesCTRWAddress = (0x66, "AesCTRWAddress")  # AES CTR w address binding mode
+    AesCTRWOAddress = (0xAA, "AesCTRWOAddress")  # AES CTR w/o address binding mode
+    AesCTRkeystream = (0x19, "AesCTRkeystream")  # AES CTR keystream only
 
 
-class IeeKeyBlobWritePmsnAttributes(Enum):
+class IeeKeyBlobWritePmsnAttributes(SpsdkEnum):
     """IEE keblob write permission attributes."""
 
-    ENABLE = 0x99  # Enable write permission in APC IEE
-    DISABLE = 0x11  # Disable write permission in APC IEE
+    ENABLE = (0x99, "ENABLE")  # Enable write permission in APC IEE
+    DISABLE = (0x11, "DISABLE")  # Disable write permission in APC IEE
 
 
 class IeeKeyBlobAttribute:
     """IEE Keyblob Attribute.
 
-    typedef struct _iee_keyblob_attribute
-    {
-        uint8_t lock;      #  IEE Region Lock control flag.
-        uint8_t keySize;   #  IEE AES key size.
-        uint8_t aesMode;   #  IEE AES mode.
-        uint8_t reserved;  #  Reserved.
-    } iee_keyblob_attribute_t;
+    | typedef struct _iee_keyblob_attribute
+    | {
+    |     uint8_t lock;      #  IEE Region Lock control flag.
+    |     uint8_t keySize;   #  IEE AES key size.
+    |     uint8_t aesMode;   #  IEE AES mode.
+    |     uint8_t reserved;  #  Reserved.
+    | } iee_keyblob_attribute_t;
     """
 
     _FORMAT = "<BBBB"
@@ -140,27 +140,27 @@ class IeeKeyBlobAttribute:
 
         :return: serialized binary data
         """
-        return pack(self._FORMAT, self.lock, self.key_attribute, self.aes_mode, 0)
+        return pack(self._FORMAT, self.lock.tag, self.key_attribute.tag, self.aes_mode.tag, 0)
 
 
 class IeeKeyBlob:
     """IEE KeyBlob.
 
-    typedef struct _iee_keyblob_
-    {
-        uint32_t header;                   #  IEE Key Blob header tag.
-        uint32_t version;                  #  IEE Key Blob version, upward compatible.
-        iee_keyblob_attribute_t attribute; #  IEE configuration attribute.
-        uint32_t pageOffset;               #  IEE page offset.
-        uint32_t key1[IEE_MAX_AES_KEY_SIZE_IN_BYTE /
-                      sizeof(uint32_t)]; #  Encryption key1 for XTS-AES mode, encryption key for AES-CTR mode.
-        uint32_t key2[IEE_MAX_AES_KEY_SIZE_IN_BYTE /
-                      sizeof(uint32_t)]; #  Encryption key2 for XTS-AES mode, initial counter for AES-CTR mode.
-        uint32_t startAddr;              #  Physical address of encryption region.
-        uint32_t endAddr;                #  Physical address of encryption region.
-        uint32_t reserved;               #  Reserved word.
-        uint32_t crc32;                  #  Entire IEE Key Blob CRC32 value. Must be the last struct member.
-    } iee_keyblob_t
+    | typedef struct _iee_keyblob_
+    | {
+    |     uint32_t header;                   #  IEE Key Blob header tag.
+    |     uint32_t version;                  #  IEE Key Blob version, upward compatible.
+    |     iee_keyblob_attribute_t attribute; #  IEE configuration attribute.
+    |     uint32_t pageOffset;               #  IEE page offset.
+    |     uint32_t key1[IEE_MAX_AES_KEY_SIZE_IN_BYTE /
+    |                   sizeof(uint32_t)]; #  Encryption key1 for XTS-AES mode, encryption key for AES-CTR mode.
+    |     uint32_t key2[IEE_MAX_AES_KEY_SIZE_IN_BYTE /
+    |                   sizeof(uint32_t)]; #  Encryption key2 for XTS-AES mode, initial counter for AES-CTR mode.
+    |     uint32_t startAddr;              #  Physical address of encryption region.
+    |     uint32_t endAddr;                #  Physical address of encryption region.
+    |     uint32_t reserved;               #  Reserved word.
+    |     uint32_t crc32;                  #  Entire IEE Key Blob CRC32 value. Must be the last struct member.
+    | } iee_keyblob_t
     """
 
     _FORMAT = "LL4BL8L8LLLLL96B"
@@ -252,7 +252,7 @@ class IeeKeyBlob:
         result += align_block(self.key1, 32)
         result += align_block(self.key2, 32)
         result += pack("<III", self.start_addr, self.end_addr, 0)
-        crc: bytes = mkPredefinedCrcFun("crc-32-mpeg")(result).to_bytes(4, "little")
+        crc: bytes = mkPredefinedCrcFun("crc-32-mpeg")(result).to_bytes(4, Endianness.LITTLE.value)
         result += crc
 
         return result
@@ -310,7 +310,7 @@ class IeeKeyBlob:
         key = reverse_bytes_in_longs(self.key1)
         nonce = reverse_bytes_in_longs(self.key2)
 
-        counter = Counter(nonce, ctr_value=base_address >> 4, ctr_byteorder_encoding="big")
+        counter = Counter(nonce, ctr_value=base_address >> 4, ctr_byteorder_encoding=Endianness.BIG)
 
         for block in split_data(bytearray(data), self._ENCRYPTION_BLOCK_SIZE):
             encrypted_block = aes_ctr_encrypt(
@@ -480,10 +480,10 @@ class IeeNxp(Iee):
         self.keyblob_address = keyblob_address
         self.binaries = binaries
 
-        self.database = Database(IEE_DATABASE_FILE)
-        self.blobs_min_cnt = self.database.get_device_value("key_blob_min_cnt", device=family)
-        self.blobs_max_cnt = self.database.get_device_value("key_blob_max_cnt", device=family)
-        self.generate_keyblob = self.database.get_device_value("generate_keyblob", device=family)
+        self.db = get_db(family, "latest")
+        self.blobs_min_cnt = self.db.get_int(DatabaseManager.IEE, "key_blob_min_cnt")
+        self.blobs_max_cnt = self.db.get_int(DatabaseManager.IEE, "key_blob_max_cnt")
+        self.generate_keyblob = self.db.get_bool(DatabaseManager.IEE, "generate_keyblob")
 
         if key_blobs:
             for key_blob in key_blobs:
@@ -527,21 +527,17 @@ class IeeNxp(Iee):
 
         :return: BLHOST script that loads the keys into fuses.
         """
-        if not self.database.get_device_value("has_kek_fuses", self.family, default=False):
+        if not self.db.get_bool(DatabaseManager.IEE, "has_kek_fuses", default=False):
             logger.debug(f"The {self.family} has no IEE KEK fuses")
             return ""
 
-        xml_fuses = self.database.get_device_value("reg_fuses", device=self.family, default=None)
+        xml_fuses = self.db.get_file_path(DatabaseManager.IEE, "reg_fuses", default=None)
         if not xml_fuses:
             logger.debug(f"The {self.family} has no IEE fuses definition")
             return ""
 
-        xml_fuses = os.path.join(IEE_DATA_FOLDER, xml_fuses)
-
-        fuses = Registers(self.family, base_endianness="little")
-        grouped_regs = self.database.get_device_value(
-            "grouped_registers", device=self.family, default=None
-        )
+        fuses = Registers(self.family, base_endianness=Endianness.LITTLE)
+        grouped_regs = self.db.get_list(DatabaseManager.IEE, "grouped_registers", default=None)
 
         fuses.load_registers_from_xml(xml_fuses, grouped_regs=grouped_regs)
         fuses.find_reg("USER_KEY1").set_value(self.ibkek1)
@@ -647,8 +643,7 @@ class IeeNxp(Iee):
 
         :return: List of supported families.
         """
-        database = Database(IEE_DATABASE_FILE)
-        return database.devices.device_names
+        return get_families(DatabaseManager.IEE)
 
     @staticmethod
     def get_validation_schemas(family: str) -> List[Dict[str, Any]]:
@@ -660,13 +655,15 @@ class IeeNxp(Iee):
         if family not in IeeNxp.get_supported_families():
             return []
 
-        database = Database(IEE_DATABASE_FILE)
-        schemas = ValidationSchemas.get_schema_file(IEE_SCH_FILE)
-        family_sch = deepcopy(schemas["iee_family"])
+        database = get_db(family, "latest")
+        schemas = get_schema_file(DatabaseManager.IEE)
+        family_sch = schemas["iee_family"]
         family_sch["properties"]["family"]["enum"] = IeeNxp.get_supported_families()
         family_sch["properties"]["family"]["template_value"] = family
         ret = [family_sch, schemas["iee_output"], schemas["iee"]]
-        additional_schemes = database.get_device_value("additional_template", family, default=[])
+        additional_schemes = database.get_list(
+            DatabaseManager.IEE, "additional_template", default=[]
+        )
         ret.extend([schemas[x] for x in additional_schemes])
         return ret
 
@@ -676,8 +673,8 @@ class IeeNxp(Iee):
 
         :return: Validation list of schemas.
         """
-        schemas = ValidationSchemas.get_schema_file(IEE_SCH_FILE)
-        family_sch = deepcopy(schemas["iee_family"])
+        schemas = get_schema_file(DatabaseManager.IEE)
+        family_sch = schemas["iee_family"]
         family_sch["properties"]["family"]["enum"] = IeeNxp.get_supported_families()
         return [family_sch]
 
@@ -689,15 +686,15 @@ class IeeNxp(Iee):
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
         val_schemas = IeeNxp.get_validation_schemas(family)
-        database = Database(IEE_DATABASE_FILE)
+        database = get_db(family, "latest")
 
         if val_schemas:
-            template_note = database.get_device_value(
-                "additional_template_text", family, default=""
+            template_note = database.get_str(
+                DatabaseManager.IEE, "additional_template_text", default=""
             )
             title = f"IEE: Inline Encryption Engine Configuration template for {family}."
 
-            yaml_data = CommentedConfig(title, val_schemas, note=template_note).export_to_yaml()
+            yaml_data = CommentedConfig(title, val_schemas, note=template_note).get_template()
 
             return {f"{family}_iee": yaml_data}
 
@@ -718,14 +715,14 @@ class IeeNxp(Iee):
         """
         iee_config: List[Dict[str, Any]] = config.get("key_blobs", [config.get("key_blob")])
         family = config["family"]
-        ibkek1 = get_key(
+        ibkek1 = load_hex_string(
             config.get(
                 "ibkek1",
                 "0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F",
             ),
             32,
         )
-        ibkek2 = get_key(
+        ibkek2 = load_hex_string(
             config.get(
                 "ibkek2",
                 "0x202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F",
@@ -780,13 +777,13 @@ class IeeNxp(Iee):
             key_size = key_blob_cfg["key_size"]
 
             attributes = IeeKeyBlobAttribute(
-                IeeKeyBlobLockAttributes[region_lock],
-                IeeKeyBlobKeyAttributes[key_size],
-                IeeKeyBlobModeAttributes[aes_mode],
+                IeeKeyBlobLockAttributes.from_label(region_lock),
+                IeeKeyBlobKeyAttributes.from_label(key_size),
+                IeeKeyBlobModeAttributes.from_label(aes_mode),
             )
 
-            key1 = get_key(key_blob_cfg["key1"], attributes.key1_size)
-            key2 = get_key(key_blob_cfg["key2"], attributes.key2_size)
+            key1 = load_hex_string(key_blob_cfg["key1"], attributes.key1_size)
+            key2 = load_hex_string(key_blob_cfg["key2"], attributes.key2_size)
 
             start_addr = value_to_int(key_blob_cfg.get("start_address", start_address))
             end_addr = value_to_int(key_blob_cfg.get("end_address", 0xFFFFFFFF))

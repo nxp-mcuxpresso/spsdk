@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -105,7 +105,9 @@ def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
 
     mem_types = XMCD.get_supported_memory_types(family)
     for mem_type in mem_types:
-        config_types = XMCD.get_supported_configuration_types(family, MemoryType.get(mem_type))
+        config_types = XMCD.get_supported_configuration_types(
+            family, MemoryType.from_label(mem_type)
+        )
         for config_type in config_types:
             template_name = f"xmcd_{family}_{mem_type}_{config_type}.yaml"
             new_template_path = os.path.join(tmpdir, template_name)
