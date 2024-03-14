@@ -276,13 +276,13 @@ class SecCsfAuthenticateCsf(SecCommandBase):
         # determine the key path, depending on if HAB is configured in normal or fast authentication mode
         try:
             install_csfk_params = config.commands.get_command_params(SecCommand.INSTALL_CSFK)
-            cfsk_path_param = "InstallCSFK_File"
+            cert_path_param = "InstallCSFK_File"
         except SPSDKValueError:  # in case of Fast Authentication, look for the NOCAK command
             install_csfk_params = config.commands.get_command_params(SecCommand.INSTALL_NOCAK)
-            cfsk_path_param = "InstallNOCAK_File"
+            cert_path_param = "InstallNOCAK_File"
 
         certificate = Certificate.parse(
-            load_binary(install_csfk_params[cfsk_path_param], search_paths)
+            load_binary(install_csfk_params[cert_path_param], search_paths)
         )
 
         if command_params.get("AuthenticateCsf_KeyPass"):
@@ -390,13 +390,13 @@ class SecCsfAuthenticateData(SecCommandBase):
         # determine the key path, depending on if HAB is configured in normal or fast authentication mode
         try:
             install_key_params = config.commands.get_command_params(SecCommand.INSTALL_KEY)
-            key_path_param = "InstallKey_File"
+            cert_path_param = "InstallKey_File"
         except SPSDKValueError:  # in case of Fast Authentication, look for the NOCAK command
             install_key_params = config.commands.get_command_params(SecCommand.INSTALL_NOCAK)
-            key_path_param = "InstallNOCAK_File"
+            cert_path_param = "InstallNOCAK_File"
 
         certificate = Certificate.parse(
-            load_binary(install_key_params[key_path_param], search_paths)
+            load_binary(install_key_params[cert_path_param], search_paths)
         )
 
         engine = EnumEngine.from_label(command_params["AuthenticateData_Engine"])
