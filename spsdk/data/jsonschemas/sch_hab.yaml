@@ -214,7 +214,7 @@ hab_sections:
                 description:
                   The Install NOCAK command authenticates and installs a public key for use with the fast authentication mechanism (HAB 4.1.2 and later only). With this mechanism, one key is used for all signatures.
                   HAB installs the no-CA key in slot 1 of its internal public key store.
-                  There must be exactly one Install NOCAK command in a CSF, and it must occur before the Authenticate CSF command and there must be no Install Key commands. Table 7 lists the install NOCAK command arguments.
+                  There must be exactly one Install NOCAK command in a CSF, and it must occur before the Authenticate CSF command and there must be no Install Key commands.
                 properties:
                   InstallNOCAK_File:
                     type: string
