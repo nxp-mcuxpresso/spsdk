@@ -206,6 +206,33 @@ hab_sections:
                   - InstallCSFK_File
           - type: object
             required:
+              - InstallNOCAK
+            properties:
+              InstallNOCAK:
+                type: object
+                title: Install NOCAK
+                description:
+                  The Install NOCAK command authenticates and installs a public key for use with the fast authentication mechanism (HAB 4.1.2 and later only). With this mechanism, one key is used for all signatures.
+                  HAB installs the no-CA key in slot 1 of its internal public key store.
+                  There must be exactly one Install NOCAK command in a CSF, and it must occur before the Authenticate CSF command and there must be no Install Key commands.
+                properties:
+                  InstallNOCAK_File:
+                    type: string
+                    title: NOCAK Certificate
+                    description: Valid path.
+                    template_value: "srk.pem"
+                  InstallNOCAK_CertificateFormat:
+                    type: string
+                    title: Certificate Format
+                    description: NOCAK certificate format.
+                    enum:
+                      - x509
+                      - WTLS
+                    template_value: x509
+                required:
+                  - InstallNOCAK_File
+          - type: object
+            required:
               - AuthenticateCSF
             properties:
               AuthenticateCSF:
