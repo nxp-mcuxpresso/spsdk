@@ -298,7 +298,7 @@ class SecCsfAuthenticateCsf(SecCommandBase):
             )
         except SPSDKValueError as exc:
             # Keep the backwards compatibility with CSF tool and try to determine the path from certificate path
-            private_key_path = determine_private_key_path(install_csfk_params[cfsk_path_param])
+            private_key_path = determine_private_key_path(install_csfk_params[cert_path_param])
             if not private_key_path:
                 raise SPSDKFileNotFoundError("Private key could not be determined.") from exc
             signature_provider = get_signature_provider(
@@ -423,7 +423,7 @@ class SecCsfAuthenticateData(SecCommandBase):
             )
         except SPSDKValueError as exc:
             # Keep the backwards compatibility with CSF tool and try to determine the path from certificate path
-            private_key_path = determine_private_key_path(install_key_params[key_path_param])
+            private_key_path = determine_private_key_path(install_key_params[cert_path_param])
             if not private_key_path:
                 raise SPSDKFileNotFoundError("Private key could not be determined.") from exc
             signature_provider = get_signature_provider(
