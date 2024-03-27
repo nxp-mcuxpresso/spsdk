@@ -11,10 +11,9 @@
 import logging
 import os
 import struct
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from crcmod.predefined import mkPredefinedCrcFun
-from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.hmac import hmac
@@ -25,8 +24,16 @@ from spsdk.crypto.signature_provider import (
     try_to_verify_public_key,
 )
 from spsdk.crypto.symmetric import aes_ctr_decrypt, aes_ctr_encrypt
-from spsdk.exceptions import SPSDKError, SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKError, SPSDKParsingError
 from spsdk.image.keystore import KeySourceType, KeyStore
+from spsdk.image.mbi.mbi_classes import (
+    MasterBootImageManifest,
+    MasterBootImageManifestCrc,
+    MasterBootImageManifestDigest,
+    MultipleImageEntry,
+    MultipleImageTable,
+    T_Manifest,
+)
 from spsdk.image.trustzone import TrustZone, TrustZoneType
 from spsdk.utils.crypto.cert_blocks import CertBlockV1, CertBlockV21, CertBlockVx
 from spsdk.utils.images import BinaryImage
@@ -44,375 +51,6 @@ from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 
-
-class MasterBootImageManifest:
-    """MasterBootImage Manifest."""
-
-    MAGIC = b"imgm"
-    FORMAT = "<4s4L"
-    FORMAT_VERSION = 0x0001_0000
-    DIGEST_PRESENT_FLAG = 0x8000_0000
-    HASH_TYPE_MASK = 0x0F
-    SUPPORTED_ALGORITHMS = [
-        EnumHashAlgorithm.SHA256,
-        EnumHashAlgorithm.SHA384,
-        EnumHashAlgorithm.SHA512,
-    ]
-
-    def __init__(
-        self,
-        firmware_version: int,
-        trust_zone: Optional[TrustZone] = None,
-        digest_hash_algo: Optional[EnumHashAlgorithm] = None,
-    ) -> None:
-        """Initialize MBI Manifest object.
-
-        :param firmware_version: firmware version
-        :param digest_hash_algo: Digest hash algorithm, defaults to None
-        :param trust_zone: TrustZone instance, defaults to None
-        """
-        self.firmware_version = firmware_version
-        if digest_hash_algo and digest_hash_algo not in self.SUPPORTED_ALGORITHMS:
-            raise SPSDKValueError(f"Unsupported digest hash algorithm: {digest_hash_algo}")
-        self.digest_hash_algo = digest_hash_algo
-        self.trust_zone = trust_zone
-        self.flags = self._calculate_flags()
-        self.total_length = self._calculate_length()
-
-    def _calculate_length(self) -> int:
-        length = struct.calcsize(self.FORMAT)
-        if self.trust_zone:
-            length += len(self.trust_zone.export())
-        return length
-
-    def _calculate_flags(self) -> int:
-        if not self.digest_hash_algo:
-            return 0
-        hash_algo_types = {
-            None: 0,
-            EnumHashAlgorithm.SHA256: 1,
-            EnumHashAlgorithm.SHA384: 2,
-            EnumHashAlgorithm.SHA512: 3,
-        }
-        return self.DIGEST_PRESENT_FLAG | hash_algo_types[self.digest_hash_algo]
-
-    @staticmethod
-    def get_hash_size(algorithm: EnumHashAlgorithm) -> int:
-        """Get hash size by used algorithm."""
-        return {
-            EnumHashAlgorithm.SHA256: 32,
-            EnumHashAlgorithm.SHA384: 48,
-            EnumHashAlgorithm.SHA512: 64,
-        }.get(algorithm, 0)
-
-    def export(self) -> bytes:
-        """Serialize MBI Manifest."""
-        data = struct.pack(
-            self.FORMAT,
-            self.MAGIC,
-            self.FORMAT_VERSION,
-            self.firmware_version,
-            self.total_length,
-            self.flags,
-        )
-        if self.trust_zone:
-            data += self.trust_zone.export()
-        return data
-
-    @classmethod
-    def parse(cls, family: str, data: bytes) -> Self:
-        """Parse the binary to Master Boot Image Manifest.
-
-        :param family: Device family.
-        :param data: Binary Image with MBI Manifest.
-        :raises SPSDKParsingError: Invalid header is detected.
-        :return: MBI Manifest object
-        """
-        fw_version, hash_algo, extra_data = cls._parse_manifest(data)
-        trust_zone = None
-        if len(extra_data) > 0:
-            trust_zone = TrustZone.from_binary(family=family, raw_data=extra_data)
-        return cls(firmware_version=fw_version, trust_zone=trust_zone, digest_hash_algo=hash_algo)
-
-    @classmethod
-    def _parse_manifest(cls, data: bytes) -> Tuple[int, Optional[EnumHashAlgorithm], bytes]:
-        """Parse manifest binary data.
-
-        :param data: Binary data with MBI Manifest.
-        :raises SPSDKParsingError: Invalid header is detected.
-        :return: Tuple with fw version, hash type and image extra data
-        """
-        (magic, version, fw_version, total_length, flags) = struct.unpack(
-            cls.FORMAT, data[: struct.calcsize(cls.FORMAT)]
-        )
-        assert isinstance(magic, bytes)
-        if magic != cls.MAGIC:
-            raise SPSDKParsingError(
-                "MBI Manifest: Invalid MAGIC marker detected when parsing:"
-                f" {magic.hex()} != {cls.MAGIC.hex()}"
-            )
-        if version != cls.FORMAT_VERSION:
-            raise SPSDKParsingError(
-                "MBI Manifest: Invalid MANIFEST VERSION detected when parsing:"
-                f" {version} != {cls.FORMAT_VERSION}"
-            )
-        if total_length >= len(data):
-            raise SPSDKParsingError(
-                "MBI Manifest: Invalid Input data length:" f" {total_length} < {len(data)}"
-            )
-        hash_algo: Optional[EnumHashAlgorithm] = None
-        if flags & cls.DIGEST_PRESENT_FLAG:
-            hash_algo = {
-                0: None,
-                1: EnumHashAlgorithm.SHA256,
-                2: EnumHashAlgorithm.SHA384,
-                3: EnumHashAlgorithm.SHA512,
-            }[flags & cls.HASH_TYPE_MASK]
-        manifest_len = struct.calcsize(cls.FORMAT)
-        extra_data = data[manifest_len:total_length]
-        return fw_version, hash_algo, extra_data
-
-
-class MasterBootImageManifestMcxNx(MasterBootImageManifest):
-    """MasterBootImage Manifest used in mcxnx devices."""
-
-    def __init__(
-        self,
-        firmware_version: int,
-        trust_zone: Optional[TrustZone] = None,
-        digest_hash_algo: Optional[EnumHashAlgorithm] = None,
-    ) -> None:
-        """Initialize MBI Manifest object.
-
-        :param firmware_version: firmware version
-        :param digest_hash_algo: Digest hash algorithm, defaults to None
-        :param trust_zone: TrustZone instance, defaults to None
-        """
-        super().__init__(firmware_version, trust_zone, digest_hash_algo)
-        self.crc = 0
-
-    def export(self) -> bytes:
-        """Serialize MBI Manifest."""
-        data = super().export()
-        data += struct.pack("<L", self.crc)
-        return data
-
-    @classmethod
-    def parse(cls, family: str, data: bytes) -> Self:
-        """Parse the binary to Master Boot Image Manifest.
-
-        :param family: Device family.
-        :param data: Binary Image with MBI Manifest.
-        :raises SPSDKParsingError: Invalid header is detected.
-        :return: MBI Manifest object
-        """
-        fw_version, hash_algo, extra_data = cls._parse_manifest(data)
-        if len(extra_data) < 4:
-            raise SPSDKParsingError("Extra data must contain crc.")
-
-        crc = int.from_bytes(extra_data[-4:], Endianness.LITTLE.value)
-        trust_zone = None
-        if extra_data[:-4]:
-            trust_zone = TrustZone.from_binary(family=family, raw_data=extra_data[:-4])
-        mcx_manifest = cls(
-            firmware_version=fw_version, trust_zone=trust_zone, digest_hash_algo=hash_algo
-        )
-        mcx_manifest.crc = crc
-        return mcx_manifest
-
-    def _calculate_length(self) -> int:
-        return super()._calculate_length() + 4
-
-    def compute_crc(self, image: bytes) -> None:
-        """Compute and add CRC field.
-
-        :param image: Image data to be used to compute CRC
-        """
-        self.crc = mkPredefinedCrcFun("crc-32-mpeg")(image)
-
-
-T_Manifest = TypeVar("T_Manifest", MasterBootImageManifest, MasterBootImageManifestMcxNx)
-
-
-class MultipleImageEntry:
-    """The class represents an entry in relocation table.
-
-    It also contains a corresponding image (binary)
-    """
-
-    # flag to simply copy load segment into target memory
-    LTI_LOAD = 1 << 0
-
-    def __init__(self, img: bytes, dst_addr: int, flags: int = LTI_LOAD):
-        """Constructor.
-
-        :param img: binary image data
-        :param dst_addr: destination address
-        :param flags: see LTI constants
-        :raises SPSDKError: If invalid destination address
-        :raises SPSDKError: Other section types (INIT) are not supported
-        """
-        if dst_addr < 0 or dst_addr > 0xFFFFFFFF:
-            raise SPSDKError("Invalid destination address")
-        if flags != self.LTI_LOAD:
-            raise SPSDKError("For now, other section types than LTI_LOAD, are not supported")
-        self._img = img
-        self._src_addr = 0
-        self._dst_addr = dst_addr
-        self._flags = flags
-
-    @property
-    def image(self) -> bytes:
-        """Binary image data."""
-        return self._img
-
-    @property
-    def src_addr(self) -> int:
-        """Source address; this value is calculated automatically when building the image."""
-        return self._src_addr
-
-    @src_addr.setter
-    def src_addr(self, value: int) -> None:
-        """Setter.
-
-        :param value: to set
-        """
-        self._src_addr = value
-
-    @property
-    def dst_addr(self) -> int:
-        """Destination address."""
-        return self._dst_addr
-
-    @property
-    def size(self) -> int:
-        """Size of the image (not aligned)."""
-        return len(self.image)
-
-    @property
-    def flags(self) -> int:
-        """Flags, currently not used."""
-        return self._flags
-
-    @property
-    def is_load(self) -> bool:
-        """True if entry represents LOAD section."""
-        return (self.flags & self.LTI_LOAD) != 0
-
-    def export_entry(self) -> bytes:
-        """Export relocation table entry in binary form."""
-        result = bytes()
-        result += struct.pack("<I", self.src_addr)  # source address
-        result += struct.pack("<I", self.dst_addr)  # dest address
-        result += struct.pack("<I", self.size)  # length
-        result += struct.pack("<I", self.flags)  # flags
-        return result
-
-    @staticmethod
-    def parse(data: bytes) -> "MultipleImageEntry":
-        """Parse relocation table entry from binary form."""
-        (src_addr, dst_addr, size, flags) = struct.unpack("<4I", data[: 4 * 4])
-        if src_addr + size > len(data):
-            raise SPSDKParsingError("The image doesn't fit into given data")
-
-        return MultipleImageEntry(data[src_addr : src_addr + size], dst_addr, flags)
-
-    def export_image(self) -> bytes:
-        """Binary image aligned to the 4-bytes boundary."""
-        return align_block(self.image, 4)
-
-
-class MultipleImageTable:
-    """The class allows to merge several images into single image and add relocation table.
-
-    It can be used for multicore images (one image for each core)
-    or trustzone images (merging secure and non-secure image)
-    """
-
-    def __init__(self) -> None:
-        """Initialize the Multiple Image Table."""
-        self._entries: List[MultipleImageEntry] = []
-        self.start_address = 0
-
-    @property
-    def header_version(self) -> int:
-        """Format version of the structure for the header."""
-        return 0
-
-    @property
-    def entries(self) -> Sequence[MultipleImageEntry]:
-        """List of all entries."""
-        return self._entries
-
-    def add_entry(self, entry: MultipleImageEntry) -> None:
-        """Add entry into relocation table.
-
-        :param entry: to add
-        """
-        self._entries.append(entry)
-
-    def reloc_table(self, start_addr: int) -> bytes:
-        """Relocate table.
-
-        :param start_addr: start address of the relocation table
-        :return: export relocation table in binary form
-        """
-        result = bytes()
-        # export relocation entries table
-        for entry in self.entries:
-            result += entry.export_entry()
-        # export relocation table header
-        result += struct.pack("<I", 0x4C54424C)  # header marker
-        result += struct.pack("<I", self.header_version)  # version
-        result += struct.pack("<I", len(self._entries))  # number of entries
-        result += struct.pack("<I", start_addr)  # pointer to entries
-        return result
-
-    def export(self, start_addr: int) -> bytes:
-        """Export.
-
-        :param start_addr: start address where the images are exported;
-                        the value matches source address for the first image
-        :return: images with relocation table
-        :raises SPSDKError: If there is no entry for export
-        """
-        if not self._entries:
-            raise SPSDKError("There must be at least one entry for export")
-        self.start_address = start_addr
-        src_addr = start_addr
-        result = bytes()
-        for entry in self.entries:
-            if entry.is_load:
-                entry.src_addr = src_addr
-                entry_img = entry.export_image()
-                result += entry_img
-                src_addr += len(entry_img)
-        result += self.reloc_table(start_addr + len(result))
-        return result
-
-    @staticmethod
-    def parse(data: bytes) -> Optional["MultipleImageTable"]:
-        """Parse binary to get the Multiple application table.
-
-        :param data: Data bytes where the application is looked for
-        :raises SPSDKParsingError: The application table parsing fails.
-
-        :return: Multiple application table if detected.
-        """
-        (marker, header_version, n_entries, start_address) = struct.unpack(
-            "<4I", data[-struct.calcsize("<4I") :]
-        )
-        if marker != 0x4C54424C or header_version != MultipleImageTable().header_version:
-            return None
-
-        app_table = MultipleImageTable()
-        app_table.start_address = start_address
-        for n in range(n_entries):
-            app_table.add_entry(MultipleImageEntry.parse(data[: -16 * (1 + n)]))
-
-        return app_table
-
-
 # ****************************************************************************************************
 #                                             Mbi Mixins
 # ****************************************************************************************************
@@ -425,6 +63,7 @@ class Mbi_Mixin:
     VALIDATION_SCHEMAS: List[str] = []
     NEEDED_MEMBERS: Dict[str, Any] = {}
     PRE_PARSED: List[str] = []
+    COUNT_IN_LEGACY_CERT_BLOCK_LEN: bool = True
 
     def mix_len(self) -> int:  # pylint: disable=no-self-use
         """Compute length of individual mixin.
@@ -438,7 +77,7 @@ class Mbi_Mixin:
 
         :return: Application data length of atomic Mixin.
         """
-        return -1
+        return 0
 
     @classmethod
     def mix_get_extra_validation_schemas(cls) -> List[Dict[str, Any]]:
@@ -495,6 +134,14 @@ class Mbi_MixinApp(Mbi_Mixin):
         """Get size of plain input application image.
 
         :return: Length of application.
+        """
+        assert self.app
+        return len(self.app)
+
+    def mix_app_len(self) -> int:
+        """Compute application data length of individual mixin.
+
+        :return: Application data length of atomic Mixin.
         """
         assert self.app
         return len(self.app)
@@ -1088,18 +735,25 @@ class Mbi_MixinBca(Mbi_Mixin):
     VALIDATION_SCHEMAS: List[str] = ["firmware_version"]
 
     # BCA table offsets
-    IMG_BCA_OFFSET = 0x3C0
-    IMG_BCA_IMAGE_LENGTH_OFFSET = IMG_BCA_OFFSET + 0x20
-    IMG_BCA_FW_VERSION_OFFSET = IMG_BCA_OFFSET + 0x24
     IMG_DIGEST_SIZE = 32
     IMG_DIGEST_OFFSET = 0x360
     IMG_SIGNATURE_OFFSET = IMG_DIGEST_OFFSET + IMG_DIGEST_SIZE
+    IMG_BCA_OFFSET = 0x3C0
+    IMG_BCA_IMAGE_LENGTH_OFFSET = IMG_BCA_OFFSET + 0x20
+    IMG_BCA_FW_VERSION_OFFSET = IMG_BCA_OFFSET + 0x24
     IMG_FCB_OFFSET = 0x400
     IMG_FCB_SIZE = 16
     IMG_ISK_OFFSET = IMG_FCB_OFFSET + IMG_FCB_SIZE
+    IMG_ISK_HASH_OFFSET = 0x4A0
+    IMG_ISK_HASH_SIZE = 128
+    IMG_WPC_BLOCK_OFFSET = IMG_ISK_HASH_OFFSET + IMG_ISK_HASH_SIZE
+    IMG_WPC_BLOCK_SIZE = 736
+    IMG_DUKB_BLOCK_OFFSET = IMG_WPC_BLOCK_OFFSET + IMG_WPC_BLOCK_SIZE
+    IMG_DUKB_BLOCK_SIZE = 0x400
+
     IMG_DATA_START = 0xC00
     IMG_SIGNED_HEADER_END = IMG_FCB_OFFSET
-    IMG_ISK_HASH_OFFSET = 0x4A0
+
     firmware_version: Optional[int]
 
     def mix_len(self) -> int:
@@ -1179,22 +833,31 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
         """
         return len(self.app_table.export(0)) if self.app_table else 0
 
+    def mix_app_len(self) -> int:
+        """Compute application data length of individual mixin.
+
+        :return: Application data length of atomic Mixin.
+        """
+        return len(self.app_table.export(0)) if self.app_table else 0
+
     def mix_load_from_config(self, config: Dict[str, Any]) -> None:
         """Load configuration from dictionary.
 
         :param config: Dictionary with configuration fields.
         """
         app_table = config.get("applicationTable", None)
-        if app_table:
-            self.app_table = MultipleImageTable()
-            for entry in app_table:
-                image = load_binary(entry.get("binary"), search_paths=self.search_paths)
-                dst_addr = value_to_int(entry.get("destAddress"))
-                load = entry.get("load")
-                image_entry = MultipleImageEntry(
-                    image, dst_addr, MultipleImageEntry.LTI_LOAD if load else 0
-                )
-                self.app_table.add_entry(image_entry)
+        if app_table is None:
+            return
+
+        self.app_table = MultipleImageTable()
+        for entry in app_table:
+            image = load_binary(entry.get("binary"), search_paths=self.search_paths)
+            dst_addr = value_to_int(entry.get("destAddress"))
+            load = entry.get("load")
+            image_entry = MultipleImageEntry(
+                image, dst_addr, MultipleImageEntry.LTI_LOAD if load else 0
+            )
+            self.app_table.add_entry(image_entry)
 
     def mix_get_config(self, output_folder: str) -> Dict[str, Any]:
         """Get the configuration of the mixin.
@@ -1223,37 +886,16 @@ class Mbi_MixinRelocTable(Mbi_Mixin):
         if self.app_table and len(self.app_table.entries) == 0:
             raise SPSDKError("The application relocation table MUST has at least one record.")
 
-    def get_app_length(self) -> int:
-        """Compute full application length.
-
-        :return: Length of application with relocated data.
-        """
-        assert self.app
-        return len(self.app) + (len(self.app_table.export(0)) if self.app_table else 0)
-
-    def get_app_data(self) -> bytes:
-        """Fold the application data.
-
-        :return: Whole application data.
-        """
-        assert self.app
-        ret = bytearray()
-        ret += self.app
-        if self.app_table:
-            ret += self.app_table.export(len(self.app))
-        return ret
-
     def disassembly_app_data(self, data: bytes) -> bytes:
         """Disassembly Application data to application and optionally Multiple Application Table.
 
         :return: Application data without Multiple Application Table which will be stored in class.
         """
-        app_size = len(data)
-        app_table = MultipleImageTable.parse(data)
-        if app_table:
-            self.app_table = app_table
-            app_size = app_table.start_address
-        return data[:app_size]
+        self.app_table = MultipleImageTable.parse(data)
+        if self.app_table:
+            return data[: self.app_table.start_address]
+
+        return data
 
 
 class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
@@ -1269,6 +911,66 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
     family: str
     cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
     firmware_version: Optional[int]
+
+    def mix_len(self) -> int:
+        """Get length of Manifest block.
+
+        :return: Length of Manifest block.
+        """
+        assert self.manifest
+        return self.manifest.total_length
+
+    def mix_validate(self) -> None:
+        """Validate the setting of image.
+
+        :raises SPSDKError: The manifest configuration is invalid.
+        """
+        super().mix_validate()
+        if not self.manifest:
+            raise SPSDKError("The Image manifest must exists.")
+
+    def mix_parse(self, data: bytes) -> None:
+        """Parse the binary to individual fields.
+
+        :param data: Final Image in bytes.
+        """
+        assert isinstance(self.cert_block, CertBlockV21)
+        manifest_offset = Mbi_MixinIvt.get_cert_block_offset(data) + self.cert_block.expected_size
+        self.manifest = self.manifest_class.parse(self.family, data[manifest_offset:])
+        self.firmware_version = self.manifest.firmware_version
+        if self.manifest.trust_zone:
+            self.trust_zone = self.manifest.trust_zone
+        else:
+            self.trust_zone = TrustZone.disabled()
+
+
+class Mbi_MixinManifestCrc(Mbi_MixinManifest):
+    """Master Boot Image Manifest class with CRC."""
+
+    manifest_class = MasterBootImageManifestCrc
+    manifest: Optional[MasterBootImageManifestCrc]
+
+    def mix_load_from_config(self, config: Dict[str, Any]) -> None:
+        """Load configuration from dictionary.
+
+        :param config: Dictionary with configuration fields.
+        """
+        super().mix_load_from_config(config)
+        self.firmware_version = value_to_int(config.get("firmwareVersion", 0))
+
+        self.manifest = self.manifest_class(
+            self.firmware_version,
+            self.trust_zone,
+        )
+
+
+class Mbi_MixinManifestDigest(Mbi_MixinManifest):
+    """Master Boot Image Manifest class for devices supporting ImageDigest functionality."""
+
+    manifest_class = MasterBootImageManifestDigest
+    manifest: Optional[MasterBootImageManifestDigest]
+
+    VALIDATION_SCHEMAS: List[str] = ["trust_zone", "firmware_version", "digest_hash_algo"]
 
     def mix_len(self) -> int:
         """Get length of Manifest block.
@@ -1297,7 +999,6 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
         digest_hash_algorithm = (
             EnumHashAlgorithm.from_label(config["manifestDigestHashAlgorithm"])
             if "manifestDigestHashAlgorithm" in config
-            and "digest_hash_algo" in self.VALIDATION_SCHEMAS
             else None
         )
         # Backward compatibility code (in case that new manifestDigestHashAlgorithm doesn't exist
@@ -1326,42 +1027,6 @@ class Mbi_MixinManifest(Mbi_MixinTrustZoneMandatory):
         if "digest_hash_algo" in self.VALIDATION_SCHEMAS:
             config["manifestDigestHashAlgorithm"] = self.manifest.digest_hash_algo
         return config
-
-    def mix_validate(self) -> None:
-        """Validate the setting of image.
-
-        :raises SPSDKError: The manifest configuration is invalid.
-        """
-        super().mix_validate()
-        if not self.manifest:
-            raise SPSDKError("The Image manifest must exists.")
-
-    def mix_parse(self, data: bytes) -> None:
-        """Parse the binary to individual fields.
-
-        :param data: Final Image in bytes.
-        """
-        assert isinstance(self.cert_block, CertBlockV21)
-        manifest_offset = Mbi_MixinIvt.get_cert_block_offset(data) + self.cert_block.expected_size
-        self.manifest = self.manifest_class.parse(self.family, data[manifest_offset:])
-        self.firmware_version = self.manifest.firmware_version
-        if self.manifest.trust_zone:
-            self.trust_zone = self.manifest.trust_zone
-        else:
-            self.trust_zone = TrustZone.disabled()
-
-
-class Mbi_MixinManifestMcxNx(Mbi_MixinManifest):
-    """Master Boot Image Manifest class for mcxn9xx device."""
-
-    manifest_class = MasterBootImageManifestMcxNx
-    manifest: Optional[MasterBootImageManifestMcxNx]
-
-
-class Mbi_MixinManifestDigest(Mbi_MixinManifest):
-    """Master Boot Image Manifest class for devices supporting ImageDigest functionality."""
-
-    VALIDATION_SCHEMAS: List[str] = ["trust_zone", "firmware_version", "digest_hash_algo"]
 
 
 class Mbi_MixinCertBlockV1(Mbi_Mixin):
@@ -1612,6 +1277,7 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
 
     VALIDATION_SCHEMAS: List[str] = ["key_store"]
     NEEDED_MEMBERS: Dict[str, Any] = {"key_store": None, "_hmac_key": None}
+    COUNT_IN_LEGACY_CERT_BLOCK_LEN: bool = False
 
     key_store: Optional[KeyStore]
     hmac_key: Optional[bytes]
@@ -1629,13 +1295,6 @@ class Mbi_MixinKeyStore(Mbi_Mixin):
             if self.key_store and self.key_store.key_source == KeySourceType.KEYSTORE
             else 0
         )
-
-    def mix_app_len(self) -> int:  # pylint: disable=no-self-use
-        """Compute application data length of individual mixin.
-
-        :return: Application data length of atomic Mixin.
-        """
-        return 0
 
     def mix_load_from_config(self, config: Dict[str, Any]) -> None:
         """Load configuration from dictionary.
@@ -1691,6 +1350,8 @@ class Mbi_MixinHmac(Mbi_Mixin):
 
     VALIDATION_SCHEMAS: List[str] = ["hmac"]
     NEEDED_MEMBERS: Dict[str, Any] = {"_hmac_key": None}
+    COUNT_IN_LEGACY_CERT_BLOCK_LEN: bool = False
+
     # offset in the image, where the HMAC table is located
     HMAC_OFFSET = 64
     # size of HMAC table in bytes
@@ -1718,13 +1379,6 @@ class Mbi_MixinHmac(Mbi_Mixin):
         :return: Length of HMAC block.
         """
         return self.HMAC_SIZE if self.hmac_key else 0
-
-    def mix_app_len(self) -> int:  # pylint: disable=no-self-use
-        """Compute application data length of individual mixin.
-
-        :return: Application data length of atomic Mixin.
-        """
-        return 0
 
     def mix_load_from_config(self, config: Dict[str, Any]) -> None:
         """Load configuration from dictionary.
@@ -1899,12 +1553,12 @@ class Mbi_MixinNoSignature(Mbi_Mixin):
 class Mbi_ExportMixin:
     """Base MBI Export Mixin class."""
 
-    def collect_data(self) -> bytes:  # pylint: disable=no-self-use
+    def collect_data(self) -> BinaryImage:  # pylint: disable=no-self-use
         """Collect basic data to create image.
 
         :return: Collected raw image.
         """
-        return bytes()
+        return BinaryImage(name="General")
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
         """Disassemble image to individual parts from image.
@@ -1912,7 +1566,9 @@ class Mbi_ExportMixin:
         :param image: Image.
         """
 
-    def encrypt(self, image: bytes, revert: bool = False) -> bytes:  # pylint: disable=no-self-use
+    def encrypt(
+        self, image: BinaryImage, revert: bool = False
+    ) -> BinaryImage:  # pylint: disable=no-self-use
         """Encrypt image if needed.
 
         :param image: Input raw image to encrypt.
@@ -1922,8 +1578,8 @@ class Mbi_ExportMixin:
         return image
 
     def post_encrypt(
-        self, image: bytes, revert: bool = False
-    ) -> bytes:  # pylint: disable=no-self-use
+        self, image: BinaryImage, revert: bool = False
+    ) -> BinaryImage:  # pylint: disable=no-self-use
         """Optionally do some post encrypt image updates.
 
         :param image: Encrypted image.
@@ -1932,7 +1588,9 @@ class Mbi_ExportMixin:
         """
         return image
 
-    def sign(self, image: bytes, revert: bool = False) -> bytes:  # pylint: disable=no-self-use
+    def sign(
+        self, image: BinaryImage, revert: bool = False
+    ) -> BinaryImage:  # pylint: disable=no-self-use
         """Sign image (by signature or CRC).
 
         :param image: Image to sign.
@@ -1941,7 +1599,9 @@ class Mbi_ExportMixin:
         """
         return image
 
-    def finalize(self, image: bytes, revert: bool = False) -> bytes:  # pylint: disable=no-self-use
+    def finalize(
+        self, image: BinaryImage, revert: bool = False
+    ) -> BinaryImage:  # pylint: disable=no-self-use
         """Finalize the image for export.
 
         This part could add HMAC/KeyStore etc.
@@ -1953,6 +1613,22 @@ class Mbi_ExportMixin:
         return image
 
 
+class Mbi_ExportMixinApp(Mbi_ExportMixin):
+    """Export Mixin to handle simple application data."""
+
+    app: Optional[bytes]
+    total_len: Any
+    update_ivt: Callable[[bytes, int, int], bytes]
+
+    def collect_data(self) -> BinaryImage:
+        """Collect application data including update IVT.
+
+        :return: Image with updated IVT.
+        """
+        assert self.app
+        return BinaryImage(name="Application", binary=self.update_ivt(self.app, self.total_len, 0))
+
+
 class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixin):
     """Export Mixin to handle simple application data and TrustZone."""
 
@@ -1961,17 +1637,28 @@ class Mbi_ExportMixinAppTrustZone(Mbi_ExportMixin):
     total_len: Any
     update_ivt: Callable[[bytes, int, int], bytes]
     clean_ivt: Callable[[bytes], bytes]
-    get_app_data: Callable[[], bytes]
+    app_table: MultipleImageTable
     disassembly_app_data: Callable[[bytes], bytes]
 
-    def collect_data(self) -> bytes:
+    def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
 
         :return: Image with updated IVT and added TrustZone.
         """
         assert self.app and self.trust_zone
-        app = self.get_app_data() if hasattr(self, "get_app_data") else self.app
-        return self.update_ivt(app + self.trust_zone.export(), self.total_len, 0)
+        ret = BinaryImage(name="Application Block")
+        app = self.update_ivt(self.app, self.total_len, 0)
+        ret.append_image(BinaryImage(name="Application", binary=app))
+
+        if hasattr(self, "app_table") and self.app_table:
+            ret.append_image(
+                BinaryImage(name="Relocation Table", binary=self.app_table.export(len(app)))
+            )
+        tz = self.trust_zone.export()
+        if len(tz):
+            ret.append_image(BinaryImage(name="TrustZone Settings", binary=tz))
+
+        return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
         """Disassemble image to individual parts from image.
@@ -1991,15 +1678,16 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
 
     app: Optional[bytes]
     trust_zone: TrustZone
-    total_len: Any
+    total_len: int
+    total_length_for_cert_block: int
     app_len: int
     update_ivt: Callable[[bytes, int, int], bytes]
     clean_ivt: Callable[[bytes], bytes]
     cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
-    get_app_data: Callable[[], bytes]
+    app_table: MultipleImageTable
     disassembly_app_data: Callable[[bytes], bytes]
 
-    def collect_data(self) -> bytes:
+    def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
 
         :return: Image with updated IVT and added TrustZone.
@@ -2010,14 +1698,25 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
             and self.cert_block
             and isinstance(self.cert_block, CertBlockV1)
         )
+        ret = BinaryImage(name="Application Block")
+
         self.cert_block.alignment = 4
-        self.cert_block.image_length = self.app_len
-        app = self.get_app_data() if hasattr(self, "get_app_data") else self.app
-        return self.update_ivt(
-            app + self.cert_block.export() + self.trust_zone.export(),
-            self.total_len + self.cert_block.signature_size,
-            len(app),
+        self.cert_block.image_length = self.total_length_for_cert_block
+        app = self.update_ivt(
+            self.app, self.total_len + self.cert_block.signature_size, self.app_len
         )
+        ret.append_image(BinaryImage(name="Application", binary=app))
+
+        if hasattr(self, "app_table") and self.app_table:
+            ret.append_image(
+                BinaryImage(name="Relocation Table", binary=self.app_table.export(len(app)))
+            )
+        ret.append_image(BinaryImage(name="Certification Block", binary=self.cert_block.export()))
+        tz = self.trust_zone.export()
+        if len(tz):
+            ret.append_image(BinaryImage(name="TrustZone Settings", binary=tz))
+
+        return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
         """Disassemble image to individual parts from image.
@@ -2030,37 +1729,20 @@ class Mbi_ExportMixinAppTrustZoneCertBlock(Mbi_ExportMixin):
         self.app = self.clean_ivt(image)
 
 
-class Mbi_ExportMixinApp(Mbi_ExportMixin):
-    """Export Mixin to handle simple application data."""
-
-    app: Optional[bytes]
-    total_len: Any
-    update_ivt: Callable[[bytes, int, int], bytes]
-    get_app_data: Callable[[], bytes]
-
-    def collect_data(self) -> bytes:
-        """Collect application data including update IVT.
-
-        :return: Image with updated IVT.
-        """
-        assert self.app
-        app = self.get_app_data() if hasattr(self, "get_app_data") else self.app
-        return self.update_ivt(app, self.total_len, 0)
-
-
 class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
     """Export Mixin to handle simple application data, Certification block and Manifest."""
 
     app: Optional[bytes]
-    total_len: Any
+    app_len: int
+    total_len: int
     update_ivt: Callable[[bytes, int, int], bytes]
     clean_ivt: Callable[[bytes], bytes]
-    get_app_data: Callable[[], bytes]
     cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
     manifest: Optional[T_Manifest]  # type: ignore  # we don't use regular bound method
     disassembly_app_data: Callable[[bytes], bytes]
+    data_to_sign: Optional[bytes]
 
-    def collect_data(self) -> bytes:
+    def collect_data(self) -> BinaryImage:
         """Collect application data, Certification Block and Manifest including update IVT.
 
         :raises SPSDKError: When either application data or certification block or manifest is missing
@@ -2070,23 +1752,22 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
             raise SPSDKError(
                 "Either application data or certification block or manifest is missing"
             )
-        app = self.get_app_data() if hasattr(self, "get_app_data") else self.app
         assert len(self.manifest.export()) == self.manifest.total_length
-        image = self.update_ivt(
-            app + self.cert_block.export() + self.manifest.export(),
-            self.total_len,
-            len(app),
-        )
 
-        # in case of McuNx manifest add crc
-        if isinstance(self.manifest, MasterBootImageManifestMcxNx):
-            self.manifest.compute_crc(image[:-4])
-            image = self.update_ivt(
-                app + self.cert_block.export() + self.manifest.export(),
-                self.total_len,
-                len(app),
-            )
-        return image
+        ret = BinaryImage(name="Application Block")
+        app = self.update_ivt(self.app, self.total_len, self.app_len)
+        ret.append_image(BinaryImage(name="Application", binary=app))
+        ret.append_image(BinaryImage(name="Certification Block", binary=self.cert_block.export()))
+        image_manifest = BinaryImage(name="Manifest", binary=self.manifest.export())
+        # in case of crc manifest add crc
+        ret.append_image(image_manifest)
+
+        if isinstance(self.manifest, MasterBootImageManifestCrc):
+            self.manifest.compute_crc(ret.export()[:-4])
+            image_manifest.binary = self.manifest.export()
+
+        # ret.append_image(image_manifest)
+        return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
         """Disassemble image to individual parts from image.
@@ -2099,14 +1780,13 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
             image = self.disassembly_app_data(image)
         self.app = self.clean_ivt(image)
 
-    def finalize(self, image: bytes, revert: bool = False) -> bytes:
+    def finalize(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Finalize the image for export by adding HMAC a optionally KeyStore.
 
         :param image: Input image.
         :param revert: Revert the operation if possible.
         :return: Finalized image suitable for export.
         """
-        ret = image
         if (
             self.manifest
             and self.manifest.flags
@@ -2114,10 +1794,19 @@ class Mbi_ExportMixinAppCertBlockManifest(Mbi_ExportMixin):
             and self.manifest.digest_hash_algo is not None
         ):
             if revert:
-                ret = ret[: -self.manifest.get_hash_size(self.manifest.digest_hash_algo)]
+                image.binary = image.binary[
+                    : -self.manifest.get_hash_size(self.manifest.digest_hash_algo)
+                ]
             else:
-                ret += get_hash(image, self.manifest.digest_hash_algo)
-        return ret
+                calculated_hash = get_hash(self.data_to_sign, self.manifest.digest_hash_algo)
+                logger.debug(f"Adding manifest hash to the image: {calculated_hash.hex()}")
+                image.append_image(
+                    BinaryImage(
+                        "Manifest Hash",
+                        binary=calculated_hash,
+                    )
+                )
+        return image
 
 
 class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
@@ -2126,7 +1815,7 @@ class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
     IVT_CRC_CERTIFICATE_OFFSET: int
     update_crc_val_cert_offset: Callable[[bytes, int], bytes]
 
-    def sign(self, image: bytes, revert: bool = False) -> bytes:
+    def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Do simple calculation of CRC and return updated image with it.
 
         :param image: Input raw image.
@@ -2136,14 +1825,17 @@ class Mbi_ExportMixinCrcSign(Mbi_ExportMixin):
         if revert:
             return image
 
+        input_image = image.export()
         # calculate CRC using MPEG2 specification over all of data (app and trustzone)
         # expect for 4 bytes at CRC_BLOCK_OFFSET
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
-        crc = crc32_function(image[: self.IVT_CRC_CERTIFICATE_OFFSET])
-        crc = crc32_function(image[self.IVT_CRC_CERTIFICATE_OFFSET + 4 :], crc)
-
+        crc = crc32_function(input_image[: self.IVT_CRC_CERTIFICATE_OFFSET])
+        crc = crc32_function(input_image[self.IVT_CRC_CERTIFICATE_OFFSET + 4 :], crc)
+        image_with_crc = image.get_image_by_absolute_address(self.IVT_CRC_CERTIFICATE_OFFSET)
         # Recreate data with valid CRC value
-        return self.update_crc_val_cert_offset(image, crc)
+        assert image_with_crc.binary
+        image_with_crc.binary = self.update_crc_val_cert_offset(image_with_crc.binary, crc)
+        return image
 
 
 class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
@@ -2153,7 +1845,7 @@ class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
     no_signature: Optional[bool]
     cert_block: Optional[Union[CertBlockV21, CertBlockV1]]
 
-    def sign(self, image: bytes, revert: bool = False) -> bytes:
+    def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Do calculation of RSA signature and return updated image with it.
 
         :param image: Input raw image.
@@ -2164,12 +1856,14 @@ class Mbi_ExportMixinRsaSign(Mbi_ExportMixin):
             return image
 
         if revert:
-            assert self.cert_block and isinstance(self.cert_block, CertBlockV1)
-            return image[: -self.cert_block.signature_size]
+            assert self.cert_block and isinstance(self.cert_block, CertBlockV1) and image.binary
+            image.binary = image.binary[: -self.cert_block.signature_size]
+            return image
 
         assert self.signature_provider
-        signature = self.signature_provider.get_signature(image)
-        return image + signature
+        signature = self.signature_provider.get_signature(image.export())
+        image.append_image(BinaryImage(name="RSA signature", binary=signature))
+        return image
 
 
 class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
@@ -2178,8 +1872,9 @@ class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
     signature_provider: Optional[SignatureProvider]
     no_signature: Optional[bool]
     cert_block: Optional[Union[CertBlockV21, CertBlockV1]]
+    data_to_sign: Optional[bytes]
 
-    def sign(self, image: bytes, revert: bool = False) -> bytes:
+    def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Do calculation of ECC signature and return updated image with it.
 
         :param image: Input raw image.
@@ -2190,16 +1885,15 @@ class Mbi_ExportMixinEccSign(Mbi_ExportMixin):
             return image
 
         if revert:
-            assert self.cert_block and isinstance(self.cert_block, CertBlockV21)
-            if self.cert_block.signature_size == 0:
-                return image
-
-            return image[: -self.cert_block.signature_size]
+            assert self.cert_block and isinstance(self.cert_block, CertBlockV21) and image.binary
+            image.binary = image.binary[: -self.cert_block.signature_size]
+            return image
 
         assert self.signature_provider
-        signature = self.signature_provider.get_signature(image)
-        assert signature
-        return image + signature
+        self.data_to_sign = image.export()
+        signature = self.signature_provider.get_signature(self.data_to_sign)
+        image.append_image(BinaryImage(name="ECC signature", binary=signature))
+        return image
 
 
 class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
@@ -2210,24 +1904,56 @@ class Mbi_ExportMixinHmacKeyStoreFinalize(Mbi_ExportMixin):
     HMAC_SIZE: int
     key_store: Optional[KeyStore]
 
-    def finalize(self, image: bytes, revert: bool = False) -> bytes:
+    def finalize(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Finalize the image for export by adding HMAC a optionally KeyStore.
 
         :param image: Input image.
         :param revert: Revert the operation if possible.
         :return: Finalized image suitable for export.
         """
+        raw_image = image.export()
         if revert:
             end_of_hmac_keystore = self.HMAC_OFFSET + self.HMAC_SIZE
-            if Mbi_MixinIvt.get_key_store_presented(image):
+            if Mbi_MixinIvt.get_key_store_presented(raw_image):
                 end_of_hmac_keystore += KeyStore.KEY_STORE_SIZE
-            return image[: self.HMAC_OFFSET] + image[end_of_hmac_keystore:]
+            image.binary = raw_image[: self.HMAC_OFFSET] + raw_image[end_of_hmac_keystore:]
+            return image
 
-        hmac_keystore = self.compute_hmac(image[: self.HMAC_OFFSET])
-        if self.key_store:
-            hmac_keystore += self.key_store.export()
+        hmac_value = self.compute_hmac(raw_image[: self.HMAC_OFFSET])
 
-        return image[: self.HMAC_OFFSET] + hmac_keystore + image[self.HMAC_OFFSET :]
+        hmac_fits_between_images = self.HMAC_OFFSET in [x.offset for x in image.sub_images]
+        ret = BinaryImage(name=image.name)
+
+        if hmac_fits_between_images:
+            for subimage in image.sub_images:
+                if subimage.offset == self.HMAC_OFFSET:
+                    ret.append_image(BinaryImage("HMAC", binary=hmac_value))
+                    if self.key_store:
+                        ret.append_image(BinaryImage("KeyStore", binary=self.key_store.export()))
+                ret.append_image(subimage)
+        else:
+            # here must be splitted the Binary image that contains the HMAC offset address
+            for subimage in image.sub_images:
+                if (
+                    subimage.offset <= self.HMAC_OFFSET
+                    and self.HMAC_OFFSET < subimage.offset + len(subimage)
+                ):
+                    # Split this image
+                    assert len(subimage.sub_images) == 0 and subimage.binary
+                    offset = self.HMAC_OFFSET - subimage.offset
+                    ret.append_image(
+                        BinaryImage(name=subimage.name + " part 1", binary=subimage.binary[:offset])
+                    )
+                    ret.append_image(BinaryImage("HMAC", binary=hmac_value))
+                    if self.key_store:
+                        ret.append_image(BinaryImage("KeyStore", binary=self.key_store.export()))
+                    ret.append_image(
+                        BinaryImage(name=subimage.name + " part 2", binary=subimage.binary[offset:])
+                    )
+                    continue
+                ret.append_image(subimage)
+
+        return ret
 
 
 class Mbi_ExportMixinAppBca(Mbi_ExportMixin):
@@ -2235,15 +1961,67 @@ class Mbi_ExportMixinAppBca(Mbi_ExportMixin):
 
     app: Optional[bytes]
     update_bca: Callable[[bytes, int], bytes]
-    app_len: int
+    total_len: int
 
-    def collect_data(self) -> bytes:
+    IMG_DIGEST_OFFSET: int
+    IMG_SIGNATURE_OFFSET: int
+    IMG_BCA_OFFSET: int
+    IMG_ISK_OFFSET: int
+    IMG_ISK_HASH_OFFSET: int
+    IMG_WPC_BLOCK_OFFSET: int
+    IMG_DUKB_BLOCK_OFFSET: int
+    IMG_DATA_START: int
+
+    def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
 
         :return: Image with updated IVT and added TrustZone.
         """
         assert self.app
-        return self.update_bca(self.app, self.app_len)
+        binary = self.update_bca(self.app, self.total_len)
+
+        ret = BinaryImage("Application Block")
+        ret.append_image(BinaryImage("Vector Table", binary=binary[: self.IMG_DIGEST_OFFSET]))
+        ret.append_image(
+            BinaryImage(
+                "Image Hash", binary=binary[self.IMG_DIGEST_OFFSET : self.IMG_SIGNATURE_OFFSET]
+            )
+        )
+        ret.append_image(
+            BinaryImage(
+                "ECC signature", binary=binary[self.IMG_SIGNATURE_OFFSET : self.IMG_BCA_OFFSET]
+            )
+        )
+        ret.append_image(
+            BinaryImage(
+                "Boot Config Area (BCA)", binary=binary[self.IMG_BCA_OFFSET : self.IMG_ISK_OFFSET]
+            )
+        )
+        ret.append_image(
+            BinaryImage(
+                "ISK Certificate", binary=binary[self.IMG_ISK_OFFSET : self.IMG_ISK_HASH_OFFSET]
+            )
+        )
+        ret.append_image(
+            BinaryImage(
+                "ISK Hash", binary=binary[self.IMG_ISK_HASH_OFFSET : self.IMG_WPC_BLOCK_OFFSET]
+            )
+        )
+        ret.append_image(
+            BinaryImage(
+                "WPC Certification block",
+                binary=binary[self.IMG_WPC_BLOCK_OFFSET : self.IMG_DUKB_BLOCK_OFFSET],
+            )
+        )
+        ret.append_image(
+            BinaryImage(
+                "DUK Certification block",
+                binary=binary[self.IMG_DUKB_BLOCK_OFFSET : self.IMG_DATA_START],
+            )
+        )
+        ret.append_image(BinaryImage("Application Image", binary=binary[self.IMG_DATA_START :]))
+
+        return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
         """Disassemble image to individual parts from image.
@@ -2269,8 +2047,9 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
     IMG_DIGEST_SIZE: int
     IMG_ISK_OFFSET: int
     IMG_ISK_HASH_OFFSET: int
+    IMG_ISK_HASH_SIZE: int
 
-    def sign(self, image: bytes, revert: bool = False) -> bytes:
+    def sign(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Do calculation of ECC signature and digest and return updated image with it.
 
         :param image: Input raw image.
@@ -2284,48 +2063,23 @@ class Mbi_ExportMixinEccSignVx(Mbi_ExportMixin):
             return image
         assert self.signature_provider
 
+        input_image = image.export()
         data_to_sign = (
-            image[: self.IMG_DIGEST_OFFSET]
-            + image[self.IMG_BCA_OFFSET : self.IMG_SIGNED_HEADER_END]
-            + image[self.IMG_DATA_START :]
+            input_image[: self.IMG_DIGEST_OFFSET]
+            + input_image[self.IMG_BCA_OFFSET : self.IMG_SIGNED_HEADER_END]
+            + input_image[self.IMG_DATA_START :]
         )
-
         image_digest = get_hash(data_to_sign)
-
         signature = self.signature_provider.get_signature(data_to_sign)
         assert signature
 
-        # Inject image digest and signature
-        image = (
-            image[: self.IMG_DIGEST_OFFSET]
-            + image_digest
-            + signature
-            + image[
-                (
-                    self.IMG_DIGEST_OFFSET
-                    + len(image_digest)
-                    + self.signature_provider.signature_length
-                ) :
-            ]
-        )
-
-        # Inject ISK certificate
-        image = (
-            image[: self.IMG_ISK_OFFSET]
-            + self.cert_block.export()
-            + image[self.IMG_ISK_OFFSET + self.cert_block.expected_size :]
-        )
-
-        # Optionally inject ISK certificate hash
+        image.find_sub_image("Image Hash").binary = image_digest
+        image.find_sub_image("ECC signature").binary = signature
+        image.find_sub_image("ISK Certificate").binary = self.cert_block.export()
         if self.add_hash:
-            image = (
-                image[: self.IMG_ISK_HASH_OFFSET]
-                + self.cert_block.cert_hash
-                + image[self.IMG_ISK_HASH_OFFSET + len(self.cert_block.cert_hash) :]
-            )
+            image.find_sub_image("ISK Hash").binary = self.cert_block.cert_hash
 
         logger.info(f"Cert block info: {str(self.cert_block)}")
-
         return image
 
 
@@ -2334,17 +2088,20 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
 
     app: Optional[bytes]
     trust_zone: TrustZone
-    total_len: Any
-    img_len: int
+    total_len: int
+    app_len: int
     family: str
-    get_app_length: Callable[[], int]
     update_ivt: Callable[[bytes, int, int], bytes]
     clean_ivt: Callable[[bytes], bytes]
     cert_block: Optional[Union[CertBlockV1, CertBlockV21]]
-    get_app_data: Callable[[], bytes]
+    app_table: MultipleImageTable
     disassembly_app_data: Callable[[bytes], bytes]
+    HMAC_OFFSET: int
+    hmac_key: Optional[bytes]
+    ctr_init_vector: bytes
+    key_store: Optional[KeyStore]
 
-    def collect_data(self) -> bytes:
+    def collect_data(self) -> BinaryImage:
         """Collect application data and TrustZone including update IVT.
 
         :return: Image with updated IVT and added TrustZone.
@@ -2356,12 +2113,19 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
             and isinstance(self.cert_block, CertBlockV1)
         )
         self.cert_block.alignment = 4
-        app = self.get_app_data() if hasattr(self, "get_app_data") else self.app
-        return self.update_ivt(
-            app + self.trust_zone.export(),
-            self.img_len,
-            self.get_app_length(),
-        )
+        ret = BinaryImage(name="Application Block")
+        app = self.update_ivt(self.app, self.img_len, self.app_len)
+        ret.append_image(BinaryImage(name="Application", binary=app))
+
+        if hasattr(self, "app_table") and self.app_table:
+            ret.append_image(
+                BinaryImage(name="Relocation Table", binary=self.app_table.export(len(app)))
+            )
+        tz = self.trust_zone.export()
+        if len(tz):
+            ret.append_image(BinaryImage(name="TrustZone Settings", binary=tz))
+
+        return ret
 
     def disassemble_image(self, image: bytes) -> None:  # pylint: disable=no-self-use
         """Disassemble image to individual parts from image.
@@ -2381,20 +2145,6 @@ class Mbi_ExportMixinAppTrustZoneCertBlockEncrypt(Mbi_ExportMixin):
             image = self.disassembly_app_data(image)
         self.app = self.clean_ivt(image)
 
-
-class Mbi_ExportMixinEncrypt(Mbi_ExportMixin):
-    """Export Mixin to handle Encrypt MBI in legacy way."""
-
-    hmac_key: Optional[bytes]
-    ctr_init_vector: bytes
-    key_store: Optional[KeyStore]
-    trust_zone: TrustZone
-    cert_block: Optional[Union[CertBlockV21, CertBlockV1]]
-    update_ivt: Callable[[bytes, int, int], bytes]
-    get_app_length: Callable[[], int]
-    total_len: int
-    HMAC_OFFSET: int
-
     @property
     def img_len(self) -> int:
         """Image length of encrypted legacy image."""
@@ -2402,7 +2152,7 @@ class Mbi_ExportMixinEncrypt(Mbi_ExportMixin):
         # Encrypted IVT + IV
         return self.total_len + self.cert_block.signature_size + 56 + 16
 
-    def encrypt(self, image: bytes, revert: bool = False) -> bytes:
+    def encrypt(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Encrypt image if needed.
 
         :param image: Input raw image to encrypt.
@@ -2422,13 +2172,19 @@ class Mbi_ExportMixinEncrypt(Mbi_ExportMixin):
         logger.debug(f"Encryption IV: {self.ctr_init_vector.hex()}")
 
         if revert:
-            return aes_ctr_decrypt(key=key, encrypted_data=image, nonce=self.ctr_init_vector)
+            return BinaryImage(
+                name="Decrypted image data",
+                binary=aes_ctr_decrypt(
+                    key=key, encrypted_data=image.export(), nonce=self.ctr_init_vector
+                ),
+            )
 
-        return aes_ctr_encrypt(
-            key=key, plain_data=image + self.trust_zone.export(), nonce=self.ctr_init_vector
+        return BinaryImage(
+            name="Encrypted Application",
+            binary=aes_ctr_encrypt(key=key, plain_data=image.export(), nonce=self.ctr_init_vector),
         )
 
-    def post_encrypt(self, image: bytes, revert: bool = False) -> bytes:
+    def post_encrypt(self, image: BinaryImage, revert: bool = False) -> BinaryImage:
         """Optionally do some post encrypt image updates.
 
         :param image: Encrypted image.
@@ -2436,35 +2192,46 @@ class Mbi_ExportMixinEncrypt(Mbi_ExportMixin):
         :return: Updated encrypted image.
         """
         assert self.cert_block and isinstance(self.cert_block, CertBlockV1)
+        image_bytes = image.export()
         if revert:
-            cert_blk_offset = Mbi_MixinIvt.get_cert_block_offset(image)
+            cert_blk_offset = Mbi_MixinIvt.get_cert_block_offset(image_bytes)
             cert_blk_size = self.cert_block.expected_size
             # Restore original part of encrypted IVT
-            org_image = image[
+            org_image = image_bytes[
                 cert_blk_offset + cert_blk_size : cert_blk_offset + cert_blk_size + 56
             ]
             # Add rest of original encrypted image
-            org_image += image[56:cert_blk_offset]
+            org_image += image_bytes[56:cert_blk_offset]
             # optionally add TrustZone data
-            org_image += image[cert_blk_offset + cert_blk_size + 56 + 16 :]
-            return org_image
+            org_image += image_bytes[cert_blk_offset + cert_blk_size + 56 + 16 :]
+            return BinaryImage("Encrypted Image", binary=org_image)
 
         enc_ivt = self.update_ivt(
-            image[: self.HMAC_OFFSET],
+            image_bytes[: self.HMAC_OFFSET],
             self.img_len,
-            self.get_app_length(),
+            self.app_len,
         )
-
-        # Create encrypted cert block (Encrypted IVT table + IV)
-        encrypted_header = image[:56] + self.ctr_init_vector
-
         self.cert_block.image_length = (
-            len(image) + len(self.cert_block.export()) + len(encrypted_header)
+            len(image_bytes) + len(self.cert_block.export()) + 56 + len(self.ctr_init_vector)
         )
-        enc_cert = self.cert_block.export() + encrypted_header
-        return (
-            enc_ivt
-            + image[self.HMAC_OFFSET : self.get_app_length()]  # header  # encrypted image
-            + enc_cert  # certificate + encoded image header + CTR init vector
-            + image[self.get_app_length() :]  # TZ encoded data
+
+        ret = BinaryImage("Encrypted application block")
+        # Create encrypted cert block (Encrypted IVT table + IV)
+        ret.append_image(BinaryImage(name="Encrypted IVT with mbi info", binary=enc_ivt))
+        ret.append_image(
+            BinaryImage(
+                name="Encrypted rest of application",
+                binary=image_bytes[self.HMAC_OFFSET : self.app_len],
+            )
         )
+        ret.append_image(BinaryImage(name="Certification block", binary=self.cert_block.export()))
+        ret.append_image(BinaryImage(name="Original Encrypted IVT", binary=image_bytes[:56]))
+        ret.append_image(
+            BinaryImage(name="Counter Initialization Vector", binary=self.ctr_init_vector)
+        )
+        if self.trust_zone.export():
+            ret.append_image(
+                BinaryImage(name="Encrypted TrustZone", binary=image_bytes[self.app_len :])
+            )
+
+        return ret

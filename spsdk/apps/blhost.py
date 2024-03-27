@@ -401,9 +401,11 @@ def flash_read_once(ctx: click.Context, index: int, byte_count: str) -> None:
     with McuBoot(ctx.obj["interface"]) as mboot:
         response = mboot.flash_read_once(index=index, count=int(byte_count))
         display_output(
-            None
-            if response is None
-            else [len(response), int.from_bytes(response, Endianness.LITTLE.value)],
+            (
+                None
+                if response is None
+                else [len(response), int.from_bytes(response, Endianness.LITTLE.value)]
+            ),
             mboot.status_code,
             ctx.obj["use_json"],
             ctx.obj["silent"],
@@ -1795,9 +1797,11 @@ def prove_genuinity(ctx: click.Context, address: int, buffer_size: int) -> None:
             [tp_response_length],
             mboot.status_code,
             use_json=ctx.obj["use_json"],
-            extra_output=f"TP response will be {tp_response_length} bytes long."
-            if tp_response_length
-            else None,
+            extra_output=(
+                f"TP response will be {tp_response_length} bytes long."
+                if tp_response_length
+                else None
+            ),
         )
 
 

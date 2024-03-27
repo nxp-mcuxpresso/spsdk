@@ -53,6 +53,7 @@ class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
             self.extensions = None
             if "extensions" in config_data:
                 self.extensions = generate_extensions(config_data["extensions"])
+            self.pss_padding = config_data.get("pss_padding")
         except KeyError as e:
             raise SPSDKError(f"Error found in configuration: {e} not found") from e
 
@@ -109,6 +110,7 @@ def generate(config: str, output: str, encoding: str) -> None:
         serial_number=cert_config.serial_number,
         duration=cert_config.duration,
         extensions=cert_config.extensions,
+        pss_padding=cert_config.pss_padding,
     )
     logger.info("Saving the generated certificate to the specified path...")
     encoding_type = SPSDKEncoding.PEM if encoding.lower() == "pem" else SPSDKEncoding.DER

@@ -342,6 +342,12 @@
             "spdx": "MIT"
         },
         {
+            "name": "h11",
+            "license": "MIT",
+            "home_page": "https://github.com/python-hyper/h11",
+            "spdx": "MIT"
+        },
+        {
             "name": "hexdump",
             "license": "Public Domain",
             "home_page": "https://bitbucket.org/techtonik/hexdump/",
@@ -351,6 +357,18 @@
             "name": "hidapi",
             "license": "",
             "home_page": "https://github.com/trezor/cython-hidapi",
+            "spdx": "BSD-3-Clause"
+        },
+        {
+            "name": "httpcore",
+            "license": "",
+            "home_page": "https://github.com/encode/httpcore",
+            "spdx": "BSD-3-Clause"
+        },
+        {
+            "name": "httpx",
+            "license": "",
+            "home_page": "https://github.com/encode/httpx",
             "spdx": "BSD-3-Clause"
         },
         {
@@ -372,7 +390,19 @@
             "spdx": "Apache-2.0"
         },
         {
+            "name": "importlib_metadata",
+            "license": "",
+            "home_page": "https://github.com/python/importlib_metadata",
+            "spdx": "Apache-2.0"
+        },
+        {
             "name": "importlib-resources",
+            "license": "",
+            "home_page": "https://github.com/python/importlib_resources",
+            "spdx": "MIT"
+        },
+        {
+            "name": "importlib_resources",
             "license": "",
             "home_page": "https://github.com/python/importlib_resources",
             "spdx": "MIT"
@@ -487,6 +517,12 @@
         },
         {
             "name": "jupyterlab_pygments",
+            "license": "Copyright (c) 2015 Project Jupyter Contributors",
+            "home_page": "https://github.com/jupyterlab/jupyterlab_pygments",
+            "spdx": "BSD-3-Clause"
+        },
+        {
+            "name": "jupyterlab-pygments",
             "license": "Copyright (c) 2015 Project Jupyter Contributors",
             "home_page": "https://github.com/jupyterlab/jupyterlab_pygments",
             "spdx": "BSD-3-Clause"
@@ -631,6 +667,12 @@
         },
         {
             "name": "prometheus-client",
+            "license": "Apache Software License 2.0",
+            "home_page": "https://github.com/prometheus/client_python",
+            "spdx": "Apache-2.0"
+        },
+        {
+            "name": "prometheus_client",
             "license": "Apache Software License 2.0",
             "home_page": "https://github.com/prometheus/client_python",
             "spdx": "Apache-2.0"

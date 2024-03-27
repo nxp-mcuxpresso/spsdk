@@ -773,6 +773,7 @@ class DatabaseManager:
     ELE = "ele"
     MEMCFG = "memcfg"
     WPC = "wpc"
+    SIGNING = "signing"
 
 
 @atexit.register
@@ -786,9 +787,8 @@ def on_delete() -> None:
     if DatabaseManager._db_hash != hash(DatabaseManager._db):
         try:
             with open(DatabaseManager._db_cache_file_name, mode="wb") as f:
-                logger.debug(f"Updating cache: {DatabaseManager._db_cache_file_name}")
                 pickle.dump(DatabaseManager().db, f, pickle.HIGHEST_PROTOCOL)
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
             pass
 
 

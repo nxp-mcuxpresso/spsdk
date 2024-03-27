@@ -137,12 +137,10 @@ class TPFlags:
         )
 
     @overload
-    def export(self, as_bytes: Literal[True] = ...) -> bytes:
-        ...
+    def export(self, as_bytes: Literal[True] = ...) -> bytes: ...
 
     @overload
-    def export(self, as_bytes: Literal[False]) -> int:
-        ...
+    def export(self, as_bytes: Literal[False]) -> int: ...
 
     def export(self, as_bytes: bool = True) -> Union[bytes, int]:
         """Export TPFlags into bytes (or optionally into integer)."""
@@ -199,12 +197,10 @@ class OEMKeyFlags:
         return self.oem_key_count > 0 or self.use_ca_key or self.use_rtf_key
 
     @overload
-    def export(self, as_bytes: Literal[True] = ...) -> bytes:
-        ...
+    def export(self, as_bytes: Literal[True] = ...) -> bytes: ...
 
     @overload
-    def export(self, as_bytes: Literal[False]) -> int:
-        ...
+    def export(self, as_bytes: Literal[False]) -> int: ...
 
     def export(self, as_bytes: bool = True) -> Union[bytes, int]:
         """Export OEMKeyFlags into bytes (or optionally into integer)."""

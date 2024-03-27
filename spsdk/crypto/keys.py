@@ -38,7 +38,7 @@ from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKValueErr
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import Endianness, load_binary, write_file
 
-from .hash import EnumHashAlgorithm, get_hash, get_hash_algorithm
+from .hash import EnumHashAlgorithm, get_hash, get_hash_algorithm, hashes
 from .oscca import IS_OSCCA_SUPPORTED
 from .rng import rand_below, random_hex
 from .types import SPSDKEncoding
@@ -253,10 +253,11 @@ class PrivateKey(BaseClass, abc.ABC):
         return cls.parse(data=data, password=password)
 
     @abc.abstractmethod
-    def sign(self, data: bytes) -> bytes:
+    def sign(self, data: bytes, **kwargs: Any) -> bytes:
         """Sign input data.
 
         :param data: Input data
+        :param kwargs: Keyword arguments for specific type of key
         :return: Signed data
         """
 
@@ -356,12 +357,14 @@ class PublicKey(BaseClass, abc.ABC):
         signature: bytes,
         data: bytes,
         algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
+        **kwargs: Any,
     ) -> bool:
         """Verify input data.
 
         :param signature: The signature of input data
         :param data: Input data
         :param algorithm: Used algorithm
+        :param kwargs: Keyword arguments for specific type of key
         :return: True if signature is valid, False otherwise
         """
 
@@ -513,18 +516,32 @@ class PrivateKeyRsa(PrivateKey):
             SPSDKEncoding.get_cryptography_encodings(encoding), PrivateFormat.PKCS8, enc
         )
 
-    def sign(self, data: bytes, algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256) -> bytes:
+    def sign(
+        self,
+        data: bytes,
+        algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
+        pss_padding: bool = False,
+        prehashed: bool = False,
+        **kwargs: Any,
+    ) -> bytes:
         """Sign input data.
 
         :param data: Input data
         :param algorithm: Used algorithm
+        :param pss_padding: Use RSA-PSS signing scheme
+        :param prehashed: Data for signing is already pre-hashed
+        :param kwargs: Sink for unused parameters
         :return: Signed data
         """
-        signature = self.key.sign(
-            data=data,
-            padding=padding.PKCS1v15(),
-            algorithm=get_hash_algorithm(algorithm),
+        hash_alg = get_hash_algorithm(algorithm)
+        pad = (
+            padding.PSS(mgf=padding.MGF1(algorithm=hash_alg), salt_length=padding.PSS.DIGEST_LENGTH)
+            if pss_padding
+            else padding.PKCS1v15()
         )
+        sign_alg = utils.Prehashed(hash_alg) if prehashed else hash_alg
+        assert isinstance(sign_alg, (utils.Prehashed, hashes.HashAlgorithm))
+        signature = self.key.sign(data=data, padding=pad, algorithm=sign_alg)
         return signature
 
     @classmethod
@@ -630,20 +647,34 @@ class PublicKeyRsa(PublicKey):
         signature: bytes,
         data: bytes,
         algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
+        pss_padding: bool = False,
+        prehashed: bool = False,
+        **kwargs: Any,
     ) -> bool:
         """Verify input data.
 
         :param signature: The signature of input data
         :param data: Input data
         :param algorithm: Used algorithm
+        :param pss_padding: Use RSA-PSS signing scheme
+        :param prehashed: Data for signing is already pre-hashed
+        :param kwargs: Sink for unused parameters
         :return: True if signature is valid, False otherwise
         """
+        hash_alg = get_hash_algorithm(algorithm)
+        pad = (
+            padding.PSS(mgf=padding.MGF1(algorithm=hash_alg), salt_length=padding.PSS.DIGEST_LENGTH)
+            if pss_padding
+            else padding.PKCS1v15()
+        )
+        sign_alg = utils.Prehashed(hash_alg) if prehashed else hash_alg
+        assert isinstance(sign_alg, (utils.Prehashed, hashes.HashAlgorithm))
         try:
             self.key.verify(
                 signature=signature,
                 data=data,
-                padding=padding.PKCS1v15(),
-                algorithm=get_hash_algorithm(algorithm),
+                padding=pad,
+                algorithm=sign_alg,
             )
         except InvalidSignature:
             return False
@@ -766,8 +797,10 @@ class KeyEccCommon:
         # pylint: disable=protected-access
         for key_object in ec._CURVE_TYPES:
             if key_object.lower() == name.lower():
-                # pylint: disable=protected-access
-                return ec._CURVE_TYPES[key_object]()
+                curve_object = ec._CURVE_TYPES[key_object]
+                if callable(curve_object):
+                    return curve_object()
+                return curve_object
 
         raise SPSDKValueError(f"The EC curve with name '{name}' is not supported.")
 
@@ -841,9 +874,9 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
         return self.key.private_bytes(
             encoding=SPSDKEncoding.get_cryptography_encodings(encoding),
             format=PrivateFormat.PKCS8,
-            encryption_algorithm=BestAvailableEncryption(password.encode("utf-8"))
-            if password
-            else NoEncryption(),
+            encryption_algorithm=(
+                BestAvailableEncryption(password.encode("utf-8")) if password else NoEncryption()
+            ),
         )
 
     def sign(
@@ -852,6 +885,7 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
         algorithm: Optional[EnumHashAlgorithm] = None,
         der_format: bool = False,
         prehashed: bool = False,
+        **kwargs: Any,
     ) -> bytes:
         """Sign input data.
 
@@ -859,6 +893,7 @@ class PrivateKeyEcc(KeyEccCommon, PrivateKey):
         :param algorithm: Used algorithm
         :param der_format: Use DER format as a output
         :param prehashed: Use pre hashed value as input
+        :param kwargs: Sink for unused arguments
         :return: Signed data
         """
         hash_name = (
@@ -953,6 +988,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         data: bytes,
         algorithm: Optional[EnumHashAlgorithm] = None,
         prehashed: bool = False,
+        **kwargs: Any,
     ) -> bool:
         """Verify input data.
 
@@ -960,6 +996,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         :param data: Input data
         :param algorithm: Used algorithm
         :param prehashed: Use pre hashed value as input
+        :param kwargs: Sink for unused arguments
         :return: True if signature is valid, False otherwise
         """
         coordinate_size = math.ceil(self.key.key_size / 8)
@@ -1147,12 +1184,19 @@ if IS_OSCCA_SUPPORTED:
             """
             return self.get_public_key() == public_key
 
-        def sign(self, data: bytes, salt: Optional[str] = None, use_ber: bool = False) -> bytes:
+        def sign(
+            self,
+            data: bytes,
+            salt: Optional[str] = None,
+            use_ber: bool = False,
+            **kwargs: Any,
+        ) -> bytes:
             """Sign data using SM2 algorithm with SM3 hash.
 
             :param data: Data to sign.
             :param salt: Salt for signature generation, defaults to None. If not specified a random string will be used.
             :param use_ber: Encode signature into BER format, defaults to True
+            :param kwargs: Sink for unused arguments
             :raises SPSDKError: Signature can't be created.
             :return: SM2 signature.
             """
@@ -1211,13 +1255,18 @@ if IS_OSCCA_SUPPORTED:
             self.key = key
 
         def verify_signature(
-            self, signature: bytes, data: bytes, algorithm: Optional[EnumHashAlgorithm] = None
+            self,
+            signature: bytes,
+            data: bytes,
+            algorithm: Optional[EnumHashAlgorithm] = None,
+            **kwargs: Any,
         ) -> bool:
             """Verify signature.
 
             :param signature: SM2 signature to verify
             :param data: Signed data
             :param algorithm: Just to keep compatibility with abstract class
+            :param kwargs: Sink for unused arguments
             :raises SPSDKError: Invalid signature
             """
             # Check if the signature is BER formatted

@@ -411,7 +411,7 @@ class CsfHabSegment(HabSegmentBase):
         header = SecCsfHeader.load_from_config(config, search_paths=search_paths)
         commands: List[SecCommandBase] = []
         for cmd_config in config.commands:
-            if cmd_config.index == SecCommand.HEADER.tag:
+            if cmd_config.index in [SecCommand.HEADER.tag, SecCommand.INSTALL_NOCAK.tag]:
                 continue
             command_class = COMMANDS_MAPPING.get(SecCommand.from_tag(cmd_config.index))
             if not command_class:

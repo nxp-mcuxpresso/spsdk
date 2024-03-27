@@ -1,0 +1,397 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ==========================================  SB 2.1 converted configuration  ==========================================
+
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+# --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
+# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signPrivateKey: sb_sources/keys_and_certs/k0_cert0_2048.pem
+# ======================================================================================================================
+#                                               == Certificate Block V1 ==
+# ======================================================================================================================
+# -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
+# Description: Path to certificate block binary or config file.
+certBlock: sb_sources/YAML_files/conf1/cert_block.yaml
+# ======================================================================================================================
+#                                                   == SB2.1 Output ==
+# ======================================================================================================================
+# -----------------------------------------===== SB2 filename [Required] =====------------------------------------------
+# Description: Generated SB2 container filename.
+containerOutputFile: output.sb
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc55s0x, lpc55s1x, lpc55s2x, lpc55s6x, rt5xx, rt6xx>
+family: rt5xx
+# ======================================================================================================================
+#                                                  == Basic Setting ==
+# ======================================================================================================================
+# ------------------------------------------===== SB2.1 SBKEK [Required] =====------------------------------------------
+# Description: Path to SB key encryption key (AES-128). It might be provided in text file or binary file or as a hex
+# string in the configuration.
+containerKeyBlobEncryptionKey: sb_sources/keys/SBkek_PUF.txt
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# -----------------------------------------===== SB2.1 Options [Required] =====-----------------------------------------
+# Description: An options block contains zero or more name/value pairs and the option settings that assign values to
+# global options used by the nxpimage to control the generation of the output file.
+
+options:
+  # -----------------------------------------===== SB2.1 flags [Required] =====-----------------------------------------
+  # Description: For SB2.1 use only 0x8 encrypted + signed.
+  flags: 8
+  # ---------------------------------------===== Product version [Optional] =====---------------------------------------
+  # Description: Version string as "xxx.yyy.zzz".
+  productVersion: 1.00.00
+  # --------------------------------------===== Component version [Optional] =====--------------------------------------
+  # Description: Component version string as "xxx.yyy.zzz".
+  componentVersion: 1.00.00
+  # -----------------------------------------===== SB Version [Optional] =====------------------------------------------
+  # Description: Used to specify version of SB2 file.
+  secureBinaryVersion: "2.1"
+  zeroPadding: True
+  dek: "0000000000000000000000000000000000000000000000000000000000000000"
+  mac: "0000000000000000000000000000000000000000000000000000000000000000"
+  nonce: "00000000000000000000000000000000"
+  timestamp: 1234567890
+# ======================================================================================================================
+#                                           == SB 2.1 Sections and commands ==
+# ======================================================================================================================
+# ----------------------------------------===== SB2.1 Sections [Required] =====-----------------------------------------
+# Description: Secure Binary v2.1 section blocks
+sections:
+  - # --------------------------------------===== SB2.1 Commands [Optional] =====---------------------------------------
+    # Description: Secure Binary v2.1 commands block, list of all possible options - Modify it according to your
+    # application
+    commands:
+      - # --------------------------------===== Check firmware version [Required] =====---------------------------------
+        # Description: Used to execute check of provided counter value with value stored in specified monotonous counter
+        # in device. If values are not same, SB file is rejected.
+        version_check:
+          # ------------------------------------===== Version type [Required] =====-------------------------------------
+          # Description: 0 for non secure, 1 for secure.
+          ver_type: 0
+          # -------------------------------------===== FW version [Required] =====--------------------------------------
+          # Description: FW version to be checked.
+          fw_version: 44988
+      - # --------------------------------===== Check firmware version [Required] =====---------------------------------
+        # Description: Used to execute check of provided counter value with value stored in specified monotonous counter
+        # in device. If values are not same, SB file is rejected.
+        version_check:
+          # ------------------------------------===== Version type [Required] =====-------------------------------------
+          # Description: 0 for non secure, 1 for secure.
+          ver_type: 1
+          # -------------------------------------===== FW version [Required] =====--------------------------------------
+          # Description: FW version to be checked.
+          fw_version: 1
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: fuse
+          # -----------------------------===== Value for fuse programming [Optional] =====------------------------------
+          # Description: Fill the 32bit integer value of fuse to be programmed. Legacy way of programming fuses.
+          # ProgramFuses is recommended in new projects.
+          pattern: 1
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: fuse
+          # -----------------------------------===== Binary values. [Optional] =====------------------------------------
+          # Description: Binary values delimited by comma to be loaded.
+          values: "00000001"
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: fuse
+          # -----------------------------------===== Binary values. [Optional] =====------------------------------------
+          # Description: Binary values delimited by comma to be loaded.
+          values: aabbccdd
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: ifr
+          # -----------------------------------===== Binary values. [Optional] =====------------------------------------
+          # Description: Binary values delimited by comma to be loaded.
+          values: aabbccdd
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: 4
+          # -----------------------------------===== Binary values. [Optional] =====------------------------------------
+          # Description: Binary values delimited by comma to be loaded.
+          values: aabbccdd
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: 4
+          # -----------------------------------===== Binary values. [Optional] =====------------------------------------
+          # Description: Binary values delimited by comma to be loaded.
+          values: aabbccdd
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: fuse
+          # -----------------------------------===== Binary values. [Optional] =====------------------------------------
+          # Description: Binary values delimited by comma to be loaded.
+          values: 8899aabbccddeeff
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: fuse
+          # -----------------------------===== Value for fuse programming [Optional] =====------------------------------
+          # Description: Fill the 32bit integer value of fuse to be programmed. Legacy way of programming fuses.
+          # ProgramFuses is recommended in new projects.
+          pattern: 1
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: fuse
+          # -----------------------------===== Value for fuse programming [Optional] =====------------------------------
+          # Description: Fill the 32bit integer value of fuse to be programmed. Legacy way of programming fuses.
+          # ProgramFuses is recommended in new projects.
+          pattern: 4294967295
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 16777608
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: fuse
+          # -----------------------------===== Value for fuse programming [Optional] =====------------------------------
+          # Description: Fill the 32bit integer value of fuse to be programmed. Legacy way of programming fuses.
+          # ProgramFuses is recommended in new projects.
+          pattern: 43707
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 134218120
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: 288
+          # -----------------------------------===== Binary values. [Optional] =====------------------------------------
+          # Description: Binary values delimited by comma to be loaded.
+          values: aabbccdd
+      - # --------------------------------------===== Fill memory [Required] =====--------------------------------------
+        # Description: Used for filling of the memory range by repeated pattern.
+        fill:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be filled.
+          address: 1097728
+          # ---------------------------------------===== Pattern [Required] =====---------------------------------------
+          # Description: Pattern which will be used to fill memory.
+          pattern: 3243257943
+      - # --------------------------------------===== Fill memory [Required] =====--------------------------------------
+        # Description: Used for filling of the memory range by repeated pattern.
+        fill:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be filled.
+          address: 1097732
+          # ---------------------------------------===== Pattern [Required] =====---------------------------------------
+          # Description: Pattern which will be used to fill memory.
+          pattern: 536870912
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 134218120
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be loaded.
+          load_opt: sdcard
+          # -----------------------------------===== Binary values. [Optional] =====------------------------------------
+          # Description: Binary values delimited by comma to be loaded.
+          values: aabbccdd
+      - # -----------------------------------===== Configure memory [Required] =====------------------------------------
+        # Description: initialization of external memories using a parameter block that was previously loaded to RAM.
+        enable:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Configuration address.
+          address: 1097728
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be configured.
+          mem_opt: 9
+      - # -----------------------------------===== Configure memory [Required] =====------------------------------------
+        # Description: initialization of external memories using a parameter block that was previously loaded to RAM.
+        enable:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Configuration address.
+          address: 1097728
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be configured.
+          mem_opt: 288
+      - # -----------------------------------===== Configure memory [Required] =====------------------------------------
+        # Description: initialization of external memories using a parameter block that was previously loaded to RAM.
+        enable:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Configuration address.
+          address: 1097728
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be configured.
+          mem_opt: sdcard
+      - # -----------------------------------------===== Erase [Required] =====-----------------------------------------
+        # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector
+        # size.
+        erase:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be erased.
+          address: 134221824
+          # ----------------------------------------===== Size [Optional] =====-----------------------------------------
+          # Description: Size of memory block to be erased.
+          length: 25764
+      - # -----------------------------------------===== Erase [Required] =====-----------------------------------------
+        # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector
+        # size.
+        erase:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be erased.
+          address: 0
+          # ----------------------------------------===== Flags [Optional] =====----------------------------------------
+          # Description: For erase all, flags=1, for erase unsecure all -> 2
+          flags: 2
+      - # -----------------------------------------===== Erase [Required] =====-----------------------------------------
+        # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector
+        # size.
+        erase:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be erased.
+          address: 0
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be erased.
+          mem_opt: 8
+          # ----------------------------------------===== Flags [Optional] =====----------------------------------------
+          # Description: For erase all, flags=1, for erase unsecure all -> 2
+          flags: 1
+      - # -----------------------------------------===== Erase [Required] =====-----------------------------------------
+        # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector
+        # size.
+        erase:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be erased.
+          address: 134221824
+          # ----------------------------------------===== Size [Optional] =====-----------------------------------------
+          # Description: Size of memory block to be erased.
+          length: 25764
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be erased.
+          mem_opt: 288
+      - # -----------------------------------------===== Erase [Required] =====-----------------------------------------
+        # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector
+        # size.
+        erase:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be erased.
+          address: 134221824
+          # ----------------------------------------===== Size [Optional] =====-----------------------------------------
+          # Description: Size of memory block to be erased.
+          length: 25764
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be erased.
+          mem_opt: sdcard
+      - # -----------------------------------------===== Erase [Required] =====-----------------------------------------
+        # Description: Performs a flash erase of the given address range. The erase will be rounded up to the sector
+        # size.
+        erase:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be erased.
+          address: 134221824
+          # ----------------------------------------===== Size [Optional] =====-----------------------------------------
+          # Description: Size of memory block to be erased.
+          length: 25764
+          # --------------------------------------===== Memory ID [Optional] =====--------------------------------------
+          # Description: ID of memory block to be erased.
+          mem_opt: mmccard
+      - # -----------------------------------------===== Load [Required] =====------------------------------------------
+        # Description: If set, then the data to write immediately follows the range header. The length field contains
+        # the actual data length
+        load:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Address of memory block to be loaded.
+          address: 134221824
+          # ------------------------------------===== Binary file. [Optional] =====-------------------------------------
+          # Description: Binary file to be loaded.
+          file: sb_sources/output_images/application_signed.bin
+      - # ------------------------------------===== Jump to address [Required] =====------------------------------------
+        # Description: The jump command produces the ROM_JUMP_CMD command. Optionally set SP and call argument.
+        jump:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Jump to fixed address.
+          address: 4294901760
+      - # ------------------------------------===== Jump to address [Required] =====------------------------------------
+        # Description: The jump command produces the ROM_JUMP_CMD command. Optionally set SP and call argument.
+        jump:
+          # ---------------------------------------===== Address [Required] =====---------------------------------------
+          # Description: Jump to fixed address.
+          address: 4096
+          # ---------------------------------===== Stack pointer value [Optional] =====---------------------------------
+          # Description: Sets the stack pointer before jumping.
+          spreg: 536874496
+          # ------------------------------------===== Call argument [Optional] =====------------------------------------
+          # Description: Argument to the function being jumped to.
+          argument: 1515870810

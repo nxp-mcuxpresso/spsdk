@@ -276,10 +276,20 @@ class DebugCredential:
         if "rotk" in yaml_config.keys():
             yaml_config["rotk"] = find_file(yaml_config["rotk"], search_paths=search_paths)
         yaml_config["dck"] = find_file(yaml_config["dck"], search_paths=search_paths)
+
+        # TODO: change ths once family/revision will be a part of the config file
+        families_socc = cls.get_socc_list()
+        family = list(families_socc[socc].keys())[0]
+        try:
+            pss_padding = get_db(family).get_bool(DatabaseManager.SIGNING, "pss_padding")
+        except SPSDKValueError:
+            pss_padding = False
+
         signature_provider = get_signature_provider(
             sp_cfg=yaml_config.get("sign_provider"),
             local_file_key=yaml_config.get("rotk"),
             search_paths=search_paths,
+            pss_padding=pss_padding,
         )
         dc_obj = klass(
             socc=yaml_config["socc"],

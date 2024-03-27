@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -92,13 +92,13 @@ signature_provider:
   then:
     oneOf:
       - allOf:
-        - required: [signingCertificatePrivateKeyFile]
-        - not:
-            required: [signProvider]
+          - required: [signingCertificatePrivateKeyFile]
+          - not:
+              required: [signProvider]
       - allOf:
-        - required: [signProvider]
-        - not:
-            required: [signingCertificatePrivateKeyFile]
+          - required: [signProvider]
+          - not:
+              required: [signingCertificatePrivateKeyFile]
 
 sbx_commands:
   type: object
@@ -198,8 +198,8 @@ sbx_commands:
                 properties:
                   address:
                     type: [string, number]
-                    title: Address
-                    description: Address of IFR region to be programmed.
+                    title: Address (IFR region index)
+                    description: Index of IFR region to be programmed.
                     format: number
                     template_value: 0x0
                   file:
@@ -208,7 +208,12 @@ sbx_commands:
                     description: Binary file to be programmed.
                     format: file
                     template_value: my_binary.bin
-                required: [address, file]
+                  value:
+                    type: [string, number]
+                    title: Binary value
+                    description: Binary value to be programmed, at least 4 bytes. Value will be converted to binary little endian format.
+                    template_value: "0xB38AA899"
+                required: [address]
 
           - type: object
             required: [reset]

@@ -198,11 +198,15 @@ def cmd_reset(*args, **kwargs):
 def cmd_generate_keyblob(*args, index, fail_step, **kwargs):
     response = {
         0: pack_response(ResponseTag.KEY_BLOB_RESPONSE, set_error_code(index, fail_step), 20),
-        1: pack_response(
-            ResponseTag.GENERIC, set_error_code(index, fail_step), CommandTag.GENERATE_KEY_BLOB.tag
-        )
-        if args[2] == 0
-        else (False, bytes(20)),
+        1: (
+            pack_response(
+                ResponseTag.GENERIC,
+                set_error_code(index, fail_step),
+                CommandTag.GENERATE_KEY_BLOB.tag,
+            )
+            if args[2] == 0
+            else (False, bytes(20))
+        ),
         2: pack_response(
             ResponseTag.GENERIC, set_error_code(index, fail_step), CommandTag.GENERATE_KEY_BLOB.tag
         ),

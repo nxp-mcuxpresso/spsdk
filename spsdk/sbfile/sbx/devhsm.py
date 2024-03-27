@@ -72,6 +72,12 @@ class DevHsmSBx(DevHsm):
         self.family = family
 
         config_data = load_configuration(container_conf)
+        family_from_cfg = config_data.get("family")
+        if family != family_from_cfg:
+            raise SPSDKError(
+                f"Family from json configuration file: {family_from_cfg} differs from the family parameter {family}"
+            )
+
         config_dir = os.path.dirname(container_conf)
         schemas = SecureBinaryX.get_validation_schemas(include_test_configuration=True)
         check_config(config_data, schemas, search_paths=[config_dir])

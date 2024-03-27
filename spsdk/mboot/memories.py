@@ -211,6 +211,8 @@ class ExtMemRegion(MemoryRegion):
         return ExtMemId.get_label(self.mem_id)
 
     def __repr__(self) -> str:
+        if not self.value:
+            return "Not Configured"
         return f"EXT Memory region, name: {self.name}, start: {hex(self.start)}"
 
     def __str__(self) -> str:

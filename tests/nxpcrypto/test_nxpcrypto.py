@@ -263,7 +263,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
                 "ec_secp256r1_cert3.pem",
             ],
             "rt118x",
-            "c132cd7a8d0ac8f096dbf0968608e47fc6592f4bc93c17e5bda50d103d80db09",
+            "2fa79d4d4cadefe5cc33b7d0f56e760cfdf65681e8da8f65c737d53066479e7f",
         ),
         (
             [

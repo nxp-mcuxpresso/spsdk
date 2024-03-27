@@ -42,6 +42,8 @@ MEMORY_IDS = {
     "ram1": 7,
 }
 
+DEFAULT_BAUDRATE = 115200
+
 logger = logging.getLogger(__name__)
 
 
@@ -73,7 +75,7 @@ def print_memory_table(memories: Dict[int, DK6Memory]) -> str:
     for memory_id, memory in memories.items():
         fields = [
             colorama.Fore.YELLOW + str(MemoryId.get_label(memory_id)),
-            colorama.Fore.MAGENTA + str(memory.mem_id),
+            colorama.Fore.MAGENTA + str(memory.mem_id.tag),
             colorama.Fore.GREEN + hex(memory.base_address),
             colorama.Fore.RED + hex(memory.length),
             colorama.Fore.MAGENTA + hex(memory.sector_size),
@@ -164,8 +166,8 @@ def get_default_backend() -> Backend:
 @click.option(
     "-r",
     "--baudrate",
-    default=115200,
-    help="Serial port baudrate. Default baud rate is 115200.",
+    default=DEFAULT_BAUDRATE,
+    help=f"Serial port baudrate. Default baud rate is {DEFAULT_BAUDRATE}.",
 )
 @click.option(
     "-b",
@@ -206,8 +208,14 @@ def main(
     if device_id is not None:
         if not no_isp:
             interface.go_to_isp(device_id)
-        interface.init_serial(device_id, baudrate)
-        dk6 = DK6Device(interface.get_serial())
+        if baudrate != DEFAULT_BAUDRATE:
+            interface.init_serial(device_id, DEFAULT_BAUDRATE)
+            dk6 = DK6Device(interface.get_serial())
+            dk6.set_baud_rate(baudrate)
+            interface.set_baud_rate(baudrate)
+        else:
+            interface.init_serial(device_id, baudrate)
+            dk6 = DK6Device(interface.get_serial())
         dk6.init()
     else:
         dk6 = None
@@ -472,7 +480,8 @@ def info(ctx: click.Context) -> None:
         )
 
     click.echo(f"MAC Address: {dk6.get_mac_str()}\n")
-    click.echo(f"Detected DEVICE: {dk6.dev_type}\n")
+    if dk6.dev_type:
+        click.echo(f"Detected DEVICE: {dk6.dev_type.label}\n")
     click.echo(print_memory_table(dk6.memories))
 
 

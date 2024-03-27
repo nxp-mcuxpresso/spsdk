@@ -15,7 +15,7 @@ from typing_extensions import Self
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.misc import align_block, load_binary, value_to_int
+from spsdk.utils.misc import Endianness, align_block, load_binary, value_to_bytes, value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
@@ -487,7 +487,12 @@ class CmdProgIfr(CmdLoadBase):
         :return: Command object loaded from configuration.
         """
         address = value_to_int(config["address"], 0)
-        data = load_binary(config["file"], search_paths=search_paths)
+        if config.get("file"):
+            data = load_binary(config["file"], search_paths=search_paths)
+        elif config.get("value"):
+            data = value_to_bytes(config["value"], endianness=Endianness.LITTLE)
+        else:
+            raise SPSDKError(f"Unsupported PROGRAM_IFR command args: {config}")
         return CmdProgIfr(address=address, data=data)
 
 

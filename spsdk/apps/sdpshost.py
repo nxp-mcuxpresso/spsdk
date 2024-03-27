@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -37,9 +37,11 @@ def main(
     if "--help " in sys.argv:
         port, usb = None, None  # type: ignore
     ctx.obj = {
-        "interface": get_sdp_interface(port=port, usb=usb, plugin=plugin, timeout=timeout)
-        if port or usb
-        else None,
+        "interface": (
+            get_sdp_interface(port=port, usb=usb, plugin=plugin, timeout=timeout)
+            if port or usb
+            else None
+        ),
         "name": name,
     }
     return 0

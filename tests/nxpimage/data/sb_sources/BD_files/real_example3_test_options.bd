@@ -1,0 +1,57 @@
+options {
+	flags = 0x8; // for sb2.1 use only 0x8 encrypted + signed
+	buildNumber = 0x1;
+	productVersion = "1.00.00";
+	componentVersion = "1.00.00";
+	secureBinaryVersion = "2.1";
+    zeroPadding = True;
+    dek = "0000000000000000000000000000000000000000000000000000000000000000";
+    mac = "0000000000000000000000000000000000000000000000000000000000000000";
+    nonce = "00000000000000000000000000000000";
+    timestamp = 1234567890;
+}
+sources {
+     myImage = "sb_sources/output_images/application_signed.bin";          // Put location of Signed or UnSigned image input
+}
+section (0) {
+    // Check FW version
+    version_check sec 0xafbc;
+    version_check nsec 1;
+
+    // FUSES: user_otp_config
+    // USER_BANK1_0 = 00000001
+    load fuse 1 > 0x01000188;
+    load fuse {{00 00 00 01}} > 0x01000188;
+    load fuse {{aa bb cc dd}} > 0x01000188;
+    load ifr {{aa bb cc dd}} > 0x01000188;
+    load @0x4 {{aa bb cc dd}} > 0x01000188;
+    load @4 {{aa bb cc dd}} > 0x01000188;
+    load fuse {{88 99 aa bb cc dd ee ff}} > 0x01000188;
+    load fuse 0x1 > 0x01000188;
+    load fuse 0xffffffff > 0x01000188;
+    load fuse 0xaabb > 0x01000188;
+    load @288 {{aa bb cc dd}} > 0x08000188;
+
+
+    // Configure external memory
+    load 0xC1503057 > 0x0010C000;
+    load 0x20000000 > 0x0010C004;
+    load sdcard {{aa bb cc dd}} > 0x08000188;
+    enable @0x9 0x0010C000;
+    enable @288 0x0010C000;
+    enable sdcard 0x0010C000;
+
+    erase 0x8001000..0x80074A4; //Erase FLASH, preserve FCB and KeyStore
+    erase unsecure all;
+    erase @8 all;
+    erase @288 0x8001000..0x80074A4;
+    erase sdcard 0x8001000..0x80074A4;
+    erase mmccard 0x8001000..0x80074A4;
+
+    load myImage > 0x8001000;
+
+    // jump command test
+    jump 0xffff0000;
+    // jump with stack pointer statement
+    jump_sp 0x20000e00 0x1000 (0x5a5a5a5a);
+}

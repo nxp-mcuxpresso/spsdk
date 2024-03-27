@@ -2,7 +2,7 @@
 tox<4.13
 -r requirements.txt
 # testing
-pytest<7.5
+pytest<8.1
 pytest-cov<4.2
 pytest-xdist<3.6
 voluptuous<0.15
@@ -15,7 +15,7 @@ types-pyyaml<6.1
 # codestyle
 pylint>=2.13.0,<3.1
 pydocstyle[toml]<6.4
-black<23.13
+black>=24.0,<24.2
 # cli executables
 pyinstaller<6.4
 pyinstaller-hooks-contrib<2024.1
@@ -31,3 +31,4 @@ flask<3.1
 ipython<8.21
 notebook<7.1
 pytest-notebook<0.11
+packaging>=23.2,<23.3

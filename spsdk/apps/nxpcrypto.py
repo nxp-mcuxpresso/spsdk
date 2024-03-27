@@ -11,7 +11,7 @@ import hashlib
 import logging
 import os
 import sys
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import click
 from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
@@ -408,6 +408,13 @@ def cut_off_data_regions(data: bytes, regions: List[str]) -> bytes:
     help="Encoding of output signature. This option is applicable only when signing with ECC keys.",
 )
 @click.option(
+    "-pp",
+    "--pss-padding",
+    is_flag=True,
+    default=False,
+    help="Use PSS padding in case of RSA",
+)
+@click.option(
     "-r",
     "--regions",
     type=click.STRING,
@@ -436,12 +443,20 @@ def signature_create(
     algorithm: str,
     input_file: str,
     encoding: str,
+    pss_padding: bool,
     regions: List[str],
     output: str,
 ) -> None:
     """Sign the data with given private key."""
     signature = signature_create_command(
-        private_key, signature_provider, password, algorithm, input_file, encoding, regions
+        private_key,
+        signature_provider,
+        password,
+        algorithm,
+        input_file,
+        encoding,
+        pss_padding,
+        regions,
     )
     write_file(signature, output, mode="wb")
     click.echo(f"The data have been signed. Signature saved to: {output}")
@@ -454,6 +469,7 @@ def signature_create_command(
     algorithm: Optional[str],
     input_file: str,
     encoding_str: str,
+    pss_padding: bool,
     regions: List[str],
 ) -> bytes:
     """Sign the data with given private key."""
@@ -461,7 +477,9 @@ def signature_create_command(
     data = cut_off_data_regions(data, regions)
     hash_alg = EnumHashAlgorithm.from_label(algorithm) if algorithm else None
     if signature_provider_cfg:
-        signature_provider = get_signature_provider(signature_provider_cfg, search_paths=["."])
+        signature_provider = get_signature_provider(
+            signature_provider_cfg, search_paths=["."], pss_padding=pss_padding
+        )
         if hash_alg:
             logger.warning("Hash algorithm was not applied when using signature provider.")
         if password:
@@ -473,7 +491,7 @@ def signature_create_command(
             prv_key = PrivateKey.load(private_key, password)
         except SPSDKKeyPassphraseMissing:
             prv_key = PrivateKey.load(private_key, prompt_for_passphrase())
-        extra_params = {}
+        extra_params: Dict[str, Any] = {"pss_padding": pss_padding}
         if hash_alg:
             if not isinstance(prv_key, PrivateKeySM2):
                 extra_params["algorithm"] = hash_alg
@@ -528,6 +546,13 @@ def signature_create_command(
     help="Path to file containing data signature.",
 )
 @click.option(
+    "-pp",
+    "--pss-padding",
+    is_flag=True,
+    default=False,
+    help="Indicate whether the signature uses PSS padding in case of RSA",
+)
+@click.option(
     "-r",
     "--regions",
     type=click.STRING,
@@ -549,19 +574,31 @@ def signature_create_command(
         """,
 )
 def signature_verify(
-    public_key: str, algorithm: Optional[str], input_file: str, signature: str, regions: List[str]
+    public_key: str,
+    algorithm: Optional[str],
+    input_file: str,
+    signature: str,
+    pss_padding: bool,
+    regions: List[str],
 ) -> None:
     """Verify the given signature with public key."""
-    result = signature_verify_command(public_key, algorithm, input_file, signature, regions)
+    result = signature_verify_command(
+        public_key, algorithm, input_file, signature, pss_padding, regions
+    )
     click.echo(f"Signature {'IS' if result else 'IS NOT'} matching the public key.")
 
 
 def signature_verify_command(
-    public_key: str, algorithm: Optional[str], input_file: str, signature: str, regions: List[str]
+    public_key: str,
+    algorithm: Optional[str],
+    input_file: str,
+    signature: str,
+    pss_padding: bool,
+    regions: List[str],
 ) -> bool:
     """Verify the given signature with public key."""
     public = PublicKey.load(public_key)
-    extra_params = {}
+    extra_params: Dict[str, Any] = {"pss_padding": pss_padding}
     if algorithm:
         extra_params["algorithm"] = EnumHashAlgorithm.from_label(algorithm)
     signature_bin = load_binary(signature)

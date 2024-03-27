@@ -342,7 +342,7 @@ def auth(
             debug_cred_data = load_binary(certificate)
             debug_cred = DebugCredential.parse(debug_cred_data)
             dac_rsp_len = (
-                30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc in [4, 6, 7] else 26
+                30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc in [4, 6, 7, 0xA] else 26
             )
             if nxp_keys:
                 dac_data = dm_commands.NxpDebugAuthenticationStart(

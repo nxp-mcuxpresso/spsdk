@@ -2,6 +2,23 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 ---
+family:
+  type: object
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description:
+        Family identifier including the chip revision. If revision is not
+        present, latest revision is used as default.
+      enum: []
+      template_value: rt118x
+    revision:
+      type: string
+      title: MCU revision
+      description: Revision of silicon
+      template_value: latest
+
 whole_ahab_image:
   allOf: # Global all of group - this is main concatenation group for all sub rules
     - anyOf:
@@ -13,23 +30,6 @@ whole_ahab_image:
     - containers
     - output
   properties:
-    family:
-      type: string
-      title: MCU family
-      description:
-        Family identifier including the chip revision. If revision is not
-        present, latest revision is used as default.
-      enum:
-        - mx8ulp
-        - mx93
-        - mx95
-        - rt118x
-      template_value: rt118x
-    revision:
-      type: string
-      title: MCU revision
-      description: Revision of silicon
-      template_value: latest
     image_type:
       type: string
       title: Type of image
@@ -346,7 +346,7 @@ ahab_certificate:
   type: object
   title: Configuration of AHAB Container Certificate
   description: Optional certificate container definition."
-  required: [public_key, permissions]
+  required: [family, public_key, permissions]
   oneOf:
     - required: [signing_key]
     - required: [signature_provider]

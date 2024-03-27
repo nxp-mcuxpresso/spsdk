@@ -80,6 +80,7 @@ def test_nxpimage_hab_export_unsigned(
     "configuration, app_name",
     [
         ("rt1050_xip_image_iar_authenticated", "led_blinky_xip_srec_iar.srec"),
+        ("rt1060_flashloader_authenticated_nocak", "flashloader.srec"),
         ("rt1160_RAM_encrypted", "validationboard_imxrt1160_iled_blinky_cm7_int_RAM.s19"),
         ("rt1165_flashloader_authenticated", "flashloader.srec"),
         ("rt1165_semcnand_authenticated", "evkmimxrt1064_iled_blinky_SDRAM.s19"),
@@ -167,6 +168,7 @@ def test_nxpimage_hab_export_authenticated_ecc(
             "evkmimxrt1170_iled_blinky_cm7_int_RAM.s19",
             "config_sp.bd",
         ),
+        ("rt1060_flashloader_authenticated_nocak", "flashloader.srec", "config_sp.bd"),
         ("rt1165_semcnand_authenticated", "evkmimxrt1064_iled_blinky_SDRAM.s19", "config_sp.bd"),
         ("rt1165_flashloader_authenticated", "flashloader.srec", "config_sp.bd"),
         ("rt1165_semcnand_encrypted", "evkmimxrt1064_iled_blinky_SDRAM.s19", "config_sp.bd"),
@@ -259,6 +261,7 @@ def test_nxpimage_hab_parse(cli_runner: CliRunner, tmpdir, hab_data_dir, configu
     "configuration",
     [
         "rt1050_xip_image_iar_authenticated",
+        "rt1060_flashloader_authenticated_nocak",
         "rt1165_flashloader_authenticated",
         "rt1165_semcnand_authenticated",
         "rt1170_flashloader_authenticated",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """DK6 Drivers backend interface."""
@@ -222,7 +222,7 @@ class DriverInterface:
             return
 
         if self.backend == Backend.PYFTDI:
-            import pyftdi.serialext  # pylint: disable=import-error
+            import pyftdi.serialext
 
             timeout //= 1000
             url = generate_pyftdi_url(device_id)
@@ -234,13 +234,13 @@ class DriverInterface:
             self.initialized = True
 
         elif self.backend == Backend.PYLIBFTDI:
-            from pylibftdi import Device  # pylint: disable=import-error
+            from pylibftdi import Device
 
             self.dev = Device(device_id=device_id)
             self.initialized = True
 
         elif self.backend == Backend.FTD2xx:
-            import ftd2xx as ftd  # pylint: disable=import-error
+            import ftd2xx as ftd
 
             try:
                 device_id_int = int(device_id)
@@ -273,3 +273,25 @@ class DriverInterface:
         if not self.initialized or not self.dev:
             raise SPSDKError("Serial device is not initialized")
         return self.dev
+
+    def set_baud_rate(self, baudrate: int) -> None:
+        """Set baud rate.
+
+        :param baudrate: UART baudrate
+        """
+        logger.info(f"Setting baudrate to {baudrate}")
+        if not self.initialized:
+            logger.error("Serial not initialized")
+            return
+
+        if self.backend == Backend.PYFTDI and self.dev:
+            self.dev.baudrate = baudrate
+
+        elif self.backend == Backend.PYLIBFTDI and self.dev:
+            self.dev.baudrate = baudrate
+
+        elif self.backend == Backend.FTD2xx and self.dev:
+            self.dev.setBaudRate(baudrate)
+
+        elif self.backend == Backend.PYSERIAL and self.dev:
+            self.dev.baudrate = baudrate

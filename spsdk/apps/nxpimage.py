@@ -120,11 +120,13 @@ def mbi_export(config: str, plugin: Optional[str] = None) -> None:
     check_config(config_data, mbi_cls.get_validation_schemas(), search_paths=[config_dir, "."])
     mbi_obj = mbi_cls()
     mbi_obj.load_from_config(config_data, search_paths=[config_dir, "."])
-    mbi_data = mbi_obj.export()
+    mbi_data = mbi_obj.export_image()
     if mbi_obj.rkth:
         click.echo(f"RKTH: {mbi_obj.rkth.hex()}")
     mbi_output_file_path = get_abs_path(config_data["masterBootOutputFile"], config_dir)
-    write_file(mbi_data, mbi_output_file_path, mode="wb")
+    logger.info(mbi_data.draw())
+
+    write_file(mbi_data.export(), mbi_output_file_path, mode="wb")
 
     click.echo(f"Success. (Master Boot Image: {mbi_output_file_path} created.)")
 

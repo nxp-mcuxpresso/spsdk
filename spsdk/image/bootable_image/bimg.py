@@ -142,9 +142,9 @@ class BootableImage(BaseClass):
             family
         )
         sch_cfg["family_rev"]["properties"]["revision"]["template_value"] = revision
-        sch_cfg["family_rev"]["properties"]["memory_type"][
-            "enum"
-        ] = bimg.get_supported_memory_types(family, revision)
+        sch_cfg["family_rev"]["properties"]["memory_type"]["enum"] = (
+            bimg.get_supported_memory_types(family, revision)
+        )
         sch_cfg["family_rev"]["properties"]["memory_type"]["template_value"] = mem_type
         schemas = [sch_cfg["family_rev"]]
         for segment in bimg.bimg_segments_descr:

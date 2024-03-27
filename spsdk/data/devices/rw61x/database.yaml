@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -87,7 +87,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinCertBlockV21
-          - Mbi_MixinManifest
+          - Mbi_MixinManifestDigest
           - Mbi_MixinLoadAddress
           - Mbi_MixinFwVersion
           - Mbi_MixinImageVersion
@@ -99,7 +99,7 @@ features:
           - Mbi_MixinApp
           - Mbi_MixinIvt
           - Mbi_MixinCertBlockV21
-          - Mbi_MixinManifest
+          - Mbi_MixinManifestDigest
           - Mbi_MixinLoadAddress
           - Mbi_MixinFwVersion
           - Mbi_MixinImageVersion
@@ -178,8 +178,15 @@ features:
 
   # ======== Device Hardware Security Module (HSM) section ========
   devhsm:
+    supported_commands:
+      - programFuses
+      - load
+      - configureMemory
+      - erase
+      - fillMemory
+    flag: 0x2
     key_blob_offset: 0xF05C
-    key_blob_command_position: 0
+    key_blob_command_position: -1
     devhsm_class: DevHsmSB31
 
   # ======== TrustZone section ========

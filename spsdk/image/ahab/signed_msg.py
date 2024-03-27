@@ -1212,9 +1212,9 @@ class MessageKeyExchange(Message):
         key_exchange_cfg["derived_key_type"] = self.derived_key_type.label
         key_exchange_cfg["derived_key_lifetime"] = self.derived_key_lifetime.label
         key_exchange_cfg["derived_key_usage"] = [x.label for x in self.derived_key_usage]
-        key_exchange_cfg[
-            "derived_key_permitted_algorithm"
-        ] = self.derived_key_permitted_algorithm.label
+        key_exchange_cfg["derived_key_permitted_algorithm"] = (
+            self.derived_key_permitted_algorithm.label
+        )
         key_exchange_cfg["derived_key_lifecycle"] = self.derived_key_lifecycle.label
         key_exchange_cfg["derived_key_id"] = self.derived_key_id
         key_exchange_cfg["private_key_id"] = self.private_key_id
@@ -1490,7 +1490,7 @@ class SignedMessage(AHABContainerBase):
         """
         signed_msg = SignedMessage()
         signed_msg.search_paths = search_paths or []
-        AHABContainerBase.load_from_config_generic(signed_msg, config)
+        signed_msg.load_from_config_generic(config)
 
         message = config.get("message")
         assert isinstance(message, dict)

@@ -39,7 +39,6 @@ class TaskResult:
 
 
 class TaskInfo:
-
     """Task information class."""
 
     def __init__(

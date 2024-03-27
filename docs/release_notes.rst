@@ -10,6 +10,29 @@
 Release Notes
 =============
 
+----------------------
+2.1.1 (27-March-2024)
+----------------------
+
+**New features**
+
+* :ref:`nxpcrypto`:
+    - add RSA-PSS support
+* :ref:`nxpdevhsm`:
+    - support external devhsm provisioning
+
+**Bugfixes**
+
+* :ref:`dk6prog`:
+    - fix DK6 operations
+* :ref:`nxpdevhsm`:
+    - fix buffer address MC56
+* :ref:`nxpele`:
+    - fix write fuse
+* :ref:`nxpimage`:
+    - add advanced params setting to configurations (padding, keys, timestamp, etc.)
+    - fix manifest hash digest KW45/K32W1
+
 ------------------------
 2.1.0 (2-February-2024)
 ------------------------

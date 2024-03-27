@@ -402,9 +402,9 @@ class Iee:
                         f"Encrypting {hex(addr)}:{hex(len(block) + addr)}"
                         f" with keyblob: \n {str(key_blob)}"
                     )
-                    encrypted_data[
-                        addr - base_addr : len(block) + addr - base_addr
-                    ] = key_blob.encrypt_image(addr, block)
+                    encrypted_data[addr - base_addr : len(block) + addr - base_addr] = (
+                        key_blob.encrypt_image(addr, block)
+                    )
             addr += len(block)
 
         return bytes(encrypted_data)

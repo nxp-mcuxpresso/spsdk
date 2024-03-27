@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -168,3 +168,7 @@ features:
         instances: [0] # probably not supported in latest version of Flashloader
       spi_nor:
         instances: [0, 1, 2, 3, 4, 5]
+
+  # ======== Misc signing section ========
+  signing:
+    pss_padding: true

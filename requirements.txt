@@ -7,7 +7,7 @@ click-command-tree<1.2
 click>=7.1,<8.1.6,!=8.1.4
 colorama>=0.4.6,<0.5
 crcmod<1.8
-cryptography>=35.0.0,<41.1
+cryptography>=42.0.0,<42.1
 deepmerge<1.2
 fastjsonschema>=2.15.1,<2.20
 hexdump<3.4

@@ -543,13 +543,11 @@ class SecureBinaryX(BaseClass):
         timestamp = config.get("timestamp")
         if timestamp:  # re-format it
             timestamp = value_to_int(timestamp)
-
-        signing_key_path = config.get("signingCertificatePrivateKeyFile")
-
-        if signing_key_path:
+        # signature provider only necessary for OEM and NXP provisioning types
+        if image_type in [SecureBinaryXType.OEM, SecureBinaryXType.NXP_PROVISIONING]:
             signature_provider = get_signature_provider(
                 sp_cfg=config.get("signProvider"),
-                local_file_key=signing_key_path,
+                local_file_key=config.get("signingCertificatePrivateKeyFile"),
                 search_paths=search_paths,
             )
         else:

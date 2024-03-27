@@ -481,6 +481,27 @@ class SecureBinary31(BaseClass):
         return schemas
 
     @classmethod
+    def get_devhsm_commands_validation_schemas(cls, family: str) -> List[Dict[str, Any]]:
+        """Create the list of validation schemas.
+
+        :param family: Family description.
+        :return: List of validation schemas.
+        """
+        sb3_sch_cfg = get_schema_file(DatabaseManager.SB31)
+        db = get_db(family, "latest")
+        schemas: List[Dict[str, Any]] = [sb3_sch_cfg["sb3_commands"]]
+        # remove unused command for current family
+        supported_commands = db.get_list(DatabaseManager.DEVHSM, "supported_commands")
+        list_of_commands: List[Dict] = schemas[0]["properties"]["commands"]["items"]["oneOf"]
+        schemas[0]["properties"]["commands"]["items"]["oneOf"] = [
+            command
+            for command in list_of_commands
+            if list(command["properties"].keys())[0] in supported_commands
+        ]
+
+        return schemas
+
+    @classmethod
     def get_validation_schemas(cls, family: str) -> List[Dict[str, Any]]:
         """Create the list of validation schemas.
 

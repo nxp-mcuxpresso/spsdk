@@ -15,7 +15,8 @@ from typing_extensions import Self
 from spsdk.crypto.signature_provider import InteractivePlainFileSP
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.debug_credential import DebugCredential
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.utils.database import DatabaseManager, get_db
 
 
 class DebugAuthenticateResponse:
@@ -39,7 +40,14 @@ class DebugAuthenticateResponse:
         self.auth_beacon = auth_beacon
         self.dac = dac
         self.dck_priv = path_dck_private
-        self.sig_provider = InteractivePlainFileSP(path_dck_private)
+
+        families_socc = self.debug_credential.get_socc_list()
+        family = list(families_socc[self.debug_credential.socc].keys())[0]
+        try:
+            pss_padding = get_db(family).get_bool(DatabaseManager.SIGNING, "pss_padding")
+        except SPSDKValueError:
+            pss_padding = False
+        self.sig_provider = InteractivePlainFileSP(path_dck_private, pss_padding=pss_padding)
 
     def __repr__(self) -> str:
         return f"DAR v{self.dac.version}, SOCC: 0x{self.dac.socc:08X}"

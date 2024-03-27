@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
@@ -161,6 +161,53 @@ keyblobs:
                   description: >-
                     RT500, RT600: noByteSwap = 1 (default)
                   template_value: 1
+sb2_test:
+  type: object
+  title: Secure Binary v2.1 Testing Settings
+  skip_in_template: true
+  properties:
+    options:
+      type: object
+      title: SB2.1 Options
+      description: An options block contains zero or more name/value pairs and the option settings that assign values to global options used by the nxpimage to control the generation of the output file.
+      properties:
+        dek:
+          type: string
+          title: DEK key
+          description: 32 bytes DEK key for SB 2.1
+          template_value: "0000000000000000000000000000000000000000000000000000000000000000"
+          minLength: 64
+          maxLength: 64
+          skip_in_template: true
+        mac:
+          type: string
+          title: MAC key
+          description: 32 bytes MAC key for SB 2.1
+          template_value: "0000000000000000000000000000000000000000000000000000000000000000"
+          minLength: 64
+          maxLength: 64
+          skip_in_template: true
+        nonce:
+          type: string
+          title: Nonce
+          description: Nonce for SB 2.1, clear bits at offset 31 and 63. 16 bytes.
+          template_value: "00000000000000000000000000000000"
+          minLength: 32
+          maxLength: 32
+          skip_in_template: true
+        zeroPadding:
+          type: boolean
+          title: Enable zero padding instead of random padding
+          description: Zero padding instead of random padding is useful if you want to binary compare two SB 2.1 files.
+          template_value: false
+          skip_in_template: true
+        timestamp:
+          type: [string, number]
+          title: SB 2.1 file force timestamp
+          description: For testing purposes. This option can override real timestamp of SB 2.1 file.
+          format: number
+          template_value: 1234567890
+          skip_in_template: true
 
 sb2_sections:
   type: object

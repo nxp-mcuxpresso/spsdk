@@ -35,7 +35,7 @@ ROT_TYPE_MAPPING = {
     "srk_table_hab": "SRK",
 }
 
-IGNORED_FEATURES = ["comm_buffer", "sbx"]
+IGNORED_FEATURES = ["comm_buffer", "sbx", "signing"]
 
 NXPIMAGE_FEATURES_MAPPING = {"cert_block": "RoT", "bootable_image": "Bootable image"}
 OTHER_FEATURES_MAPPING = {

@@ -35,6 +35,7 @@ from spsdk.utils.misc import (
     load_configuration,
     load_hex_string,
     load_text,
+    value_to_bytes,
     value_to_int,
     write_file,
 )
@@ -69,6 +70,7 @@ class SBV2xAdvancedParams:
         mac: Optional[bytes] = None,
         nonce: Optional[bytes] = None,
         timestamp: Optional[datetime] = None,
+        padding: Optional[bytes] = None,
     ):
         """Initialize SBV2xAdvancedParams.
 
@@ -76,12 +78,14 @@ class SBV2xAdvancedParams:
         :param mac: MAC key
         :param nonce: nonce
         :param timestamp: fixed timestamp for the header; use None to use current date/time
+        :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
         :raises SPSDKError: Invalid dek or mac
         :raises SPSDKError: Invalid length of nonce
         """
         self._dek: bytes = dek if dek else random_bytes(32)
         self._mac: bytes = mac if mac else random_bytes(32)
         self._nonce: bytes = nonce if nonce else SBV2xAdvancedParams._create_nonce()
+        self._padding: bytes = padding if padding else random_bytes(8)
         if timestamp is None:
             timestamp = datetime.now()
         self._timestamp = datetime.fromtimestamp(int(timestamp.timestamp()))
@@ -89,6 +93,16 @@ class SBV2xAdvancedParams:
             raise SPSDKError("Invalid dek or mac")
         if len(self._nonce) != 16:
             raise SPSDKError("Invalid length of nonce")
+
+    def __str__(self) -> str:
+        """String representation."""
+        return (
+            f"Advanced params: \nDEK: {self.dek.hex()}\n"
+            + f"MAC: {self.mac.hex()}\n"
+            + f"nonce: {self.nonce.hex()}\n"
+            + f"timestamp: {self.timestamp}\n"
+            + f"padding: {self.padding.hex()}\n"
+        )
 
     @property
     def dek(self) -> bytes:
@@ -109,6 +123,11 @@ class SBV2xAdvancedParams:
     def timestamp(self) -> datetime:
         """Return timestamp."""
         return self._timestamp
+
+    @property
+    def padding(self) -> bytes:
+        """Return padding."""
+        return self._padding
 
 
 ########################################################################################################################
@@ -498,9 +517,9 @@ class BootImageV21(BaseClass):
         :param sections: Boot sections
         """
         self._kek = kek
-        self.signature_provider: Optional[
-            SignatureProvider
-        ] = None  # this should be assigned for export, not needed for parsing
+        self.signature_provider: Optional[SignatureProvider] = (
+            None  # this should be assigned for export, not needed for parsing
+        )
         self._dek = advanced_params.dek
         self._mac = advanced_params.mac
         self._header = ImageHeaderV2(
@@ -511,6 +530,7 @@ class BootImageV21(BaseClass):
             flags=flags,
             nonce=advanced_params.nonce,
             timestamp=advanced_params.timestamp,
+            padding=advanced_params.padding,
         )
         self._cert_block: Optional[CertBlockV1] = None
         self.boot_sections: List[BootSectionV2] = []
@@ -865,7 +885,9 @@ class BootImageV21(BaseClass):
 
         schemas: List[Dict[str, Any]] = []
         schemas.extend([mbi_schema[x] for x in ["signature_provider", "cert_block_v1"]])
-        schemas.extend([sb2_schema[x] for x in ["sb2_output", "sb2_family", "common", "sb2"]])
+        schemas.extend(
+            [sb2_schema[x] for x in ["sb2_output", "sb2_family", "common", "sb2", "sb2_test"]]
+        )
 
         add_keyblob = True
 
@@ -931,6 +953,28 @@ class BootImageV21(BaseClass):
             check_config(parsed_conf, schemas, search_paths=[config_dir])
 
         return parsed_conf
+
+    @classmethod
+    def get_advanced_params(cls, config: Dict[str, Any]) -> SBV2xAdvancedParams:
+        """Get advanced test params from configuration.
+
+        :param config: Input standard configuration.
+        :return: SBV2xAdvancedParams advanced test params
+        """
+        # Test params
+        timestamp = config.get("timestamp")
+        if timestamp:  # re-format it
+            timestamp = datetime.fromtimestamp(value_to_int(timestamp))
+        dek = config.get("dek")
+        dek = value_to_bytes("0x" + dek, byte_cnt=32) if dek else None
+        mac = config.get("mac")
+        mac = value_to_bytes("0x" + mac, byte_cnt=32) if mac else None
+        nonce = config.get("nonce")
+        nonce = value_to_bytes("0x" + nonce, byte_cnt=16) if nonce else None
+        zero_padding = bytes(8) if config.get("zeroPadding") else None
+        advanced_params = SBV2xAdvancedParams(dek, mac, nonce, timestamp, zero_padding)
+        logger.debug(f"Loading advanced parameters for SB 2.1 {str(advanced_params)}")
+        return advanced_params
 
     @classmethod
     def load_from_config(
@@ -1017,6 +1061,7 @@ class BootImageV21(BaseClass):
             component_version=component_version,
             build_number=cert_block.header.build_number,
             flags=flags,
+            advanced_params=cls.get_advanced_params(config["options"]),
         )
 
         # We have our secure binary, now we attach to it the certificate block and

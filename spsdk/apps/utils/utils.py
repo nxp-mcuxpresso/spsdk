@@ -19,7 +19,7 @@ import click
 import hexdump
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.misc import get_abs_path, write_file
+from spsdk.utils.misc import get_abs_path, load_configuration, write_file
 
 WARNING_MSG = """
 This is an experimental utility. Use with caution!
@@ -254,3 +254,29 @@ def progress_bar(
                 p_bar.update(round(increment))
 
             yield progress
+
+
+def resolve_path_relative_to_config(
+    path_key: str,
+    config: Optional[str] = None,
+    override_path: Optional[str] = None,
+) -> str:
+    """Resolve path relative to config file. If override path is provided use that instead.
+
+    :param path_key: key in configuration
+    :param config: path to YAML/JSON configuration
+    :param override_path: If provided path will be overriden, defaults to None
+    :return: absolute path calculated from the relative path in config file
+    """
+    out_file = None
+    if override_path:
+        return override_path
+
+    if config:
+        cfg_dict = load_configuration(config)
+        out_file = cfg_dict.get(path_key)
+
+    if out_file and config:
+        return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(config)), out_file))
+    else:
+        raise SPSDKAppError(f"Path in {path_key} cannot be resolved")

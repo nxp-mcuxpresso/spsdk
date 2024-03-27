@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -109,7 +109,7 @@ def test_sbx_devhsm(data_dir):
             oem_share_input=b"abcd",
             info_print=None,
             container_conf="cfg_sbx_load.yaml",
-            family="lpc55s3x",
+            family="mc56f81xxx",
         )
 
     assert "ERASE: Address=0x00000000, Length=4096, Memory ID=0\n" in str(devhsm.sbx.sb_commands)

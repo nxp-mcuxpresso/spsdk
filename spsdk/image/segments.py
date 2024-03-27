@@ -1092,9 +1092,9 @@ class SegDcdBuilder:
     def __init__(self) -> None:
         """Initialize SegDcdBuilder."""
         self.line_cnt = 0  # current line number to be displayed in the error message
-        self.cmd_write: Optional[
-            CmdWriteData
-        ] = None  # this is cache to merge several write commands of same type
+        self.cmd_write: Optional[CmdWriteData] = (
+            None  # this is cache to merge several write commands of same type
+        )
 
     def _parse_cmd(self, dcd_obj: SegDCD, cmd: List[str]) -> None:
         """Parse one command.

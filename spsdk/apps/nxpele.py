@@ -1365,7 +1365,7 @@ def ele_gen_keyblob_iee_whole_keyblob(
     help="Data to be written",
 )
 @click.option(
-    "-p",
+    "-i",
     "--index",
     type=INT(),
     required=True,

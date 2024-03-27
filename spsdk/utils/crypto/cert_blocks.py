@@ -1465,9 +1465,9 @@ class CertBlockV21(CertBlock):
                 key.save(key_file_name)
                 cfg[f"rootCertificate{i}File"] = f"rootCertificate{i}File.pub"
             else:
-                cfg[
-                    f"rootCertificate{i}File"
-                ] = "The public key is not possible reconstruct from the key hash"
+                cfg[f"rootCertificate{i}File"] = (
+                    "The public key is not possible reconstruct from the key hash"
+                )
 
         cfg["mainRootCertId"] = self.root_key_record.used_root_cert
         if self.isk_certificate and self.root_key_record.ca_flag == 0:

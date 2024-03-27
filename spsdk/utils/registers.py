@@ -751,9 +751,11 @@ class RegsRegister:
             )
             value = value.from_bytes(
                 val_bytes,
-                Endianness.BIG.value
-                if self.base_endianness == Endianness.LITTLE
-                else Endianness.LITTLE.value,
+                (
+                    Endianness.BIG.value
+                    if self.base_endianness == Endianness.LITTLE
+                    else Endianness.LITTLE.value
+                ),
             )
 
         return value

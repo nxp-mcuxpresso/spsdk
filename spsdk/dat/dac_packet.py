@@ -132,7 +132,7 @@ class DebugAuthenticationChallenge:
         )
         # Note: EdgeLock is always 256b SRKH - if P384 these are the first 256b of SHA384(SRKT)
         hash_length = (
-            48 if (socc in [4, 6, 7] and version_minor == 1 and version_major == 2) else 32
+            48 if (socc in [4, 6, 7, 0xA] and version_minor == 1 and version_major == 2) else 32
         )
 
         format_tail = f"<{hash_length}s3L32s"

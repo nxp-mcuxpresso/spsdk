@@ -177,6 +177,7 @@ class PlainFileSP(SignatureProvider):
         password: Optional[str] = None,
         hash_alg: Optional[EnumHashAlgorithm] = None,
         search_paths: Optional[List[str]] = None,
+        **kwargs: Union[str, int, bool],
     ) -> None:
         """Initialize the plain file signature provider.
 
@@ -186,6 +187,7 @@ class PlainFileSP(SignatureProvider):
         :param search_paths: List of paths where to search for the file, defaults to None
         :raises SPSDKError: Invalid Private Key
         """
+        self.sign_kwargs = kwargs
         self.file_path = find_file(file_path=file_path, search_paths=search_paths)
         self.private_key = PrivateKey.load(self.file_path, password=password)
         self.hash_alg = self._get_hash_algorithm(hash_alg)
@@ -246,7 +248,7 @@ class PlainFileSP(SignatureProvider):
 
     def sign(self, data: bytes) -> bytes:
         """Return the signature for data."""
-        return self.private_key.sign(data)
+        return self.private_key.sign(data, **self.sign_kwargs)
 
 
 class InteractivePlainFileSP(PlainFileSP):
@@ -257,11 +259,12 @@ class InteractivePlainFileSP(PlainFileSP):
 
     sp_type = "interactive_file"
 
-    def __init__(  # pylint: disable=super-init-not-called
+    def __init__(
         self,
         file_path: str,
         hash_alg: Optional[EnumHashAlgorithm] = None,
         search_paths: Optional[List[str]] = None,
+        **kwargs: Union[str, int, bool],
     ) -> None:
         """Initialize the interactive plain file signature provider.
 
@@ -270,13 +273,18 @@ class InteractivePlainFileSP(PlainFileSP):
         :param search_paths: List of paths where to search for the file, defaults to None
         :raises SPSDKError: Invalid Private Key
         """
-        self.file_path = find_file(file_path=file_path, search_paths=search_paths)
         try:
-            self.private_key = PrivateKey.load(self.file_path)
+            super().__init__(
+                file_path=file_path,
+                password=None,
+                hash_alg=hash_alg,
+                search_paths=search_paths,
+                **kwargs,
+            )
         except SPSDKKeyPassphraseMissing:
             password = prompt_for_passphrase()
             self.private_key = PrivateKey.load(self.file_path, password=password)
-        self.hash_alg = self._get_hash_algorithm(hash_alg)
+            self.hash_alg = self._get_hash_algorithm(hash_alg)
 
 
 class HttpProxySP(SignatureProvider):
@@ -389,7 +397,8 @@ def get_signature_provider(
     elif local_file_key:
         signature_provider = InteractivePlainFileSP(
             file_path=local_file_key,
-            search_paths=kwargs.get("search_paths"),
+            # search_paths=kwargs.get("search_paths"),
+            **kwargs,
         )
     else:
         raise SPSDKValueError("No signature provider configuration is provided")

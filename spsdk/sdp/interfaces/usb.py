@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -43,7 +43,6 @@ USB_DEVICES = {
     "MX7SD": (0x15A2, 0x0076),
     "MX7ULP": (0x1FC9, 0x0126),
     "VYBRID": (0x15A2, 0x006A),
-    "MXRT10": (0x1FC9, 0x0145),
     "MXRT20": (0x1FC9, 0x0130),
     "MXRT50": (0x1FC9, 0x0130),
     "MXRT60": (0x1FC9, 0x0135),

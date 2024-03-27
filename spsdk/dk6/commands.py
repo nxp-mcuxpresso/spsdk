@@ -355,9 +355,7 @@ class MemCloseResponse(CmdResponse):
         return f"Tag={tag}, Status={status}"
 
 
-def parse_cmd_response(
-    data: bytes, frame_type: int
-) -> Union[
+def parse_cmd_response(data: bytes, frame_type: int) -> Union[
     CmdResponse,
     GenericResponse,
     GetChipIdResponse,

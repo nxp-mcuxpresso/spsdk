@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # =========================  Advanced High-Assurance Boot Certificate Configuration template.  =========================
@@ -7,6 +7,14 @@
 #                                   == Configuration of AHAB Container Certificate ==
 #                                      Optional certificate container definition."
 # ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
+# default.
+# Possible options: <mx8ulp, mx93, mx95, rt118x>
+family: rt118x
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon
+revision: latest
 # ------------------------------------===== Certificate permissions [Required] =====------------------------------------
 # Description: Permissions used to indicate what a certificate can be used for
 permissions:

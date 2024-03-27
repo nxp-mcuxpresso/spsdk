@@ -219,7 +219,7 @@ class EleMessage:
             raise SPSDKParsingError(f"Message TAG in response is invalid: {hex(tag)}")
         if command != self.command:
             raise SPSDKParsingError(f"Message COMMAND in response is invalid: {hex(command)}")
-        if size not in [self.response_words_count, self.RESPONSE_HEADER_WORDS_COUNT]:
+        if size not in range(self.RESPONSE_HEADER_WORDS_COUNT, self.response_words_count + 1):
             raise SPSDKParsingError(f"Message SIZE in response is invalid: {hex(size)}")
         if version != self.VERSION:
             raise SPSDKParsingError(f"Message VERSION in response is invalid: {hex(version)}")
@@ -1440,6 +1440,7 @@ class EleMessageWriteFuse(EleMessage):
 
     CMD = MessageIDs.WRITE_FUSE.tag
     COMMAND_PAYLOAD_WORDS_COUNT = 2
+    RESPONSE_PAYLOAD_WORDS_COUNT = 1
 
     def __init__(self, bit_position: int, bit_length: int, lock: bool, payload: int) -> None:
         """Constructor.
@@ -1457,6 +1458,7 @@ class EleMessageWriteFuse(EleMessage):
         self.bit_length = bit_length
         self.lock = lock
         self.payload = payload
+        self.processed_idx = 0
 
     def export(self) -> bytes:
         """Exports message to final bytes array.
@@ -1468,10 +1470,20 @@ class EleMessageWriteFuse(EleMessage):
         ret += pack(
             LITTLE_ENDIAN + UINT16 + UINT16 + UINT32,
             self.bit_position,
-            self.bit_length | 0x8000 if self.lock else 0,
+            self.bit_length | (0x8000 if self.lock else 0),
             self.payload,
         )
         return ret
+
+    def decode_response(self, response: bytes) -> None:
+        """Decode response from target.
+
+        :param response: Data of response.
+        :raises SPSDKParsingError: Response parse detect some error.
+        """
+        super().decode_response(response)
+        if len(response) == self.response_words_count * 4:
+            (self.processed_idx, _) = unpack(LITTLE_ENDIAN + UINT16 + UINT16, response[8:12])
 
 
 class EleMessageWriteShadowFuse(EleMessage):

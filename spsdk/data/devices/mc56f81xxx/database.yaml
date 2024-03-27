@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,7 +10,7 @@ latest: a1
 info:
   purpose: Digital Signal Controller
   # Web page of MCU representative
-  # web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-arm-cortex-m33/lpc553x-s3x-advanced-analog-armcortex-m33-based-mcu-family:LPC553x
+  web: https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx
   memory_map: # Memory map basic info
     internal_flash:
       base_addr: 0x0
@@ -26,7 +26,7 @@ info:
 features:
   # ======== Communication buffer section ========
   comm_buffer:
-    address: 0x60000
+    address: 0x04003000
     size: 0x1000
 
   # ======== Certificate block section ========

@@ -141,9 +141,9 @@ class FCB(SegmentBase):
             revisions = DatabaseManager().db.devices.get(family).revisions.revision_names(True)
             sch_cfg["fcb_family_rev"]["properties"]["revision"]["enum"] = revisions
             sch_cfg["fcb_family_rev"]["properties"]["revision"]["template_value"] = revision
-            sch_cfg["fcb_family_rev"]["properties"]["type"][
-                "enum"
-            ] = fcb_obj.get_supported_memory_types(fcb_obj.family, revision)
+            sch_cfg["fcb_family_rev"]["properties"]["type"]["enum"] = (
+                fcb_obj.get_supported_memory_types(fcb_obj.family, revision)
+            )
             sch_cfg["fcb_family_rev"]["properties"]["type"]["template_value"] = mem_type
             sch_cfg["fcb"]["properties"]["fcb_settings"] = fcb_obj.registers.get_validation_schema()
             return [sch_cfg["fcb_family_rev"], sch_cfg["fcb"]]

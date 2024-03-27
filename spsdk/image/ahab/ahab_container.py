@@ -782,8 +782,8 @@ class SRKRecord(HeaderContainerInversed):
     """
 
     TAG = AHABTags.SRK_RECORD.tag
-    VERSION = [0x21, 0x27, 0x28]  # type: ignore
-    VERSION_ALGORITHMS = {"rsa": 0x21, "ecdsa": 0x27, "sm2": 0x28}
+    VERSION = [0x21, 0x22, 0x27, 0x28]  # type: ignore
+    VERSION_ALGORITHMS = {"rsa": 0x21, "rsa_pss": 0x22, "ecdsa": 0x27, "sm2": 0x28}
     HASH_ALGORITHM = {
         EnumHashAlgorithm.SHA256: 0x0,
         EnumHashAlgorithm.SHA384: 0x1,
@@ -797,8 +797,8 @@ class SRKRecord(HeaderContainerInversed):
         0x1: (32, 32),
         0x2: (48, 48),
         0x3: (66, 66),
-        0x5: (128, 128),
-        0x7: (256, 256),
+        0x5: (256, 4),
+        0x7: (512, 4),
         0x8: (32, 32),
     }
 
@@ -807,7 +807,7 @@ class SRKRecord(HeaderContainerInversed):
     def __init__(
         self,
         src_key: Optional[PublicKey] = None,
-        signing_algorithm: str = "rsa",
+        signing_algorithm: str = "rsa_pss",
         hash_type: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
         key_size: int = 0,
         srk_flags: int = 0,
@@ -918,7 +918,7 @@ class SRKRecord(HeaderContainerInversed):
         if self.srk_flags is None or not check_range(self.srk_flags, end=0xFF):
             raise SPSDKValueError(f"SRK record: Invalid Flags: {self.srk_flags}")
 
-        if self.version == 0x21:  # Signing algorithm RSA
+        if self.version in (0x21, 0x22):  # Signing algorithm RSA
             if self.key_size not in self.RSA_KEY_TYPE.values():
                 raise SPSDKValueError(
                     f"SRK record: Invalid Key size in match to RSA signing algorithm: {self.key_size}"
@@ -979,7 +979,7 @@ class SRKRecord(HeaderContainerInversed):
             key_size = SRKRecord.RSA_KEY_TYPE[public_key.key_size]
             return SRKRecord(
                 src_key=public_key,
-                signing_algorithm="rsa",
+                signing_algorithm="rsa_pss",
                 hash_type=EnumHashAlgorithm.SHA256,
                 key_size=key_size,
                 srk_flags=srk_flags,
@@ -1092,6 +1092,8 @@ class SRKRecord(HeaderContainerInversed):
         """
         if get_key_by_val(self.VERSION_ALGORITHMS, self.version) == "rsa":
             return f"rsa{get_key_by_val(self.RSA_KEY_TYPE, self.key_size)}"
+        if get_key_by_val(self.VERSION_ALGORITHMS, self.version) == "rsa_pss":
+            return f"rsa_pss{get_key_by_val(self.RSA_KEY_TYPE, self.key_size)}"
         if get_key_by_val(self.VERSION_ALGORITHMS, self.version) == "ecdsa":
             return get_key_by_val(self.ECC_KEY_TYPE, self.key_size)
         if get_key_by_val(self.VERSION_ALGORITHMS, self.version) == "sm2":
@@ -1107,9 +1109,9 @@ class SRKRecord(HeaderContainerInversed):
         par1 = int.from_bytes(self.crypto_param1, Endianness.BIG.value)
         par2 = int.from_bytes(self.crypto_param2, Endianness.BIG.value)
         key: Union[PublicKey, PublicKeyEcc, PublicKeyRsa, PublicKeySM2]
-        if get_key_by_val(self.VERSION_ALGORITHMS, self.version) == "rsa":
+        if get_key_by_val(self.VERSION_ALGORITHMS, self.version) in ("rsa", "rsa_pss"):
             # RSA Key to store
-            key = PublicKeyRsa.recreate(par1, par2)
+            key = PublicKeyRsa.recreate(modulus=par1, exponent=par2)
         elif get_key_by_val(self.VERSION_ALGORITHMS, self.version) == "ecdsa":
             # ECDSA Key to store
             curve = get_key_by_val(self.ECC_KEY_TYPE, self.key_size)
@@ -1321,7 +1323,7 @@ class SRKTable(HeaderContainerInversed):
         ret_cfg["flag_ca"] = bool(self._srk_records[0].srk_flags & SRKRecord.FLAGS_CA_MASK)
 
         for ix_srk, srk in enumerate(self._srk_records):
-            filename = f"container{index}_srk_public_key{ix_srk}_{srk.get_key_name()}.PEM"
+            filename = f"container{index}_srk_public_key{ix_srk}_{srk.get_key_name()}.pem"
             write_file(data=srk.get_public_key(), path=os.path.join(data_path, filename), mode="wb")
             cfg_srks.append(filename)
 
@@ -1519,6 +1521,7 @@ class ContainerSignature(HeaderContainer):
             sp_cfg=config.get("signature_provider"),
             local_file_key=config.get("signing_key"),
             search_paths=search_paths,
+            pss_padding=True,
         )
         assert signature_provider
         return ContainerSignature(signature_provider=signature_provider)
@@ -1843,7 +1846,7 @@ class Certificate(HeaderContainer):
         ret_cfg["permissions"] = self.create_config_permissions(srk_set)
         if self._uuid:
             ret_cfg["uuid"] = "0x" + self._uuid.hex()
-        filename = f"container{index}_certificate_public_key_{self.public_key.get_key_name()}.PEM"
+        filename = f"container{index}_certificate_public_key_{self.public_key.get_key_name()}.pem"
         write_file(
             data=self.public_key.get_public_key(), path=os.path.join(data_path, filename), mode="wb"
         )
@@ -1876,6 +1879,7 @@ class Certificate(HeaderContainer):
             config.get("signature_provider"),
             config.get("signing_key"),
             search_paths=search_paths,
+            pss_padding=True,
         )
         return Certificate(
             permissions=Certificate.create_permissions(cert_permissions_list),
@@ -1890,7 +1894,9 @@ class Certificate(HeaderContainer):
 
         :return: Validation list of schemas.
         """
-        return [DatabaseManager().db.get_schema_file(DatabaseManager.AHAB)["ahab_certificate"]]
+        sch = DatabaseManager().db.get_schema_file(DatabaseManager.AHAB)
+        sch["family"]["properties"]["family"]["enum"] = AHABImage.get_supported_families()
+        return [sch["family"], sch["ahab_certificate"]]
 
     @staticmethod
     def generate_config_template() -> str:
@@ -2342,17 +2348,17 @@ class SignatureBlock(HeaderContainer):
                 self._srk_table_offset : self._srk_table_offset + len(self.srk_table)
             ] = self.srk_table.export()
         if self.signature:
-            signature_block[
-                self.signature_offset : self.signature_offset + len(self.signature)
-            ] = self.signature.export()
+            signature_block[self.signature_offset : self.signature_offset + len(self.signature)] = (
+                self.signature.export()
+            )
         if self.certificate:
             signature_block[
                 self._certificate_offset : self._certificate_offset + len(self.certificate)
             ] = self.certificate.export()
         if self.blob:
-            signature_block[
-                self._blob_offset : self._blob_offset + len(self.blob)
-            ] = self.blob.export()
+            signature_block[self._blob_offset : self._blob_offset + len(self.blob)] = (
+                self.blob.export()
+            )
 
         return signature_block
 
@@ -3119,6 +3125,7 @@ class AHABContainer(AHABContainerBase):
                 if not key.verify_signature(
                     self.signature_block.certificate.signature.signature_data,
                     self.signature_block.certificate.get_signature_data(),
+                    pss_padding=True,
                 ):
                     raise SPSDKValueError(
                         f"AHAB Container 0x{self.container_offset:04X}: Certificate block signature "
@@ -3136,7 +3143,9 @@ class AHABContainer(AHABContainerBase):
                 key = PublicKey.parse(self.signature_block.certificate.public_key.get_public_key())
 
             if not key.verify_signature(
-                self.signature_block.signature.signature_data, self.get_signature_data()
+                self.signature_block.signature.signature_data,
+                self.get_signature_data(),
+                pss_padding=True,
             ):
                 if (
                     self.signature_block.certificate
@@ -3226,6 +3235,8 @@ class AHABContainer(AHABContainerBase):
         ahab_container = AHABContainer(parent)
         ahab_container.search_paths = parent.search_paths or []
         ahab_container.container_offset = parent.ahab_address_map[container_ix]
+        config["family"] = parent.family
+        config["revision"] = parent.revision
         ahab_container.load_from_config_generic(config)
         images = config.get("images")
         assert isinstance(images, list)
@@ -3610,9 +3621,9 @@ class AHABImage:
 
         :return: Validation list of schemas.
         """
-        sch = DatabaseManager().db.get_schema_file(DatabaseManager.AHAB)["whole_ahab_image"]
-        sch["properties"]["family"]["enum"] = AHABImage.get_supported_families()
-        return [sch]
+        sch = DatabaseManager().db.get_schema_file(DatabaseManager.AHAB)
+        sch["family"]["properties"]["family"]["enum"] = AHABImage.get_supported_families()
+        return [sch["family"], sch["whole_ahab_image"]]
 
     @staticmethod
     def generate_config_template(family: str) -> Dict[str, Any]:

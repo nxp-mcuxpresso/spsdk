@@ -73,3 +73,7 @@ features:
 
   # ======== EdgeLock Enclave section ========
   ele: {}
+
+  # ======== Misc signing section ========
+  signing:
+    pss_padding: true

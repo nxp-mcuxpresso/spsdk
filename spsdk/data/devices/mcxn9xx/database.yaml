@@ -118,7 +118,7 @@ features:
           - Mbi_MixinIvt
           - Mbi_MixinLoadAddress
           - Mbi_MixinCertBlockV21
-          - Mbi_MixinManifestMcxNx
+          - Mbi_MixinManifestCrc
           - Mbi_MixinImageSubType
           - Mbi_MixinImageVersion
           - Mbi_MixinFwVersion

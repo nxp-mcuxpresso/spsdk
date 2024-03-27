@@ -1,4 +1,4 @@
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -231,7 +231,12 @@ sb3_commands:
                     description: Binary file to be programmed.
                     format: file
                     template_value: my_binary.bin
-                required: [address, file]
+                  value:
+                    type: [string, number]
+                    title: Binary value
+                    description: Binary value to be programmed, at least 4 bytes. Value will be converted to binary little endian format.
+                    template_value: "0xB38AA899"
+                required: [address]
 
           - type: object
             required: [loadCMAC]

@@ -273,9 +273,16 @@ class SecCsfAuthenticateCsf(SecCommandBase):
         version = parse_version(header_params["Header_Version"])
         engine = EnumEngine.from_label(header_params["Header_Engine"])
 
-        install_csfk_params = config.commands.get_command_params(SecCommand.INSTALL_CSFK)
+        # determine the key path, depending on if HAB is configured in normal or fast authentication mode
+        try:
+            install_csfk_params = config.commands.get_command_params(SecCommand.INSTALL_CSFK)
+            cert_path_param = "InstallCSFK_File"
+        except SPSDKValueError:  # in case of Fast Authentication, look for the NOCAK command
+            install_csfk_params = config.commands.get_command_params(SecCommand.INSTALL_NOCAK)
+            cert_path_param = "InstallNOCAK_File"
+
         certificate = Certificate.parse(
-            load_binary(install_csfk_params["InstallCSFK_File"], search_paths)
+            load_binary(install_csfk_params[cert_path_param], search_paths)
         )
 
         if command_params.get("AuthenticateCsf_KeyPass"):
@@ -291,7 +298,7 @@ class SecCsfAuthenticateCsf(SecCommandBase):
             )
         except SPSDKValueError as exc:
             # Keep the backwards compatibility with CSF tool and try to determine the path from certificate path
-            private_key_path = determine_private_key_path(install_csfk_params["InstallCSFK_File"])
+            private_key_path = determine_private_key_path(install_csfk_params[cert_path_param])
             if not private_key_path:
                 raise SPSDKFileNotFoundError("Private key could not be determined.") from exc
             signature_provider = get_signature_provider(
@@ -380,9 +387,16 @@ class SecCsfAuthenticateData(SecCommandBase):
         header_params = config.commands.get_command_params(SecCommand.HEADER)
         version = parse_version(header_params["Header_Version"])
 
-        install_key_params = config.commands.get_command_params(SecCommand.INSTALL_KEY)
+        # determine the key path, depending on if HAB is configured in normal or fast authentication mode
+        try:
+            install_key_params = config.commands.get_command_params(SecCommand.INSTALL_KEY)
+            cert_path_param = "InstallKey_File"
+        except SPSDKValueError:  # in case of Fast Authentication, look for the NOCAK command
+            install_key_params = config.commands.get_command_params(SecCommand.INSTALL_NOCAK)
+            cert_path_param = "InstallNOCAK_File"
+
         certificate = Certificate.parse(
-            load_binary(install_key_params["InstallKey_File"], search_paths)
+            load_binary(install_key_params[cert_path_param], search_paths)
         )
 
         engine = EnumEngine.from_label(command_params["AuthenticateData_Engine"])
@@ -409,7 +423,7 @@ class SecCsfAuthenticateData(SecCommandBase):
             )
         except SPSDKValueError as exc:
             # Keep the backwards compatibility with CSF tool and try to determine the path from certificate path
-            private_key_path = determine_private_key_path(install_key_params["InstallKey_File"])
+            private_key_path = determine_private_key_path(install_key_params[cert_path_param])
             if not private_key_path:
                 raise SPSDKFileNotFoundError("Private key could not be determined.") from exc
             signature_provider = get_signature_provider(

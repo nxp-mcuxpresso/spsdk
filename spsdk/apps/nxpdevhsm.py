@@ -22,14 +22,13 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
 )
-from spsdk.apps.utils.utils import INT, catch_spsdk_error
-from spsdk.exceptions import SPSDKError
+from spsdk.apps.utils.utils import INT, catch_spsdk_error, resolve_path_relative_to_config
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.mboot.scanner import get_mboot_interface
 from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.devhsm.utils import get_devhsm_class
-from spsdk.utils.misc import load_configuration, write_file
+from spsdk.utils.misc import write_file
 
 logger = logging.getLogger(__name__)
 
@@ -119,26 +118,7 @@ def generate(
 
     oem_share_in = DevHsm.get_oem_share_input(oem_share_input)
     cust_mk_sk = DevHsm.get_cust_mk_sk(key) if key else None
-    family_from_cfg = None
-    out_file = None
-
-    if config:
-        cfg_dict = load_configuration(config)
-        family_from_cfg = cfg_dict.get("family")
-        if not isinstance(family_from_cfg, str):
-            raise SPSDKError("Family parameter is not provided in the container configuration")
-        out_file = cfg_dict.get("containerOutputFile")
-
-    if (family and config) and (family != family_from_cfg):
-        raise SPSDKError(
-            f"Family from json configuration file: {family_from_cfg} differs from the family parameter {family}"
-        )
-
-    if output:
-        out_file = output
-    if not out_file:
-        raise SPSDKError("Output file was not provided")
-
+    out_file = resolve_path_relative_to_config("containerOutputFile", config, output)
     devhsm_cls = get_devhsm_class(family)
     with McuBoot(interface) as mboot:
         devhsm = devhsm_cls(

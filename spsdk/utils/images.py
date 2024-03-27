@@ -134,6 +134,28 @@ class BinaryImage:
                 return
         self.sub_images.append(image)
 
+    def append_image(self, image: "BinaryImage") -> None:
+        """Append new sub image at the end of the parent.
+
+        This function use the size of the parent as a offset for new appended image.
+
+        :param image: Image object.
+        """
+        image.offset = len(self)
+        self.add_image(image)
+
+    def find_sub_image(self, name: str) -> "BinaryImage":
+        """Find sub image by its name.
+
+        :param name: Name of sub image
+        :raises SPSDKValueError: The sub image with requested name doesn't exists
+        :return: Sub Image object
+        """
+        for sub_image in self.sub_images:
+            if name == sub_image.name:
+                return sub_image
+        raise SPSDKValueError(f"Sub image {name} in {self.name} doesn't exists")
+
     def join_images(self) -> None:
         """Join all sub images into main binary block."""
         binary = self.export()
@@ -167,6 +189,25 @@ class BinaryImage:
         :return: Floor alignment address.
         """
         return math.floor(self.absolute_address / alignment) * alignment
+
+    def get_image_by_absolute_address(self, address: int) -> "BinaryImage":
+        """Get Binary Image object that contains the provided absolute address.
+
+        :param address: Absolute address to image
+        :raises SPSDKValueError: Exception when the address doesn't fit into address space
+        :return: Binary image object that contains the data.
+        """
+        for sub_image in self.sub_images:
+            try:
+                return sub_image.get_image_by_absolute_address(address=address - self.offset)
+            except SPSDKValueError:
+                pass
+
+        if address < self.offset or address > (self.offset + len(self)):
+            raise SPSDKValueError(
+                f"The address 0x{address:08X} doesn't fit into {self.name} image."
+            )
+        return self
 
     def aligned_length(self, alignment: int = 4) -> int:
         """Returns aligned length for erasing purposes.

@@ -8,10 +8,11 @@
 
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
-
 ########################################################################################################################
 # Enums version 3.1
 ########################################################################################################################
+
+
 class EnumCmdTag(SpsdkEnum):
     """Contains commands tags."""
 
@@ -31,3 +32,10 @@ class EnumCmdTag(SpsdkEnum):
     FW_VERSION_CHECK = (0x0D, "FW_VERSION_CHECK")
     # RESET added in SBx
     RESET = (0x0E, "RESET")
+
+
+class EnumDevHSMType(SpsdkEnum):
+    """Contains Types of DevHSM provisioning specification."""
+
+    INTERNAL = (1, "INTERNAL_DEVHSM_PROVISIONING")
+    EXTERNAL = (2, "EXTERNAL_DEVHSM_PROVISIONING")

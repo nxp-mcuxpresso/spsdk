@@ -38,6 +38,8 @@ subject:
 
 # Path, where issuer private key is stored
 issuer_private_key: issuer_key.pem
+# Use PSS padding in case of RSA private key
+pss_padding: false
 # Path, where subject public key is stored
 subject_public_key: subject_key.pub
 # Serial number of certificate

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -41,6 +41,7 @@ class ImageHeaderV2(BaseClass):
         flags: int = 0x08,
         nonce: Optional[bytes] = None,
         timestamp: Optional[datetime] = None,
+        padding: Optional[bytes] = None,
     ) -> None:
         """Initialize Image Header Version 2.x.
 
@@ -51,6 +52,7 @@ class ImageHeaderV2(BaseClass):
         :param flags: The flags value (default: 0x08)
         :param nonce: The NONCE value; None if TODO ????
         :param timestamp: value requested in the test; None to use current value
+        :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
         """
         self.nonce = nonce
         self.version = version
@@ -71,6 +73,7 @@ class ImageHeaderV2(BaseClass):
         self.product_version: BcdVersion3 = BcdVersion3.to_version(product_version)
         self.component_version: BcdVersion3 = BcdVersion3.to_version(component_version)
         self.build_number = build_number
+        self.padding = padding
 
     def __repr__(self) -> str:
         return f"Header: v{self.version}, {self.image_blocks}"
@@ -114,6 +117,7 @@ class ImageHeaderV2(BaseClass):
         major_version, minor_version = [int(v) for v in self.version.split(".")]
         product_version_words = [swap16(v) for v in self.product_version.nums]
         component_version_words = [swap16(v) for v in self.product_version.nums]
+        padding = padding or self.padding
         if padding is None:
             padding = random_bytes(8)
         else:

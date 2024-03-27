@@ -18,6 +18,7 @@ from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.mbi import mbi_mixin
 from spsdk.utils.crypto.cert_blocks import CertBlockV1, CertBlockV21, CertBlockVx
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
+from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import get_key_by_val, write_file
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
@@ -215,11 +216,11 @@ class MasterBootImage:
     app: Optional[bytes]
     app_table: Optional[mbi_mixin.MultipleImageTable]
     cert_block: Optional[Union[CertBlockV1, CertBlockV21, CertBlockVx]]
-    collect_data: Callable[[], bytes]
-    encrypt: Any  # encrypt(self, raw_image: bytes, revert: bool = False) -> bytes
-    post_encrypt: Any  # post_encrypt(self, image: bytes, revert: bool = False) -> bytes
-    sign: Any  # sign(self, image: bytes, revert: bool = False) -> bytes
-    finalize: Any  # finalize(self, image: bytes, revert: bool = False) -> bytes
+    collect_data: Callable[[], BinaryImage]
+    encrypt: Callable[[BinaryImage, bool], BinaryImage]
+    post_encrypt: Callable[[BinaryImage, bool], BinaryImage]
+    sign: Callable[[BinaryImage, bool], BinaryImage]
+    finalize: Callable[[BinaryImage, bool], BinaryImage]
     disassemble_image: Callable[[bytes], None]
 
     @classmethod
@@ -295,6 +296,18 @@ class MasterBootImage:
         return ret
 
     @property
+    def total_length_for_cert_block(self) -> int:
+        """Compute Master Boot Image data length.
+
+        :return: Final image data length.
+        """
+        ret = 0
+        for base in self._get_mixins():
+            if base.COUNT_IN_LEGACY_CERT_BLOCK_LEN:
+                ret += base.mix_len(self)  # type: ignore
+        return ret
+
+    @property
     def app_len(self) -> int:
         """Compute application data length.
 
@@ -302,10 +315,7 @@ class MasterBootImage:
         """
         ret = 0
         for base in self._get_mixins():
-            mix_app_len = base.mix_app_len(self)  # type: ignore
-            if mix_app_len < 0:
-                mix_app_len = base.mix_len(self)  # type: ignore
-            ret += mix_app_len
+            ret += base.mix_app_len(self)  # type: ignore
         return ret
 
     @property
@@ -331,35 +341,43 @@ class MasterBootImage:
         for base in self._get_mixins():
             base.mix_load_from_config(self, config)  # type: ignore
 
-    def export(self) -> bytes:
+    def export_image(self) -> BinaryImage:
         """Export final bootable image.
 
-        :return: Bootable Image in bytes.
+        :return: Bootable Image in Binary Image format.
         """
+        BinaryImage(name="MBI Image", description=f"MBI Image: {self.IMAGE_TYPE} for {self.family}")
         # 1: Validate the input data
         self.validate()
         # 2: Collect all input data into raw image
         raw_image = self.collect_data()
         if DEBUG_TRACE_ENABLE:
-            write_file(raw_image, "export_1_collect.bin", mode="wb")
+            write_file(raw_image.export(), "export_1_collect.bin", mode="wb")
         # 3: Optionally encrypt the image
-        encrypted_image = self.encrypt(raw_image)
+        encrypted_image = self.encrypt(raw_image, False)
         if DEBUG_TRACE_ENABLE:
-            write_file(encrypted_image, "export_2_encrypt.bin", mode="wb")
+            write_file(encrypted_image.export(), "export_2_encrypt.bin", mode="wb")
         # 4: Optionally do some post encrypt image updates
-        encrypted_image = self.post_encrypt(encrypted_image)
+        encrypted_image = self.post_encrypt(encrypted_image, False)
         if DEBUG_TRACE_ENABLE:
-            write_file(encrypted_image, "export_3_post_encrypt.bin", mode="wb")
+            write_file(encrypted_image.export(), "export_3_post_encrypt.bin", mode="wb")
         # 5: Optionally sign image
-        signed_image = self.sign(encrypted_image)
+        signed_image = self.sign(encrypted_image, False)
         if DEBUG_TRACE_ENABLE:
-            write_file(signed_image, "export_4_signed.bin", mode="wb")
+            write_file(signed_image.export(), "export_4_signed.bin", mode="wb")
         # 6: Finalize image
-        final_image = self.finalize(signed_image)
+        final_image = self.finalize(signed_image, False)
         if DEBUG_TRACE_ENABLE:
-            write_file(final_image, "export_5_finalized.bin", mode="wb")
+            write_file(final_image.export(), "export_5_finalized.bin", mode="wb")
 
         return final_image
+
+    def export(self) -> bytes:
+        """Export final bootable image.
+
+        :return: Bootable Image in bytes.
+        """
+        return self.export_image().export()
 
     @staticmethod
     def parse(family: str, data: bytes, dek: Optional[str] = None) -> "MasterBootImage":
@@ -414,24 +432,25 @@ class MasterBootImage:
                         continue
                 mixin.mix_parse(mbi_cls, data)  # type: ignore
 
+        input_image = BinaryImage("MBI to parse", binary=data)
         # 3: Revert finalize operation of image
-        image = mbi_cls.finalize(data, revert=True)
+        image = mbi_cls.finalize(input_image, True)
         if DEBUG_TRACE_ENABLE:
-            write_file(image, "parse_1_revert_finalize.bin", mode="wb")
+            write_file(image.export(), "parse_1_revert_finalize.bin", mode="wb")
         # 4: Revert optional sign of image
-        unsigned_image = mbi_cls.sign(image, revert=True)
+        unsigned_image = mbi_cls.sign(image, True)
         if DEBUG_TRACE_ENABLE:
-            write_file(unsigned_image, "parse_2_revert_sign.bin", mode="wb")
+            write_file(unsigned_image.export(), "parse_2_revert_sign.bin", mode="wb")
         # 5: Revert optional some post encrypt image updates
-        encrypted_image = mbi_cls.post_encrypt(unsigned_image, revert=True)
+        encrypted_image = mbi_cls.post_encrypt(unsigned_image, True)
         if DEBUG_TRACE_ENABLE:
-            write_file(encrypted_image, "parse_3_revert_post_encrypt.bin", mode="wb")
+            write_file(encrypted_image.export(), "parse_3_revert_post_encrypt.bin", mode="wb")
         # 6: Revert optional encryption of the image
-        decrypted_image = mbi_cls.encrypt(encrypted_image, revert=True)
+        decrypted_image = mbi_cls.encrypt(encrypted_image, True)
         if DEBUG_TRACE_ENABLE:
-            write_file(decrypted_image, "parse_4_revert_encrypt.bin", mode="wb")
+            write_file(decrypted_image.export(), "parse_4_revert_encrypt.bin", mode="wb")
         # 7: Disassembly rest of image
-        mbi_cls.disassemble_image(decrypted_image)
+        mbi_cls.disassemble_image(decrypted_image.export())
 
         return mbi_cls
 

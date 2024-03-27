@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+import os
+
 import pytest
 
 from spsdk.apps.utils import utils
-from spsdk.apps.utils.utils import catch_spsdk_error
+from spsdk.apps.utils.utils import catch_spsdk_error, resolve_path_relative_to_config
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootConnectionError
 from spsdk.utils.misc import load_configuration, use_working_directory
@@ -104,3 +106,15 @@ def test_load_configuration_invalid_file(data_dir, file_name):
     with use_working_directory(data_dir):
         with pytest.raises(SPSDKError):
             load_configuration(file_name)
+
+
+@pytest.mark.parametrize("file_name", ["test_relative_config1.yaml"])
+def test_resolve_path_relative_to_config(data_dir, file_name):
+    path_key = "containerOutputFile"
+    with use_working_directory(data_dir):
+        pth = resolve_path_relative_to_config(path_key, file_name)
+        assert os.path.join("tests", "apps", "output.txt") in pth
+
+        assert "override" == resolve_path_relative_to_config(
+            path_key, file_name, override_path="override"
+        )

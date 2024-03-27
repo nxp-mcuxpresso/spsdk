@@ -60,7 +60,7 @@ firmware_version:
     firmwareVersion:
       type: [number, string]
       title: Firmware version.
-      description: Value compared with Secure_FW_Version monotonic counter value stored in PFR/IFR. If value is lower than value in PFR/IFR, then is image rejected (rollback protection)..
+      description: Value compared with Secure_FW_Version monotonic counter value stored in protected memory (MCU specific). If value is lower than value in protected memory, then is image rejected (rollback protection).
       format: number
       template_value: 0
 

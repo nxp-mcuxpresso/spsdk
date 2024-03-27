@@ -11,12 +11,12 @@ from typing import Dict, List, Optional, Union
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.x509.extensions import ExtensionNotFound
 from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.keys import PrivateKey, PublicKey, PublicKeyEcc, PublicKeyRsa
+from spsdk.crypto.keys import PrivateKey, PrivateKeyRsa, PublicKey, PublicKeyEcc, PublicKeyRsa
 from spsdk.crypto.types import (
     SPSDKEncoding,
     SPSDKExtensionOID,
@@ -55,6 +55,7 @@ class Certificate(BaseClass):
         serial_number: Optional[int] = None,
         duration: Optional[int] = None,
         extensions: Optional[List[x509.ExtensionType]] = None,
+        pss_padding: Optional[bool] = None,
     ) -> "Certificate":
         """Generate certificate.
 
@@ -65,6 +66,7 @@ class Certificate(BaseClass):
         :param serial_number: certificate serial number, if not specified, random serial number will be set
         :param duration: how long the certificate will be valid (in days)
         :param extensions: List of extensions to include in the certificate
+        :param pss_padding: Use RSA-PSS padding
         :return: certificate
         """
         before = datetime.utcnow() if duration else datetime(2000, 1, 1)
@@ -84,7 +86,22 @@ class Certificate(BaseClass):
             for ext in extensions:
                 crt = crt.add_extension(ext, critical=True)
 
-        return Certificate(crt.sign(issuer_private_key.key, hashes.SHA256()))
+        if not isinstance(issuer_private_key, PrivateKeyRsa):
+            pss_padding = None
+        if pss_padding is None:
+            rsa_padding = None
+        else:
+            rsa_padding = (
+                padding.PSS(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    salt_length=padding.PSS.DIGEST_LENGTH,
+                )
+                if pss_padding
+                else padding.PKCS1v15()
+            )
+        return Certificate(
+            crt.sign(issuer_private_key.key, hashes.SHA256(), rsa_padding=rsa_padding)  # type: ignore
+        )
 
     def save(
         self,

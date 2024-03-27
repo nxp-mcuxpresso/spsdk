@@ -240,8 +240,7 @@ class DK6Device:
         """
         if self.mac_addr:
             return ":".join(f"{b:02X}" for b in self.mac_addr)
-        else:
-            return "N/A"
+        return "N/A"
 
     def add_memory_from_response(self, memory_response: MemGetInfoResponse) -> None:
         """Add memory from MemGetInfoResponse.
@@ -253,10 +252,10 @@ class DK6Device:
                 base_address=memory_response.base_addr,
                 length=memory_response.length,
                 sector_size=memory_response.sector_size,
-                mem_type=memory_response.mem_type,
+                mem_type=MemoryType.from_tag(memory_response.mem_type),
                 mem_name=memory_response.mem_name,
-                mem_id=memory_response.memory_id,
-                access=memory_response.access,
+                mem_id=MemoryId.from_tag(memory_response.memory_id),
+                access=MemoryAccessValues.from_tag(memory_response.access),
             )
             self.add_memory(memory)
 
@@ -476,3 +475,7 @@ class DK6Device:
 
         if result.status != StatusCode.OK:
             raise SPSDKError("Reset failed")
+
+    def set_baud_rate(self, baudrate: int) -> None:
+        """Set baud rate."""
+        self.protocol.set_baud_rate(baudrate)

@@ -22,7 +22,7 @@ from spsdk.exceptions import SPSDKError
 from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbi.mbi import create_mbi_class, get_mbi_class
-from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestMcxNx, Mbi_MixinHmac, Mbi_MixinIvt
+from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestCrc, Mbi_MixinHmac, Mbi_MixinIvt
 from spsdk.utils.crypto.cert_blocks import CertBlockV21, CertBlockVx
 from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.misc import Endianness, load_binary, load_configuration, use_working_directory
@@ -227,7 +227,7 @@ def test_nxpimage_mbi_signed(
         new_data = new_data[:-signature_length]
 
         if hasattr(parsed_mbi, "manifest") and isinstance(
-            parsed_mbi.manifest, MasterBootImageManifestMcxNx
+            parsed_mbi.manifest, MasterBootImageManifestCrc
         ):
             # Check CRC
             assert (

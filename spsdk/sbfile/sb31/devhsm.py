@@ -18,6 +18,7 @@ from spsdk.mboot.commands import TrustProvKeyType, TrustProvOemKeyType
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
+from spsdk.sbfile.sb31.constants import EnumDevHSMType
 from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands, SecureBinary31Header
 from spsdk.utils.crypto.cert_blocks import CertificateBlockHeader
 from spsdk.utils.database import DatabaseManager, get_schema_file
@@ -95,6 +96,12 @@ class DevHsmSB31(DevHsm):
             if "timestamp" in config_data:
                 self.timestamp = value_to_int(str(config_data.get("timestamp")))
 
+            family_from_cfg = config_data.get("family")
+            if family != family_from_cfg:
+                raise SPSDKError(
+                    f"Family from json configuration file: {family_from_cfg} differs from the family parameter {family}"
+                )
+
         self.wrapped_cust_mk_sk = bytes()
         self.final_sb = bytes()
 
@@ -121,7 +128,7 @@ class DevHsmSB31(DevHsm):
         schemas.append(mbi_sch_cfg["firmware_version"])
         schemas.append(sb3_sch_cfg["sb3_family"])
         schemas.append(sb3_sch_cfg["sb3_description"])
-        schemas.extend(SecureBinary31.get_commands_validation_schemas(family))
+        schemas.extend(SecureBinary31.get_devhsm_commands_validation_schemas(family))
         if include_test_configuration:
             schemas.append(sb3_sch_cfg["sb3_test"])
         # find family
@@ -259,6 +266,8 @@ class DevHsmSB31(DevHsm):
         # 7.4: Compose manifest that will be signed
         self.info_print(" 7.4: Preparing SB3 manifest to sign.")
         manifest_to_sign = bytes()
+        if self.database.get_int(self.F_DEVHSM, "flag") == EnumDevHSMType.EXTERNAL.tag:
+            sb3_header.flags = EnumDevHSMType.EXTERNAL.tag
         manifest_to_sign += sb3_header.export()
         manifest_to_sign += sb3_data.final_hash
         manifest_to_sign += cb_header.export()

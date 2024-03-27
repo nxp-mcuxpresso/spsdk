@@ -48,4 +48,4 @@ SPSDK_YML_INDENT = 2
 
 
 ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
-SPSDK_EXAMPLES_FOLDER = os.path.relpath(os.path.join(ROOT_DIR, "examples"))
+SPSDK_EXAMPLES_FOLDER = os.path.abspath(os.path.join(ROOT_DIR, "examples"))
