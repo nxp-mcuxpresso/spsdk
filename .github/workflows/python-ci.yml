@@ -52,7 +52,7 @@ jobs:
  
       - name: Run Codecheck
         run: |
-          : # Year of Github merge may differ from the actual year when the fila was updated 
+          # Year of Github merge may differ from the actual year when the fila was updated 
           python codecheck.py -s --output reports_codecheck --info-check gitcov  --info-check COPYRIGHT
 
       - name: Archive Results
