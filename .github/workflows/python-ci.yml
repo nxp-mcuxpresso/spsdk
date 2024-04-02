@@ -52,7 +52,7 @@ jobs:
  
       - name: Run Codecheck
         run: |
-          python codecheck.py -s --output reports_codecheck --info-check gitcov  --info-check MYPY_TOOLS --info-check MYPY
+          python codecheck.py -s --output reports_codecheck --info-check gitcov --info-check MYPY
 
       - name: Archive Results
         uses: actions/upload-artifact@v3
