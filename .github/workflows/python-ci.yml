@@ -52,7 +52,8 @@ jobs:
  
       - name: Run Codecheck
         run: |
-          python codecheck.py -s --output reports_codecheck --info-check gitcov --info-check MYPY
+          : # Year of Github merge may differ from the actual year when the fila was updated 
+          python codecheck.py -s --output reports_codecheck --info-check gitcov  --info-check COPYRIGHT
 
       - name: Archive Results
         uses: actions/upload-artifact@v3
