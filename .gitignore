@@ -86,7 +86,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-workspace
+examples/**/workspace
 
 # pyenv
 .python-version

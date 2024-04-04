@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,9 +10,13 @@
 import ast
 import logging
 import re
+import sys
 from typing import Tuple
 
-import astunparse
+if sys.version_info < (3, 9):
+    from astunparse import unparse
+else:
+    from ast import unparse
 
 from .translator import Translator
 
@@ -33,7 +37,7 @@ class MyTransformer(ast.NodeTransformer):
     def visit_Attribute(self, node: ast.Attribute) -> ast.Constant:  # pylint: disable=invalid-name
         """Translate Attribute Nodes."""
         self.logger.debug("Transforming node attribute...")
-        thing = astunparse.unparse(node).strip()
+        thing = unparse(node).strip()
         value = self.translator.translate(thing)
         self.logger.debug(f"Attribute '{thing}' transformed into {value:x}")
         result = ast.Constant(value=value, kind=None)
@@ -67,7 +71,7 @@ class Processor:
         self.logger.debug(f"Transforming condition: {condition}")
         org_node = ast.parse(condition, mode="eval")
         new_node = self.transformer.visit(org_node)
-        node_str = astunparse.unparse(new_node).rstrip()
+        node_str = unparse(new_node).rstrip()
         self.logger.debug(f"Transformed condition: {node_str}")
         node_str = self._replace_int_as_hex(node_str)
         # pylint: disable=eval-used

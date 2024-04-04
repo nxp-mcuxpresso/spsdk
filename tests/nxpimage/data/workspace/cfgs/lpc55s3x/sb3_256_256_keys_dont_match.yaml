@@ -1,0 +1,37 @@
+# Copyright 2023 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Secure Binary v3.1 converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+# ----------------------------------------------------------------------------------------------------
+firmwareVersion: '0x1'  # [Optional], Firmware version; Version of application image firmware.
+family: lpc55s3x # [Required], MCU family name; Possible options:['k32w1xx', 'kw45xx', 'lpc55s3x', 'mcxn9xx']
+containerOutputFile: .\workspace\output_images\lpc55s3x\sb3_256_256.sb3 # [Required], SB3 filename; Generated SB3 container filename.
+# ----------------------------------------------------------------------------------------------------
+#                                    == ISK Certificate Settings ==
+# ----------------------------------------------------------------------------------------------------
+certBlock: .\workspace\cfgs\cert_block\cert_256_256_data.yaml
+signPrivateKey: .\workspace\keys_certs\ec_pk_secp256r1_cert3.pem # [Optional], ISK Certificate private key used to sign certificate. It can be replaced by signProvider key.
+# ----------------------------------------------------------------------------------------------------
+#                                  == Secure Binary v3.1 Settings ==
+# ----------------------------------------------------------------------------------------------------
+containerKeyBlobEncryptionKey: .\workspace\keys\userkey.txt # [Optional], Part Common Key; Path to PCK/NPK key in plain hex string format.
+isNxpContainer: false # [Optional], Enable NXP Container format; Internal usage only, used for generating SB files with NXP content e.g. provisioning firmware, etc...
+kdkAccessRights: 3 # [Optional], KDK access rights; Accepted values are 0, 1, 2 and 3. Value used as key properties for key derivation process, more details can be found in CSSv2 manual; Possible options:[0, 1, 2, 3]
+containerConfigurationWord: '0x0' # [Optional], Container configuration word; Flag value in SB3.1 manifest, not used by silicons with LPC55S3x ROM. Value can be kept 0, or it can be removed from the configuration file.
+description: sb3_256_256.sb3 # [Optional], Description up to 16 characters, longer will be truncated. Stored in SB3.1 manifest.
+# ----------------------------------------------------------------------------------------------------
+#                              == Secure Binary v3.1 Commands Settings ==
+# ----------------------------------------------------------------------------------------------------
+commands: # [Required], SB3.1 Commands; Secure Binary v3.1 commands block, list of all possible options - Modify it according to your application
+  - erase:  # [Required], Erase; Performs a flash erase of the given address range. The erase will be rounded up to the sector size.
+      address: '0x0'  # [Required], Address of memory block to be erased.
+      size: '0x10000' # [Required], Size of memory block to be erased.
+  - load:  # [Required], Load; If set, then the data to write immediately follows the range header. The length field contains the actual data length
+      address: '0x0'  # [Required], Address of memory block to be loaded.
+      file: .\workspace\output_images\lpc55s3x\normal_boot_sign.bin # [Optional], Binary file to be loaded.
+# ----------------------------------------------------------------------------------------------------
+#                              == Secure Binary v3.1 Testing Settings ==
+# ----------------------------------------------------------------------------------------------------
+timestamp: '0x123456' # [Optional], SB3 file force timestamp; For testing purposes. This option can override real timestamp of SB3 file.
