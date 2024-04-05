@@ -401,32 +401,13 @@ def get_key_path(data_dir: str, key_type: str):
     return private, public
 
 
-@pytest.mark.parametrize(
-    "key_type",
-    ["secp256r1", "secp384r1", "secp521r1", "rsa2048", "rsa4096"],
-)
-@pytest.mark.parametrize(
-    "algorithm",
-    [
-        None,
-        EnumHashAlgorithm.SHA1,
-        EnumHashAlgorithm.SHA256,
-        EnumHashAlgorithm.SHA384,
-        EnumHashAlgorithm.SHA512,
-        EnumHashAlgorithm.MD5,
-    ],
-)
-def test_nxpcrypto_create_signature_algorithm(
-    cli_runner: CliRunner,
-    data_dir: str,
-    tmpdir,
-    key_type: str,
-    algorithm: Optional[EnumHashAlgorithm],
-):
+def run_signature(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, key_type: str, algorithm: EnumHashAlgorithm
+) -> None:
     priv_key, pub_key = get_key_path(data_dir, key_type)
 
     input_file = os.path.join(data_dir, "data_to_sign.bin")
-    output_file = os.path.join(tmpdir, "signature.bin")
+    output_file = os.path.join(tmpdir, f"signature_{key_type}_{algorithm}.bin")
 
     cmd = f"signature create -k {priv_key} -i {input_file} -o {output_file}"
     if algorithm:
@@ -441,6 +422,49 @@ def test_nxpcrypto_create_signature_algorithm(
     if algorithm:
         extra_params["algorithm"] = algorithm
     assert pub.verify_signature(signature, load_binary(input_file), **extra_params)
+
+
+@pytest.mark.parametrize(
+    "key_type, algorithms",
+    [
+        ("secp256r1", [None, EnumHashAlgorithm.SHA256]),
+        ("secp384r1", [None, EnumHashAlgorithm.SHA384]),
+        ("secp521r1", [None, EnumHashAlgorithm.SHA512]),
+        ("rsa2048", [None, EnumHashAlgorithm.SHA256]),
+        ("rsa4096", [None, EnumHashAlgorithm.SHA256]),
+    ],
+)
+def test_nxpcrypto_create_signature_algorithm_mandatory(
+    cli_runner: CliRunner,
+    data_dir: str,
+    tmpdir,
+    key_type: str,
+    algorithms: List[Optional[EnumHashAlgorithm]],
+):
+    for algorithm in algorithms:
+        run_signature(cli_runner, data_dir, tmpdir, key_type, algorithm)
+
+
+@pytest.mark.xfail(reason="Some Linux distributions allows only certain combinations of key-hash")
+@pytest.mark.parametrize(
+    "key_type, algorithms",
+    [
+        ("secp256r1", [EnumHashAlgorithm.SHA384, EnumHashAlgorithm.SHA512]),
+        ("secp384r1", [EnumHashAlgorithm.SHA256, EnumHashAlgorithm.SHA512]),
+        ("secp521r1", [EnumHashAlgorithm.SHA256, EnumHashAlgorithm.SHA384]),
+        ("rsa2048", [EnumHashAlgorithm.SHA384, EnumHashAlgorithm.SHA512]),
+        ("rsa4096", [EnumHashAlgorithm.SHA384, EnumHashAlgorithm.SHA512]),
+    ],
+)
+def test_nxpcrypto_create_signature_algorithm_optional(
+    cli_runner: CliRunner,
+    data_dir: str,
+    tmpdir,
+    key_type: str,
+    algorithms: List[Optional[EnumHashAlgorithm]],
+):
+    for algorithm in algorithms:
+        run_signature(cli_runner, data_dir, tmpdir, key_type, algorithm)
 
 
 @pytest.mark.skipif(not IS_OSCCA_SUPPORTED, reason="OSCCA support is not installed")
