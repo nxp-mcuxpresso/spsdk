@@ -16,6 +16,7 @@ types-pyyaml<6.1
 pylint>=2.13.0,<3.1
 pydocstyle[toml]<6.4
 black>=24.0,<24.2
+nxp_codecheck>=0.1.0
 # cli executables
 pyinstaller<6.4
 pyinstaller-hooks-contrib<2024.1
