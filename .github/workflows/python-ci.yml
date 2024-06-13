@@ -33,17 +33,17 @@ jobs:
       - name:  Install OS Dependencies
         run:   |
           if [ "$RUNNER_OS" == "Linux" ]; then
-            sudo apt-get update && sudo apt install -y libpcsclite-dev
+            sudo apt-get update && sudo apt install -y libpcsclite-dev swig
           fi
           if [ "$RUNNER_OS" == "macOS" ]; then
-            brew install pcsc-lite
+            brew install pcsc-lite swig
           fi
         shell: bash
 
       - name: Install SPSDK
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade .
+          pip install --upgrade .[all]
 
       - name: Install Development Dependencies
         run: |
