@@ -104,6 +104,22 @@ unsafe-load-any-extension=no
 
 [BASIC]
 
+disable=R,
+        C,
+        no-self-use,
+        protected-access,
+        fixme,
+        arguments-renamed,
+        broad-exception-caught,
+        unused-argument,
+        abstract-method
+enable=no-else-return,
+       no-else-raise,
+       simplifiable-if-expression,
+       simplifiable-condition,
+       redefined-argument-from-local,
+       chained-comparison
+
 # Naming style matching correct argument names.
 argument-naming-style=snake_case
 
@@ -349,7 +365,7 @@ indent-string='    '
 max-line-length=120
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=3000
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -443,7 +459,12 @@ disable=raw-checker-failed,
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once). See also the "--disable" option for examples.
-enable=c-extension-no-member
+enable=c-extension-no-member,
+        parameter_documentation,
+        format,
+        missing-class-docstring,
+        missing-function-docstring,
+        missing-module-docstring
 
 
 [METHOD_ARGS]
