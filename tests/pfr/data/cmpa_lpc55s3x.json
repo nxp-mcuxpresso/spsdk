@@ -33,8 +33,7 @@
             "ISP_CMD_EN": "0b0",
             "FA_CMD_EN": "0b0",
             "ME_CMD_EN": "0b0",
-            "UUID_CHECK": "0b0",
-            "INVERSE_VALUE": "0x0000"
+            "UUID_CHECK": "0b0"
         },
         "DCFG_CC_SOCU_DFLT": {
             "NIDEN": "0b0",
@@ -43,8 +42,7 @@
             "SPIDEN": "0b0",
             "ISP_CMD_EN": "0b0",
             "FA_CMD_EN": "0b0",
-            "ME_CMD_EN": "0b0",
-            "INVERSE_VALUE": "0x0000"
+            "ME_CMD_EN": "0b0"
         },
         "VENDOR_USAGE": {
             "VENDOR_USAGE": "0x0000"

@@ -1,22 +1,21 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 description:
   device: mcxn9xx
-  revision: a0
+  revision: latest
   type: CMPA
-  version: 2.0.0
 settings:
   BOOT_CFG:
     bitfields:
-      DEFAULT_BOOT_SOURCE: FLEXSPI_FLASH_XIP_0b01
+      BOOT_SRC: FLEXSPI_FLASH_XIP
   FLEXSPI_BOOT_CFG0:
     bitfields:
-      FLEXSPI_AUTO_PROBE: ENABLED
+      FLEXSPI_AUTO_PROBE_EN: ENABLED
   SECURE_BOOT_CFG:
     bitfields:
       SEC_BOOT_EN: SIGNED_IMAGES
-      ENF_CNSA: ECC_P384_0
+      ENF_CNSA: LIMITED_0b01
   RoTK_USAGE:
     bitfields:
       RoTK0_Usage: USABLE

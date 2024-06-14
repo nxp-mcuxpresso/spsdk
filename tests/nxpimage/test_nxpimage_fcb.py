@@ -27,6 +27,7 @@ from tests.cli_runner import CliRunner
         ("rt106x", "flexspi_nor"),
         ("rt117x", "flexspi_nor"),
         ("lpc55s3x", "flexspi_nor"),
+        ("mcxn9xx", "flexspi_nor"),
     ],
 )
 def test_nxpimage_fcb_export(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type):
@@ -52,6 +53,7 @@ def test_nxpimage_fcb_export(cli_runner: CliRunner, tmpdir, data_dir, family, me
         ("rt106x", "flexspi_nor", "fcb.bin"),
         ("rt117x", "flexspi_nor", "fcb.bin"),
         ("lpc55s3x", "flexspi_nor", "fcb.bin"),
+        ("mcxn9xx", "flexspi_nor", "fcb.bin"),
     ],
 )
 def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family, mem_type, binary):
@@ -82,7 +84,8 @@ def test_nxpimage_fcb_parse_cli(cli_runner: CliRunner, tmpdir, data_dir, family,
     [
         ("rt5xx", ["flexspi_nor"]),
         ("rt6xx", ["flexspi_nor"]),
-        ("rt101x", ["flexspi_nor"]),
+        ("rt1010", ["flexspi_nor"]),
+        ("rt1015", ["flexspi_nor"]),
         ("rt102x", ["flexspi_nor"]),
         ("rt104x", ["flexspi_nor"]),
         ("rt105x", ["flexspi_nor"]),
@@ -112,6 +115,7 @@ def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family, mem_ty
         (b"FCFB" + b"0" * 507, True),
         (b"FCFB" + b"0" * 508, False),
         (b"FCFB" + b"0" * 512, False),
+        (b"CFBF" + b"0" * 512, False),
     ],
 )
 @pytest.mark.parametrize(

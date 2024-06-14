@@ -1,0 +1,207 @@
+{
+    "cpu": "LPC5536",
+    "groups": [
+        {
+            "group": {
+                "name": "LC_STATE",
+                "description": "Device life cycle state, only the lowest 8 bits are valid."
+            },
+            "registers": [
+                {
+                    "id": "fuse0",
+                    "name": "LC_STATE[7:0]",
+                    "description": "Device life cycle state.\nLife-cycle state is used to determine Code read protection (CRP) levels.",
+                    "index_int": "0",
+                    "reset_value_int": "3",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse0-bits-0-7",
+                            "name": "LC_STATE[7:0]",
+                            "description": "Device life cycle state LC_STATE[7:0].",
+                            "advanced": true,
+                            "values": [
+                                {
+                                    "name": "CRP_LEVEL0",
+                                    "value": 3,
+                                    "description": "CRP_LEVEL0 (LC_STATE = 0x03)"
+                                },
+                                {
+                                    "name": "CRP_LEVEL1",
+                                    "value": 7,
+                                    "description": "CRP_LEVEL1 (LC_STATE = 0x07)"
+                                },
+                                {
+                                    "name": "CRP_LEVEL2_3",
+                                    "value": 15,
+                                    "description": "CRP_LEVEL2 (LC_STATE = 0x0F)\nCRP_LEVEL3 (LC_STATE = 0x0F) and CMPA.ISP_mode = Disable."
+                                },
+                                {
+                                    "name": "FIELD_RETURN",
+                                    "value": 31,
+                                    "description": "(Field return OEM) LC_STATE = 0x1F"
+                                },
+                                {
+                                    "name": "FAILURE_ANALYSIS",
+                                    "value": 127,
+                                    "description": "(Failure analysis NXP) LC_STATE = 0x7F"
+                                },
+                                {
+                                    "name": "CRP_LEVEL4",
+                                    "value": 207,
+                                    "description": "CRP_LEVEL4 (LC_STATE = 0xCF) and CMPA.ISP_mode = Disable."
+                                }
+                            ]
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CMPA_CRC",
+                "description": "CMPA CRC check value."
+            },
+            "registers": [
+                {
+                    "id": "fuse1",
+                    "name": "CMPA_CRC[31:0]",
+                    "description": "CRC32 of CMPA fields.\n- Used by non-secure part during boot.",
+                    "index_int": "1",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "MFG_DATA",
+                "description": "Customer Manufacturing-time programmed words."
+            },
+            "registers": [
+                {
+                    "id": "fuse2",
+                    "name": "MFG_DATA_WORD0",
+                    "description": "CMPA MFG data value word 0.",
+                    "index_int": "2",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse3",
+                    "name": "MFG_DATA_WORD1",
+                    "description": "CMPA MFG data value word 1.",
+                    "index_int": "3",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse4",
+                    "name": "MFG_DATA_WORD2",
+                    "description": "CMPA MFG data value word 2.",
+                    "index_int": "4",
+                    "individual_write_lock": "always_lock"
+                },
+                {
+                    "id": "fuse5",
+                    "name": "MFG_DATA_WORD3",
+                    "description": "CMPA MFG data value word 3.",
+                    "index_int": "5",
+                    "individual_write_lock": "always_lock"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved",
+                "description": "Reserved for NXP use."
+            },
+            "registers": [
+                {
+                    "id": "fuse6",
+                    "name": "Reserved",
+                    "description": "Reserved.",
+                    "index_int": "6",
+                    "is_reserved": true,
+                    "bitfields": [
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "group":  { 
+                "name": "CUSTOMER_WORDS",
+                "description": "Customer words area."
+            },
+            "registers": [
+                {
+                    "id": "fuse7",
+                    "name": "CUSTOMER_WORD0",
+                    "description": "Customer use word 0.",
+                    "index_int": "7"
+                },
+                {
+                    "id": "fuse8",
+                    "name": "CUSTOMER_WORD1",
+                    "description": "Customer use word 1, only the lowest 8 bits are valid.",
+                    "index_int": "8",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse7-bits-0-7",
+                            "name": "CUSTOMER_WORD1[7:0]",
+                            "description": "Customer use word 1."
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                },
+                {
+                    "id": "fuse9",
+                    "name": "CUSTOMER_WORD2",
+                    "description": "Customer use word 2, only the lowest 8 bits are valid.",
+                    "index_int": "9",
+                    "bitfields": [
+                        {
+                            "width": 8,
+                            "id": "fuse9-bits-0-7",
+                            "name": "CUSTOMER_WORD2[7:0]",
+                            "description": "Customer use word 2."
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

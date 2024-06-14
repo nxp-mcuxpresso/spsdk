@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 import click
 import hexdump
 
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.misc import get_abs_path, load_configuration, write_file
 
 WARNING_MSG = """
@@ -119,14 +119,16 @@ def catch_spsdk_error(function: Callable) -> Callable:
     """Catch the SPSDKError."""
 
     @wraps(function)
-    def wrapper(*args: tuple, **kwargs: dict) -> Any:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             retval = function(*args, **kwargs)
             return retval
         except SPSDKAppError as app_exc:
             if app_exc.description:
                 click.echo(str(app_exc))
-            sys.exit(app_exc.error_code)
+            if app_exc.error_code > 0 and app_exc.error_code < 256:
+                sys.exit(app_exc.error_code)
+            sys.exit(1)
         except (AssertionError, SPSDKError) as spsdk_exc:
             click.echo(f"ERROR:{spsdk_exc}", err=True)
             logger.debug(str(spsdk_exc), exc_info=True)
@@ -278,5 +280,16 @@ def resolve_path_relative_to_config(
 
     if out_file and config:
         return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(config)), out_file))
-    else:
-        raise SPSDKAppError(f"Path in {path_key} cannot be resolved")
+    raise SPSDKAppError(f"Path in {path_key} cannot be resolved")
+
+
+def deprecated_option_warning(
+    option_name: Optional[str], custom_text: Optional[str] = None
+) -> None:
+    """Print deprecated option warning."""
+    if not (option_name or custom_text):
+        raise SPSDKValueError("Either option name or custom text must be provided.")
+    msg = custom_text or (
+        f"The '{option_name}' option has been deprecated and will be removed in the future release"
+    )
+    click.secho(msg, fg="yellow")

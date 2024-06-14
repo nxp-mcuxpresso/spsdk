@@ -18,7 +18,7 @@ if sys.version_info < (3, 9):
 else:
     from ast import unparse
 
-from .translator import Translator
+from spsdk.pfr.translator import Translator
 
 logger = logging.getLogger(__name__)
 

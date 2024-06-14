@@ -9,13 +9,12 @@
 """Module implementing the SDP communication protocol."""
 import logging
 import math
-from typing import Mapping, Optional, Tuple
+from typing import Any, Optional
 
+from spsdk.sdp.commands import CmdPacket, CommandTag, ResponseValue
+from spsdk.sdp.error_codes import StatusCode
+from spsdk.sdp.exceptions import SdpCommandError, SdpConnectionError, SdpError
 from spsdk.sdp.interfaces import SDPDeviceTypes
-
-from .commands import CmdPacket, CommandTag, ResponseValue
-from .error_codes import StatusCode
-from .exceptions import SdpCommandError, SdpConnectionError, SdpError
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ class SDP:
         self.open()
         return self
 
-    def __exit__(self, *args: Tuple, **kwargs: Mapping) -> None:
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         self.close()
 
     def open(self) -> None:

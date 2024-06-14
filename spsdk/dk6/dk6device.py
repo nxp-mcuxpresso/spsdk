@@ -9,11 +9,7 @@ import logging
 from types import TracebackType
 from typing import Callable, Dict, List, Optional, Type, Union
 
-from spsdk.exceptions import SPSDKError
-from spsdk.utils.misc import Endianness
-from spsdk.utils.spsdk_enum import SpsdkEnum
-
-from .commands import (
+from spsdk.dk6.commands import (
     GetChipIdResponse,
     MemGetInfoResponse,
     MemoryAccessValues,
@@ -21,9 +17,12 @@ from .commands import (
     MemoryType,
     StatusCode,
 )
-from .interface import Uart
-from .protocol import DK6Protocol
-from .serial_device import SerialDevice
+from spsdk.dk6.interface import Uart
+from spsdk.dk6.protocol import DK6Protocol
+from spsdk.dk6.serial_device import SerialDevice
+from spsdk.exceptions import SPSDKError
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 

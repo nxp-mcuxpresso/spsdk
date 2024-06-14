@@ -5,7 +5,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Tests for `pfr` application."""
+"""Tests for 'pfr' application."""
 import filecmp
 import logging
 import os
@@ -33,6 +33,16 @@ def test_command_line_interface(cli_runner: CliRunner):
         ("lpc55s3x", "cmpa"),
         ("lpc55s3x", "cfpa"),
         ("mcxa1xx", "cmpa"),
+        ("mcxa156", "cmpa"),
+        ("mcxa155", "cmpa"),
+        ("mcxa154", "cmpa"),
+        ("mcxa144", "cmpa"),
+        ("mcxa145", "cmpa"),
+        ("mcxa146", "cmpa"),
+        ("mcxa142", "cmpa"),
+        ("mcxa143", "cmpa"),
+        ("mcxa152", "cmpa"),
+        ("mcxa153", "cmpa"),
         ("mcxn9xx", "cmpa"),
         ("mcxn9xx", "cfpa"),
         ("nhs52sxx", "cmpa"),
@@ -50,7 +60,7 @@ def test_generate_all(cli_runner: CliRunner, data_dir, tmpdir, name, type):
         "--config",
         f"{test_data_dir}/{name}_{type}.yaml",
         "--calc-inverse",
-        "-x",  # Omit PFRC tests
+        "--ignore",  # Omit PFRC tests
     ]
     logging.debug(cmd)
     cli_runner.invoke(cli.main, cmd)
@@ -200,6 +210,17 @@ def test_parse(cli_runner: CliRunner, data_dir, tmpdir):
         ("mcxn9xx", "cfpa"),
         ("nhs52sxx", "cmpa"),
         ("nhs52sxx", "cfpa"),
+        ("mcxa1xx", "cmpa"),
+        ("mcxa156", "cmpa"),
+        ("mcxa155", "cmpa"),
+        ("mcxa154", "cmpa"),
+        ("mcxa144", "cmpa"),
+        ("mcxa145", "cmpa"),
+        ("mcxa146", "cmpa"),
+        ("mcxa142", "cmpa"),
+        ("mcxa143", "cmpa"),
+        ("mcxa152", "cmpa"),
+        ("mcxa153", "cmpa"),
     ],
 )
 def test_user_config(cli_runner: CliRunner, tmpdir, family, type):
@@ -222,7 +243,7 @@ def test_user_config(cli_runner: CliRunner, tmpdir, family, type):
 
 
 @pytest.mark.parametrize(
-    "test_pass,dfl_niden,dfl_inverse,force",
+    "test_pass,dfl_niden,dfl_inverse,ignore",
     [
         (True, 0x0, 0xFFFF, False),  # OK
         (True, 0x0, 0xFFFE, False),  # breaking rule 1.4
@@ -238,7 +259,7 @@ def test_pfrc_integration_1(
     test_pass,
     dfl_niden,
     dfl_inverse,
-    force,
+    ignore,
 ):
     cmpa_config_template = os.path.join(data_dir, "cmpa_lpc55s3x_default.yaml")
     config = load_configuration(cmpa_config_template)
@@ -251,8 +272,8 @@ def test_pfrc_integration_1(
         yaml.dump(config, fp)
 
     cmd = f"generate-binary --config {cmpa_config_path} --output {output_bin}"
-    if force:
-        cmd += " --force"
+    if ignore:
+        cmd += " --ignore"
     logging.debug(cmd)
     cli_runner.invoke(cli.main, cmd.split(), expected_code=0 if test_pass else 1)
 

@@ -39,7 +39,7 @@ class MessageIDs(SpsdkSoftEnum):
     GET_INFO_REQ = (0xDA, "GET_INFO_REQ", "Get ELE Information request.")
     ELE_RESET_APC_CTX_REQ = (0xD8, "ELE_RESET_APC_CTX_REQ", "Reset APC Context")
     START_RNG_REQ = (0xA3, "START_RNG_REQ", "Start True Random Generator request.")
-    GET_TRNG_STATE_REQ = (0xA3, "GET_TRNG_STATE_REQ", "Get True Random Generator state request.")
+    GET_TRNG_STATE_REQ = (0xA4, "GET_TRNG_STATE_REQ", "Get True Random Generator state request.")
     RESET_REQ = (0xC7, "RESET_REQ", "System reset request.")
     WRITE_FUSE = (0xD6, "WRITE_FUSE", "Write fuse")
     WRITE_SHADOW_FUSE = (0xF2, "WRITE_SHADOW_FUSE", "Write shadow fuse")
@@ -320,17 +320,25 @@ class EleCsalState(SpsdkSoftEnum):
     ELE_CSAL_NOT_READY = (
         0x0,
         "ELE_CSAL_NOT_READY",
-        "Crypto Lib random context initialization is not done yet",
+        "EdgeLock secure enclave random context initialization is not done yet",
     )
     ELE_CSAL_ON_GOING = (
         0x1,
         "ELE_CSAL_ON_GOING",
-        "Crypto Lib random context initialization is on-going",
+        "EdgeLock secure enclave random context initialization is on-going",
     )
-    ELE_CSAL_READY = (0x2, "ELE_CSAL_READY", "Crypto Lib random context initialization succeed")
-    ELE_CSAL_ERROR = (0x3, "ELE_CSAL_ERROR", "Crypto Lib random context initialization failed")
+    ELE_CSAL_READY = (
+        0x2,
+        "ELE_CSAL_READY",
+        "EdgeLock secure enclave random context initialization succeed",
+    )
+    ELE_CSAL_ERROR = (
+        0x3,
+        "ELE_CSAL_ERROR",
+        "EdgeLock secure enclave random context initialization failed",
+    )
     ELE_CSAL_PAUSE = (
         0x4,
         "ELE_CSAL_PAUSE",
-        "Crypto Lib random context initialization is in 'pause' mode",
+        "EdgeLock secure enclave random context initialization is in 'pause' mode",
     )

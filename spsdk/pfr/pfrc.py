@@ -12,12 +12,11 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError, SPSDKPfrConfigError
+from spsdk.pfr.pfr import CFPA, CMPA, SPSDKPfrError
 from spsdk.pfr.processor import Processor
 from spsdk.pfr.translator import Translator
 from spsdk.utils.database import DatabaseManager, get_db, get_families
 from spsdk.utils.misc import load_configuration
-
-from .pfr import CFPA, CMPA, SPSDKPfrError
 
 logger = logging.getLogger(__name__)
 

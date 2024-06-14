@@ -1,0 +1,24 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  rev1: {}
+latest: rev1
+
+info: {}
+
+features:
+  # ======== Feature 1 ========
+  feature1: {}
+  # ======== Feature Fuses Testing ========
+  fuses: {}
+  # ======== Feature Shadow registers Testing ========
+  shadow_regs:
+    inverted_regs:
+      REG1: REG_INVERTED_AP
+    flush_func: rw61x_update_scratch_reg
+    computed_fields:
+      REG1:
+        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
+        CRC8: comalg_dcfg_cc_socu_crc8

@@ -16,16 +16,15 @@ import click
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
-    isp_interfaces,
     spsdk_apps_common_options,
     spsdk_config_option,
     spsdk_family_option,
+    spsdk_mboot_interface,
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import INT, catch_spsdk_error, resolve_path_relative_to_config
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.mboot.scanner import get_mboot_interface
 from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.devhsm.utils import get_devhsm_class
 from spsdk.utils.misc import write_file
@@ -42,7 +41,7 @@ def main(log_level: int) -> int:
 
 
 @main.command(no_args_is_help=True)
-@isp_interfaces(uart=True, usb=True, sdio=True, lpcusbsio=True, buspal=True, json_option=False)
+@spsdk_mboot_interface(identify_by_family=True)
 @spsdk_family_option(families=DevHsm.get_supported_families())
 @click.option(
     "-k",
@@ -94,28 +93,18 @@ def main(log_level: int) -> int:
 @spsdk_output_option(required=False)
 @spsdk_config_option(required=False)
 def generate(
-    port: str,
-    usb: str,
-    sdio: str,
-    buspal: str,
-    lpcusbsio: str,
+    interface: MbootProtocolBase,
     oem_share_input: str,
     key: str,
     output: str,
     workspace: str,
     config: str,
-    timeout: int,
     family: str,
     initial_reset: bool,
     final_reset: bool,
     buffer_address: int,
 ) -> None:
     """Generate provisioning SB file."""
-    interface = get_mboot_interface(
-        port=port, usb=usb, lpcusbsio=lpcusbsio, timeout=timeout, buspal=buspal, sdio=sdio
-    )
-    assert isinstance(interface, MbootProtocolBase)
-
     oem_share_in = DevHsm.get_oem_share_input(oem_share_input)
     cust_mk_sk = DevHsm.get_cust_mk_sk(key) if key else None
     out_file = resolve_path_relative_to_config("containerOutputFile", config, output)

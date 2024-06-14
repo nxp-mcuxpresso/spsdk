@@ -12,15 +12,14 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 from spsdk.crypto.certificate import Certificate, generate_name
+from spsdk.crypto.crypto_types import SPSDKEncoding, SPSDKNameOID
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
 from spsdk.crypto.rng import random_bytes
-from spsdk.crypto.types import SPSDKEncoding, SPSDKNameOID
 from spsdk.crypto.utils import extract_public_key
-from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.misc import Endianness, find_file, load_binary, load_file, write_file
-
-from ..data_container import (
+from spsdk.tp.adapters.model_utils import ModelConfig, get_models_configs
+from spsdk.tp.adapters.utils import OEMCertInfo, OEMKeyFlags, TPFlags, sanitize_common_name
+from spsdk.tp.data_container import (
     AuthenticationType,
     Container,
     DataDestinationEntry,
@@ -28,10 +27,10 @@ from ..data_container import (
     DestinationType,
     PayloadType,
 )
-from ..exceptions import SPSDKTpError
-from ..tp_intf import TpDevInterface, TpIntfDescription
-from .model_utils import ModelConfig, get_models_configs
-from .utils import OEMCertInfo, OEMKeyFlags, TPFlags, sanitize_common_name
+from spsdk.tp.exceptions import SPSDKTpError
+from spsdk.tp.tp_intf import TpDevInterface, TpIntfDescription
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.misc import Endianness, find_file, load_binary, load_file, write_file
 
 logger = logging.getLogger(__name__)
 

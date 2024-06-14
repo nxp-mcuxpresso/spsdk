@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright (c) 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Low level usbsio device."""
 import logging
 import re
-from dataclasses import dataclass
 from typing import List, Optional, Union
 
 import libusbsio
 from libusbsio.libusbsio import LIBUSBSIO
-from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
@@ -24,25 +22,12 @@ from spsdk.utils.usbfilter import USBDeviceFilter
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ScanArgs:
-    """Scan arguments dataclass."""
-
-    config: str
-
-    @classmethod
-    def parse(cls, params: str) -> Self:
-        """Parse given scanning parameters into ScanArgs class.
-
-        :param params: Parameters as a string
-        """
-        return cls(config=params)
-
-
 class UsbSioDevice(DeviceBase):
     """USBSIO device class."""
 
-    def __init__(self, dev: int = 0, config: Optional[str] = None, timeout: int = 5000) -> None:
+    def __init__(
+        self, dev: int = 0, config: Optional[str] = None, timeout: Optional[int] = None
+    ) -> None:
         """Initialize the Interface object.
 
         :param dev: device index to be used, default is set to 0
@@ -56,10 +41,30 @@ class UsbSioDevice(DeviceBase):
         # work with the global LIBUSBSIO instance
         self.dev_ix = dev
         self.sio = self._get_usbsio()
-        self._timeout = timeout
+        self._timeout = timeout or 5000
 
         # store USBSIO configuration and version
         self.config = config
+
+    def open(self) -> None:
+        """Open the interface."""
+        if self.sio is None:
+            self.sio = self._get_usbsio()
+        if not self.sio.IsDllLoaded():
+            self.sio.LoadDLL()
+
+        if not self.sio.IsOpen():
+            detected_dev = self.sio.GetNumPorts()
+            if detected_dev <= 0:
+                raise SPSDKConnectionError(
+                    "Cannot open LIBUSBSIO device because there is no one connected in system."
+                )
+            if detected_dev <= self.dev_ix:
+                raise SPSDKConnectionError(
+                    f"Cannot open LIBUSBSIO device-{self.dev_ix}, because the index is out of connected devices."
+                )
+
+            self.sio.Open(self.dev_ix)
 
     @property
     def timeout(self) -> int:
@@ -75,7 +80,7 @@ class UsbSioDevice(DeviceBase):
     def is_opened(self) -> bool:
         """Indicates whether device is open.
 
-        :return: True if device is open, False othervise.
+        :return: True if device is open, False otherwise.
         """
         return bool(self.port)
 
@@ -84,9 +89,8 @@ class UsbSioDevice(DeviceBase):
         if self.port:
             self.port.Close()
             self.port = None
-            self.sio.Close()
-            # re-init the libusb to prepare it for next open
-            self.sio.GetNumPorts()
+            if not self.sio.IsAnyPortOpen():
+                self.sio.Close()
 
     def __str__(self) -> str:
         """Return string containing information about the interface."""
@@ -125,7 +129,7 @@ class UsbSioDevice(DeviceBase):
 
     @classmethod
     def scan(
-        cls, config: Optional[str] = None, timeout: int = 5000
+        cls, config: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Union["UsbSioSPIDevice", "UsbSioI2CDevice"]]:
         """Scan connected USB-SIO bridge devices.
 
@@ -136,6 +140,7 @@ class UsbSioDevice(DeviceBase):
         :raises SPSDKError: When libusbsio library error or if no bridge device found
         :raises SPSDKValueError: Invalid configuration detected.
         """
+        timeout = timeout or 5000
         cfg = config.split(",") if config else []
         re_spi = re.compile(r"^spi(?P<index>\d*)")
         re_i2c = re.compile(r"^i2c(?P<index>\d*)")
@@ -188,8 +193,7 @@ class UsbSioDevice(DeviceBase):
                     )
             if sio.Close() < 0:
                 raise SPSDKError(f"Cannot close libusbsio bridge {port}.")
-            # re-init the libusb to prepare it for next open
-            sio.GetNumPorts()
+
         return devices
 
     @classmethod
@@ -304,8 +308,7 @@ class UsbSioSPIDevice(UsbSioDevice):
 
     def open(self) -> None:
         """Open the interface."""
-        if not self.sio.IsOpen():
-            self.sio.Open(self.dev_ix)
+        super().open()
 
         self.port: LIBUSBSIO.SPI = self.sio.SPI_Open(
             portNum=self.spi_port,
@@ -405,8 +408,8 @@ class UsbSioI2CDevice(UsbSioDevice):
 
     def open(self) -> None:
         """Open the interface."""
-        if not self.sio.IsOpen():
-            self.sio.Open(self.dev_ix)
+        super().open()
+
         self.port: LIBUSBSIO.I2C = self.sio.I2C_Open(
             clockRate=self.i2c_speed_khz * 1000, portNum=self.i2c_port
         )

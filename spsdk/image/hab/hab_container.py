@@ -29,7 +29,7 @@ from spsdk.image.hab.segments import (
     XmcdHabSegment,
 )
 from spsdk.sbfile.sb2.sly_bd_parser import BDParser
-from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import BinaryPattern, load_configuration, load_text
 from spsdk.utils.schema_validator import CommentedConfig, check_config
@@ -51,8 +51,8 @@ class HabContainer:
         """HAB container initialization.
 
         :param flags: Flags
-        :param ivt_offset: IVT offset value
-        :param start_address: Start address value
+        :param ivt_offset: IVT offset value which is actually the HAB container offset
+        :param start_address: Start address of bootable image
         :param segments: Segments list
         :param image_pattern: Image pattern used to fill empty spaces
         """
@@ -149,7 +149,7 @@ class HabContainer:
                 pass
         hab = cls(
             flags=hab_config.options.flags,
-            ivt_offset=hab_config.options.ivt_offset,
+            ivt_offset=hab_config.options.get_ivt_offset(),
             start_address=hab_config.options.start_address,
             segments=segments,
         )
@@ -286,7 +286,7 @@ class HabContainer:
         return self.image_info(padding=False).export()
 
     @classmethod
-    def get_validation_schemas(cls) -> List[Dict[str, Any]]:
+    def get_validation_schemas(cls, family: Optional[str] = None) -> List[Dict[str, Any]]:
         """Create the list of validation schemas.
 
         :return: List of validation schemas.
@@ -294,18 +294,27 @@ class HabContainer:
         hab_schema = get_schema_file(DatabaseManager.HAB)
 
         schemas: List[Dict[str, Any]] = []
-        schemas.extend([hab_schema[x] for x in ["hab_input", "hab"]])
-        schemas = [hab_schema[x] for x in ["hab_input", "hab", "hab_sections"]]
+        sch_hab = hab_schema["hab"]
+        sch_hab["properties"]["options"]["properties"]["family"][
+            "enum"
+        ] = cls.get_supported_families()
+        if family:
+            sch_hab["properties"]["options"]["properties"]["family"]["template_value"] = family
+            sch_hab["properties"]["options"]["properties"]["bootDevice"]["enum"] = (
+                cls.get_boot_devices(family)
+            )
+        schemas = [sch_hab]
+        schemas.extend([hab_schema[x] for x in ["hab_input", "hab_sections"]])
         return schemas
 
     @classmethod
-    def generate_config_template(cls) -> str:
+    def generate_config_template(cls, family: Optional[str] = None) -> str:
         """Generate configuration template.
 
         :return: Dictionary of individual templates (key is name of template, value is template itself).
         """
         return CommentedConfig(
-            "HAB Configuration template.", cls.get_validation_schemas()
+            "HAB Configuration template.", cls.get_validation_schemas(family)
         ).get_template()
 
     @classmethod
@@ -413,7 +422,25 @@ class HabContainer:
         except SPSDKError:
             # if loading as BD fails try it as YAML
             parsed_conf = load_configuration(config_path, search_paths=search_paths)
-            schemas = cls.get_validation_schemas()
+            schemas = cls.get_validation_schemas(family=parsed_conf["options"].get("family"))
             check_config(parsed_conf, schemas, search_paths=search_paths)
             config_data = cls.transform_bd_configuration(parsed_conf)
         return config_data
+
+    @staticmethod
+    def get_supported_families() -> List[str]:
+        """Get all supported families for HAB container.
+
+        :return: List of supported families.
+        """
+        return get_families(DatabaseManager.HAB)
+
+    @staticmethod
+    def get_boot_devices(family: str) -> List[str]:
+        """Get all supported boot devices for given family.
+
+        :param family: Target family name.
+        :return: List of supported boot devices.
+        """
+        db = get_db(family)
+        return list(db.get_dict(DatabaseManager.HAB, "mem_types").keys())

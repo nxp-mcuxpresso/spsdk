@@ -1,0 +1,80 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+info:
+  use_in_doc: False # Include this MCU in generated documentation
+  purpose: i.MX 9 Applications Processors
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/secure-energy-efficient-i-mx-91-family-brings-essential-linux-capabilities-for-thousands-of-edge-applications:i.MX91
+  memory_map: {}
+  isp:
+    rom:
+      protocol: sdps
+      interfaces: ["usb"]
+      usb:
+        vid: 0x1FC9
+        pid: 0x014E
+      protocol_params:
+        no_cmd: True
+        hid_ep1: True
+        hid_pack_size: 1020
+features:
+  # ======== AHAB section ========
+  ahab:
+    valid_offset_minimal_alignment: 0x400
+    containers_max_cnt: 3
+    oem_images_max_cnt: 8
+    core_ids:
+      RESERVED:  [1, "reserved", "Reserved Core ID"]
+      CORTEX_A55:  [2, "cortex-a55", "Cortex A55"]
+      ELE:  [6, "ele", "EdgeLock Enclave"]
+      V2X_1:  [9, "v2x-1", "V2X 1"]
+      V2X_2:  [10, "v2x-2", "V2X 2"]
+    image_types:
+        EXECUTABLE: [0x03, executable, Executable Image]
+        DATA: [0x04, data, Data Image]
+        ELE: [0x06, ele, EdgeLock Enclave Image]
+        PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
+        PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
+        V2X_PRIMARY: [0x0B, v2x_primary, V2X primary Image]
+        V2X_SECONDARY: [0x0C, v2x_secondary, V2X secondary Image]
+        V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
+        V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      serial_downloader:
+        segments:
+          primary_image_container_set: 0x0
+          secondary_image_container_set: -1 # Just behind previous segment
+      flexspi_nor:
+        segments:
+          keyblob: 0x0000
+          fcb: 0x0400
+          #not_used: 0xC00
+          primary_image_container_set: 0x1_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      emmc:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      sd:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      # flexspi_nand:
+      #   segments:
+      #     xmcd: 0x00
+      #     primary_image_container_set: 0x400
+      #     secondary_image_container_set: -1 # Just behind previous segment
+      recovery_spi:
+        note: Connected to LPSPI1/2/3/4. SPI NOR recovery image
+        segments:
+          primary_image_container_set: 0x00
+          secondary_image_container_set: -1 # Just behind previous segment

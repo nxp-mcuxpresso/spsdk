@@ -12,7 +12,7 @@ import pytest
 import yaml
 
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.database import DatabaseManager
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import use_working_directory
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
@@ -303,7 +303,7 @@ def test_validate_oneof() -> None:
 def test_load_schema_file() -> None:
     """Test class ValidationSchemas"""
 
-    assert isinstance(DatabaseManager().db.get_schema_file(DatabaseManager.TZ), dict)
+    assert isinstance(get_schema_file(DatabaseManager.TZ), dict)
 
     with pytest.raises(SPSDKError):
-        DatabaseManager().db.get_schema_file("total_invalid_name")
+        get_schema_file("total_invalid_name")

@@ -10,7 +10,7 @@
 
 import datetime
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from crcmod.predefined import mkPredefinedCrcFun
 from typing_extensions import Self
@@ -19,7 +19,7 @@ from spsdk import version as spsdk_version
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
 from spsdk.image.segments import XMCDHeader
 from spsdk.image.segments_base import SegmentBase
-from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers
 from spsdk.utils.schema_validator import CommentedConfig, check_config
@@ -64,7 +64,9 @@ class XMCD(SegmentBase):
         super().__init__(family, revision)
         self.mem_type: MemoryType = mem_type
         self.config_type: ConfigurationBlockType = config_type
-        self._registers: Registers = Registers(family, base_endianness=Endianness.LITTLE)
+        self._registers = XMCD._load_block_registers(
+            family=family, mem_type=mem_type, config_type=config_type, revision=revision
+        )
 
     @property
     def mem_type(self) -> MemoryType:
@@ -130,17 +132,14 @@ class XMCD(SegmentBase):
         header = XMCDHeader.parse(binary[: XMCDHeader.SIZE])
         mem_type = MemoryType.from_tag(header.interface)
         config_type = ConfigurationBlockType.from_tag(header.block_type)
-        filter_reg = None
+        registers = cls.load_registers(family, mem_type, config_type, revision)
         # Flexspi simplified configuration may contain one or two config Option words
         if (
             mem_type == MemoryType.FLEXSPI_RAM
             and config_type == ConfigurationBlockType.SIMPLIFIED
             and len(binary) == 8
         ):
-            filter_reg = ["configOption1"]
-        registers = cls.load_registers(
-            family, mem_type, config_type, revision, filter_reg=filter_reg
-        )
+            registers.remove_register("configOption1")
         registers.parse(binary)
         crc = cls.calculate_crc(binary)
         logger.info(f"CRC value: {crc!r}")
@@ -169,18 +168,20 @@ class XMCD(SegmentBase):
 
         xmcd = XMCD(family=family, mem_type=mem_type, config_type=config_type, revision=revision)
 
-        filter_reg = None
+        xmcd.registers = xmcd.load_registers(
+            xmcd.family, xmcd.mem_type, xmcd.config_type, xmcd.revision
+        )
+        xmcd.registers.load_yml_config(xmcd_settings)
+
         if (
             xmcd.mem_type == MemoryType.FLEXSPI_RAM
             and xmcd.config_type == ConfigurationBlockType.SIMPLIFIED
+            and xmcd.registers.find_reg("configOption0").find_bitfield("optionSize").get_value()
+            == 0
         ):
             # Simplified flexspi_ram can contain one or two option words
-            config_options = {"configOption0", "configOption1"}
-            filter_reg = list(config_options - set(xmcd_settings.keys()))
-        xmcd.registers = xmcd.load_registers(
-            xmcd.family, xmcd.mem_type, xmcd.config_type, xmcd.revision, filter_reg=filter_reg
-        )
-        xmcd.registers.load_yml_config(xmcd_settings)
+            xmcd.registers.remove_register("configOption1")
+
         xmcd._validate()
         return xmcd
 
@@ -352,10 +353,13 @@ class XMCD(SegmentBase):
         :param config_type: Config type: either simplified or full.
         :param revision: Chip revision specification, as default, latest is used.
         """
-        db = get_db(family, revision)
-        header_file_path = db.get_file_path(DatabaseManager.XMCD, "header")
-        regs = Registers(family, base_endianness=Endianness.LITTLE)
-        regs.load_registers_from_xml(header_file_path)
+        regs = Registers(
+            family=family,
+            feature=DatabaseManager.XMCD,
+            base_key="header",
+            revision=revision,
+            base_endianness=Endianness.LITTLE,
+        )
         header_reg = regs.find_reg("header")
         block_type_bf = header_reg.find_bitfield("configurationBlockType")
         block_type_bf.set_value(config_type.tag)
@@ -368,8 +372,7 @@ class XMCD(SegmentBase):
         family: str,
         mem_type: MemoryType,
         config_type: ConfigurationBlockType,
-        revision: str,
-        filter_reg: Optional[List[str]] = None,
+        revision: str = "latest",
     ) -> Registers:
         """Load block registers of segment.
 
@@ -377,20 +380,20 @@ class XMCD(SegmentBase):
         :param mem_type: Used memory type.
         :param config_type: Config type: either simplified or full.
         :param revision: Chip revision specification, as default, latest is used.
-        :param filter_reg: List of register names that should be filtered out.
         :raises SPSDKKeyError: Unknown mem_type or config type
         """
         try:
-            block_file_path = get_db(family, revision).get_file_path(
-                DatabaseManager.XMCD, ["mem_types", mem_type.label, config_type.label]
+            return Registers(
+                family=family,
+                feature=DatabaseManager.XMCD,
+                base_key=["mem_types", mem_type.label, config_type.label],
+                revision=revision,
+                base_endianness=Endianness.LITTLE,
             )
         except KeyError as exc:
             raise SPSDKKeyError(
                 f"Unsupported combination: {mem_type.label}:{config_type.label}"
             ) from exc
-        regs = Registers(family, base_endianness=Endianness.LITTLE)
-        regs.load_registers_from_xml(block_file_path, filter_reg=filter_reg)
-        return regs
 
     @staticmethod
     def load_registers(
@@ -398,7 +401,6 @@ class XMCD(SegmentBase):
         mem_type: MemoryType,
         config_type: ConfigurationBlockType,
         revision: str,
-        filter_reg: Optional[List[str]] = None,
     ) -> Registers:
         """Load all registers of segment.
 
@@ -406,14 +408,11 @@ class XMCD(SegmentBase):
         :param mem_type: Used memory type.
         :param config_type: Config type: either simplified or full.
         :param revision: Chip revision specification, as default, latest is used.
-        :param filter_reg: List of register names that should be filtered out.
 
         :raises SPSDKValueError: If option_size has invalid value(only 0 or 1 are allowed)
         """
         regs = XMCD._load_header_registers(family, mem_type, config_type, revision)
-        block_regs = XMCD._load_block_registers(
-            family, mem_type, config_type, revision, filter_reg=filter_reg
-        )
+        block_regs = XMCD._load_block_registers(family, mem_type, config_type, revision)
         for block_reg in block_regs.get_registers():
             block_reg.offset += XMCDHeader.SIZE
             regs.add_register(block_reg)

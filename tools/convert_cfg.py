@@ -16,7 +16,7 @@ import colorama
 
 from spsdk.apps.utils.utils import catch_spsdk_error
 from spsdk.exceptions import SPSDKError
-from spsdk.image.ahab.ahab_container import AHABImage
+from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.ahab.signed_msg import SignedMessage
 from spsdk.image.bee import BeeNxp
 from spsdk.image.bootable_image.bimg import BootableImage
@@ -105,9 +105,7 @@ def get_schemas_cert_block(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     :return: Validation JSON schemas
     """
     schemas = CertBlockV21.get_validation_schemas()
-    schemas.append(
-        DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"]
-    )
+    schemas.append(get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"])
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 
@@ -118,7 +116,8 @@ def get_schemas_ahab(config: Dict[str, Any]) -> List[Dict[str, Any]]:
     :param config: Any configuration of AHAB
     :return: Validation JSON schemas
     """
-    schemas = AHABImage.get_validation_schemas()
+    check_config(config, AHABImage.get_validation_schemas_family())
+    schemas = AHABImage.get_validation_schemas(config["family"], config.get("revision", "latest"))
     check_config(config, schemas, extra_formatters=disable_files_dirs_formatters)
     return schemas
 

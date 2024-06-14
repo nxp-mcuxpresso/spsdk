@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Custom enum extension."""
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union, cast
 
 from typing_extensions import Self
 
@@ -134,6 +134,19 @@ class SpsdkEnum(SpsdkEnumMember, Enum):
                 return item
         raise SPSDKKeyError(f"There is no {cls.__name__} item with label {label} defined")
 
+    @classmethod
+    def create_from_dict(cls, name: str, config: Dict[str, Union[Tuple, List]]) -> Type[Self]:
+        """Create the Enum in runtime from the Dictionary where is instead.
+
+        :param name: Name of new Class
+        :param config: Configuration with the enum
+        :return: Enum class
+        """
+        updated_config = {}
+        for k, v in config.items():
+            updated_config[k] = tuple(v)
+        return cls(name, updated_config)  # type:ignore # pylint: disable=too-many-function-args
+
 
 class SpsdkSoftEnum(SpsdkEnum):
     """SPSDK Soft Enum type.
@@ -168,3 +181,26 @@ class SpsdkSoftEnum(SpsdkEnum):
             return super().get_description(tag, default)
         except SPSDKKeyError:
             return f"Unknown ({tag})"
+
+    @classmethod
+    def from_tag(cls, tag: int) -> Self:
+        """Get enum member with given tag.
+
+        :param tag: Tag to be used for searching
+        :raises SPSDKKeyError: If enum with given label is not found
+        :return: Found enum member
+        """
+        try:
+            return super().from_tag(tag)
+        except SPSDKKeyError:
+
+            class UnknownEnum(SpsdkEnum):
+                """Dummy class with a new enum value."""
+
+                UNKNOWN = (
+                    tag,
+                    f"{cls.__name__}:Unknown_{hex(tag)}",
+                    f"This is non-existing tag({hex(tag)}) from enum: {cls.__name__}",
+                )
+
+            return cast(Self, UnknownEnum).from_tag(tag)

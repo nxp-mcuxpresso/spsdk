@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -16,8 +16,7 @@ from typing import (  # pylint: disable=unused-import  # Type is necessary for M
 
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.interfaces.buspal import I2cModeCommand, SpiModeCommand
-
-from .serial_proxy import SerialProxy
+from spsdk.utils.serial_proxy import SerialProxy
 
 logger = logging.getLogger(__name__)
 

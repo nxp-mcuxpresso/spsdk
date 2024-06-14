@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test IEE part of nxpimage app."""
@@ -12,6 +12,7 @@ import pytest
 import yaml
 
 from spsdk.apps import nxpimage
+from spsdk.utils.crypto.iee import IeeNxp
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -133,3 +134,37 @@ def test_iee_custom_output(cli_runner: CliRunner, tmpdir, data_dir, case, config
         assert not os.path.isfile(os.path.join(out_dir, "iee_rt117x_blhost.bcf"))
         assert os.path.isfile(os.path.join(out_dir, "readme.txt"))
         assert os.path.isfile(config_dict["output_name"] + ".bin")
+
+
+@pytest.mark.parametrize(
+    "case,config,blhost_bcf_res",
+    [
+        (
+            "aes_xts512",
+            "iee_config.yaml",
+            [
+                "efuse-program-once 96 0x03020100 --no-verify",
+                "efuse-program-once 103 0x1F1E1D1C --no-verify",
+                "efuse-program-once 104 0x23222120 --no-verify",
+                "efuse-program-once 111 0x3F3E3D3C --no-verify",
+                "efuse-program-once 14 0x00000100 --no-verify",
+                "efuse-program-once 23 0x00001000 --no-verify",
+                "efuse-program-once 9 0x0000000C --no-verify",
+                "efuse-program-once 20 0x00000002 --no-verify",
+            ],
+        ),
+        (
+            "aes_xts512_rt1180",
+            "iee_config.yaml",
+            [],
+        ),
+    ],
+)
+def test_nxpimage_iee_export_bcf(data_dir, case, config, blhost_bcf_res):
+    config_dir = os.path.join(data_dir, "iee", case)
+    config1_dir = os.path.join(data_dir, "iee")
+    config_data = load_configuration(os.path.join(config_dir, config))
+    iee = IeeNxp.load_from_config(config_data, config_dir, search_paths=[config_dir, config1_dir])
+    bcf = iee.get_blhost_script_otp_kek()
+    for result in blhost_bcf_res:
+        assert result in bcf

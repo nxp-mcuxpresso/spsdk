@@ -1,0 +1,38 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ========================  Configuration of EdgeLock 2GO Offline Provisioning flow for rw61x  =========================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: Family identifier including the chip revision. If revision is not present, latest revision is used as
+# default.
+family: rw61x
+# -----------------------------------------===== MCU revision [Optional] =====------------------------------------------
+# Description: Revision of silicon
+revision: latest
+# -------------------------------------===== EdgeLock 2GO API Key [Required] =====--------------------------------------
+# Description: REST API key used for user authentication in EdgeLock 2GO. You may use: 1) path to a file with the key on
+# the first line: ~/.el2go_test/wpc_token.txt (~ is interpreted as your HOME) 2) environment variable with the key:
+# $MY_EL2GO_KEY 3) environment variable containing a path to the key file: $MY_KEY_FILE 4) directly your API key in
+# plain text (not recommended)
+api_key: abcxyz123
+# ----------------------------------------===== Device Group ID [Required] =====----------------------------------------
+# Description: Device Group ID in which the connected secure element needs to be assigned
+device_group_id: 49
+# -----------------------------------------===== Product 12NC [Required] =====------------------------------------------
+# Description: Product 12NC registered in EdgeLock 2GO
+nc12: 123456789012
+# ----------------------------===== Delay between EdgeLock 2GO's API calls [Optional] =====-----------------------------
+# Description: Delay in seconds between EdgeLock 2GO API requests regarding Secure Objects generation status. Default
+# value is 5 seconds
+delay: 5
+# ---------------------------------===== Timeout for EdgeLock 2GO API [Optional] =====----------------------------------
+# Description: Timeout in seconds of downloading Secure Objects through EdgeLock 2GO API operation. Default is 60
+# seconds
+timeout: 10
+# ---------------------------------------===== Download Timeout [Optional] =====----------------------------------------
+# Description: Timeout for overall download process including waiting for provisionigs creation
+download_timeout: 10

@@ -1,0 +1,30 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+issuer:
+  COMMON_NAME: ONE
+  COUNTRY_NAME: PL
+  LOCALITY_NAME: KR
+  STATE_OR_PROVINCE_NAME: MLPK
+  STREET_ADDRESS: BOT
+  ORGANIZATION_NAME: PKO
+
+subject:
+  COMMON_NAME: TWO
+  COUNTRY_NAME: PL
+  LOCALITY_NAME: LIMA
+  STATE_OR_PROVINCE_NAME: MLPK
+  STREET_ADDRESS: STOW
+  ORGANIZATION_NAME: IBM
+  POSTAL_CODE: 31503
+
+issuer_private_key: issuer_privatekey_rsa2048_encrypted.pem
+issuer_private_key_password: test
+subject_public_key: subject_publickey_rsa2048.pem
+serial_number: 777
+duration: 1234
+extensions:
+  BASIC_CONSTRAINTS:
+    ca: true
+    path_length: 5

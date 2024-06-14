@@ -47,3 +47,4 @@ class PayloadType(SpsdkEnum):
     NXP_DIE_RFC4122v4_ID_UUID   = (0x9696, "NXP_DIE_RFC4122v4_ID_UUID", "NXP_DIE_RFC4122v4_ID_UUID")
 
     WPC_DIE_ID_AUTH_PUK         = (0xABAB, "WPC_DIE_ID_PUK", "Public key for WPC Qi Authentication")
+    WPC_RSID                    = (0x9797, "WPC_RSID", "RSID for WPC Qi Certificate identification")

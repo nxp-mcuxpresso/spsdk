@@ -17,8 +17,8 @@ import pytest
 from cryptography import x509
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import PrivateKeyRsa
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.image.bee import BeeFacRegion, BeeKIB, BeeProtectRegionBlock, BeeRegionHeader
 from spsdk.image.images import BootImgRT, FlexSPIConfBlockFCB, PaddingFCB
 from spsdk.image.secret import MAC, SrkItem, SrkTable

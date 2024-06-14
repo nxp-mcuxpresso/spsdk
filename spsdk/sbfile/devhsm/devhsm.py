@@ -111,10 +111,10 @@ class DevHsm(BaseClass):
 
     def get_devbuff_base_address(self, index: int) -> int:
         """Get devbuff base address."""
-        assert index < 4 and index >= 0
+        assert 0 <= index < 4
         return self.devbuff_base + index * self.DEVBUFF_SIZE
 
-    def update_keyblob_offset(self) -> int:
+    def get_keyblob_offset(self) -> int:
         """Update keyblob offset based on family."""
         return self.database.get_int(self.F_DEVHSM, "key_blob_offset")
 

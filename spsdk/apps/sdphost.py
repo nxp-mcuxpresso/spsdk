@@ -17,39 +17,35 @@ import click
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
-    is_click_help,
-    isp_interfaces,
     spsdk_apps_common_options,
     spsdk_output_option,
+    spsdk_sdp_interface,
+    spsdk_use_json_option,
 )
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error, format_raw_data
 from spsdk.sdp.commands import ResponseValue
-from spsdk.sdp.scanner import get_sdp_interface
+from spsdk.sdp.protocol.base import SDPProtocolBase
 from spsdk.sdp.sdp import SDP
 from spsdk.utils import misc
 
 
 @click.group(name="sdphost", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True, is_sdp=True, plugin=True, default_timeout=10000)
+@spsdk_sdp_interface()
+@spsdk_use_json_option
 @spsdk_apps_common_options
 @click.pass_context
 def main(
     ctx: click.Context,
-    port: str,
-    usb: str,
-    plugin: str,
+    interface: SDPProtocolBase,
     use_json: bool,
     log_level: int,
-    timeout: int,
 ) -> int:
     """Utility for communication with ROM on i.MX targets using SDP protocol."""
     spsdk_logger.install(level=log_level)
-    # if --help is provided anywhere on command line, skip interface lookup and display help message
-    if not is_click_help(ctx, sys.argv):
-        ctx.obj = {
-            "interface": get_sdp_interface(port=port, usb=usb, plugin=plugin, timeout=timeout),
-            "use_json": use_json,
-        }
+    ctx.obj = {
+        "interface": interface,
+        "use_json": use_json,
+    }
     return 0
 
 

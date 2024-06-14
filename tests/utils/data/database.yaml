@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -6,19 +6,18 @@ devices:
   lpc55s6x:
     revisions:
       0a:
-        data_file: lpc55s6x_0a.xml
+        reg_spec: lpc55s6x_0a.json
         attributes:
           attr_1: revision_value
       1b:
-        data_file: lpc55s6x_1b.xml
+        reg_spec: lpc55s6x_1b.json
     latest: 1b
     attributes:
       attr_1: device_value
   lpc551x:
     revisions:
       a:
-        data_file: lpc551x_a.xml
+        reg_spec: lpc551x_a.json
     latest: a
 attributes:
   attr_1: global_value
-

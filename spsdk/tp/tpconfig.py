@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Trust Provisioning HOST application support."""
@@ -9,9 +9,8 @@
 import logging
 from typing import Callable, Optional
 
+from spsdk.tp.tp_intf import TpDevInterface
 from spsdk.utils.misc import Timeout
-
-from .tp_intf import TpDevInterface
 
 logger = logging.getLogger(__name__)
 

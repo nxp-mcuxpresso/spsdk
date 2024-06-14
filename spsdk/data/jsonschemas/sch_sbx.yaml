@@ -10,10 +10,8 @@ sbx_family:
       type: string
       title: MCU family
       description: MCU family name.
-      enum:
-        - mc56f81xxx
-        - mwct20d2x
-      template_value: mc56f81xxx
+      enum: [] # Just placeholder to keep this record that will be fulfilled in runtime
+      template_value: mc56f818xx
   required: [family]
 
 sbx_output:
@@ -82,7 +80,7 @@ signature_provider:
     signProvider:
       type: string
       title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'.
       template_value: type=file;file_path=my_prv_key.pem
 
   if:
@@ -213,13 +211,18 @@ sbx_commands:
                     title: Binary value
                     description: Binary value to be programmed, at least 4 bytes. Value will be converted to binary little endian format.
                     template_value: "0xB38AA899"
+                  values:
+                    type: [string, number]
+                    title: Binary values.
+                    description: 32-bit binary values delimited by comma to be programmed.
+                    template_value: 0x1234, 0x5678, 0, 12345678
                 required: [address]
 
           - type: object
             required: [reset]
             properties:
               reset:
-                type: boolean
+                type: object
                 title: Reset
                 description: Resets the target
-                template_value: true
+                properties: {}

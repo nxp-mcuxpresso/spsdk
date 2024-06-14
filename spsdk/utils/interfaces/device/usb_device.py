@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -13,6 +13,7 @@ import libusbsio
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKConnectionError, SPSDKError
+from spsdk.utils.database import UsbId
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.device.base import DeviceBase
 from spsdk.utils.misc import get_hash
@@ -162,7 +163,7 @@ class UsbDevice(DeviceBase):
     def scan(
         cls,
         device_id: Optional[str] = None,
-        usb_devices_filter: Optional[Dict] = None,
+        usb_devices_filter: Optional[Dict[str, List[UsbId]]] = None,
         timeout: Optional[int] = None,
     ) -> List[Self]:
         """Scan connected USB devices.

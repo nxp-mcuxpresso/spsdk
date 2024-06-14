@@ -1,0 +1,56 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+---
+# =================  Master Boot Image Configuration template for mc56f818xx, Plain Signed XIP Image.  =================
+
+# ======================================================================================================================
+#                                                  == Basic Settings ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <mc56f818xx, mwct2xd2>
+family: mc56f818xx
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp>
+outputImageAuthenticationType: signed
+# ------------------------------------===== Master Boot Image name [Required] =====-------------------------------------
+# Description: The file for Master Boot Image result file.
+masterBootOutputFile: "../workspace/mb_xip_signed_closed.bin"
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: "blinky_oem_open.bin"
+# ---------------------------------------===== Firmware version. [Optional] =====---------------------------------------
+# Description: Value compared with Secure_FW_Version monotonic counter value stored in PFR/IFR. If value is lower than
+# value in PFR/IFR, then is image rejected (rollback protection)..
+firmwareVersion: 0
+# ---------------------------------------===== Life cycle state [Optional] =====----------------------------------------
+# Description: life cycle state model to protect code from reading from the device internal flash, which is called code
+# read protection feature. There are different levels of protections in the system, so that access to the on-chip flash
+# and use of ISP can be restricted. Four levels of Read Out Protection (ROP) are supported. This read out protection is
+# a mechanism that allows user to enable different levels of protection in the system. It is a 8-bit field FTFA_FSEC
+# associated with flash security byte (0x40c byte address). It can be programmed by customer. Check the SRM for more
+# information. If not provided, value in application will be used.
+# Possible options: <NOT_SET, OEM_OPEN, OEM_CLOSED_ROP1, OEM_CLOSED_ROP2, OEM_CLOSED_ROP3, OEM_CLOSED_NO_RETURN>
+lifeCycle: OEM_CLOSED_ROP1
+# ======================================================================================================================
+#                                               == Certificate Block vX ==
+# ======================================================================================================================
+# -----------------------------===== Certificate Block binary/config file [Required] =====------------------------------
+# Description: Path to certificate block binary or config file.
+certBlock: ../workspace/cert_block.bin
+# ======================================================================================================================
+#                                              == Image Signing Settings ==
+# ======================================================================================================================
+# --------------------------===== Main Certificate private key [Conditionally required] =====---------------------------
+# Description: Main Certificate private key used to sign certificate. It can be replaced by signProvider key.
+signPrivateKey: ec_pk_secp256r1_sign_cert.pem
+# -------------------------------===== Signature Provider [Conditionally required] =====--------------------------------
+# Description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+# signProvider: type=file;file_path=my_prv_key.pem
+appendHash: True

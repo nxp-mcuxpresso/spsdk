@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Testing the SDPHost application."""
 
 
+import sys
 from unittest.mock import patch
 
 import spsdk
@@ -37,3 +38,10 @@ def test_get_property(cli_runner: CliRunner, caplog):
     ):
         result = cli_runner.invoke(sdphost.main, cmd.split())
         assert "Response status = 4042322160 (0xf0f0f0f0) HAB Success." in result.output
+
+
+def test_sdphost_help(cli_runner: CliRunner, caplog):
+    caplog.set_level(100_000)
+    cmd = ["--help"]
+    result = cli_runner.invoke(sdphost.main, cmd)
+    assert "Utility for communication with ROM on i.MX" in str(result.output)

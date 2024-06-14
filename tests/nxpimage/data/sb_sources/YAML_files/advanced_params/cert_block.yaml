@@ -1,0 +1,30 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===============================================  Certificate Block V1  ===============================================
+
+# ======================================================================================================================
+#                                             == Certificate V1 Settings ==
+# ======================================================================================================================
+# --------------------------------------===== Image Build Number [Optional] =====---------------------------------------
+# Description: If it's omitted, it will be used 0 as default value.
+imageBuildNumber: 1
+# ======================================================================================================================
+#                                                == Root Keys Settings ==
+# ======================================================================================================================
+# -----------------------------===== Root Certificate File 0 [Conditionally required] =====-----------------------------
+# Description: Root certificate file index 0.
+rootCertificate0File: sb_sources/keys_and_certs/root_k0_signed_cert0_noca.der.cert
+# ------------------------------------===== Root Certificate File 1 [Optional] =====------------------------------------
+# Description: Root certificate file index 1.
+rootCertificate1File: sb_sources/keys_and_certs/root_k1_signed_cert0_noca.der.cert
+# ------------------------------------===== Root Certificate File 2 [Optional] =====------------------------------------
+# Description: Root certificate file index 2.
+rootCertificate2File: sb_sources/keys_and_certs/root_k2_signed_cert0_noca.der.cert
+# ------------------------------------===== Root Certificate File 3 [Optional] =====------------------------------------
+# Description: Root certificate file index 3.
+rootCertificate3File: sb_sources/keys_and_certs/root_k3_signed_cert0_noca.der.cert
+# -----------------------------===== Main Certificate Index [Conditionally required] =====------------------------------
+# Description: Index of certificate that is used as a main. If not defined, the certificate matching private key will be
+# selected.
+mainRootCertId: 0

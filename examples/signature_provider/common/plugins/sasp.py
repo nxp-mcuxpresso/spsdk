@@ -11,6 +11,7 @@ import base64
 
 import requests
 
+from spsdk.crypto.keys import PublicKey
 from spsdk.crypto.signature_provider import SignatureProvider
 
 
@@ -43,14 +44,14 @@ class SuperAwesomeSP(SignatureProvider):
         data = base64.b64decode(signature)
         return data
 
-    def verify_public_key(self, public_key: bytes) -> bool:
+    def verify_public_key(self, public_key: PublicKey) -> bool:
         """Verify if given public key matches private key.
 
         :param public_key: Public key to verify
         :return: True if public_key is matching private_key, False otherwise
         """
         endpoint = f"{self.url}/verifier/{self.key_type}/{self.key_number}"
-        params = {"public_key": base64.b64encode(public_key)}
+        params = {"public_key": base64.b64encode(public_key.export())}
         response = requests.get(endpoint, params=params, timeout=30)
         self.check_response(response)
         is_matching = response.json()["is_matching"]
@@ -73,5 +74,4 @@ class SuperAwesomeSP(SignatureProvider):
                     request=e.request,
                     response=e.response,
                 )
-            else:
-                raise e
+            raise e

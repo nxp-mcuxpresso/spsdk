@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """CLI helper for Click."""
 
+import functools
 import logging
 import os
+import sys
 from gettext import gettext
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
@@ -16,128 +18,216 @@ import click
 from click_command_tree import _build_command_tree, _CommandWrapper
 
 from spsdk import __version__ as spsdk_version
+from spsdk.apps.utils.interface_helper import load_interface_config
+from spsdk.mboot.interfaces.uart import MbootUARTInterface
+from spsdk.mboot.protocol.base import MbootProtocolBase
+from spsdk.sdp.interfaces.uart import SdpUARTInterface
+from spsdk.sdp.protocol.base import SDPProtocolBase
 
 FC = TypeVar("FC", bound=Union[Callable[..., Any], click.Command])
 
-_uart_option = click.option(
-    "-p",
-    "--port",
-    metavar="COM[,speed]",
-    help="""Serial port configuration. Default baud rate is 57600.
-    Use 'nxpdevscan' utility to list devices on serial port.""",
-)
 
-_sdp_uart_option = click.option(
-    "-p",
-    "--port",
-    metavar="COM[,speed]",
-    help="""Serial port configuration. Default baud rate is 115200.
-    Use 'nxpdevscan' utility to list devices on serial port.""",
-)
+def port_option(baud_rate: int = 57600) -> Callable[[FC], FC]:
+    """Click decorator handling serial port configuration.
 
-_usb_option = click.option(
-    "-u",
-    "--usb",
-    metavar="VID:PID|USB_PATH|DEV_NAME",
-    help="""USB device identifier.
+    Provides: `port: str` a port number.
+
+    :param baud_rate: Default baud rate
+    :return: Click decorator.
+    """
+    return click.option(
+        "-p",
+        "--port",
+        metavar="COM[,speed]",
+        help=f"""Serial port configuration. Default baud rate is {baud_rate}.
+        Use 'nxpdevscan' utility to list devices on serial port.""",
+    )
+
+
+def usb_option(identify_by_family: bool = False) -> Callable[[FC], FC]:
+    """Click decorator handling USB port configuration.
+
+    Provides: `usb: str` a usb identifier.
+
+    :return: Click decorator.
+    """
+    help_msg = """USB device identifier.
+        \b
+        Following formats are supported: <vid>, <vid:pid> or <vid,pid>, device/instance path, device name.
+        <vid>: hex or dec string; e.g. 0x0AB12, 43794.
+        <vid/pid>: hex or dec string; e.g. 0x0AB12:0x123, 1:3451.
+        Use 'nxpdevscan' utility to list connected device names.
+
+        """
+    if identify_by_family:
+        help_msg += """\b
+        This option can be omitted if '--family' option is used."""
+    option = click.option(
+        "-u",
+        "--usb",
+        metavar="VID:PID|USB_PATH|DEV_NAME",
+        help=help_msg,
+    )
+    return option
+
+
+def sdio_option() -> Callable[[FC], FC]:
+    """Click decorator handling Sdio configuration.
+
+    Provides: `sdio: str` a sdio device identifier.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "-sd",
+        "--sdio",
+        metavar="SDIO_PATH|DEV_NAME",
+        help="""SDIO device identifier.
+
+        \b
+        Following formats are supported: device/instance path, device name.
+        device/instance path: device string; e.g. /dev/mcu-sdio.
+        Use 'nxpdevscan' utility to list connected device names.
+        """,
+    )
+
+
+def lpcusbsio_option() -> Callable[[FC], FC]:
+    """Click decorator handling Lpcusbsio configuration.
+
+    Provides: `lpcusbsio: str` a lpcusbsio device identifier.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "-l",
+        "--lpcusbsio",
+        metavar="[usb,VID:PID|USB_PATH|SER_NUM,]spi|i2c",
+        help="""USB-SIO bridge interface.
+
+        Optional USB device filtering formats:
+        [usb,vid:pid|usb_path|serial_number]
+
+        Following serial interfaces are supported:
+
+        \b
+        spi[index][,port,pin,speed_kHz,polarity,phase]
+        - index ... optional index of SPI peripheral. Example: "spi1" (default=0)
+        - port ... bridge GPIO port used as SPI SSEL(default=0)
+        - pin  ... bridge GPIO pin used as SPI SSEL
+            default SSEL is set to 0.15 which works
+            for the LPCLink2 bridge. The MCULink OB
+            bridge ignores the SSEL value anyway.(default=15)
+        - speed_kHz ... SPI clock in kHz (default 1000)
+        - polarity ... SPI CPOL option (default=1)
+        - phase ... SPI CPHA option (default=1)
+
+        \b
+        i2c[index][,address,speed_kHz]
+        - index ... optional index of I2C peripheral. Example: "i2c1" (default=0)
+        - address ... I2C device address (default 0x10)
+        - speed_kHz ... I2C clock in kHz (default 100)
+        """,
+    )
+
+
+def buspal_option() -> Callable[[FC], FC]:
+    """Click decorator handling Buspal configuration.
+
+    Provides: `buspal: str` a buspal device identifier.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "-b",
+        "--buspal",
+        metavar="spi[,speed,polarity,phase,lsb|msb] | i2c[,address,speed]",
+        help="Buspal settings",
+    )
+
+
+def can_option() -> Callable[[FC], FC]:
+    """Click decorator handling Can bus configuration.
+
+    Provides: `can: str` a can device identifier.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "-cb",
+        "--can",
+        metavar="interface[,channel,bitrate,rxid,txid]",
+        help="""CAN Bus settings
 
     \b
-    Following formats are supported: <vid>, <vid:pid> or <vid,pid>, device/instance path, device name.
-    <vid>: hex or dec string; e.g. 0x0AB12, 43794.
-    <vid/pid>: hex or dec string; e.g. 0x0AB12:0x123, 1:3451.
-    Use 'nxpdevscan' utility to list connected device names.
-""",
-)
-
-_sdio_option = click.option(
-    "-sd",
-    "--sdio",
-    metavar="SDIO_PATH|DEV_NAME",
-    help="""SDIO device identifier.
+    interface[,channel,bitrate,rxid,txid]
+    - interface ... CAN interface name (refer to python-can library)
+    - channel ... CAN channel number
+    - bitrate ... CAN bitrate (default=1000000)
+    - rxid ... default arbitration ID for RX (default=0x123)
+    - txid ... default arbitration ID for TX (default=0x321)
 
     \b
-    Following formats are supported: device/instance path, device name.
-    device/instance path: device string; e.g. /dev/mcu-sdio.
-    Use 'nxpdevscan' utility to list connected device names.
-""",
-)
-
-_lpcusbsio_option = click.option(
-    "-l",
-    "--lpcusbsio",
-    metavar="[usb,VID:PID|USB_PATH|SER_NUM,]spi|i2c",
-    help="""USB-SIO bridge interface.
-
-    Optional USB device filtering formats:
-    [usb,vid:pid|usb_path|serial_number]
-
-    Following serial interfaces are supported:
-
-    \b
-    spi[index][,port,pin,speed_kHz,polarity,phase]
-     - index ... optional index of SPI peripheral. Example: "spi1" (default=0)
-     - port ... bridge GPIO port used as SPI SSEL(default=0)
-     - pin  ... bridge GPIO pin used as SPI SSEL
-        default SSEL is set to 0.15 which works
-        for the LPCLink2 bridge. The MCULink OB
-        bridge ignores the SSEL value anyway.(default=15)
-     - speed_kHz ... SPI clock in kHz (default 1000)
-     - polarity ... SPI CPOL option (default=1)
-     - phase ... SPI CPHA option (default=1)
-
-    \b
-    i2c[index][,address,speed_kHz]
-     - index ... optional index of I2C peripheral. Example: "i2c1" (default=0)
-     - address ... I2C device address (default 0x10)
-     - speed_kHz ... I2C clock in kHz (default 100)
-""",
-)
-
-_buspal_option = click.option(
-    "-b",
-    "--buspal",
-    metavar="spi[,speed,polarity,phase,lsb|msb] | i2c[,address,speed]",
-    help="Buspal settings",
-)
-
-_plugin_option = click.option(
-    "-x",
-    "--plugin",
-    metavar="identifier=PLUGIN_IDENTIFIER[,param1=value1,param2=value2]",
-    help="""Plugin interface settings.
-
-    Following format of plugin setting is supported:
-
-    \b
-    identifier=<PLUGIN_IDENTIFIER>[,<key1>=<value1>,<key2>=<value2>,...]
-     - <PLUGIN_IDENTIFIER>: Corresponds to the 'identifier' attribute of the plugin class
-     - <key1>=<value1>: Represent a single interface parameter
-
-    \b
-    Optional interface settings:
-     - Any number of optional <key>=<value> scan settings separated by comma can be defined
-     - The <key>=<value> pairs are used as keyword parameters for 'scan' method of a plugin class
     """,
-)
-
-_json_option = click.option(
-    "-j",
-    "--json",
-    "use_json",
-    is_flag=True,
-    help="Use JSON output",
-)
+    )
 
 
-def _timeout_option(use_long_option: bool, timeout: int) -> Callable[[FC], FC]:
+def interface_plugin_option() -> Callable[[FC], FC]:
+    """Click decorator handling interface plugin configuration.
+
+    Provides: `plugin: str` a plugin configuration.
+
+    :return: Click decorator.
+    """
+    return click.option(
+        "-x",
+        "--plugin",
+        metavar="identifier=PLUGIN_IDENTIFIER[,param1=value1,param2=value2]",
+        help="""Plugin interface settings.
+
+        Following format of plugin setting is supported:
+
+        \b
+        identifier=<PLUGIN_IDENTIFIER>[,<key1>=<value1>,<key2>=<value2>,...]
+        - <PLUGIN_IDENTIFIER>: Corresponds to the 'identifier' attribute of the plugin class
+        - <key1>=<value1>: Represent a single interface parameter
+
+        \b
+        Optional interface settings:
+        - Any number of optional <key>=<value> scan settings separated by comma can be defined
+        - The <key>=<value> pairs are used as keyword parameters for 'scan' method of a plugin class
+        """,
+    )
+
+
+def spsdk_use_json_option(options: FC) -> FC:
+    """Use json click option decorator.
+
+    Provides: `use_json: bool` a use_json flag.
+
+    :return: Click decorator
+    """
+    return click.option(
+        "-j",
+        "--json",
+        "use_json",
+        is_flag=True,
+        help="Use JSON output",
+    )(options)
+
+
+def timeout_option(
+    timeout: int,
+    use_long_form_only: bool = False,
+) -> Callable[[FC], FC]:
     """Get the timeout option.
 
-    :param use_long_option: Use long version only
+    :param use_long_form_only: Use long version only
     :param timeout: Default timeout in miliseconds
 
     :return: click decorator
     """
-    options = [] if use_long_option else ["-t"]
+    options = [] if use_long_form_only else ["-t"]
     options.append("--timeout")
     return click.option(
         *options,
@@ -204,19 +294,50 @@ def spsdk_family_option(
     :param help: Customized help message, defaults to None
     :return: Click decorator.
     """
+    FAMILY_OPTION = "family"
 
     def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
-        func = click.option(
+        @functools.wraps(func)
+        @click.pass_context
+        def wrapper(
+            ctx: click.Context,
+            *args: Any,
+            **kwargs: Any,
+        ) -> Any:
+            if is_click_help(ctx, sys.argv):
+                return None
+            if required and ctx.params.get(FAMILY_OPTION) is None:
+                param = next(param for param in ctx.command.params if param.name == FAMILY_OPTION)
+                raise click.MissingParameter(ctx=ctx, param=param, param_type="option")
+            return func(*args, **kwargs)
+
+        wrapper = click.option(
             "-f",
-            "--family",
+            f"--{FAMILY_OPTION}",
             type=click.Choice(choices=families, case_sensitive=False),
             default=default,
-            required=required,
+            required=False,  # will be validated in the wrapper method
             help=help or "Select the chip family.",
-        )(func)
-        return func
+        )(wrapper)
+        return wrapper
 
     return decorator
+
+
+def spsdk_revision_option(options: FC) -> FC:
+    """Click decorator handling revision selection.
+
+    Provides: `revision: str` a name of revision to be used.
+
+    :return: Click decorator
+    """
+    return click.option(
+        "-r",
+        "--revision",
+        type=str,
+        default="latest",
+        help="Chip revision; if not specified, most recent one will be used",
+    )(options)
 
 
 def spsdk_config_option(
@@ -314,59 +435,141 @@ def spsdk_output_option(
     return decorator
 
 
-def isp_interfaces(
-    uart: bool = False,
-    usb: bool = False,
-    sdio: bool = False,
-    lpcusbsio: bool = False,
-    buspal: bool = False,
-    plugin: bool = False,
-    json_option: bool = True,
-    timeout_option: bool = True,
-    is_sdp: bool = False,
-    use_long_timeout_option: bool = False,
-    default_timeout: int = 5000,
+def spsdk_sdp_interface(
+    port: bool = True,
+    usb: bool = True,
+    plugin: bool = True,
+    timeout: int = 10000,
+    identify_by_family: bool = False,
+    use_long_timeout_form: bool = False,
 ) -> Callable:
-    """Interfaces Click CLI options.
+    """Click decorator handling SDP interface.
 
-    :param uart: UART interface, defaults to False
-    :param usb: USB interface, defaults to False
-    :param sdio: SDIO interface, defaults to False
-    :param lpcusbsio: LPCUSBSIO interface, defaults to False
-    :param buspal: BUSPAL interface, defaults to False
-    :param plugin: Additional plugin to be used
-    :param json_option: add -j option, defaults to True
-    :param timeout_option: add timeout option, defaults to True
-    :param is_sdp: Specifies whether the ISP interface is meant for SDP(S) protocol
-    :param use_long_timeout_option: Use only the long form for timeout (--timeout)
-    :param default_timeout: Default timeout to be set when getting the timeout_option
-    :return: click decorator
+    Provides: `interface: str` an instance of SDPInterface class.
+
+    :return: Click decorator.
     """
 
-    def decorator(func: Callable[[FC], FC]) -> Callable[[FC], FC]:
-        options = []
+    def decorator(func: Callable[[FC], FC]) -> Callable:
+        @functools.wraps(func)
+        @click.pass_context
+        def wrapper(
+            ctx: click.Context,
+            timeout: int,
+            *args: Any,
+            port: Optional[str] = None,
+            usb: Optional[str] = None,
+            plugin: Optional[str] = None,
+            **kwargs: Any,
+        ) -> Any:
+            # if --help is provided anywhere on command line, skip interface lookup
+            if is_click_help(ctx, sys.argv):
+                return None
+            if identify_by_family:
+                usb = usb or kwargs.get("family") if not (port or plugin) else usb
+            interface_params = load_interface_config(
+                {
+                    "port": port,
+                    "usb": usb,
+                    "plugin": plugin,
+                    "timeout": timeout,
+                }
+            )
+            interface_cls = SDPProtocolBase.get_interface_class(interface_params.IDENTIFIER)
+            interface = interface_cls.scan_single(**interface_params.get_scan_args())
+            kwargs["interface"] = interface
+            return func(*args, **kwargs)
 
-        if uart:
-            options.append(_sdp_uart_option if is_sdp else _uart_option)
-        if usb:
-            options.append(_usb_option)
-        if sdio:
-            options.append(_sdio_option)
-        if lpcusbsio:
-            options.append(_lpcusbsio_option)
-        if buspal:
-            options.append(_buspal_option)
-        if plugin:
-            options.append(_plugin_option)
-        if json_option:
-            options.append(_json_option)
-        if timeout_option:
-            option = _timeout_option(use_long_timeout_option, default_timeout)
-            options.append(option)
-        for option in reversed(options):
-            func = option(func)
+        interface_options: Dict[Callable, Tuple[bool, Dict]] = {
+            interface_plugin_option: (plugin, {}),
+            usb_option: (usb, {"identify_by_family": identify_by_family}),
+            port_option: (port, {"baud_rate": SdpUARTInterface.default_baudrate}),
+        }
 
-        return func
+        wrapper = timeout_option(timeout, use_long_timeout_form)(wrapper)
+        for option, (is_used, decorator_args) in interface_options.items():
+            if is_used:
+                wrapper = option(**decorator_args)(wrapper)
+        return wrapper
+
+    return decorator
+
+
+def spsdk_mboot_interface(
+    port: bool = True,
+    usb: bool = True,
+    sdio: bool = True,
+    lpcusbsio: bool = True,
+    buspal: bool = True,
+    can: bool = True,
+    plugin: bool = True,
+    timeout: int = 5000,
+    identify_by_family: bool = False,
+    use_long_timeout_form: bool = False,
+) -> Callable:
+    """Click decorator handling Mboot interface.
+
+    Provides: `interface: str` an instance of MbootInterface class.
+
+    :return: Click decorator.
+    """
+
+    def decorator(func: Callable[[FC], FC]) -> Callable:
+        @functools.wraps(func)
+        @click.pass_context
+        def wrapper(
+            ctx: click.Context,
+            timeout: int,
+            *args: Any,
+            port: Optional[str] = None,
+            usb: Optional[str] = None,
+            sdio: Optional[str] = None,
+            buspal: Optional[str] = None,
+            can: Optional[str] = None,
+            lpcusbsio: Optional[str] = None,
+            plugin: Optional[str] = None,
+            **kwargs: Any,
+        ) -> Any:
+            # if --help is provided anywhere on command line, skip interface lookup
+            if is_click_help(ctx, sys.argv):
+                return None
+            if identify_by_family:
+                usb = (
+                    usb or kwargs.get("family")
+                    if not (port or buspal or lpcusbsio or sdio or can or plugin)
+                    else usb
+                )
+            cli_params = {
+                "port": port,
+                "usb": usb,
+                "sdio": sdio,
+                "buspal": buspal,
+                "can": can,
+                "lpcusbsio": lpcusbsio,
+                "plugin": plugin,
+                "timeout": timeout,
+            }
+            interface_params = load_interface_config(cli_params)
+            interface_cls = MbootProtocolBase.get_interface_class(interface_params.IDENTIFIER)
+            interface = interface_cls.scan_single(**interface_params.get_scan_args())
+            kwargs["interface"] = interface
+            return func(*args, **kwargs)
+
+        interface_options: Dict[Callable, Tuple[bool, Dict]] = {
+            interface_plugin_option: (plugin, {}),
+            buspal_option: (buspal, {}),
+            can_option: (can, {}),
+            lpcusbsio_option: (lpcusbsio, {}),
+            sdio_option: (sdio, {}),
+            usb_option: (usb, {"identify_by_family": identify_by_family}),
+            port_option: (port, {"baud_rate": MbootUARTInterface.default_baudrate}),
+        }
+        wrapper = timeout_option(timeout, use_long_timeout_form)(wrapper)
+
+        for option, (is_used, decorator_args) in interface_options.items():
+            if is_used:
+                wrapper = option(**decorator_args)(wrapper)
+        return wrapper
 
     return decorator
 

@@ -90,7 +90,7 @@ features:
   feature2:
     key1: value_default
   feature3: {}
-
+```
 
 **Device 1 database file => devices/device1/database.yaml**
 ```
@@ -205,14 +205,23 @@ Each "get_" has two mandatory parameters:
 - get_file_path: Get file path. Path is relative to device folder. In case of aliased device and non existing file in device folder,
                 it automatically used device path of aliased device. The method also check if the file exists.
 
-Ech
 
-## Database caching
-By default the SPSDK database is cached on local machine to get better performance on load. The cache is independent for each SPSDK instance on machine.
-There is also invented invalidation mechanism to detect changes in original data and update the cache. If needed, the cache could be disabled by environment
-variable "SPSDK_CACHE_DISABLED_{version}" set to True.
+## Database Caching
+By default, the SPSDK database is cached on the local machine to improve load performance. Each SPSDK instance on the machine has its own independent cache.
+ An invalidation mechanism is also in place to detect changes in the original data and update the cache accordingly. If necessary, the cache can be disabled
+ by setting the environment variable "SPSDK_CACHE_DISABLED_{version}" to True. The database itself also maintains a simple cache for opened configuration
+ files to prevent multiple loads during the application's runtime. The content of these runtime configuration files is checked upon exit of SPSDK, and 
+ the main cache is updated if new files are found.
 
-In the database itself is also simple cache for opened configuration files to avoid loading them multiply during application run. The content of that runtime
-configuration files is also checked at exit of SPSDK and the main cache is updated if there is some new files.
+## Support for Restricted Data
+The database also supports a mechanism to load restricted data (usually chips and features under an NDA deal). The structure of the restricted data folders/files 
+ must adhere to the standard database. If the restricted data is used, the database performs the following steps:
+- Checks if "database_defaults.yaml" is present in the restricted data and uses it instead of the standard one if available.
+- Checks if "database.yaml" is present in the restricted device data and uses it instead of the standard one if available. This check is performed for each device.
+- If the restricted data contains a file with the same name as a standard database folder, the restricted file is used instead of the standard one.
 
-
+## Support for Database Add-On Data
+Add-ons are designed to add any customer data to the standard/restricted database. The structure of the add-on data folders/files must adhere to the standard database.
+ If the add-on data is used, the database performs the following steps:
+- Checks if "database.yaml" is present in the add-on device data and updates the loaded database with these add-ons.
+- Add-ons also allow the addition of new data files. Files with the same names as those in the restricted/standard database are ignored.

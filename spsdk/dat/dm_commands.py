@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,11 +9,10 @@
 import time
 from typing import Any, List, Optional
 
+from spsdk.dat.debug_mailbox import DebugMailbox, logger
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.misc import format_value
-
-from .debug_mailbox import DebugMailbox, logger
 
 
 class DebugMailboxCommand:

@@ -36,6 +36,7 @@ class DebugProbeVirtual(DebugProbe):
         super().__init__(hardware_id, options)
 
         self.opened = False
+        self.connected = False
         self.virtual_memory: Dict[Any, Any] = {}
         self.virtual_memory_substituted: Dict[Any, Any] = {}
         self.coresight_ap: Dict[Any, Any] = {}
@@ -101,16 +102,24 @@ class DebugProbeVirtual(DebugProbe):
         """Open Virtual interface for NXP SPSDK.
 
         The Virtual opening function for SPSDK library to support various DEBUG PROBES.
+        """
+        self.opened = True
+
+    def connect(self) -> None:
+        """Connect to target.
+
+        The Virtual connecting function for SPSDK library to support various DEBUG PROBES.
         The function is used to initialize the connection to target and enable using debug probe
         for DAT purposes.
         """
-        self.opened = True
+        self.connected = True
 
     def close(self) -> None:
         """Close Virtual interface.
 
         The Virtual closing function for SPSDK library to support various DEBUG PROBES.
         """
+        self.connected = False
         self.opened = False
 
     def _get_requested_value(self, values: Dict, subs_values: Dict, addr: Any) -> int:
@@ -142,7 +151,7 @@ class DebugProbeVirtual(DebugProbe):
         :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
         :raises SPSDKDebugProbeError: General virtual probe error.
         """
-        if not self.opened:
+        if not (self.opened and self.connected):
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         if self.coresight_mem_read_exception > 0:
@@ -160,7 +169,7 @@ class DebugProbeVirtual(DebugProbe):
         :param data: the data to be written into register
         :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
         """
-        if not self.opened:
+        if not (self.opened and self.connected):
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         self.virtual_memory[addr] = data
@@ -176,7 +185,7 @@ class DebugProbeVirtual(DebugProbe):
         :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
         :raises SPSDKDebugProbeError: General virtual probe error.
         """
-        if not self.opened:
+        if not (self.opened and self.connected):
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
         # As first try to solve AP requests
         if access_port:
@@ -195,7 +204,7 @@ class DebugProbeVirtual(DebugProbe):
         :raises SPSDKDebugProbeTransferError: The IO operation failed
         :raises SPSDKDebugProbeNotOpenError: The Virtual probe is NOT opened
         """
-        if not self.opened:
+        if not (self.opened and self.connected):
             raise SPSDKDebugProbeNotOpenError("The Virtual debug probe is not opened yet")
 
         if access_port:

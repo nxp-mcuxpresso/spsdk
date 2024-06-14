@@ -17,7 +17,6 @@ from spsdk.debuggers.utils import test_ahb_access
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import Endianness
-from spsdk.utils.reg_config import RegConfig
 from spsdk.utils.registers import Registers, RegsRegister, SPSDKRegsErrorRegisterNotFound
 
 logger = logging.getLogger(__name__)
@@ -32,39 +31,79 @@ class ShadowRegisters:
 
     def __init__(
         self,
-        debug_probe: Optional[DebugProbe],
-        config: RegConfig,
+        family: str,
+        revision: str = "latest",
+        debug_probe: Optional[DebugProbe] = None,
     ) -> None:
         """Initialization of Shadow register class."""
         self.probe = debug_probe
-        self.config = config
-        self.device = config.family
-        self.offset = self.config.get_address()
-        self.offset_for_read = self.config.get_address(alt_read_address=True)
-        self.fuse_mode = False
-        self.regs = Registers(self.device)
-
-        self.regs.load_registers_from_xml(
-            config.get_data_file(),
-            grouped_regs=config.get_grouped_registers(),
+        self.device = family
+        self.db = get_db(family, revision)
+        self.revision = self.db.name
+        self.offset_for_write = self.db.get_int(
+            DatabaseManager.SHADOW_REGS, "write_address_offset", 0
         )
 
+        self.fuse_mode = False
+        self.registers = self._get_init_registers(self.device, self.revision)
+        self.computed_fields: Dict[str, Dict[str, str]] = self.db.get_dict(
+            DatabaseManager.SHADOW_REGS, "computed_fields", {}
+        )
+        self.antipole_regs: Dict[str, str] = self.db.get_dict(
+            DatabaseManager.SHADOW_REGS, "inverted_regs", {}
+        )
+        self.possible_verification = self.db.get_bool(
+            DatabaseManager.SHADOW_REGS, "possible_verification", True
+        )
+        # keep the separate, so we can distinguish the loaded registers
+        self._loaded_registers: List[RegsRegister] = []
+
+    @staticmethod
+    def _get_init_registers(family: str, revision: str = "latest") -> Registers:
+        """Initialize the shadow registers from whole fuse list.
+
+        :param family: Family of device to be loaded
+        :param revision: Chip revision, defaults to "latest"
+        :return: Register class with loaded just fuses that supports shadow registers
+        """
+        db = get_db(family, revision)
+        computed_fields: Dict[str, Dict[str, str]] = db.get_dict(
+            DatabaseManager.SHADOW_REGS, "computed_fields", {}
+        )
+        antipole_regs: Dict[str, str] = db.get_dict(
+            DatabaseManager.SHADOW_REGS, "inverted_regs", {}
+        )
+        regs = Registers(
+            family=family,
+            feature=DatabaseManager.FUSES,
+            revision=revision,
+            base_endianness=Endianness.BIG,
+        )
+        regs_to_remove = []
+        for reg in regs._registers:
+            if reg.shadow_register_offset is None:
+                regs_to_remove.append(reg.name)
+        for reg_name in regs_to_remove:
+            regs.remove_register(reg_name)
+
         # Set the computed field handler
-        for reg, fields in self.config.get_computed_fields().items():
-            reg_obj = self.regs.find_reg(reg)
-            reg_obj.add_setvalue_hook(self.reg_computed_fields_handler, fields)
+        for computed_reg, fields in computed_fields.items():
+            reg_obj = regs.get_reg(computed_reg)
+            for bitfiled in fields.keys():
+                reg_obj.get_bitfield(bitfiled).hidden = True
+                logger.debug(f"Hiding bitfield: {bitfiled} in {computed_reg}")
 
         # Set the antipolize handler
-        for reg, antipole_reg in self.config.get_antipole_regs().items():
-            src = self.regs.find_reg(reg)
-            dst = self.regs.find_reg(antipole_reg)
-            src.add_setvalue_hook(self.reg_antipolize_src_handler, dst)
-            dst.add_setvalue_hook(self.reg_antipolize_dst_handler, src)
+        for antipole_reg in antipole_regs.values():
+            regs.get_reg(antipole_reg).hidden = True
+            logger.debug(f"Hiding anti pole register: {antipole_reg}")
+
+        return regs
 
     def _write_shadow_reg(self, addr: int, data: int, verify_mask: int = 0) -> None:
         """The function write a shadow register.
 
-        The function writes shadow register in to MCU and verify the write if requested.
+        The function writes shadow register into MCU and verify the write if requested.
 
         param addr: Shadow register address.
         param data: Shadow register data to write.
@@ -77,9 +116,12 @@ class ShadowRegisters:
             )
 
         logger.info(f"Writing shadow register address: {hex(addr)}, data: {hex(data)}")
-        self.probe.mem_reg_write(addr, data)
+        write_address = (
+            addr + self.offset_for_write
+        )  # some device has different write address then read
+        self.probe.mem_reg_write(write_address, data)
 
-        if verify_mask:
+        if verify_mask and self.possible_verification:
             read_back = self.probe.mem_reg_read(addr)
             if read_back & verify_mask != data & verify_mask:
                 raise IoVerificationError(
@@ -89,15 +131,23 @@ class ShadowRegisters:
 
     def reload_registers(self) -> None:
         """Reload all the values in managed registers."""
-        for reg in self.regs.get_registers():
+        for reg in self.registers._registers:
             self.get_register(reg.name)
 
-    def sets_all_registers(self, verify: bool = True) -> None:
-        """Update all shadow registers in target by local values.
+    def set_all_registers(self, verify: bool = True) -> None:
+        """Update all shadow registers in target using their local values.
 
         :param verify: Verity write operation.
         """
-        for reg in self.regs.get_registers():
+        for reg in self.registers._registers:
+            self.set_register(reg.name, reg.get_value(raw=True), verify)
+
+    def set_loaded_registers(self, verify: bool = True) -> None:
+        """Update shadow registers in target using their local values.
+
+        :param verify: Verity write operation.
+        """
+        for reg in self._loaded_registers:
             self.set_register(reg.name, reg.get_value(raw=True), verify)
 
     def set_register(self, reg_name: str, data: Any, verify: bool = True, raw: bool = True) -> None:
@@ -132,13 +182,13 @@ class ShadowRegisters:
                     verify_mask = (1 << reg.width) - 1
 
             self._write_shadow_reg(
-                addr=self.offset + reg.offset,
+                addr=reg.real_offset,
                 data=reg.get_value(raw=True),
                 verify_mask=verify_mask,
             )
 
         try:
-            reg = self.regs.find_reg(reg_name, include_group_regs=True)
+            reg = self.registers.find_reg(reg_name, include_group_regs=True)
             reg.set_value(data, raw)
             if reg.has_group_registers():
                 for sub_reg in reg.sub_regs:
@@ -167,10 +217,10 @@ class ShadowRegisters:
                 raise SPSDKError(
                     f"Invalid width ({reg.width}b) of shadow register ({reg.name}) to read from device."
                 )
-            reg.set_value(self.probe.mem_reg_read(self.offset_for_read + reg.offset), raw=True)
+            reg.set_value(self.probe.mem_reg_read(reg.real_offset), raw=True)
 
         try:
-            reg = self.regs.find_reg(reg_name, include_group_regs=True)
+            reg = self.registers.find_reg(reg_name, include_group_regs=True)
 
             if reg.has_group_registers():
                 for sub_reg in reg.sub_regs:
@@ -191,7 +241,7 @@ class ShadowRegisters:
         """
 
         def add_reg(reg: RegsRegister) -> str:
-            otp_index = reg.otp_index
+            otp_index = reg._otp_index
             assert otp_index
             otp_value = "0x" + reg.get_bytes_value(raw=True).hex()
             burn_fuse = f"# Fuse {reg.name}, index {otp_index} and value: {otp_value}.\n"
@@ -201,16 +251,16 @@ class ShadowRegisters:
         ret = (
             "# BLHOST fuses programming script\n"
             f"# Generated by SPSDK {__version__}\n"
-            f"# Chip: {self.device} rev:{self.config.revision}\n\n\n"
+            f"# Chip: {self.device} rev:{self.revision}\n\n\n"
         )
         # Update list by antipole opposites registers
-        for ap_reg_src, ap_reg_dst in self.config.get_antipole_regs().items():
+        for ap_reg_src, ap_reg_dst in self.antipole_regs.items():
             if ap_reg_src in reg_list:
                 reg_list.insert(reg_list.index(ap_reg_src) + 1, ap_reg_dst)
         self.fuse_mode = True
         for reg_name in reg_list:
             try:
-                reg = self.regs.find_reg(reg_name, True)
+                reg = self.registers.find_reg(reg_name, True)
                 # do recalculation based on fuse mode sets to ON!
                 reg.set_value(reg.get_value())
             except SPSDKRegsErrorRegisterNotFound as exc:
@@ -254,12 +304,7 @@ class ShadowRegisters:
         """
         sch_cfg = get_schema_file(DatabaseManager.SHADOW_REGS)
         try:
-            db = get_db(family, revision)
-            regs = Registers(family, Endianness.LITTLE)
-            regs.load_registers_from_xml(
-                db.get_file_path(DatabaseManager.SHADOW_REGS, "data_file"),
-                grouped_regs=db.get_list(DatabaseManager.SHADOW_REGS, "grouped_registers"),
-            )
+            regs = cls._get_init_registers(family, revision)
             sch_cfg["sr_family_rev"]["properties"]["family"]["enum"] = cls.get_supported_families()
             sch_cfg["sr_family_rev"]["properties"]["family"]["template_value"] = family
             sch_cfg["sr_family_rev"]["properties"]["revision"]["template_value"] = revision
@@ -275,45 +320,61 @@ class ShadowRegisters:
 
         :param config: The configuration of shadow registers.
         """
-        self.regs.load_yml_config(config["registers"])
+        cfg: Dict = config["registers"]
+        self.registers.load_yml_config(cfg)
+        self._loaded_registers = [
+            self.registers.find_reg(reg_name, include_group_regs=True) for reg_name in cfg.keys()
+        ]
+        # Updates necessary register values
+        for reg_uid, bitfields_rec in self.computed_fields.items():
+            reg_name = self.registers.get_reg(reg_uid).name
+            if reg_name in cfg:
+                reg = self.registers.get_reg(reg_uid)
+                for bitfield_uid, method in bitfields_rec.items():
+                    bitfield_name = reg.get_bitfield(bitfield_uid).name
+                    if isinstance(cfg[reg_name], dict) and not bitfield_name in cfg[reg_name]:
+                        self.compute_register(reg, method)
+                        log_msg = (
+                            f"The {reg_name} register has been recomputed, because "
+                            f"it has been used in configuration and the bitfield {bitfield_name} "
+                            "has not been specified"
+                        )
+                        logger.debug(log_msg)
+
+        # Update also antipole registers if needed
+        for src_uid, dst_uid in self.antipole_regs.items():
+            src_reg = self.registers.get_reg(src_uid)
+            dst_reg = self.registers.get_reg(dst_uid)
+            if src_reg.name in cfg and not dst_reg.name in cfg:
+                self.antipolize_register(src_reg, dst_reg)
+                log_msg = (
+                    f"The {src_reg.name} register has been used to compute antipole value, and it "
+                    f"has been used in {dst_reg.name}."
+                )
+                logger.debug(log_msg)
+                self._loaded_registers.append(dst_reg)
 
         logger.debug("The shadow registers has been loaded from configuration.")
 
     def get_config(self, diff: bool = False) -> Dict[str, Any]:
         """The function creates the configuration.
 
-        :param diff: If sett only changed registers will be placed in configuration.
+        :param diff: If set, only changed registers will be placed in configuration.
         """
-        ret: Dict[str, Any] = {"family": self.config.family, "revision": self.config.revision}
-        ret["registers"] = self.regs.get_config(diff)
+        ret: Dict[str, Any] = {"family": self.device, "revision": self.revision}
+        ret["registers"] = self.registers.get_config(diff)
 
         logger.debug("The shadow registers creates configuration.")
         return ret
 
     @staticmethod
-    def reg_antipolize_src_handler(val: int, context: Any) -> int:
-        """Antipolize given register value.
+    def antipolize_register(src: RegsRegister, dst: RegsRegister) -> None:
+        """Antipolize given registers.
 
-        :param val: Input register value.
-        :param context: The method context.
-        :return: Antipolized value.
+        :param src: Input register.
+        :param dst: The antipole destination register.
         """
-        dst_reg: RegsRegister = context
-        dst_reg.set_value(val ^ 0xFFFFFFFF, raw=True)
-        return val
-
-    @staticmethod
-    def reg_antipolize_dst_handler(val: int, context: Any) -> int:
-        """Keep same antipolized register value in computed register.
-
-        :param val: Input register value.
-        :param context: The method context.
-        :return: Antipolized value.
-        """
-        src_reg: RegsRegister = context
-        val = src_reg.get_value()
-        new_val = val ^ 0xFFFFFFFF
-        return new_val
+        dst.set_value(src.get_value(True) ^ 0xFFFFFFFF, raw=True)
 
     def flush_func_handler(self) -> None:
         """A function to determine and execute the flush-func handler.
@@ -321,7 +382,7 @@ class ShadowRegisters:
         :param self: Input Value.
         :raises SPSDKError: Raises when the computing routine is not found.
         """
-        flush_func = self.config.get_value("flush_func", "")
+        flush_func = self.db.get_str(DatabaseManager.SHADOW_REGS, "flush_func", "")
         if flush_func:
             if hasattr(self, flush_func):
                 method_ref = getattr(self, flush_func)
@@ -329,23 +390,18 @@ class ShadowRegisters:
             else:
                 raise SPSDKError(f"The '{flush_func}' function doesn't exists.")
 
-    def reg_computed_fields_handler(self, val: bytes, context: Any) -> bytes:
-        """Recalculate all fields for given register value.
+    def compute_register(self, reg: RegsRegister, method: str) -> None:
+        """Recalculate register value.
 
-        :param val: Input register value.
-        :param context: The method context (fields).
-        :return: recomputed value.
+        :param reg: Register to be recalculated.
+        :param method: Method name to be use to recompute the register value.
         :raises SPSDKError: Raises when the computing routine is not found.
         """
-        fields: dict = context
-        for method in fields.values():
-            if hasattr(self, method):
-                method_ref = getattr(self, method)
-                val = method_ref(val)
-            else:
-                raise SPSDKError(f"The '{method}' compute function doesn't exists.")
-
-        return val
+        if hasattr(self, method):
+            method_ref = getattr(self, method)
+            reg.set_value(method_ref(reg.get_value(True)), True)
+        else:
+            raise SPSDKError(f"The '{method}' compute function doesn't exists.")
 
     # CRC8 - ITU
     @staticmethod
@@ -405,18 +461,11 @@ class ShadowRegisters:
 
         :param self: Input Value.
         """
+        assert self.probe
+        logger.debug("Flush shadow registers data")
         addr = 0x5003B498
         value = 0xA7C56B9E
-        self._write_shadow_reg(addr=addr, data=value, verify_mask=True)
-
-    @staticmethod
-    def comalg_do_nothing(val: int) -> int:
-        """Function that do nothing.
-
-        :param val: Input Value.
-        :return: Returns same value as it get.
-        """
-        return val
+        self.probe.mem_reg_write(addr, value)
 
 
 def enable_debug(probe: DebugProbe, ap_mem: int = 0) -> bool:

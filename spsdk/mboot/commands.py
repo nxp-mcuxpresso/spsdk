@@ -11,11 +11,10 @@
 from struct import pack, unpack, unpack_from
 from typing import Dict, List, Optional, Type
 
+from spsdk.mboot.error_codes import StatusCode
+from spsdk.mboot.exceptions import McuBootError
 from spsdk.utils.interfaces.commands import CmdPacketBase, CmdResponseBase
 from spsdk.utils.spsdk_enum import SpsdkEnum
-
-from .error_codes import StatusCode
-from .exceptions import McuBootError
 
 ########################################################################################################################
 # McuBoot Commands and Responses Tags
@@ -51,6 +50,7 @@ class CommandTag(SpsdkEnum):
     FUSE_READ                   = (0x17, "ReadFuse", "Read Fuse")
     UPDATE_LIFE_CYCLE           = (0x18, "UpdateLifeCycle", "Update Life Cycle")
     ELE_MESSAGE                 = (0x19, "EleMessage", "Send EdgeLock Enclave Message")
+    EL2GO                       = (0x20, "EL2GO", "EL2GO Provisioning Commands and API Calls")
 
     # reserved commands
     CONFIGURE_I2C = (0xC1, "ConfigureI2c", "Configure I2C")
@@ -163,6 +163,7 @@ class TrustProvWrappingKeyType(SpsdkEnum):
     INT_SK = (0x10, "INT_SK", "The wrapping key for wrapping of MFG_CUST_MK_SK0_BLOB")
     EXT_SK = (0x11, "EXT_SK", "The wrapping key for wrapping of MFG_CUST_MK_SK0_BLOB")
 
+
 class TrustProvWpc(SpsdkEnum):
     """Type of WPC trusted facility commands for DSC."""
 
@@ -171,12 +172,20 @@ class TrustProvWpc(SpsdkEnum):
     WPC_INSERT_CERT         = (0x5000002, "wpc_insert_cert", "WPC insert certificate")
     WPC_SIGN_CSR            = (0x5000003, "wpc_sign_csr", "WPC sign CSR")
 
+
 class TrustProvDevHsmDsc(SpsdkEnum):
     """Type of DSC Device HSM."""
 
     DSC_HSM_CREATE_SESSION  = (0x6000000, "dsc_hsm_create_session", "DSC HSM create session")
     DSC_HSM_ENC_BLK         = (0x6000001, "dsc_hsm_enc_blk", "DSC HSM encrypt bulk")
     DSC_HSM_ENC_SIGN        = (0x6000002, "dsc_hsm_enc_sign", "DSC HSM sign")
+
+
+class EL2GOCommandGroup(SpsdkEnum):
+    """EL2GO command group."""
+
+    EL2GO_GET_FW_VERSION    = (0x1, "el2go_get_version", "EL2GO Get Version")
+    EL2GO_CLOSE_DEVICE      = (0x2, "el2go_close_device", "EL2GO Close Device")
 
 # fmt: on
 

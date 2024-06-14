@@ -14,8 +14,10 @@ from unittest.mock import patch
 import pytest
 
 from spsdk.apps import nxpimage
+from spsdk.exceptions import SPSDKValueError
+from spsdk.image.hab.hab_config import OptionsConfig
 from spsdk.image.hab.hab_container import HabContainer
-from spsdk.utils.misc import load_binary, use_working_directory
+from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 from tests.misc import GetPassMock
 
@@ -73,41 +75,123 @@ def test_nxpimage_hab_export_unsigned(
 
 @patch("spsdk.crypto.keys.getpass", GetPassMock)
 @pytest.mark.parametrize(
-    "config_file",
-    ["config_pk_encrypted.bd", "config_pk.bd", "config_sp.bd", "config_pk_autodetect.bd"],
-)
-@pytest.mark.parametrize(
-    "configuration, app_name",
+    "configuration, app_name, config_files",
     [
-        ("rt1050_xip_image_iar_authenticated", "led_blinky_xip_srec_iar.srec"),
-        ("rt1060_flashloader_authenticated_nocak", "flashloader.srec"),
-        ("rt1160_RAM_encrypted", "validationboard_imxrt1160_iled_blinky_cm7_int_RAM.s19"),
-        ("rt1165_flashloader_authenticated", "flashloader.srec"),
-        ("rt1165_semcnand_authenticated", "evkmimxrt1064_iled_blinky_SDRAM.s19"),
-        ("rt1165_semcnand_encrypted", "evkmimxrt1064_iled_blinky_SDRAM.s19"),
-        ("rt1170_flashloader_authenticated", "flashloader.srec"),
-        ("rt1170_RAM_authenticated", "evkmimxrt1170_iled_blinky_cm7_int_RAM.s19"),
-        ("rt1170_semcnand_authenticated", "evkmimxrt1170_iled_blinky_cm7_int_RAM.s19"),
+        (
+            "rt1050_xip_image_iar_authenticated",
+            "led_blinky_xip_srec_iar.srec",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+                "config_pk_simplified.bd",
+                "config_pk_simplified.yaml",
+            ],
+        ),
+        (
+            "rt1060_flashloader_authenticated_nocak",
+            "flashloader.srec",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+            ],
+        ),
+        (
+            "rt1160_RAM_encrypted",
+            "validationboard_imxrt1160_iled_blinky_cm7_int_RAM.s19",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+                "config_pk_simplified.bd",
+                "config_pk_simplified.yaml",
+            ],
+        ),
+        (
+            "rt1165_flashloader_authenticated",
+            "flashloader.srec",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+            ],
+        ),
+        (
+            "rt1165_semcnand_authenticated",
+            "evkmimxrt1064_iled_blinky_SDRAM.s19",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+            ],
+        ),
+        (
+            "rt1165_semcnand_encrypted",
+            "evkmimxrt1064_iled_blinky_SDRAM.s19",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+            ],
+        ),
+        (
+            "rt1170_flashloader_authenticated",
+            "flashloader.srec",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+            ],
+        ),
+        (
+            "rt1170_RAM_authenticated",
+            "evkmimxrt1170_iled_blinky_cm7_int_RAM.s19",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+            ],
+        ),
+        (
+            "rt1170_semcnand_authenticated",
+            "evkmimxrt1170_iled_blinky_cm7_int_RAM.s19",
+            [
+                "config_pk_encrypted.bd",
+                "config_pk.bd",
+                "config_sp.bd",
+                "config_pk_autodetect.bd",
+            ],
+        ),
     ],
 )
 def test_nxpimage_hab_export_authenticated_rsa(
-    cli_runner: CliRunner, tmpdir, config_file, hab_data_dir, configuration, app_name
+    cli_runner: CliRunner, tmpdir, hab_data_dir, configuration, app_name, config_files
 ):
     GetPassMock.PASSWORD = "test"
     config_dir = os.path.join(hab_data_dir, "export", configuration)
-    with use_working_directory(tmpdir):
-        output_file_path = os.path.join(tmpdir, "image_output.bin")
-        export_hab_cli(
-            cli_runner,
-            output_file_path,
-            os.path.join(config_dir, config_file),
-            os.path.join(config_dir, app_name),
-        )
-        assert os.path.isfile(output_file_path)
-        ref_binary = load_binary(os.path.join(config_dir, "output.bin"))
-        new_binary = load_binary(output_file_path)
-        assert len(ref_binary) == len(new_binary)
-        assert ref_binary == new_binary
+    for config_file in config_files:
+        with use_working_directory(tmpdir):
+            output_file_path = os.path.join(tmpdir, "image_output.bin")
+            export_hab_cli(
+                cli_runner,
+                output_file_path,
+                os.path.join(config_dir, config_file),
+                os.path.join(config_dir, app_name),
+            )
+            assert os.path.isfile(output_file_path)
+            ref_binary = load_binary(os.path.join(config_dir, "output.bin"))
+            new_binary = load_binary(output_file_path)
+            assert len(ref_binary) == len(new_binary)
+            assert ref_binary == new_binary
 
 
 @patch("spsdk.crypto.keys.getpass", GetPassMock)
@@ -309,3 +393,43 @@ def test_nxpimage_hab_export_secret_key_generated(cli_runner: CliRunner, tmpdir,
         assert os.path.isfile(secret_key_path)
         secret_key = load_binary(secret_key_path)
         assert len(secret_key) == 32
+
+
+def test_nxpimage_hab_template_cli(cli_runner: CliRunner, tmpdir):
+    template = os.path.join(tmpdir, "hab_template.yaml")
+    cmd = [
+        "hab",
+        "get-template",
+        "--output",
+        template,
+    ]
+    cli_runner.invoke(nxpimage.main, cmd)
+    assert os.path.isfile(template)
+    config = load_configuration(template)
+    option_keys = [cfg.lower() for cfg in config["options"].keys()]
+    # all the options are generated in the template
+    diff = list(set(OptionsConfig._FIELD_MAPPING.keys()) - set(option_keys))
+    assert len(diff) == 0
+
+
+@pytest.mark.parametrize(
+    "missing_option",
+    [
+        "initialLoadSize",
+        "ivtOffset",
+    ],
+)
+def test_nxpimage_hab_invalid_options(hab_data_dir, missing_option):
+    cfg_dir = os.path.join(hab_data_dir, "export", "rt1160_xip_mdk_unsigned")
+    cfg = HabContainer.load_configuration(
+        os.path.join(cfg_dir, "config.bd"),
+        external_files=[
+            os.path.join(cfg_dir, "evkbimxrt1160_iled_blinky_cm7_xip_mdk_unsigned.srec")
+        ],
+    )
+    del cfg["options"][missing_option]
+    with pytest.raises(
+        SPSDKValueError,
+        match=f"Either '{missing_option}' or 'family' and 'bootDevice' options must be specified.",
+    ):
+        HabContainer.load_from_config(cfg)

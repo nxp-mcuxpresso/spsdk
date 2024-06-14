@@ -7,19 +7,22 @@
 
 """Test some testable functionality of nxpdevhsm application."""
 import os
+from typing import Type, Union
 
 import pytest
+from ruamel.yaml import YAML
 
 from spsdk.apps import nxpdevhsm
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.exceptions import SPSDKError
+from spsdk.sbfile.devhsm.devhsm import DevHsm
 from spsdk.sbfile.devhsm.utils import get_devhsm_class
 from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
 from spsdk.sbfile.sb31.devhsm import DevHsmSB31
 from spsdk.sbfile.sb31.images import SecureBinary31Commands
 from spsdk.sbfile.sbx.devhsm import DevHsmSBx
 from spsdk.sbfile.sbx.images import SecureBinaryXType
-from spsdk.utils.misc import load_binary, use_working_directory
+from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
 
 
@@ -27,7 +30,10 @@ def test_nxpdevhsm_run_generate(cli_runner: CliRunner, data_dir, tmpdir):
     with use_working_directory(data_dir):
         cmd = f"generate -p COMx -f lpc55s3x -k test_bin.bin -i test_bin.bin -o {tmpdir}/bootable_images/cust_mk_sk.sb"
         result = cli_runner.invoke(nxpdevhsm.main, cmd.split(), expected_code=1)
-        assert "Selected 'uart' device not found." == result.exception.description
+        assert (
+            "No devices for given interface 'uart' and parameters 'port=COMx, timeout=5000' was found."
+            == str(result.exception)
+        )
 
 
 @pytest.mark.parametrize(
@@ -92,7 +98,7 @@ def test_load_commands_with_keyblob4(data_dir):
     "family,expected_cls",
     [
         ("lpc55s3x", DevHsmSB31),
-        ("mc56f81xxx", DevHsmSBx),
+        ("mc56f818xx", DevHsmSBx),
     ],
 )
 def test_devhsm_factory(family, expected_cls):
@@ -109,7 +115,7 @@ def test_sbx_devhsm(data_dir):
             oem_share_input=b"abcd",
             info_print=None,
             container_conf="cfg_sbx_load.yaml",
-            family="mc56f81xxx",
+            family="mc56f818xx",
         )
 
     assert "ERASE: Address=0x00000000, Length=4096, Memory ID=0\n" in str(devhsm.sbx.sb_commands)
@@ -122,9 +128,9 @@ def test_sbx_devhsm(data_dir):
     "family",
     [
         ("lpc55s3x"),
-        ("mc56f81xxx"),
+        ("mc56f818xx"),
         ("mcxn9xx"),
-        ("mwct20d2x"),
+        ("mwct2xd2"),
         ("rw61x"),
     ],
 )
@@ -133,3 +139,24 @@ def test_nxpdevhsm_get_template(cli_runner: CliRunner, tmpdir, family):
     cmd = ["get-template", "-f", family, "--output", f"{tmpdir}/devhsm.yml"]
     cli_runner.invoke(nxpdevhsm.main, cmd)
     assert os.path.isfile(f"{tmpdir}/devhsm.yml")
+
+
+def test_devhsm_commands_are_optional(tmpdir, data_dir):
+    """Test nxpdevhsm factory method."""
+    options = {
+        "mboot": None,
+        "cust_mk_sk": b"abcd",
+        "oem_share_input": b"abcd",
+        "info_print": None,
+        "container_conf": "cfg_sb3_load.yaml",
+        "family": "lpc55s3x",
+    }
+    config_file = options["container_conf"]
+    configuration = load_configuration(os.path.join(data_dir, config_file))
+    configuration.pop("commands")
+    with use_working_directory(tmpdir):
+        with open(config_file, "w") as f:
+            yaml = YAML()
+            yaml.dump(configuration, f)
+        devhsm = DevHsmSB31(**options)
+        assert devhsm.get_cmd_from_config() == []

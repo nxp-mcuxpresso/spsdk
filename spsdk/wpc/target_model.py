@@ -16,8 +16,7 @@ from typing_extensions import Self
 from spsdk.crypto.keys import PrivateKeyEcc
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import find_dir, load_configuration
-
-from .utils import SPSDKWPCError, WPCCertChain, WPCIdType, WPCTarget
+from spsdk.wpc.utils import SPSDKWPCError, WPCCertChain, WPCIdType, WPCTarget
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 class WPCTargetModel(WPCTarget):
     """SW Model representing a WPC target."""
 
-    NAME = "model"
+    identifier = "model"
 
     def __init__(self, family: str, model_dir: str) -> None:
         """Initialize SW Model for WPC target.

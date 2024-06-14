@@ -12,12 +12,11 @@ from typing import List, Literal, Optional, Set, Union, overload
 
 from spsdk.crypto.certificate import X509NameConfig
 from spsdk.mboot.interfaces.usb import MbootUSBInterface
+from spsdk.tp.adapters.tptarget_blhost import TpTargetBlHost
+from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.interfaces.device.usb_device import UsbDevice
 from spsdk.utils.misc import Endianness, Timeout
-
-from ..exceptions import SPSDKTpError
-from .tptarget_blhost import TpTargetBlHost
 
 logger = logging.getLogger(__name__)
 

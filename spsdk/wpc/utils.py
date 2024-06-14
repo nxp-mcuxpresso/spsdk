@@ -7,6 +7,7 @@
 
 """General utilities and classes used for WPC."""
 
+import inspect
 import logging
 import os
 import struct
@@ -18,9 +19,9 @@ from typing import Dict, List, Optional, Type
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate, WPCQiAuthPolicy, WPCQiAuthRSID, x509
+from spsdk.crypto.crypto_types import Encoding, SPSDKEncoding
 from spsdk.crypto.hash import hashes
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc, PublicKeyEcc
-from spsdk.crypto.types import Encoding, SPSDKEncoding
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import load_binary, write_file
@@ -38,8 +39,17 @@ class WPCIdType(Enum):
     """Enumeration of different types of WPC ID provided by the target."""
 
     UUID = "uuid"
+    RSID = "rsid"
     STATIC_CSR = "static_csr"
     COMPUTED_CSR = "computed_csr"
+
+
+class ConfigCheckScope(Enum):
+    """Scope of the config file checking."""
+
+    SERVICE = "service_config"
+    TARGET = "target_config"
+    FULL = "full_config"
 
 
 @dataclass
@@ -116,7 +126,12 @@ class WPCCertChain:
     def get_rsid(self) -> bytes:
         """Get the Revocation Sequential Identifier."""
         ext = self.product_unit_cert.cert.extensions.get_extension_for_oid(WPCQiAuthRSID.oid)
-        return ext.value.public_bytes()[2:]
+        rsid = ext.value.public_bytes()
+        if len(rsid) == 11:
+            rsid = rsid[2:]
+        if len(rsid) != 9:
+            raise SPSDKWPCError(f"Invalid RSID length. Expected 9B, got {len(rsid)}")
+        return rsid
 
     def export(self) -> bytes:
         """Export WPC Certificate Chain into bytes."""
@@ -201,8 +216,35 @@ class WPCCertChain:
 class BaseWPCClass(ABC):
     """Base abstract class for both WPC Service and Target."""
 
-    NAME: str
+    identifier: str
     CONFIG_PARAMS: str
+    legacy_identifier_name = "NAME"
+
+    def __init_subclass__(cls) -> None:
+        if not inspect.isabstract(cls) and hasattr(cls, cls.legacy_identifier_name):
+            identifier = getattr(cls, cls.legacy_identifier_name)
+            logger.warning(
+                (
+                    f"Class {cls.__name__} uses legacy identifier '{cls.legacy_identifier_name} = \"{identifier}\"', "
+                    f"please use 'identifier = \"{identifier}\"' instead"
+                )
+            )
+            setattr(cls, "identifier", identifier)
+
+        if not inspect.isabstract(cls) and not hasattr(cls, "identifier"):
+            raise SPSDKError(f"{cls.__name__}.identifier is not set")
+        return super().__init_subclass__()
+
+    def __init__(self, family: str) -> None:
+        """Initialize WPC target.
+
+        :param family: Target family name
+        :raises SPSDKWPCError: Family is not supported as WPC target
+        """
+        if family not in self.get_supported_families():
+            raise SPSDKWPCError(f"Family '{family}' is not supported")
+        self.family = family
+        self.wpc_id_type = WPCIdType(get_db(device=family).get_str(DatabaseManager.WPC, "id_type"))
 
     @classmethod
     def get_validation_schema(cls) -> dict:
@@ -219,7 +261,7 @@ class BaseWPCClass(ABC):
     def get_providers(cls) -> Dict[str, Type[Self]]:
         """Get available WPC Service/Target Providers."""
         import_providers_and_plugins()
-        return {sc.NAME: sc for sc in cls.__subclasses__()}
+        return {sc.identifier: sc for sc in cls.__subclasses__()}
 
     @classmethod
     def validate_config(cls, config_data: dict, search_paths: Optional[List[str]] = None) -> None:
@@ -254,13 +296,10 @@ class WPCCertificateService(BaseWPCClass):
     CONFIG_PARAMS = "service_parameters"
 
     @abstractmethod
-    def get_wpc_cert(
-        self, wpc_id_data: str, wpc_id_type: Optional[WPCIdType] = None
-    ) -> WPCCertChain:
+    def get_wpc_cert(self, wpc_id_data: bytes) -> WPCCertChain:
         """Obtain the WPC Certificate Chain.
 
         :param wpc_id_data: WPC ID provided by the target
-        :param wpc_id_type: WPC ID type, defaults to None
         :return: WPC Certificate Chain
         """
 
@@ -269,17 +308,6 @@ class WPCTarget(BaseWPCClass):
     """Base class for adapters providing connection to a target."""
 
     CONFIG_PARAMS = "target_parameters"
-
-    def __init__(self, family: str) -> None:
-        """Initialize WPC target.
-
-        :param family: Target family name
-        :raises SPSDKWPCError: Family is not supported as WPC target
-        """
-        if family not in WPCTarget.get_supported_families():
-            raise SPSDKWPCError(f"Family '{family}' is not supported")
-        self.family = family
-        self.wpc_id_type = WPCIdType(get_db(device=family).get_str(DatabaseManager.WPC, "id_type"))
 
     @abstractmethod
     def get_low_level_wpc_id(self) -> bytes:
@@ -298,10 +326,11 @@ class WPCTarget(BaseWPCClass):
         """Sign data by the target."""
         raise NotImplementedError()
 
-    def get_wpc_id(self) -> str:
+    def get_wpc_id(self) -> bytes:
         """Get the WPC ID from the target."""
         logger.info("Getting WPC ID")
         wpc_id_data = self.get_low_level_wpc_id()
+
         if self.wpc_id_type == WPCIdType.COMPUTED_CSR:
             logger.info("Computing CSR")
             csr = CSRBlob.parse(data=wpc_id_data)
@@ -329,7 +358,10 @@ class WPCTarget(BaseWPCClass):
 
             csr2 = x509.load_der_x509_csr(data=csr2_data)
             csr2_pem_data = csr2.public_bytes(Encoding.PEM)
-            return csr2_pem_data.decode("utf-8")
+            return csr2_pem_data
+
+        if self.wpc_id_type == WPCIdType.RSID:
+            return wpc_id_data
 
         raise NotImplementedError()
 
@@ -354,14 +386,40 @@ def length_to_asn1(length: int) -> bytes:
     )
 
 
-def check_main_config(config_data: dict, search_paths: Optional[List[str]] = None) -> None:
+def check_main_config(
+    config_data: dict,
+    search_paths: Optional[List[str]] = None,
+    scope: ConfigCheckScope = ConfigCheckScope.FULL,
+) -> None:
     """Check top layer of config data.
 
     :param config_data: Configuration data from config file
     :param search_paths: List of paths where to look for files and directories in config data, defaults to None
+    :param scope: Scope of the config file check
     :raises SPSDKError: Configuration contains invalid data or some data is missing
     """
-    schema = get_schema_file(DatabaseManager.WPC)["full_config"]
+    schema = get_schema_file(DatabaseManager.WPC)[scope.value]
+    if "family" not in config_data:
+        logger.warning(
+            "Your configuration doesn't have family in root. Attempting fallback search."
+            "This behavior is deprecated since SPSDK v2.2 and will be removed in v2.4. "
+            "Please use `get-template` and update your configuration file accordingly."
+        )
+        family = None
+        for section in config_data:
+            if not isinstance(config_data[section], dict):
+                continue
+            print(config_data[section])
+            if "family" in config_data[section]:
+                family = config_data[section]["family"]
+                break
+        config_data["family"] = family
+        if not "family":
+            raise SPSDKError("Fallback search for family failed. Please update your config file.")
+    for section in config_data.copy():
+        if not isinstance(config_data[section], dict):
+            continue
+        config_data[section]["family"] = config_data["family"]
     check_config(config=config_data, schemas=[schema], search_paths=search_paths)
 
 
@@ -376,18 +434,13 @@ def generate_template_config(
     :return: Configuration template in YAML format
     """
     overall_schema = get_schema_file(DatabaseManager.WPC)["full_config"]
+    overall_schema["properties"]["family"]["template_value"] = family
     service_schema = service.get_validation_schema()
-    if "family" in service_schema["properties"]:
-        service_schema["properties"]["family"]["template_value"] = family
-        service_schema["properties"]["family"]["enum"] = service.get_supported_families()
     target_schema = target.get_validation_schema()
-    if "family" in target_schema["properties"]:
-        target_schema["properties"]["family"]["template_value"] = family
-        target_schema["properties"]["family"]["enum"] = target.get_supported_families()
 
-    overall_schema["properties"]["service_type"]["template_value"] = service.NAME
+    overall_schema["properties"]["service_type"]["template_value"] = service.identifier
     overall_schema["properties"]["service_parameters"].update(service_schema)
-    overall_schema["properties"]["target_type"]["template_value"] = target.NAME
+    overall_schema["properties"]["target_type"]["template_value"] = target.identifier
     overall_schema["properties"]["target_parameters"].update(target_schema)
     yaml_data = CommentedConfig(
         main_title="WPC Certificate injection configuration",

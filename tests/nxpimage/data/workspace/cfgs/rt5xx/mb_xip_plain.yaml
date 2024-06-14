@@ -1,0 +1,38 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Master Boot Image Configuration template for rt5xx, Plain Image (either XIP or Load-to-RAM).  ===========
+
+# ======================================================================================================================
+#                                                  == Basic Settings ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+family: rt5xx
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp>
+outputImageAuthenticationType: plain
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: .\workspace\output_images\rt5xx\mbi_xip_plain.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+inputImageFile: .\workspace\input_images\normal_boot.bin
+# ----------------------------------===== Enable User HW key sharing [Required] =====-----------------------------------
+# Description: Controlling secure hardware key bus. If enabled(1), then it is possible to access keys on hardware secure
+# bus from non-secure application, else non-secure application will read zeros.
+enableHwUserModeKeys: false
+# ======================================================================================================================
+#                                               == Trust Zone Settings ==                                               
+# ======================================================================================================================
+# ------------------------------------===== TrustZone enable option [Optional] =====------------------------------------
+# Description: If not specified, the Trust zone is disabled.
+enableTrustZone: false
+# ---------------------------------===== TrustZone Customization file [Optional] =====----------------------------------
+# Description: If not specified, but TrustZone is enabled(enableTrustZone) the default values are used.
+#trustZonePresetFile: my_tz_custom.yaml

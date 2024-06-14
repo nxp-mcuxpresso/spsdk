@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Tool for updating requirements.txt files."""
@@ -17,128 +17,155 @@ from enum import Enum
 from typing import List, Optional
 
 import click
-import pkg_resources
 import requests
-
-from spsdk.exceptions import SPSDKError
+from packaging.requirements import Requirement
+from packaging.specifiers import Specifier
+from packaging.version import Version
 
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 REPO_ROOT = os.path.normpath(os.path.join(THIS_DIR, ".."))
-IGNORE_LIST = ["click"]
-REQUIRED_PYTHON = (3, 10)
+REQUIRED_PYTHON = (3, 8)
 
 
 class NextVersion(str, Enum):
+    """Next version selector class."""
+
     NONE = "none"
     MINOR = "minor"
     MAJOR = "major"
 
     @staticmethod
     def from_str(selector: Optional[str] = None) -> "NextVersion":
+        """Load next version selector from string format.
+
+        :param selector: Version in string format, defaults to None
+        :raises ValueError: Unknown string on input
+        :return: Version selector object
+        """
         if not selector or selector == "current":
             return NextVersion.NONE
         if selector == "minor":
             return NextVersion.MINOR
         if selector == "major":
             return NextVersion.MAJOR
-        raise SPSDKError(f"Unknown NextVersion selector '{selector}'. Use 'minor' or 'major'")
+        raise ValueError(f"Unknown NextVersion selector '{selector}'. Use 'minor' or 'major'")
 
 
 @dataclass
 class RequirementsRecord:
-    name: str
-    original: Optional[pkg_resources.Requirement] = None
-    min_version: Optional[str] = None
+    """Requirement record class."""
+
+    original: Requirement
     max_version: Optional[str] = None
-    extras: Optional[List[str]] = None
-    condition: Optional[str] = None
+    act_version: Optional[str] = None
+
+    @property
+    def name(self) -> str:
+        """Name of requirement."""
+        return self.original.name
 
     @staticmethod
-    def from_req(requirement: pkg_resources.Requirement) -> "RequirementsRecord":
-        name = requirement.key
-        min_version = None
+    def from_req(requirement: Requirement) -> "RequirementsRecord":
+        """Get requirement record from requirement.
+
+        :param requirement: Input requirement
+        :return: Requirement record
+        """
         max_version = None
-        for spec in requirement.specs:
-            operator, value = spec
-            if "<" in operator:
-                max_version = value
-                continue
-            if ">" in operator:
-                min_version = value
-                continue
-            max_version = value
+        act_version = None
+        for spec in list(requirement.specifier):
+            if "<" in spec.operator:
+                max_version = spec.version
+            if "==" == spec.operator:
+                act_version = spec.version
+        specs = [s for s in list(requirement.specifier) if s.version != max_version]
+        requirement.specifier._specs = frozenset(specs)
         return RequirementsRecord(
-            original=requirement,
-            name=name,
-            min_version=min_version,
-            max_version=max_version,
-            extras=list(requirement.extras),
+            original=requirement, max_version=max_version, act_version=act_version
         )
 
     def get_next_version(self, selector: NextVersion) -> str:
+        """Get the next version of package.
+
+        :param selector: Select which version severity should be updated
+        :raises ValueError: Maximal version is not defined
+        :return: New version in string
+        """
         if not self.max_version:
-            raise SPSDKError("max_version is not defined")
+            raise ValueError("max_version is not defined")
         if selector == NextVersion.NONE:
             return self.max_version
-        version = pkg_resources.parse_version(self.max_version)
+        version = Version(self.max_version)
         if selector == NextVersion.MINOR:
             return f"{version.major}.{version.minor + 1}"
         if selector == NextVersion.MAJOR:
             return f"{version.major + 1}"
-        raise SPSDKError(f"Unknown next version selector: {selector}")
 
     @staticmethod
     def from_str(req_line: str) -> "RequirementsRecord":
-        return RequirementsRecord.from_req(next(pkg_resources.parse_requirements(req_line)))
+        """Get requirement from line record.
 
-    @property
-    def name_extra(self) -> str:
-        result = self.name
-        if self.extras:
-            result += f"[{','.join(self.extras)}]"
-        return result
+        :param req_line: Input line to decode
+        :return: Requirement object.
+        """
+        return RequirementsRecord.from_req(Requirement(req_line))
 
     def to_str(
         self,
-        include_min_version: bool = True,
         include_max_version: bool = True,
         use_next_version: NextVersion = NextVersion.NONE,
     ) -> str:
-        result = self.name_extra
-        if include_min_version and self.min_version:
-            result += f">={self.min_version}"
+        """Print Requirement to string."""
         if include_max_version and self.max_version:
-            result += f"{',' if '>' in result else ''}{'<' if use_next_version != NextVersion.NONE else '<='}"
-            result += self.get_next_version(selector=use_next_version)
-        return result
+            specs = list(self.original.specifier)
+            specs.append(Specifier(f"<{self.get_next_version(selector=use_next_version)}"))
+            self.original.specifier._specs = frozenset(specs)
+        return str(self.original)
 
 
 class RequirementsList(List[RequirementsRecord]):
+    """List of requirements class."""
+
     def get_record(self, name: str) -> RequirementsRecord:
+        """Get requirement record by its name."""
         for req in self:
-            if req.name == name:
+            if self.normalize_name(req.name) == self.normalize_name(name):
                 return req
-        raise SPSDKError(f"Requirement named {name} wasn't found")
+        raise ValueError(f"Requirement named {name} wasn't found")
+
+    @staticmethod
+    def normalize_name(name: str) -> str:
+        """Normalize to standard name format."""
+        return name.replace("-", "_").lower()
 
     @staticmethod
     def from_pip() -> "RequirementsList":
-        output = subprocess.check_output("pip freeze", text=True, shell=True).splitlines()
+        """Get Requirements from pip package."""
+        output = subprocess.check_output(
+            f"{sys.executable} -m pip freeze", text=True, shell=True
+        ).splitlines()
         return RequirementsList.from_lines(req_lines=output)
 
     @staticmethod
     def load(path: str) -> "RequirementsList":
+        """Get Requirements from file."""
         with open(path) as f:
             req_lines = f.readlines()
         return RequirementsList.from_lines(req_lines=req_lines)
 
     @staticmethod
     def from_lines(req_lines: List[str]) -> "RequirementsList":
+        """Get Requirements from text lines."""
         req_lines = [line for line in req_lines if not line.startswith(("-", "#"))]
         result = RequirementsList([RequirementsRecord.from_str(req) for req in req_lines])
         return result
 
 
 def prepare_file(path: str) -> None:
+    """Prepare requirements file.
+
+    :param path: File path
+    """
     click.echo(f"Preparing: {path}")
     with open(path) as f:
         main_reqs = f.readlines()
@@ -148,10 +175,7 @@ def prepare_file(path: str) -> None:
                 f.write(req_line)
                 continue
             req = RequirementsRecord.from_str(req_line=req_line)
-            if req.name in IGNORE_LIST:
-                f.write(req_line)
-                continue
-            f.write(req.to_str(include_min_version=True, include_max_version=False) + "\n")
+            f.write(req.to_str(include_max_version=False) + "\n")
 
 
 def finalize_file(
@@ -159,6 +183,12 @@ def finalize_file(
     requirements: RequirementsList,
     use_next_version: NextVersion = NextVersion.NONE,
 ) -> None:
+    """Finalize output requirement file.
+
+    :param path: File path
+    :param requirements: List of requirements
+    :param use_next_version: Using a new version, defaults to NextVersion.NONE
+    """
     click.echo(f"Finalizing: {path}")
     with open(path) as f:
         main_reqs = f.readlines()
@@ -168,18 +198,8 @@ def finalize_file(
                 f.write(req_line)
                 continue
             req = RequirementsRecord.from_str(req_line=req_line)
-            if req.name in IGNORE_LIST:
-                f.write(req_line)
-                continue
-            req.max_version = requirements.get_record(req.name).max_version
-            f.write(
-                req.to_str(
-                    include_min_version=True,
-                    include_max_version=True,
-                    use_next_version=use_next_version,
-                )
-                + "\n"
-            )
+            req.max_version = requirements.get_record(req.name).act_version
+            f.write(req.to_str(include_max_version=True, use_next_version=use_next_version) + "\n")
 
 
 @click.group("req-update", no_args_is_help=True)
@@ -215,12 +235,15 @@ def update() -> None:
     """Update all dependencies."""
     try:
         click.echo("Updating pip")
-        subprocess.check_call("python -m pip install --upgrade pip", shell=True)
+        subprocess.check_call(f"{sys.executable} -m pip install --upgrade pip", shell=True)
         click.echo("Updating project")
-        subprocess.check_call('pip install --upgrade --force-reinstall -e ".[tp]"', shell=True)
+        subprocess.check_call(
+            f'{sys.executable} -m pip install --upgrade --force-reinstall -e ".[tp]"', shell=True
+        )
         click.echo("Updating development requirements")
         subprocess.check_call(
-            "pip install --upgrade --force-reinstall -r requirements-develop.txt", shell=True
+            f"{sys.executable} -m pip install --upgrade --force-reinstall -r requirements-develop.txt",
+            shell=True,
         )
     except subprocess.CalledProcessError:
         click.secho("Automated venv update failed! Please run the following commands:", fg="red")

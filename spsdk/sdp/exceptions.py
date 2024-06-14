@@ -8,9 +8,8 @@
 
 """Exceptions used in the SDP module."""
 
-from spsdk.exceptions import SPSDKError
-
-from .error_codes import StatusCode
+from spsdk.exceptions import SPSDKConnectionError, SPSDKError
+from spsdk.sdp.error_codes import StatusCode
 
 
 ########################################################################################################################
@@ -46,7 +45,7 @@ class SdpCommandError(SdpError):
         return self.fmt.format(cmd_name=self.cmd_name, description=self.description)
 
 
-class SdpConnectionError(SdpError):
+class SdpConnectionError(SPSDKConnectionError, SdpError):
     """SDP Module: Connection Exception."""
 
     fmt = "SDP: Connection issue -> {description}"

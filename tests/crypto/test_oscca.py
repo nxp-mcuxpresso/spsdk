@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,9 +9,9 @@ import pytest
 
 pytest.importorskip("gmssl")
 
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import PrivateKeySM2, PublicKeySM2
 from spsdk.crypto.oscca import SM2Encoder, sanitize_pem
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.utils.misc import load_binary
 
 

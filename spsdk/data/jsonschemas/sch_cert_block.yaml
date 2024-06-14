@@ -1,4 +1,4 @@
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -134,14 +134,14 @@ certificate_v21:
       title: ISK public key
       description: Path to ISK public key.
       format: file
-      template_value: sign_cert.pem
+      template_value: sign_cert.pub
       skip_in_template: true
     iskPublicKey:
       type: string
       title: ISK public key
       description: Path to ISK public key.
       format: file
-      template_value: sign_cert.pem
+      template_value: sign_cert.pub
 
     signingCertificateConstraint:
       type: [string, number]
@@ -190,7 +190,7 @@ certificate_v21:
     signProvider:
       type: string
       title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'.
       template_value: type=file;file_path=root_prv_key.pem
   required: [family, useIsk]
   allOf: # Global all of group - this is main concatenation group for all sub rules
@@ -224,7 +224,7 @@ certificate_vx:
     selfSigned:
       type: boolean
       title: True if certificate is self signed, false for NXP Signed certificate
-      description: NXP Signed = false, Self signed = True
+      description: NXP Signed = false, Self signed = true
       template_value: true
 
     signingCertificateFile:
@@ -232,14 +232,14 @@ certificate_vx:
       title: ISK public key
       description: Path to ISK public key.
       format: file
-      template_value: sign_cert.pem
+      template_value: sign_cert.pub
       skip_in_template: true
     iskPublicKey:
       type: string
       title: ISK public key
       description: Path to ISK public key.
       format: file
-      template_value: sign_cert.pem
+      template_value: sign_cert.pub
 
     mainRootCertPrivateKeyFile:
       type: string
@@ -258,7 +258,7 @@ certificate_vx:
     signProvider:
       type: string
       title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'.
       template_value: type=file;file_path=root_prv_key.pem
 
   allOf: # Global all of group - this is main concatenation group for all sub rules

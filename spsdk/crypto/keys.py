@@ -10,7 +10,7 @@ import abc
 import getpass
 import math
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union, cast
 
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
@@ -34,20 +34,29 @@ from cryptography.hazmat.primitives.serialization import (
 )
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError, SPSDKNotImplementedError, SPSDKValueError
+from spsdk import SPSDK_INTERACTIVE_DISABLED
+from spsdk.crypto.crypto_types import SPSDKEncoding
+from spsdk.crypto.dilithium import IS_DILITHIUM_SUPPORTED
+from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_algorithm, hashes
+from spsdk.crypto.oscca import IS_OSCCA_SUPPORTED
+from spsdk.crypto.rng import rand_below, random_hex
+from spsdk.exceptions import (
+    SPSDKError,
+    SPSDKNotImplementedError,
+    SPSDKUnsupportedOperation,
+    SPSDKValueError,
+)
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import Endianness, load_binary, write_file
-
-from .hash import EnumHashAlgorithm, get_hash, get_hash_algorithm, hashes
-from .oscca import IS_OSCCA_SUPPORTED
-from .rng import rand_below, random_hex
-from .types import SPSDKEncoding
 
 if IS_OSCCA_SUPPORTED:
     from asn1tools import DecodeError  # pylint: disable=import-error
     from gmssl import sm2  # pylint: disable=import-error
 
-    from .oscca import SM2Encoder, sanitize_pem
+    from spsdk.crypto.oscca import SM2Encoder, sanitize_pem
+
+if IS_DILITHIUM_SUPPORTED:
+    from spsdk_pqc import DilithiumPrivateKey, DilithiumPublicKey  # pylint: disable=import-error
 
 
 def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
@@ -70,6 +79,11 @@ def _load_pem_private_key(data: bytes, password: Optional[bytes]) -> Any:
             return sm2.CryptSM2(private_key=key_set.private, public_key=key_set.public)
         except (SPSDKError, DecodeError) as exc:
             last_error = exc
+    if IS_DILITHIUM_SUPPORTED:
+        try:
+            return DilithiumPrivateKey(data=data)
+        except ValueError as exc:
+            last_error = exc
     raise SPSDKError(f"Cannot load PEM private key: {last_error}")
 
 
@@ -91,6 +105,11 @@ def _load_der_private_key(data: bytes, password: Optional[bytes]) -> Any:
             key_set = SM2Encoder().decode_private_key(data=data)
             return sm2.CryptSM2(private_key=key_set.private, public_key=key_set.public)
         except (SPSDKError, DecodeError) as exc:
+            last_error = exc
+    if IS_DILITHIUM_SUPPORTED:
+        try:
+            return DilithiumPrivateKey(data=data)
+        except ValueError as exc:
             last_error = exc
     raise SPSDKError(f"Cannot load DER private key: {last_error}")
 
@@ -147,6 +166,11 @@ def _load_pem_public_key(data: bytes) -> Any:
             return sm2.CryptSM2(private_key=None, public_key=public_key.public)
         except (SPSDKError, DecodeError) as exc:
             last_error = exc
+    if IS_DILITHIUM_SUPPORTED:
+        try:
+            return DilithiumPublicKey(public_data=data)
+        except ValueError as exc:
+            last_error = exc
     raise SPSDKError(f"Cannot load PEM public key: {last_error}")
 
 
@@ -168,7 +192,12 @@ def _load_der_public_key(data: bytes) -> Any:
             return sm2.CryptSM2(private_key=None, public_key=public_key.public)
         except (SPSDKError, DecodeError) as exc:
             last_error = exc
-    raise SPSDKError(f"Cannot load DER private key: {last_error}")
+    if IS_DILITHIUM_SUPPORTED:
+        try:
+            return DilithiumPublicKey(public_data=data)
+        except ValueError as exc:
+            last_error = exc
+    raise SPSDKError(f"Cannot load DER public key: {last_error}")
 
 
 class SPSDKInvalidKeyType(SPSDKError):
@@ -293,6 +322,8 @@ class PrivateKey(BaseClass, abc.ABC):
                 return cls.create(private_key)
             if IS_OSCCA_SUPPORTED and isinstance(private_key, sm2.CryptSM2):
                 return cls.create(private_key)
+            if IS_DILITHIUM_SUPPORTED and isinstance(private_key, DilithiumPrivateKey):
+                return cls.create(private_key)
         except (ValueError, SPSDKInvalidKeyType) as exc:
             raise SPSDKError(f"Cannot load private key: ({str(exc)})") from exc
         raise SPSDKError(f"Unsupported private key: ({str(private_key)})")
@@ -312,6 +343,9 @@ class PrivateKey(BaseClass, abc.ABC):
         if IS_OSCCA_SUPPORTED:
             SUPPORTED_KEYS[PrivateKeySM2] = sm2.CryptSM2
 
+        if IS_DILITHIUM_SUPPORTED:
+            SUPPORTED_KEYS[PrivateKeyDilithium] = DilithiumPrivateKey
+
         for k, v in SUPPORTED_KEYS.items():
             if isinstance(key, v):
                 return k(key)
@@ -323,6 +357,7 @@ class PublicKey(BaseClass, abc.ABC):
     """SPSDK Public Key."""
 
     key: Any
+    RECOMMENDED_ENCODING = SPSDKEncoding.PEM
 
     @property
     @abc.abstractmethod
@@ -356,14 +391,14 @@ class PublicKey(BaseClass, abc.ABC):
         self,
         signature: bytes,
         data: bytes,
-        algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
+        algorithm: Optional[EnumHashAlgorithm] = None,
         **kwargs: Any,
     ) -> bool:
         """Verify input data.
 
         :param signature: The signature of input data
         :param data: Input data
-        :param algorithm: Used algorithm
+        :param algorithm: Used algorithm, defaults, automatic selection - None
         :param kwargs: Keyword arguments for specific type of key
         :return: True if signature is valid, False otherwise
         """
@@ -383,18 +418,35 @@ class PublicKey(BaseClass, abc.ABC):
         :param data: Data to be parsed
         :returns: Recreated key
         """
+        encoding = SPSDKEncoding.get_file_encodings(data)
+        if encoding == SPSDKEncoding.PEM:
+            return cls.create(_load_pem_public_key(data))
+
         try:
-            public_key = {
-                SPSDKEncoding.PEM: _load_pem_public_key,
-                SPSDKEncoding.DER: _load_der_public_key,
-            }[SPSDKEncoding.get_file_encodings(data)](data)
-            if isinstance(public_key, (ec.EllipticCurvePublicKey, rsa.RSAPublicKey)):
-                return cls.create(public_key)
-            if IS_OSCCA_SUPPORTED and isinstance(public_key, sm2.CryptSM2):
-                return cls.create(public_key)
-        except (ValueError, SPSDKInvalidKeyType) as exc:
-            raise SPSDKError(f"Cannot load public key: ({str(exc)})") from exc
-        raise SPSDKError(f"Unsupported public key: ({str(public_key)})")
+            return cls.create(_load_der_public_key(data))
+        except SPSDKError:
+            pass
+
+        try:
+            return cast(Self, PublicKeyEcc.recreate_from_data(data))
+        except SPSDKError:
+            pass
+
+        try:
+            return cast(Self, PublicKeyRsa.recreate_from_data(data))
+        except SPSDKError:
+            pass
+
+        if IS_DILITHIUM_SUPPORTED:
+            try:
+                return cast(Self, PublicKeyDilithium.parse(data=data))
+            except (SPSDKError, ValueError):
+                pass
+
+        # No need for explicit SM2, because SM2.recreate_from_data uses PEM/DER
+        # There's no NXP encoding format for SM2
+
+        raise SPSDKError("Unable to parse public key data.")
 
     def key_hash(self, algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256) -> bytes:
         """Get key hash.
@@ -422,6 +474,9 @@ class PublicKey(BaseClass, abc.ABC):
         }
         if IS_OSCCA_SUPPORTED:
             SUPPORTED_KEYS[PublicKeySM2] = sm2.CryptSM2
+
+        if IS_DILITHIUM_SUPPORTED:
+            SUPPORTED_KEYS[PublicKeyDilithium] = DilithiumPublicKey
 
         for k, v in SUPPORTED_KEYS.items():
             if isinstance(key, v):
@@ -646,7 +701,7 @@ class PublicKeyRsa(PublicKey):
         self,
         signature: bytes,
         data: bytes,
-        algorithm: EnumHashAlgorithm = EnumHashAlgorithm.SHA256,
+        algorithm: Optional[EnumHashAlgorithm] = None,
         pss_padding: bool = False,
         prehashed: bool = False,
         **kwargs: Any,
@@ -661,6 +716,7 @@ class PublicKeyRsa(PublicKey):
         :param kwargs: Sink for unused parameters
         :return: True if signature is valid, False otherwise
         """
+        algorithm = algorithm or EnumHashAlgorithm.SHA256
         hash_alg = get_hash_algorithm(algorithm)
         pad = (
             padding.PSS(mgf=padding.MGF1(algorithm=hash_alg), salt_length=padding.PSS.DIGEST_LENGTH)
@@ -703,6 +759,15 @@ class PublicKeyRsa(PublicKey):
         """
         public_numbers = rsa.RSAPublicNumbers(e=exponent, n=modulus)
         return cls(public_numbers.public_key())
+
+    @classmethod
+    def recreate_from_data(cls, data: bytes) -> Self:
+        """Recreate RSA public key from exponent and modulus in data blob.
+
+        :param data: Data blob of exponent and modulus in bytes (in Big Endian)
+        :return: RSA public key.
+        """
+        return cls(cls.recreate_public_numbers(data).public_key())
 
     @staticmethod
     def recreate_public_numbers(data: bytes) -> rsa.RSAPublicNumbers:
@@ -1061,10 +1126,13 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
         :param curve: ECC curve.
         :return: ECC public key.
         """
-        pub_numbers = ec.EllipticCurvePublicNumbers(
-            x=coor_x, y=coor_y, curve=PrivateKeyEcc._get_ec_curve_object(curve)
-        )
-        key = pub_numbers.public_key()
+        try:
+            pub_numbers = ec.EllipticCurvePublicNumbers(
+                x=coor_x, y=coor_y, curve=PrivateKeyEcc._get_ec_curve_object(curve)
+            )
+            key = pub_numbers.public_key()
+        except ValueError as exc:
+            raise SPSDKValueError(f"Cannot recreate the public key: {str(exc)}") from exc
         return cls(key)
 
     @classmethod
@@ -1135,7 +1203,7 @@ class PublicKeyEcc(KeyEccCommon, PublicKey):
 # ===================================================================================================
 # ===================================================================================================
 if IS_OSCCA_SUPPORTED:
-    from .oscca import SM2Encoder, SM2KeySet, SM2PublicKey, sanitize_pem
+    from spsdk.crypto.oscca import SM2Encoder, SM2KeySet, SM2PublicKey, sanitize_pem
 
     class PrivateKeySM2(PrivateKey):
         """SPSDK SM2 Private Key."""
@@ -1240,9 +1308,19 @@ if IS_OSCCA_SUPPORTED:
             """Signature size."""
             return 64
 
+        def save(
+            self,
+            file_path: str,
+            password: Optional[str] = None,
+            encoding: SPSDKEncoding = SPSDKEncoding.PEM,
+        ) -> None:
+            """Save the Private key to the given file."""
+            return super().save(file_path, password, encoding=SPSDKEncoding.DER)
+
     class PublicKeySM2(PublicKey):
         """SM2 Public Key."""
 
+        RECOMMENDED_ENCODING = SPSDKEncoding.DER
         key: sm2.CryptSM2
 
         def __init__(self, key: sm2.CryptSM2) -> None:
@@ -1326,6 +1404,10 @@ if IS_OSCCA_SUPPORTED:
             """Object description in string format."""
             ret = f"SM2 Public Key <{self.public_numbers}>"
             return ret
+
+        def save(self, file_path: str, encoding: SPSDKEncoding = SPSDKEncoding.PEM) -> None:
+            """Save the Private key to the given file."""
+            return super().save(file_path, encoding=SPSDKEncoding.DER)
 
 else:
     # In case the OSCCA is not installed, do this to avoid import errors
@@ -1417,6 +1499,152 @@ class ECDSASignature:
         )
 
 
+if IS_DILITHIUM_SUPPORTED:
+
+    class PublicKeyDilithium(PublicKey):
+        """Dilithium Public Key."""
+
+        key: DilithiumPublicKey
+        RECOMMENDED_ENCODING = SPSDKEncoding.NXP
+
+        def __init__(self, key: DilithiumPublicKey) -> None:
+            """Create SPSDK key."""
+            self.key = key
+            super().__init__()
+
+        @property
+        def signature_size(self) -> int:
+            """Size of signature data."""
+            return self.key.signature_size
+
+        @property
+        def public_numbers(self) -> bytes:
+            """Public numbers of key."""
+            return self.key.public_data
+
+        def verify_signature(
+            self,
+            signature: bytes,
+            data: bytes,
+            algorithm: Optional[EnumHashAlgorithm] = None,
+            **kwargs: Any,
+        ) -> bool:
+            """Verify input data.
+
+            :param signature: The signature of input data
+            :param data: Input data
+            :param algorithm: Used algorithm, defaults, automatic selection - None
+            :param kwargs: Keyword arguments for specific type of key
+            :return: True if signature is valid, False otherwise
+            """
+            return self.key.verify(data=data, signature=signature)
+
+        def export(self, encoding: SPSDKEncoding = SPSDKEncoding.NXP) -> bytes:
+            """Export key into bytes to requested format.
+
+            :param encoding: encoding type, default is NXP
+            :return: Byte representation of key
+            """
+            return self.key.public_data
+
+        @classmethod
+        def parse(cls, data: bytes) -> Self:
+            """Deserialize object from bytes array.
+
+            :param data: Data to be parsed
+            :returns: Recreated key
+            """
+            return cls(DilithiumPublicKey(public_data=data))
+
+        def __repr__(self) -> str:
+            return f"Dilithium {self.key.backend.level} Public key"
+
+        def __str__(self) -> str:
+            return repr(self)
+
+    class PrivateKeyDilithium(PrivateKey):
+        """Dilithium Private Key."""
+
+        SUPPORTED_LEVELS = [2, 3, 5]
+        key: DilithiumPrivateKey
+
+        def __init__(self, key: DilithiumPrivateKey) -> None:
+            """Create SPSDK key."""
+            self.key = key
+            super().__init__()
+
+        @classmethod
+        def generate_key(cls, level: int = 3) -> Self:
+            """Generate SPSDK Key (private key).
+
+            :param level: NIST claim level, defaults to 3
+            :return: Dilithium Private key
+            """
+            key = DilithiumPrivateKey(level=level)
+            return cls(key)
+
+        @property
+        def signature_size(self) -> int:
+            """Size of signature data."""
+            return self.key.signature_size
+
+        @property
+        def key_size(self) -> int:
+            """Key size in bytes."""
+            return self.key.key_size
+
+        def get_public_key(self) -> PublicKeyDilithium:
+            """Generate public key."""
+            if self.key.public_data is None:
+                raise SPSDKUnsupportedOperation("Dilithium key doesn't have public portion")
+            return PublicKeyDilithium(DilithiumPublicKey(public_data=self.key.public_data))
+
+        def verify_public_key(self, public_key: PublicKey) -> bool:
+            """Verify public key."""
+            if not isinstance(public_key, PublicKeyDilithium):
+                raise SPSDKInvalidKeyType("Public key type is not a Dilithium public key")
+            return self.key.public_data == public_key.key.public_data
+
+        def sign(self, data: bytes, **kwargs: Any) -> bytes:
+            """Sign input data.
+
+            :param data: Input data
+            :param kwargs: Keyword arguments for specific type of key
+            :return: Signed data
+            """
+            return self.key.sign(data=data)
+
+        @classmethod
+        def parse(cls, data: bytes, password: Optional[str] = None) -> Self:
+            """Deserialize object from bytes array.
+
+            :param data: Data to be parsed
+            :param password: Password in case of encrypted key
+            :returns: Recreated key
+            """
+            return cls(DilithiumPrivateKey(data=data))
+
+        def export(
+            self, password: Optional[str] = None, encoding: SPSDKEncoding = SPSDKEncoding.DER
+        ) -> bytes:
+            """Export key into bytes to requested format.
+
+            :param encoding: encoding type, default is NXP
+            :param password: password to private key; None to store without password
+            :return: Byte representation of key
+            """
+            return self.key.private_data + (self.key.public_data or bytes())
+
+        def __repr__(self) -> str:
+            return f"Dilithium {self.key.backend.level} Private key"
+
+        def __str__(self) -> str:
+            return repr(self)
+
+else:
+    PrivateKeyDilithium = PrivateKey  # type: ignore
+    PublicKeyDilithium = PublicKey  # type: ignore
+
 # # ===================================================================================================
 # # ===================================================================================================
 # #
@@ -1447,6 +1675,11 @@ def get_supported_keys_generators() -> KeyGeneratorInfo:
     if IS_OSCCA_SUPPORTED:
         ret["sm2"] = (PrivateKeySM2.generate_key, {})
 
+    if IS_DILITHIUM_SUPPORTED:
+        ret["dil2"] = (PrivateKeyDilithium.generate_key, {"level": 2})
+        ret["dil3"] = (PrivateKeyDilithium.generate_key, {"level": 3})
+        ret["dil5"] = (PrivateKeyDilithium.generate_key, {"level": 5})
+
     return ret
 
 
@@ -1466,5 +1699,10 @@ def get_ecc_curve(key_length: int) -> EccCurve:
 
 def prompt_for_passphrase() -> str:
     """Prompt interactively for private key passphrase."""
+    if SPSDK_INTERACTIVE_DISABLED:
+        raise SPSDKError(
+            "Prompting for passphrase failed. The interactive mode is turned off."
+            "You can change it setting the 'SPSDK_INTERACTIVE_DISABLED' environment variable"
+        )
     password = getpass.getpass(prompt="Private key is encrypted. Enter password: ", stream=None)
     return password

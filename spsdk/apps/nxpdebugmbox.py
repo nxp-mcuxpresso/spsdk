@@ -29,6 +29,7 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_family_option,
     spsdk_output_option,
     spsdk_plugin_option,
+    spsdk_revision_option,
 )
 from spsdk.apps.utils.utils import (
     INT,
@@ -40,7 +41,7 @@ from spsdk.apps.utils.utils import (
 from spsdk.dat import dm_commands
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
 from spsdk.dat.dar_packet import DebugAuthenticateResponse
-from spsdk.dat.debug_credential import DebugCredential
+from spsdk.dat.debug_credential import DebugCredentialCertificate, ProtocolVersion
 from spsdk.dat.debug_mailbox import DebugMailbox
 from spsdk.dat.famode_image import (
     check_famode_data,
@@ -50,7 +51,7 @@ from spsdk.dat.famode_image import (
     modify_input_config,
 )
 from spsdk.debuggers.utils import PROBES, load_all_probe_types, open_debug_probe, test_ahb_access
-from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.exceptions import SPSDKError
 from spsdk.image.mbi.mbi import MasterBootImage, get_mbi_class
 from spsdk.utils.crypto.cert_blocks import find_root_certificates
 from spsdk.utils.images import BinaryImage
@@ -89,38 +90,6 @@ def get_debug_probe_options_help() -> str:
 
 
 @dataclass
-class DatProtocol:
-    """Debug Authentication protocol."""
-
-    VERSIONS = [
-        "1.0",
-        "1.1",
-        "2.0",
-        "2.1",
-        "2.2",
-    ]
-
-    version: str
-
-    def is_rsa(self) -> bool:
-        """Determine whether rsa or ecc is used.
-
-        :return: True if the protocol is RSA type. False otherwise
-        """
-        protocol_version = self.version.split(".")
-        is_rsa = protocol_version[0] == "1"
-        return is_rsa
-
-    def validate(self) -> None:
-        """Validate protocol value.
-
-        :raises SPSDKValueError: In case that protocol is using unsupported key type.
-        """
-        if self.version not in self.VERSIONS:
-            raise SPSDKValueError(f"Unsupported protocol '{self.version}' was given.")
-
-
-@dataclass
 class DebugProbeParams:
     """Debug probe related parameters."""
 
@@ -156,6 +125,7 @@ def _open_debugmbox(
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
+        debug_probe.connect()
         dm = DebugMailbox(
             debug_probe=debug_probe,
             reset=debug_mailbox_params.reset,
@@ -190,9 +160,10 @@ def _open_debugmbox(
     "--protocol",
     "protocol",
     metavar="VERSION",
-    help=f"Set the protocol version. Currently this option is used for gendc and auth sub commands"
-    f'Available options are: {", ".join(DatProtocol.VERSIONS)}',
-    type=click.Choice(DatProtocol.VERSIONS),
+    help=f"Set the protocol version. Currently this option is used for gendc and auth sub commands."
+    f'Available options are: {", ".join(ProtocolVersion.VERSIONS)}. '
+    "If not set, the version will be determined from the RoT public key type.",
+    type=click.Choice(ProtocolVersion.VERSIONS, case_sensitive=False),
 )
 @click.option(
     "-t",
@@ -268,14 +239,14 @@ def main(
         "debug_probe_params": DebugProbeParams(
             interface=interface, serial_no=serial_no, debug_probe_user_params=probe_user_params
         ),
-        "protocol": DatProtocol(version=protocol),
+        "protocol": ProtocolVersion(version=protocol) if protocol is not None else None,
     }
 
     return 0
 
 
 @main.command(name="auth", no_args_is_help=True)
-@click.option("-b", "--beacon", type=INT(), help="Authentication beacon")
+@click.option("-b", "--beacon", type=INT(), required=True, help="Authentication beacon")
 @click.option("-c", "--certificate", help="Path to Debug Credentials.")
 @click.option("-k", "--key", help="Path to DCK private key.")
 @click.option(
@@ -292,9 +263,22 @@ def main(
     default=False,
     help="Use the ROM NXP keys to authenticate.",
 )
+@click.option(
+    "-a",
+    "--address",
+    type=INT(),
+    default="0x2000_0000",
+    help="The AHB access test address, the default is 0x2000_0000, but some chips needs different.",
+)
 @click.pass_obj
 def auth_command(
-    pass_obj: dict, beacon: int, certificate: str, key: str, no_exit: bool, nxp_keys: bool
+    pass_obj: dict,
+    beacon: int,
+    certificate: str,
+    key: str,
+    no_exit: bool,
+    nxp_keys: bool,
+    address: int,
 ) -> None:
     """Perform the Debug Authentication.
 
@@ -309,18 +293,20 @@ def auth_command(
         key,
         no_exit,
         nxp_keys,
+        address,
     )
 
 
 def auth(
     debug_probe_params: DebugProbeParams,
     debug_mailbox_params: DebugMailboxParams,
-    protocol: DatProtocol,
+    protocol: Optional[ProtocolVersion],
     beacon: int,
     certificate: str,
     key: str,
     no_exit: bool,
     nxp_keys: bool,
+    address: int,
 ) -> None:
     """Perform the Debug Authentication.
 
@@ -332,18 +318,26 @@ def auth(
     :param key: Path to DCK private key.
     :param no_exit: When true, exit debug mailbox command is not executed after debug authentication.
     :param nxp_keys: When true, Use the ROM NXP keys to authenticate.
+    :param address: The AHB access test address, default is 0x2000_0000.
     :raises SPSDKAppError: Raised if any error occurred.
     """
-    protocol.validate()
     try:
         logger.info("Starting Debug Authentication")
+        if not "test_address" in debug_probe_params.debug_probe_user_params:
+            debug_probe_params.debug_probe_user_params["test_address"] = address
 
         with _open_debugmbox(debug_probe_params, debug_mailbox_params) as mail_box:
             debug_cred_data = load_binary(certificate)
-            debug_cred = DebugCredential.parse(debug_cred_data)
+            debug_cred = DebugCredentialCertificate.parse(debug_cred_data)
+            protocol = protocol or debug_cred.version
             dac_rsp_len = (
-                30 if debug_cred.HASH_LENGTH == 48 and debug_cred.socc in [4, 6, 7, 0xA] else 26
+                18
+                + DebugAuthenticationChallenge.get_rot_hash_length(
+                    debug_cred.socc, protocol.major, protocol.minor
+                )
+                // 4
             )
+
             if nxp_keys:
                 dac_data = dm_commands.NxpDebugAuthenticationStart(
                     dm=mail_box, resplen=dac_rsp_len
@@ -358,7 +352,7 @@ def auth(
             logger.info(f"DAC: \n{str(dac)}")
             dac.validate_against_dc(debug_cred)
             dar = DebugAuthenticateResponse.create(
-                version=protocol.version,
+                version=protocol,
                 dc=debug_cred,
                 auth_beacon=beacon,
                 dac=dac,
@@ -378,14 +372,18 @@ def auth(
                 ).run(dar_data_words)
             logger.debug(f"DAR response: {dar_response}")
             if not no_exit:
-                exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
-                logger.debug(f"Exit response: {exit_response}")
+                try:
+                    exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
+                    logger.debug(f"Exit response: {exit_response}")
+                except SPSDKError:
+                    logger.debug("Exit command failed. Maybe too early reset happen on hardware.")
                 # Re-open debug probe
                 mail_box.debug_probe.close()
                 mail_box.debug_probe.open()
+                mail_box.debug_probe.connect()
                 # Do test of access to AHB bus
                 sleep(0.2)
-                ahb_access_granted = test_ahb_access(mail_box.debug_probe)
+                ahb_access_granted = test_ahb_access(mail_box.debug_probe, test_mem_address=address)
                 res_str = (
                     (colorama.Fore.GREEN + "successfully")
                     if ahb_access_granted
@@ -635,11 +633,17 @@ def token_auth(
 
             dm_commands.EnterBlankDebugAuthentication(dm=mail_box).run(token)
             if not no_exit:
-                exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
-                logger.debug(f"Exit response: {exit_response}")
+                try:
+                    exit_response = dm_commands.ExitDebugMailbox(dm=mail_box).run()
+                    logger.debug(f"Exit response: {exit_response}")
+                except SPSDKError:
+                    logger.debug(
+                        "Exit command failed. Possibly the target reset happened too early."
+                    )
                 # Re-open debug probe
                 mail_box.debug_probe.close()
                 mail_box.debug_probe.open()
+                mail_box.debug_probe.connect()
                 # Do test of access to AHB bus
                 ahb_access_granted = test_ahb_access(mail_box.debug_probe)
                 res_str = (
@@ -713,28 +717,39 @@ def start_debug_session(
 
 
 @main.command(name="test-connection")
+@click.option(
+    "-a",
+    "--address",
+    type=INT(),
+    default="0x2000_0000",
+    help="The AHB access test address, the default is 0x2000_0000, but some chips needs different.",
+)
 @click.pass_obj
-def test_connection_command(pass_obj: dict) -> None:
+def test_connection_command(pass_obj: dict, address: int) -> None:
     """Method just try if the device debug port is opened or not."""
-    ahb_access_granted = test_connection(pass_obj["debug_probe_params"])
+    ahb_access_granted = test_connection(pass_obj["debug_probe_params"], address)
     access_str = colorama.Fore.GREEN if ahb_access_granted else colorama.Fore.RED + "not-"
     click.echo(f"The device is {access_str}accessible for debugging.{colorama.Fore.RESET}")
 
 
-def test_connection(debug_probe_params: DebugProbeParams) -> bool:
+def test_connection(debug_probe_params: DebugProbeParams, address: int = 0x2000_0000) -> bool:
     """Method just try if the device debug port is opened or not.
 
     :param debug_probe_params: DebugProbeParams object holding information about parameters for debug probe.
+    :param address: The AHB test address, default is 0x2000_0000
     :raises SPSDKAppError: Raised if any error occurred.
     """
     try:
+        if not "test_address" in debug_probe_params.debug_probe_user_params:
+            debug_probe_params.debug_probe_user_params["test_address"] = address
         with open_debug_probe(
             interface=debug_probe_params.interface,
             serial_no=debug_probe_params.serial_no,
             debug_probe_params=debug_probe_params.debug_probe_user_params,
             print_func=click.echo,
         ) as debug_probe:
-            ahb_access_granted = test_ahb_access(debug_probe)
+            debug_probe.connect()
+            ahb_access_granted = test_ahb_access(debug_probe, test_mem_address=address)
         return ahb_access_granted
     except Exception as e:
         raise SPSDKAppError(f"Testing AHB access failed: {e}") from e
@@ -788,6 +803,7 @@ def read_memory(
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
+        debug_probe.connect()
         try:
             for addr in range(start_addr, start_addr + length, 4):
                 if progress_callback:
@@ -849,6 +865,7 @@ def write_memory(debug_probe_params: DebugProbeParams, address: int, data: bytes
         debug_probe_params=debug_probe_params.debug_probe_user_params,
         print_func=click.echo,
     ) as debug_probe:
+        debug_probe.connect()
         start_padding = address - start_addr
         align_data = data
         if start_padding:
@@ -915,6 +932,7 @@ def get_uuid(
             debug_probe_params.debug_probe_user_params,
             print_func=click.echo,
         ) as debug_probe:
+            debug_probe.connect()
             try:
                 dm = DebugMailbox(
                     debug_probe=debug_probe,
@@ -926,6 +944,7 @@ def get_uuid(
             except SPSDKError:
                 debug_probe.close()
                 debug_probe.open()
+                debug_probe.connect()
                 dm = DebugMailbox(
                     debug_probe=debug_probe,
                     reset=debug_mailbox_params.reset,
@@ -979,7 +998,7 @@ def gendc_command(
 
 
 def gendc(
-    protocol: DatProtocol,
+    protocol: Optional[ProtocolVersion],
     plugin: str,
     output: str,
     config: str,
@@ -994,16 +1013,11 @@ def gendc(
     :param rot_config: Root Of Trust from MBI or Cert block configuration file.
     :raises SPSDKAppError: Raised if any error occurred.
     """
-    protocol.validate()
-
     try:
         if plugin:
             load_plugin_from_source(plugin)
         logger.info("Loading configuration from yml file...")
         yaml_content = load_configuration(config)
-        socc = yaml_content.get("socc")
-        if socc is None:
-            raise SPSDKAppError("SOCC must be defined in configuration.")
 
         if rot_config:
             rot_config_dir = os.path.dirname(rot_config)
@@ -1039,23 +1053,32 @@ def gendc(
             if rot_index is not None:
                 yaml_content["rot_id"] = value_to_int(rot_index)
 
-        family_ambassador = DebugCredential.get_family_ambassador(socc)
+        family = yaml_content.get("family")
+        if not family:  # backward compatibility code to get at least ambassador of family
+            socc_raw = yaml_content.get("socc")
+            if socc_raw is None:
+                raise SPSDKAppError("\nYou need to define 'family' in the configuration file")
+            socc = value_to_int(socc_raw)
+            family = DebugCredentialCertificate.get_family_ambassador(socc)
 
         check_config(
             yaml_content,
-            DebugCredential.get_validation_schemas(family_ambassador),
+            DebugCredentialCertificate.get_validation_schemas(family),
             search_paths=[os.path.dirname(config)],
         )
 
-        logger.info(f"Creating {'RSA' if protocol.is_rsa() else 'ECC'} debug credential object...")
-        dc = DebugCredential.create_from_yaml_config(
-            version=protocol.version,
-            yaml_config=yaml_content,
+        dc = DebugCredentialCertificate.create_from_yaml_config(
+            version=protocol,
+            config=yaml_content,
             search_paths=[os.path.dirname(config)],
         )
+        logger.info(
+            f"Creating {'RSA' if dc.version.is_rsa() else 'ECC'} debug credential object..."
+        )
+
         dc.sign()
         data = dc.export()
-        click.echo(f"RKTH: {dc.get_rotkh().hex()}")
+        click.echo(f"RKTH: {dc.calculate_hash().hex()}")
         logger.debug(f"Debug credential file details:\n {str(dc)}")
         logger.info(f"Saving the debug credential to a file: {output}")
         write_file(data, output, mode="wb")
@@ -1066,22 +1089,16 @@ def gendc(
 
 @main.command(name="get-template", no_args_is_help=True)
 @spsdk_family_option(
-    families=DebugCredential.get_supported_families(),
+    families=DebugCredentialCertificate.get_supported_families(),
     required=True,
     help="If needed select the chip family.",
 )
-@click.option(
-    "-r",
-    "--revision",
-    type=str,
-    default="latest",
-    help="Chip revision; if not specified, most recent one will be used",
-)
+@spsdk_revision_option
 @spsdk_output_option(force=True)
 def get_template_command(family: str, revision: str, output: str) -> None:
     """Generate the template of Debug Credentials YML configuration file."""
     get_template(family, revision, output)
-    click.echo("The configuration template file has been created.")
+    click.echo(f"The configuration template file has been created: {output}")
 
 
 def get_template(family: str, revision: str, output: str) -> None:
@@ -1091,7 +1108,7 @@ def get_template(family: str, revision: str, output: str) -> None:
     :param revision: Optional chip revision to specify MCU family.
     :param output: Path to output file.
     """
-    write_file(DebugCredential.generate_config_template(family, revision), output)
+    write_file(DebugCredentialCertificate.generate_config_template(family, revision), output)
 
 
 @main.command(name="erase-one-sector", no_args_is_help=True)

@@ -6,7 +6,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import itertools
-import os
 
 from setuptools import find_packages, setup  # type: ignore
 
@@ -17,24 +16,20 @@ with open("requirements.txt") as req_file:
 with open("README.md", "r") as f:
     long_description = f.read()
 
-# extract version info indirectly
-version_info = {}
-base_dir = os.path.dirname(__file__)
-with open(os.path.join(base_dir, "spsdk", "__version__.py")) as f:
-    exec(f.read(), version_info)
-
 extras_require = {
-    "tp": ["swig", "pyscard==2.0.2"],
+    "tp": ["pyscard==2.0.2"],
     "examples": ["flask", "requests", "ipython", "notebook"],
     "dk6": ["pyftdi", "pylibftdi", "ftd2xx"],
     "oscca": ["asn1tools>=0.160,<1", "gmssl>=3.2,<4"],
+    "can": ["python-can<4.4"],
+    "pqc": ["spsdk-pqc<1.0,>=0.3"],
 }
 # specify all option that contains all extras
 extras_require["all"] = list(itertools.chain.from_iterable(extras_require.values()))
 
 setup(
     name="spsdk",
-    version=version_info["__version__"],
+    use_scm_version=True,
     description="Open Source Secure Provisioning SDK for NXP MCU/MPU",
     url="https://github.com/NXPmicro/spsdk",
     project_urls={
@@ -48,17 +43,17 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     platforms="Windows, Linux, Mac OSX",
-    python_requires=">=3.8",
-    setup_requires=["setuptools>=40.0"],
+    python_requires=">=3.9",
+    setup_requires=["setuptools_scm", "setuptools>=40.0"],
     install_requires=requirements,
     include_package_data=True,
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Operating System :: POSIX :: Linux",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: MacOS :: MacOS X",
@@ -91,6 +86,7 @@ setup(
             "tpconfig=spsdk.apps.tpconfig:safe_main",
             "tphost=spsdk.apps.tphost:safe_main",
             "dk6prog=spsdk.apps.dk6prog:safe_main",
+            "el2go=spsdk.apps.el2go:safe_main",
         ],
     },
     extras_require=extras_require,

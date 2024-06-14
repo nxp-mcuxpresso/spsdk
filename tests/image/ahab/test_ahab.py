@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,24 +11,28 @@ import pytest
 
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.ele.ele_message import KeyBlobEncryptionAlgorithm
-from spsdk.exceptions import SPSDKLengthError, SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKLengthError, SPSDKVerificationError
 from spsdk.image.ahab.ahab_abstract_interfaces import HeaderContainer
-from spsdk.image.ahab.ahab_container import (
-    AHABContainer,
-    AHABImage,
-    Blob,
-    Certificate,
-    ContainerSignature,
-    ImageArrayEntry,
-    SignatureBlock,
-    SRKRecord,
-    SRKTable,
-)
+from spsdk.image.ahab.ahab_blob import AhabBlob
+from spsdk.image.ahab.ahab_container import AHABContainer
+from spsdk.image.ahab.ahab_sign_block import SignatureBlock
+from spsdk.image.ahab.ahab_signature import ContainerSignature
+from spsdk.image.ahab.ahab_srk import SRKRecord, SRKTable
+from spsdk.image.ahab.ahab_iae import ImageArrayEntry
+from spsdk.image.ahab.ahab_image import AHABImage
+from spsdk.image.ahab.ahab_certificate import AhabCertificate
 
 
 @pytest.fixture
 def container_head() -> HeaderContainer:
-    return HeaderContainer(tag=0x01, length=0x02, version=0x03)
+    class TestContainerHeader(HeaderContainer):
+        TAG = 0x01
+        VERSION = 0x03
+
+        def __len__(self) -> int:
+            return 2
+
+    return TestContainerHeader(tag=0x01, length=0x02, version=0x03)
 
 
 @pytest.fixture(scope="function")
@@ -60,12 +64,12 @@ def container_signature():
 @pytest.fixture(scope="function")
 def certificate(request):
     srk_record = request.getfixturevalue("srk_record")
-    return Certificate(permissions=0x00, uuid=bytes.fromhex(16 * "33"), public_key=srk_record)
+    return AhabCertificate(permissions=0x00, uuid=bytes.fromhex(16 * "33"), public_key=srk_record)
 
 
 @pytest.fixture(scope="function")
 def blob():
-    return Blob(
+    return AhabBlob(
         flags=0x80,
         size=0x20,
         wrapped_key=bytes.fromhex(80 * "23"),
@@ -141,31 +145,31 @@ def test_container_head_compare(container_head):
 def test_container_head_validate(container_head: HeaderContainer):
     """Test of HeaderContainer class validate function."""
 
-    container_head.validate_header()
+    container_head.verify_header().validate()
 
     container_head.tag = None
-    with pytest.raises(SPSDKValueError):
-        container_head.validate_header()
+    with pytest.raises(SPSDKVerificationError):
+        container_head.verify_header().validate()
     container_head.tag = 0x01
 
     container_head.length = None
-    with pytest.raises(SPSDKValueError):
-        container_head.validate_header()
+    with pytest.raises(SPSDKVerificationError):
+        container_head.verify_header().validate()
     container_head.length = 0x01
 
     container_head.version = None
-    with pytest.raises(SPSDKValueError):
-        container_head.validate_header()
+    with pytest.raises(SPSDKVerificationError):
+        container_head.verify_header().validate()
     container_head.version = 0x01
 
 
 def test_container_head_fixed_length(container_head: HeaderContainer):
     """Test of HeaderContainer class check input length function."""
     data = bytes(container_head.fixed_length())
-    container_head._check_fixed_input_length(data)
+    container_head._check_fixed_input_length(data).validate()
     container_head.length += 1
-    with pytest.raises(SPSDKLengthError):
-        container_head._check_fixed_input_length(bytes(3))
+    with pytest.raises(SPSDKVerificationError):
+        container_head._check_fixed_input_length(bytes(3)).validate()
 
 
 def test_container_head_parse():
@@ -187,7 +191,7 @@ def test_container_head_check_head():
 
     TestHeadContainer(tag=0x01, length=0x05, version=0x03).check_container_head(
         b"\x03\x05\x00\x01\x99"
-    )
+    ).validate()
 
     class TestHeadContainer2(HeaderContainer):
         TAG = [0x01, 0x06]
@@ -195,18 +199,18 @@ def test_container_head_check_head():
 
     TestHeadContainer2(tag=0x01, length=0x05, version=0x03).check_container_head(
         b"\x03\x05\x00\x01\x99"
-    )
+    ).validate()
 
     head = TestHeadContainer(tag=0x01, length=0x05, version=0x03)
 
-    with pytest.raises(SPSDKParsingError):
-        head.check_container_head(b"\x03\x05\x00\x10\x99")
+    with pytest.raises(SPSDKVerificationError):
+        head.check_container_head(b"\x03\x05\x00\x10\x99").validate()
 
-    with pytest.raises(SPSDKParsingError):
-        head.check_container_head(b"\x04\x05\x00\x01\x99")
+    with pytest.raises(SPSDKVerificationError):
+        head.check_container_head(b"\x04\x05\x00\x01\x99").validate()
 
-    with pytest.raises(SPSDKLengthError):
-        head.check_container_head(b"\x04\x06\x00\x01\x99")
+    with pytest.raises(SPSDKVerificationError):
+        head.check_container_head(b"\x03\x06\x00\x01\x99").validate()
 
 
 def test_keyblob():
@@ -216,7 +220,7 @@ def test_keyblob():
         + b"\x94v\xe7\xc7\xae\x07\xca\xce;\x93Z\xcd\x0ff\x0c\xec{"
         + b'\xa6KMg\x97\x0e\xb3](]b"\xdd`\x16\xdb\xe5\x94*\x01\xea'
     )
-    blob = Blob().parse(keyblob)
+    blob = AhabBlob().parse(keyblob)
     assert blob.algorithm == KeyBlobEncryptionAlgorithm.AES_CBC
     assert blob.mode == 0
     assert blob.flags == 1

@@ -9,8 +9,8 @@ import os
 
 import pytest
 
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import EccCurve, ECDSASignature, PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKValueError
 
 

@@ -48,7 +48,7 @@ class SPSDKNotImplementedError(SPSDKError, NotImplementedError):
 
 
 class SPSDKLengthError(SPSDKError, ValueError):
-    """SPSDK parsing error of any AHAB containers.
+    """SPSDK parsing error of any binary.
 
     Input/output data must be of at least container declared length bytes long.
     """
@@ -64,6 +64,10 @@ class SPSDKAlignmentError(SPSDKError, ValueError):
 
 class SPSDKParsingError(SPSDKError):
     """Cannot parse binary data."""
+
+
+class SPSDKVerificationError(SPSDKError):
+    """Error caused by verifying object."""
 
 
 class SPSDKCorruptedException(SPSDKError):

@@ -16,17 +16,17 @@ from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
-from spsdk.crypto.hmac import hmac
 from spsdk.crypto.rng import random_bytes
-from spsdk.crypto.signature_provider import (
-    SignatureProvider,
-    get_signature_provider,
-    try_to_verify_public_key,
-)
+from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import Counter, aes_key_unwrap, aes_key_wrap
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.misc import SecBootBlckSize
+from spsdk.sbfile.sb2 import sly_bd_parser as bd_parser
+from spsdk.sbfile.sb2.commands import CmdHeader
+from spsdk.sbfile.sb2.headers import ImageHeaderV2
 from spsdk.sbfile.sb2.sb_21_helper import SB21Helper
+from spsdk.sbfile.sb2.sections import BootSectionV2, CertSectionV2
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.crypto.cert_blocks import CertBlockV1
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
@@ -35,16 +35,12 @@ from spsdk.utils.misc import (
     load_configuration,
     load_hex_string,
     load_text,
+    value_to_bool,
     value_to_bytes,
     value_to_int,
     write_file,
 )
 from spsdk.utils.schema_validator import CommentedConfig, check_config
-
-from . import sly_bd_parser as bd_parser
-from .commands import CmdHeader
-from .headers import ImageHeaderV2
-from .sections import BootSectionV2, CertSectionV2
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +124,11 @@ class SBV2xAdvancedParams:
     def padding(self) -> bytes:
         """Return padding."""
         return self._padding
+
+    @property
+    def zero_padding(self) -> bool:
+        """Return True if padding is zero, False otherwise."""
+        return self._padding == b"\x00" * 8
 
 
 ########################################################################################################################
@@ -404,7 +405,7 @@ class BootImageV20(BaseClass):
                 raise SPSDKError("Certificate block is not assigned.")
 
             public_key = self.cert_block.certificates[-1].get_public_key()
-            try_to_verify_public_key(self.signature_provider, public_key.export())
+            self.signature_provider.try_to_verify_public_key(public_key)
             data += self.signature_provider.get_signature(data)
 
         if len(data) != self.raw_size:
@@ -971,7 +972,7 @@ class BootImageV21(BaseClass):
         mac = value_to_bytes("0x" + mac, byte_cnt=32) if mac else None
         nonce = config.get("nonce")
         nonce = value_to_bytes("0x" + nonce, byte_cnt=16) if nonce else None
-        zero_padding = bytes(8) if config.get("zeroPadding") else None
+        zero_padding = bytes(8) if value_to_bool(config.get("zeroPadding", False)) else None
         advanced_params = SBV2xAdvancedParams(dek, mac, nonce, timestamp, zero_padding)
         logger.debug(f"Loading advanced parameters for SB 2.1 {str(advanced_params)}")
         return advanced_params
@@ -1033,7 +1034,10 @@ class BootImageV21(BaseClass):
         # validate keyblobs and perform appropriate actions
         keyblobs = config.get("keyblobs", [])
 
-        sb21_helper = SB21Helper(search_paths)
+        # get advanced params
+        advanced_params = cls.get_advanced_params(config["options"])
+
+        sb21_helper = SB21Helper(search_paths, zero_filling=advanced_params.zero_padding)
         sb_sections = []
         sections = config["sections"]
         for section_id, section in enumerate(sections):
@@ -1050,7 +1054,9 @@ class BootImageV21(BaseClass):
                     cmd = cmd_fce(value)
                     commands.append(cmd)
 
-            sb_sections.append(BootSectionV2(section_id, *commands))
+            sb_sections.append(
+                BootSectionV2(section_id, *commands, zero_filling=advanced_params.zero_padding)
+            )
 
         # We have a list of sections and their respective commands, lets create
         # a boot image v2.1 object
@@ -1061,7 +1067,7 @@ class BootImageV21(BaseClass):
             component_version=component_version,
             build_number=cert_block.header.build_number,
             flags=flags,
-            advanced_params=cls.get_advanced_params(config["options"]),
+            advanced_params=advanced_params,
         )
 
         # We have our secure binary, now we attach to it the certificate block and
@@ -1084,3 +1090,12 @@ class BootImageV21(BaseClass):
         write_file(secure_binary.cert_block.rkth, rkth_out_path, mode="wb")
 
         return secure_binary
+
+    @staticmethod
+    def validate_header(binary: bytes) -> None:
+        """Validate SB2.1 header in binary data.
+
+        :param binary: Binary data to be validate
+        :raises SPSDKError: Invalid header of SB2.1 data
+        """
+        ImageHeaderV2.parse(binary)

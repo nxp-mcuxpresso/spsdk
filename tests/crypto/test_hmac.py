@@ -11,7 +11,7 @@ from binascii import unhexlify
 import pytest
 
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.hmac import hmac
+from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.spsdk_enum import SpsdkEnum
 

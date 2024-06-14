@@ -13,7 +13,6 @@ from typing import List
 
 import click
 
-from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.apps.tp_utils import (
     TPHostConfig,
     device_help,
@@ -35,9 +34,9 @@ from spsdk.apps.utils.common_cli_options import (
 )
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PublicKeyEcc
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
 from spsdk.tp.data_container import Container
@@ -46,6 +45,7 @@ from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tp_intf import TpDevInterface, TpTargetInterface
 from spsdk.tp.tphost import TrustProvisioningHost
 from spsdk.tp.utils import get_supported_devices, scan_tp_devices, scan_tp_targets
+from spsdk.utils.database import get_common_data_file_path
 from spsdk.utils.misc import load_binary, load_text, write_file
 
 
@@ -231,7 +231,7 @@ def get_template(
 ) -> None:
     """Command to generate tphost template of configuration YML file."""
     template_name = "tphost_cfg_template.yaml"
-    template = load_text(os.path.join(SPSDK_DATA_FOLDER_COMMON, "tp", template_name))
+    template = load_text(get_common_data_file_path(os.path.join("tp", template_name)))
     template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 

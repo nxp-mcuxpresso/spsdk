@@ -8,7 +8,7 @@
 """Sdio Mboot interface implementation."""
 import logging
 import struct
-from dataclasses import dataclass
+from sys import platform
 from typing import List, Optional, Tuple, Union
 
 from typing_extensions import Self
@@ -26,21 +26,6 @@ SDIO_DEVICES = {
 }
 
 
-@dataclass
-class ScanArgs:
-    """Scan arguments dataclass."""
-
-    device_path: str
-
-    @classmethod
-    def parse(cls, params: str) -> Self:
-        """Parse given scanning parameters into ScanArgs class.
-
-        :param params: Parameters as a string
-        """
-        return cls(device_path=params)
-
-
 class MbootSdioInterface(MbootSerialProtocol):
     """Sdio interface."""
 
@@ -53,6 +38,8 @@ class MbootSdioInterface(MbootSerialProtocol):
 
         :param device: The device instance
         """
+        if platform == "win32":
+            logger.warning("Sdio interface is not supported on windows platform.")
         super().__init__(device=device)
 
     @property
@@ -66,24 +53,6 @@ class MbootSdioInterface(MbootSerialProtocol):
             if value[0] == self.device.vid and value[1] == self.device.pid:
                 return name
         return "Unknown"
-
-    @classmethod
-    def scan_from_args(
-        cls,
-        params: str,
-        timeout: int,
-        extra_params: Optional[str] = None,
-    ) -> List[Self]:
-        """Scan connected USB devices.
-
-        :param params: Params as a configuration string
-        :param extra_params: Extra params configuration string
-        :param timeout: Interface timeout
-        :return: list of matching RawHid devices
-        """
-        scan_args = ScanArgs.parse(params)
-        interfaces = cls.scan(device_path=scan_args.device_path, timeout=timeout)
-        return interfaces
 
     @classmethod
     def scan(

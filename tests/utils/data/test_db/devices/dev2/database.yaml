@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,8 +8,8 @@ revisions:
     features:
       shadow_regs:
         computed_fields:
-          REG1:
-            DEV_TEST_EN: comalg_dcfg_cc_socu_invalid
+          field010: # REG1
+            field010-bit-31: comalg_dcfg_cc_socu_invalid # DEV_TEST_EN
   rev_test_invalid_flush_func:
     features:
       shadow_regs:
@@ -17,38 +17,32 @@ revisions:
 
 latest: rev1
 
-info: {}
-
+info:
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        pid: 0xBBBB
+    flashloader:
+      protocol: sdp
+      interfaces: ["usb", "uart"]
+      usb:
+        vid: 0xFEDC
+        pid: 0xBA98
 features:
   # ======== Feature 1 ========
   feature1:
     sub_feature1: Yeah
 
-  # ======== Feature Reg Config Testing ========
-  reg_config:
-    data_file: test_device2_b0.xml
-    address: 0x4000_0000
-    inverted_regs:
-      INVERTED_REG: INVERTED_REG_AP
-    computed_fields:
-      COMPUTED_REG:
-        TEST_FIELD1: computed_reg_test_field1
-        TEST_FIELD2: computed_reg_test_field2
-      COMPUTED_REG2:
-        TEST_FIELD1: computed_reg2_test_field1
-        TEST_FIELD2: computed_reg2_test_field2
+  # ======== Feature Fuses Testing ========
+  fuses: {}
 
   # ======== Feature Shadow registers Testing ========
   shadow_regs:
-    address: 0x4000_0000
-    read_address: 0x4000_0000
-    data_file: sh_test_dev_x0.xml
     inverted_regs:
-      REG1: REG_INVERTED_AP
+      field010: field020 #  REG1 -> REG_INVERTED_AP
     flush_func: rw61x_update_scratch_reg
     computed_fields:
-      REG1:
-        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
-        CRC8: comalg_dcfg_cc_socu_crc8
-      REG2:
-        RESERVED: comalg_do_nothing
+      field010: #  REG1
+        field010-bit-31: comalg_dcfg_cc_socu_test_en # DEV_TEST_EN
+        field010-bits0-7: comalg_dcfg_cc_socu_crc8 # CRC8

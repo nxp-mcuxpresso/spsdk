@@ -16,13 +16,14 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 import colorama
 
 from spsdk.exceptions import SPSDKError, SPSDKOverlapError, SPSDKValueError
-from spsdk.utils.database import DatabaseManager
+from spsdk.utils.database import get_schema_file
 from spsdk.utils.misc import (
     BinaryPattern,
     align,
     align_block,
     find_file,
     format_value,
+    get_printable_path,
     size_fmt,
     write_file,
 )
@@ -231,7 +232,7 @@ class BinaryImage:
         ret += f"Starts:    {hex(self.absolute_address)}\n"
         ret += f"Ends:      {hex(self.absolute_address+ size-1)}\n"
         ret += f"Size:      {self._get_size_line(size)}\n"
-        ret += f"Alignment: {size_fmt(self.alignment, use_kibibyte=False)}\n"
+        ret += f"Alignment: {size_fmt(self.alignment)}\n"
         if self.pattern:
             ret += f"Pattern:{self.pattern.pattern}\n"
         if self.description:
@@ -278,9 +279,9 @@ class BinaryImage:
         """
         if size >= 1024:
             real_size = ",".join(re.findall(".{1,3}", (str(len(self)))[::-1]))[::-1]
-            return f"Size: {size_fmt(len(self), False)}; {real_size} B"
+            return f"Size: {size_fmt(len(self))}; {real_size} B"
 
-        return f"Size: {size_fmt(len(self), False)}"
+        return f"Size: {size_fmt(len(self))}"
 
     def get_min_draw_width(self, include_sub_images: bool = True) -> int:
         """Get minimal width of table for draw function.
@@ -374,7 +375,11 @@ class BinaryImage:
         block += _get_centered_line(self._get_size_line(len(self)))
         # - Description
         if self.description:
-            for line in textwrap.wrap(self.description, width=width - 2, fix_sentence_endings=True):
+            for line in textwrap.wrap(
+                self.description,
+                width=width - 2,
+                fix_sentence_endings=True,
+            ):
                 block += _get_centered_line(line)
         # - Pattern
         if self.pattern:
@@ -385,9 +390,7 @@ class BinaryImage:
             for child in self.sub_images:
                 # If the images doesn't comes one by one place empty line
                 if child.offset != next_free_space:
-                    block += _get_centered_line(
-                        f"Gap: {size_fmt(child.offset-next_free_space, False)}"
-                    )
+                    block += _get_centered_line(f"Gap: {size_fmt(child.offset-next_free_space)}")
                 next_free_space = child.offset + len(child)
                 inner_block = child.draw(
                     include_sub_images=include_sub_images,
@@ -461,7 +464,7 @@ class BinaryImage:
 
         :return: Validation schemas.
         """
-        return [DatabaseManager().db.get_schema_file("binary")]
+        return [get_schema_file("binary")]
 
     @staticmethod
     def load_from_config(
@@ -618,7 +621,7 @@ class BinaryImage:
 
         img_name = name or os.path.basename(path)
         img_size = size or 0
-        img_descr = description or f"The image loaded from: {path} ."
+        img_descr = description or f"The image loaded from: {get_printable_path(path)} ."
         bin_image = BinaryImage(
             name=img_name,
             size=img_size,

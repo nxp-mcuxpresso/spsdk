@@ -1,0 +1,33 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ================================  Bootable Image Configuration template for rt118x.  =================================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc55s3x, rt101x, rt102x, rt104x, rt105x, rt106x, rt116x, rt117x, rt118x, rt5xx, rt6xx, rw61x>
+family: rt118x
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <a0, b0, latest>
+revision: latest
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+# Possible options: <serial_downloader, flexspi_nor, flexspi_nand, semc_nand>
+memory_type: flexspi_nor
+# ----------------------------------------===== FCB block path [Optional] =====-----------------------------------------
+# Description: Flash Configuration block Image path. It could be used as pre-prepared binary form of FCB and also YAML
+# configuration file for FCB. In case that YAML configuration file is used, the Bootable image tool build the FCB
+# itself.
+fcb: workspace/fcb.bin
+# ======================================================================================================================
+#                                          == Executable Segment definition ==                                          
+# ======================================================================================================================
+# ----------------------------------------===== AHAB container [Required] =====-----------------------------------------
+# Description: AHAB container image path. It could be used as pre-prepared binary form of AHAB and also YAML
+# configuration file for AHAB. In case that YAML configuration file is used, the Bootable image tool build the AHAB
+# itself.
+ahab_container: workspace/signed_ahab.bin

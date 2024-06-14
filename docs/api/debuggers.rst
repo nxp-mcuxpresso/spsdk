@@ -13,22 +13,6 @@ Module for DebugMailbox Debug probes support
    :show-inheritance:
 
 
-Module for DebugMailbox Jlink Debug probes support
-----------------------------------------------------
-.. automodule:: spsdk.debuggers.debug_probe_jlink
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Module for DebugMailbox Pemicro Debug probes support
------------------------------------------------------
-.. automodule:: spsdk.debuggers.debug_probe_pemicro
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 Module for DebugMailbox PyOCD Debug probes support
 -----------------------------------------------------
 .. automodule:: spsdk.debuggers.debug_probe_pyocd
@@ -43,3 +27,11 @@ Module with common utils for debuggers module
    :members:
    :undoc-members:
    :show-inheritance:
+
+Additional debuggers
+--------------------
+
+SPSDK does have a plugin system in place to support additional debuggers.
+There are couple of plugins provided by NXP which you may find here: https://github.com/nxp-mcuxpresso/spsdk_plugins
+
+If you want to add support for a different debugger, you may create a Python module by using Cookiecutter template in examples/plugins/templates/cookiecutter-spsdk-debug-probe-plugin.zip

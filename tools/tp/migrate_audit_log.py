@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Helper script for migrating the Audit Log."""
@@ -16,6 +16,11 @@ from spsdk.tp.exceptions import SPSDKTpError
 
 
 def find_audit_log_version(file_path: str) -> int:
+    """Get audit log version.
+
+    :param file_path:  Filename of audit log
+    :return: Version number
+    """
     try:
         with audit_log.sqlite_cursor(file_path) as cursor:
             cursor.execute(audit_log.SELECT_PROPERTIES_COMMAND)
@@ -27,6 +32,10 @@ def find_audit_log_version(file_path: str) -> int:
 
 
 def v1_v2(file_path: str) -> None:
+    """Method to migrate from version 1 to version 2 of audit log.
+
+    :param file_path: Filename of original audit log
+    """
     print("Migrating from v1 to v2")
     tp_device_id = input("Enter TP Device ID: ")
     shutil.copy(file_path, f"{file_path}.v1.db")
@@ -36,6 +45,7 @@ def v1_v2(file_path: str) -> None:
 
 
 def completed(file_path: str) -> None:
+    """Help print method when all is done."""
     print(
         f"Nothing to do with audit log '{file_path}'.\n"
         f"It's already at latest version: {audit_log.DB_VERSION}"
@@ -49,6 +59,7 @@ MIGRATION_HANDLERS = {
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Migrate the Audit Log."""
     parser = argparse.ArgumentParser(description="Helper script for migrating TP Audit log.")
     parser.add_argument("-p", "--audit-log-path", required=True, help="Path to audit log")
     args = parser.parse_args(argv)

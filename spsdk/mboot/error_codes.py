@@ -341,6 +341,9 @@ class StatusCode(SpsdkEnum):
     IAP_ERASE_FAILUIRE         = (100005, "IAP_EraseFailuire", "IAP: Erase Operation Failed")
     IAP_COMMAND_NOT_SUPPORTED  = (100006, "IAP_CommandNotSupported", "IAP: Specific Command Not Supported")
     IAP_MEMORY_ACCESS_DISABLED = (100007, "IAP_MemoryAccessDisabled", "IAP: Memory Access Disabled")
+
+    # EL2Go ProvFW statuses.
+    EL2GO_PROV_SUCCESS = (0x5a5a5a5a, "EL2GO_FW_PASS", "Device has been successfully provisioned.")
 # fmt: on
 
 

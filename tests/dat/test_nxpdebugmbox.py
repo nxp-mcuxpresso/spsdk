@@ -88,19 +88,31 @@ def test_nxpdebugmbox_erase_exe(cli_runner: CliRunner):
     cli_runner.invoke(main, cmd.split())
 
 
-def test_generate_rsa_dc_file(cli_runner: CliRunner, tmpdir, data_dir):
+@pytest.mark.parametrize(
+    "protocol",
+    ["1.0", None],
+)
+def test_generate_rsa_dc_file(cli_runner: CliRunner, tmpdir, data_dir, protocol):
     """Test generate dc file with rsa 2048 protocol."""
     out_file = f"{tmpdir}/dc_2048.cert"
-    cmd = f"-p 1.0 gendc -c new_dck_rsa2048.yml -o {out_file}"
+    cmd = f"gendc -c new_dck_rsa2048.yml -o {out_file}"
+    if protocol:
+        cmd = " ".join([f"-p {protocol}", cmd])
     with use_working_directory(data_dir):
         cli_runner.invoke(main, cmd.split())
         assert os.path.isfile(out_file)
 
 
-def test_generate_ecc_dc_file(cli_runner: CliRunner, tmpdir, data_dir):
+@pytest.mark.parametrize(
+    "protocol",
+    ["2.0", None],
+)
+def test_generate_ecc_dc_file(cli_runner: CliRunner, tmpdir, data_dir, protocol):
     """Test generate dc file with ecc protocol."""
     out_file = f"{tmpdir}/dc_secp256r1.cert"
-    cmd = f"-p 2.0 gendc -c new_dck_secp256.yml -o {out_file}"
+    cmd = f"gendc -c new_dck_secp256.yml -o {out_file}"
+    if protocol:
+        cmd = " ".join([f"-p {protocol}", cmd])
     with use_working_directory(data_dir):
         cli_runner.invoke(main, cmd.split())
         assert os.path.isfile(out_file)
@@ -124,10 +136,16 @@ def test_generate_dc_file_lpc55s3x_256(cli_runner: CliRunner, tmpdir, data_dir):
         assert os.path.isfile(out_file)
 
 
-def test_generate_dc_file_lpc55s3x_384(cli_runner: CliRunner, tmpdir, data_dir):
+@pytest.mark.parametrize(
+    "protocol",
+    ["2.1", None],
+)
+def test_generate_dc_file_lpc55s3x_384(cli_runner: CliRunner, tmpdir, data_dir, protocol):
     """Test generate dc file with ecc protocol for lpc55s3x"""
     out_file = f"{tmpdir}/dc_secp384r1_lpc55s3x.cert"
-    cmd = f"-p 2.1 gendc -c new_dck_secp384_lpc55s3x.yml -o {out_file}"
+    cmd = f"gendc -c new_dck_secp384_lpc55s3x.yml -o {out_file}"
+    if protocol:
+        cmd = " ".join([f"-p {protocol}", cmd])
     with use_working_directory(data_dir):
         cli_runner.invoke(main, cmd.split())
         assert os.path.isfile(out_file)

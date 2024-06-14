@@ -8,13 +8,13 @@
 """Module with Debug Authentication Response (DAR) Packet."""
 
 from struct import pack
-from typing import Type
+from typing import Optional, Type
 
 from typing_extensions import Self
 
 from spsdk.crypto.signature_provider import InteractivePlainFileSP
 from spsdk.dat.dac_packet import DebugAuthenticationChallenge
-from spsdk.dat.debug_credential import DebugCredential
+from spsdk.dat.debug_credential import DebugCredentialCertificate, ProtocolVersion
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.database import DatabaseManager, get_db
 
@@ -24,7 +24,7 @@ class DebugAuthenticateResponse:
 
     def __init__(
         self,
-        debug_credential: DebugCredential,
+        debug_credential: DebugCredentialCertificate,
         auth_beacon: int,
         dac: DebugAuthenticationChallenge,
         path_dck_private: str,
@@ -99,18 +99,18 @@ class DebugAuthenticateResponse:
         raise NotImplementedError("Derived class has to implement this method.")
 
     @staticmethod
-    def _get_class(version: str) -> "Type[DebugAuthenticateResponse]":
+    def _get_class(protocol_version: ProtocolVersion) -> "Type[DebugAuthenticateResponse]":
         """Get the right Debug Authentication Response class by the protocol version.
 
         :param version: DAT protocol version
         """
-        return _version_mapping[version]
+        return _version_mapping[protocol_version.version]
 
     @classmethod
     def create(
         cls,
-        version: str,
-        dc: DebugCredential,
+        version: Optional[ProtocolVersion],
+        dc: DebugCredentialCertificate,
         auth_beacon: int,
         dac: DebugAuthenticationChallenge,
         dck: str,
@@ -124,7 +124,7 @@ class DebugAuthenticateResponse:
         :param dck: string containing path to dck key
         :return: DAR object
         """
-        klass = DebugAuthenticateResponse._get_class(version=version)
+        klass = DebugAuthenticateResponse._get_class(protocol_version=version or dc.version)
         dar_obj = klass(debug_credential=dc, auth_beacon=auth_beacon, dac=dac, path_dck_private=dck)
         return dar_obj
 

@@ -6,13 +6,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Script for the automated generation of schemas documentation for nxpimage
 import copy
+import json
 import os
+import tempfile
 from typing import Any, Dict, List, Optional, Sequence
 
-import jsonschema2md
 from pytablewriter import MarkdownTableWriter
+from json_schema_for_humans.generation_configuration import GenerationConfiguration
+from json_schema_for_humans.generate import generate_from_schema
 
-from spsdk.image.ahab.ahab_container import AHABImage
+from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.bee import BeeNxp
 from spsdk.image.bootable_image.bimg import BootableImage
 from spsdk.image.fcb.fcb import FCB
@@ -28,6 +31,7 @@ from spsdk.utils.schema_validator import CommentedConfig, SPSDKMerger
 
 DOC_PATH = os.path.abspath(".")
 DOC_DIR = os.path.join(DOC_PATH, "_prebuild")
+HTML_SCHEMAS_PATH = os.path.join(DOC_PATH, "html_schemas")
 
 MBI_SCHEMAS_FILE = os.path.join(DOC_DIR, "schemas.inc")
 SB3_SCHEMAS_FILE = os.path.join(DOC_DIR, "schemas_sb3.inc")
@@ -68,6 +72,15 @@ def clean_files() -> None:
     print("Existing schemas files have been removed")
 
 
+def get_docs_families(feature: str) -> List[str]:
+    """Get list of families."""
+    families = get_families(feature)
+    families = [
+        family for family in families if DatabaseManager().db.devices.get(family).info.use_in_doc
+    ]
+    return sorted(families)
+
+
 def get_schema(schemas: List[Dict[str, Any]]) -> Dict:
     """Merges partial schemas into one valid schema using deepmerge
 
@@ -89,42 +102,85 @@ def get_schema(schemas: List[Dict[str, Any]]) -> Dict:
 
 
 def parse_schema(schema: Dict) -> Sequence[str]:
-    """Parse schema using jsonschema2md parser and returns MD as a string
+    """Parse schema using json_schema_for_humans and return it as a HTML
 
     :param schema: Valid schema from the get_schema function
-    :return: Sequence of strings with parsed schema as a Markdown
+    :return: HTML string
     """
-    parser = jsonschema2md.Parser(
-        examples_as_yaml=False,
-        show_examples="all",
-    )
+    config = GenerationConfiguration(with_footer=False, deprecated_from_description=True)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        schema_file = os.path.join(temp_dir, schema["title"].replace(" ", "_"))
+        with open(schema_file, "w") as file:
+            json.dump(schema, file)
 
-    return parser.parse_schema(schema)
+        output = generate_from_schema(schema_file, config=config)
+
+    return output
 
 
 def append_schema(
-    parsed: Sequence[str], template: str, file: str, note: Optional[str] = None
+    parsed: str,
+    template: str,
+    file: str,
+    note: Optional[str] = None,
+    title: str = "Title",
+    subtitle: Optional[str] = None,
 ) -> None:
     """Appends schema and template to the markdown document
 
-    :param parsed: sequence of MD strings
+    :param parsed: HTML string with parsed schema
     :param template: string with YAML to be appended to the doc
     :param file: schema file
     :param note: note that will be appended after parsed
+    :param title: title of the schema
+    :param subtitle: subtitle of the schema
     """
     if not os.path.exists(DOC_DIR):
         os.makedirs(DOC_DIR)
+
+    if not os.path.exists(HTML_SCHEMAS_PATH):
+        os.makedirs(HTML_SCHEMAS_PATH)
+
+    html_file = title.replace(" ", "_") + ".html"
+
     with open(file, "a+") as f:
-        f.write(parsed[0])
+        f.write(f"## {title}\n")
         if note:
+            f.write("\n")
             f.write(note)
-        f.writelines(parsed[1:])
+            f.write("\n")
+
+        if subtitle:
+            f.write(f"### {subtitle}\n")
+        f.write(
+            f"""\n<details>
+<summary>{title} JSON schema</summary>
+
+<a href="../{html_file}" target="_blank">Open it in full page</a>
+
+<iframe title="JSON schema" width="100%" height="1000" src="../{html_file}" frameborder="0" allowfullscreen></iframe>
+
+</details>
+"""
+        )
         f.write("\n")
         f.write("\n")
-        f.write("```yaml\n")
-        f.write(template)
-        f.write("\n```")
-        f.write("\n")
+        f.write(
+            f"""<details>
+<summary>{title} YAML configuration template</summary>
+
+```yaml\n
+{template}
+\n```
+\n
+
+</details>
+\n
+"""
+        )
+
+    with open(os.path.join(HTML_SCHEMAS_PATH, html_file), "w") as f:
+        f.write(parsed)
 
 
 def get_template(schemas: List, name: str) -> str:
@@ -154,10 +210,10 @@ def get_template(schemas: List, name: str) -> str:
 
 def get_mbi_note(mbi_cls: Any) -> str:
     """Get note about MBI supported mixins"""
-    note = "## MBI Mixins\n"
+    note = " **MBI Mixins**\n\n"
+    note += f"Class name: {mbi_cls.__name__}\n"
     for mbi_base in mbi_cls.__bases__:
         note += f" - {mbi_base.__name__}\n"
-    note += "\n ## Schema \n"
     return note
 
 
@@ -171,16 +227,22 @@ def get_mbi_doc() -> None:
         schema = get_schema(validation_schemas)
         schema["title"] = cls.hash()
         parsed_schema = parse_schema(schema)
-        parsed_schema[1] = parsed_schema[1].replace("Properties", f"Class name: {cls.__name__}")
+        # parsed_schema[1] = parsed_schema[1].replace("Properties", f"Class name: {cls.__name__}")
         template = get_template([schema], f"YAML template {cls.__name__}")
         note = get_mbi_note(cls)
-        append_schema(parsed_schema, template, MBI_SCHEMAS_FILE, note)
+        append_schema(
+            parsed_schema,
+            template,
+            MBI_SCHEMAS_FILE,
+            note,
+            title=cls.hash(),
+        )
 
 
 def get_sb3_table() -> None:
     """Generates table with SB3 supported commands"""
     # Load the YAML files
-    sb31_devices = get_families(DatabaseManager.SB31)
+    sb31_devices = get_docs_families(DatabaseManager.SB31)
     commands_yaml = get_schema_file(DatabaseManager.SB31)
 
     headers = ["Command", "Command Description"]
@@ -219,14 +281,14 @@ def get_sb3_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(SB3_SCHEMAS_FILE):
         os.remove(SB3_SCHEMAS_FILE)
-    families = SecureBinary31.get_supported_families()
+    families = get_docs_families(DatabaseManager.SB31)
     for fam in families:
         validation_schemas = SecureBinary31.get_validation_schemas(fam)
         schema = get_schema(validation_schemas)
         schema["title"] = f"{SecureBinary31.__name__} for {fam}"
         parsed_schema = parse_schema(schema)
         template = SecureBinary31.generate_config_template(fam)[f"{fam}_sb31"]
-        append_schema(parsed_schema, template, SB3_SCHEMAS_FILE)
+        append_schema(parsed_schema, template, SB3_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_ahab_doc() -> None:
@@ -234,12 +296,14 @@ def get_ahab_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(AHAB_SCHEMAS_FILE):
         os.remove(AHAB_SCHEMAS_FILE)
-    validation_schemas = AHABImage.get_validation_schemas()
-    schema = get_schema(validation_schemas)
-    schema["title"] = f"{AHABImage.__name__}"
-    parsed_schema = parse_schema(schema)
-    template = get_template([schema], f"AHAB template {AHABImage.__name__}")
-    append_schema(parsed_schema, template, AHAB_SCHEMAS_FILE)
+    families = get_docs_families(DatabaseManager.AHAB)
+    for fam in families:
+        validation_schemas = AHABImage.get_validation_schemas(fam)
+        schema = get_schema(validation_schemas)
+        schema["title"] = f"{AHABImage.__name__} for {fam}"
+        parsed_schema = parse_schema(schema)
+        template = get_template([schema], f"AHAB template {AHABImage.__name__} for {fam}")
+        append_schema(parsed_schema, template, AHAB_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_hab_doc() -> None:
@@ -252,7 +316,7 @@ def get_hab_doc() -> None:
     schema["title"] = f"{HabContainer.__name__}"
     parsed_schema = parse_schema(schema)
     template = get_template([schema], f"HAB template {HabContainer.__name__}")
-    append_schema(parsed_schema, template, HAB_SCHEMAS_FILE)
+    append_schema(parsed_schema, template, HAB_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_otfad_doc() -> None:
@@ -260,14 +324,14 @@ def get_otfad_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(OTFAD_SCHEMAS_FILE):
         os.remove(OTFAD_SCHEMAS_FILE)
-    families = OtfadNxp.get_supported_families()
+    families = get_docs_families(DatabaseManager.OTFAD)
     for fam in families:
         validation_schemas = OtfadNxp.get_validation_schemas(fam)
         schema = get_schema(validation_schemas)
-        schema["title"] = f"OTFAD template for {fam}"
+        schema["title"] = f"OTFAD for {fam}"
         parsed_schema = parse_schema(schema)
         template = get_template([schema], f"OTFAD template for {fam}")
-        append_schema(parsed_schema, template, OTFAD_SCHEMAS_FILE)
+        append_schema(parsed_schema, template, OTFAD_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_iee_doc() -> None:
@@ -275,14 +339,14 @@ def get_iee_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(IEE_SCHEMAS_FILE):
         os.remove(IEE_SCHEMAS_FILE)
-    families = IeeNxp.get_supported_families()
+    families = get_docs_families(DatabaseManager.IEE)
     for fam in families:
         validation_schemas = IeeNxp.get_validation_schemas(fam)
         schema = get_schema(validation_schemas)
-        schema["title"] = f"IEE template for {fam}"
+        schema["title"] = f"IEE for {fam}"
         parsed_schema = parse_schema(schema)
         template = get_template([schema], f"IEE template for {fam}")
-        append_schema(parsed_schema, template, IEE_SCHEMAS_FILE)
+        append_schema(parsed_schema, template, IEE_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_bee_doc() -> None:
@@ -295,29 +359,29 @@ def get_bee_doc() -> None:
     schema["title"] = f"{BeeNxp.__name__}"
     parsed_schema = parse_schema(schema)
     template = get_template([schema], "BEE template")
-    append_schema(parsed_schema, template, BEE_SCHEMAS_FILE)
+    append_schema(parsed_schema, template, BEE_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_bootable_image() -> None:
     """Get bootable image schemas."""
     if os.path.exists(BOOTABLE_SCHEMAS_FILE):
         os.remove(BOOTABLE_SCHEMAS_FILE)
-    families = BootableImage.get_supported_families()
+    families = get_docs_families(DatabaseManager.BOOTABLE_IMAGE)
     for fam in families:
         memories = BootableImage.get_supported_memory_types(fam)
         for mem in memories:
             validation_schemas = BootableImage.get_validation_schemas(fam, mem)
             schema = get_schema(validation_schemas)
-            schema["title"] = f"Bootable Image template for {fam} and {mem}"
+            schema["title"] = f"Bootable Image for {fam} and {mem}"
             parsed_schema = parse_schema(schema)
             template = get_template([schema], f"Bootable Image template for {fam} and {mem}")
-            append_schema(parsed_schema, template, BOOTABLE_SCHEMAS_FILE)
+            append_schema(parsed_schema, template, BOOTABLE_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_bootable_image_table() -> None:
     """Get bootable image table."""
     values = []
-    families = BootableImage.get_supported_families()
+    families = get_docs_families(DatabaseManager.BOOTABLE_IMAGE)
     for fam in families:
         supported_memory = BootableImage.get_supported_memory_types(fam)
         for mem in supported_memory:
@@ -337,16 +401,16 @@ def get_fcb_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(FCB_SCHEMAS_FILE):
         os.remove(FCB_SCHEMAS_FILE)
-    families = FCB.get_supported_families()
+    families = get_docs_families(DatabaseManager.FCB)
     for fam in families:
         memories = FCB.get_supported_memory_types(fam)
         for mem in memories:
             validation_schemas = FCB.get_validation_schemas(fam, mem)
             schema = get_schema(validation_schemas)
-            schema["title"] = f"FCB template for {fam} and {mem}"
+            schema["title"] = f"FCB for {fam} and {mem}"
             parsed_schema = parse_schema(schema)
-            template = get_template([schema], f"FCB template for {fam} and {mem}")
-            append_schema(parsed_schema, template, FCB_SCHEMAS_FILE)
+            template = get_template([schema], f"FCB for {fam} and {mem}")
+            append_schema(parsed_schema, template, FCB_SCHEMAS_FILE, title=schema["title"])
 
 
 def get_xmcd_doc() -> None:
@@ -354,7 +418,7 @@ def get_xmcd_doc() -> None:
     # Get validation schemas DOC
     if os.path.exists(XMCD_SCHEMAS_FILE):
         os.remove(XMCD_SCHEMAS_FILE)
-    families = XMCD.get_supported_families()
+    families = get_docs_families(DatabaseManager.XMCD)
     for fam in families:
         memories = XMCD.get_supported_memory_types(fam)
         for mem in memories:
@@ -362,10 +426,10 @@ def get_xmcd_doc() -> None:
                 fam, MemoryType.from_label(mem), ConfigurationBlockType.FULL
             )
             schema = get_schema(validation_schemas)
-            schema["title"] = f"XMCD template for {fam} and {mem}"
+            schema["title"] = f"XMCD for {fam} and {mem}"
             parsed_schema = parse_schema(schema)
-            template = get_template([schema], f"XMCD template for {fam} and {mem}")
-            append_schema(parsed_schema, template, XMCD_SCHEMAS_FILE)
+            template = get_template([schema], f"XMCD for {fam} and {mem}")
+            append_schema(parsed_schema, template, XMCD_SCHEMAS_FILE, title=schema["title"])
 
 
 def write_table(header: List[str], values: List[List[str]], table_name: str, table_file_path: str):

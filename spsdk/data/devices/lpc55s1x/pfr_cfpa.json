@@ -1,0 +1,1698 @@
+{
+    "cpu": "LPC55S16",
+    "groups": [
+        {
+            "group": {
+                "name": "Configuration",
+                "description": "Configuration"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "HEADER",
+                    "description": "Header",
+                    "offset_int": "0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field004",
+                    "name": "VERSION",
+                    "description": "Version",
+                    "offset_int": "0x0004",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field008",
+                    "name": "S_FW_Version",
+                    "description": "Secure firmware version (Monotonic counter)",
+                    "offset_int": "0x0008",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field00C",
+                    "name": "NS_FW_Version",
+                    "description": "Non-Secure firmware version (Monotonic counter)",
+                    "offset_int": "0x000C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field010",
+                    "name": "IMAGE_KEY_REVOKE",
+                    "description": "Image key revocation ID (Monotonic counter)",
+                    "offset_int": "0x0010",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00014",
+                    "name": "Reserved 0x00014",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0014",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field018",
+                    "name": "ROTKH_REVOKE",
+                    "description": "Root of Trust Key Hash Revoke",
+                    "offset_int": "0x0018",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field018-bits0-1",
+                            "name": "RoTK0_EN",
+                            "description": "RoT Key 0 enable.",
+                            "values": [
+                                {
+                                    "name": "INVALID",
+                                    "value": 0,
+                                    "description": "Invalid"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "REVOKED_0",
+                                    "value": 2,
+                                    "description": "Key revoked"
+                                },
+                                {
+                                    "name": "REVOKED_1",
+                                    "value": 3,
+                                    "description": "Key revoked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field018-bits2-3",
+                            "name": "RoTK1_EN",
+                            "description": "RoT Key 1 enable.",
+                            "values": [
+                                {
+                                    "name": "INVALID",
+                                    "value": 0,
+                                    "description": "Invalid"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "REVOKED_0",
+                                    "value": 2,
+                                    "description": "Key revoked"
+                                },
+                                {
+                                    "name": "REVOKED_1",
+                                    "value": 3,
+                                    "description": "Key revoked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field018-bits4-5",
+                            "name": "RoTK2_EN",
+                            "description": "RoT Key 2 enable.",
+                            "values": [
+                                {
+                                    "name": "INVALID",
+                                    "value": 0,
+                                    "description": "Invalid"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "REVOKED_0",
+                                    "value": 2,
+                                    "description": "Key revoked"
+                                },
+                                {
+                                    "name": "REVOKED_1",
+                                    "value": 3,
+                                    "description": "Key revoked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field018-bits6-7",
+                            "name": "RoTK3_EN",
+                            "description": "RoT Key 3 enable.",
+                            "values": [
+                                {
+                                    "name": "INVALID",
+                                    "value": 0,
+                                    "description": "Invalid"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                },
+                                {
+                                    "name": "REVOKED_0",
+                                    "value": 2,
+                                    "description": "Key revoked"
+                                },
+                                {
+                                    "name": "REVOKED_1",
+                                    "value": 3,
+                                    "description": "Key revoked"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 24
+                        }
+                    ]
+                },
+                {
+                    "id": "field01C",
+                    "name": "VENDOR_USAGE",
+                    "description": "Vendor Usage",
+                    "offset_int": "0x001C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits0-15",
+                            "name": "DBG_VENDOR_USAGE",
+                            "description": "Debug Vendor Usage"
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field01C-bits16-31",
+                            "name": "INVERSE_VALUE",
+                            "description": "inverse value of bits [15:0]",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field020",
+                    "name": "DCFG_CC_SOCU_NS_PIN",
+                    "description": "Device Configuration Credential Constraints for SoC specific Use Pinned. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.",
+                    "offset_int": "0x0020",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field020-bit0",
+                            "name": "NIDEN",
+                            "description": "Non Secure non-invasive debug enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field020-bit1",
+                            "name": "DBGEN",
+                            "description": "Non Secure debug enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field020-bit2",
+                            "name": "SPNIDEN",
+                            "description": "Secure non-invasive debug enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field020-bit3",
+                            "name": "SPIDEN",
+                            "description": "Secure invasive debug enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field020-bit4",
+                            "name": "TAPEN",
+                            "description": "JTAG TAP enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field020-bit6",
+                            "name": "ISP_CMD_EN",
+                            "description": "ISP Boot Command enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field020-bit7",
+                            "name": "FA_ME_CMD_EN",
+                            "description": "Fault Analysis/Mass Erase Command enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 7
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field020-bit15",
+                            "name": "UUID_CHECK",
+                            "description": "Enforce UUID match during Debug authentication.",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field020-bits16-31",
+                            "name": "INVERSE_VALUE",
+                            "description": "inverse value of bits [15:0]",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field024",
+                    "name": "DCFG_CC_SOCU_NS_DFLT",
+                    "description": "Device Configuration Credential Constraints for SoC specific Use Debug Filter. \nCombinations of PIN and DFLT bits and resulting restriction level: \n- PIN=1,DFLT=1: Restriction level 0. Access to the sub-domain is always enabled. This setting is provided for module use case scenario where DCFG_CC_SOCU_NS would be used to define further access restrictions before final deployment of the product. \n- PIN=0,DFLT=0: Restriction level 1. Access to the sub-domain is disabled at startup. But the access can be enabled through debug authentication process by providing appropriate Debug Credential (DC) certificate. \n- PIN=0,DFLT=1: Illegal setting. Part may lock-up if this setting is selected. \n- PIN=1,DFLT=0: Restriction level 3. Access to the sub-domain is permanently disabled and can't be reversed. This setting offers the highest level of restriction.",
+                    "offset_int": "0x0024",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field024-bit0",
+                            "name": "NIDEN",
+                            "description": "Non Secure non-invasive debug fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field024-bit1",
+                            "name": "DBGEN",
+                            "description": "Non Secure debug fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field024-bit2",
+                            "name": "SPNIDEN",
+                            "description": "Secure non-invasive debug fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field024-bit3",
+                            "name": "SPIDEN",
+                            "description": "Secure invasive debug fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field024-bit4",
+                            "name": "TAPEN",
+                            "description": "JTAG TAP fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field024-bit6",
+                            "name": "ISP_CMD_EN",
+                            "description": "ISP Boot Command fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field024-bit7",
+                            "name": "FA_ME_CMD_EN",
+                            "description": "Fault Analysis/Mass Erase Command fixed state",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 8
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field024-bits16-31",
+                            "name": "INVERSE_VALUE",
+                            "description": "inverse value of bits [15:0]",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field028",
+                    "name": "ENABLE_FA_MODE",
+                    "description": "Enable FA mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.",
+                    "offset_int": "0x0028",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field02C",
+                    "name": "CMPA_PROG_IN_PROGRESS",
+                    "description": "CMPA Page programming on going. This field shall be set to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.",
+                    "offset_int": "0x002C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "PRINCE region 0",
+                "description": "PRINCE region 0"
+            },
+            "registers": [
+                {
+                    "id": "field030",
+                    "name": "PRINCE_REGION0_IV_CODE0",
+                    "description": "Field.",
+                    "offset_int": "0x0030",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field034",
+                    "name": "PRINCE_REGION0_IV_CODE1",
+                    "description": "Field.",
+                    "offset_int": "0x0034",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field034-bits0-1",
+                            "name": "TYPE",
+                            "description": "Type."
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 4,
+                            "reset_value_int": "0",
+                            "id": "field034-bits8-11",
+                            "name": "INDEX",
+                            "description": "Index."
+                        },
+                        {
+                            "width": 12
+                        },
+                        {
+                            "width": 6,
+                            "reset_value_int": "0",
+                            "id": "field034-bits24-29",
+                            "name": "SIZE",
+                            "description": "Size."
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                },
+                {
+                    "id": "field038",
+                    "name": "PRINCE_REGION0_IV_BODY0",
+                    "description": "Field.",
+                    "offset_int": "0x0038",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field03C",
+                    "name": "PRINCE_REGION0_IV_BODY1",
+                    "description": "Field.",
+                    "offset_int": "0x003C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field040",
+                    "name": "PRINCE_REGION0_IV_BODY2",
+                    "description": "Field.",
+                    "offset_int": "0x0040",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field044",
+                    "name": "PRINCE_REGION0_IV_BODY3",
+                    "description": "Field.",
+                    "offset_int": "0x0044",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field048",
+                    "name": "PRINCE_REGION0_IV_BODY4",
+                    "description": "Field.",
+                    "offset_int": "0x0048",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field04C",
+                    "name": "PRINCE_REGION0_IV_BODY5",
+                    "description": "Field.",
+                    "offset_int": "0x004C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field050",
+                    "name": "PRINCE_REGION0_IV_BODY6",
+                    "description": "Field.",
+                    "offset_int": "0x0050",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field054",
+                    "name": "PRINCE_REGION0_IV_BODY7",
+                    "description": "Field.",
+                    "offset_int": "0x0054",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field058",
+                    "name": "PRINCE_REGION0_IV_BODY8",
+                    "description": "Field.",
+                    "offset_int": "0x0058",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field05C",
+                    "name": "PRINCE_REGION0_IV_BODY9",
+                    "description": "Field.",
+                    "offset_int": "0x005C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field060",
+                    "name": "PRINCE_REGION0_IV_BODY10",
+                    "description": "Field.",
+                    "offset_int": "0x0060",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field064",
+                    "name": "PRINCE_REGION0_IV_BODY11",
+                    "description": "Field.",
+                    "offset_int": "0x0064",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "PRINCE region 1",
+                "description": "PRINCE region 1"
+            },
+            "registers": [
+                {
+                    "id": "field068",
+                    "name": "PRINCE_REGION1_IV_CODE0",
+                    "description": "Field.",
+                    "offset_int": "0x0068",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field06C",
+                    "name": "PRINCE_REGION1_IV_CODE1",
+                    "description": "Field.",
+                    "offset_int": "0x006C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field06C-bits0-1",
+                            "name": "TYPE",
+                            "description": "Type."
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 4,
+                            "reset_value_int": "0",
+                            "id": "field06C-bits8-11",
+                            "name": "INDEX",
+                            "description": "Index."
+                        },
+                        {
+                            "width": 12
+                        },
+                        {
+                            "width": 6,
+                            "reset_value_int": "0",
+                            "id": "field06C-bits24-29",
+                            "name": "SIZE",
+                            "description": "Size."
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                },
+                {
+                    "id": "field070",
+                    "name": "PRINCE_REGION1_IV_BODY0",
+                    "description": "Field.",
+                    "offset_int": "0x0070",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field074",
+                    "name": "PRINCE_REGION1_IV_BODY1",
+                    "description": "Field.",
+                    "offset_int": "0x0074",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field078",
+                    "name": "PRINCE_REGION1_IV_BODY2",
+                    "description": "Field.",
+                    "offset_int": "0x0078",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field07C",
+                    "name": "PRINCE_REGION1_IV_BODY3",
+                    "description": "Field.",
+                    "offset_int": "0x007C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field080",
+                    "name": "PRINCE_REGION1_IV_BODY4",
+                    "description": "Field.",
+                    "offset_int": "0x0080",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field084",
+                    "name": "PRINCE_REGION1_IV_BODY5",
+                    "description": "Field.",
+                    "offset_int": "0x0084",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field088",
+                    "name": "PRINCE_REGION1_IV_BODY6",
+                    "description": "Field.",
+                    "offset_int": "0x0088",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field08C",
+                    "name": "PRINCE_REGION1_IV_BODY7",
+                    "description": "Field.",
+                    "offset_int": "0x008C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field090",
+                    "name": "PRINCE_REGION1_IV_BODY8",
+                    "description": "Field.",
+                    "offset_int": "0x0090",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field094",
+                    "name": "PRINCE_REGION1_IV_BODY9",
+                    "description": "Field.",
+                    "offset_int": "0x0094",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field098",
+                    "name": "PRINCE_REGION1_IV_BODY10",
+                    "description": "Field.",
+                    "offset_int": "0x0098",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field09C",
+                    "name": "PRINCE_REGION1_IV_BODY11",
+                    "description": "Field.",
+                    "offset_int": "0x009C",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "PRINCE region 2",
+                "description": "PRINCE region 2"
+            },
+            "registers": [
+                {
+                    "id": "field0A0",
+                    "name": "PRINCE_REGION2_IV_CODE0",
+                    "description": "Field.",
+                    "offset_int": "0x00A0",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0A4",
+                    "name": "PRINCE_REGION2_IV_CODE1",
+                    "description": "Field.",
+                    "offset_int": "0x00A4",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 2,
+                            "reset_value_int": "0",
+                            "id": "field0A4-bits0-1",
+                            "name": "TYPE",
+                            "description": "Type."
+                        },
+                        {
+                            "width": 6
+                        },
+                        {
+                            "width": 4,
+                            "reset_value_int": "0",
+                            "id": "field0A4-bits8-11",
+                            "name": "INDEX",
+                            "description": "Index."
+                        },
+                        {
+                            "width": 12
+                        },
+                        {
+                            "width": 6,
+                            "reset_value_int": "0",
+                            "id": "field0A4-bits24-29",
+                            "name": "SIZE",
+                            "description": "Size."
+                        },
+                        {
+                            "width": 2
+                        }
+                    ]
+                },
+                {
+                    "id": "field0A8",
+                    "name": "PRINCE_REGION2_IV_BODY0",
+                    "description": "Field.",
+                    "offset_int": "0x00A8",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0AC",
+                    "name": "PRINCE_REGION2_IV_BODY1",
+                    "description": "Field.",
+                    "offset_int": "0x00AC",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0B0",
+                    "name": "PRINCE_REGION2_IV_BODY2",
+                    "description": "Field.",
+                    "offset_int": "0x00B0",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0B4",
+                    "name": "PRINCE_REGION2_IV_BODY3",
+                    "description": "Field.",
+                    "offset_int": "0x00B4",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0B8",
+                    "name": "PRINCE_REGION2_IV_BODY4",
+                    "description": "Field.",
+                    "offset_int": "0x00B8",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0BC",
+                    "name": "PRINCE_REGION2_IV_BODY5",
+                    "description": "Field.",
+                    "offset_int": "0x00BC",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0C0",
+                    "name": "PRINCE_REGION2_IV_BODY6",
+                    "description": "Field.",
+                    "offset_int": "0x00C0",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0C4",
+                    "name": "PRINCE_REGION2_IV_BODY7",
+                    "description": "Field.",
+                    "offset_int": "0x00C4",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0C8",
+                    "name": "PRINCE_REGION2_IV_BODY8",
+                    "description": "Field.",
+                    "offset_int": "0x00C8",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0CC",
+                    "name": "PRINCE_REGION2_IV_BODY9",
+                    "description": "Field.",
+                    "offset_int": "0x00CC",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0D0",
+                    "name": "PRINCE_REGION2_IV_BODY10",
+                    "description": "Field.",
+                    "offset_int": "0x00D0",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field0D4",
+                    "name": "PRINCE_REGION2_IV_BODY11",
+                    "description": "Field.",
+                    "offset_int": "0x00D4",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 000D8-000FC",
+                "description": "Reserved 000D8-000FC"
+            },
+            "registers": [
+                {
+                    "id": "Reserved000D8",
+                    "name": "Reserved 0x000D8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000DC",
+                    "name": "Reserved 0x000DC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00DC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E0",
+                    "name": "Reserved 0x000E0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E4",
+                    "name": "Reserved 0x000E4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E8",
+                    "name": "Reserved 0x000E8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000EC",
+                    "name": "Reserved 0x000EC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00EC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F0",
+                    "name": "Reserved 0x000F0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F4",
+                    "name": "Reserved 0x000F4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F8",
+                    "name": "Reserved 0x000F8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000FC",
+                    "name": "Reserved 0x000FC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00FC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Customer defined",
+                "description": "Customer defined"
+            },
+            "registers": [
+                {
+                    "id": "field100",
+                    "name": "CUSTOMER_DEFINED0",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0100",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field104",
+                    "name": "CUSTOMER_DEFINED1",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0104",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field108",
+                    "name": "CUSTOMER_DEFINED2",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0108",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field10C",
+                    "name": "CUSTOMER_DEFINED3",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x010C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field110",
+                    "name": "CUSTOMER_DEFINED4",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0110",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field114",
+                    "name": "CUSTOMER_DEFINED5",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0114",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field118",
+                    "name": "CUSTOMER_DEFINED6",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0118",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field11C",
+                    "name": "CUSTOMER_DEFINED7",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x011C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field120",
+                    "name": "CUSTOMER_DEFINED8",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0120",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field124",
+                    "name": "CUSTOMER_DEFINED9",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0124",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field128",
+                    "name": "CUSTOMER_DEFINED10",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0128",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field12C",
+                    "name": "CUSTOMER_DEFINED11",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x012C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field130",
+                    "name": "CUSTOMER_DEFINED12",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0130",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field134",
+                    "name": "CUSTOMER_DEFINED13",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0134",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field138",
+                    "name": "CUSTOMER_DEFINED14",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0138",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field13C",
+                    "name": "CUSTOMER_DEFINED15",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x013C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field140",
+                    "name": "CUSTOMER_DEFINED16",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0140",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field144",
+                    "name": "CUSTOMER_DEFINED17",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0144",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field148",
+                    "name": "CUSTOMER_DEFINED18",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0148",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field14C",
+                    "name": "CUSTOMER_DEFINED19",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x014C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field150",
+                    "name": "CUSTOMER_DEFINED20",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0150",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field154",
+                    "name": "CUSTOMER_DEFINED21",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0154",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field158",
+                    "name": "CUSTOMER_DEFINED22",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0158",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field15C",
+                    "name": "CUSTOMER_DEFINED23",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x015C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field160",
+                    "name": "CUSTOMER_DEFINED24",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0160",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field164",
+                    "name": "CUSTOMER_DEFINED25",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0164",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field168",
+                    "name": "CUSTOMER_DEFINED26",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0168",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field16C",
+                    "name": "CUSTOMER_DEFINED27",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x016C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field170",
+                    "name": "CUSTOMER_DEFINED28",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0170",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field174",
+                    "name": "CUSTOMER_DEFINED29",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0174",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field178",
+                    "name": "CUSTOMER_DEFINED30",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0178",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field17C",
+                    "name": "CUSTOMER_DEFINED31",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x017C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field180",
+                    "name": "CUSTOMER_DEFINED32",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0180",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field184",
+                    "name": "CUSTOMER_DEFINED33",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0184",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field188",
+                    "name": "CUSTOMER_DEFINED34",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0188",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field18C",
+                    "name": "CUSTOMER_DEFINED35",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x018C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field190",
+                    "name": "CUSTOMER_DEFINED36",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0190",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field194",
+                    "name": "CUSTOMER_DEFINED37",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0194",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field198",
+                    "name": "CUSTOMER_DEFINED38",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x0198",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field19C",
+                    "name": "CUSTOMER_DEFINED39",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x019C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1A0",
+                    "name": "CUSTOMER_DEFINED40",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01A0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1A4",
+                    "name": "CUSTOMER_DEFINED41",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01A4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1A8",
+                    "name": "CUSTOMER_DEFINED42",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01A8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1AC",
+                    "name": "CUSTOMER_DEFINED43",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01AC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1B0",
+                    "name": "CUSTOMER_DEFINED44",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01B0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1B4",
+                    "name": "CUSTOMER_DEFINED45",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01B4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1B8",
+                    "name": "CUSTOMER_DEFINED46",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01B8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1BC",
+                    "name": "CUSTOMER_DEFINED47",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01BC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1C0",
+                    "name": "CUSTOMER_DEFINED48",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01C0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1C4",
+                    "name": "CUSTOMER_DEFINED49",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01C4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1C8",
+                    "name": "CUSTOMER_DEFINED50",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01C8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1CC",
+                    "name": "CUSTOMER_DEFINED51",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01CC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1D0",
+                    "name": "CUSTOMER_DEFINED52",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01D0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1D4",
+                    "name": "CUSTOMER_DEFINED53",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01D4",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1D8",
+                    "name": "CUSTOMER_DEFINED54",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01D8",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1DC",
+                    "name": "CUSTOMER_DEFINED55",
+                    "description": "Customer Defined (Programmable through ROM API)",
+                    "offset_int": "0x01DC",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "SHA256_DIGEST",
+                "description": "SHA256_DIGEST"
+            },
+            "registers": [
+                {
+                    "id": "field1E0",
+                    "name": "SHA256_DIGEST0",
+                    "description": "SHA256_DIGEST0 for DIGEST[31:0]",
+                    "offset_int": "0x01E0",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1E4",
+                    "name": "SHA256_DIGEST1",
+                    "description": "SHA256_DIGEST1 for DIGEST[63:32]",
+                    "offset_int": "0x01E4",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1E8",
+                    "name": "SHA256_DIGEST2",
+                    "description": "SHA256_DIGEST2 for DIGEST[95:64]",
+                    "offset_int": "0x01E8",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1EC",
+                    "name": "SHA256_DIGEST3",
+                    "description": "SHA256_DIGEST3 for DIGEST[127:96]",
+                    "offset_int": "0x01EC",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1F0",
+                    "name": "SHA256_DIGEST4",
+                    "description": "SHA256_DIGEST4 for DIGEST[159:128]",
+                    "offset_int": "0x01F0",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1F4",
+                    "name": "SHA256_DIGEST5",
+                    "description": "SHA256_DIGEST5 for DIGEST[191:160]",
+                    "offset_int": "0x01F4",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1F8",
+                    "name": "SHA256_DIGEST6",
+                    "description": "SHA256_DIGEST6 for DIGEST[223:192]",
+                    "offset_int": "0x01F8",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field1FC",
+                    "name": "SHA256_DIGEST7",
+                    "description": "SHA256_DIGEST7 for DIGEST[255:224]",
+                    "offset_int": "0x01FC",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        }
+    ]
+}

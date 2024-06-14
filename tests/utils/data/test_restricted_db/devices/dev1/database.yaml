@@ -1,0 +1,25 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  rev1: {}
+  rev2:
+    features:
+      feature2:
+        atrribute_int1: 4
+latest: rev2
+
+info: {}
+
+features:
+  # ======== Feature 1 ========
+  feature1: {}
+
+  # ======== Feature 2 ========
+  feature2:
+    atrribute_int1: 3
+
+  # ======== Feature 2 ========
+  feature3:
+    atribute__int1: 10

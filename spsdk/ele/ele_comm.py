@@ -195,9 +195,11 @@ class EleMessageHandlerUBoot(EleMessageHandler):
             status = 0
             indication = 0
         else:
-            abort_code = int(ret_match.group(1), 16)
+            ret_code = int(ret_match.group(1), 16)
+            logger.debug(f"Return code of uBoot ELE MSG command {ret_code}")
             status_all = int(response_match.group(1), 16)
-            indication = status_all >> 8
+            abort_code = (status_all >> 16) & 0xFFFF
+            indication = (status_all >> 8) & 0xFF
             status = status_all & 0xFF
         return abort_code, status, indication
 
@@ -211,7 +213,7 @@ class EleMessageHandlerUBoot(EleMessageHandler):
         if not isinstance(self.device, Uboot):
             raise SPSDKError("Wrong instance of device, must be UBoot")
         msg.set_buffer_params(self.comm_buff_addr, self.comm_buff_size)
-
+        response = b""
         try:
             logger.debug(f"ELE msg {hex(msg.buff_addr)} {hex(msg.buff_size)} {msg.export().hex()}")
 
@@ -223,17 +225,18 @@ class EleMessageHandlerUBoot(EleMessageHandler):
             self.device.write(
                 f"ele_message {hex(msg.buff_addr)} {hex(msg.buff_size)} {msg.export().hex()}"
             )
-            output = self.device.read_output()
-            logger.debug(f"Raw ELE message output:\n{output}")
 
             if msg.response_words_count == 0:
                 return
+
+            output = self.device.read_output()
+            logger.debug(f"Raw ELE message output:\n{output}")
 
             if "Error" in output:
                 msg.abort_code, msg.status, msg.indication = self.extract_error_values(output)
             else:
                 # 2. Read back the response
-                stripped_output = output.splitlines()[-1].replace("u-boot=> ", "")
+                stripped_output = re.sub(r"(u-boot)?=> ", "", output.splitlines()[-1])
                 logger.debug(f"Stripped output {stripped_output}")
                 response = value_to_bytes("0x" + stripped_output)
         except (SPSDKError, IndexError) as exc:

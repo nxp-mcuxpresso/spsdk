@@ -1,0 +1,35 @@
+# ======================================  Bootable Image Configuration for mx93.  ======================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc55s3x, mcxn54x, mcxn94x, mcxn9xx, mx8mn, mx8mp, mx8ulp, mx91, mx93, mx95, rt1015, rt101x,
+# rt102x, rt104x, rt105x, rt106x, rt116x, rt117x, rt118x, rt5xx, rt6xx, rw61x>
+family: mx93
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <a0, a1, latest>
+revision: a1
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+# Possible options: <serial_downloader, flexspi_nor>
+memory_type: serial_downloader
+
+# ======================================================================================================================
+#                                      == Primary executable Segment definition ==
+# ======================================================================================================================
+# ------------------------------------===== Primary AHAB container [Optional] =====-------------------------------------
+# Description: This is primary AHAB image that is validated by ROM and usually contains DDR initialization and SPL code.
+# AHAB container image path. It could be used as pre-prepared binary form of AHAB and also YAML configuration file for
+# AHAB. In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+primary_image_container_set: u-boot-spl-container-img_config.yaml
+# ======================================================================================================================
+#                                     == Secondary executable Segment definition ==
+# ======================================================================================================================
+# -----------------------------------===== Secondary AHAB container [Optional] =====------------------------------------
+# Description: This is secondary AHAB image that is validated by SPL from primary image. AHAB container image path. It
+# could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB. In case that YAML
+# configuration file is used, the Bootable image tool build the AHAB itself.
+secondary_image_container_set: u-boot-atf-container-img_config.yaml

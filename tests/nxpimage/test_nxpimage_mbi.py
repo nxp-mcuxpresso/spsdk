@@ -19,7 +19,6 @@ from spsdk.apps import nxpimage
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.keys import PrivateKeyEcc, PrivateKeyRsa, PublicKeyEcc
 from spsdk.exceptions import SPSDKError
-from spsdk.image.exceptions import SPSDKUnsupportedImageType
 from spsdk.image.keystore import KeyStore
 from spsdk.image.mbi.mbi import create_mbi_class, get_mbi_class
 from spsdk.image.mbi.mbi_mixin import MasterBootImageManifestCrc, Mbi_MixinHmac, Mbi_MixinIvt
@@ -53,6 +52,7 @@ mbi_basic_tests = [
     ("mb_xip_crc_tz_no_preset.yaml", "rt5xx"),
     ("mb_xip_crc_hwk.yaml", "rt5xx"),
     ("mb_xip_crc_hwk_tz.yaml", "rt5xx"),
+    ("mb_xip_plain.yaml", "rt5xx"),
     ("mb_ram_crc.yaml", "lpc55s3x"),
     ("mb_ram_crc_version.yaml", "lpc55s3x"),
     ("mb_xip_crc.yaml", "lpc55s3x"),
@@ -64,6 +64,8 @@ mbi_basic_tests = [
     ("mb_xip_crc_version.yaml", "kw45xx"),
     ("mb_xip_crc_nbu.yaml", "k32w1xx"),
     ("mb_xip_crc_version.yaml", "k32w1xx"),
+    ("mb_xip_plain.yaml", "mc56f818xx"),
+    ("mb_xip_plain.yaml", "mcxn9xx"),
 ]
 
 mbi_signed_tests = [
@@ -171,10 +173,11 @@ def test_mbi_parser_basic(cli_runner: CliRunner, tmpdir, nxpimage_data_dir, fami
     cmd = f"mbi parse -b {new_binary} -f {family} -o {tmpdir}/parsed"
     cli_runner.invoke(nxpimage.main, cmd.split())
 
-    input_image = os.path.join(nxpimage_data_dir, load_configuration(config_file)["inputImageFile"])
+    sub_path: str = load_configuration(config_file)["inputImageFile"]
+    input_image = os.path.normpath(os.path.join(nxpimage_data_dir, sub_path.replace("\\", "/")))
     parsed_app = os.path.join(tmpdir, "parsed", "application.bin")
     assert os.path.isfile(parsed_app)
-    if os.path.split(input_image)[1] == "bin":
+    if os.path.splitext(input_image)[1] == ".bin":
         assert filecmp.cmp(input_image, parsed_app)
 
 
@@ -283,9 +286,10 @@ def test_nxpimage_mbi_signed(
 @pytest.mark.parametrize(
     "config_file,device,added_hash",
     [
-        ("mb_xip.yaml", "mc56xx", True),
-        ("mb_xip_bin_cert.yaml", "mc56xx", True),
-        ("mb_xip_no_hash.yaml", "mc56xx", False),
+        ("mb_xip.yaml", "mc56f818xx", True),
+        ("mb_xip_bin_cert.yaml", "mc56f818xx", True),
+        ("mb_xip_no_hash.yaml", "mc56f818xx", False),
+        ("mb_xip_oem_closed.yaml", "mc56f818xx", True),
     ],
 )
 def test_nxpimage_mbi_signed_vx(
@@ -308,7 +312,7 @@ def test_nxpimage_mbi_signed_vx(
         signing_key = get_main_root_key(config_file=config_file)
         signature_length = signing_key.signature_size
         mbi_cls = get_mbi_class(load_configuration(new_config))
-        parsed_mbi = mbi_cls.parse(family="mc56f81xxx", data=new_data)
+        parsed_mbi = mbi_cls.parse(family="mc56f818xx", data=new_data)
         assert hasattr(parsed_mbi, "cert_block")
         cert_block: CertBlockVx = parsed_mbi.cert_block
 
@@ -358,6 +362,35 @@ def test_nxpimage_mbi_signed_vx(
             == ref_data[BCA_OFFSET : IMG_FCB_OFFSET + IMG_FCB_SIZE]
         )
         assert new_data[APP_OFFSET:] == ref_data[APP_OFFSET:]
+
+
+@pytest.mark.parametrize(
+    "config_file,device",
+    [
+        ("mb_xip_crc.yaml", "mc56f817xx"),
+    ],
+)
+def test_nxpimage_mbi_crc_vx(
+    cli_runner: CliRunner,
+    nxpimage_data_dir,
+    tmpdir,
+    config_file,
+    device,
+):
+    with use_working_directory(nxpimage_data_dir):
+        config_file = f"{nxpimage_data_dir}/workspace/cfgs/{device}/{config_file}"
+        ref_binary, new_binary, new_config = process_config_file(config_file, tmpdir)
+
+        cmd = f"mbi export -c {new_config}"
+        cli_runner.invoke(nxpimage.main, cmd.split())
+        assert os.path.isfile(new_binary)
+
+        ref_data = load_binary(ref_binary)
+        new_data = load_binary(new_binary)
+        assert ref_data == new_data
+
+        cmd = f"mbi parse -b {new_binary} -f {device} -o {tmpdir}/parsed"
+        cli_runner.invoke(nxpimage.main, cmd.split())
 
 
 @pytest.mark.parametrize("config_file,family,sign_digest", mbi_signed_tests)
@@ -697,7 +730,7 @@ def test_mbi_parser_legacy_encrypted(
 
 
 def test_mbi_lpc55s3x_invalid():
-    mbi = create_mbi_class("signed", "lpc55s3x")(app=bytes(100), firmware_version=0)
+    mbi = create_mbi_class("signed_xip", "lpc55s3x")(app=bytes(100), firmware_version=0)
     with pytest.raises(SPSDKError):
         mbi.validate()
 
@@ -719,8 +752,8 @@ def test_mbi_lpc55s3x_invalid():
         "kw45xx",
         "k32w1xx",
         "lpc553x",
-        "mc56f81xxx",
-        "mwct20d2x",
+        "mc56f818xx",
+        "mwct2xd2",
         "mcxn9xx",
         "rw61x",
     ],
@@ -776,8 +809,8 @@ def test_mbi_get_templates(cli_runner: CliRunner, tmpdir, family):
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
         (
-            "mc56f81xxx",
-            "mc56f81xxx_int_xip_signed.yaml",
+            "mc56f818xx",
+            "mc56f818xx_int_xip_signed.yaml",
             ["ec_pk_secp256r1_cert0.pem", "ec_secp256r1_cert0.pem"],
         ),
     ],

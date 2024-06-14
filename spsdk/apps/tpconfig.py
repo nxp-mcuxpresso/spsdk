@@ -12,7 +12,6 @@ from typing import List
 
 import click
 
-from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.apps.tp_utils import (
     TPConfigConfig,
     device_help,
@@ -35,7 +34,7 @@ from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.tp.tp_intf import TpDevInterface
 from spsdk.tp.tpconfig import TrustProvisioningConfig
 from spsdk.tp.utils import get_supported_devices, scan_tp_devices
-from spsdk.utils.database import DatabaseManager, get_db
+from spsdk.utils.database import DatabaseManager, get_common_data_file_path, get_db
 from spsdk.utils.misc import load_text, write_file
 
 
@@ -156,7 +155,7 @@ def get_template(family: str, output: str) -> None:
     template_name = (
         "tpconfig_cfg_data_template.yml" if use_prov_data else "tpconfig_cfg_template.yml"
     )
-    template = load_text(os.path.join(SPSDK_DATA_FOLDER_COMMON, "tp", template_name))
+    template = load_text(get_common_data_file_path(os.path.join("tp", template_name)))
     template = template.replace("TMP_FAMILY", family)
     write_file(template, output)
 

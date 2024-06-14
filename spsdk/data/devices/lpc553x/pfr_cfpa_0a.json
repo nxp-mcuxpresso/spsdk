@@ -1,0 +1,1381 @@
+{
+    "cpu": "LPC5536",
+    "groups": [
+        {
+            "group": {
+                "name": "Configuration",
+                "description": "Configuration"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "HEADER",
+                    "description": "Header",
+                    "offset_int": "0",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field004",
+                    "name": "CFPA_PAGE_VERSION",
+                    "description": "CFPA Page Version",
+                    "offset_int": "0x0004",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field008",
+                    "name": "FW_Version",
+                    "description": "Firmware Version (Monotonic counter)",
+                    "offset_int": "0x0008",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field00C",
+                    "name": "MCTR_NXP_CTR0",
+                    "description": "Monotonic counter 0",
+                    "offset_int": "0x000C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field010",
+                    "name": "MFLAG_CUST_0",
+                    "description": "Customer defined Monotonic flags",
+                    "offset_int": "0x0010",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field014",
+                    "name": "MCTR_NXP_CTR1",
+                    "description": "Monotonic counter 1",
+                    "offset_int": "0x0014",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field018",
+                    "name": "MCTR_NXP_CTR2",
+                    "description": "Monotonic counter 2",
+                    "offset_int": "0x0018",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field01C",
+                    "name": "MCTR_NXP_CTR3",
+                    "description": "Monotonic counter 3",
+                    "offset_int": "0x001C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field020",
+                    "name": "MCTR_NXP_CTR4",
+                    "description": "Monotonic counter 4",
+                    "offset_int": "0x0020",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field024",
+                    "name": "MCTR_NXP_CTR5",
+                    "description": "Monotonic counter 5",
+                    "offset_int": "0x0024",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field028",
+                    "name": "MCTR_NXP_CTR6",
+                    "description": "Monotonic counter 6",
+                    "offset_int": "0x0028",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field02C",
+                    "name": "MCTR_NXP_CTR7",
+                    "description": "Monotonic counter 7",
+                    "offset_int": "0x002C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field030",
+                    "name": "MCTR_CUST_CTR0",
+                    "description": "Customer defined Monotonic counter 0.",
+                    "offset_int": "0x0030",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field034",
+                    "name": "MCTR_CUST_CTR1",
+                    "description": "Customer defined Monotonic counter 1.",
+                    "offset_int": "0x0034",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field038",
+                    "name": "MCTR_CUST_CTR2",
+                    "description": "Customer defined Monotonic counter 2.",
+                    "offset_int": "0x0038",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field03C",
+                    "name": "MCTR_CUST_CTR3",
+                    "description": "Customer defined Monotonic counter 3.",
+                    "offset_int": "0x003C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field040",
+                    "name": "MCTR_CUST_CTR4",
+                    "description": "Customer defined Monotonic counter 4.",
+                    "offset_int": "0x0040",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field044",
+                    "name": "MCTR_CUST_CTR5",
+                    "description": "Customer defined Monotonic counter 5.",
+                    "offset_int": "0x0044",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field048",
+                    "name": "MCTR_CUST_CTR6",
+                    "description": "Customer defined Monotonic counter 6.",
+                    "offset_int": "0x0048",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field04C",
+                    "name": "MCTR_CUST_CTR7",
+                    "description": "Customer defined Monotonic counter 7.",
+                    "offset_int": "0x004C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field050",
+                    "name": "MFLAG_CUST_1",
+                    "description": "Customer defined Monotonic flags",
+                    "offset_int": "0x0050",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00054",
+                    "name": "Reserved 0x00054",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0054",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field058",
+                    "name": "DCFG_CC_SOCU_NS_PIN",
+                    "description": "Device Configuration Credential Constraints for SoC specific Use Pinned",
+                    "offset_int": "0x0058",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field058-bit0",
+                            "name": "NIDEN",
+                            "description": "Non-secure Non-invasive Debug Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field058-bit1",
+                            "name": "DBGEN",
+                            "description": "Non-secure Debug Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field058-bit5",
+                            "name": "DSP_DBGEN",
+                            "description": "DSP Debug Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field058-bit6",
+                            "name": "ISP_CMD_EN",
+                            "description": "ISP Boot Command Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field058-bit7",
+                            "name": "FA_CMD_EN",
+                            "description": "FA Command Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field058-bit8",
+                            "name": "ME_CMD_EN",
+                            "description": "Flash Mass Erase Command Enable",
+                            "values": [
+                                {
+                                    "name": "USE_DAP",
+                                    "value": 0,
+                                    "description": "Use DAP to enable"
+                                },
+                                {
+                                    "name": "FIXED_STATE",
+                                    "value": 1,
+                                    "description": "Fixed state"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 7
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field058-bits16-31",
+                            "name": "INVERSE_VALUE",
+                            "description": "Inverse Value of Bits [15:0]",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field05C",
+                    "name": "DCFG_CC_SOCU_NS_DFLT",
+                    "description": "Device Configuration Credential Constraints for SoC specific Use Debug Filter",
+                    "offset_int": "0x005C",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none",
+                    "bitfields": [
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field05C-bit0",
+                            "name": "NIDEN",
+                            "description": "Non-secure Non-invasive Debug Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field05C-bit1",
+                            "name": "DBGEN",
+                            "description": "Non-secure Debug Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 3
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field05C-bit5",
+                            "name": "DSP_DBGEN",
+                            "description": "DSP Debug Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field05C-bit6",
+                            "name": "ISP_CMD_EN",
+                            "description": "ISP Boot Command Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field05C-bit7",
+                            "name": "FA_CMD_EN",
+                            "description": "FA Command Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 1,
+                            "reset_value_int": "0",
+                            "id": "field05C-bit8",
+                            "name": "ME_CMD_EN",
+                            "description": "Flash Mass Erase Command Fixed State",
+                            "values": [
+                                {
+                                    "name": "DISABLED",
+                                    "value": 0,
+                                    "description": "Disabled"
+                                },
+                                {
+                                    "name": "ENABLED",
+                                    "value": 1,
+                                    "description": "Enabled"
+                                }
+                            ]
+                        },
+                        {
+                            "width": 7
+                        },
+                        {
+                            "width": 16,
+                            "reset_value_int": "0",
+                            "id": "field05C-bits16-31",
+                            "name": "INVERSE_VALUE",
+                            "description": "Inverse Value",
+                            "calculated": "INVERSE"
+                        }
+                    ]
+                },
+                {
+                    "id": "field060",
+                    "name": "ENABLE_FA_MODE",
+                    "description": "Enable FA Mode. SET_FA_MODE Command should write 0xC33CA55A to this word to indicate boot ROM to enter FA mode.",
+                    "offset_int": "0x0060",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "field064",
+                    "name": "CMPA_PROG_IN_PROGRESS",
+                    "description": "CMPA Page Programming On Going. Set this field to 0x5CC55AA5 in the active CFPA page each time CMPA page programming is going on. It shall always be set to 0x00000000 in the CFPA scratch area.",
+                    "offset_int": "0x0064",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "Reserved 00068-001E8",
+                "description": "Reserved 00068-001E8"
+            },
+            "registers": [
+                {
+                    "id": "Reserved00068",
+                    "name": "Reserved 0x00068",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0068",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0006C",
+                    "name": "Reserved 0x0006C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x006C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00070",
+                    "name": "Reserved 0x00070",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0070",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00074",
+                    "name": "Reserved 0x00074",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0074",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00078",
+                    "name": "Reserved 0x00078",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0078",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0007C",
+                    "name": "Reserved 0x0007C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x007C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00080",
+                    "name": "Reserved 0x00080",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0080",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00084",
+                    "name": "Reserved 0x00084",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0084",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00088",
+                    "name": "Reserved 0x00088",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0088",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0008C",
+                    "name": "Reserved 0x0008C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x008C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00090",
+                    "name": "Reserved 0x00090",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0090",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00094",
+                    "name": "Reserved 0x00094",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0094",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00098",
+                    "name": "Reserved 0x00098",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0098",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0009C",
+                    "name": "Reserved 0x0009C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x009C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000A0",
+                    "name": "Reserved 0x000A0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00A0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000A4",
+                    "name": "Reserved 0x000A4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00A4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000A8",
+                    "name": "Reserved 0x000A8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00A8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000AC",
+                    "name": "Reserved 0x000AC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00AC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000B0",
+                    "name": "Reserved 0x000B0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00B0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000B4",
+                    "name": "Reserved 0x000B4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00B4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000B8",
+                    "name": "Reserved 0x000B8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00B8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000BC",
+                    "name": "Reserved 0x000BC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00BC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000C0",
+                    "name": "Reserved 0x000C0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000C4",
+                    "name": "Reserved 0x000C4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000C8",
+                    "name": "Reserved 0x000C8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00C8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000CC",
+                    "name": "Reserved 0x000CC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00CC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000D0",
+                    "name": "Reserved 0x000D0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000D4",
+                    "name": "Reserved 0x000D4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000D8",
+                    "name": "Reserved 0x000D8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00D8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000DC",
+                    "name": "Reserved 0x000DC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00DC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E0",
+                    "name": "Reserved 0x000E0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E4",
+                    "name": "Reserved 0x000E4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000E8",
+                    "name": "Reserved 0x000E8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00E8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000EC",
+                    "name": "Reserved 0x000EC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00EC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F0",
+                    "name": "Reserved 0x000F0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F4",
+                    "name": "Reserved 0x000F4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000F8",
+                    "name": "Reserved 0x000F8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00F8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved000FC",
+                    "name": "Reserved 0x000FC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x00FC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00100",
+                    "name": "Reserved 0x00100",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0100",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00104",
+                    "name": "Reserved 0x00104",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0104",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00108",
+                    "name": "Reserved 0x00108",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0108",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0010C",
+                    "name": "Reserved 0x0010C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x010C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00110",
+                    "name": "Reserved 0x00110",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0110",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00114",
+                    "name": "Reserved 0x00114",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0114",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00118",
+                    "name": "Reserved 0x00118",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0118",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0011C",
+                    "name": "Reserved 0x0011C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x011C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00120",
+                    "name": "Reserved 0x00120",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0120",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00124",
+                    "name": "Reserved 0x00124",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0124",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00128",
+                    "name": "Reserved 0x00128",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0128",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0012C",
+                    "name": "Reserved 0x0012C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x012C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00130",
+                    "name": "Reserved 0x00130",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0130",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00134",
+                    "name": "Reserved 0x00134",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0134",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00138",
+                    "name": "Reserved 0x00138",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0138",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0013C",
+                    "name": "Reserved 0x0013C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x013C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00140",
+                    "name": "Reserved 0x00140",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0140",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00144",
+                    "name": "Reserved 0x00144",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0144",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00148",
+                    "name": "Reserved 0x00148",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0148",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0014C",
+                    "name": "Reserved 0x0014C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x014C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00150",
+                    "name": "Reserved 0x00150",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0150",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00154",
+                    "name": "Reserved 0x00154",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0154",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00158",
+                    "name": "Reserved 0x00158",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0158",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0015C",
+                    "name": "Reserved 0x0015C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x015C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00160",
+                    "name": "Reserved 0x00160",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0160",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00164",
+                    "name": "Reserved 0x00164",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0164",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00168",
+                    "name": "Reserved 0x00168",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0168",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0016C",
+                    "name": "Reserved 0x0016C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x016C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00170",
+                    "name": "Reserved 0x00170",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0170",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00174",
+                    "name": "Reserved 0x00174",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0174",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00178",
+                    "name": "Reserved 0x00178",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0178",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0017C",
+                    "name": "Reserved 0x0017C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x017C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00180",
+                    "name": "Reserved 0x00180",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0180",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00184",
+                    "name": "Reserved 0x00184",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0184",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00188",
+                    "name": "Reserved 0x00188",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0188",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0018C",
+                    "name": "Reserved 0x0018C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x018C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00190",
+                    "name": "Reserved 0x00190",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0190",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00194",
+                    "name": "Reserved 0x00194",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0194",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved00198",
+                    "name": "Reserved 0x00198",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x0198",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved0019C",
+                    "name": "Reserved 0x0019C",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x019C",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001A0",
+                    "name": "Reserved 0x001A0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01A0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001A4",
+                    "name": "Reserved 0x001A4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01A4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001A8",
+                    "name": "Reserved 0x001A8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01A8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001AC",
+                    "name": "Reserved 0x001AC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01AC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001B0",
+                    "name": "Reserved 0x001B0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01B0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001B4",
+                    "name": "Reserved 0x001B4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01B4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001B8",
+                    "name": "Reserved 0x001B8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01B8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001BC",
+                    "name": "Reserved 0x001BC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01BC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001C0",
+                    "name": "Reserved 0x001C0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01C0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001C4",
+                    "name": "Reserved 0x001C4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01C4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001C8",
+                    "name": "Reserved 0x001C8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01C8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001CC",
+                    "name": "Reserved 0x001CC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01CC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001D0",
+                    "name": "Reserved 0x001D0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01D0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001D4",
+                    "name": "Reserved 0x001D4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01D4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001D8",
+                    "name": "Reserved 0x001D8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01D8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001DC",
+                    "name": "Reserved 0x001DC",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01DC",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001E0",
+                    "name": "Reserved 0x001E0",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01E0",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001E4",
+                    "name": "Reserved 0x001E4",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01E4",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                },
+                {
+                    "id": "Reserved001E8",
+                    "name": "Reserved 0x001E8",
+                    "description": "This field is reserved for internal use",
+                    "offset_int": "0x01E8",
+                    "is_reserved": true,
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "CRC32",
+                "description": "CRC32 fields"
+            },
+            "registers": [
+                {
+                    "id": "field1EC",
+                    "name": "CFPA_CRC32",
+                    "description": "CFPA CRC32",
+                    "offset_int": "0x01EC",
+                    "access": "RO",
+                    "reset_value_int": "0",
+                    "individual_write_lock": "none"
+                }
+            ]
+        }
+    ]
+}

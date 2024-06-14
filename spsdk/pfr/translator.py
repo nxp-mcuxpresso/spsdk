@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -10,8 +10,8 @@
 import logging
 from typing import Optional
 
-from .exceptions import SPSDKPfrcMissingConfigError
-from .pfr import CFPA, CMPA
+from spsdk.pfr.exceptions import SPSDKPfrcMissingConfigError
+from spsdk.pfr.pfr import CFPA, CMPA
 
 logger = logging.getLogger(__name__)
 

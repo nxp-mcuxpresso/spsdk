@@ -56,12 +56,6 @@ MBoot Exceptions
    :undoc-members:
    :show-inheritance:
 
-MBoot Scanner
--------------
-.. automodule:: spsdk.mboot.scanner
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 MBoot Protocol
 --------------

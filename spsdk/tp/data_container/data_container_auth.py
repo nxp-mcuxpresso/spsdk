@@ -14,13 +14,12 @@ from crcmod.predefined import mkPredefinedCrcFun
 
 from spsdk.crypto.cmac import cmac, cmac_validate
 from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.hmac import hmac, hmac_validate
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
+from spsdk.crypto.spsdk_hmac import hmac, hmac_validate
 from spsdk.crypto.utils import extract_public_key_from_data
+from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
-
-from ..exceptions import SPSDKTpError
 
 
 class AuthenticationType(SpsdkEnum):

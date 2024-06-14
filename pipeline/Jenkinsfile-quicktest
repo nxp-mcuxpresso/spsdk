@@ -1,0 +1,48 @@
+pipeline {
+    agent { label 'linux-spsdk' }
+    // agent any
+    options {
+        timeout(time: 1, unit: 'HOURS', activity: true)   // timeout on whole pipeline job
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                // checkout SPSDK repository
+                checkout([
+                        $class: 'GitSCM',
+                        branches: scm.branches,
+                        doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+                        extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: false]],
+                        submoduleCfg: [],
+                        userRemoteConfigs: scm.userRemoteConfigs
+                    ])
+            // checkout scm
+            }
+        }
+        stage('Setup') {
+            steps {
+                    withPythonEnv('python3.9') {
+                        sh 'python -m pip install --upgrade pip'
+                        sh 'pip install --upgrade --editable ".[all]"'
+                        sh 'pip install --upgrade -r requirements-develop.txt'
+                    }
+            }
+        }
+        stage('Codecheck') {
+                steps {
+                        withPythonEnv('python3.9') {
+                            sh 'codecheck -s -ic gitcov --output reports_py39'
+                        }
+                }
+        }
+    }
+        post {
+            always {
+                    archiveArtifacts artifacts: 'reports_py39/**', fingerprint: true
+                    emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
+                     replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
+                     to: emailextrecipients([[$class: 'CulpritsRecipientProvider'],
+                                             [$class: 'RequesterRecipientProvider']]))
+            }
+        }
+}

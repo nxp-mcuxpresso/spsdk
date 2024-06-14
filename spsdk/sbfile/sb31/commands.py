@@ -12,9 +12,10 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, Union
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.sbfile.sb31.constants import EnumCmdTag
 from spsdk.utils.abstract import BaseClass
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.misc import Endianness, align_block, load_binary, value_to_bytes, value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
@@ -311,8 +312,14 @@ class CmdLoad(CmdLoadBase):
             data = load_binary(config["file"], search_paths=search_paths)
             return CmdLoad(address=address, data=data, memory_id=memory_id)
         if config.get("values"):
-            values = [value_to_int(s, 0) for s in config["values"].split(",")]
+            if isinstance(config["values"], int):
+                values = [config["values"]]
+            else:
+                values = [value_to_int(s, 0) for s in config["values"].split(",")]
             data = pack(f"<{len(values)}L", *values)
+            return CmdLoad(address=address, data=data, memory_id=memory_id)
+        if config.get("value"):
+            data = value_to_bytes(config["value"], endianness=Endianness.LITTLE)
             return CmdLoad(address=address, data=data, memory_id=memory_id)
 
         raise SPSDKError(f"Unsupported LOAD command args: {config}")
@@ -489,6 +496,12 @@ class CmdProgIfr(CmdLoadBase):
         address = value_to_int(config["address"], 0)
         if config.get("file"):
             data = load_binary(config["file"], search_paths=search_paths)
+        elif config.get("values"):
+            if isinstance(config["values"], int):
+                values = [config["values"]]
+            else:
+                values = [value_to_int(s, 0) for s in config["values"].split(",")]
+            data = pack(f"<{len(values)}L", *values)
         elif config.get("value"):
             data = value_to_bytes(config["value"], endianness=Endianness.LITTLE)
         else:
@@ -668,7 +681,7 @@ class CmdLoadKeyBlob(BaseCmd):
         NXP_CUST_KEK_EXT_SK = 17
 
     class _KeyWrapsV2(BuiltinEnum):
-        """KeyWrap IDs used by the CmdLoadKeyBlob command for mcxnx family."""
+        """KeyWrap IDs used by the CmdLoadKeyBlob command."""
 
         NXP_CUST_KEK_INT_SK = 18
         NXP_CUST_KEK_EXT_SK = 19
@@ -687,7 +700,11 @@ class CmdLoadKeyBlob(BaseCmd):
         :param key_name: NXP_CUST_KEK_INT_SK or NXP_CUST_KEK_EXT_SK
         :return: integer value representing key
         """
-        key_wraps = cls._KeyWrapsV2 if "mcxn" in family.lower() else cls._KeyWraps
+        database = DatabaseManager().db.devices.get(family).revisions.get("latest")
+        key_wraps_version = database.get_int(DatabaseManager.SB31, "key_wraps_version")
+        key_wraps = {1: cls._KeyWraps, 2: cls._KeyWrapsV2}.get(key_wraps_version)
+        if key_wraps is None:
+            raise SPSDKValueError(f"KeyWraps version {key_wraps_version} is not defined")
         return key_wraps[key_name.name].value
 
     def __init__(self, offset: int, data: bytes, key_wrap_id: int) -> None:

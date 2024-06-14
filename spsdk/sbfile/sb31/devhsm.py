@@ -21,7 +21,7 @@ from spsdk.sbfile.sb31.commands import CmdLoadKeyBlob
 from spsdk.sbfile.sb31.constants import EnumDevHSMType
 from spsdk.sbfile.sb31.images import SecureBinary31, SecureBinary31Commands, SecureBinary31Header
 from spsdk.utils.crypto.cert_blocks import CertificateBlockHeader
-from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import load_configuration, value_to_int
 from spsdk.utils.schema_validator import CommentedConfig, check_config
 
@@ -72,16 +72,15 @@ class DevHsmSB31(DevHsm):
         # Override the default buffer address
         if buffer_address is not None:
             self.devbuff_base = buffer_address
+
         # store input of OEM_SHARE_INPUT to workspace in case that is generated randomly
         self.store_temp_res("OEM_SHARE_INPUT.BIN", self.oem_share_input)
-
-        # Default value that could be given from SB3 configuration container
-        self.timestamp = None
-        self.sb3_descr = "SB3 SB_KEK"
-        self.sb3_fw_ver = 0
-
         # Check the configuration file and options to update by user config
         self.config_data = None
+        self.timestamp = None
+        self.sb3_fw_ver = 0
+        self.sb3_descr = "SB 3.1"
+
         if container_conf:
             config_data = load_configuration(container_conf)
             # validate input configuration
@@ -91,8 +90,8 @@ class DevHsmSB31(DevHsm):
                 search_paths=[os.path.dirname(container_conf)],
             )
             self.config_data = config_data
-            self.sb3_fw_ver = config_data.get("firmwareVersion") or self.sb3_fw_ver
-            self.sb3_descr = config_data.get("description") or self.sb3_descr
+            self.sb3_fw_ver = value_to_int(config_data.get("firmwareVersion", 0))
+            self.sb3_descr = config_data.get("description", "SB 3.1")
             if "timestamp" in config_data:
                 self.timestamp = value_to_int(str(config_data.get("timestamp")))
 
@@ -110,6 +109,21 @@ class DevHsmSB31(DevHsm):
 
     def __str__(self) -> str:
         return f"SB 3.1 DevHSM for {self.family}"
+
+    @staticmethod
+    def get_supported_families() -> List[str]:
+        """Get the list of supported families by Device HSM.
+
+        :return: List of supported families.
+        """
+        families = get_families(DatabaseManager.DEVHSM)
+        families = [
+            family
+            for family in families
+            if get_db(family, "latest").get_str(DatabaseManager.DEVHSM, "devhsm_class")
+            == "DevHsmSB31"
+        ]
+        return families
 
     @classmethod
     def get_validation_schemas(
@@ -225,7 +239,7 @@ class DevHsmSB31(DevHsm):
         sb3_data.insert_command(
             index=key_blob_command_position,
             command=CmdLoadKeyBlob(
-                offset=self.update_keyblob_offset(),
+                offset=self.get_keyblob_offset(),
                 data=self.wrapped_cust_mk_sk,
                 key_wrap_id=CmdLoadKeyBlob.get_key_id(
                     family=self.family, key_name=CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK

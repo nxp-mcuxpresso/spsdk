@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for NXP SPSDK DebugMailbox support."""
@@ -170,7 +170,10 @@ class DebugMailbox:
 
         :param func: Decorated function.
         """
-        POSSIBLE_DBGMLBX_AP_IX = [0, 1, 2, 3, 8]
+        # TODO: Remove this "dirty" hack with task SPSDK-3299
+        # The actual order of AP indexes matters here as debug port stops responding
+        # on some devices when testing the AP with index 0 first
+        POSSIBLE_DBGMLBX_AP_IX = [2, 0, 1, 3, 8]
 
         @functools.wraps(func)
         def wrapper(self: "DebugMailbox", *args, **kwargs):

@@ -11,18 +11,17 @@ import logging
 import math
 from typing import Any, Dict, List, Optional, Type, Union
 
+from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PublicKey, PublicKeyEcc, PublicKeyRsa
 from spsdk.exceptions import SPSDKError
+from spsdk.pfr.exceptions import SPSDKPfrError, SPSDKPfrRotkhIsNotPresent
 from spsdk.utils.crypto.rkht import RKHT, RKHTv1, RKHTv21
 from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.exceptions import SPSDKRegsErrorRegisterNotFound
 from spsdk.utils.misc import BinaryPattern, Endianness, value_to_int
-from spsdk.utils.reg_config import RegConfig
-from spsdk.utils.registers import Registers
+from spsdk.utils.registers import Registers, RegsRegister
 from spsdk.utils.schema_validator import check_config
-
-from .exceptions import SPSDKPfrError, SPSDKPfrRotkhIsNotPresent
 
 logger = logging.getLogger(__name__)
 
@@ -42,56 +41,62 @@ class BaseConfigArea:
     def __init__(
         self,
         family: str,
-        revision: Optional[str] = None,
+        revision: str = "latest",
     ) -> None:
         """Initialize an instance.
 
         :param family: Family to use, list of supported families is available via 'get_supported_families' method
         :param revision: silicon revision, if not specified, the latest is being used
-        :param user_config: User configuration to use with initialization
         :raises SPSDKError: When no device is provided
         :raises SPSDKError: When no device is not supported
         :raises SPSDKError: When there is invalid revision
         """
         self.family = family
-        self.revision = revision or "latest"
-
-        self.reg_config = RegConfig(
-            family=self.family,
-            feature=self.FEATURE_NAME,
-            revision=self.revision,
-            db_path=self.DB_SUB_KEYS,
-        )
-        self.revision = self.reg_config.revision
-
-        self.registers = Registers(self.family, base_endianness=Endianness.LITTLE)
-        self.registers.load_registers_from_xml(
-            xml=self.reg_config.get_data_file(),
-            grouped_regs=self.reg_config.get_grouped_registers(),
+        self.db = get_db(family, revision)
+        self.revision = self.db.name
+        self.registers = self._load_registers(family, revision)
+        self.computed_fields: Dict[str, Dict[str, str]] = self.db.get_dict(
+            self.FEATURE_NAME, self.DB_SUB_KEYS + ["computed_fields"], {}
         )
 
+    @classmethod
+    def _load_registers(cls, family: str, revision: str = "latest") -> Registers:
+        """Load register class for PFR tool.
+
+        :param family: Device family name
+        :param revision: Revision of the chip, defaults to "latest"
+        :return: Loaded register class
+        """
+        registers = Registers(
+            family=family,
+            feature=cls.FEATURE_NAME,
+            base_key=cls.DB_SUB_KEYS,
+            revision=revision,
+            base_endianness=Endianness.LITTLE,
+        )
+        computed_fields: Dict[str, Dict[str, str]] = get_db(family, revision).get_dict(
+            cls.FEATURE_NAME, cls.DB_SUB_KEYS + ["computed_fields"], {}
+        )
         # Set the computed field handler
-        for reg, fields in self.reg_config.get_computed_fields().items():
-            reg_obj = self.registers.find_reg(reg)
-            reg_obj.add_setvalue_hook(self.reg_computed_fields_handler, fields)
+        for reg, fields in computed_fields.items():
+            reg_obj = registers.get_reg(reg)
+            for bitfiled in fields.keys():
+                reg_obj.get_bitfield(bitfiled).hidden = True
+                logger.debug(f"Hiding bitfield: {bitfiled} in {reg}")
+        return registers
 
-    def reg_computed_fields_handler(self, val: bytes, context: Any) -> bytes:
-        """Recalculate all fields for given register value.
+    def compute_register(self, reg: RegsRegister, method: str) -> None:
+        """Recalculate register value.
 
-        :param val: Input register value.
-        :param context: The method context (fields).
-        :return: recomputed value.
+        :param reg: Register to be recalculated.
+        :param method: Method name to be use to recalculation of register value.
         :raises SPSDKPfrError: Raises when the computing routine is not found.
         """
-        fields: dict = context
-        for method in fields.values():
-            if hasattr(self, method):
-                method_ref = getattr(self, method)
-                val = method_ref(val)
-            else:
-                raise SPSDKPfrError(f"The '{method}' compute function doesn't exists.")
-
-        return val
+        if hasattr(self, method):
+            method_ref = getattr(self, method)
+            reg.set_value(method_ref(reg.get_value(True)), True)
+        else:
+            raise SPSDKPfrError(f"The '{method}' compute function doesn't exists.")
 
     @staticmethod
     def pfr_reg_inverse_high_half(val: int) -> int:
@@ -145,14 +150,7 @@ class BaseConfigArea:
         """
         sch_cfg = get_schema_file(DatabaseManager.PFR)
         try:
-            db = get_db(family, revision)
-            regs = Registers(family, Endianness.LITTLE)
-            regs.load_registers_from_xml(
-                db.get_file_path(cls.FEATURE_NAME, cls.DB_SUB_KEYS + ["data_file"]),
-                grouped_regs=db.get_list(
-                    cls.FEATURE_NAME, cls.DB_SUB_KEYS + ["grouped_registers"], []
-                ),
-            )
+            regs = cls._load_registers(family=family, revision=revision)
             sch_cfg["pfr_base"]["properties"]["family"]["enum"] = cls.get_supported_families()
             sch_cfg["pfr_base"]["properties"]["family"]["template_value"] = family
             sch_cfg["pfr_base"]["properties"]["revision"]["template_value"] = revision
@@ -188,14 +186,23 @@ class BaseConfigArea:
         :param cfg: Registers configuration.
         """
         self.registers.load_yml_config(cfg)
-        if self.reg_config.get_value("mandatory_computed_regs", False):
-            # Updates also computed registers not used in configuration
-            all_computed = list(self.reg_config.get_computed_registers().keys())
-            all_computed.extend(list(self.reg_config.get_computed_fields().keys()))
-            rest_regs_to_update = list(set(all_computed) - set(cfg.keys()))
-            for r in rest_regs_to_update:
-                reg = self.registers.find_reg(r)
-                reg.set_value(reg.get_value(raw=True), raw=False)
+        # Updates necessary register values
+        for reg_uid, bitfields_rec in self.computed_fields.items():
+            reg_name = self.registers.get_reg(uid=reg_uid).name
+            if reg_name in cfg:
+                reg = self.registers.get_reg(reg_uid)
+                for bitfield_uid, method in bitfields_rec.items():
+                    bitfield_name = reg.get_bitfield(bitfield_uid).name
+                    compute = isinstance(cfg[reg_name], dict) and not bitfield_name in cfg[reg_name]
+                    if compute:
+                        self.compute_register(reg, method)
+                        logger.warning(
+                            (
+                                f"The {reg_name} register has been recomputed, because "
+                                f"it has been used in configuration and the bitfield {bitfield_name} "
+                                "has not been specified"
+                            )
+                        )
 
     @staticmethod
     def load_from_config(config: Dict[str, Any]) -> "BaseConfigArea":
@@ -224,20 +231,11 @@ class BaseConfigArea:
         :param diff: Get only configuration with difference value to reset state.
         :return: PFR configuration in dictionary.
         """
-        if self.reg_config.get_value("mandatory_computed_regs", False):
-            # Updates also computed registers not used in configuration
-            all_computed = list(self.reg_config.get_computed_registers().keys())
-            all_computed.extend(list(self.reg_config.get_computed_fields().keys()))
-            for r in all_computed:
-                reg = self.registers.find_reg(r)
-                reg.set_value(reg.get_value(raw=True), raw=False)
-
-        data = self.registers.get_config(diff=diff)
         res_data: Dict[str, Union[str, Dict[str, Any]]] = {}
         res_data["family"] = self.family
         res_data["revision"] = self.revision
         res_data["type"] = self.__class__.__name__.upper()
-        res_data["settings"] = data
+        res_data["settings"] = self.registers.get_config(diff=diff)
         return res_data
 
     def generate_config(self) -> Dict:
@@ -296,10 +294,10 @@ class BaseConfigArea:
         :return: Start of seals fields.
         :raises SPSDKError: When 'seal_start_address' in database can not be found
         """
-        start = self.reg_config.get_seal_start_address()
+        start = self.db.get_str(self.FEATURE_NAME, self.DB_SUB_KEYS + ["seal_start"])
         if not start:
             raise SPSDKError("Can't find 'seal_start_address' in database.")
-        return self.registers.find_reg(start).offset
+        return self.registers.get_reg(start).offset
 
     def _get_seal_count(self) -> int:
         """Function returns seal count for the family.
@@ -307,7 +305,7 @@ class BaseConfigArea:
         :return: Count of seals fields.
         :raises SPSDKError: When 'seal_count' in database can not be found
         """
-        count = self.reg_config.get_seal_count()
+        count = self.db.get_int(self.FEATURE_NAME, self.DB_SUB_KEYS + ["seal_count"])
         if not count:
             raise SPSDKError("Can't find 'seal_count' in database")
         return value_to_int(count)
@@ -335,7 +333,9 @@ class BaseConfigArea:
                     rotkh_data = rotkh
                 elif keys:
                     rotkh_data = self._calc_rotkh(keys)
-                rotkh_reg.set_value(rotkh_data, True)
+                else:
+                    raise SPSDKError("Cannot determine source of RoTKH data.")
+                rotkh_reg.set_value(rotkh_data, False)
             except SPSDKRegsErrorRegisterNotFound as exc:
                 raise SPSDKPfrRotkhIsNotPresent(
                     "This device doesn't contain ROTKH register!"
@@ -348,9 +348,12 @@ class BaseConfigArea:
         data = bytearray(image_info.export())
 
         if add_seal:
-            seal_start = self._get_seal_start_address()
-            seal_count = self._get_seal_count()
-            data[seal_start : seal_start + seal_count * 4] = self.MARK * seal_count
+            try:
+                seal_start = self._get_seal_start_address()
+                seal_count = self._get_seal_count()
+                data[seal_start : seal_start + seal_count * 4] = self.MARK * seal_count
+            except SPSDKError:
+                logger.warning("This device doesn't support sealing of PFR page.")
 
         if len(data) != self.BINARY_SIZE:
             raise SPSDKError(f"The size of data is {len(data)}, is not equal to {self.BINARY_SIZE}")
@@ -390,15 +393,28 @@ class CFPA(BaseConfigArea):
 class ROMCFG(BaseConfigArea):
     """Information flash region - ROMCFG."""
 
+    DB_SUB_KEYS = ["romcfg"]
     FEATURE_NAME = DatabaseManager.IFR
     BINARY_SIZE = 304
     IMAGE_PREFILL_PATTERN = "0xFF"
+    DESCRIPTION = "ROM Bootloader configurations"
+
+
+class CMACTABLE(BaseConfigArea):
+    """Information flash region - CMAC Table."""
+
+    DB_SUB_KEYS = ["cmactable"]
+    FEATURE_NAME = DatabaseManager.IFR
+    BINARY_SIZE = 128
+    IMAGE_PREFILL_PATTERN = "0xFF"
+    DESCRIPTION = "CMAC table - Used to save hashes of multiple boot components"
 
 
 CONFIG_AREA_CLASSES: Dict[str, Type[BaseConfigArea]] = {
     "cmpa": CMPA,
     "cfpa": CFPA,
     "romcfg": ROMCFG,
+    "cmactable": CMACTABLE,
 }
 
 
@@ -430,3 +446,13 @@ def calc_pub_key_hash(
     n2_bytes = n_2.to_bytes(n2_len, Endianness.BIG.value)
 
     return get_hash(n2_bytes + n1_bytes, algorithm=EnumHashAlgorithm.from_label(f"sha{sha_width}"))
+
+
+def get_ifr_pfr_class(area_name: str, family: str) -> Type[BaseConfigArea]:
+    """Return IFR/PFR class based on the name."""
+    _cls: Type[BaseConfigArea] = globals()[area_name.upper()]
+    if family not in _cls.get_supported_families():
+        raise SPSDKAppError(
+            f"The family has not support for {_cls.FEATURE_NAME.upper()} {area_name.upper()} area"
+        )
+    return _cls

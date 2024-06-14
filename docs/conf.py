@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+#
+# Copyright 2019-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -42,7 +49,7 @@ master_doc = "index"
 # }
 
 autoclass_content = "both"
-suppress_warnings = ["autosectionlabel.*"]
+suppress_warnings = ["autosectionlabel.*", "myst.header"]
 
 # we don't want to execute notebooks during docs build because many of them require HW boards
 nbsphinx_execute = "never"
@@ -55,6 +62,7 @@ extensions = [
     "generate_schemas",
     "generate_table",
     "generate_apps_img",
+    "generate_readme",
     "copy_examples",
     "generate_project_struct_doc",
     "sphinx.ext.autodoc",
@@ -84,7 +92,6 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# html_theme = "sphinx_rtd_theme"
 html_theme = "sphinx_book_theme"
 html_logo = "_static/images/nxp_logo.svg"
 html_theme_options = {
@@ -104,6 +111,8 @@ html_static_path = ["_static"]
 
 # These paths are either relative to html_static_path
 # or fully qualified paths (eg. https://...)
-# html_css_files = [
-#     "custom.css",
-# ]
+html_css_files = [
+    "custom.css",
+]
+
+html_extra_path = ["html_schemas"]

@@ -7,11 +7,14 @@
 
 """Helper module for blhost application."""
 
+import inspect
+import json
 from copy import deepcopy
 from typing import Any, Optional, Type
 
 import click
 
+from spsdk.apps.utils.utils import SPSDKAppError
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.commands import (
     KeyProvUserKeyType,
@@ -19,6 +22,7 @@ from spsdk.mboot.commands import (
     TrustProvOemKeyType,
     TrustProvWrappingKeyType,
 )
+from spsdk.mboot.error_codes import stringify_status_code
 from spsdk.mboot.properties import PropertyTag
 from spsdk.utils.misc import value_to_int
 from spsdk.utils.spsdk_enum import SpsdkEnum
@@ -96,7 +100,11 @@ KW45XX = {
     22: "fuse-program-voltage",
 }
 
-PROPERTIES_OVERRIDE = {"kw45xx": KW45XX, "k32w1xx": KW45XX}
+MCXA1XX = {
+    17: "life-cycle",
+}
+
+PROPERTIES_OVERRIDE = {"kw45xx": KW45XX, "k32w1xx": KW45XX, "mcxa1xx": MCXA1XX}
 
 
 def parse_property_tag(property_tag: str, family: Optional[str] = None) -> PropertyTag:
@@ -107,7 +115,7 @@ def parse_property_tag(property_tag: str, family: Optional[str] = None) -> Prope
     :return: Property integer tag
     """
     properties_dict = deepcopy(PROPERTIES_NAMES)
-    if family and family in PROPERTIES_OVERRIDE.keys():
+    if family and family in PROPERTIES_OVERRIDE:
         properties_dict.update(PROPERTIES_OVERRIDE[family])
     try:
         return PropertyTag.from_tag(value_to_int(property_tag))
@@ -167,3 +175,51 @@ def _parse_key_type(
                 f"Unable to find '{user_input}' in '{collection.__name__}'"
             )
         return key_type_int
+
+
+def display_output(
+    response: Optional[list] = None,
+    status_code: int = 0,
+    use_json: bool = False,
+    suppress: bool = False,
+    extra_output: Optional[str] = None,
+) -> None:
+    """Displays response and status code.
+
+    :param response: Response from the MBoot function
+    :param status_code: MBoot status code
+    :param use_json: Format the output in JSON format, defaults to False
+    :param suppress: Suppress display
+    :param extra_output: Extra string to print out, defaults to None
+    :raises SPSDKAppError: Command is executed properly, how MBoot status code is non-zero
+    """
+    if suppress:
+        pass
+    elif use_json:
+        data = {
+            # get the name of a caller function and replace _ with -
+            "command": inspect.stack()[1].function.replace("_", "-"),
+            # this is just a visualization thing
+            "response": response or [],
+            "status": {
+                "description": stringify_status_code(status_code),
+                "value": status_code,
+            },
+        }
+        print(json.dumps(data, indent=3))
+    else:
+        print(f"Response status = {stringify_status_code(status_code)}")
+        if isinstance(response, list):
+            filtered_response = filter(lambda x: x is not None, response)
+            for i, word in enumerate(filtered_response):
+                print(f"Response word {i + 1} = {word} ({word:#x})")
+        if extra_output:
+            print(extra_output)
+    # Force exit to handover the current status code.
+    # We could do that because this function is called as last from each subcommand
+    if status_code:
+        raise SPSDKAppError()
+
+
+# For backward compatibility
+decode_status_code = stringify_status_code

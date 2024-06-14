@@ -1,31 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """AHAB abstract classes."""
 
+from dataclasses import dataclass
 from struct import calcsize, unpack
-from typing import Tuple
+from typing import List, Optional, Tuple, Union
 
 from typing_extensions import Self
 
-from spsdk.exceptions import SPSDKLengthError, SPSDKParsingError, SPSDKValueError
+from spsdk.exceptions import SPSDKLengthError, SPSDKParsingError
+from spsdk.image.ahab.ahab_data import LITTLE_ENDIAN, UINT8, UINT16
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.misc import check_range
-
-LITTLE_ENDIAN = "<"
-UINT8 = "B"
-UINT16 = "H"
-UINT32 = "L"
-UINT64 = "Q"
-RESERVED = 0
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 
 class Container(BaseClass):
     """Base class for any container."""
+
+    _parser_verifier: Optional[Verifier]
 
     @classmethod
     def fixed_length(cls) -> int:
@@ -67,21 +64,40 @@ class Container(BaseClass):
         return LITTLE_ENDIAN
 
     @classmethod
-    def _check_fixed_input_length(cls, binary: bytes) -> None:
+    def _check_fixed_input_length(cls, binary: bytes) -> Verifier:
         """Checks the data length and container fixed length.
 
         This is just a helper function used throughout the code.
 
         :param Binary: Binary input data.
-        :raises SPSDKLengthError: If containers length is larger than data length.
+        :return: The verifier object with checked minimal container length.
         """
         data_len = len(binary)
         fixed_input_len = cls.fixed_length()
-        if data_len < fixed_input_len:
-            raise SPSDKLengthError(
-                f"Parsing error in fixed part of {cls.__name__} data!\n"
-                f"Input data must be at least {fixed_input_len} bytes!"
-            )
+        ret = Verifier("Minimal input length of container block")
+        ret.add_record_range("Length", data_len, min_val=fixed_input_len)
+        return ret
+
+
+@dataclass
+class HeaderContainerData:
+    """Holder for Container header data."""
+
+    tag: int
+    length: int
+    version: int
+
+    @classmethod
+    def parse(cls, binary: bytes, inverted: bool = False) -> Self:
+        """Parse binary header."""
+        fmt = LITTLE_ENDIAN + UINT8 + UINT16 + UINT8
+        if len(binary) < 4:
+            raise SPSDKParsingError("AHAB header length is not sufficient")
+        if inverted:
+            (tag, length, version) = unpack(fmt, binary[:4])
+        else:
+            (version, length, tag) = unpack(fmt, binary[:4])
+        return cls(tag, length, version)
 
 
 class HeaderContainer(Container):
@@ -95,8 +111,8 @@ class HeaderContainer(Container):
     'version'.
     """
 
-    TAG = 0x00
-    VERSION = 0x00
+    TAG: Union[int, List[int]] = 0x00
+    VERSION: Union[int, List[int]] = 0x00
 
     def __init__(self, tag: int, length: int, version: int):
         """Class object initialized.
@@ -108,6 +124,7 @@ class HeaderContainer(Container):
         self.length = length
         self.tag = tag
         self.version = version
+        self._parsed_header: Optional[HeaderContainerData] = None
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, (HeaderContainer, HeaderContainerInversed)):
@@ -125,18 +142,93 @@ class HeaderContainer(Container):
         """Format of binary representation."""
         return super().format() + UINT8 + UINT16 + UINT8
 
-    def validate_header(self) -> None:
-        """Validates the header of container properties...
+    def verify_header(self) -> Verifier:
+        """Verifies the header of container properties...
 
         i.e. tag e <0; 255>, otherwise an exception is raised.
         :raises SPSDKValueError: Any MAndatory field has invalid value.
         """
-        if self.tag is None or not check_range(self.tag, end=0xFF):
-            raise SPSDKValueError(f"AHAB: Head of Container: Invalid TAG Value: {self.tag}")
-        if self.length is None or not check_range(self.length, end=0xFFFF):
-            raise SPSDKValueError(f"AHAB: Head of Container: Invalid Length Value: {self.length}")
-        if self.version is None or not check_range(self.version, end=0xFF):
-            raise SPSDKValueError(f"AHAB: Head of Container: Invalid Version Value: {self.version}")
+        return self._verify_header(self.tag, self.length, self.version, len(self))
+
+    def verify_parsed_header(self) -> Verifier:
+        """Verifies the parsed header of container properties...
+
+        i.e. tag e <0; 255>, otherwise an exception is raised.
+        :raises SPSDKValueError: Any MAndatory field has invalid value.
+        """
+        ret = Verifier(f"Parsed header ({self.__class__.__name__})", important=False)
+        if self._parsed_header:
+            ret.add_child(
+                self._verify_header(
+                    self._parsed_header.tag,
+                    self._parsed_header.length,
+                    self._parsed_header.version,
+                    len(self),
+                )
+            )
+        else:
+            ret.add_record("Availability", VerifierResult.WARNING, "Not included")
+        return ret
+
+    @classmethod
+    def _verify_header(
+        cls, tag: int, length: int, version: int, object_length: Optional[int] = None
+    ) -> Verifier:
+        """Verifies the header of container properties...
+
+        i.e. tag e <0; 255>, otherwise an exception is raised.
+        :raises SPSDKValueError: Any MAndatory field has invalid value.
+        """
+        ret = Verifier("Header")
+        ver_tag = Verifier("Tag")
+        ver_tag.add_record_bit_range("Range", tag, 8, False)
+        if tag is not None:
+            if isinstance(cls.TAG, int) and tag != cls.TAG:
+                ver_tag.add_record(
+                    "Value",
+                    VerifierResult.ERROR,
+                    f"Invalid: {hex(tag)}, " f"expected {hex(cls.TAG)}!",
+                )
+            elif isinstance(cls.TAG, list) and not tag in cls.TAG:
+                ver_tag.add_record(
+                    "Value",
+                    VerifierResult.ERROR,
+                    f"Invalid: {hex(tag)}, " f"expected one of those {[hex(x) for x in cls.TAG]}!",
+                )
+            else:
+                ver_tag.add_record("Value", VerifierResult.SUCCEEDED, hex(tag))
+        ret.add_child(ver_tag)
+        ver_length = Verifier("Length")
+        ver_length.add_record_bit_range("Range", length, 16, False)
+        if object_length is not None:
+            if object_length != length:
+                ver_length.add_record(
+                    "Computed length",
+                    VerifierResult.ERROR,
+                    f"The length should be {object_length} and is {length}",
+                )
+            else:
+                ver_length.add_record("Computed length", VerifierResult.SUCCEEDED, object_length)
+        ret.add_child(ver_length)
+
+        ver_version = Verifier("Version")
+        ver_version.add_record_bit_range("Range", version, 8, False)
+        if version is not None:
+            if (
+                isinstance(cls.VERSION, int)
+                and version != cls.VERSION
+                or isinstance(cls.VERSION, list)
+                and not version in cls.VERSION
+            ):
+                ver_version.add_record(
+                    "Value",
+                    VerifierResult.ERROR,
+                    f"Invalid VERSION {version} loaded, expected {cls.VERSION}!",
+                )
+            else:
+                ver_version.add_record("Value", VerifierResult.SUCCEEDED, hex(version))
+        ret.add_child(ver_version)
+        return ret
 
     @classmethod
     def parse_head(cls, binary: bytes) -> Tuple[int, int, int]:
@@ -151,50 +243,34 @@ class HeaderContainer(Container):
                 f"Parsing error in {cls.__name__} container head data!\n"
                 "Input data must be at least 4 bytes!"
             )
-        (version, length, tag) = unpack(HeaderContainer.format(), binary)
+        (version, length, tag) = unpack(HeaderContainer.format(), binary[:4])
         return tag, length, version
 
     @classmethod
-    def check_container_head(cls, binary: bytes) -> None:
+    def check_container_head(cls, binary: bytes) -> Verifier:
         """Compares the data length and container length.
 
         This is just a helper function used throughout the code.
 
-        :param binary: Binary input data.
-        :raises SPSDKLengthError: If containers length is larger than data length.
-        :raises SPSDKParsingError: If containers header value doesn't match.
+        :param binary: Binary input data
+        :return: Verifier object of parsed header
         """
-        cls._check_fixed_input_length(binary)
-        data_len = len(binary)
-        (tag, length, version) = cls.parse_head(binary[: HeaderContainer.fixed_length()])
+        ret = Verifier(f"Container({cls.__name__}) header")
+        ret.add_child(cls._check_fixed_input_length(binary))
+        if not ret.has_errors:
+            data_len = len(binary)
+            (tag, length, version) = cls.parse_head(binary[: HeaderContainer.fixed_length()])
+            ret.add_child(cls._verify_header(tag, length, version))
 
-        if (
-            isinstance(cls.TAG, int)
-            and tag != cls.TAG
-            or isinstance(cls.TAG, list)
-            and not tag in cls.TAG
-        ):
-            raise SPSDKParsingError(
-                f"Parsing error of {cls.__name__} data!\n"
-                f"Invalid TAG {hex(tag)} loaded, expected {hex(cls.TAG)}!"
-            )
-
-        if data_len < length:
-            raise SPSDKLengthError(
-                f"Parsing error of {cls.__name__} data!\n"
-                f"At least {length} bytes expected, got {data_len} bytes!"
-            )
-
-        if (
-            isinstance(cls.VERSION, int)
-            and version != cls.VERSION
-            or isinstance(cls.VERSION, list)
-            and not version in cls.VERSION
-        ):
-            raise SPSDKParsingError(
-                f"Parsing error of {cls.__name__} data!\n"
-                f"Invalid VERSION {version} loaded, expected {cls.VERSION}!"
-            )
+        if not ret.has_errors:
+            if data_len < length:
+                ret.add_record(
+                    "Binary length",
+                    VerifierResult.ERROR,
+                    f"Parsing error of {cls.__name__} data!\n"
+                    f"At least {length} bytes expected, got {data_len} bytes!",
+                )
+        return ret
 
 
 class HeaderContainerInversed(HeaderContainer):

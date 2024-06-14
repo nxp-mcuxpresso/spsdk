@@ -9,28 +9,19 @@
 """Module implementing the SDPS communication protocol."""
 
 import logging
+from dataclasses import dataclass
 from struct import pack
-from typing import Mapping, Tuple
+from typing import Any, List
 
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKConnectionError, SPSDKError, SPSDKValueError
+from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.interfaces import SDPDeviceTypes
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.interfaces.commands import CmdPacketBase
 from spsdk.utils.misc import swap32
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
-from .exceptions import SdpConnectionError
-
 logger = logging.getLogger(__name__)
-
-ROM_INFO = {
-    "MX8QXP": {"no_cmd": True, "hid_ep1": False, "hid_pack_size": 1024},
-    "MX28": {"no_cmd": False, "hid_ep1": False, "hid_pack_size": 1024},
-    "MX815": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
-    "MX865": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
-    "MX91": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
-    "MX93": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
-    "MX95": {"no_cmd": True, "hid_ep1": True, "hid_pack_size": 1020},
-}
 
 
 class CommandSignature(SpsdkEnum):
@@ -53,28 +44,66 @@ class CommandTag(SpsdkEnum):
     FW_DOWNLOAD = (2, "FwDownload", "Firmware download")
 
 
+@dataclass
+class RomInfo:
+    """Rom information."""
+
+    no_cmd: bool
+    hid_ep1: bool
+    hid_pack_size: int
+
+
 class SDPS:
     """Secure Serial Downloader Protocol."""
 
-    @property
-    def name(self) -> str:
-        """Get name."""
-        return self.__name
-
-    def __init__(self, interface: SDPDeviceTypes, device_name: str) -> None:
+    def __init__(self, interface: SDPDeviceTypes, family: str) -> None:
         """Initialize SDPS object.
 
         :param device: USB device
         :param device_name: target platform name used to determine ROM settings
         """
         self._interface = interface
-        self.__name: str = device_name
+        self.family: str = family
+
+    @staticmethod
+    def get_supported_families() -> List[str]:
+        """Get supported devices.
+
+        :return: List of supported devices
+        """
+        return [
+            dev.name
+            for dev in DatabaseManager().db.devices
+            if dev.info.isp.is_protocol_supported("sdps")
+        ]
+
+    @property
+    def rom_info(self) -> RomInfo:
+        """Rom information property."""
+        device = DatabaseManager().db.devices.get(self.family)
+        return RomInfo(
+            no_cmd=device.info.isp.rom.protocol_params.get("no_cmd", True),
+            hid_ep1=device.info.isp.rom.protocol_params.get("hid_ep1", True),
+            hid_pack_size=device.info.isp.rom.protocol_params.get("hid_pack_size", 1020),
+        )
+
+    @property
+    def family(self) -> str:
+        """Device name."""
+        return self._name
+
+    @family.setter
+    def family(self, value: str) -> None:
+        """Device name setter."""
+        if value not in self.get_supported_families():
+            raise SPSDKValueError(f"Device family is not supported {value}")
+        self._name = value
 
     def __enter__(self) -> "SDPS":
         self.open()
         return self
 
-    def __exit__(self, *args: Tuple, **kwargs: Mapping) -> None:
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         self.close()
 
     def open(self) -> None:
@@ -100,15 +129,16 @@ class SDPS:
 
         :param data: The boot image data in binary format
         :raises SdpConnectionError: Timeout or Connection error
+        :raises SPSDKError: Fail in middle of transfer
         """
         try:
             self._interface.configure(
                 {
-                    "hid_ep1": ROM_INFO[self.name]["hid_ep1"],
-                    "pack_size": ROM_INFO[self.name]["hid_pack_size"],
+                    "hid_ep1": self.rom_info.hid_ep1,
+                    "pack_size": self.rom_info.hid_pack_size,
                 }
             )
-            if not ROM_INFO[self.name]["no_cmd"]:
+            if not self.rom_info.no_cmd:
                 cmd_packet = CmdPacket(
                     signature=CommandSignature.CBW_BLTC_SIGNATURE.tag,
                     length=len(data),
@@ -117,11 +147,15 @@ class SDPS:
                 )
                 logger.info(f"TX-CMD: {cmd_packet})")
                 self._interface.write_command(cmd_packet)
-            self._interface.write_data(data)
-
+            try:
+                self._interface.write_data(data)
+            except SPSDKConnectionError as exc:
+                raise SPSDKError(
+                    "Probably invalid file content. " f"The low level error: {exc.description}"
+                ) from exc
         except SPSDKError as exc:
             logger.info(f"RX-CMD: {exc}")
-            raise SdpConnectionError(f"Writing file failed: {exc}") from exc
+            raise SdpConnectionError(f"Writing file failed: {exc.description}") from exc
 
         logger.info(f"TX-CMD: WriteFile(length={len(data)})")
 

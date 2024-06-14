@@ -53,6 +53,16 @@ load_addr:
       template_value: 0
   required: [outputImageExecutionAddress]
 
+load_addr_optional:
+  type: object
+  title: Basic Settings
+  properties:
+    outputImageExecutionAddress:
+      type: [number, string]
+      title: Loading address of application
+      description: Application loading address in RAM if not XiP, otherwise address of load in XiP.
+      template_value: 0
+
 firmware_version:
   type: object
   title: Basic Settings
@@ -61,6 +71,17 @@ firmware_version:
       type: [number, string]
       title: Firmware version.
       description: Value compared with Secure_FW_Version monotonic counter value stored in protected memory (MCU specific). If value is lower than value in protected memory, then is image rejected (rollback protection).
+      format: number
+      template_value: 0
+
+firmware_version_vx:
+  type: object
+  title: Basic Settings
+  properties:
+    firmwareVersion:
+      type: [number, string]
+      title: Firmware version.
+      description: Used for anti-rollback protection. New firmware must have the same or higher FW version. This value is the minimum firmware version will be stored in BCA and the firmware version specified in SBX file is then compared with this value.
       format: number
       template_value: 0
 
@@ -94,7 +115,7 @@ digest_hash_algo:
       type: string
       title: Manifest signing hash algorithm
       description: Optional Manifest signing hash algorithm name to create Certificate v3.1 Manifest.
-      enum: [sha256, sha384, sha521]
+      enum: [sha256, sha384, sha512]
       template_value: sha256
 
 cert_block_v1:
@@ -160,7 +181,7 @@ signature_provider:
     signProvider:
       type: string
       title: Signature Provider
-      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>".
+      description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'.
       template_value: type=file;file_path=my_prv_key.pem
   oneOf:
     - allOf:
@@ -265,16 +286,6 @@ app_table:
             description: Enabler to load/use the image.
             template_value: true
 
-no_signature:
-  type: object
-  title: Extra Settings
-  properties:
-    noSignature:
-      type: boolean
-      title: No Signature
-      description: When is set, the signature is not included. The signature could be later added by HSM.
-      template_value: false
-
 family:
   type: object
   title: Basic Settings
@@ -330,3 +341,27 @@ image_type:
       template_value: plain
 
   required: [outputImageExecutionTarget, outputImageAuthenticationType]
+
+lifecycle:
+  type: object
+  title: Basic Settings
+  properties:
+    lifeCycle:
+      type: string
+      title: Life cycle state
+      description:
+        life cycle state model to protect code from reading from the device internal flash, which is called code
+        read protection feature. There are different levels of protections in the system, so that access to the on-chip flash and use of ISP
+        can be restricted. Four levels of Read Out Protection (ROP) are supported. This read out protection is a mechanism that allows user to enable
+        different levels of protection in the system. It is a 8-bit field FTFA_FSEC associated with flash security byte (0x40c byte address).
+        It can be programmed by customer. Check the SRM for more information. If not provided, value in application will be used.
+      enum:
+        [
+          "NOT_SET",
+          "OEM_OPEN",
+          "OEM_CLOSED_ROP1",
+          "OEM_CLOSED_ROP2",
+          "OEM_CLOSED_ROP3",
+          "OEM_CLOSED_NO_RETURN",
+        ]
+      template_value: NOT_SET

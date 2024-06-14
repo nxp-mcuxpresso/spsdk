@@ -1,0 +1,189 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========================================  HAB converted configuration  ============================================
+
+# ======================================================================================================================
+#                                                    == HAB Input ==                                                    
+# ======================================================================================================================
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image in plain BIN, S-REC or ELF.
+inputImageFile: led_blinky_xip_srec_iar.srec
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== HAB Options [Required] =====------------------------------------------
+# Description: An options block contains zero or more name/value pairs and the option settings that assign values to
+# global options used by the nxpimage to control the generation of the output file.
+options:
+  # -----------------------------------===== HAB flags [Conditionally required] =====-----------------------------------
+  # Description: HAB flags. 0x0 for unsigned, 0x08 signed, 0x0C encrypted.
+  flags: 8
+  # ------------------------------===== Image start address [Conditionally required] =====------------------------------
+  # Description: First address of the bootable image in the target memory.
+  startAddress: 1610612736
+  # ------------------------------------===== Family [Conditionally required] =====-------------------------------------
+  # Description: Processor family. If not specified, the ivtOffset and initialLoadSize must be defined.
+  family: rt105x
+  # ----------------------------------===== Boot device [Conditionally required] =====----------------------------------
+  # Description: Boot device memory where the image is booted from. If not specified, the ivtOffset and initialLoadSize
+  # must be defined.
+  bootDevice: flexspi_nor
+  # ---------------------------------===== Timestamp of the signature [Optional] =====----------------------------------
+  signatureTimestamp: 04/05/2023 14:41:11
+# ======================================================================================================================
+#                                                   == CSF Sections ==                                                  
+# ======================================================================================================================
+# -----------------------------------------===== CSF Sections [Optional] =====------------------------------------------
+# Description: CSF Sections.
+sections:
+  -
+    # ------------------------------------------===== Header [Required] =====-------------------------------------------
+    # Description: The Header command contains data used in the CSF header as well as default values used by the CST for
+    # other commands throughout the remaining CSF. There must be exactly one Header command and it must appear first in
+    # the CSF.
+    Header:
+      # -----------------------------------------===== Version [Required] =====-----------------------------------------
+      # Description: Version of HAB.
+      Header_Version: '4.2'
+      # -------------------------------------===== Hash algorithm [Optional] =====--------------------------------------
+      # Description: Default hash algorithm.
+      # Possible options: <sha256>
+      Header_HashAlgorithm: sha256
+      # -----------------------------------------===== Engine [Optional] =====------------------------------------------
+      # Description: Default engine.
+      # Possible options: <ANY, SAHARA, RTIC, DCP, CAAM, SW>
+      Header_Engine: DCP
+      # ----------------------------------===== Engine configuration [Optional] =====-----------------------------------
+      # Description: Default engine configuration. See the CST manual for more info.
+      Header_EngineConfiguration: 0
+      # -----------------------------------===== Certificate format [Optional] =====------------------------------------
+      # Description: Default certificate format.
+      # Possible options: <x509, WTLS>
+      Header_CertificateFormat: x509
+      # ------------------------------------===== Signature format [Optional] =====-------------------------------------
+      # Description: Default signature format.
+      # Possible options: <PKCS1, CMS>
+      Header_SignatureFormat: CMS
+  -
+    # ----------------------------------------===== Install SRK [Required] =====----------------------------------------
+    # Description: The Install SRK command authenticates and installs the root public key for use in subsequent Install
+    # CSFK (HAB only) or Install Key (HAB4 only) commands. HAB or AHAB authenticates the SRK using the SRK hash
+    # (SRK_HASH) fuses. HAB4 or AHAB allows revocation of individual keys within the SRK table using the SRK revocation
+    # (SRK_REVOKE) fuses. HAB installs the SRK in slot 0 of its internal public key store. There must be exactly one
+    # Install SRK command in a CSF, and it must occur before the Install CSFK (HAB only) command.
+    InstallSRK:
+      # ----------------------------------===== SRK table binary file [Required] =====----------------------------------
+      # Description: Valid file path
+      InstallSRK_Table: gen_hab_certs/SRK_hash.bin
+      # ---------------------------------===== InstallSRK SourceIndex [Required] =====----------------------------------
+      # Description: SRK index within SRK table. Installation fails if the SRK revocation fuse with this index is
+      # burned.
+      # Possible options: <0, 1, 2, 3>
+      InstallSRK_SourceIndex: 1
+  -
+    # ---------------------------------------===== Install CSFK [Required] =====----------------------------------------
+    # Description: The Install CSFK command authenticates and installs a public key for use in subsequent Install Key
+    # (HAB3 only) or Authenticate CSF commands. HAB authenticates the CSFK from the CSFK certificate using the SRK. HAB
+    # installs the CSFK in slot 1 of its internal public key store. There must be exactly one Install CSFK command in a
+    # CSF, and it must occur before the Authenticate CSF command.
+    InstallCSFK:
+      # ------------------------------------===== CSFK Certificate [Required] =====-------------------------------------
+      # Description: Valid path.
+      InstallCSFK_File: ../crts/CSF2_1_sha256_2048_65537_v3_usr_crt.pem
+      # -----------------------------------===== Certificate Format [Optional] =====------------------------------------
+      # Description: CSFK certificate format.
+      # Possible options: <x509, WTLS>
+      InstallCSFK_CertificateFormat: x509
+  -
+    # -------------------------------------===== Authenticate CSF [Required] =====--------------------------------------
+    # Description: The Authenticate CSF command authenticates the CSF from which it is executed. HAB authenticates the
+    # CSF using the CSFK public key, from a digital signature generated automatically by the CST. There must be exactly
+    # one Authenticate CSF command in a CSF file, and it must occur after the Install CSFK command. Most other CSF
+    # commands are allowed only after the Authenticate CSF command.
+    AuthenticateCSF:
+      # ------------------------------------===== Private Key File [Optional] =====-------------------------------------
+      # Description: Path to authenticate CSF private key file. If not set, the file will be determined from
+      # InstallCSFK_File parameter.
+      AuthenticateCsf_PrivateKeyFile: ../keys/CSF2_1_sha256_2048_65537_v3_usr_key.pem
+  -
+    # ----------------------------------------===== Install Key [Required] =====----------------------------------------
+    # Description: The Install Key command authenticates and installs a public key for use in subsequent Install Key or
+    # Authenticate Data commands. HAB authenticates a public key from a public key certificate using a previously
+    # installed verifying key and a hash of the public key certificate. HAB installs the authenticated public key in an
+    # internal public key store with a zero-based array of key slots. The CSF author is responsible for managing the key
+    # slots in the internal public key store to establish the desired public key hierarchy and determine the keys used
+    # in authentication operations. Overwriting occupied key slots is not allowed, although a repeat command to re-
+    # install the same public key occupying the target slot will be skipped and not generate an error.
+    InstallKey:
+      # ---------------------------------===== Public key certificate [Required] =====----------------------------------
+      # Description: Valid file path.
+      InstallKey_File: ../crts/IMG2_1_sha256_2048_65537_v3_usr_crt.pem
+      # -----------------------------------===== Verification Index [Required] =====------------------------------------
+      # Description: Verification key index in key store. CSFK not supported.
+      # Possible options: <0, 2, 4>
+      InstallKey_VerificationIndex: 0
+      # --------------------------------------===== Target Index [Required] =====---------------------------------------
+      # Description: Target key index in key store. SRK, CSFK slots reserved.
+      # Possible options: <2, 4>
+      InstallKey_TargetIndex: 2
+  -
+    # -------------------------------------===== Authenticate Data [Required] =====-------------------------------------
+    # Description: The Authenticate Data command verifies the authenticity of pre-loaded data in memory. The data may
+    # include executable SW instructions and may be spread across multiple non-contiguous address ranges drawn from
+    # multiple object files. HAB authenticates the pre-loaded data using a previously installed public key from a
+    # digital signature generated automatically by the CST.
+    AuthenticateData:
+      # -----------------------------------===== Verification Index [Required] =====------------------------------------
+      # Description: Verification key index in key store. SRK, CSFK not supported. NOTE For HAB4 Fast Authentication,
+      # this must be 0
+      # Possible options: <0, 2, 4>
+      AuthenticateData_VerificationIndex: 2
+      # -----------------------------------------===== Engine [Optional] =====------------------------------------------
+      # Description: Data signature hash engine.
+      # Possible options: <ANY, SAHARA, RTIC, DCP, CAAM, SW>
+      AuthenticateData_Engine: DCP
+      # ----------------------------------===== Engine Configuration [Optional] =====-----------------------------------
+      # Description: Configuration flags for the engine. See the CSF manual.
+      AuthenticateData_EngineConfiguration: 0
+      # ------------------------------------===== Private Key File [Optional] =====-------------------------------------
+      # Description: Path to authenticate IMG private key file. If not set, the file will be determined from
+      # InstallCSFK_File parameter.
+      AuthenticateData_PrivateKeyFile: ../keys/IMG2_1_sha256_2048_65537_v3_usr_key.pem
+  -
+    # ----------------------------------------===== Set Engine [Required] =====-----------------------------------------
+    # Description: The Set Engine command selects the default engine and engine configuration for a given algorithm.
+    # HAB3 does not support the Set Engine command. Some CSF commands allow the CSF author to select the engine used for
+    # an algorithm by specifying an argument other than ANY. However, if the engine argument is ANY, then HAB selects
+    # the engine to use based on internal criteria. The Set Engine command overrides the HAB internal criteria and
+    # selects the engine and configuration to use when ANY is specified.
+    # Some algorithm types do not have an associated engine argument in the CSF commands (e.g. the signature algorithm
+    # in Authenticate Data commands). By default, HAB selects the engine to use for such algorithms based on internal
+    # criteria. The Set Engine command overrides the HAB internal criteria in such cases as well. Multiple Set Engine
+    # commands may appear anywhere in a CSF after the Header command. Subsequent commands use the engine selected by the
+    # most recent Set Engine command
+    SetEngine:
+      # -------------------------------------===== Hash Algorithm [Required] =====--------------------------------------
+      # Description: Hash algorithm.
+      # Possible options: <sha256>
+      SetEngine_HashAlgorithm: sha256
+      # -----------------------------------------===== Engine [Required] =====------------------------------------------
+      # Description: Engine, use ANY to restore internal HAB criteria.
+      # Possible options: <ANY, SAHARA, RTIC, DCP, CAAM, SW>
+      SetEngine_Engine: DCP
+      # ----------------------------------===== Engine configuration [Optional] =====-----------------------------------
+      # Description: Default engine configuration. See the CST manual for more info.
+      SetEngine_EngineConfiguration: '0'
+  -
+    # ------------------------------------------===== Unlock [Required] =====-------------------------------------------
+    # Description: The Unlock command prevents specified engine features from being locked when exiting the internal
+    # boot ROM. HAB3 does not support the Unlock command. Multiple Unlock commands may appear after the Authenticate CSF
+    # command. A feature will be unlocked if specified in one or more Unlock commands.
+    Unlock:
+      # -----------------------------------------===== Engine [Optional] =====------------------------------------------
+      # Description: Engine to unlock.
+      # Possible options: <SRTC, CAAM, SNVS, OCOTP>
+      Unlock_Engine: SNVS
+      # ----------------------------------------===== Features [Optional] =====-----------------------------------------
+      # Description: Comma-separated list of features to unlock.
+      Unlock_Features: ZMK WRITE

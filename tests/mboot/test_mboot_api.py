@@ -165,18 +165,6 @@ def test_cmd_reset_reopen(mcuboot: McuBoot, target):
     assert mcuboot.status_code == StatusCode.SUCCESS
 
 
-def test_cmd_reset_reopen_disabled(mcuboot: McuBoot, target):
-    """Test reset command with reopen disabled"""
-    mcuboot._interface.device.fail_step = None
-    mcuboot.reopen = False
-    with pytest.raises(SPSDKError):
-        mcuboot.reset(reopen=True)
-    mcuboot.open()  # ensure device is again opened for communication
-    with pytest.raises(SPSDKError):
-        mcuboot.reset()
-    mcuboot.open()  # ensure device is again opened for communication
-
-
 def test_cmd_flash_erase_all_unsecure(mcuboot: McuBoot, target):
     assert not mcuboot.flash_erase_all_unsecure()
     assert mcuboot.status_code == StatusCode.UNKNOWN_COMMAND

@@ -7,8 +7,6 @@
 
 """Wrappers for various types of debuggers."""
 
-from .debug_probe_jlink import DebugProbePyLink
-from .debug_probe_pemicro import DebugProbePemicro
-from .debug_probe_pyocd import DebugProbePyOCD
+from spsdk.debuggers.debug_probe_pyocd import DebugProbePyOCD
 
-__all__ = ["DebugProbePyLink", "DebugProbePemicro", "DebugProbePyOCD"]
+__all__ = ["DebugProbePyOCD"]

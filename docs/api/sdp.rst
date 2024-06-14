@@ -52,9 +52,3 @@ SDP Exceptions
    :undoc-members:
    :show-inheritance:
 
-SDP Scanner
------------
-.. automodule:: spsdk.sdp.scanner
-   :members:
-   :undoc-members:
-   :show-inheritance:

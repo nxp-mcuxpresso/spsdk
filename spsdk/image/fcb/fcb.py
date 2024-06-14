@@ -9,6 +9,7 @@
 
 
 import datetime
+import logging
 from typing import Any, Dict, List
 
 from typing_extensions import Self
@@ -17,9 +18,11 @@ from spsdk import version as spsdk_version
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.image.segments_base import SegmentBase
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.misc import Endianness
+from spsdk.utils.misc import Endianness, swap_bytes
 from spsdk.utils.registers import Registers
 from spsdk.utils.schema_validator import CommentedConfig
+
+logger = logging.getLogger(__name__)
 
 
 class FCB(SegmentBase):
@@ -27,6 +30,7 @@ class FCB(SegmentBase):
 
     FEATURE = DatabaseManager.FCB
     TAG = b"FCFB"
+    TAG_SWAPPED = swap_bytes(TAG)
     SIZE = 0x200
 
     def __init__(self, family: str, mem_type: str, revision: str = "latest") -> None:
@@ -42,10 +46,13 @@ class FCB(SegmentBase):
         if mem_type not in mem_types:
             raise SPSDKValueError(f"Unsupported memory type:{mem_type} not in {mem_types}")
         self.mem_type = mem_type
-        self._registers = Registers(family, base_endianness=Endianness.LITTLE)
-
-        xml_file_name = self.db.get_file_path(self.FEATURE, ["mem_types", self.mem_type])
-        self._registers.load_registers_from_xml(xml_file_name)
+        self._registers = Registers(
+            family=family,
+            feature=self.FEATURE,
+            base_key=["mem_types", self.mem_type],
+            revision=revision,
+            base_endianness=Endianness.LITTLE,
+        )
 
     @property
     def registers(self) -> Registers:
@@ -75,6 +82,9 @@ class FCB(SegmentBase):
             raise SPSDKError(
                 f"Invalid input binary block size: ({len(binary[offset:])} < {FCB.SIZE})."
             )
+        if binary[: (len(cls.TAG))] == cls.TAG_SWAPPED:
+            logger.info("Swapped bytes order has been detected. Fixing the bytes order.")
+            binary = swap_bytes(binary)
         fcb.registers.parse(binary[offset:])
         tag = fcb.registers.find_reg("tag")
         if tag.get_bytes_value() != cls.TAG:

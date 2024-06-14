@@ -36,6 +36,7 @@ def test_virtualprobe_dp():
     with pytest.raises(SPSDKDebugProbeNotOpenError):
         virtual_probe.coresight_reg_write(False, 0, 0)
     virtual_probe.open()
+    virtual_probe.connect()
 
     assert virtual_probe.coresight_reg_read(False, 0) == 0
     virtual_probe.coresight_reg_write(False, 0, 1)
@@ -69,6 +70,7 @@ def test_virtualprobe_ap():
         virtual_probe.coresight_reg_write(True, 0, 0)
 
     virtual_probe.open()
+    virtual_probe.connect()
 
     assert virtual_probe.coresight_reg_read(True, 0) == 0
     virtual_probe.coresight_reg_write(True, 0, 1)
@@ -96,6 +98,7 @@ def test_virtualprobe_memory():
         virtual_probe.mem_reg_write(0, 0)
 
     virtual_probe.open()
+    virtual_probe.connect()
 
     assert virtual_probe.mem_reg_read(0) == 0
     virtual_probe.mem_reg_write(0, 1)

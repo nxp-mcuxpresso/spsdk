@@ -18,16 +18,23 @@ from typing_extensions import Self
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.cms import cms_sign
 from spsdk.crypto.keys import PrivateKey
-from spsdk.crypto.signature_provider import SignatureProvider, try_to_verify_public_key
+from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKAttributeError, SPSDKError, SPSDKKeyError, SPSDKValueError
-from spsdk.utils.abstract import BaseClass
-from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
 # Enums
 ########################################################################################################################
-from .header import CmdHeader, CmdTag, Header, SegTag
-from .secret import MAC, BaseSecretClass, CertificateImg, EnumAlgorithm, Signature, SrkTable
+from spsdk.image.header import CmdHeader, CmdTag, Header, SegTag
+from spsdk.image.secret import (
+    MAC,
+    BaseSecretClass,
+    CertificateImg,
+    EnumAlgorithm,
+    Signature,
+    SrkTable,
+)
+from spsdk.utils.abstract import BaseClass
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 
 class EnumWriteOps(SpsdkEnum):
@@ -1283,7 +1290,7 @@ class CmdAuthData(CmdBase):
         if certificate and (private_key or signature_provider):
             public_key = certificate.get_public_key()
             if signature_provider:
-                try_to_verify_public_key(signature_provider, public_key.export())
+                signature_provider.try_to_verify_public_key(public_key)
             else:
                 assert private_key
                 if not private_key.verify_public_key(public_key):

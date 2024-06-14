@@ -9,6 +9,7 @@
 
 import logging
 import os
+import shlex
 import sys
 from struct import pack
 from typing import List, Optional
@@ -19,13 +20,19 @@ from click_option_group import RequiredMutuallyExclusiveOptionGroup, optgroup
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
+    buspal_option,
     is_click_help,
-    isp_interfaces,
+    lpcusbsio_option,
+    port_option,
     spsdk_apps_common_options,
     spsdk_config_option,
     spsdk_family_option,
     spsdk_output_option,
+    spsdk_revision_option,
+    timeout_option,
+    usb_option,
 )
+from spsdk.apps.utils.interface_helper import load_interface_config
 from spsdk.apps.utils.utils import INT, SPSDKAppError, catch_spsdk_error
 from spsdk.ele import ele_message
 from spsdk.ele.ele_comm import EleMessageHandler, EleMessageHandlerMBoot, EleMessageHandlerUBoot
@@ -39,10 +46,10 @@ from spsdk.exceptions import SPSDKError
 from spsdk.mboot.exceptions import McuBootCommandError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.mboot.scanner import get_mboot_interface
 from spsdk.uboot.uboot import Uboot
 from spsdk.utils.crypto.iee import IeeKeyBlobLockAttributes, IeeKeyBlobModeAttributes, IeeNxp
 from spsdk.utils.crypto.otfad import KeyBlob, OtfadNxp
+from spsdk.utils.database import DatabaseManager
 from spsdk.utils.images import BinaryImage
 from spsdk.utils.misc import (
     BinaryPattern,
@@ -57,22 +64,21 @@ logger = logging.getLogger(__name__)
 
 
 @click.group(name="nxpele", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True, lpcusbsio=True, buspal=True, json_option=False)
+@port_option()
+@usb_option()
+@lpcusbsio_option()
+@buspal_option()
 @spsdk_apps_common_options
-@spsdk_family_option(families=EleMessageHandler.get_supported_families(), required=False)
-@click.option(
-    "-r",
-    "--revision",
-    default="latest",
-    help="Chip revision; if not specified, most recent one will be used",
-)
+@spsdk_family_option(families=EleMessageHandler.get_supported_families(), required=True)
+@timeout_option(timeout=5000)
+@spsdk_revision_option
 @click.pass_context
 def main(
     ctx: click.Context,
     port: str,
     usb: str,
-    buspal: str,
     lpcusbsio: str,
+    buspal: str,
     log_level: int,
     timeout: int,
     family: str,
@@ -86,25 +92,56 @@ def main(
 
     # if --help is provided anywhere on command line, skip interface lookup and display help message
     # Or the command doesn't need communication with target.
-    if not is_click_help(ctx, sys.argv):
-        if not family:
-            click.echo("Missing family option !")
-            ctx.exit(-1)
-        default_device = EleMessageHandler.get_ele_device(family)
-        if default_device == "uboot":
-            if not port:
-                raise SPSDKAppError("Only UART is supported for U-Boot")
-            device = Uboot(port, timeout // 5000)
-            ctx.obj = EleMessageHandlerUBoot(device=device, family=family, revision=revision)
-        else:
-            mboot_interface = mboot_interface = get_mboot_interface(
-                port=port, usb=usb, timeout=timeout, buspal=buspal, lpcusbsio=lpcusbsio
-            )
-            assert isinstance(mboot_interface, MbootProtocolBase)
-            mboot = McuBoot(mboot_interface, cmd_exception=True)
-            ctx.obj = EleMessageHandlerMBoot(device=mboot, family=family, revision=revision)
-
+    if is_click_help(ctx, sys.argv):
+        return 0
+    default_device = EleMessageHandler.get_ele_device(family)
+    if default_device == "uboot":
+        if not port:
+            raise SPSDKAppError("Only UART is supported for U-Boot")
+        device = Uboot(port, timeout // 5000)
+        ctx.obj = EleMessageHandlerUBoot(device=device, family=family, revision=revision)
+    else:
+        iface_params = load_interface_config(
+            {"port": port, "usb": usb, "buspal": buspal, "lpcusbsio": lpcusbsio}
+        )
+        interface_cls = MbootProtocolBase.get_interface_class(iface_params.IDENTIFIER)
+        interface = interface_cls.scan_single(**iface_params.get_scan_args())
+        mboot = McuBoot(interface, cmd_exception=True)
+        ctx.obj = EleMessageHandlerMBoot(device=mboot, family=family, revision=revision)
     return 0
+
+
+@main.command(no_args_is_help=True)
+@click.argument("command_file", type=click.Path(file_okay=True))
+@click.pass_context
+def batch(ctx: click.Context, command_file: str) -> None:
+    """Invoke nxpele commands defined in command file.
+
+    Command file contains one nxpele command per line.
+    example: "write-fuse --index=129 --data=0x7021b4a5"
+
+    Comments are supported. Everything after '#' is a comment (just like in Python/Shell)
+
+    Note: This is an early experimental format, it may change at any time.
+
+    \b
+    COMMAND_FILE    - path to nxpele command file
+    """
+    with open(command_file) as f:
+        for line in f.readlines():
+            tokes = shlex.split(line, comments=True)
+            if len(tokes) < 1:
+                continue
+
+            command_name, *command_args = tokes
+            ctx.params = {}
+            assert isinstance(ctx.parent, click.Context)
+            assert isinstance(ctx.parent.command, click.Group)
+            cmd_obj = ctx.parent.command.commands.get(command_name)
+            if not cmd_obj:
+                raise SPSDKError(f"Unknown command: {command_name}")
+            cmd_obj.parse_args(ctx, command_args)
+            ctx.invoke(cmd_obj, **ctx.params)
 
 
 @main.command(name="ping", no_args_is_help=False)
@@ -438,21 +475,47 @@ def ele_read_shadow_fuse(ele_handler: EleMessageHandler, index: int) -> None:
     type=INT(),
     help="Address of OEM container in target memory.",
 )
+@click.option(
+    "-b",
+    "--binary",
+    type=click.Path(exists=True, readable=True),
+    help=(
+        "Alternative to defining address, this option get the "
+        "binary file, load it into device and run authentication."
+    ),
+)
 @click.pass_obj
-def cmd_oem_cntn_auth(handler: EleMessageHandler, address: int) -> None:
+def cmd_oem_cntn_auth(handler: EleMessageHandler, address: int, binary: str) -> None:
     """Authenticate OEM container.
 
     Container should be placed in any memory accessible by ROM code
     """
-    ele_oem_cntn_auth(handler, address)
+    ele_oem_cntn_auth(handler, address, binary)
 
 
-def ele_oem_cntn_auth(ele_handler: EleMessageHandler, address: int) -> None:
+def ele_oem_cntn_auth(
+    ele_handler: EleMessageHandler, address: Optional[int], binary: Optional[str]
+) -> None:
     """Authenticate OEM container.
 
     :param ele_handler: ELE handler class
     :param address: Address of OEM container to be authenticated
+    :param binary: Path to binary file that should be loaded to device and authenticated
     """
+    if binary:
+        data = load_binary(binary)
+        if address is None:
+            address = ele_handler.database.get_int(DatabaseManager.COMM_BUFFER, "address")
+            size = ele_handler.database.get_int(DatabaseManager.COMM_BUFFER, "size")
+            if len(data) > size:
+                raise SPSDKAppError(
+                    f"The SPSDK validation size of OEM binary file exceeded supported size: {len(data)}B > {size}B"
+                )
+            ele_handler.device.write_memory(address, data)
+
+    if address is None:
+        raise SPSDKAppError("Address has to be defined, option '-a'. Check the help.")
+
     oem_cntn_auth_msg = ele_message.EleMessageOemContainerAuthenticate(address)
     with ele_handler:
         ele_handler.send_message(oem_cntn_auth_msg)
@@ -466,7 +529,7 @@ def ele_oem_cntn_auth(ele_handler: EleMessageHandler, address: int) -> None:
 @click.option(
     "-i",
     "--commit-info",
-    type=click.Choice(EleInfo2Commit.labels()),
+    type=click.Choice(EleInfo2Commit.labels(), case_sensitive=False),
     help="Info to be committed. It could be used multiple",
     required=True,
     multiple=True,
@@ -493,7 +556,7 @@ def ele_commit(ele_handler: EleMessageHandler, commit_info: List[EleInfo2Commit]
 @click.option(
     "-s",
     "--size",
-    type=click.Choice(["16", "32"]),
+    type=click.Choice(["16", "32"], case_sensitive=False),
     help="Size of output key",
     default=16,
 )
@@ -603,7 +666,7 @@ def ele_release_container(ele_handler: EleMessageHandler) -> None:
 @click.option(
     "-l",
     "--lifecycle",
-    type=click.Choice(LifeCycleToSwitch.labels()),
+    type=click.Choice(LifeCycleToSwitch.labels(), case_sensitive=False),
     required=True,
     help="Lifecycle to switch to value",
 )
@@ -752,7 +815,10 @@ def gen_keyblob_group() -> None:
 @click.option(
     "-a",
     "--algorithm",
-    type=click.Choice(ele_message.EleMessageGenerateKeyBlobDek.get_supported_algorithms()),
+    type=click.Choice(
+        ele_message.EleMessageGenerateKeyBlobDek.get_supported_algorithms(),
+        case_sensitive=False,
+    ),
     required=True,
     help="Encryption algorithm to wrap key.",
 )
@@ -1085,7 +1151,10 @@ def ele_gen_keyblob_otfad_whole_keyblob(
 @click.option(
     "-a",
     "--algorithm",
-    type=click.Choice(ele_message.EleMessageGenerateKeyBlobIee.get_supported_algorithms()),
+    type=click.Choice(
+        ele_message.EleMessageGenerateKeyBlobIee.get_supported_algorithms(),
+        case_sensitive=False,
+    ),
     required=True,
     help="Encryption algorithm to wrap key.",
 )
@@ -1114,7 +1183,7 @@ def ele_gen_keyblob_otfad_whole_keyblob(
 @click.option(
     "-m",
     "--ctr-mode",
-    type=click.Choice(KeyBlobEncryptionIeeCtrModes.labels()),
+    type=click.Choice(KeyBlobEncryptionIeeCtrModes.labels(), case_sensitive=False),
     required=False,
     default="CTR_WITH_ADDRESS",
     help="AES CTR mode in case that is used",

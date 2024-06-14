@@ -19,7 +19,7 @@ from pyocd.coresight.dap import DPConnector
 from pyocd.probe.debug_probe import DebugProbe as PyOCDDebugProbe
 
 from spsdk.debuggers.debug_probe import (
-    DebugProbeLocal,
+    DebugProbeCoreSightOnly,
     DebugProbes,
     ProbeDescription,
     SPSDKDebugProbeError,
@@ -32,7 +32,7 @@ TRACE_ENABLE = True
 logger = logging.getLogger(__name__)
 
 
-class DebugProbePyOCD(DebugProbeLocal):
+class DebugProbePyOCD(DebugProbeCoreSightOnly):
     """Class to define PyOCD package interface for NXP SPSDK."""
 
     NAME = "pyocd"
@@ -80,12 +80,10 @@ class DebugProbePyOCD(DebugProbeLocal):
         """Open PyOCD interface for NXP SPSDK.
 
         The PyOCD opening function for SPSDK library to support various DEBUG PROBES.
-        The function is used to initialize the connection to target and enable using debug probe
-        for DAT purposes.
 
         :raises SPSDKProbeNotFoundError: The probe has not found
         :raises SPSDKDebugMailBoxAPNotFoundError: The debug mailbox access port NOT found
-        :raises SPSDKDebugProbeError: The PyOCD cannot establish communication with target
+        :raises SPSDKDebugProbeError: Opening of the debug probe failed
         """
         try:
             self.probe = ConnectHelper.choose_probe(
@@ -96,6 +94,20 @@ class DebugProbePyOCD(DebugProbeLocal):
 
             self.probe.session = Session(self.probe, options={"target_override": "cortex_m"})
             self.probe.open()
+        except PyOCDError as exc:
+            raise SPSDKDebugProbeError(f"Opening the debug probe failed ({str(exc)})") from exc
+
+    def connect(self) -> None:
+        """Connect to target.
+
+        The PyOCD connecting function for SPSDK library to support various DEBUG PROBES.
+        The function is used to initialize the connection to target
+
+        :raises SPSDKDebugProbeError: The PyOCD cannot establish communication with target
+        """
+        if self.probe is None:
+            raise SPSDKDebugProbeError("Debug probe must be opened first")
+        try:
             if self.options.get("use_jtag") is None:
                 self.probe.connect(pyocd.probe.debug_probe.DebugProbe.Protocol.SWD)
             else:

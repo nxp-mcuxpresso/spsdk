@@ -69,6 +69,7 @@ class ExtMemId(MemIdEnum):
     SEMC_NOR = (8, "SEMC-NOR", "SEMC NOR Memory")
     FLEX_SPI_NOR = (9, "FLEX-SPI-NOR", "Flex SPI NOR Memory")
     SPIFI_NOR = (10, "SPIFI-NOR", "SPIFI NOR Memory")
+    XSPI_NOR = (11, "XSPI-NOR", "XSPI NOR Memory")
     FLASH_EXEC_ONLY = (16, "FLASH-EXEC", "Execute-Only region on internal Flash")
     SEMC_NAND = (256, "SEMC-NAND", "SEMC NAND Memory")
     SPI_NAND = (257, "SPI-NAND", "SPI NAND Memory")

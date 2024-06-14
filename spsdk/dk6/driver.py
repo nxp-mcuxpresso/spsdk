@@ -82,11 +82,13 @@ class DeviceInfo:
 
     def __str__(self) -> str:
         return (
-            f"DEVICE ID: {self.device_id}, VID: {hex(self.vid)}, PID: {hex(self.pid)}, Serial number: {self.sn}, "
-            + f"Description: {self.description}, Address: {self.address}, Backend: {self.backend}"
+            f"DEVICE ID: {self.device_id}, VID: {hex(self.vid) if self.vid else 'N/A'}, "
+            f"PID: {hex(self.pid) if self.pid else 'N/A'}, Serial number: {self.sn}, "
+            f"Description: {self.description}, Address: {self.address}, Backend: {self.backend}"
         )
 
 
+# pylint: disable=import-error
 class DriverInterface:
     """Interface to FTDI backends.
 
@@ -100,31 +102,58 @@ class DriverInterface:
         """
         self.backend = backend
         self.initialized = False
+        self.dev = None
+        self.driver = None
 
         logger.info(f"Initializing backend {backend}")
+
         if self.backend == Backend.PYFTDI:
-            from pyftdi import ftdi  # pylint: disable=import-error
+            try:
+                from pyftdi import ftdi
+            except ImportError as e:
+                raise SPSDKError(
+                    "PYFTDI backed was selected, but required 'pyftdi` package is not installed. "
+                    "Please install DK6 extras."
+                ) from e
 
             self.driver = ftdi.Ftdi()
             self.dev = None
 
-        elif self.backend == Backend.PYLIBFTDI:
-            from pylibftdi import Device, Driver  # pylint: disable=import-error
+        if self.backend == Backend.PYLIBFTDI:
+            try:
+                from pylibftdi import Device, Driver
+            except ImportError as e:
+                raise SPSDKError(
+                    "PYLIBFTDI backed was selected, but required 'pylibftdi` package is not installed. "
+                    "Please install DK6 extras."
+                ) from e
 
             self.dev = Device()
             self.driver = Driver()
-        else:
-            self.dev = None
-            self.driver = None
+
+        if self.backend == Backend.FTD2xx:
+            try:
+                import ftd2xx  # pylint: disable=unused-import
+            except ImportError as e:
+                raise SPSDKError(
+                    "FTD2xx backed was selected, but required 'ftd2xx` package is not installed. "
+                    "Please install DK6 extras."
+                ) from e
+            except OSError as e:
+                raise SPSDKError(
+                    "Required 'ftd2xx` package is installed, however the underlying SO library wasn't found. "
+                    "Please install libftd2xx.so (.dll, .dynlib)."
+                ) from e
 
     def go_to_isp(self, device_id: str) -> None:
         """Send a sequence that goes to ISP mode using FTDI bitbang device."""
         logger.info("Sending bitbang sequence to ISP mode")
         if self.backend == Backend.PYFTDI:
-            from pyftdi import ftdi  # pylint: disable=import-error
+            from pyftdi import ftdi
 
             url = generate_pyftdi_url(device_id)
 
+            assert self.driver
             self.driver.open_bitbang_from_url(url)
             for ins in FTDI_ISP_SEQUENCE:
                 bitmode = ftdi.Ftdi.BitMode.CBUS if ins[1] == 0x20 else ftdi.Ftdi.BitMode.RESET
@@ -132,7 +161,7 @@ class DriverInterface:
                 time.sleep(ins[2] / 1000)
 
         elif self.backend == Backend.FTD2xx:
-            import ftd2xx as ftd  # pylint: disable=import-error
+            import ftd2xx as ftd
 
             if self.dev is None:
                 logger.info("Initializing serial first before ISP bitbang for D2XX backend")
@@ -154,6 +183,7 @@ class DriverInterface:
         devices_info = []
         logger.info("Enumerating DK6 devices")
         if self.backend == Backend.PYFTDI:
+            assert self.driver
             devices_list = self.driver.list_devices()
             for device in devices_list:
                 device_info = DeviceInfo(
@@ -168,7 +198,7 @@ class DriverInterface:
                 devices_info.append(device_info)
 
         elif self.backend == Backend.FTD2xx:
-            import ftd2xx as ftd  # pylint: disable=import-error
+            import ftd2xx as ftd
 
             device_count = ftd.createDeviceInfoList()
             for n in range(device_count):

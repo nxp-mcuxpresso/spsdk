@@ -22,6 +22,11 @@ from spsdk.utils.misc import write_file
 
 
 def generate_root(root_path: str) -> PrivateKeyEcc:
+    """Generate root key for EL2GO.
+
+    :param root_path: Root path
+    :return: Private ECC key
+    """
     prk = PrivateKeyEcc.generate_key(EccCurve.SECP256R1)
     prk.save(os.path.join(root_path, "wpc_root_prk.pem"))
     puk = prk.get_public_key()
@@ -43,6 +48,14 @@ def generate_root(root_path: str) -> PrivateKeyEcc:
 def generate_qi_id(
     model_path: str, subject: str, policy: int, root_key: PrivateKeyEcc, extra_text: str
 ) -> None:
+    """Generate QI ID.
+
+    :param model_path: Filename of model
+    :param subject: TODO
+    :param policy: TODO
+    :param root_key: TODO
+    :param extra_text: TODO
+    """
     prk = PrivateKeyEcc.generate_key(EccCurve.SECP256R1)
     prk.save(os.path.join(model_path, "manufacturer_prk.pem"))
     puk = prk.get_public_key()
@@ -71,6 +84,7 @@ def generate_qi_id(
 
 
 def main() -> None:
+    """Setting up models for EL2GO mock-up."""
     root_dir = inquirer.filepath(
         message="Path to root folder for service model",
         only_directories=True,

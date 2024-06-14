@@ -24,6 +24,15 @@ family_rev:
       description: Specify type of memory used by bootable image description.
       template_value: flexspi_nor
 
+init_offset:
+  properties:
+    init_offset:
+      type: [number, string]
+      format: number
+      title: Initial segment
+      description: The segment name or the index of initial segment in exported image
+      template_value: 0
+
 keyblob:
   title: Bootable Segments definition
   properties:
@@ -109,9 +118,6 @@ xmcd:
       template_value: xmcd.bin
 
 mbi:
-  oneOf:
-    - required: [mbi]
-    - required: [application]
   title: Executable Segment definition
   properties:
     mbi:
@@ -131,7 +137,6 @@ mbi:
       skip_in_template: True
 
 hab_container:
-  required: [hab_container]
   title: Executable Segment definition
   properties:
     hab_container:
@@ -144,7 +149,6 @@ hab_container:
       template_value: hab_container.yaml
 
 ahab_container:
-  required: [ahab_container]
   title: Executable Segment definition
   properties:
     ahab_container:
@@ -156,3 +160,52 @@ ahab_container:
         In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
       template_value: ahab_container.yaml
 
+primary_image_container_set:
+  title: Primary Executable Segment definition
+  properties:
+    primary_image_container_set:
+      type: string
+      title: Primary Image Container Set
+      format: file
+      description:
+        This is primary Image Container Set that is validated by ROM and usually contains DDR initialization and SPL code.
+        It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
+        In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+      template_value: primary_image_container_set.yaml
+
+secondary_image_container_set:
+  title: Secondary Executable Segment definition
+  properties:
+    secondary_image_container_set:
+      type: string
+      title: Secondary Image Container Set
+      format: file
+      description:
+        This is secondary AHAB image that is validated by SPL from primary image.
+        It could be used as pre-prepared binary form of AHAB and also YAML configuration file for AHAB.
+        In case that YAML configuration file is used, the Bootable image tool build the AHAB itself.
+      template_value: secondary_image_container_set.yaml
+
+sb21:
+  title: Secure Binary Executable Segment definition
+  properties:
+    sb21:
+      type: string
+      title: Secure Binary v2.1
+      format: file
+      description:
+        Secure Binary v2.1 image path. It could be used as pre-prepared binary form of Secure Binary v2.1 and also YAML configuration file for Secure Binary v2.1.
+        In case that YAML configuration file is used, the Bootable image tool build the Secure Binary v2.1 itself.
+      template_value: secure_binary_21.yaml
+
+sb31:
+  title: Secure Binary Executable Segment definition
+  properties:
+    sb31:
+      type: string
+      title: Secure Binary v3.1
+      format: file
+      description:
+        Secure Binary v3.1 image path. It could be used as pre-prepared binary form of Secure Binary v3.1 and also YAML configuration file for Secure Binary v3.1.
+        In case that YAML configuration file is used, the Bootable image tool build the Secure Binary v3.1 itself.
+      template_value: secure_binary_21.yaml

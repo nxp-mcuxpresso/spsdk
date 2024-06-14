@@ -13,19 +13,22 @@ info:
   web: https://www.nxp.com
   memory_map: {} # Memory map basic info
   isp:
-    rom_protocol: mboot # Possible options:[mboot, sdps, sdp]
-    mboot_interfaces: []
-    using_flashloader: False
-    usb_rom: {}
-    usb_flashloader:
-      pid: 0x15A2
-      vid: 0x0073
+    rom:
+      protocol: mboot # Possible options:[mboot, sdps, sdp]
+      interfaces: ["uart", "usb", "spi", "i2c"]
+    flashloader: {}
 
 features:
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2000_8000
     size: 0x1000
+    tool: blhost
+
+  # ======== Fuses description section ========
+  fuses:
+    reg_spec: fuses.json
+    grouped_registers: []
 
   # ======== Blhost section ========
   # blhost:
@@ -80,33 +83,37 @@ features:
   mbi:
     mbi_classes: {}
     images: {}
-    fixed_image_type: 0
 
   # ======== HABv4 section ========
   hab: {}
 
   # ======== AHAB section ========
   ahab:
-    srkh_sha_supports: ["sha256", "sha384", "sha512", "sm3"]
-    ahab_map: [0x0000, 0x0400]
     containers_max_cnt: 2
     oem_images_max_cnt: 8
-    oem_srkh_fuses_start: 0x80
-    oem_srkh_fuses_count: 8
-    oem_srkh_fuses_size: 4
     valid_offset_minimal_alignment: 4
-    core_ids:
-      0: "undefined"
-      1: "cortex-m33"
-      2: "cortex-m7"
-      3: "cortex-m4_1"
-      4: "cortex-a53"
-      5: "cortex-a72"
-      6: "seco"
-      7: "hdmi-tx"
-      8: "hdmi-rx"
-      9: "v2x-1"
-      10: "v2x-2"
+    container_image_size_alignment: 512 # To satisfy SD card blocks
+    core_ids: {}
+    # image_types: Keep it here as a template for new NPI
+    #     CSF: [0x01, csf, CSF Image]
+    #     SCD: [0x02, scd, SCD Image]
+    #     EXECUTABLE: [0x03, executable, Executable Image]
+    #     DATA: [0x04, data, Data Image]
+    #     DCD_IMAGE: [0x05, dcd_image, DCD Image]
+    #     ELE: [0x06, ele, EdgeLock Enclave Image]
+    #     PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
+    #     DEK_VALIDATION_FCB_CHK: [0x08, dek_validation_fcb_chk, DEK validation FCB check Image]
+    #     PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
+    #     EXECUTABLE_FAST_BOOT_IMAGE: [0x0A, executable_fast_boot_image, Executable fast boot Image]
+    #     V2X_PRIMARY: [0x0B, v2x_primary, V2X primary Image]
+    #     V2X_SECONDARY: [0x0C, v2x_secondary, V2X secondary Image]
+    #     V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
+    #     V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
+
+    extra_containers: []
+    fuses:
+      _name: "AHAB SRK"
+      srkh: "__srk_hash" # SRK hash fuse
 
   # ======== PFR section ========
   pfr: {}
@@ -114,7 +121,7 @@ features:
   # ======== IFR section ========
   ifr:
     address: 0x200_0000
-    data_file: ifr.xml
+    reg_spec: ifr.json
 
   # ======== Bootable image section ========
   bootable_image:
@@ -126,7 +133,8 @@ features:
 
   # ======== XMCD section ========
   xmcd:
-    header: ../common/xmcd/header.xml
+    header:
+      reg_spec: ../../common/xmcd/header.json
     mem_types: {}
 
   # ======== BEE section ========
@@ -137,7 +145,6 @@ features:
     key_blob_rec_size: 96
     key_blob_max_cnt: 4
     key_blob_min_cnt: 4
-    sb_21_supported: True
     has_kek_fuses: False
     additional_template: []
     additional_template_text: ""
@@ -152,17 +159,9 @@ features:
     keyblob_byte_swap_cnt: 0
     sb_21_supported: True
     has_kek_fuses: False
-    peripheral_list: [""]
     additional_template: []
     additional_template_text: ""
     supports_key_scrambling: False
-    otfad_key_fuse: "OTFAD_KEY"
-    otfad_cfg_fuse: "OTFAD_CFG"
-    otfad_enable_bitfield: "OTFAD_ENABLE"
-    otfad_scramble_enable_bitfield: "OTFAD_SCRAMBLE_ENABLE"
-    otfad_scramble_align_bitfield: "OTFAD_SCRAMBLE_ALIGN"
-    otfad_scramble_key: "OTFAD{index}_KEY_SCRAMBLE"
-    otfad_scramble_align_fuse_standalone: False
 
   # ======== Secure binary v2.1 section ========
   sb21:
@@ -172,17 +171,15 @@ features:
   # ======== Secure binary v3.1 section ========
   sb31:
     supported_commands: []
+    key_wraps_version: 1
 
   # ======== Secure binary vX section ========
   sbx: {}
 
   # ======== Shadow registers section ========
   shadow_regs:
-    data_file: shadow_regs.xml
-    address: 0x4000_0000
     inverted_regs: {}
     computed_fields: {}
-    grouped_registers: []
     reset_type: hw_reset # possible options: [hw_reset, nvic_reset]
 
   # ======== Device Hardware Security Module (HSM) section ========
@@ -190,7 +187,6 @@ features:
     supported_commands:
       - erase
       - load
-      - execute
       - programFuses
       - programIFR
       - copy
@@ -200,7 +196,7 @@ features:
       - checkFwVersion
     flag: 0x1
     key_blob_offset: 0x4
-    key_blob_command_position: 0
+    key_blob_command_position: -1
     devhsm_class: DevHsm
 
   # ======== Trust provisioning section ========
@@ -218,7 +214,7 @@ features:
 
   # ======== Trust Zone section ========
   tz:
-    data_file: tz.yaml
+    reg_spec: tz.yaml
 
   # ======== EdgeLock Enclave section ========
   ele:
@@ -229,29 +225,29 @@ features:
     data_file: ../../common/memcfg/memcfg_data.yaml
     peripherals:
       flexspi_nor:
-        description_file: ../../common/memcfg/opt_word_flexspi_nor.xml
+        reg_spec: ../../common/memcfg/opt_word_flexspi_nor.json
         region_number: 0x09
         ow_counts_rule: OptionSize
         runtime_instance: True
         instances: []
       flexspi_nand:
-        description_file: ../../common/memcfg/opt_word_flexspi_nand.xml
+        reg_spec: ../../common/memcfg/opt_word_flexspi_nand.json
         region_number: 0x101
         ow_counts_rule: OptionSize
         runtime_instance: True
         instances: []
       semc_nor:
-        description_file: ../../common/memcfg/opt_word_semc_nor.xml
+        reg_spec: ../../common/memcfg/opt_word_semc_nor.json
         region_number: 0x08
         ow_counts_rule: AcTimingMode
         instances: []
       semc_nand:
-        description_file: ../../common/memcfg/opt_word_semc_nand.xml
+        reg_spec: ../../common/memcfg/opt_word_semc_nand.json
         region_number: 0x100
         ow_counts_rule: All
         instances: []
       spi_nor:
-        description_file: ../../common/memcfg/opt_word_spi_nor.xml
+        reg_spec: ../../common/memcfg/opt_word_spi_nor.json
         region_number: 0x110
         ow_counts_rule: OptionSize
         instances: []
@@ -259,12 +255,12 @@ features:
       #   region_number: 0x101
       #   instances: []
       mmc:
-        description_file: ../../common/memcfg/opt_word_mmc.xml
+        reg_spec: ../../common/memcfg/opt_word_mmc.json
         region_number: 0x121
         ow_counts_rule: All
         instances: []
       sd:
-        description_file: ../../common/memcfg/opt_word_sd.xml
+        reg_spec: ../../common/memcfg/opt_word_sd.json
         region_number: 0x120
         ow_counts_rule: All
         instances: []
@@ -286,8 +282,14 @@ features:
     # mem_region_mmc = 0x100 + 0x21  # MMC, eMMC memory Card
 
   # ======== Wireless Power section ========
-  wpc: {}
+  wpc:
+    insert_puc_only: false
+    need_reset: false
+    check_lifecycle: 0
 
   # ======== Misc signing section ========
   signing:
     pss_padding: false
+
+  # ======== EL2Go TP section ========
+  el2go_tp: {}

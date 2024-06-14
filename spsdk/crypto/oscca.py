@@ -7,7 +7,7 @@
 
 """Support for OSCCA SM2/SM3."""
 
-from spsdk import SPSDK_DATA_FOLDER_COMMON
+from spsdk import SPSDK_DATA_FOLDER
 from spsdk.utils.misc import Endianness
 
 try:
@@ -25,9 +25,9 @@ if IS_OSCCA_SUPPORTED:
     import os
     from typing import Any, NamedTuple, Optional, Type, TypeVar
 
-    from ..exceptions import SPSDKError
+    from spsdk.exceptions import SPSDKError
 
-    OSCCA_ASN_DEFINITION_FILE = os.path.join(SPSDK_DATA_FOLDER_COMMON, "crypto", "oscca.asn")
+    OSCCA_ASN_DEFINITION_FILE = os.path.join(SPSDK_DATA_FOLDER, "common", "crypto", "oscca.asn")
     SM2_OID = "1.2.156.10197.1.301"
 
     class SM2KeySet(NamedTuple):
@@ -138,7 +138,10 @@ if IS_OSCCA_SUPPORTED:
                 capture_data = not capture_data
         # in the end the `capture_data` flag should be false singaling propper END * KEY
         # and we should have some data
-        if capture_data is False and len(base64_data) > 0:
-            der_data = base64.b64decode(base64_data)
-            return der_data
+        try:
+            if capture_data is False and len(base64_data) > 0:
+                der_data = base64.b64decode(base64_data)
+                return der_data
+        except base64.binascii.Error as e:  # type: ignore[attr-defined]
+            raise SPSDKError("PEM data are corrupted") from e
         raise SPSDKError("PEM data are corrupted")

@@ -79,7 +79,7 @@ class DevHsmSBx(DevHsm):
             )
 
         config_dir = os.path.dirname(container_conf)
-        schemas = SecureBinaryX.get_validation_schemas(include_test_configuration=True)
+        schemas = SecureBinaryX.get_validation_schemas(family, include_test_configuration=True)
         check_config(config_data, schemas, search_paths=[config_dir])
 
         self.sbx = SecureBinaryX.load_from_config(config_data, search_paths=[config_dir])
@@ -110,15 +110,17 @@ class DevHsmSBx(DevHsm):
         else:
             self.info_print(" 1: Initial target reset is disabled ")
 
-        # 2: Call GEN_OEM_MASTER_SHARE to generate encOemShare.bin
+        # 2: Call GEN_OEM_MASTER_SHARE to generate OEM share
         self.info_print(" 2: Generating OEM master share.")
         oem_enc_share = self.oem_generate_master_share(self.oem_share_input)
 
         # 3: Create SBx header
+        self.info_print(" 3: Creating SBx header.")
         self.sbx.load_tphsm(oem_enc_share)
 
         # 4: Export unencrypted SBx data blocks
-        logger.debug(f" 4: Created un-encrypted sbx data: \n{str(self.sbx)}")
+        self.info_print(" 4: Created unencrypted SBx data")
+        logger.info(f"\n SBx data: \n{str(self.sbx)}\n")
         # 4.1: Get sbx file data part individual chunks
         data_cmd_blocks = self.sbx.sb_commands.get_cmd_blocks_to_export()
         # 4.2: Get sbx header without signature
@@ -127,16 +129,16 @@ class DevHsmSBx(DevHsm):
         sbx_header_no_sign += bytes(self.DEVBUFF_SB_SIGNATURE_SIZE)
 
         # 5: Call hsm_enc_blk to encrypt all the data chunks from step 6. Use FW encryption key from step 3.
-        self.info_print(" 5: Encrypting sbx data on device")
+        self.info_print(" 5: Encrypting SBx data on device")
         sbx_enc_data = self.encrypt_data_blocks(sbx_header_no_sign, data_cmd_blocks)
 
         # 5.1: Calculate SHA-256 hashes of encrypted data
-        self.info_print(" 5.1: Enriching encrypted sbx data by mandatory hashes.")
+        self.info_print(" 5.1: Calculating SHA-256 hashes of encrypted data.")
         enc_final_data = self.sbx.sb_commands.process_cmd_blocks_to_export(sbx_enc_data)
         self.store_temp_res("Final_data.bin", enc_final_data, "to_merge")
 
-        # 5.2: Update the sbx pre-prepared header by current data
-        self.info_print(" 5.2: Updating sbx header by valid values.")
+        # 5.2: Update the sbx pre-prepared header with current data
+        self.info_print(" 5.2: Updating SBx header with current data.")
         self.sbx.update_header()
 
         # 5.3: Compose header that will be signed with final hash
@@ -146,32 +148,32 @@ class DevHsmSBx(DevHsm):
         # 6: Get signature of sbx file manifest
 
         if self.sbx.isk_signed and self.sbx.signature_provider:
-            self.info_print(" 6: Creating sbx signature using ISK certificate.")
+            self.info_print(" 6: Creating SBx signature using ISK certificate.")
             header_signature = self.sbx.signature_provider.get_signature(sbx_header)
         else:
-            self.info_print(" 6: Creating sbx signature on device.")
+            self.info_print(" 6: Creating SBx signature on device.")
             header_signature = self.sign_data_blob(sbx_header)
         logger.debug(
-            f" 6: The SBX header signature data:\n{format_raw_data(header_signature, use_hexdump=True)}."
+            f" 6: The SBx header signature data:\n{format_raw_data(header_signature, use_hexdump=True)}."
         )
 
         # 7: Merge all parts together
-        self.info_print(" 7: Composing final sbx file.")
+        self.info_print(" 7: Composing final SBx file.")
         self.final_sb = bytes()
         self.final_sb += sbx_header
         self.final_sb += header_signature
         self.final_sb += enc_final_data
         self.store_temp_res("final_sbx.sbx", self.final_sb)
         logger.debug(
-            f" 7: The final sbx file data:\n{format_raw_data(self.final_sb, use_hexdump=True)}."
+            f" 7: The final SBx file data:\n{format_raw_data(self.final_sb, use_hexdump=True)}."
         )
 
         # 8: Final reset to ensure followup operations (e.g. receive-sb-file) work correctly
         if self.final_reset:
-            self.info_print("8: Resetting the target device")
-            self.mboot.reset(timeout=self.RESET_TIMEOUT)
+            self.info_print(" 8: Resetting the target device - device will be in ISP mode.")
+            self.mboot.reset(timeout=self.RESET_TIMEOUT, reopen=True)
         else:
-            self.info_print("8: Final target reset disabled")
+            self.info_print(" 8: Final target reset disabled")
 
     def export(self) -> bytes:
         """Get the Final SB file.

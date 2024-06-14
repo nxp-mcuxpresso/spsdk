@@ -82,7 +82,7 @@ class CmdHeader(BaseClass):
             checksum = (checksum + raw_data[i]) & 0xFF
         return checksum
 
-    def __init__(self, tag: int, flags: int = 0) -> None:
+    def __init__(self, tag: int, flags: int = 0, zero_filling: bool = False) -> None:
         """Initialize header."""
         if tag not in EnumCmdTag.tags():
             raise SPSDKError("Incorrect command tag")
@@ -91,6 +91,7 @@ class CmdHeader(BaseClass):
         self.address = 0
         self.count = 0
         self.data = 0
+        self.zero_filling = zero_filling
 
     def __repr__(self) -> str:
         return f"SB2 Command header, TAG:{self.tag}"
@@ -259,7 +260,9 @@ class CmdLoad(CmdBaseClass):
             size += CmdHeader.SIZE - (size % CmdHeader.SIZE)
         return size
 
-    def __init__(self, address: int, data: bytes, mem_id: int = 0) -> None:
+    def __init__(
+        self, address: int, data: bytes, mem_id: int = 0, zero_filling: bool = False
+    ) -> None:
         """Initialize CMD Load."""
         super().__init__(EnumCmdTag.LOAD)
         assert isinstance(data, (bytes, bytearray))
@@ -278,6 +281,8 @@ class CmdLoad(CmdBaseClass):
             (group_id << self.ROM_MEM_GROUP_ID_SHIFT) & self.ROM_MEM_GROUP_ID_MASK
         )
 
+        self.zero_filling = zero_filling
+
     def __str__(self) -> str:
         return (
             f"LOAD: Address=0x{self.address:08X}, DataLen={len(self.data)}, "
@@ -293,7 +298,10 @@ class CmdLoad(CmdBaseClass):
     def _update_data(self) -> None:
         """Update command data."""
         # padding data
-        self.data = SecBootBlckSize.align_block_fill_random(self.data)
+        if self.zero_filling or self._header.zero_filling:
+            self.data = SecBootBlckSize.align_block_fill_zeros(self.data)
+        else:
+            self.data = SecBootBlckSize.align_block_fill_random(self.data)
         # update header
         self._header.count = len(self.data)
         crc32_function = mkPredefinedCrcFun("crc-32-mpeg")
@@ -352,7 +360,9 @@ class CmdFill(CmdBaseClass):
             size += CmdHeader.SIZE - (size % CmdHeader.SIZE)
         return size
 
-    def __init__(self, address: int, pattern: int, length: Optional[int] = None) -> None:
+    def __init__(
+        self, address: int, pattern: int, length: Optional[int] = None, zero_filling: bool = False
+    ) -> None:
         """Initialize Command Fill.
 
         :param address: to write data
@@ -386,6 +396,7 @@ class CmdFill(CmdBaseClass):
         # update header
         self._header.data = unpack_from(">L", self._pattern)[0]
         self._header.count = length
+        self.zero_filling = zero_filling
 
     @property
     def pattern(self) -> bytes:
@@ -402,7 +413,10 @@ class CmdFill(CmdBaseClass):
         # export cmd
         data = super().export()
         # export additional data
-        data = SecBootBlckSize.align_block_fill_random(data)
+        if self.zero_filling or self._header.zero_filling:
+            data = SecBootBlckSize.align_block_fill_zeros(data)
+        else:
+            data = SecBootBlckSize.align_block_fill_random(data)
         return data
 
     @classmethod

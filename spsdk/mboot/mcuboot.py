@@ -14,14 +14,12 @@ import time
 from types import TracebackType
 from typing import Callable, Dict, List, Optional, Sequence, Type
 
-from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.utils.interfaces.device.usb_device import UsbDevice
-
-from .commands import (
+from spsdk.mboot.commands import (
     CmdPacket,
     CmdResponse,
     CommandFlag,
     CommandTag,
+    EL2GOCommandGroup,
     FlashReadOnceResponse,
     FlashReadResourceResponse,
     GenerateKeyBlobSelect,
@@ -36,16 +34,18 @@ from .commands import (
     TrustProvOperation,
     TrustProvWpc,
 )
-from .error_codes import StatusCode, stringify_status_code
-from .exceptions import (
+from spsdk.mboot.error_codes import StatusCode, stringify_status_code
+from spsdk.mboot.exceptions import (
     McuBootCommandError,
     McuBootConnectionError,
     McuBootDataAbortError,
     McuBootError,
     SPSDKError,
 )
-from .memories import ExtMemId, ExtMemRegion, FlashRegion, MemoryRegion, RamRegion
-from .properties import PropertyTag, PropertyValueBase, Version, parse_property_value
+from spsdk.mboot.memories import ExtMemId, ExtMemRegion, FlashRegion, MemoryRegion, RamRegion
+from spsdk.mboot.properties import PropertyTag, PropertyValueBase, Version, parse_property_value
+from spsdk.mboot.protocol.base import MbootProtocolBase
+from spsdk.utils.interfaces.device.usb_device import UsbDevice
 
 logger = logging.getLogger(__name__)
 
@@ -399,7 +399,8 @@ class McuBoot:  # pylint: disable=too-many-public-methods
         :raises SPSDKError: Other Error
         """
         ext_mem_list: List[ExtMemRegion] = []
-        ext_mem_ids: Sequence[int] = ExtMemId.tags()
+        # The items of ExtMemId enum may not have unique tags
+        ext_mem_ids: Sequence[int] = list(set(ExtMemId.tags()))
         try:
             values = self.get_property(PropertyTag.CURRENT_VERSION)
         except McuBootCommandError:
@@ -458,7 +459,7 @@ class McuBoot:  # pylint: disable=too-many-public-methods
 
         # Internal RAM
         ram_data = self._get_internal_ram()
-        if mdata:
+        if ram_data:
             memory_list["internal_ram"] = ram_data
 
         # External Memories
@@ -753,8 +754,6 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             self._status_code = StatusCode.SUCCESS.tag
 
         if reopen:
-            if not self.reopen:
-                raise McuBootError("reopen is not supported")
             time.sleep(timeout / 1000)
             try:
                 self.open()
@@ -1658,6 +1657,32 @@ class McuBoot:  # pylint: disable=too-many-public-methods
             signature_output_size,
         )
         cmd_response = self._process_cmd(cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values[0]
+        return None
+
+    def el2go_get_version(self) -> Optional[List[int]]:
+        """Get version of the EL2GO Provisioning FW."""
+        logger.info("CMD: Getting FW version")
+        cmd_packet = CmdPacket(
+            CommandTag.EL2GO, CommandFlag.NONE.tag, EL2GOCommandGroup.EL2GO_GET_FW_VERSION.tag
+        )
+        cmd_response = self._process_cmd(cmd_packet=cmd_packet)
+        if isinstance(cmd_response, TrustProvisioningResponse):
+            return cmd_response.values
+        return None
+
+    def el2go_close_device(self, address: int, dry_run: bool = False) -> Optional[int]:
+        """Close device using EL2GO Provisioning FW."""
+        logger.info("CMD: Close device")
+        cmd_packet = CmdPacket(
+            CommandTag.EL2GO,
+            CommandFlag.NONE.tag,
+            EL2GOCommandGroup.EL2GO_CLOSE_DEVICE.tag,
+            address,
+            dry_run,
+        )
+        cmd_response = self._process_cmd(cmd_packet=cmd_packet)
         if isinstance(cmd_response, TrustProvisioningResponse):
             return cmd_response.values[0]
         return None

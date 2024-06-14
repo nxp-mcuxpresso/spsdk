@@ -28,7 +28,7 @@ except ImportError as import_error:
     ) from import_error
 
 
-from . import scard_commands
+from spsdk.tp.adapters import scard_commands
 
 logger = logging.getLogger(__name__)
 

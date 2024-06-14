@@ -1,8 +1,9 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # ===========  Bootable Image converted config.  ===========
 family: lpc55s3x
 revision: latest
 memory_type: internal
+init_offset: 0
 mbi: mbi.bin

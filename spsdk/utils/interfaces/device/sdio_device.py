@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Low level sdio device."""
+import logging
 import os
 import time
 from io import FileIO
@@ -18,6 +19,8 @@ from spsdk.utils.exceptions import SPSDKTimeoutError
 from spsdk.utils.interfaces.device.base import DeviceBase, logger
 from spsdk.utils.misc import Timeout
 
+logger = logging.getLogger(__name__)
+
 
 class SdioDevice(DeviceBase):
     """SDIO device class."""
@@ -27,7 +30,7 @@ class SdioDevice(DeviceBase):
     def __init__(
         self,
         path: Optional[str] = None,
-        timeout: int = DEFAULT_TIMEOUT,
+        timeout: Optional[int] = None,
     ) -> None:
         """Initialize the SDIO interface object.
 
@@ -37,7 +40,7 @@ class SdioDevice(DeviceBase):
         # Temporarily use hard code until there is a way to retrive VID/PID
         self.vid = 0x0471
         self.pid = 0x0209
-        self._timeout = timeout
+        self._timeout = timeout or self.DEFAULT_TIMEOUT
         if path is None:
             raise SPSDKConnectionError("No SDIO device path")
         self.path = path

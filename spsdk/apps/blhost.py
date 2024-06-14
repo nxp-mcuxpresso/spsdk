@@ -7,13 +7,10 @@
 
 """Console script for MBoot module aka BLHost."""
 
-import inspect
-import json
 import logging
 import os
 import shlex
 import sys
-from typing import Optional
 
 import click
 
@@ -21,6 +18,7 @@ from spsdk.apps.blhost_helper import (
     PROPERTIES_OVERRIDE,
     OemGenMasterShareHelp,
     OemSetMasterShareHelp,
+    display_output,
     parse_key_prov_key_type,
     parse_property_tag,
     parse_trust_prov_key_type,
@@ -29,10 +27,10 @@ from spsdk.apps.blhost_helper import (
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
-    is_click_help,
-    isp_interfaces,
     spsdk_apps_common_options,
     spsdk_family_option,
+    spsdk_mboot_interface,
+    spsdk_use_json_option,
 )
 from spsdk.apps.utils.utils import (
     INT,
@@ -44,14 +42,14 @@ from spsdk.apps.utils.utils import (
     progress_bar,
 )
 from spsdk.exceptions import SPSDKError
-from spsdk.mboot.error_codes import stringify_status_code
 from spsdk.mboot.mcuboot import GenerateKeyBlobSelect, McuBoot, StatusCode, parse_property_value
-from spsdk.mboot.scanner import get_mboot_interface
+from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.utils.misc import Endianness, load_hex_string
 
 
 @click.group(name="blhost", no_args_is_help=True, cls=CommandsTreeGroup)
-@isp_interfaces(uart=True, usb=True, sdio=True, lpcusbsio=True, buspal=True, plugin=True)
+@spsdk_mboot_interface()
+@spsdk_use_json_option
 @spsdk_apps_common_options
 @click.option(
     "-s",
@@ -62,15 +60,9 @@ from spsdk.utils.misc import Endianness, load_hex_string
 @click.pass_context
 def main(
     ctx: click.Context,
-    port: str,
-    usb: str,
-    sdio: str,
-    buspal: str,
-    lpcusbsio: str,
-    plugin: str,
+    interface: MbootProtocolBase,
     use_json: bool,
     log_level: int,
-    timeout: int,
     silent: bool,
 ) -> int:
     """Utility for communication with the bootloader on target."""
@@ -91,22 +83,12 @@ def main(
                 click.echo("Invalid index for get-property", err=True)
                 ctx.exit(1)
 
-    # if --help is provided anywhere on command line, skip interface lookup and display help message
-    if not is_click_help(ctx, sys.argv):
-        ctx.obj = {
-            "interface": get_mboot_interface(
-                port=port,
-                usb=usb,
-                sdio=sdio,
-                plugin=plugin,
-                timeout=timeout,
-                buspal=buspal,
-                lpcusbsio=lpcusbsio,
-            ),
-            "use_json": use_json,
-            "suppress_progress_bar": use_json or silent or log_level < logging.WARNING,
-            "silent": silent,
-        }
+    ctx.obj = {
+        "interface": interface,
+        "use_json": use_json,
+        "suppress_progress_bar": use_json or silent or log_level < logging.WARNING,
+        "silent": silent,
+    }
     return 0
 
 
@@ -120,7 +102,7 @@ def batch(ctx: click.Context, command_file: str) -> None:
     example: "read-memory 0 4096 memory.bin"
     example: "get-property 24 # read target version"
 
-    Comment are supported. Everything after '#' is a comment (just like in Python/Shell)
+    Comments are supported. Everything after '#' is a comment (just like in Python/Shell)
 
     Note: This is an early experimental format, it may change at any time.
 
@@ -184,7 +166,7 @@ def configure_memory(ctx: click.Context, address: int, memory_id: int) -> None:
 @click.argument(
     "lock",
     metavar="[nolock/lock]",
-    type=click.Choice(["nolock", "lock"]),
+    type=click.Choice(["nolock", "lock"], case_sensitive=False),
     default="nolock",
 )
 @click.option(
@@ -359,12 +341,12 @@ def flash_image(ctx: click.Context, image_file_path: str, erase: str, memory_id:
 
 @main.command(no_args_is_help=True)
 @click.argument("index", type=INT(), required=True)
-@click.argument("byte_count", type=click.Choice(["4", "8"]), required=True)
+@click.argument("byte_count", type=click.Choice(["4", "8"], case_sensitive=False), required=True)
 @click.argument("data", type=INT(base=16), required=True)
 @click.argument(
     "endianness",
     metavar="[LSB|MSB]",
-    type=click.Choice(["LSB", "MSB"]),
+    type=click.Choice(["LSB", "MSB"], case_sensitive=False),
     default="LSB",
     required=False,
 )
@@ -389,7 +371,9 @@ def flash_program_once(
 
 @main.command(no_args_is_help=True)
 @click.argument("index", type=INT(), required=True)
-@click.argument("byte_count", type=click.Choice(["4", "8"]), required=True, default="4")
+@click.argument(
+    "byte_count", type=click.Choice(["4", "8"], case_sensitive=False), required=True, default="4"
+)
 @click.pass_context
 def flash_read_once(ctx: click.Context, index: int, byte_count: str) -> None:
     """Returns the contents of a specific program once field.
@@ -435,7 +419,7 @@ def flash_security_disable(ctx: click.Context, key: str) -> None:
 @main.command(no_args_is_help=True)
 @click.argument("address", type=INT(), required=True)
 @click.argument("length", type=INT(), required=True)
-@click.argument("option", type=click.Choice(["0", "1"]), required=True)
+@click.argument("option", type=click.Choice(["0", "1"], case_sensitive=False), required=True)
 @click.argument("out_file", metavar="FILE", type=click.File("wb"), required=False)
 @click.option("-h", "--use-hexdump", is_flag=True, default=False, help="Use hexdump format")
 @click.pass_context
@@ -483,7 +467,7 @@ def flash_read_resource(
 @click.argument(
     "pattern_format",
     metavar="format",
-    type=click.Choice(["word", "short", "byte"]),
+    type=click.Choice(["word", "short", "byte"], case_sensitive=False),
     required=False,
     default="word",
 )
@@ -679,6 +663,8 @@ def get_property(
     20 or 'boot status'                 Value of Boot Status Register
     21 or 'loadable-fw-version'         LoadableFWVersion
     22 or 'fuse-program-voltage'        Fuse Program Voltage
+    for mcxa1xx devices:
+    17 or 'life-cycle'                  Life Cycle
 
     \b
     Note: Not all the properties are available for all devices.
@@ -899,7 +885,7 @@ def write_memory(ctx: click.Context, address: int, data_source: str, memory_id: 
 @click.argument(
     "key_sel",
     metavar="[KEY_SEL]",
-    type=click.Choice(["0", "1", "2", "3", "OPTMK", "ZMK", "CMK"]),
+    type=click.Choice(["0", "1", "2", "3", "OPTMK", "ZMK", "CMK"], case_sensitive=False),
     default="0",
 )
 @click.pass_context
@@ -1821,54 +1807,6 @@ def set_wrap_data(ctx: click.Context, address: int, control: int, stage: int) ->
     with McuBoot(ctx.obj["interface"]) as mboot:
         mboot.tp_set_wrapped_data(address=address, control=control, stage=stage)
         display_output(None, mboot.status_code, use_json=ctx.obj["use_json"])
-
-
-def display_output(
-    response: Optional[list] = None,
-    status_code: int = 0,
-    use_json: bool = False,
-    suppress: bool = False,
-    extra_output: Optional[str] = None,
-) -> None:
-    """Displays response and status code.
-
-    :param response: Response from the MBoot function
-    :param status_code: MBoot status code
-    :param use_json: Format the output in JSON format, defaults to False
-    :param suppress: Suppress display
-    :param extra_output: Extra string to print out, defaults to None
-    :raises SPSDKAppError: Command is executed properly, how MBoot status code is non-zero
-    """
-    if suppress:
-        pass
-    elif use_json:
-        data = {
-            # get the name of a caller function and replace _ with -
-            "command": inspect.stack()[1].function.replace("_", "-"),
-            # this is just a visualization thing
-            "response": response or [],
-            "status": {
-                "description": stringify_status_code(status_code),
-                "value": status_code,
-            },
-        }
-        print(json.dumps(data, indent=3))
-    else:
-        print(f"Response status = {stringify_status_code(status_code)}")
-        if isinstance(response, list):
-            filtered_response = filter(lambda x: x is not None, response)
-            for i, word in enumerate(filtered_response):
-                print(f"Response word {i + 1} = {word} ({word:#x})")
-        if extra_output:
-            print(extra_output)
-    # Force exit to handover the current status code.
-    # We could do that because this function is called as last from each subcommand
-    if status_code:
-        raise SPSDKAppError()
-
-
-# For backward compatibility
-decode_status_code = stringify_status_code
 
 
 @catch_spsdk_error

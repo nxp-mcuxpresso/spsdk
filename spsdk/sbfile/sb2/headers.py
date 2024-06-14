@@ -50,7 +50,7 @@ class ImageHeaderV2(BaseClass):
         :param component_version: The component version (default: 1.0.0)
         :param build_number: The build number value (default: 0)
         :param flags: The flags value (default: 0x08)
-        :param nonce: The NONCE value; None if TODO ????
+        :param nonce: The NONCE value
         :param timestamp: value requested in the test; None to use current value
         :param padding: header padding (8 bytes) for testing purpose; None to use random values (recommended)
         """

@@ -239,8 +239,8 @@ class MasterBootImage:
         :param data: MBI raw data
         :return: Image type int representation
         """
-        img_type = get_db(device).get_int(DatabaseManager.MBI, ["fixed_image_type"])
-        if not img_type:
+        img_type = get_db(device).get_int(DatabaseManager.MBI, ["fixed_image_type"], -1)
+        if img_type < 0:
             return mbi_mixin.Mbi_MixinIvt.get_image_type(data)
         return img_type
 
@@ -268,7 +268,7 @@ class MasterBootImage:
 
         return "-".join(acronyms)
 
-    def __init__(self, **kwargs: Dict[str, Any]) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         """Initialization of MBI.
 
         :param kwargs: Various input parameters based on used dynamic class.

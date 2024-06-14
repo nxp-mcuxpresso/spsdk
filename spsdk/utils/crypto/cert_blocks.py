@@ -19,10 +19,10 @@ from typing_extensions import Self
 
 from spsdk import version as spsdk_version
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import PrivateKeyRsa, PublicKeyEcc
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key, extract_public_key_from_data, get_matching_key_id
 from spsdk.exceptions import (
     SPSDKError,
@@ -587,9 +587,7 @@ class CertBlockV1(CertBlock):
     def generate_config_template(_family: Optional[str] = None) -> str:
         """Generate configuration for certification block v1."""
         val_schemas = CertBlockV1.get_validation_schemas()
-        val_schemas.append(
-            DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"]
-        )
+        val_schemas.append(get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"])
         return CommentedConfig("Certification Block V1 template", val_schemas).get_template()
 
     def create_config(self, data_path: str) -> str:
@@ -935,10 +933,12 @@ class RootKeyRecord(BaseClass):
         root_key_record = cls(ca_flag=ca_flag, root_certs=[], used_root_cert=used_rot_ix)
         root_key_record.flags = flags
         offset = 4  # move offset just after FLAGS
+        rkht = b""
         if number_of_hashes > 1:
             rkht_len = rotkh_len * number_of_hashes
             rkht = data[offset : offset + rkht_len]
             offset += rkht_len
+
         root_key_record.root_public_key = data[offset : offset + rotkh_len * 2]
         root_key_record._rkht = (
             RKHTv21.parse(rkht, cls.get_hash_algorithm(flags))
@@ -1178,17 +1178,30 @@ class IskCertificateLite(BaseClass):
         if not signature_provider:
             raise SPSDKError("ISK Certificate: The signature provider is not specified.")
 
-        data = pack(self.HEADER_FORMAT, self.MAGIC, self.VERSION, self.constraints)
-        data += self.isk_public_key_data
+        data = self.get_tbs_data()
         self.signature = signature_provider.get_signature(data)
+
+    def get_tbs_data(self) -> bytes:
+        """Get To-Be-Signed data."""
+        data = pack(self.HEADER_FORMAT, self.MAGIC, self.VERSION, self.constraints)
+        if len(self.isk_public_key_data) != self.ISK_PUB_KEY_LENGTH:
+            raise SPSDKError(
+                "Invalid public key length. "
+                f"Expected: {self.ISK_PUB_KEY_LENGTH}, got: {len(self.isk_public_key_data)}"
+            )
+        data += self.isk_public_key_data
+        if len(data) != self.SIGNATURE_OFFSET:
+            raise SPSDKError(
+                f"Invalid TBS data length. Expected: {self.SIGNATURE_OFFSET}, got: {len(data)}"
+            )
+        return data
 
     def export(self) -> bytes:
         """Export ISK certificate as bytes array."""
         if not self.signature:
             raise SPSDKError("Signature is not set.")
 
-        data = pack(self.HEADER_FORMAT, self.MAGIC, self.VERSION, self.constraints)
-        data += self.isk_public_key_data
+        data = self.get_tbs_data()
         data += self.signature
 
         assert len(data) == self.expected_size, "ISK Cert data size does not match"
@@ -1432,9 +1445,7 @@ class CertBlockV21(CertBlock):
     def generate_config_template(family: Optional[str] = None) -> str:
         """Generate configuration for certification block v21."""
         val_schemas = CertBlockV21.get_validation_schemas()
-        val_schemas.append(
-            DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"]
-        )
+        val_schemas.append(get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"])
 
         if family:
             # find family
@@ -1566,6 +1577,10 @@ class CertBlockVx(CertBlock):
         isk_cert_data = self.isk_certificate.export()
         return isk_cert_data
 
+    def get_tbs_data(self) -> bytes:
+        """Get To-Be-Signed data."""
+        return self.isk_certificate.get_tbs_data()
+
     @classmethod
     def parse(cls, data: bytes) -> "Self":
         """Parse Certificate block from bytes array.This operation is not supported.
@@ -1647,9 +1662,7 @@ class CertBlockVx(CertBlock):
     def generate_config_template(_family: Optional[str] = None) -> str:
         """Generate configuration for certification block vX."""
         val_schemas = CertBlockVx.get_validation_schemas()
-        val_schemas.append(
-            DatabaseManager().db.get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"]
-        )
+        val_schemas.append(get_schema_file(DatabaseManager.CERT_BLOCK)["cert_block_output"])
         return CommentedConfig("Certification Block Vx template", val_schemas).get_template()
 
     @classmethod

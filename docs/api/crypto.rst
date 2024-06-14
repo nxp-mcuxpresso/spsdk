@@ -57,7 +57,7 @@ Crypto module CMAC
 Crypto module HMAC
 --------------------------------------
 
-.. automodule:: spsdk.crypto.hmac
+.. automodule:: spsdk.crypto.spsdk_hmac
    :members:
    :undoc-members:
    :show-inheritance:
@@ -99,7 +99,7 @@ Crypto module OSCCA
 Crypto module types
 --------------------------------------
 
-.. automodule:: spsdk.crypto.types
+.. automodule:: spsdk.crypto.crypto_types
    :members:
    :undoc-members:
    :show-inheritance:

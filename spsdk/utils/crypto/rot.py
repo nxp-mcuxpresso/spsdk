@@ -14,8 +14,8 @@ from typing import List, Optional, Sequence, Type, Union
 from spsdk.crypto.certificate import Certificate
 from spsdk.crypto.keys import PrivateKey, PublicKey
 from spsdk.exceptions import SPSDKError
-from spsdk.image.ahab.ahab_container import SRKRecord
-from spsdk.image.ahab.ahab_container import SRKTable as AhabSrkTable
+from spsdk.image.ahab.ahab_srk import SRKRecord
+from spsdk.image.ahab.ahab_srk import SRKTable as AhabSrkTable
 from spsdk.image.secret import SrkItem
 from spsdk.image.secret import SrkTable as HabSrkTable
 from spsdk.utils.crypto.rkht import RKHT, RKHTv1, RKHTv21

@@ -1,0 +1,165 @@
+{
+    "cpu": "MWCT20D2",
+    "groups": [
+        {
+            "group": {
+                "name": "Customer IFR data",
+                "description": "Customer IFR data"
+            },
+            "registers": [
+                {
+                    "id": "field000",
+                    "name": "CUSTOMER_DEFINED0",
+                    "description": "Customer defined",
+                    "index_int": "0x0000",
+                    "offset_int": "0x0000",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field001",
+                    "name": "CUSTOMER_DEFINED1",
+                    "description": "Customer defined",
+                    "index_int": "0x0001",
+                    "offset_int": "0x0001",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field002",
+                    "name": "CUSTOMER_DEFINED2",
+                    "description": "Customer defined",
+                    "index_int": "0x0002",
+                    "offset_int": "0x0002",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field003",
+                    "name": "CUSTOMER_DEFINED3",
+                    "description": "Customer defined",
+                    "index_int": "0x0003",
+                    "offset_int": "0x0003",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field004",
+                    "name": "CUSTOMER_DEFINED4",
+                    "description": "Customer defined",
+                    "index_int": "0x0004",
+                    "offset_int": "0x0004",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field005",
+                    "name": "CUSTOMER_DEFINED5",
+                    "description": "Customer defined",
+                    "index_int": "0x0005",
+                    "offset_int": "0x0005",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field006",
+                    "name": "CUSTOMER_DEFINED6",
+                    "description": "Customer defined",
+                    "index_int": "0x0006",
+                    "offset_int": "0x0006",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field007",
+                    "name": "CUSTOMER_DEFINED7",
+                    "description": "Customer defined",
+                    "index_int": "0x0007",
+                    "offset_int": "0x0007",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field008",
+                    "name": "CUSTOMER_DEFINED8",
+                    "description": "Customer defined",
+                    "index_int": "0x0008",
+                    "offset_int": "0x0008",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field009",
+                    "name": "CUSTOMER_DEFINED9",
+                    "description": "Customer defined",
+                    "index_int": "0x0009",
+                    "offset_int": "0x0009",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field010",
+                    "name": "CUSTOMER_DEFINED10",
+                    "description": "Customer defined",
+                    "index_int": "0x000A",
+                    "offset_int": "0x000A",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field011",
+                    "name": "CUSTOMER_DEFINED11",
+                    "description": "Customer defined",
+                    "index_int": "0x000B",
+                    "offset_int": "0x000B",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        },
+        {
+            "group": {
+                "name": "ISK_CERT_HASH",
+                "description": "ISK_CERT_HASH"
+            },
+            "registers": [
+                {
+                    "id": "field012",
+                    "name": "ISK_CERT_HASH[31:0]",
+                    "description": "ISK_CERT_HASH[31:0]",
+                    "index_int": "0x000C",
+                    "offset_int": "0x000C",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field013",
+                    "name": "ISK_CERT_HASH[63:32]",
+                    "description": "ISK_CERT_HASH[63:32]",
+                    "index_int": "0x000D",
+                    "offset_int": "0x000D",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field014",
+                    "name": "ISK_CERT_HASH[95:64]",
+                    "description": "ISK_CERT_HASH[96:64]",
+                    "index_int": "0x000E",
+                    "offset_int": "0x000E",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                },
+                {
+                    "id": "field015",
+                    "name": "ISK_CERT_HASH[127:96]",
+                    "description": "ISK_CERT_HASH[127:96]",
+                    "index_int": "0x000F",
+                    "offset_int": "0x000F",
+                    "reset_value_int": "0xFFFFFFFF",
+                    "individual_write_lock": "implicit"
+                }
+            ]
+        }
+    ]
+}

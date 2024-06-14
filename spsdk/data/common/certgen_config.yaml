@@ -37,6 +37,13 @@ subject:
 # ==============================================
 
 # Path, where issuer private key is stored
+# If the issuer_private_key is encrypted, the interactive prompt will ask for password
+# For loading the password in non-interactive way, the configuration parameter 'issuer_private_key_password' can be used.
+# There are multiple formats of issuer_private_key_password values:
+#   1. If the value is an existing path, first line of file is read and returned
+#   2. If the value has format '$ENV_VAR', the value of environment variable ENV_VAR is returned
+#   3. If the value has format '$ENV_VAR' and the value contains a valid path to a file, the first line of a file is returned
+#   4. If the value does not match any options above, the input value itself is returned
 issuer_private_key: issuer_key.pem
 # Use PSS padding in case of RSA private key
 pss_padding: false

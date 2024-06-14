@@ -18,19 +18,25 @@ from click.testing import Result
 
 from spsdk.apps import nxpcrypto
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import (
+    IS_DILITHIUM_SUPPORTED,
     IS_OSCCA_SUPPORTED,
     ECDSASignature,
     PrivateKeyRsa,
     PublicKey,
     PublicKeyRsa,
 )
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKSyntaxError
 from spsdk.utils.misc import Endianness, load_binary, load_text, use_working_directory, write_file
 from tests.cli_runner import CliRunner
 from tests.misc import GetPassMock
+
+if IS_DILITHIUM_SUPPORTED:
+    from spsdk_pqc.wrapper import KEY_INFO
+
+    from spsdk.crypto.keys import PrivateKeyDilithium
 
 
 def run_nxpcrypto(cli_runner: CliRunner, cmd: str, cwd: str, expected_code=0) -> Result:
@@ -69,7 +75,7 @@ def test_nxpcrypto_key_verify(
         ("prk_rsa4096.pem", "-e pem --puk", "puk_rsa4096.pem"),
     ],
 )
-def test_nxpcrypto_convert(
+def test_nxpcrypto_key_convert(
     cli_runner: CliRunner, data_dir: str, tmpdir: str, key: str, transform: str, expected: str
 ):
     src_key = f"{data_dir}/{expected}"
@@ -183,17 +189,19 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
 
 
 @pytest.mark.parametrize(
-    "keys, family, ref_rotkth",
+    "keys, family, ref_rotkth, base64",
     [
         (
             ["ec_secp256r1_cert0.pem"],
             "mcxn9xx",
             "671e3f7108621830c08df03c339d2ce9700c0a4bd74f7bfbcc48fbe27c78bf05",
+            False,
         ),
         (
             ["ec_secp256r1_cert0.pem", "ec_secp256r1_cert1.pem"],
             "mcxn9xx",
             "8ba978ef5dd132a4462d8f93abdba11c89d3f8060b3dd4ba6d6d5c9fbb7c38fa",
+            False,
         ),
         (
             [
@@ -204,6 +212,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
             ],
             "mcxn9xx",
             "3f1f71ccd8dfcbcff3e445c21f003a974f8c40ce9aa7d8c567416b9ab45d1655",
+            False,
         ),
         (
             [
@@ -214,6 +223,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
             ],
             "rw61x",
             "3f1f71ccd8dfcbcff3e445c21f003a974f8c40ce9aa7d8c567416b9ab45d1655",
+            False,
         ),
         (
             [
@@ -224,6 +234,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
             ],
             "kw45xx",
             "3f1f71ccd8dfcbcff3e445c21f003a974f8c40ce9aa7d8c567416b9ab45d1655",
+            False,
         ),
         (
             [
@@ -234,16 +245,19 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
             ],
             "k32w1xx",
             "3f1f71ccd8dfcbcff3e445c21f003a974f8c40ce9aa7d8c567416b9ab45d1655",
+            False,
         ),
         (
             ["ec_secp256r1_cert0.pem"],
             "lpc55s0x",
             "7eb98e20a565ba54e866a3920967c3a56a1acf07043ab08fc36a90d55a6e0eb0",
+            False,
         ),
         (
             ["ec_secp256r1_cert0.pem", "ec_secp256r1_cert1.pem"],
             "lpc55s0x",
             "3e3bfcd794c998eeaef6347a2a438ec36e5e5132d350d31fcbd927bfcc120c9e",
+            False,
         ),
         (
             [
@@ -254,6 +268,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
             ],
             "lpc55s0x",
             "3f1f71ccd8dfcbcff3e445c21f003a974f8c40ce9aa7d8c567416b9ab45d1655",
+            False,
         ),
         (
             [
@@ -264,6 +279,7 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
             ],
             "rt118x",
             "2fa79d4d4cadefe5cc33b7d0f56e760cfdf65681e8da8f65c737d53066479e7f",
+            False,
         ),
         (
             [
@@ -274,20 +290,41 @@ def test_key_types(cli_runner: CliRunner, tmpdir, key, valid):
             ],
             "rt117x",
             "bcd8f444bd7f9ccd8048a8bcf8c2764f085058ed527c6978037a94ffb81c14e8",
+            False,
+        ),
+        (
+            [
+                "ec_secp256r1_cert0.pem",
+                "ec_secp256r1_cert1.pem",
+                "ec_secp256r1_cert2.pem",
+                "ec_secp256r1_cert3.pem",
+            ],
+            "rt118x",
+            "L6edTUyt7+XMM7fQ9W52DP32VoHo2o9lxzfVMGZHnn8=",
+            True,
         ),
     ],
 )
 def test_nxpcrypto_rot_calc_hash(
-    cli_runner: CliRunner, data_dir: str, tmpdir: str, keys: List, family: str, ref_rotkth: str
+    cli_runner: CliRunner,
+    data_dir: str,
+    tmpdir: str,
+    keys: List,
+    family: str,
+    ref_rotkth: str,
+    base64: bool,
 ):
     out_file = os.path.join(tmpdir, "rot_hash.bin")
     cmd = f"rot calculate-hash -f {family} -o {out_file}"
     for key in keys:
         cmd = " ".join([cmd, f"-k {key}"])
+    if base64:
+        cmd += " -b"
     run_nxpcrypto(cli_runner, cmd, data_dir)
     assert os.path.isfile(out_file)
-    rotkth = load_binary(out_file)
-    assert rotkth.hex() == ref_rotkth
+    rotkth_bin = load_binary(out_file)
+    rotkth = rotkth_bin.decode("utf-8") if base64 else rotkth_bin.hex()
+    assert rotkth == ref_rotkth
 
 
 @pytest.mark.parametrize(
@@ -356,18 +393,24 @@ def test_npxcrypto_cert_get_template(cli_runner: CliRunner, tmpdir):
     "key_type",
     ["SECP256R1", "SECP384R1", "SECP521R1", "RSA2048", "RSA4096"],
 )
+@pytest.mark.parametrize("encoding", ["PEM", "DER"])
 def test_nxpcrypto_cert_generate(
-    cli_runner: CliRunner, data_dir: str, tmpdir, key_type: str, password: Optional[str]
+    cli_runner: CliRunner,
+    data_dir: str,
+    tmpdir,
+    key_type: str,
+    password: Optional[str],
+    encoding: str,
 ):
     # Generate subject key pair
     subject_key = os.path.join(tmpdir, "subject_key.pem")
     subject_public_key = os.path.join(tmpdir, "subject_key.pub")
-    cmd = ["key", "generate", "-k", key_type, "-o", subject_key, "-e", "PEM"]
+    cmd = ["key", "generate", "-k", key_type, "-o", subject_key, "-e", encoding]
     cli_runner.invoke(nxpcrypto.main, cmd)
 
     # Generate issuer key pair
     issuer_key = os.path.join(tmpdir, "issuer_key.pem")
-    cmd = ["key", "generate", "-k", key_type, "-o", issuer_key, "-e", "PEM"]
+    cmd = ["key", "generate", "-k", key_type, "-o", issuer_key, "-e", encoding]
     if password:
         cmd.extend(["--password", password])
         GetPassMock.PASSWORD = password
@@ -376,7 +419,7 @@ def test_nxpcrypto_cert_generate(
     shutil.copy(os.path.join(data_dir, "cert.yaml"), tmpdir)
     crt_config = os.path.join(tmpdir, "cert.yaml")
     out_crt = os.path.join(tmpdir, "cert.crt")
-    cmd = ["cert", "generate", "-c", crt_config, "-o", out_crt]
+    cmd = ["cert", "generate", "-c", crt_config, "-o", out_crt, "-e", encoding]
     cli_runner.invoke(nxpcrypto.main, cmd)
     assert os.path.isfile(out_crt)
     Certificate.load(out_crt)
@@ -384,6 +427,16 @@ def test_nxpcrypto_cert_generate(
     cmd = ["cert", "verify", "-c", out_crt, "-p", subject_public_key]
     result = cli_runner.invoke(nxpcrypto.main, cmd)
     assert "Public key in certificate matches the input" in result.output
+
+    # Convert the certificate to DER
+    cmd = ["cert", "convert", "-i", out_crt, "-e", "DER", "-o", f"{tmpdir}/cert.der"]
+    result = cli_runner.invoke(nxpcrypto.main, cmd)
+    assert os.path.isfile(f"{tmpdir}/cert.der")
+
+    # Convert the certificate to PEM
+    cmd = ["cert", "convert", "-i", f"{tmpdir}/cert.der", "-e", "PEM", "-o", f"{tmpdir}/cert.pem"]
+    result = cli_runner.invoke(nxpcrypto.main, cmd)
+    assert os.path.isfile(f"{tmpdir}/cert.pem")
 
 
 SIGNATURE_NOT_MATCHING = "Signature IS NOT matching the public key"
@@ -393,7 +446,12 @@ SIGNATURE_MATCHING = "Signature IS matching the public key"
 def get_key_path(data_dir: str, key_type: str):
     """Get paths to pre-generated key pairs."""
     sign_data_dir = os.path.join(data_dir, "signature_tool")
-    private_ext = "pem" if key_type != "sm2" else "der"
+    private_ext = "pem"
+    if key_type == "sm2":
+        private_ext = "der"
+    if key_type.startswith("dil"):
+        private_ext = "bin"
+
     private = os.path.join(sign_data_dir, f"{key_type}.{private_ext}")
     public = os.path.join(sign_data_dir, f"{key_type}.pub")
     assert os.path.isfile(private)
@@ -483,6 +541,28 @@ def test_nxpcrypto_create_signature_algorithm_oscca(cli_runner: CliRunner, data_
     assert pub.verify_signature(signature, load_binary(input_file))
 
 
+@pytest.mark.skipif(not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed")
+@pytest.mark.parametrize(
+    "level", PrivateKeyDilithium.SUPPORTED_LEVELS if IS_DILITHIUM_SUPPORTED else []
+)  # this would fail on ImportError if not handled when pqc is not installed
+def test_nxpcrypto_create_signature_algorithm_dilithium(
+    cli_runner: CliRunner, data_dir: str, tmpdir: str, level: int
+):
+    input_file = os.path.join(data_dir, "data_to_sign.bin")
+    output_file = os.path.join(tmpdir, "signature.bin")
+    priv_key, pub_key = get_key_path(data_dir, f"dil{level}")
+
+    cmd = f"signature create -k {priv_key} -i {input_file} -o {output_file}"
+    run_nxpcrypto(cli_runner, cmd, tmpdir)
+    assert os.path.isfile(output_file)
+
+    pub = PublicKey.load(pub_key)
+    signature = load_binary(output_file)
+
+    assert len(signature) == KEY_INFO[level].signature_size
+    assert pub.verify_signature(signature, load_binary(input_file))
+
+
 @pytest.mark.parametrize("signature_provider", [True, False])
 @pytest.mark.parametrize(
     "encoding",
@@ -500,6 +580,24 @@ def test_nxpcrypto_create_signature_algorithm_oscca(cli_runner: CliRunner, data_
             "sm2",
             marks=pytest.mark.skipif(
                 not IS_OSCCA_SUPPORTED, reason="OSCCA support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dil2",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dil3",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dil5",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
             ),
         ),
     ],
@@ -524,8 +622,10 @@ def test_nxpcrypto_signature_create_signature_encoding(
     signature = load_binary(output_file)
     if "secp" in key_type or "sm2" == key_type:
         assert ECDSASignature.get_encoding(signature) == encoding
-    else:
+    if "rsa" in key_type:
         assert len(signature) == {"rsa2048": 256, "rsa4096": 512}[key_type]
+    if "dil" in key_type:
+        assert len(signature) == KEY_INFO[int(key_type.replace("dil", ""))].signature_size
 
 
 @patch("spsdk.crypto.keys.getpass", GetPassMock)
@@ -651,6 +751,24 @@ def test_nxpcrypto_create_signature_regions_rsa_invalid(
             "sm2",
             marks=pytest.mark.skipif(
                 not IS_OSCCA_SUPPORTED, reason="OSCCA support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dil2",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dil3",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
+            ),
+        ),
+        pytest.param(
+            "dil5",
+            marks=pytest.mark.skipif(
+                not IS_DILITHIUM_SUPPORTED, reason="PQC support is not installed"
             ),
         ),
     ],

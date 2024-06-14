@@ -11,8 +11,8 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, cast
 
 from spsdk.crypto.certificate import Certificate, SPSDKNameOID, generate_name
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import PrivateKeyEcc, PublicKeyEcc
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
@@ -33,11 +33,11 @@ except ImportError as e:
     ) from e
 
 
-from ..exceptions import SPSDKTpError
-from ..tp_intf import TpDevInterface, TpIntfDescription
-from . import scard_commands
-from .scard_utils import ProvItem, get_applet_infos
-from .utils import OEMCertInfo, TPFlags, sanitize_common_name
+from spsdk.tp.adapters import scard_commands
+from spsdk.tp.adapters.scard_utils import ProvItem, get_applet_infos
+from spsdk.tp.adapters.utils import OEMCertInfo, TPFlags, sanitize_common_name
+from spsdk.tp.exceptions import SPSDKTpError
+from spsdk.tp.tp_intf import TpDevInterface, TpIntfDescription
 
 logger = logging.getLogger(__name__)
 

@@ -9,24 +9,26 @@
 
 import logging
 import sys
-from typing import Optional, Union
+from typing import Callable
 
 import click
 
+from spsdk.apps.pfr import _parse_binary_data, _store_output
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     FC,
     CommandsTreeGroup,
-    isp_interfaces,
     spsdk_apps_common_options,
     spsdk_config_option,
+    spsdk_family_option,
+    spsdk_mboot_interface,
     spsdk_output_option,
+    spsdk_revision_option,
 )
-from spsdk.apps.utils.utils import catch_spsdk_error, format_raw_data
+from spsdk.apps.utils.utils import catch_spsdk_error, deprecated_option_warning, format_raw_data
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.mboot.scanner import get_mboot_interface
 from spsdk.pfr import pfr
 from spsdk.utils.misc import load_binary, load_configuration, size_fmt, write_file
 from spsdk.utils.schema_validator import CommentedConfig
@@ -34,59 +36,41 @@ from spsdk.utils.schema_validator import CommentedConfig
 logger = logging.getLogger(__name__)
 
 
-def _parse_binary_data(
-    data: bytes,
-    family: str,
-    revision: str = "latest",
-    show_diff: bool = False,
-) -> str:
-    """Parse binary data and extract YAML configuration.
+def ifr_device_type_options(no_type: bool = False) -> Callable:
+    """IFR common device click options.
 
-    :param data: Data to parse
-    :param family: Family to use
-    :param revision: Revision to use, defaults to 'latest'
-    :param show_diff: Show only difference to default
-    :return: IFR YAML configuration as a string
+    :param no_type: If true, the type option is not added, defaults to False
+    :return: Click decorator
     """
-    ifr_obj = pfr.ROMCFG(family=family, revision=revision)
-    ifr_obj.parse(data)
-    parsed = ifr_obj.get_config(diff=show_diff)
-    schemas = ifr_obj.get_validation_schemas(family=family, revision=revision)
-    yaml_data = CommentedConfig("IFR configuration from parsed binary", schemas=schemas).get_config(
-        parsed
-    )
-    return yaml_data
 
+    def decorator(options: Callable[[FC], FC]) -> Callable[[FC], FC]:
+        """Setup IFR options for device, revision and sector."""
+        options = click.option(
+            "-r",
+            "--revision",
+            help="Chip revision; if not specified, most recent one will be used",
+            default="latest",
+        )(options)
+        options = click.option(
+            "-f",
+            "--family",
+            type=click.Choice(pfr.ROMCFG.get_supported_families(), case_sensitive=False),
+            help="Device to use",
+            required=True,
+        )(options)
+        if not no_type:
+            options = click.option(
+                "-s",
+                "--sector",
+                "sector",
+                required=False,
+                type=click.Choice(["ROMCFG", "CMACTable"], case_sensitive=False),
+                default="ROMCFG",
+                help="Select IFR sector",
+            )(options)
+        return options
 
-def _store_output(
-    data: Union[str, bytes], path: Optional[str], mode: str = "w", msg: Optional[str] = None
-) -> None:
-    """Store the output data; either on stdout or into file if it's provided."""
-    if msg:
-        click.echo(msg)
-    if path is None:
-        click.echo(data)
-    else:
-        click.echo(f"Result has been stored in: {path}")
-        write_file(data, path=path, mode=mode)
-
-
-def ifr_device_type_options(options: FC) -> FC:
-    """Setup IFR options for family and revision."""
-    options = click.option(
-        "-r",
-        "--revision",
-        help="Chip revision; if not specified, most recent one will be used",
-        default="latest",
-    )(options)
-    options = click.option(
-        "-f",
-        "--family",
-        type=click.Choice(pfr.ROMCFG.get_supported_families()),
-        help="Device to use",
-        required=True,
-    )(options)
-    return options
+    return decorator
 
 
 @click.group(name="ifr", no_args_is_help=True, cls=CommandsTreeGroup)
@@ -98,22 +82,25 @@ def main(log_level: int) -> int:
 
 
 @main.command(name="get-template", no_args_is_help=True)
-@ifr_device_type_options
 @spsdk_output_option(
     required=False,
     force=True,
     help="Save the output into a file instead of console",
 )
+@ifr_device_type_options()
 @click.option("--full", is_flag=True, help="Show full config, including computed values")
-def get_template(family: str, revision: str, output: str, full: bool) -> None:
+def get_template(family: str, revision: str, sector: str, output: str, full: bool) -> None:
     """Generate user configuration template file."""
-    schemas = pfr.ROMCFG.get_validation_schemas(family=family, revision=revision)
+    if full:
+        deprecated_option_warning("full")
+    ifr_cls = pfr.get_ifr_pfr_class(sector, family)
+    schemas = ifr_cls.get_validation_schemas(family=family, revision=revision)
     yaml_data = CommentedConfig("IFR configuration template", schemas).get_template()
     _store_output(yaml_data, output, msg="IFR configuration template has been created.")
 
 
 @main.command(name="parse-binary", no_args_is_help=True)
-@ifr_device_type_options
+@ifr_device_type_options()
 @spsdk_output_option(
     required=False,
     help="Save the output into a file instead of console",
@@ -126,16 +113,23 @@ def get_template(family: str, revision: str, output: str, full: bool) -> None:
     help="Binary to parse",
 )
 @click.option("-d", "--show-diff", is_flag=True, help="Show differences comparing to defaults")
-def parse_binary(revision: str, output: str, binary: str, show_diff: bool, family: str) -> None:
+def parse_binary(
+    revision: str, output: str, binary: str, sector: str, show_diff: bool, family: str
+) -> None:
     """Parse binary and extract configuration."""
     yaml_data = _parse_binary_data(
-        data=load_binary(binary), family=family, revision=revision, show_diff=show_diff
+        data=load_binary(binary),
+        family=family,
+        revision=revision,
+        area=sector,
+        show_diff=show_diff,
     )
     _store_output(yaml_data, output, msg=f"Success. (IFR: {binary} has been parsed.")
 
 
 @main.command(name="generate-binary", no_args_is_help=True)
-@ifr_device_type_options
+@spsdk_family_option(families=pfr.ROMCFG.get_supported_families())
+@spsdk_revision_option
 @spsdk_config_option()
 @spsdk_output_option(
     required=False,
@@ -143,6 +137,10 @@ def parse_binary(revision: str, output: str, binary: str, show_diff: bool, famil
 )
 def generate_binary(output: str, config: str, family: str, revision: str) -> None:
     """Generate binary data."""
+    if family:
+        deprecated_option_warning("family")
+    if revision:
+        deprecated_option_warning("revision")
     ifr_config = load_configuration(str(config))
     pfr.ROMCFG.validate_config(ifr_config)
     ifr_obj = pfr.ROMCFG.load_from_config(ifr_config)
@@ -151,15 +149,9 @@ def generate_binary(output: str, config: str, family: str, revision: str) -> Non
 
 
 @main.command(name="write", no_args_is_help=True)
-@isp_interfaces(
-    uart=True,
-    usb=True,
-    lpcusbsio=True,
-    buspal=True,
-    json_option=False,
-    use_long_timeout_option=True,
-)
-@ifr_device_type_options
+@spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
+@spsdk_family_option(families=pfr.ROMCFG.get_supported_families())
+@spsdk_revision_option
 @click.option(
     "-b",
     "--binary",
@@ -168,18 +160,14 @@ def generate_binary(output: str, config: str, family: str, revision: str) -> Non
     help="Path to IFR data to write.",
 )
 def write(
-    port: str,
-    usb: str,
-    buspal: str,
-    lpcusbsio: str,
-    timeout: int,
+    interface: MbootProtocolBase,
     family: str,
     revision: str,
     binary: str,
 ) -> None:
     """Write IFR page to the device."""
     ifr_obj = pfr.ROMCFG(family=family, revision=revision)
-    ifr_page_address = ifr_obj.reg_config.get_address()
+    ifr_page_address = ifr_obj.db.get_int(ifr_obj.FEATURE_NAME, ifr_obj.DB_SUB_KEYS + ["address"])
     ifr_page_length = ifr_obj.BINARY_SIZE
 
     click.echo(f"{ifr_obj.__class__.__name__} page address on {family} is {ifr_page_address:#x}")
@@ -190,10 +178,6 @@ def write(
             f"IFR page length is {ifr_page_length}. Provided binary has {size_fmt(len(data))}."
         )
 
-    interface = get_mboot_interface(
-        port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
-    )
-    assert isinstance(interface, MbootProtocolBase)
     with McuBoot(interface=interface) as mboot:
         mboot.write_memory(address=ifr_page_address, data=data)
     click.echo(
@@ -202,15 +186,8 @@ def write(
 
 
 @main.command(name="read", no_args_is_help=True)
-@isp_interfaces(
-    uart=True,
-    usb=True,
-    lpcusbsio=True,
-    buspal=True,
-    json_option=False,
-    use_long_timeout_option=True,
-)
-@ifr_device_type_options
+@spsdk_mboot_interface(use_long_timeout_form=True)
+@ifr_device_type_options()
 @spsdk_output_option(
     required=False,
     help="Store IFR data into a file. If not specified hexdump data into stdout.",
@@ -237,13 +214,10 @@ def write(
     "defaults (--show-diff)",
 )
 def read(
-    port: str,
-    usb: str,
-    buspal: str,
-    lpcusbsio: str,
-    timeout: int,
+    interface: MbootProtocolBase,
     family: str,
     revision: str,
+    sector: str,
     output: str,
     yaml_output: str,
     show_diff: bool,
@@ -256,16 +230,12 @@ def read(
             " In case of debugging those values check the binary data."
         )
     ifr_obj = pfr.ROMCFG(family=family, revision=revision)
-    ifr_page_address = ifr_obj.reg_config.get_address()
+    ifr_page_address = ifr_obj.db.get_int(ifr_obj.FEATURE_NAME, ifr_obj.DB_SUB_KEYS + ["address"])
     ifr_page_length = ifr_obj.BINARY_SIZE
     ifr_page_name = ifr_obj.__class__.__name__
 
     click.echo(f"{ifr_page_name} page address on {family} is {ifr_page_address:#x}")
 
-    interface = get_mboot_interface(
-        port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
-    )
-    assert isinstance(interface, MbootProtocolBase)
     with McuBoot(interface=interface) as mboot:
         data = mboot.read_memory(address=ifr_page_address, length=ifr_page_length)
     if not data:
@@ -279,6 +249,7 @@ def read(
             data=data,
             family=family,
             revision=revision,
+            area=sector,
             show_diff=show_diff,
         )
         write_file(yaml_data, yaml_output)

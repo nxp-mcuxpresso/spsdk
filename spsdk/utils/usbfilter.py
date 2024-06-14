@@ -8,9 +8,10 @@
 """Module defining a USB filtering class."""
 import platform
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from .misc import get_hash
+from spsdk.utils.database import UsbId
+from spsdk.utils.misc import get_hash
 
 
 class USBDeviceFilter:
@@ -241,7 +242,7 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
     def __init__(
         self,
         usb_id: Optional[str] = None,
-        nxp_device_names: Optional[Dict[str, Tuple[int, int]]] = None,
+        nxp_device_names: Optional[Dict[str, List[UsbId]]] = None,
     ):
         """Initialize the USB Device Filtering.
 
@@ -279,12 +280,11 @@ class NXPUSBDeviceFilter(USBDeviceFilter):
         return False
 
     def _is_nxp_device_name(self, vid: int, pid: int) -> bool:
-        nxp_device_name_to_compare = {k.lower(): v for k, v in self.nxp_device_names.items()}
         assert isinstance(self.usb_id, str)
-        if self.usb_id.lower() in nxp_device_name_to_compare:
-            vendor_id, product_id = nxp_device_name_to_compare[self.usb_id.lower()]
-            if vendor_id == vid and product_id == pid:
-                return True
+        if self.usb_id in self.nxp_device_names:
+            for usb_cfg in self.nxp_device_names[self.usb_id]:
+                if usb_cfg.vid == vid and usb_cfg.pid == pid:
+                    return True
         return False
 
     @staticmethod

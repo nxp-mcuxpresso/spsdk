@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,9 +9,9 @@ latest: a0
 # General MCU information
 info:
   use_in_doc: False # Include this MCU in generated documentation
-  purpose: General Purpose Processor
+  purpose: MCX Industrial and IoT Microcontrollers
   # Web page of MCU representative
-  web: https://www.nxp.com
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/mcx-arm-cortex-m/mcx-a-series-microcontrollers:MCX-A-SERIES
   memory_map: # Memory map basic info
     internal_flash:
       base_addr: 0x0
@@ -25,11 +25,12 @@ info:
       base_addr: 0x4000000
       size: 0x3000
       external: false
-  # isp:
-  #   mboot_interfaces: [usb, uart, spi, i2c]
-  #   usb_rom:
-  #     vid: 0x1FC9
-  #     pid: 0x0155
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0155
 
 features:
   # ======== MBI section ========
@@ -39,7 +40,7 @@ features:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinIvt
+          - Mbi_MixinIvtZeroTotalLength
           - Mbi_MixinImageVersion
           - Mbi_ExportMixinApp
       crc_xip:
@@ -60,6 +61,4 @@ features:
     cmpa: # CMPA description
       address: 0x100_0000
       size: 512
-      seal_start: SHA256_DIGEST0
-      seal_count: 8
-      data_file: pfr_cmpa.xml
+      reg_spec: pfr_cmpa.json

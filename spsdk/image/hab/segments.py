@@ -121,13 +121,17 @@ class IvtHabSegment(HabSegmentBase):
         :return: Instance of IVT HAB segment.
         """
         segment = SegIVT2(cls.IVT_VERSION)
-        segment.app_address = config.options.entrypoint_address
-        segment.ivt_address = config.options.start_address + config.options.ivt_offset
+        segment.app_address = (
+            config.options.entrypoint_address
+            if config.options.entrypoint_address is not None
+            else AppHabSegment.get_reset_vector(config.app_image.export())
+        )
+        segment.ivt_address = config.options.start_address + config.options.get_ivt_offset()
         segment.bdt_address = segment.ivt_address + segment.size
         if bool(config.options.flags >> 3):
-            image_len = config.options.initial_load_size + len(config.app_image)
+            image_len = config.options.get_initial_load_size() + len(config.app_image)
             csf_offset = CsfHabSegment.align_offset(image_len)
-            csf_offset = csf_offset - config.options.ivt_offset
+            csf_offset = csf_offset - config.options.get_ivt_offset()
             segment.csf_address = segment.ivt_address + csf_offset
         else:
             segment.csf_address = 0
@@ -196,7 +200,7 @@ class BdtHabSegment(HabSegmentBase):
         }
         end_seg_class = end_segments[(config.options.flags & 0xF) >> 3]
         end_seg = end_seg_class.load_from_config(config, search_paths)
-        segment.app_length = config.options.ivt_offset + end_seg.offset + end_seg.size
+        segment.app_length = config.options.get_ivt_offset() + end_seg.offset + end_seg.size
         offset = IvtHabSegment.OFFSET + SegIVT2.SIZE
         return cls(offset, segment)
 
@@ -402,9 +406,9 @@ class CsfHabSegment(HabSegmentBase):
         :param search_paths: List of paths where to search for the file, defaults to None
         :return: Instance of CSF HAB segment.
         """
-        image_len = config.options.initial_load_size + len(config.app_image)
+        image_len = config.options.get_initial_load_size() + len(config.app_image)
         offset = cls.align_offset(image_len)
-        offset = offset - config.options.ivt_offset
+        offset = offset - config.options.get_ivt_offset()
         if not config.commands:
             raise SPSDKSegmentNotPresent(f"Segment {cls.__name__} is not present")
 
@@ -661,7 +665,7 @@ class AppHabSegment(HabSegmentBase):
         app_bin = config.app_image.export()
         if (config.options.flags & 0xF) >> 3:
             app_bin = align_block(app_bin, 16)
-        offset = config.options.initial_load_size - config.options.ivt_offset
+        offset = config.options.get_initial_load_size() - config.options.get_ivt_offset()
         return cls(offset, app_bin)
 
     def export(self) -> bytes:
@@ -684,9 +688,8 @@ class AppHabSegment(HabSegmentBase):
             """Get app offset from known possible offsets."""
             known_offsets = [0x100, 0x400, 0xC00, 0x1000, 0x2000]
             for offset in known_offsets:
-                reset = int.from_bytes(data[offset + 4 : offset + 8], "little")
-                offset_range = 0x400
-                if ivt.segment.app_address in range(reset - offset_range, reset + offset_range):
+                reset = cls.get_reset_vector(data[offset:])
+                if reset in range(ivt.segment.app_address, ivt.segment.app_address + len(data)):
                     return offset
             raise SPSDKParsingError("Application offset could not be found")
 
@@ -703,6 +706,11 @@ class AppHabSegment(HabSegmentBase):
     def size(self) -> int:
         """Get size of the segment."""
         return len(self.binary)
+
+    @staticmethod
+    def get_reset_vector(data: bytes) -> int:
+        """Get application reset vector."""
+        return int.from_bytes(data[4:8], "little")
 
 
 class HabSegments(List[HabSegmentBase]):

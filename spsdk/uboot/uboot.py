@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Simple Uboot serial console implementation."""
@@ -25,7 +25,8 @@ class Uboot:
     ENCODING = "ascii"
     READ_ALIGNMENT = 16
     DATA_BYTES_SPLIT = 4
-    PROMPT = b"u-boot=> "
+    PROMPT = b"=> "
+    INTERRUPT_STRING = "invalid"
 
     def __init__(
         self, port: str, timeout: int = 1, baudrate: int = 115200, crc: bool = True
@@ -56,11 +57,14 @@ class Uboot:
             return
         crc_command = f"crc32 {hex(address)} {hex(count)}"
         self.write(crc_command)
-        hexdump_str = self.LINE_FEED.join(self.read_output().splitlines()[1:-1])
-        crc_obtained = "0x" + hexdump_str[-8:]
+        hexdump_str = self.LINE_FEED.join(self.read_output().splitlines())
+        if "==>" in hexdump_str:
+            hexdump_str += self.LINE_FEED.join(self.read_output().splitlines())
+        hexdump_str = hexdump_str.splitlines()[-2][-8:]
+        crc_obtained = int("0x" + hexdump_str, base=16)
         logger.debug(f"CRC command:\n{crc_command}\n{crc_obtained}")
         crc_function = mkPredefinedCrcFun("crc-32")
-        calculated_crc = hex(crc_function(data))
+        calculated_crc = crc_function(data)
         logger.debug(f"Calculated CRC {calculated_crc}")
         if calculated_crc != crc_obtained:
             raise SPSDKError(f"Invalid CRC of data {calculated_crc} != {crc_obtained}")
@@ -68,7 +72,41 @@ class Uboot:
     def open(self) -> None:
         """Open uboot device."""
         self._device = Serial(port=self.port, timeout=self.timeout, baudrate=self.baudrate)
+        self.interrupt_autoboot()
         self.is_opened = True
+
+    def is_serial_console_open(self) -> bool:
+        """Check if we are already dropped to uboot serial console .
+
+        Function sends an invalid command expecting
+        serial console prompt with an error message.
+
+        :return: True if the serial console is open else False
+        """
+        self.write(self.INTERRUPT_STRING)
+        output = self.read_output()
+        logger.debug(f"is_serial_console_open: {repr(output)}")
+        return self.PROMPT.decode(self.ENCODING) in output
+
+    def interrupt_autoboot(self) -> None:
+        """Interrupt the uboot booting process.
+
+        Function first checks if we are already in the uboot serial console, if not
+        it notifies the user and waits until board reset. Following that it
+        interrupts the autoboot by sending input to the console..
+
+        In case of the serial console not being open, we wait for the reset
+        """
+        if self.is_serial_console_open():
+            self.read_output()
+            return
+
+        logger.info("Waiting for board reset...")
+
+        while not self.is_serial_console_open():
+            continue
+
+        self.read_output()
 
     def close(self) -> None:
         """Close uboot device."""
@@ -76,7 +114,7 @@ class Uboot:
         self.is_opened = False
 
     def read(self, length: int) -> str:
-        """Read specified number of charactrs from uboot CLI.
+        """Read specified number of characters from uboot CLI.
 
         :param length: count of read characters
         :return: encoded string

@@ -84,8 +84,8 @@ def test_nxpimage_get_template_tz(cli_runner: CliRunner, tmpdir, device, revisio
         ("k32w1xx"),
         ("mcxn9xx"),
         ("nhs52sxx"),
-        ("mc56f81xxx"),
-        ("mwct20d2x"),
+        ("mc56f818xx"),
+        ("mwct2xd2"),
         ("rw61x"),
     ],
 )

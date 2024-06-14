@@ -1,0 +1,41 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =====================================  Bootable Image Configuration for rt105x.  =====================================
+
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+family: rt105x
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+# Possible options: <a0, latest>
+revision: a0
+# ------------------------------------------===== Memory type [Required] =====------------------------------------------
+# Description: Specify type of memory used by bootable image description.
+memory_type: flexspi_nor
+# Description: The segment name or the index of initial segment in exported image
+init_offset: 0 
+# ======================================================================================================================
+#                                           == Bootable Segments definition ==                                          
+# ======================================================================================================================
+# ----------------------------------------===== FCB block path [Optional] =====-----------------------------------------
+# Description: Flash Configuration block Image path. It could be used as pre-prepared binary form of FCB and also YAML
+# configuration file for FCB. In case that YAML configuration file is used, the Bootable image tool build the FCB
+# itself.
+fcb: segment_fcb.bin
+# ------------------------------------===== BEE encryption header 0 [Optional] =====------------------------------------
+# Description: BEE encryption header 0 path
+bee_header_0: ''
+# ------------------------------------===== BEE encryption header 1 [Optional] =====------------------------------------
+# Description: BEE encryption header 1 path
+bee_header_1: ''
+# ======================================================================================================================
+#                                          == Executable Segment definition ==                                          
+# ======================================================================================================================
+# -----------------------------------------===== HAB container [Optional] =====-----------------------------------------
+# Description: HAB container image path. It could be used as pre-prepared binary form of HAB and also YAML configuration
+# file for HAB. In case that YAML configuration file is used, the Bootable image tool build the HAB itself.
+hab_container: segment_hab_container.bin

@@ -18,7 +18,7 @@ IMG_APPS_PATH = os.path.join(IMG_PATH, "spsdk-architecture-apps.png")
 IMG_APIS_PATH = os.path.join(IMG_PATH, "spsdk-architecture-apis.png")
 IMG_ARCHITECTURE_PATH = os.path.join(IMG_PATH, "spsdk-architecture.png")
 
-IMG_FONT_PATH = os.path.join(os.path.abspath("."), "_static/fonts/Roboto-Medium.ttf")
+IMG_FONT_PATH = os.path.join(os.path.abspath("."), "_static/fonts/Poppins-Regular.ttf")
 
 SHOW_IMG = False
 
@@ -206,6 +206,7 @@ def get_spsdk_apps() -> List[str]:
     :return: list of all SPSDK apps
     """
     commands = spsdk_main.commands
+    commands.pop("clear-cache")  # remove clear-cache command
     return list(commands.keys())
 
 

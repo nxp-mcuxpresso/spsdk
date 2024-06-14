@@ -17,19 +17,24 @@ import time
 from functools import partial
 from typing import Callable, Optional, Sequence
 
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import PublicKeyEcc
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
-from spsdk.tp.data_container import AuditLog, DataEntry, PayloadType
+from spsdk.tp.adapters.tptarget_blhost import TpTargetBlHost
+from spsdk.tp.adapters.utils import detect_new_usb_path, get_current_usb_paths, update_usb_path
+from spsdk.tp.data_container import (
+    AuditLog,
+    AuditLogCounter,
+    AuditLogRecord,
+    Container,
+    DataEntry,
+    PayloadType,
+)
+from spsdk.tp.exceptions import SPSDKTpError
+from spsdk.tp.tp_intf import TpDevInterface, TpTargetInterface
 from spsdk.utils.database import DatabaseManager, Features, get_db, get_families
 from spsdk.utils.misc import Timeout, write_file
-
-from .adapters.tptarget_blhost import TpTargetBlHost
-from .adapters.utils import detect_new_usb_path, get_current_usb_paths, update_usb_path
-from .data_container import AuditLogCounter, AuditLogRecord, Container
-from .exceptions import SPSDKTpError
-from .tp_intf import TpDevInterface, TpTargetInterface
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +96,8 @@ class TrustProvisioningHost:
         try:
             if self.tptarget.uses_usb:
                 initial_usb_set = get_current_usb_paths()
+            else:
+                initial_usb_set = None
 
             self.tptarget.load_sb_file(prov_fw, timeout)
             # Need to reset the connection due to re-init on the MCU side

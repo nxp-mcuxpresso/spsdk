@@ -18,6 +18,7 @@ from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
 
 
 def main() -> None:
+    """Setting up target (MCU) models for WPC."""
     model_root = inquirer.filepath(
         message="Path to root folders with target models",
         only_directories=True,

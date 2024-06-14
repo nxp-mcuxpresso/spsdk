@@ -7,6 +7,7 @@
 
 """CLI application for various cryptographic operations."""
 
+import base64
 import hashlib
 import logging
 import os
@@ -25,22 +26,19 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import (
-    ECDSASignature,
     PrivateKey,
     PrivateKeyEcc,
     PrivateKeyRsa,
     PrivateKeySM2,
     PublicKey,
     PublicKeyEcc,
-    SPSDKKeyPassphraseMissing,
     get_ecc_curve,
     get_supported_keys_generators,
-    prompt_for_passphrase,
 )
 from spsdk.crypto.signature_provider import get_signature_provider
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError, SPSDKIndexError, SPSDKSyntaxError, SPSDKValueError
 from spsdk.utils.crypto.rot import Rot
@@ -148,15 +146,27 @@ def export(family: str, key: List[str], password: str, output: str) -> None:
     "--password",
     help="Password when using encrypted private keys.",
 )
+@click.option(
+    "-b",
+    "--base64",
+    "_base64",
+    is_flag=True,
+    default=False,
+    help="Apply base64 encoding on the final RoT hash.",
+)
 @spsdk_output_option(required=False)
-def calculate_hash(family: str, key: List[str], password: str, output: str) -> None:
+def calculate_hash(family: str, key: List[str], password: str, output: str, _base64: bool) -> None:
     """Calculate RoT hash."""
     _rot = Rot(family, keys_or_certs=key, password=password)
     rot_hash = _rot.calculate_hash()
+    if _base64:
+        rot_hash = base64.b64encode(rot_hash)
+        click.echo(f"Base64 encoded RoT hash: '{rot_hash.decode('utf-8')}'")
+    else:
+        click.echo(f"RoT hash: '{rot_hash.hex()}'")
     if output:
         write_file(rot_hash, path=output, mode="wb")
         click.echo(f"Result has been stored in: {output}")
-    click.echo(f"RoT hash: {rot_hash.hex()}")
 
 
 @main.group(name="cert", no_args_is_help=True)
@@ -164,6 +174,7 @@ def cert() -> None:
     """Group of command for working with x509 certificates."""
 
 
+cert.add_command(cert_gen_main.commands["convert"], name="convert")
 cert.add_command(cert_gen_main.commands["generate"], name="generate")
 cert.add_command(cert_gen_main.commands["get-template"], name="get-template")
 cert.add_command(cert_gen_main.commands["verify"], name="verify")
@@ -179,6 +190,7 @@ def key_group() -> None:
     "-k",
     "--key-type",
     type=click.Choice(list(get_supported_keys_generators()), case_sensitive=False),
+    required=True,
     metavar="KEY-TYPE",
     help=f"""\b
         Set of the supported key types.
@@ -204,7 +216,12 @@ def key_group() -> None:
     "If not provided, the output will be unencrypted.",
 )
 @spsdk_output_option(force=True)
-@click.option("-e", "--encoding", type=click.Choice(list(SPSDKEncoding.all())), default="PEM")
+@click.option(
+    "-e",
+    "--encoding",
+    type=click.Choice(list(SPSDKEncoding.all()), case_sensitive=False),
+    default="PEM",
+)
 def key_generate(key_type: str, output: str, password: str, encoding: str) -> None:
     """NXP Key Generator Tool."""
     key_param = key_type.lower().strip()
@@ -390,7 +407,7 @@ def cut_off_data_regions(data: bytes, regions: List[str]) -> bytes:
 @click.option(
     "-a",
     "--algorithm",
-    type=click.Choice(EnumHashAlgorithm.labels()),
+    type=click.Choice(EnumHashAlgorithm.labels(), case_sensitive=False),
     help="Hash algorithm used when signing the message.",
 )
 @click.option(
@@ -403,7 +420,7 @@ def cut_off_data_regions(data: bytes, regions: List[str]) -> bytes:
 @click.option(
     "-e",
     "--encoding",
-    type=click.Choice([SPSDKEncoding.NXP.value, SPSDKEncoding.DER.value]),
+    type=click.Choice([SPSDKEncoding.NXP.value, SPSDKEncoding.DER.value], case_sensitive=False),
     default=SPSDKEncoding.DER.value,
     help="Encoding of output signature. This option is applicable only when signing with ECC keys.",
 )
@@ -448,68 +465,25 @@ def signature_create(
     output: str,
 ) -> None:
     """Sign the data with given private key."""
-    signature = signature_create_command(
-        private_key,
-        signature_provider,
-        password,
-        algorithm,
-        input_file,
-        encoding,
-        pss_padding,
-        regions,
+    if not (signature_provider or private_key):
+        raise SPSDKValueError("Signature provider or private key must be specified.")
+    if signature_provider and private_key:
+        raise SPSDKValueError("One of signature provider and private key must be specified.")
+    hash_alg = EnumHashAlgorithm.from_label(algorithm) if algorithm else None
+    encoding_obj = SPSDKEncoding(encoding.upper()) if encoding else None
+    signature_provider_obj = get_signature_provider(
+        sp_cfg=signature_provider,
+        local_file_key=private_key,
+        password=password,
+        pss_padding=pss_padding,
+        hash_alg=hash_alg,
     )
+
+    data = cut_off_data_regions(load_binary(input_file), regions)
+    signature = signature_provider_obj.get_signature(data, encoding_obj)
+
     write_file(signature, output, mode="wb")
     click.echo(f"The data have been signed. Signature saved to: {output}")
-
-
-def signature_create_command(
-    private_key: Optional[str],
-    signature_provider_cfg: Optional[str],
-    password: Optional[str],
-    algorithm: Optional[str],
-    input_file: str,
-    encoding_str: str,
-    pss_padding: bool,
-    regions: List[str],
-) -> bytes:
-    """Sign the data with given private key."""
-    data = load_binary(input_file, search_paths=["."])
-    data = cut_off_data_regions(data, regions)
-    hash_alg = EnumHashAlgorithm.from_label(algorithm) if algorithm else None
-    if signature_provider_cfg:
-        signature_provider = get_signature_provider(
-            signature_provider_cfg, search_paths=["."], pss_padding=pss_padding
-        )
-        if hash_alg:
-            logger.warning("Hash algorithm was not applied when using signature provider.")
-        if password:
-            logger.warning("Password was not applied when using signature provider.")
-        signature = signature_provider.get_signature(data)
-    else:
-        assert private_key
-        try:
-            prv_key = PrivateKey.load(private_key, password)
-        except SPSDKKeyPassphraseMissing:
-            prv_key = PrivateKey.load(private_key, prompt_for_passphrase())
-        extra_params: Dict[str, Any] = {"pss_padding": pss_padding}
-        if hash_alg:
-            if not isinstance(prv_key, PrivateKeySM2):
-                extra_params["algorithm"] = hash_alg
-            else:
-                if hash_alg != EnumHashAlgorithm.SM3:
-                    logger.warning("Only SM3 hash algorithm is supported for OSCCA")
-        signature = prv_key.sign(data, **extra_params)
-    encoding = SPSDKEncoding.all()[encoding_str.upper().strip()]
-    try:
-        ecc_signature = ECDSASignature.parse(signature)
-        return ecc_signature.export(encoding=encoding)
-    except SPSDKValueError:
-        # Not an ECC signature
-        parameter_source = click.get_current_context().get_parameter_source("encoding")
-        assert parameter_source
-        if parameter_source.name == "COMMANDLINE":
-            logger.warning("Signature encoding is supported only for ECC keys.")
-        return signature
 
 
 @signature_group.command(name="verify", no_args_is_help=True)
@@ -528,7 +502,7 @@ def signature_create_command(
 @click.option(
     "-a",
     "--algorithm",
-    type=click.Choice(EnumHashAlgorithm.labels()),
+    type=click.Choice(EnumHashAlgorithm.labels(), case_sensitive=False),
     help="Hash algorithm used when signing the message. If not set, default algorithm will be used.",
 )
 @click.option(

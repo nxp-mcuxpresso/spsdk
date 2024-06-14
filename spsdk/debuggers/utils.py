@@ -11,11 +11,13 @@ import logging
 from types import ModuleType
 from typing import Callable, Dict, Iterator, Optional, Type
 
+from spsdk import SPSDK_INTERACTIVE_DISABLED
 from spsdk.debuggers.debug_probe import (
     DebugProbe,
     DebugProbes,
     ProbeDescription,
     SPSDKDebugProbeError,
+    SPSDKMultipleProbesError,
     SPSDKProbeNotFoundError,
 )
 from spsdk.exceptions import SPSDKError
@@ -67,6 +69,7 @@ def select_probe(
     :param input_func: Custom function to handle user input, defaults to input
     :return: The record of selected DebugProbe
     :raises SPSDKProbeNotFoundError: No probe has been founded
+    :raises SPSDKMultipleProbesError: Multiple probes have been found in non-interactive mode
     """
     probe_len = len(probes)
     if probe_len == 0:
@@ -81,6 +84,11 @@ def select_probe(
         # Automatically gets and use only one option\
         i_selected = 0
     else:  # pragma: no cover
+        if SPSDK_INTERACTIVE_DISABLED:
+            raise SPSDKMultipleProbesError(
+                "Multiple probes found. The interactive mode is turned off."
+                "You can change it setting the 'SPSDK_INTERACTIVE_DISABLED' environment variable"
+            )
         print_func("Please choose the debug probe: ")
         i_selected = int(input_func())
         if i_selected > probe_len - 1:
@@ -163,7 +171,6 @@ def open_debug_probe(
     selected_probe = select_probe(debug_probes, print_func=print_func, input_func=input_func)
     debug_probe = selected_probe.get_probe(debug_probe_params)
     debug_probe.open()
-
     try:
         yield debug_probe
     except SPSDKError as exc:

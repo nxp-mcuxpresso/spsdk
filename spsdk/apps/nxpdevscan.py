@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -72,9 +72,9 @@ def main(extend_vids: str, output: IO[str], scope: str, log_level: int) -> None:
     spsdk_logger.install(level=log_level)
     additional_vids = [int(vid, 16) for vid in extend_vids]
 
-    if scope in ["all", "sdio"]:
+    if scope in ["all", "sdio"] and sys.platform != "win32":
         nxp_sdio_devices = nxpdevscan.search_nxp_sdio_devices()
-        if output.name == "<stdout>":
+        if hasattr(output, "name") and output.name == "<stdout>":
             click.echo(8 * "-" + " Connected NXP SDIO Devices " + 8 * "-" + "\n", output)
         for sdio_dev in nxp_sdio_devices:
             click.echo(str(sdio_dev), output)
@@ -82,7 +82,7 @@ def main(extend_vids: str, output: IO[str], scope: str, log_level: int) -> None:
 
     if scope in ["all", "usb"]:
         nxp_usb_devices = nxpdevscan.search_nxp_usb_devices(additional_vids)
-        if output.name == "<stdout>":
+        if hasattr(output, "name") and output.name == "<stdout>":
             click.echo(8 * "-" + " Connected NXP USB Devices " + 8 * "-" + "\n", output)
         for usb_dev in nxp_usb_devices:
             click.echo(str(usb_dev), output)
@@ -90,7 +90,7 @@ def main(extend_vids: str, output: IO[str], scope: str, log_level: int) -> None:
 
     if scope in ["all", "port"]:
         nxp_uart_devices = nxpdevscan.search_nxp_uart_devices()
-        if output.name == "<stdout>":
+        if hasattr(output, "name") and output.name == "<stdout>":
             click.echo(8 * "-" + " Connected NXP UART Devices " + 8 * "-" + "\n", output)
         for uart_dev in nxp_uart_devices:
             click.echo(str(uart_dev), output)
@@ -98,7 +98,7 @@ def main(extend_vids: str, output: IO[str], scope: str, log_level: int) -> None:
 
     if scope in ["all", "lpcusbsio"]:
         nxp_sio_devices = nxpdevscan.search_libusbsio_devices()
-        if output.name == "<stdout>":
+        if hasattr(output, "name") and output.name == "<stdout>":
             click.echo(8 * "-" + " Connected NXP SIO Devices " + 8 * "-" + "\n", output)
         for sio_dev in nxp_sio_devices:
             click.echo(str(sio_dev), output)

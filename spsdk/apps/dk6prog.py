@@ -173,7 +173,7 @@ def get_default_backend() -> Backend:
     "-b",
     "--backend",
     "backend",
-    type=click.Choice(Backend.__members__),  # type: ignore
+    type=click.Choice(Backend.__members__, case_sensitive=False),  # type: ignore
     callback=lambda c, p, v: getattr(Backend, v) if v else None,
     help="PYFTDI backend, pure Python implementation of libFTDI.\n"
     + "PYLIBFTDI backend. Ctypes wrapper for libFTDI.\n"

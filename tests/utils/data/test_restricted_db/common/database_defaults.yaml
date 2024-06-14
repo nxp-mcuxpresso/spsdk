@@ -1,0 +1,84 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions: {}
+latest: latest
+
+info:
+  purpose: Test Device
+  web: Interesting web page
+  memory_map: {}
+  isp: {}
+
+features:
+  # ======== Feature 1 ========
+  feature1:
+    atrribute_int1: 1
+    atrribute_str1: Database text
+    atrribute_boolT: True
+    atrribute_boolF: False
+    atrribute_dict:
+      dict_attribute_int: 1
+      dict_attribute_str: Dict text
+    atrribute_list:
+      - 1
+      - 2
+      - 3
+    secret_info: Super secret information
+
+  # ======== Feature 2 ========
+  feature2:
+    atrribute_int1: 2
+    atrribute_str1: Database text feature 2
+    atrribute_boolT: True
+    atrribute_boolF: False
+    atrribute_dict:
+      dict_attribute_int: 2
+      dict_attribute_str: Dict text feature 2
+    atrribute_list:
+      - Hello
+      - GoodBye
+      - Good morning
+
+  # ======== Feature 2 ========
+  feature3: {}
+
+  # ======== Feature Fuses Testing ========
+  fuses:
+    reg_spec: sh_test_dev_x0.json
+    grouped_registers:
+      - uid: reg_big
+        name: REG_BIG
+        width: 256
+        description: Just Big register
+        "sub_regs":
+          [
+            "field0E0",
+            "field0E4",
+            "field0E8",
+            "field0EC",
+            "field0F0",
+            "field0F4",
+            "field0F8",
+            "field0FC",
+          ]
+      - uid: reg_big_rev
+        name: REG_BIG_REV
+        width: 256
+        reversed: 1
+        description: Just Big register in reversed order
+        "sub_regs":
+          [
+            "field1E0",
+            "field1E4",
+            "field1E8",
+            "field1EC",
+            "field1F0",
+            "field1F4",
+            "field1F8",
+            "field1FC",
+          ]
+
+  # ======== Feature Shadow registers Testing ========
+  shadow_regs: {}

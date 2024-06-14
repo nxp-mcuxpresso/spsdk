@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,10 +11,10 @@ from typing import List, Sequence
 
 from typing_extensions import Self
 
-from spsdk.utils.abstract import BaseClass
-
-from ..misc import SecBootBlckSize
-from ..sb2.commands import (
+from spsdk.sbfile.misc import SecBootBlckSize
+from spsdk.sbfile.sb1.commands import parse_v1_command
+from spsdk.sbfile.sb1.headers import BootSectionHeaderV1, SecureBootFlagsV1
+from spsdk.sbfile.sb2.commands import (
     CmdBaseClass,
     CmdCall,
     CmdErase,
@@ -26,8 +26,7 @@ from ..sb2.commands import (
     CmdProg,
     CmdReset,
 )
-from .commands import parse_v1_command
-from .headers import BootSectionHeaderV1, SecureBootFlagsV1
+from spsdk.utils.abstract import BaseClass
 
 
 class BootSectionV1(BaseClass):

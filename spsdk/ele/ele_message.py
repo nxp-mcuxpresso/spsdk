@@ -146,7 +146,7 @@ class EleMessage:
     @property
     def status_string(self) -> str:
         """Get status in readable string format."""
-        if self.status not in ResponseStatus:
+        if not ResponseStatus.contains(self.status):
             return "Invalid status!"
         if self.status == ResponseStatus.ELE_SUCCESS_IND:
             return "Succeeded"
@@ -596,7 +596,7 @@ class EleMessageGetTrngState(EleMessage):
         """
         super().decode_response(response)
         self.ele_trng_state, self.ele_csal_state, _ = unpack(
-            LITTLE_ENDIAN + UINT8 + UINT8 + "2s", response[8:12]
+            LITTLE_ENDIAN + UINT8 + UINT8 + "2s", response[-4:]
         )
 
     def response_info(self) -> str:
@@ -606,7 +606,7 @@ class EleMessageGetTrngState(EleMessage):
         """
         return (
             f"EdgeLock Enclave TRNG state: {EleTrngState.get_description(self.ele_trng_state)}"
-            + f"\nEdgeLock Enclave CSAL state: {EleCsalState.get_description(self.ele_csal_state)}"
+            + f"\nEdgeLock Secure Enclave RNG state: {EleCsalState.get_description(self.ele_csal_state)}"
         )
 
 

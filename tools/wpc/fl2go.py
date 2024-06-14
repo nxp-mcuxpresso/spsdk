@@ -29,6 +29,11 @@ APP = Flask(__name__)
 
 @APP.route("/api/v1/wpc/product-unit-certificate/<qi_id>/request-puc", methods=["POST"])
 def request_product_unit_certificate(qi_id: str) -> Tuple[Response, int]:
+    """Request for product Unit certificate.
+
+    :param qi_id: QI ID
+    :return: TODO
+    """
     man_dir = os.path.join(FILES_DIR, str(int(qi_id)))
     if not os.path.isdir(man_dir):
         return jsonify({"error": f"qi_id '{qi_id}' not found"}), 404

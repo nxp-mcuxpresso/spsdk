@@ -12,11 +12,10 @@ from typing import Iterator, List, NamedTuple, Optional, Tuple
 
 from spsdk.crypto.hash import get_hash
 from spsdk.crypto.keys import PublicKeyEcc
+from spsdk.tp.data_container.data_container import Container
+from spsdk.tp.data_container.payload_types import PayloadType
+from spsdk.tp.exceptions import SPSDKTpError
 from spsdk.utils.misc import Endianness
-
-from ..exceptions import SPSDKTpError
-from .data_container import Container
-from .payload_types import PayloadType
 
 DB_VERSION = 2
 

@@ -9,7 +9,7 @@ latest: b0
 
 # General MCU information
 info:
-  purpose: General Purpose Processor
+  purpose: i.MX RT Crossover MCUs
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt500-crossover-mcu-with-arm-cortex-m33-core:i.MX-RT500
   memory_map:
@@ -26,14 +26,76 @@ info:
       base_addr: 0x0000_0000
       size: 0x0050_0000
       external: false
-
-  # isp:
-  #   mboot_interfaces: [usb, uart, spi, i2c]
-  #   usb_rom:
-  #     vid: 0x1FC9
-  #     pid: 0x0023
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0023
 
 features:
+  # ======== Fuses description section ========
+  fuses:
+    grouped_registers:
+      - uid: otfad_kek_seed
+        name: OTFAD_KEK_SEED
+        width: 128
+        reversed: True
+        config_as_hexstring: True
+        description:
+          "When OTP key store is used (USE_PUF = 0), this 128-bit user
+          programmed value is used to derive OTFAD_KEK.\n\nOTFAD_KEK[127:0] =
+          AES_ENCRYPT (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0])"
+        sub_regs: ["fuse108", "fuse109", "fuse110", "fuse111"]
+      - uid: otp_master_key
+        name: OTP_MASTER_KEY
+        width: 256
+        config_as_hexstring: True
+        description: "Master Key used to derive different usage keys (HMAC_KEY,
+          ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). \n- ENC_BOOT_HMAC_KEY[127:0] =
+          AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)\n-
+          ENC_BOOT_AES_KEY[256:0] = AES_ENCRYPT (OTP_MASTER_KEK,
+          0x00000000000000000000000000000001) ||  AES_ENCRYPT (OTP_MASTER_KEK,
+          0x00000000000000000000000000000002)\n- SB_KEK[256:0] = AES_ENCRYPT
+          (OTP_MASTER_KEK, 0x00000000000000000000000000000003) ||  AES_ENCRYPT
+          (OTP_MASTER_KEK, 0x00000000000000000000000000000004) OR if
+          SBKEK_SEED != 0 then SB_KEK[255:0] = AES_ENCRYPT (OTP_MASTER_KEK,
+          SBKEK_SEED[255:0])\n- OTFAD_KEK[127:0] = AES_ENCRYPT
+          (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0])"
+        sub_regs:
+          [
+            "fuse112",
+            "fuse113",
+            "fuse114",
+            "fuse115",
+            "fuse116",
+            "fuse117",
+            "fuse118",
+            "fuse119",
+          ]
+      - uid: rkth
+        name: RKTH
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description:
+          "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||
+          exponent).\nFor i in 0..3:\n  Let M[i] = BE(Modulus i)\n  Let
+          E[i] = BE(Exponent i)\n  Let RKH[i] = SHA256( M[i] || E[i] )\n  Let
+          RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )\nNote:
+          Documentation update needed when using blhost due to endianness issue."
+        sub_regs:
+          [
+            "fuse120",
+            "fuse121",
+            "fuse122",
+            "fuse123",
+            "fuse124",
+            "fuse125",
+            "fuse126",
+            "fuse127",
+          ]
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x0010_C000
@@ -104,7 +166,8 @@ features:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinIvt
+          - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinLoadAddressOptional
           - Mbi_MixinTrustZone
           - Mbi_MixinHwKey
           - Mbi_ExportMixinAppTrustZone
@@ -143,7 +206,8 @@ features:
   # ======== FCB section ========
   fcb:
     mem_types:
-      flexspi_nor: fcb_flexspi_nor.xml
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
 
   # ======== Bootable image section ========
   bootable_image:
@@ -156,7 +220,18 @@ features:
           keystore: 0x0800
           mbi: 0x1000
         remap_align: 0x40000 # 256 KB
-
+      sd:
+        segments:
+          mbi: 0x1000
+      emmc:
+        segments:
+          mbi: 0x1000
+      recovery_spi_sb21:
+        segments:
+          sb21: 0x1000
+      recovery_spi_mbi:
+        segments:
+          mbi: 0x1000
   # ======== Secure binary v2.1 section ========
   sb21:
     keyblobs: true
@@ -177,59 +252,21 @@ features:
 
   # ======== Shadow registers section ========
   shadow_regs:
-    data_file: shadow_regs.xml
-    address: 0x4013_0000
     inverted_regs:
-      DCFG_CC_SOCU: DCFG_CC_SOCU_AP
+      fuse95: fuse104 # DCFG_CC_SOCU -> DCFG_CC_SOCU_AP
     computed_fields:
-      DCFG_CC_SOCU:
-        DEV_TEST_EN: comalg_dcfg_cc_socu_test_en
-        CRC8: comalg_dcfg_cc_socu_crc8
-      DCFG_CC_SOCU_NS:
-        CRC8: comalg_dcfg_cc_socu_crc8
-      "SEC_BOOT_CFG[5]":
-        RESERVED: comalg_do_nothing
-    grouped_registers:
-      - name: OTFAD_KEK_SEED
-        width: 128
-        reversed: True
-        config_as_hexstring: True
-        description:
-          "When OTP key store is used (USE_PUF = 0), this 128-bit user
-          programmed value is used to derive OTFAD_KEK.\n\nOTFAD_KEK[127:0] =
-          AES_ENCRYPT (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0])"
-      - name: OTP_MASTER_KEY
-        width: 256
-        config_as_hexstring: True
-        description: "Master Key used to derive different usage keys (HMAC_KEY,
-          ENC_IMAGE_KEY, SB2_KEK, OTFAD_KEK). \n- ENC_BOOT_HMAC_KEY[127:0] =
-          AES_ENCRYPT (OTP_MASTER_KEK, 0x00000000000000000000000000000000)\n-
-          ENC_BOOT_AES_KEY[256:0] = AES_ENCRYPT (OTP_MASTER_KEK,
-          0x00000000000000000000000000000001) ||  AES_ENCRYPT (OTP_MASTER_KEK,
-          0x00000000000000000000000000000002)\n- SB_KEK[256:0] = AES_ENCRYPT
-          (OTP_MASTER_KEK, 0x00000000000000000000000000000003) ||  AES_ENCRYPT
-          (OTP_MASTER_KEK, 0x00000000000000000000000000000004) OR if
-          SBKEK_SEED != 0 then SB_KEK[255:0] = AES_ENCRYPT (OTP_MASTER_KEK,
-          SBKEK_SEED[255:0])\n- OTFAD_KEK[127:0] = AES_ENCRYPT
-          (OTP_MASTER_KEK, OTFAD_KEK_SEED[127:0])"
-      - name: RKTH
-        width: 256
-        reversed: True
-        config_as_hexstring: True
-        description:
-          "SHA256 hash digest of hash of four Root Of Trust Keys (modulus ||
-          exponent).\nFor i in 0..3:\n  Let M[i] = BE(Modulus i)\n  Let
-          E[i] = BE(Exponent i)\n  Let RKH[i] = SHA256( M[i] || E[i] )\n  Let
-          RKTH = SHA256( RKH[0] || RKH[1] || RKH[2] || RKH[3] )\nNote:
-          Documentation update needed when using blhost due to endianness issue."
+      fuse95: # DCFG_CC_SOCU
+        fuse95-bit-31: comalg_dcfg_cc_socu_test_en # DEV_TEST_EN
+        fuse95-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8
+      fuse100: # DCFG_CC_SOCU_NS
+        fuse100-bits-0-7: comalg_dcfg_cc_socu_crc8 # CRC8
 
   # ======== Trust Zone section ========
   tz:
-    data_file: tz.yaml
+    reg_spec: tz.yaml
 
   # ======== OTFAD section ========
   otfad:
-    reg_fuses: otfad_fuses.xml
     key_blob_rec_size: 64
     key_blob_max_cnt: 4
     key_blob_min_cnt: 4
@@ -237,33 +274,20 @@ features:
     keyblob_byte_swap_cnt: 0
     sb_21_supported: True
     has_kek_fuses: False
-    peripheral_list: [""]
     additional_template: []
     additional_template_text: ""
-    supports_key_scrambling: False
-    otfad_key_fuse: OTFAD_KEY
-    otfad_cfg_fuse: OTFAD_CFG
-    otfad_enable_bitfield: OTFAD_ENABLE
-    otfad_scramble_enable_bitfield: OTFAD_SCRAMBLE_ENABLE
-    otfad_scramble_align_bitfield: OTFAD_SCRAMBLE_ALIGN
-    otfad_scramble_key: OTFAD{index}_KEY_SCRAMBLE
-    otfad_scramble_align_fuse_standalone: False
-    grouped_registers:
-      - name: OTP_MASTER_KEY
-        width: 256
-        config_as_hexstring: true
-        reverse_subregs_order: True
-        description: OTP MASTER KEY
-      - name: OTFAD_KEK_SEED
-        width: 128
-        config_as_hexstring: true
-        description: OTFAD KEK SEED
+
+    fuses:
+      _no_verify: True
+      otp_master_key: __otp_master_key
+      otfad_kek_seed: __otfad_kek_seed
+      fuse106:
+        fuse106-bit-12: 1
 
   # ======== Memory configuration ========
   memcfg:
     peripherals:
       flexspi_nor:
-        # description_file: ../../common/memcfg/opt_word_flexspi_nor_legacy.xml
         instances: [0, 1]
       flexspi_nand:
         instances: [0, 1]
@@ -272,5 +296,5 @@ features:
       mmc:
         instances: [0, 1]
       spi_nor:
-        description_file: ../../common/memcfg/opt_word_spi_nor_legacy.xml
-        instances: [0, 1, 2, 3, 4, 5]
+        reg_spec: ../../common/memcfg/opt_word_spi_nor_legacy.json
+        instances: [0, 1, 2, 3, 4, 5, 6, 7]

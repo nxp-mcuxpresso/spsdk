@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,9 +8,9 @@ latest: a1
 
 # General MCU information
 info:
-  purpose: Wireless Processor
+  purpose: Wireless Connectivity
   # Web page of MCU representative
-  web: https://www.nxp.com/products/wireless-connectivity/bluetooth-low-energy/nhs52sx4-ultra-low-power-bluetooth-low-energy-solution-with-arm-cortex-m33-trustzone-for-medical-iot:NHS52Sx4
+  web: https://www.nxp.com/products/wireless-connectivity/bluetooth-low-energy/nhs52s04-ultra-low-power-bluetooth-low-energy-solution-with-arm-cortex-m33-trustzone-for-medical-iot:NHS52S04
   memory_map:
     {} # Memory map basic info
     # internal_flash:
@@ -29,25 +29,31 @@ info:
     #   base_addr: 0x4000000
     #   size: 0x8000
     #   external: false
-  # isp:
-  #   mboot_interfaces: [usb, uart, spi, i2c]
-  #   usb_rom:
-  #     vid: 0x1FC9
-  #     pid: 0x0021
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0021
 
 features:
   # ======== Certificate block section ========
   cert_block:
     rot_type: "cert_block_1"
 
+  # ======== DAT section ========
+  dat:
+    socc: 1 # SOCC identification
+
   # ======== MBI section ========
   mbi:
     mbi_classes:
-      plain:
+      plain_xip:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinIvt
+          - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinLoadAddressOptional
           - Mbi_MixinTrustZone
           - Mbi_ExportMixinAppTrustZone
       crc_ram:
@@ -88,7 +94,7 @@ features:
           - Mbi_ExportMixinRsaSign
     images:
       xip:
-        plain: plain
+        plain: plain_xip
         crc: crc_xip
         signed: signed_xip
       load_to_ram:
@@ -100,36 +106,51 @@ features:
     cfpa: # CFPA description
       address: 0xF_E000
       size: 512
-      data_file: pfr_cfpa.xml
-      seal_start: SHA256_DIGEST0
+      reg_spec: pfr_cfpa.json
+      seal_start: field1E0 # SHA256_DIGEST0
       seal_count: 8
       computed_fields:
-        VENDOR_USAGE:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
-        DCFG_CC_SOCU_PIN:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
-        DCFG_CC_SOCU_DFLT:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
+        field01C: # VENDOR_USAGE
+          field01C-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field020: # DCFG_CC_SOCU_NS_PIN
+          field020-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field024: # DCFG_CC_SOCU_NS_DFLT
+          field024-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
     cmpa: # CMPA description
       address: 0x10_4000
       size: 512
-      data_file: pfr_cmpa.xml
-      seal_start: SHA256_DIGEST0
+      reg_spec: pfr_cmpa.json
+      seal_start: field1E0 # SHA256_DIGEST0
       seal_count: 8
       grouped_registers:
-        - name: ROTKH
+        - uid: cmpa_rotkh
+          name: ROTKH
           width: 256
           config_as_hexstring: true
           reversed: true
           description:
             ROTKH field is compounded by 8 32-bit fields and contains Root key
             table hash
+          sub_regs:
+            - field060
+            - field064
+            - field068
+            - field06C
+            - field070
+            - field074
+            - field078
+            - field07C
       computed_fields:
-        CC_SOCU_PIN:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
-        CC_SOCU_DFLT:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
+        field008: # DCFG_CC_SOCU_PIN
+          field008-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field00C: # DCFG_CC_SOCU_DFLT
+          field00C-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+
+  # ======== Secure binary v2.1 section ========
+  sb21:
+    supported_commands: [erase, load, enable, fill, jump, version_check]
+    keyblobs: false
 
   # ======== TrustZone section ========
   tz:
-    data_file: tz.yaml
+    reg_spec: tz.yaml

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Trust provisioning host adapters interfaces."""
 from typing import Any, Dict, List, Optional, Type, Union
 
-from .data_container.audit_log import AuditLog
-from .exceptions import SPSDKTpError
+from spsdk.tp.data_container.audit_log import AuditLog
+from spsdk.tp.exceptions import SPSDKTpError
 
 
 class TpIntfDescription:

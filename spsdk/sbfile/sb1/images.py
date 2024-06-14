@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -15,12 +15,11 @@ from typing_extensions import Self
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKError
+from spsdk.sbfile.misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
+from spsdk.sbfile.sb1.headers import BootSectionHeaderV1, SectionHeaderItemV1, SecureBootHeaderV1
+from spsdk.sbfile.sb1.sections import BootSectionV1
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import align
-
-from ..misc import BcdVersion3, BcdVersion3Format, SecBootBlckSize
-from .headers import BootSectionHeaderV1, SectionHeaderItemV1, SecureBootHeaderV1
-from .sections import BootSectionV1
 
 
 ########################################################################################################################

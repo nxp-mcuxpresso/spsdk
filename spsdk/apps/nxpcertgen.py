@@ -13,7 +13,6 @@ import sys
 import click
 from click_option_group import optgroup
 
-from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     CommandsTreeGroup,
@@ -23,6 +22,7 @@ from spsdk.apps.utils.common_cli_options import (
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error
 from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import (
     PrivateKey,
@@ -30,10 +30,10 @@ from spsdk.crypto.keys import (
     SPSDKKeyPassphraseMissing,
     prompt_for_passphrase,
 )
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
-from spsdk.utils.misc import find_file, load_configuration, load_text, write_file
+from spsdk.utils.database import get_common_data_file_path
+from spsdk.utils.misc import find_file, load_configuration, load_secret, load_text, write_file
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ class CertificateParametersConfig:  # pylint: disable=too-few-public-methods
         """Initialize cert_config from yml config data."""
         try:
             self.issuer_private_key = config_data["issuer_private_key"]
+            self.issuer_private_key_password = config_data.get("issuer_private_key_password")
             self.subject_public_key = config_data["subject_public_key"]
             self.serial_number = config_data.get("serial_number")
             self.duration = config_data.get("duration")
@@ -67,6 +68,31 @@ def main(log_level: int) -> None:
     """
     click.secho("Deprecated tool! Use npxcrypto instead", fg="yellow")
     spsdk_logger.install(level=log_level, logger=logger)
+
+
+@main.command(name="convert", no_args_is_help=True)
+@click.option(
+    "-e",
+    "--encoding",
+    type=click.Choice(["PEM", "DER"], case_sensitive=False),
+    required=True,
+    help="Desired output format.",
+)
+@click.option(
+    "-i",
+    "--input-file",
+    type=click.Path(exists=True, dir_okay=False),
+    required=True,
+    help="Path to certificate file to convert.",
+)
+@spsdk_output_option()
+def convert(encoding: str, input_file: str, output: str) -> None:
+    """Convert certificate format."""
+    logger.info(f"Loading certificate from: {input_file}")
+    cert = Certificate.load(input_file)
+    encoding_type = {"PEM": SPSDKEncoding.PEM, "DER": SPSDKEncoding.DER}[encoding]
+    cert.save(output, encoding_type)
+    click.echo(f"The certificate file has been created: {output}")
 
 
 @main.command(name="generate", no_args_is_help=True)
@@ -92,8 +118,13 @@ def generate(config: str, output: str, encoding: str) -> None:
     cert_config = CertificateParametersConfig(config_data)
     search_paths = [os.path.dirname(config)]
     try:
+        password = (
+            load_secret(cert_config.issuer_private_key_password)
+            if cert_config.issuer_private_key_password
+            else None
+        )
         priv_key = PrivateKey.load(
-            find_file(cert_config.issuer_private_key, search_paths=search_paths)
+            find_file(cert_config.issuer_private_key, search_paths=search_paths), password=password
         )
     except SPSDKKeyPassphraseMissing:
         password = prompt_for_passphrase()
@@ -124,7 +155,7 @@ def generate(config: str, output: str, encoding: str) -> None:
 def get_template(output: str) -> None:
     """Generate the template of Certificate generation YML configuration file."""
     logger.info("Creating Certificate template...")
-    write_file(load_text(os.path.join(SPSDK_DATA_FOLDER_COMMON, "certgen_config.yaml")), output)
+    write_file(load_text(get_common_data_file_path("certgen_config.yaml")), output)
     click.echo(f"The configuration template file has been created: {output}")
 
 

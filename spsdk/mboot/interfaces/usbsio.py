@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright (c) 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -11,7 +11,7 @@ from typing import List, Optional
 from typing_extensions import Self
 
 from spsdk.mboot.protocol.serial_protocol import MbootSerialProtocol
-from spsdk.utils.interfaces.device.usbsio_device import ScanArgs, UsbSioI2CDevice, UsbSioSPIDevice
+from spsdk.utils.interfaces.device.usbsio_device import UsbSioI2CDevice, UsbSioSPIDevice
 
 
 class MbootUsbSioI2CInterface(MbootSerialProtocol):
@@ -28,25 +28,7 @@ class MbootUsbSioI2CInterface(MbootSerialProtocol):
         super().__init__(device=device)
 
     @classmethod
-    def scan_from_args(
-        cls,
-        params: str,
-        timeout: int,
-        extra_params: Optional[str] = None,
-    ) -> List[Self]:
-        """Scan connected USBSIO devices.
-
-        :param params: Params as a configuration string
-        :param extra_params: Extra params configuration string
-        :param timeout: Timeout for the scan
-        :return: list of matching RawHid devices
-        """
-        scan_args = ScanArgs.parse(params=params)
-        interfaces = cls.scan(config=scan_args.config, timeout=timeout)
-        return interfaces
-
-    @classmethod
-    def scan(cls, config: Optional[str] = None, timeout: int = 5000) -> List[Self]:
+    def scan(cls, config: Optional[str] = None, timeout: Optional[int] = None) -> List[Self]:
         """Scan connected USB-SIO bridge devices.
 
         :param config: Configuration string identifying spi or i2c SIO interface
@@ -75,25 +57,7 @@ class MbootUsbSioSPIInterface(MbootSerialProtocol):
         super().__init__(device)
 
     @classmethod
-    def scan_from_args(
-        cls,
-        params: str,
-        timeout: int,
-        extra_params: Optional[str] = None,
-    ) -> List[Self]:
-        """Scan connected USBSIO devices.
-
-        :param params: Params as a configuration string
-        :param extra_params: Extra params configuration string
-        :param timeout: Timeout for the scan
-        :return: list of matching RawHid devices
-        """
-        scan_args = ScanArgs.parse(params=params)
-        interfaces = cls.scan(config=scan_args.config, timeout=timeout)
-        return interfaces
-
-    @classmethod
-    def scan(cls, config: Optional[str] = None, timeout: int = 5000) -> List[Self]:
+    def scan(cls, config: Optional[str] = None, timeout: Optional[int] = None) -> List[Self]:
         """Scan connected USB-SIO bridge devices.
 
         :param config: Configuration string identifying spi or i2c SIO interface

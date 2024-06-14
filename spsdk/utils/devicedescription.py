@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,12 +9,13 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
 from libusbsio.libusbsio import LIBUSBSIO
 
 from spsdk.mboot.interfaces.usb import MbootUSBInterface
 from spsdk.sdp.interfaces.usb import SdpUSBInterface
+from spsdk.utils.database import UsbId
 from spsdk.utils.misc import get_hash
 
 # for backward-compatibility
@@ -206,7 +207,7 @@ class SIODeviceDescription(DeviceDescription):
 
 
 def get_usb_device_name(
-    vid: int, pid: int, device_names: Optional[Dict[str, Tuple[int, int]]] = None
+    vid: int, pid: int, device_names: Optional[Dict[str, List[UsbId]]] = None
 ) -> List[str]:
     """Returns 'name' device identifier based on VID/PID, from dicts.
 
@@ -224,18 +225,18 @@ def get_usb_device_name(
 
     :return: list containing device names with corresponding VID/PID
     """
-    nxp_device_names = []
-    if device_names is None:
-        for dname, vid_pid in MbootUSBInterface.usb_devices.items():
-            if vid_pid[0] == vid and vid_pid[1] == pid:
-                nxp_device_names.append(dname)
+    nxp_device_names = set()
 
-        for dname, vid_pid in SdpUSBInterface.usb_devices.items():
-            if vid_pid[0] == vid and vid_pid[1] == pid:
-                nxp_device_names.append(dname)
-    else:
-        for dname, vid_pid in device_names.items():
-            if vid_pid[0] == vid and vid_pid[1] == pid:
-                nxp_device_names.append(dname)
+    def find_device_names(device_names: Dict[str, List[UsbId]]) -> set:
+        dnames = set()
+        for dname, usb_configs in device_names.items():
+            for cfg in usb_configs:
+                if cfg.vid == vid and cfg.pid == pid:
+                    dnames.add(dname)
+        return dnames
 
-    return nxp_device_names
+    if device_names:
+        return list(find_device_names(device_names))
+    nxp_device_names.update(find_device_names(MbootUSBInterface.get_devices()))
+    nxp_device_names.update(find_device_names(SdpUSBInterface.get_devices()))
+    return list(nxp_device_names)

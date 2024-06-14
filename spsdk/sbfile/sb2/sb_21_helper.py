@@ -42,7 +42,9 @@ logger = logging.getLogger(__name__)
 class SB21Helper:
     """SB21 Helper class."""
 
-    def __init__(self, search_paths: Optional[List[str]] = None):
+    def __init__(
+        self, search_paths: Optional[List[str]] = None, zero_filling: bool = False
+    ) -> None:
         """SB21 helper constructor."""
         self.search_paths = search_paths
         self.cmds = {
@@ -58,6 +60,7 @@ class SB21Helper:
             "jump": self._jump,
             "programFuses": self._prog,
         }
+        self.zero_filling = zero_filling
 
     @staticmethod
     def get_mem_id(mem_opt: Union[int, str]) -> int:
@@ -110,7 +113,7 @@ class SB21Helper:
         """
         address = value_to_int(cmd_args["address"])
         pattern = value_to_int(cmd_args["pattern"])
-        return CmdFill(address=address, pattern=pattern)
+        return CmdFill(address=address, pattern=pattern, zero_filling=self.zero_filling)
 
     def _load(self, cmd_args: dict) -> Union[CmdLoad, CmdProg]:
         """Returns a CmdLoad object initialized based on cmd_args.
@@ -150,7 +153,9 @@ class SB21Helper:
         # general non-authenticated load command
         if cmd_args.get("file"):
             data = load_binary(cmd_args["file"], self.search_paths)
-            return CmdLoad(address=address, data=data, mem_id=mem_id)
+            return CmdLoad(
+                address=address, data=data, mem_id=mem_id, zero_filling=self.zero_filling
+            )
         if cmd_args.get("values"):
             # if the memory ID is fuse or IFR change load command to program command
             if mem_id == prog_mem_id:
@@ -163,7 +168,9 @@ class SB21Helper:
                     + ", expected unsigned 32bit comma separated values"
                 )
             data = struct.pack(f"<{len(values)}L", *values)
-            return CmdLoad(address=address, data=data, mem_id=mem_id)
+            return CmdLoad(
+                address=address, data=data, mem_id=mem_id, zero_filling=self.zero_filling
+            )
         if cmd_args.get("pattern"):
             # if the memory ID is fuse or IFR change load command to program command
             # pattern in this case represents 32b int data word 1
@@ -299,9 +306,11 @@ class SB21Helper:
 
         if cmd_args.get("file"):
             data = load_binary(cmd_args["file"], self.search_paths)
-        if cmd_args.get("values"):
+        elif cmd_args.get("values"):
             values = [int(s, 16) for s in cmd_args["values"].split(",")]
             data = struct.pack(f"<{len(values)}L", *values)
+        else:
+            raise SPSDKError("Neither 'file', neither 'values' is missing in config to get data.")
 
         try:
             valid_keyblob = self._validate_keyblob(keyblobs, keyblob_id)

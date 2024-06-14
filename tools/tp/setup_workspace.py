@@ -5,6 +5,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""Script to setup workspace for Trust Provisioning models."""
+
 import os
 import shutil
 import sys
@@ -16,10 +18,9 @@ from InquirerPy.utils import get_style
 from InquirerPy.validator import NumberValidator, ValidationError
 from prompt_toolkit.validation import Document
 
-from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.tp.adapters import TpDevSmartCard
 from spsdk.tp.utils import get_tp_devices
-from spsdk.utils.database import DatabaseManager, get_db, get_families
+from spsdk.utils.database import DatabaseManager, get_common_data_file_path, get_db, get_families
 from spsdk.utils.nxpdevscan import UartDeviceDescription, search_nxp_uart_devices
 
 # import logging
@@ -33,7 +34,14 @@ SAMPLE_DATA_DIR = os.path.join(THIS_DIR, SAMPLE_DATA_DIR_NAME)
 
 
 class HexNumberValidator(NumberValidator):
+    """Help class to validate hexadecimal number."""
+
     def validate(self, document: Document) -> None:
+        """Validate hexadecimal number.
+
+        :param document: Document with hex number in text
+        :raises ValidationError: No valid hexadecimal number
+        """
         try:
             int(document.text, 0)
         except ValueError as e:
@@ -44,6 +52,13 @@ class HexNumberValidator(NumberValidator):
 
 
 def setup_tp_device_model(tp_device_id: str, use_prov_data: bool, family: str) -> str:
+    """Setup Trust Provisioning device models.
+
+    :param tp_device_id: TODO
+    :param use_prov_data: TODO
+    :param family: TODO
+    :return: TODO
+    """
     model_top_dir = "tp_device_models"
     model_sub_dir = f"tp_device_{tp_device_id}"
     model_dir = f"{model_top_dir}/{model_sub_dir}"
@@ -65,6 +80,13 @@ def setup_tp_device_model(tp_device_id: str, use_prov_data: bool, family: str) -
 
 
 def setup_tp_target_model(tp_target_id: str, use_prov_data: bool, family: str) -> str:
+    """Setup Trust Provisioning target models.
+
+    :param tp_target_id: TODO
+    :param use_prov_data: TODO
+    :param family: TODO
+    :return: TODO
+    """
     model_top_dir = "tp_target_models"
     model_sub_dir = f"tp_target_{tp_target_id.split('/')[-1]}"
     model_dir = f"{model_top_dir}/{model_sub_dir}"
@@ -93,10 +115,18 @@ def setup_tp_config_file(
     family: str,
     use_prov_data: bool,
 ) -> None:
+    """Setup Trust Provisioning configuration file.
+
+    :param default_tpconfig_data: TODO
+    :param tp_device: TODO
+    :param tp_device_parameter: TODO
+    :param family: TODO
+    :param use_prov_data: TODO
+    """
     template_name = (
         "tpconfig_cfg_data_template.yaml" if use_prov_data else "tpconfig_cfg_template.yaml"
     )
-    shutil.copy(os.path.join(SPSDK_DATA_FOLDER_COMMON, "tp", template_name), "tp_config.yaml")
+    shutil.copy(get_common_data_file_path(os.path.join("tp", template_name)), "tp_config.yaml")
     yaml = ruamel.yaml.YAML()
     with open("tp_config.yaml") as f:
         data: dict = yaml.load(f)
@@ -124,8 +154,17 @@ def setup_tp_host_file(
     tp_target_parameter: dict,
     family: str,
 ) -> None:
+    """Setup Trust Provisioning host file.
+
+    :param default_tphost_data: TODO
+    :param tp_device: TODO
+    :param tp_device_parameter: TODO
+    :param tp_target: TODO
+    :param tp_target_parameter: TODO
+    :param family: TODO
+    """
     shutil.copy(
-        os.path.join(SPSDK_DATA_FOLDER_COMMON, "tp", "tphost_cfg_template.yaml"), "tp_host.yaml"
+        get_common_data_file_path(os.path.join("tp", "tphost_cfg_template.yaml")), "tp_host.yaml"
     )
     yaml = ruamel.yaml.YAML()
     with open("tp_host.yaml") as f:
@@ -149,6 +188,11 @@ def setup_tp_host_file(
 
 
 def get_cards() -> List[str]:
+    """Get all viable cards.
+
+    :raises RuntimeError: No viable Smart Cards found
+    :return: List of cards
+    """
     tp_devices = cast(Sequence[TpDevSmartCard], get_tp_devices())
     if not tp_devices:
         raise RuntimeError("No viable Smart Cards found")
@@ -160,10 +204,20 @@ def get_cards() -> List[str]:
 
 
 def get_card_id(info: str) -> str:
+    """Get TP card ID from its information string.
+
+    :param info: Card information string
+    :return: ID of card
+    """
     return info.split("@")[0].strip()
 
 
 def get_uart_targets() -> List[str]:
+    """Get all UART targets.
+
+    :raises RuntimeError: No viable UART MBoot devices found
+    :return: List of UART targets
+    """
     tp_targets = cast(Sequence[UartDeviceDescription], search_nxp_uart_devices())
     if not tp_targets:
         raise RuntimeError("No viable UART MBoot devices found")
@@ -172,6 +226,10 @@ def get_uart_targets() -> List[str]:
 
 
 def setup_runner_files(verbosity: str) -> None:
+    """Setup runner files.
+
+    :param verbosity: Verbosity level
+    """
     verbosity = VERBOSITY[verbosity]
 
     def render_command(command: str, use_f_string: bool = False) -> str:
@@ -213,6 +271,7 @@ def setup_runner_files(verbosity: str) -> None:
 
 
 def main() -> None:
+    """Setup Trust provisioning workspace."""
     dest_path = inquirer.filepath(
         message="Destination for new workspace:",
         only_directories=True,

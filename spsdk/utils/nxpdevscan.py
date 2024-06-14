@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -14,15 +14,12 @@ from typing import List, Optional
 from libusbsio import LIBUSBSIO_Exception, usbsio
 from serial.tools.list_ports import comports
 
-from spsdk.exceptions import SPSDKError
+from spsdk.exceptions import SPSDKConnectionError, SPSDKError
 from spsdk.mboot.interfaces.sdio import MbootSdioInterface
 from spsdk.mboot.interfaces.uart import MbootUARTInterface
-from spsdk.sdp.exceptions import SdpConnectionError
 from spsdk.sdp.interfaces.uart import SdpUARTInterface
 from spsdk.sdp.sdp import SDP
-from spsdk.utils.interfaces.device.serial_device import SerialDevice
-
-from .devicedescription import (
+from spsdk.utils.devicedescription import (
     SDIODeviceDescription,
     SIODeviceDescription,
     UartDeviceDescription,
@@ -30,6 +27,7 @@ from .devicedescription import (
     convert_usb_path,
     get_usb_device_name,
 )
+from spsdk.utils.interfaces.device.serial_device import SerialDevice
 
 NXP_USB_DEVICE_VIDS = [
     0x1FC9,
@@ -91,7 +89,7 @@ def search_nxp_usb_devices(extend_vid_list: Optional[list] = None) -> List[USBDe
                 path = convert_usb_path(usb_device["path"])
                 product_string = usb_device["product_string"]
                 manufacturer_string = usb_device["manufacturer_string"]
-                name = ", ".join(get_usb_device_name(vid, pid, None))
+                name = " | ".join(get_usb_device_name(vid, pid, None))
                 serial = usb_device["serial_number"]
                 usb_dev = USBDeviceDescription(
                     vid,
@@ -139,7 +137,7 @@ def search_nxp_uart_devices() -> List[UartDeviceDescription]:
             if sdp_com.read_status() is not None:
                 uart_dev = UartDeviceDescription(name=port, dev_type="SDP device")
                 retval.append(uart_dev)
-        except SdpConnectionError as e:
+        except SPSDKConnectionError as e:
             logger.debug(
                 f"Exception {type(e).__name__} occurred while reading status via SDP. \
 Arguments: {e.args}"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -46,7 +46,7 @@ def main(log_level: int) -> None:
 @click.option(
     "-p",
     "--peripheral",
-    type=click.Choice(MemoryConfig.PERIPHERALS),
+    type=click.Choice(MemoryConfig.PERIPHERALS, case_sensitive=False),
     required=False,
     help="Restrict results just for this one peripheral, if used.",
 )
@@ -138,7 +138,7 @@ def family_info(family: str, peripheral: Optional[str] = None) -> None:
 @optgroup.option(
     "-p",
     "--peripheral",
-    type=click.Choice(MemoryConfig.PERIPHERALS),
+    type=click.Choice(MemoryConfig.PERIPHERALS, case_sensitive=False),
     help="Choose the peripheral of the input option words",
 )
 @optgroup.option(

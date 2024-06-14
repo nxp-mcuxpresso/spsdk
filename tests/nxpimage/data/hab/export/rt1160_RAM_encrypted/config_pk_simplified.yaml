@@ -1,0 +1,203 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========================================  HAB converted configuration  ============================================
+
+# ======================================================================================================================
+#                                                    == HAB Input ==                                                    
+# ======================================================================================================================
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image in plain BIN, S-REC or ELF.
+inputImageFile: validationboard_imxrt1160_iled_blinky_cm7_int_RAM.s19
+# ======================================================================================================================
+#                                                 == General Options ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== HAB Options [Required] =====------------------------------------------
+# Description: An options block contains zero or more name/value pairs and the option settings that assign values to
+# global options used by the nxpimage to control the generation of the output file.
+options:
+  # -----------------------------------===== HAB flags [Conditionally required] =====-----------------------------------
+  # Description: HAB flags. 0x0 for unsigned, 0x08 signed, 0x0C encrypted.
+  flags: 12
+  # ------------------------------===== Image start address [Conditionally required] =====------------------------------
+  # Description: First address of the bootable image in the target memory.
+  startAddress: 4096
+  # ------------------------------------===== Family [Conditionally required] =====-------------------------------------
+  # Description: Processor family. If not specified, the ivtOffset and initialLoadSize must be defined.
+  family: rt106x
+  # ----------------------------------===== Boot device [Conditionally required] =====----------------------------------
+  # Description: Boot device memory where the image is booted from. If not specified, the ivtOffset and initialLoadSize
+  # must be defined.
+  bootDevice: flexspi_nor
+  # ---------------------------------===== Timestamp of the signature [Optional] =====----------------------------------
+  signatureTimestamp: 16/05/2023 12:34:08
+# ======================================================================================================================
+#                                                   == CSF Sections ==                                                  
+# ======================================================================================================================
+# -----------------------------------------===== CSF Sections [Optional] =====------------------------------------------
+# Description: CSF Sections.
+sections:
+  -
+    # ------------------------------------------===== Header [Required] =====-------------------------------------------
+    # Description: The Header command contains data used in the CSF header as well as default values used by the CST for
+    # other commands throughout the remaining CSF. There must be exactly one Header command and it must appear first in
+    # the CSF.
+    Header:
+      # -----------------------------------------===== Version [Required] =====-----------------------------------------
+      # Description: Version of HAB.
+      Header_Version: '4.2'
+      # -------------------------------------===== Hash algorithm [Optional] =====--------------------------------------
+      # Description: Default hash algorithm.
+      # Possible options: <sha256>
+      Header_HashAlgorithm: sha256
+      # -----------------------------------------===== Engine [Optional] =====------------------------------------------
+      # Description: Default engine.
+      # Possible options: <ANY, SAHARA, RTIC, DCP, CAAM, SW>
+      Header_Engine: ANY
+      # ----------------------------------===== Engine configuration [Optional] =====-----------------------------------
+      # Description: Default engine configuration. See the CST manual for more info.
+      Header_EngineConfiguration: 0
+      # -----------------------------------===== Certificate format [Optional] =====------------------------------------
+      # Description: Default certificate format.
+      # Possible options: <x509, WTLS>
+      Header_CertificateFormat: x509
+      # ------------------------------------===== Signature format [Optional] =====-------------------------------------
+      # Description: Default signature format.
+      # Possible options: <PKCS1, CMS>
+      Header_SignatureFormat: CMS
+  -
+    # ----------------------------------------===== Install SRK [Required] =====----------------------------------------
+    # Description: The Install SRK command authenticates and installs the root public key for use in subsequent Install
+    # CSFK (HAB only) or Install Key (HAB4 only) commands. HAB or AHAB authenticates the SRK using the SRK hash
+    # (SRK_HASH) fuses. HAB4 or AHAB allows revocation of individual keys within the SRK table using the SRK revocation
+    # (SRK_REVOKE) fuses. HAB installs the SRK in slot 0 of its internal public key store. There must be exactly one
+    # Install SRK command in a CSF, and it must occur before the Install CSFK (HAB only) command.
+    InstallSRK:
+      # ----------------------------------===== SRK table binary file [Required] =====----------------------------------
+      # Description: Valid file path
+      InstallSRK_Table: gen_hab_certs/SRK_hash.bin
+      # ---------------------------------===== InstallSRK SourceIndex [Required] =====----------------------------------
+      # Description: SRK index within SRK table. Installation fails if the SRK revocation fuse with this index is
+      # burned.
+      # Possible options: <0, 1, 2, 3>
+      InstallSRK_SourceIndex: 0
+  -
+    # ---------------------------------------===== Install CSFK [Required] =====----------------------------------------
+    # Description: The Install CSFK command authenticates and installs a public key for use in subsequent Install Key
+    # (HAB3 only) or Authenticate CSF commands. HAB authenticates the CSFK from the CSFK certificate using the SRK. HAB
+    # installs the CSFK in slot 1 of its internal public key store. There must be exactly one Install CSFK command in a
+    # CSF, and it must occur before the Authenticate CSF command.
+    InstallCSFK:
+      # ------------------------------------===== CSFK Certificate [Required] =====-------------------------------------
+      # Description: Valid path.
+      InstallCSFK_File: ../crts/CSF3_1_sha256_2048_65537_v3_usr_crt.pem
+      # -----------------------------------===== Certificate Format [Optional] =====------------------------------------
+      # Description: CSFK certificate format.
+      # Possible options: <x509, WTLS>
+      InstallCSFK_CertificateFormat: x509
+  -
+    # -------------------------------------===== Authenticate CSF [Required] =====--------------------------------------
+    # Description: The Authenticate CSF command authenticates the CSF from which it is executed. HAB authenticates the
+    # CSF using the CSFK public key, from a digital signature generated automatically by the CST. There must be exactly
+    # one Authenticate CSF command in a CSF file, and it must occur after the Install CSFK command. Most other CSF
+    # commands are allowed only after the Authenticate CSF command.
+    AuthenticateCSF:
+      # ------------------------------------===== Private Key File [Optional] =====-------------------------------------
+      # Description: Path to authenticate CSF private key file. If not set, the file will be determined from
+      # InstallCSFK_File parameter.
+      AuthenticateCsf_PrivateKeyFile: ../keys/CSF3_1_sha256_2048_65537_v3_usr_key.pem
+  -
+    # ----------------------------------------===== Install Key [Required] =====----------------------------------------
+    # Description: The Install Key command authenticates and installs a public key for use in subsequent Install Key or
+    # Authenticate Data commands. HAB authenticates a public key from a public key certificate using a previously
+    # installed verifying key and a hash of the public key certificate. HAB installs the authenticated public key in an
+    # internal public key store with a zero-based array of key slots. The CSF author is responsible for managing the key
+    # slots in the internal public key store to establish the desired public key hierarchy and determine the keys used
+    # in authentication operations. Overwriting occupied key slots is not allowed, although a repeat command to re-
+    # install the same public key occupying the target slot will be skipped and not generate an error.
+    InstallKey:
+      # ---------------------------------===== Public key certificate [Required] =====----------------------------------
+      # Description: Valid file path.
+      InstallKey_File: ../crts/IMG3_1_sha256_2048_65537_v3_usr_crt.pem
+      # -----------------------------------===== Verification Index [Required] =====------------------------------------
+      # Description: Verification key index in key store. CSFK not supported.
+      # Possible options: <0, 2, 4>
+      InstallKey_VerificationIndex: 0
+      # --------------------------------------===== Target Index [Required] =====---------------------------------------
+      # Description: Target key index in key store. SRK, CSFK slots reserved.
+      # Possible options: <2, 4>
+      InstallKey_TargetIndex: 2
+  -
+    # -------------------------------------===== Authenticate Data [Required] =====-------------------------------------
+    # Description: The Authenticate Data command verifies the authenticity of pre-loaded data in memory. The data may
+    # include executable SW instructions and may be spread across multiple non-contiguous address ranges drawn from
+    # multiple object files. HAB authenticates the pre-loaded data using a previously installed public key from a
+    # digital signature generated automatically by the CST.
+    AuthenticateData:
+      # -----------------------------------===== Verification Index [Required] =====------------------------------------
+      # Description: Verification key index in key store. SRK, CSFK not supported. NOTE For HAB4 Fast Authentication,
+      # this must be 0
+      # Possible options: <0, 2, 4>
+      AuthenticateData_VerificationIndex: 2
+      # -----------------------------------------===== Engine [Optional] =====------------------------------------------
+      # Description: Data signature hash engine.
+      # Possible options: <ANY, SAHARA, RTIC, DCP, CAAM, SW>
+      AuthenticateData_Engine: ANY
+      # ----------------------------------===== Engine Configuration [Optional] =====-----------------------------------
+      # Description: Configuration flags for the engine. See the CSF manual.
+      AuthenticateData_EngineConfiguration: 0
+      # ------------------------------------===== Private Key File [Optional] =====-------------------------------------
+      # Description: Path to authenticate IMG private key file. If not set, the file will be determined from
+      # InstallCSFK_File parameter.
+      AuthenticateData_PrivateKeyFile: ../keys/IMG3_1_sha256_2048_65537_v3_usr_key.pem
+  -
+    # ------------------------------------===== Install Secret Key [Required] =====-------------------------------------
+    # Description: This command is applicable from HAB 4.1 onwards and only on processors which include CAAM and SNVS.
+    # Each instance of this command generates a CSF command to install a secret key in CAAM's secret key store.
+    SecretKey:
+      # -------------------------------------------===== Key [Optional] =====-------------------------------------------
+      # Description: CMS encrypted data encryption key.
+      SecretKey_Name: gen_hab_encrypt/validationboard_imxrt1160_iled_blinky_cm7_int_RAM_hab_dek.bin
+      # ---------------------------------------===== Key length [Optional] =====----------------------------------------
+      # Description: Key length in bits
+      # Possible options: <128, 192, 256>
+      SecretKey_Length: 256
+      # -----------------------------------===== Verification index [Optional] =====------------------------------------
+      # Description: Master KEK index. 0 or 1 OTPMK from fuses. 2 ZMK from SNVS, 3 CMK from SNVS.
+      # Possible options: <0, 1, 2, 3>
+      SecretKey_VerifyIndex: 0
+      # --------------------------------------===== Target index [Required] =====---------------------------------------
+      # Description: Target secret key store index.
+      # Possible options: <0, 1, 2, 3>
+      SecretKey_TargetIndex: 0
+      # ----------------------------------------===== Reuse DEK [Optional] =====----------------------------------------
+      # Description: If set, the secret key from SecretKey_Name parameter will be used. If not, a random key will be
+      # generated and stored.
+      SecretKey_ReuseDek: 1
+  -
+    # ---------------------------------------===== Decrypt Data [Required] =====----------------------------------------
+    # Description: This command is applicable from HAB4.1 onwards. Each instance generates a CSF command to decrypt and
+    # authenticate a list of code/data blocks using secret key stored in the secret key store. CST will generate a
+    # corresponding AUT_DAT command. CST will encrypt the data blocks in- place in the given files using a secret key
+    # and generate MAC data which is appended to the CSF. The secret key index must have been the target key index in a
+    # preceding Install Secret Key command. The same secret key must never be used more than once. The secret key used
+    # is removed from the secret key store by the Decrypt Data command. A separate Install Secret Key command (which
+    # generates a fresh secret key) is required for another Decrypt Data command.
+    Decrypt:
+      # -----------------------------------===== Verification Index [Required] =====------------------------------------
+      # Description: Secret key index in Secret key store.
+      # Possible options: <0, 1, 2, 4>
+      Decrypt_VerifyIndex: 0
+      # -----------------------------------------===== Engine [Optional] =====------------------------------------------
+      # Description: MAC Engine.
+      # Possible options: <CAAM, ANY>
+      Decrypt_Engine: ANY
+      # ----------------------------------===== Engine Configuration [Optional] =====-----------------------------------
+      # Description: Configuration flags for the engine. See the CSF manual.
+      Decrypt_EngineConfiguration: '0'
+      # ----------------------------------------===== Mac Bytes [Optional] =====----------------------------------------
+      # Description: Size of MAC in bytes. Even value between 4 and 16.
+      Decrypt_MacBytes: 16
+      # ------------------------------------------===== Nonce [Optional] =====------------------------------------------
+      # Description: If set, the nonce from the given file will be used. If not, a random nonce will be generated.
+      Decrypt_Nonce: gen_hab_encrypt/nonce.bin

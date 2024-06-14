@@ -42,6 +42,14 @@ blhost - LPCUSBSIO
 
 LPCUSBSIO - LPC USB Serial I/O(LPCUSBSIO), a firmware built in LPC Link2. The LPCUSBSIO acts as a bus translator, and establishes connection with *blhost* over USB-HID, and the MCU bootloader device over I2C and SPI.
 
+
+blhost - CAN
+============
+
+*blhost* could be connected to MCU bootloader over CAN. Support is based on python-can library. Refer to the documentation of python-can for more information. https://python-can.readthedocs.io/en/stable/
+In order to use CAN, extras must be installed with "pip install spsdk[can]".
+
+
 ----------------
  MCU bootloader
 ----------------

@@ -42,7 +42,7 @@ fail-under=10
 #from-stdin=
 
 # Files or directories to be skipped. They should be base names, not paths.
-ignore=CVS
+ignore=CVS, __version__.py
 
 # Add files or directories matching the regular expressions patterns to the
 # ignore-list. The regex matches against paths and can be in Posix or Windows
@@ -78,14 +78,15 @@ limit-inference-results=100
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
 load-plugins=pylint.extensions.docparams,
-             pylint.extensions.no_self_use
+             pylint.extensions.no_self_use,
+             spsdk_pylint_plugins
 
 # Pickle collected data for later comparisons.
 persistent=yes
 
 # Minimum Python version to use for version dependent checks. Will default to
 # the version used to run pylint.
-py-version=3.8
+py-version=3.9
 
 # Discover python modules and packages in the file system subtree.
 recursive=no
@@ -103,6 +104,22 @@ unsafe-load-any-extension=no
 
 
 [BASIC]
+
+disable=R,
+        C,
+        no-self-use,
+        protected-access,
+        fixme,
+        arguments-renamed,
+        broad-exception-caught,
+        unused-argument,
+        abstract-method
+enable=no-else-return,
+       no-else-raise,
+       simplifiable-if-expression,
+       simplifiable-condition,
+       redefined-argument-from-local,
+       chained-comparison
 
 # Naming style matching correct argument names.
 argument-naming-style=snake_case
@@ -349,7 +366,7 @@ indent-string='    '
 max-line-length=120
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=3000
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -443,7 +460,12 @@ disable=raw-checker-failed,
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once). See also the "--disable" option for examples.
-enable=c-extension-no-member
+enable=c-extension-no-member,
+        parameter_documentation,
+        format,
+        missing-class-docstring,
+        missing-function-docstring,
+        missing-module-docstring
 
 
 [METHOD_ARGS]

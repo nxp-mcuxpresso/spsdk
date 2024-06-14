@@ -79,6 +79,7 @@ instance/
 docs/_build/
 docs/_prebuild/
 docs/examples/**
+docs/html_schemas/**
 # docs examples are copied from spsdk/examples
 
 # PyBuilder
@@ -144,3 +145,5 @@ logging.yaml
 # Git merge-conflict files
 *.orig
 
+# setuptools_scm version file
+spsdk/__version__.py

@@ -98,7 +98,7 @@ xmcd_settings:
     # - XMCD_FLEXSPI_OPTION_SIZE_1, (0): Option words = 1
     # - XMCD_FLEXSPI_OPTION_SIZE_2, (1): Option words = 2
     # Possible options: <XMCD_FLEXSPI_OPTION_SIZE_1, XMCD_FLEXSPI_OPTION_SIZE_2>
-    optionSize: XMCD_FLEXSPI_OPTION_SIZE_2
+    optionSize: XMCD_FLEXSPI_OPTION_SIZE_1
     # --------------------------------------------===== tag [Optional] =====--------------------------------------------
     # Description: Offset: 28b, Width: 4b, Tag, fixed value 0xC
     tag: 12

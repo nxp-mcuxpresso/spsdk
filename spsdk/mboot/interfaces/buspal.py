@@ -9,7 +9,6 @@ import datetime
 import logging
 import struct
 import time
-from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -23,30 +22,6 @@ from spsdk.mboot.protocol.serial_protocol import FPType, MbootSerialProtocol, to
 from spsdk.utils.interfaces.device.serial_device import SerialDevice
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ScanArgs:
-    """Scan arguments dataclass."""
-
-    port: Optional[str]
-    props: Optional[List[str]]
-
-    @classmethod
-    def parse(cls, params: str, extra_params: Optional[str] = None) -> Self:
-        """Parse given scanning parameters and extra parameters into ScanArgs class.
-
-        :param params: Parameters as a string
-        :param extra_params: Optional extra parameters as a string
-        """
-        props = []
-        if extra_params:
-            props = extra_params.split(",")
-        target = props.pop(0)
-        if target not in ["spi", "i2c"]:
-            raise SPSDKError(f"Target must be either 'spi' or 'ic2', not {target}")
-        port_parts = params.split(",")
-        return cls(port=port_parts.pop(0), props=props)
 
 
 class SpiModeCommand(Enum):
@@ -169,7 +144,7 @@ class MbootBuspalProtocol(MbootSerialProtocol):
         port: Optional[str] = None,
         props: Optional[List[str]] = None,
         timeout: Optional[int] = None,
-    ) -> List[SerialDevice]:
+    ) -> List[Self]:
         """Scan connected serial ports and set BUSPAL properties.
 
         Returns list of serial ports with devices that respond to BUSPAL communication protocol.
@@ -191,7 +166,7 @@ class MbootBuspalProtocol(MbootSerialProtocol):
                 for comport in comports(include_links=True)
             ]
             devices = list(filter(None, all_ports))
-        return devices
+        return [cls(device) for device in devices]
 
     @classmethod
     def _check_port_buspal(
@@ -304,27 +279,6 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
         self.mode = BuspalMode.SPI
         super().__init__(device)
 
-    @classmethod
-    def scan_from_args(
-        cls,
-        params: str,
-        timeout: int,
-        extra_params: Optional[str] = None,
-    ) -> List[Self]:
-        """Scan connected Buspal devices.
-
-        :param params: Params as a configuration string
-        :param extra_params: Extra params configuration string
-        :param timeout: Timeout for the scan
-        :return: list of matching RawHid devices
-        """
-        scan_args = ScanArgs.parse(params, extra_params)
-        devices = cls.scan(port=scan_args.port, props=scan_args.props, timeout=timeout)
-        interfaces = []
-        for device in devices:
-            interfaces.append(cls(device))
-        return interfaces
-
     def _configure(self, props: List[str]) -> None:
         """Configure the BUSPAL SPI interface.
 
@@ -434,27 +388,6 @@ class MbootBuspalI2CInterface(MbootBuspalProtocol):
         """
         self.mode = BuspalMode.I2C
         super().__init__(device)
-
-    @classmethod
-    def scan_from_args(
-        cls,
-        params: str,
-        timeout: int,
-        extra_params: Optional[str] = None,
-    ) -> List[Self]:
-        """Scan connected Buspal devices.
-
-        :param params: Params as a configuration string
-        :param extra_params: Extra params configuration string
-        :param timeout: Timeout for the scan
-        :return: list of matching RawHid devices
-        """
-        scan_args = ScanArgs.parse(params, extra_params)
-        devices = cls.scan(port=scan_args.port, props=scan_args.props, timeout=timeout)
-        interfaces = []
-        for device in devices:
-            interfaces.append(cls(device))
-        return interfaces
 
     def _configure(self, props: List[str]) -> None:
         """Initialize the BUSPAL I2C interface.

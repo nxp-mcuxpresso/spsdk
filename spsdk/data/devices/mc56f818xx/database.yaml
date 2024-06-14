@@ -1,0 +1,69 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  b1: {}
+latest: b1
+
+# General MCU information
+info:
+  purpose: Digital Signal Controller
+  # Web page of MCU representative
+  web: https://www.nxp.com/products/processors-and-microcontrollers/additional-mpu-mcus-architectures/digital-signal-controllers/32-bit-56800ex-ef-core/up-to-100mhz-digital-signal-controllers-with-dsass-and-operational-amplifier:MC56F81xxx
+  memory_map: # Memory map basic info
+    internal_flash:
+      base_addr: 0x0
+      size: 0x20000
+      external: false
+    sram:
+      base_addr: 0x60000
+      size: 0x5000
+      external: false
+  isp:
+    rom:
+      protocol: mboot
+      interfaces: ["uart", "i2c", "spi"]
+
+features:
+  # ======== Communication buffer section ========
+  comm_buffer:
+    address: 0x04003000
+    size: 0x1000
+
+  # ======== Certificate block section ========
+  cert_block:
+    rot_type: "cert_block_x"
+
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      signed_xip:
+        image_type: SIGNED_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinBcaTable
+          - Mbi_MixinBca
+          - Mbi_MixinFcf
+          - Mbi_MixinCertBlockVx
+          - Mbi_ExportMixinAppBcaFcf
+          - Mbi_ExportMixinEccSignVx
+      plain_xip:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinBcaTable
+          - Mbi_MixinFcf
+          - Mbi_ExportMixinAppFcf
+    images:
+      xip:
+        signed: signed_xip
+        plain: plain_xip
+    # Fixed image type redefines the image type fetched from IVT
+    fixed_image_type: 4
+
+  # ======== Device Hardware Security Module (HSM) section ========
+  devhsm:
+    key_blob_offset: -1
+    key_blob_command_position: -1
+    devhsm_class: DevHsmSBx

@@ -9,11 +9,11 @@
 
 import logging
 
+from spsdk.mboot.interfaces.uart import MbootUARTInterface
 from spsdk.mboot.mcuboot import McuBoot
-from spsdk.mboot.scanner import get_mboot_interface
+from spsdk.mboot.properties import PropertyTag
 from spsdk.utils.database import DatabaseManager, get_db, get_schema_file
-
-from .utils import SPSDKWPCError, WPCCertChain, WPCTarget
+from spsdk.wpc.utils import SPSDKEncoding, SPSDKWPCError, WPCCertChain, WPCIdType, WPCTarget
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class WPCTargetMBoot(WPCTarget):
     """WPC Target adapter using MBoot interface."""
 
-    NAME = "mboot"
+    identifier = "mboot"
 
     def __init__(self, family: str, port: str) -> None:
         """Initialize WPC Target adapter.
@@ -30,8 +30,14 @@ class WPCTargetMBoot(WPCTarget):
         :param port: Serial port used for communication with the target
         """
         super().__init__(family)
-        self.interface = get_mboot_interface(port=port)
-        self.buffer_address = get_db(device=family).get_int(DatabaseManager.COMM_BUFFER, "address")
+        self.interface = MbootUARTInterface.scan_single(port=port)
+        db = get_db(device=family)
+        self.buffer_address = db.get_int(DatabaseManager.COMM_BUFFER, "address")
+        self.id_length = db.get_int(DatabaseManager.WPC, "id_length")
+        self.need_reset = db.get_bool(DatabaseManager.WPC, "need_reset")
+        self.check_lifecycle = db.get_int(DatabaseManager.WPC, "check_lifecycle")
+        self.insert_puc_only = db.get_bool(DatabaseManager.WPC, "insert_puc_only")
+        self.need_address_adjust = db.get_bool(DatabaseManager.WPC, "need_address_adjust")
 
     @classmethod
     def get_validation_schema(cls) -> dict:
@@ -42,14 +48,33 @@ class WPCTargetMBoot(WPCTarget):
     def get_low_level_wpc_id(self) -> bytes:
         """Get the lower-level WPC ID from the target."""
         logger.info("Reading low level WPC ID")
-        with McuBoot(interface=self.interface) as mboot:
-            pre_csr_data = mboot.read_memory(
-                address=self.buffer_address,
-                length=136,
-            )
-            if not pre_csr_data:
-                raise SPSDKWPCError(f"Unable to read WPC_ID. Error: {mboot.status_string}")
-        return pre_csr_data
+        if self.wpc_id_type == WPCIdType.COMPUTED_CSR:
+            with McuBoot(interface=self.interface) as mboot:
+                pre_csr_data = mboot.read_memory(
+                    address=self.buffer_address,
+                    length=self.id_length,
+                )
+                if not pre_csr_data:
+                    raise SPSDKWPCError(f"Unable to read WPC_ID. Error: {mboot.status_string}")
+            return pre_csr_data
+
+        if self.wpc_id_type == WPCIdType.RSID:
+            with McuBoot(interface=self.interface) as mboot:
+                actual_size = mboot.wpc_get_id(
+                    wpc_id_blob_addr=self.buffer_address, wpc_id_blob_size=self.id_length
+                )
+                if not actual_size:
+                    raise SPSDKWPCError(f"Generating WPC ID failed. Error: {mboot.status_string}")
+                if actual_size != self.id_length:
+                    raise SPSDKWPCError(
+                        f"Unexpected WPC ID length. Expected {self.id_length}, got {actual_size}"
+                    )
+                data = mboot.read_memory(address=self.buffer_address, length=actual_size)
+                if not data:
+                    raise SPSDKWPCError(f"Failed to read WPC ID. Error: {mboot.status_string}")
+            return data
+
+        raise SPSDKWPCError(f"WPC ID type: '{self.wpc_id_type.value}' is not supported")
 
     def sign(self, data: bytes) -> bytes:
         """Sign data by the target."""
@@ -75,26 +100,51 @@ class WPCTargetMBoot(WPCTarget):
                 raise SPSDKWPCError(f"Unable to read CSR signature. Error: {mboot.status_string}")
         return signature
 
-    def wpc_insert_cert(self, cert_chain: WPCCertChain) -> bool:
+    def wpc_insert_cert(self, cert_chain: WPCCertChain, reset: bool = True) -> bool:
         """Insert the WPC Certificate Chain into the target.
 
         :param cert_chain: Certificate chain to insert into the target
+        :param reset: Perform reset if the target requires it.
+            With this option you may disable required reset (for testing purposes)
         :raises SPSDKWPCError: Error during certificate chain insertion
         :return: True if operation finishes successfully
         """
         logger.info("Inserting WPC certificate")
-        data = cert_chain.export()
-        puk_offset = cert_chain.get_puk_offset()
-        rsid_offset = cert_chain.get_rsid_offset()
+        if self.insert_puc_only:
+            logger.info("Using PUC certificate only")
+            data = cert_chain.product_unit_cert.export(encoding=SPSDKEncoding.DER)
+        else:
+            data = cert_chain.export()
+        puk_offset = cert_chain.get_puk_offset(pu_cert_only=self.insert_puc_only)
+        rsid_offset = cert_chain.get_rsid_offset(pu_cert_only=self.insert_puc_only)
 
         with McuBoot(interface=self.interface) as mboot:
-            if not mboot.write_memory(
-                address=self.buffer_address + 0x400,
-                data=data,
-            ):
+            if self.check_lifecycle:
+                logger.info("Checking lifecycle")
+                lifecycle = mboot.get_property(prop_tag=PropertyTag.from_tag(17))
+                if lifecycle is None:
+                    raise SPSDKWPCError(
+                        f"Unable to get device's lifecycle. Error: {mboot.status_string}"
+                    )
+                if lifecycle[1] > self.check_lifecycle:
+                    raise SPSDKWPCError(
+                        f"Invalid lifecycle: Expected <= {self.check_lifecycle}, got: {lifecycle[1]}"
+                    )
+
+            if self.need_reset and reset:
+                logger.info("Resetting device")
+                mboot.reset(reopen=True)
+
+            address = self.buffer_address + 0x400
+            # we need to make sure the PUK is on a even address on some platforms
+            if self.need_address_adjust and puk_offset % 2:
+                logger.info("Adjusting memory address to align PUK offset")
+                address += 1
+
+            if not mboot.write_memory(address=address, data=data):
                 raise SPSDKWPCError(f"Unable to write memory. Error: {mboot.status_string}")
             result = mboot.wpc_insert_cert(
-                wpc_cert_addr=self.buffer_address + 0x400,
+                wpc_cert_addr=address,
                 wpc_cert_len=len(data),
                 ec_id_offset=rsid_offset,
                 wpc_puk_offset=puk_offset,

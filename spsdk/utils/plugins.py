@@ -55,8 +55,8 @@ class PluginsManager(metaclass=SingletonMeta):
         )
 
         entry_points: List[importlib_metadata.EntryPoint] = []
-        for group_name in group_names:
-            eps = importlib_metadata.entry_points(group=group_name)
+        for group in group_names:
+            eps = importlib_metadata.entry_points(group=group)
             entry_points.extend(eps)
 
         count = 0

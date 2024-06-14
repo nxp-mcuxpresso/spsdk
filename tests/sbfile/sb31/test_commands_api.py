@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test of commands."""
@@ -241,7 +241,7 @@ def test_cmd_loadkeyblob():
     cmd = CmdLoadKeyBlob(
         offset=100,
         key_wrap_id=CmdLoadKeyBlob.get_key_id(
-            "LPC55S3x", CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK
+            "lpc55s3x", CmdLoadKeyBlob.KeyTypes.NXP_CUST_KEK_EXT_SK
         ),
         data=10 * b"x",
     )
@@ -523,3 +523,28 @@ def test_invalid_base_load_cmd():
         cmd._extract_data(
             data=b"U\xaa\xaaU\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x01\x00\x00"
         )
+
+
+@pytest.mark.parametrize(
+    "config,value,raise_error",
+    [
+        ({"address": 0, "value": "0x0FFFFFFE"}, b"\xfe\xff\xff\x0f", False),
+        (
+            {"address": 0, "values": "0x00000004,0x00020000,0xFFFFFFFF,0xFFFFFFFE"},
+            b"\x04\x00\x00\x00\x00\x00\x02\x00\xff\xff\xff\xff\xfe\xff\xff\xff",
+            False,
+        ),
+        (
+            {"address": 0, "unknown": "option"},
+            None,
+            True,
+        ),
+    ],
+)
+def test_load_program_ifr_cmd(config, value, raise_error):
+    if raise_error:
+        with pytest.raises(SPSDKError):
+            CmdProgIfr.load_from_config(config)
+    else:
+        cmd = CmdProgIfr.load_from_config(config)
+        assert cmd.data == value

@@ -1,13 +1,13 @@
 # fetch project dependencies
 -r ../requirements.txt
 # docs
-sphinx<7.2.0  # limit due to Python3.8
+sphinx<7.3.8
 sphinx-book-theme
 sphinx-autodoc-annotation
 sphinx_autodoc_typehints
 myst-parser
 sphinx-click>=4.2.0
-jsonschema2md
+json-schema-for-humans
 pytablewriter
 Pillow>=10.2.0
 docutils<0.21

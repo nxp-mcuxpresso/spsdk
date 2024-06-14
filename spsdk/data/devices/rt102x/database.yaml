@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,7 +8,7 @@ latest: a0
 
 # General MCU information
 info:
-  purpose: General Purpose Processor
+  purpose: i.MX RT Crossover MCUs
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1020-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1020
   memory_map:
@@ -29,15 +29,22 @@ info:
       base_addr: 0x60000000
       size: 0x10000000
       external: true
-
-  # isp:
-  #   rom_protocol: sdp
-  #   mboot_interfaces: [usb, uart, spi, i2c]
-  #   usb_rom:
-  #     vid: 0x1FC9
-  #     pid: 0x0130
+  isp:
+    rom:
+      protocol: sdp
+      usb:
+        vid: 0x1FC9
+        pid: 0x0130
+    flashloader:
+      protocol: mboot
+      usb:
+        vid: 0x15A2
+        pid: 0x0073
 
 features:
+  # ======== Fuses description section ========
+  fuses: {}
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x0000_2000
@@ -48,12 +55,24 @@ features:
     rot_type: "srk_table_hab"
 
   # ======== HABv4 section ========
-  hab: {}
+  hab:
+    mem_types:
+      flexspi_nor:
+        initial_load_size: 0x2000
+      flexspi_nand:
+        initial_load_size: 0x1000
+      semc_nand:
+        initial_load_size: 0x1000
+      sd:
+        initial_load_size: 0x1000
+      mmc:
+        initial_load_size: 0x1000
 
   # ======== FCB section ========
   fcb:
     mem_types:
-      flexspi_nor: fcb_flexspi_nor.xml
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
 
   # ======== BEE section ========
   bee: {}
@@ -61,12 +80,33 @@ features:
   # ======== Bootable image section ========
   bootable_image:
     mem_types:
+      serial_downloader:
+        segments:
+          hab_container: 0x0
       flexspi_nor:
         segments:
           fcb: 0x0000
           bee_header_0: 0x0400
           bee_header_1: 0x0800
           hab_container: 0x1000
+      flexspi_nand:
+        segments:
+          hab_container: 0x400
+      semc_nor:
+        segments:
+          hab_container: 0x1000
+      semc_nand:
+        segments:
+          hab_container: 0x400
+      sd:
+        segments:
+          hab_container: 0x400
+      mmc:
+        segments:
+          hab_container: 0x400
+      recovery_spi_hab:
+        segments:
+          hab_container: 0x400
 
   # ======== Memory configuration ========
   memcfg:
@@ -77,11 +117,11 @@ features:
         instances: [0]
       semc_nor:
         instances: [0] # probably not supported in latest version of Flashloader
-      sd:
-        instances: [0, 1]
-      mmc:
-        instances: [0, 1]
       semc_nand:
         instances: [0] # probably not supported in latest version of Flashloader
+      sd:
+        instances: [1, 2]
+      mmc:
+        instances: [1, 2]
       spi_nor:
-        instances: [0, 1, 2, 3]
+        instances: [1, 2, 3, 4]

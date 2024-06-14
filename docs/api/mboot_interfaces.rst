@@ -46,3 +46,13 @@ MBoot BUSPAL
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
+
+
+Mboot CAN
+---------
+
+.. automodule:: spsdk.mboot.interfaces.can_interface
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource

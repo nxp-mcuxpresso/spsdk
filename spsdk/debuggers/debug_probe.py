@@ -33,6 +33,10 @@ class SPSDKProbeNotFoundError(SPSDKDebugProbeError):
     """The Probe not found exception for use with SPSDK."""
 
 
+class SPSDKMultipleProbesError(SPSDKDebugProbeError):
+    """Multiple probes found exception for use with SPSDK."""
+
+
 class SPSDKDebugProbeTransferError(SPSDKDebugProbeError):
     """The communication error exception for use with SPSDK."""
 
@@ -127,8 +131,15 @@ class DebugProbe(ABC):
         """Debug probe open.
 
         General opening function for SPSDK library to support various DEBUG PROBES.
-        The function is used to initialize the connection to target and enable using debug probe
-        for DAT purposes.
+        The function is used to opening the debug probe
+        """
+
+    @abstractmethod
+    def connect(self) -> None:
+        """Debug probe connect.
+
+        General connecting function for SPSDK library to support various DEBUG PROBES.
+        The function is used to initialize the connection to target
         """
 
     @abstractmethod
@@ -200,7 +211,7 @@ class DebugProbe(ABC):
         sleep(self.AFTER_RESET_TIME)
 
 
-class DebugProbeLocal(DebugProbe):
+class DebugProbeCoreSightOnly(DebugProbe):
     """Abstraction class to define SPSDK debug probes interface."""
 
     NAME = "local_help"
@@ -226,7 +237,7 @@ class DebugProbeLocal(DebugProbe):
         DEFAULT_TEST_MEM_AP_ADDRESS = 0x2000_0000
 
         @functools.wraps(func)
-        def wrapper(self: "DebugProbeLocal", *args, **kwargs) -> Any:
+        def wrapper(self: "DebugProbeCoreSightOnly", *args, **kwargs) -> Any:
             status = False
             test_address = value_to_int(
                 self.options.get("test_address", DEFAULT_TEST_MEM_AP_ADDRESS)
@@ -412,6 +423,7 @@ class DebugProbeLocal(DebugProbe):
                 self.coresight_reg_write(access_port=False, addr=self.DP_ABORT_REG, data=0x1F)
         except SPSDKError as e:
             try:
+                logger.debug("Read sticky errors failed, sending ABORT request.")
                 self.coresight_reg_write(access_port=False, addr=self.DP_ABORT_REG, data=0x1F)
             except SPSDKError:
                 pass
@@ -501,6 +513,10 @@ class DebugProbeLocal(DebugProbe):
             self.close()
         except NotImplementedError:
             pass
+
+
+# for backward compatibility
+DebugProbeLocal = DebugProbeCoreSightOnly
 
 
 class ProbeDescription:

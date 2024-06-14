@@ -242,13 +242,28 @@ def test_sdio_device_search_no_device_found():
     "vid, pid, expected_result",
     [
         (0x1111, 0x2222, []),
-        (0x15A2, 0x0073, ["MKL27", "MXRT20", "MXRT50", "MXRT60"]),
-        (0x1FC9, 0x0135, ["IMXRT", "MXRT60"]),
+        (
+            0x15A2,
+            0x0073,
+            [
+                "rt1010",
+                "rt1015",
+                "rt102x",
+                "rt104x",
+                "rt105x",
+                "rt106x",
+                "rt116x",
+                "rt117x",
+                "rt118x",
+                "mwct2xxxs",
+            ],
+        ),
+        (0x1FC9, 0x0135, ["rt104x", "rt106x"]),
     ],
 )
 def test_get_device_name(vid, pid, expected_result):
     """Verify search works and returns appropriate name based on VID/PID"""
-    assert devicedescription.get_usb_device_name(vid, pid) == expected_result
+    assert sorted(devicedescription.get_usb_device_name(vid, pid)) == sorted(expected_result)
 
 
 def test_path_conversion():

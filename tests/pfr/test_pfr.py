@@ -12,7 +12,6 @@ import os
 import pytest
 from ruamel.yaml import YAML
 
-from spsdk.apps import pfr
 from spsdk.crypto.keys import PrivateKeyRsa
 from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
@@ -52,6 +51,16 @@ def test_supported_devices():
     cfpa_devices = CFPA.get_supported_families()
     cmpa_devices = CMPA.get_supported_families()
     cmpa_devices.remove("mcxa1xx")
+    cmpa_devices.remove("mcxa156")
+    cmpa_devices.remove("mcxa155")
+    cmpa_devices.remove("mcxa154")
+    cmpa_devices.remove("mcxa144")
+    cmpa_devices.remove("mcxa145")
+    cmpa_devices.remove("mcxa146")
+    cmpa_devices.remove("mcxa142")
+    cmpa_devices.remove("mcxa143")
+    cmpa_devices.remove("mcxa152")
+    cmpa_devices.remove("mcxa153")
     assert sorted(cmpa_devices) == sorted(cfpa_devices)
 
 
@@ -102,7 +111,7 @@ def test_config_cfpa(data_dir):
     cfpa2.set_config(cfpa2_pfr_cfg["settings"])
     out = cfpa2.get_config()
 
-    assert out == config2
+    assert config == out
 
 
 def test_config_cmpa():
@@ -126,40 +135,30 @@ def test_config_cmpa_yml(tmpdir):
     yaml.indent(sequence=4, offset=2)
     cmpa = CMPA("lpc55s3x")
     config = cmpa.get_config()
+
+    assert cmpa.get_config(True) == {
+        "family": "lpc55s3x",
+        "revision": "a1",
+        "type": "CMPA",
+        "settings": {},
+    }
+
     with open(os.path.join(tmpdir, "config.yml"), "w") as yml_file:
         yaml.dump(config, yml_file)
 
     cmpa2_pfr_cfg = load_configuration(os.path.join(tmpdir, "config.yml"))
     cmpa2 = CMPA.load_from_config(cmpa2_pfr_cfg)
-    out_config = cmpa2.get_config()
-    with open(os.path.join(tmpdir, "out_config.yml"), "w") as yml_file:
-        yaml.dump(out_config, yml_file)
+    out_config = cmpa2.get_config(True)
 
-    assert filecmp.cmp(os.path.join(tmpdir, "config.yml"), os.path.join(tmpdir, "out_config.yml"))
-
-
-# def test_load_config_invalid(data_dir):
-#     """Test PFR tool - PFR Configuration Invalid cases."""
-#     with pytest.raises(SPSDKError):
-#         validate_config(load_configuration(data_dir + "/invalid_file"))
-
-#     with pytest.raises(SPSDKError):
-#         validate_config(load_configuration(data_dir + "/invalid_file.yml"))
-
-#     with pytest.raises(SPSDKError):
-#         validate_config(load_configuration(data_dir + "/invalid_file.json"))
-
-#     with pytest.raises(SPSDKError):
-#         validate_config(load_configuration(data_dir + "/empty_json.json"))
-
-#     with pytest.raises(SPSDKError):
-#         validate_config(load_configuration(data_dir + "/empty_json1.json"))
-
-#     with pytest.raises(SPSDKError):
-#         validate_config(load_configuration(data_dir + "/empty_yml.yml"))
-
-#     with pytest.raises(SPSDKError):
-#         validate_config(load_configuration(data_dir + "/empty_file"))
+    assert out_config == {
+        "family": "lpc55s3x",
+        "revision": "a1",
+        "type": "CMPA",
+        "settings": {
+            "DCFG_CC_SOCU_PIN": {"INVERSE_VALUE": "0xFFFF"},
+            "DCFG_CC_SOCU_DFLT": {"INVERSE_VALUE": "0xFFFF"},
+        },
+    }
 
 
 def test_set_config_rev_latest(data_dir):
@@ -167,15 +166,6 @@ def test_set_config_rev_latest(data_dir):
     pfr_cfg = load_configuration(data_dir + "/latest_rev.yml")
     cmpa = CMPA.load_from_config(pfr_cfg)
     assert cmpa
-
-
-def test_invalid_computed_field_handler():
-    """Test invalid case for computed filed handler."""
-    cmpa = CMPA(family="lpc55s6x")
-    fields = {"test_field": "invalid_handler"}
-
-    with pytest.raises(SPSDKError):
-        cmpa.reg_computed_fields_handler(b"\x00", fields)
 
 
 def test_json_yml_configs(data_dir):

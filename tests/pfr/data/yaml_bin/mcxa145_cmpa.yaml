@@ -1,0 +1,571 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =========================================  PFR CMPA configuration template  ==========================================
+
+# ======================================================================================================================
+#                                                 == General Options ==
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Optional] =====-------------------------------------------
+# Description: MCU family name.
+# Possible options: <lpc550x, lpc551x, lpc552x, lpc553x, lpc55s0x, lpc55s1x, lpc55s2x, lpc55s3x, lpc55s6x, mcxa142,
+# mcxa143, mcxa144, mcxa145, mcxa146, mcxa152, mcxa153, mcxa154, mcxa155, mcxa156, mcxa1xx, mcxn23x, mcxn54x, mcxn94x,
+# mcxn9xx, nhs52sxx>
+family: mcxa145
+# -------------------------------------===== Chip silicon revision [Optional] =====-------------------------------------
+# Description: If needed this could be used to specify silicon revision of device.
+revision: latest
+# ------------------------------------===== Configuration area type [Optional] =====------------------------------------
+# Description: PFR / IFR type
+type: CMPA
+# ----------------------------------===== Configuration area Settings [Required] =====----------------------------------
+settings:
+  # ------------------------------------------===== BOOT_CFG [Optional] =====-------------------------------------------
+  # Description: Offset: 0x00000000, Width: 32b; Boot Configuration
+  BOOT_CFG:
+    # ----------------------------------------===== ISP_BOOT_IF [Optional] =====----------------------------------------
+    # Description: Offset: 4b, Width: 3b, ISP boot interface
+    # - AUTO_ISP, (0): Auto ISP
+    # - UART_ISP, (1): UART ISP
+    # - RESERVED_0b010, (2): Reserved
+    # - RESERVED_0b011, (3): Reserved
+    # - USB0_HID, (4): USB0_HID
+    # - RESERVED_0b101, (5): Reserved
+    # - RESERVED_0b110, (6): Reserved
+    # - RESERVED_0b111, (7): Reserved
+    # Possible options: <AUTO_ISP, UART_ISP, RESERVED_0b010, RESERVED_0b011, USB0_HID, RESERVED_0b101, RESERVED_0b110,
+    # RESERVED_0b111>
+    ISP_BOOT_IF: AUTO_ISP
+    # ----------------------------------------===== BOOT_SPEED [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 2b, Core Clock
+    # - FRO_48_MHZ, (0): 48Mhz FRO @1v0
+    # - FRO_96_MHZ, (1): 96MHz FRO @1v1
+    # - RESERVED_0b10, (2): Reserved
+    # - RESERVED_0b11, (3): Reserved
+    # Possible options: <FRO_48_MHZ, FRO_96_MHZ, RESERVED_0b10, RESERVED_0b11>
+    BOOT_SPEED: FRO_48_MHZ
+    # ----------------------------------------===== AGDET_RE_EN [Optional] =====----------------------------------------
+    # Description: Offset: 14b, Width: 2b, AGDET reset must be enabled during boot (must be 00b).
+    # - ENABLED_0b00, (0): Enable AGDET reset
+    # - DISABLED_0b01, (1): Don't enable AGDET reset
+    # - DISABLED_0b10, (2): Don't enable AGDET reset
+    # - DISABLED_0b11, (3): Don't enable AGDET reset
+    # Possible options: <ENABLED_0b00, DISABLED_0b01, DISABLED_0b10, DISABLED_0b11>
+    AGDET_RE_EN: ENABLED_0b00
+    # ------------------------------------------===== HEADER [Optional] =====-------------------------------------------
+    # Description: Offset: 16b, Width: 16b, CMPA Header marker should be set to 0x5963
+    HEADER: 22883
+  # ------------------------------------------===== FLASH_CFG [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000004, Width: 32b; Flash Configuration
+  FLASH_CFG:
+    # -------------------------------------===== FLASH_REMAP_SIZE [Optional] =====--------------------------------------
+    # Description: Offset: 0b, Width: 5b, Flash remap size.
+    # This field should be written to remap field in flash.
+    FLASH_REMAP_SIZE: 0
+    # ---------------------------------------===== ISP_PIN_ENTRY [Optional] =====---------------------------------------
+    # Description: Offset: 10b, Width: 2b, Disable ISP mode entry through pin assertion.
+    # - ALLOWED_0b00, (0): ISP entry allowed
+    # - DISABLED_0b01, (1): ISP entry disabled
+    # - ALLOWED_0b10, (2): ISP entry allowed
+    # - ALLOWED_0b11, (3): ISP entry allowed
+    # Possible options: <ALLOWED_0b00, DISABLED_0b01, ALLOWED_0b10, ALLOWED_0b11>
+    ISP_PIN_ENTRY: ALLOWED_0b00
+    # ---------------------------------------===== ISP_DM_ENTRY [Optional] =====----------------------------------------
+    # Description: Offset: 12b, Width: 2b, Disable ISP mode entry through debug mailbox command.
+    # - ALLOWED_0b00, (0): ISP entry allowed
+    # - DISABLED_0b01, (1): ISP entry disabled
+    # - ALLOWED_0b10, (2): ISP entry allowed
+    # - ALLOWED_0b11, (3): ISP entry allowed
+    # Possible options: <ALLOWED_0b00, DISABLED_0b01, ALLOWED_0b10, ALLOWED_0b11>
+    ISP_DM_ENTRY: ALLOWED_0b00
+  # ---------------------------------------===== BOOT_LED_STATUS [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000008, Width: 32b; Boot LED Status
+  BOOT_LED_STATUS:
+    # ---------------------------------------===== BOOT_FAIL_LED [Optional] =====---------------------------------------
+    # Description: Offset: 16b, Width: 8b, Assert on fatal errors during boot.
+    # ROM toggles the GPIO pin identified by this field whenever primary boot fails due to fatal errors before locking-
+    # up/reset.
+    # Note, use QUICK_SET_/CLR_GPIOx field to set the default level of pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    BOOT_FAIL_LED: 0
+  # -----------------------------------------===== BOOT_TIMERS [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000000C, Width: 32b; Boot Timers
+  BOOT_TIMERS:
+    # ----------------------------------===== POWERDOWN_TIMEOUT_SECS [Optional] =====-----------------------------------
+    # Description: Offset: 0b, Width: 16b, Powerdown timeout:
+    # Timeout value in seconds.
+    # When a non-zero value is programmed in this field ROM uses it as idle timeout value to enter power-down state to
+    # conserve power.
+    POWERDOWN_TIMEOUT_SECS: 0
+  # ----------------------------------------===== ISP_UART_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000010, Width: 32b; ISP UART Configuration
+  ISP_UART_CFG:
+    # ----------------------------------------===== UART_RX_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default UART RX ISP pin.
+    # Identifies the pin to be used as UART_RX pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    UART_RX_PIN: 0
+    # -------------------------------------===== UART_RX_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    UART_RX_FUNC_SLOT: 0
+    # -------------------------------------===== UART_ISP_INSTANCE [Optional] =====-------------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the LPUART instance used for UART ISP mode.
+    UART_ISP_INSTANCE: 0
+    # ----------------------------------------===== UART_TX_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default UART TX ISP pin.
+    # Identifies the pin to be used as UART_TX pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    UART_TX_PIN: 0
+    # -------------------------------------===== UART_TX_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot.
+    UART_TX_FUNC_SLOT: 0
+  # -----------------------------------------===== ISP_I2C_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000014, Width: 32b; ISP I2C Configuration
+  ISP_I2C_CFG:
+    # ----------------------------------------===== I2C_SCL_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default I2C SCL ISP pin.
+    # Identifies the pin to be used as I2C_SCL pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    I2C_SCL_PIN: 0
+    # -------------------------------------===== I2C_SCL_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    I2C_SCL_FUNC_SLOT: 0
+    # -------------------------------------===== I2C_ISP_INSTANCE [Optional] =====--------------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the LPI2C instance used for I2C ISP mode
+    I2C_ISP_INSTANCE: 0
+    # ----------------------------------------===== I2C_SDA_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default I2C SDA ISP pin.
+    # Identifies the pin to be used as I2C_SDA pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    I2C_SDA_PIN: 0
+    # -------------------------------------===== I2C_SDA_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot.
+    I2C_SDA_FUNC_SLOT: 0
+  # ----------------------------------------===== ISP_SPI_CFG0 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000001C, Width: 32b; ISP SPI Configuration 0
+  ISP_SPI_CFG0:
+    # ----------------------------------------===== SPI_SCK_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default SPI SCK ISP pin.
+    # Identifies the pin to be used as SPI_SCK pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    SPI_SCK_PIN: 0
+    # -------------------------------------===== SPI_SCK_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    SPI_SCK_FUNC_SLOT: 0
+    # -------------------------------------===== SPI_ISP_INSTANCE [Optional] =====--------------------------------------
+    # Description: Offset: 12b, Width: 4b, Identifies the LPSPI instance used for SPI ISP mode
+    SPI_ISP_INSTANCE: 0
+    # ---------------------------------------===== SPI_MOSI_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default SPI MOSI ISP pin.
+    # Identifies the pin to be used as SPI_MOSI pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    SPI_MOSI_PIN: 0
+    # ------------------------------------===== SPI_MOSI_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot.
+    SPI_MOSI_FUNC_SLOT: 0
+  # ----------------------------------------===== ISP_SPI_CFG1 [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000020, Width: 32b; ISP SPI Configuration 1
+  ISP_SPI_CFG1:
+    # ---------------------------------------===== SPI_MISO_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default SPI MISO ISP pin.
+    # Identifies the pin to be used as SPI_MISO pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    SPI_MISO_PIN: 0
+    # ------------------------------------===== SPI_MISO_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    SPI_MISO_FUNC_SLOT: 0
+    # ---------------------------------------===== SPI_SSEL_PIN [Optional] =====----------------------------------------
+    # Description: Offset: 16b, Width: 8b, Override default SPI SSEL ISP pin.
+    # Identifies the pin to be used as SPI_SSEL pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    SPI_SSEL_PIN: 0
+    # ------------------------------------===== SPI_SSEL_FUNC_SLOT [Optional] =====-------------------------------------
+    # Description: Offset: 24b, Width: 4b, Identifies the pin mux function slot.
+    SPI_SSEL_FUNC_SLOT: 0
+    # --------------------------------------===== ISP_SPI_SSEL_X [Optional] =====---------------------------------------
+    # Description: Offset: 28b, Width: 2b, SPI chip select number.
+    # FlexComm SPI interfaces supports up to four chip selects.
+    ISP_SPI_SSEL_X: 0
+  # -----------------------------------------===== ISP_USB_ID [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000024, Width: 32b; ISP USB Identification
+  ISP_USB_ID:
+    # ---------------------------------------===== USB_Vendor_ID [Optional] =====---------------------------------------
+    # Description: Offset: 0b, Width: 16b, USB Vendor ID
+    USB_Vendor_ID: 0
+    # --------------------------------------===== USB_Product_ID [Optional] =====---------------------------------------
+    # Description: Offset: 16b, Width: 16b, USB Product ID
+    USB_Product_ID: 0
+  # -----------------------------------------===== ISP_USB_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x00000028, Width: 32b; ISP USB Configuration
+  ISP_USB_CFG:
+    # ---------------------------------------===== USBx_VBUS_PIN [Optional] =====---------------------------------------
+    # Description: Offset: 0b, Width: 8b, Override default USB0_VBUS_DETECT ISP pin.
+    # Identifies the pin to be used as USB0_VBUS detect pin.
+    # [4:0] GPIO Pin number
+    # [7:5] GPIO port number
+    USBx_VBUS_PIN: 0
+    # ------------------------------------===== USBx_VBUS_FUNC_SLOT [Optional] =====------------------------------------
+    # Description: Offset: 8b, Width: 4b, Identifies the pin mux function slot.
+    USBx_VBUS_FUNC_SLOT: 0
+  # ----------------------------------------===== ISP_MISC_CFG [Optional] =====-----------------------------------------
+  # Description: Offset: 0x0000002C, Width: 32b; ISP MISC Configuration
+  ISP_MISC_CFG:
+    # --------------------------------------===== I2C_SLAVE_ADDR [Optional] =====---------------------------------------
+    # Description: Offset: 0b, Width: 8b, I2C slave address.
+    # A 7-bit Address used for selecting our device on shared I2C bus system.
+    # By default ROM uses 0x10 as slave address.
+    I2C_SLAVE_ADDR: 0
+    # ---------------------------------------===== ISP_USB_CUST [Optional] =====----------------------------------------
+    # Description: Offset: 22b, Width: 2b, Use customer defined GPIO for USB VBUS detect function during ISP mode.
+    # - DEDICATED, (0): Use dedicated VBUS pins.
+    # - USB0_VBUS, (1): Customer defined GPIO for USB0_VBUS detect.
+    # - RESERVED, (2): RESERVED
+    # - VDD_USB, (3): Use VDD_USB for VBUS presence. On board regulator should generate VDD_USB voltage using 5V input
+    # fo VBUS pin on connector.
+    # Possible options: <DEDICATED, USB0_VBUS, RESERVED, VDD_USB>
+    ISP_USB_CUST: DEDICATED
+    # ---------------------------------------===== ISP_SPI_CUST [Optional] =====----------------------------------------
+    # Description: Offset: 26b, Width: 2b, Use customer defined SPI ISP pins.
+    # - DEFAULT_0b00, (0): Default ROM defined pins
+    # - CUST_DEFINED, (1): Customer defined.
+    # - DEFAULT_0b10, (2): Default ROM defined pins
+    # - DEFAULT_0b11, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_0b00, CUST_DEFINED, DEFAULT_0b10, DEFAULT_0b11>
+    ISP_SPI_CUST: DEFAULT_0b00
+    # ---------------------------------------===== ISP_I2C_CUST [Optional] =====----------------------------------------
+    # Description: Offset: 28b, Width: 2b, Use customer defined I2C ISP pins.
+    # - DEFAULT_0b00, (0): Default ROM defined pins
+    # - CUST_DEFINED, (1): Customer defined.
+    # - DEFAULT_0b10, (2): Default ROM defined pins
+    # - DEFAULT_0b11, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_0b00, CUST_DEFINED, DEFAULT_0b10, DEFAULT_0b11>
+    ISP_I2C_CUST: DEFAULT_0b00
+    # ---------------------------------------===== ISP_UART_CUST [Optional] =====---------------------------------------
+    # Description: Offset: 30b, Width: 2b, Use customer defined UART ISP pins.
+    # - DEFAULT_0b00, (0): Default ROM defined pins
+    # - CUST_DEFINED, (1): Customer defined.
+    # - DEFAULT_0b10, (2): Default ROM defined pins
+    # - DEFAULT_0b11, (3): Default ROM defined pins
+    # Possible options: <DEFAULT_0b00, CUST_DEFINED, DEFAULT_0b10, DEFAULT_0b11>
+    ISP_UART_CUST: DEFAULT_0b00
+  # ----------------------------------------===== FLASH_ACL_0_7 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000040, Width: 32b; Access control for flash sector 0-7
+  FLASH_ACL_0_7:
+    # -----------------------------------------===== ACL_SEC_0 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector.
+    ACL_SEC_0: 0
+    # -----------------------------------------===== ACL_SEC_1 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector.
+    ACL_SEC_1: 0
+    # -----------------------------------------===== ACL_SEC_2 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector.
+    ACL_SEC_2: 0
+    # -----------------------------------------===== ACL_SEC_3 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector.
+    ACL_SEC_3: 0
+    # -----------------------------------------===== ACL_SEC_4 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector.
+    ACL_SEC_4: 0
+    # -----------------------------------------===== ACL_SEC_5 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector.
+    ACL_SEC_5: 0
+    # -----------------------------------------===== ACL_SEC_6 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector.
+    ACL_SEC_6: 0
+    # -----------------------------------------===== ACL_SEC_7 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector.
+    ACL_SEC_7: 0
+  # ---------------------------------------===== FLASH_ACL_8_15 [Optional] =====----------------------------------------
+  # Description: Offset: 0x00000044, Width: 32b; Access control for flash sector 8-15
+  FLASH_ACL_8_15:
+    # -----------------------------------------===== ACL_SEC_8 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector.
+    ACL_SEC_8: 0
+    # -----------------------------------------===== ACL_SEC_9 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector.
+    ACL_SEC_9: 0
+    # ----------------------------------------===== ACL_SEC_10 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector.
+    ACL_SEC_10: 0
+    # ----------------------------------------===== ACL_SEC_11 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector.
+    ACL_SEC_11: 0
+    # ----------------------------------------===== ACL_SEC_12 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector.
+    ACL_SEC_12: 0
+    # ----------------------------------------===== ACL_SEC_13 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector.
+    ACL_SEC_13: 0
+    # ----------------------------------------===== ACL_SEC_14 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector.
+    ACL_SEC_14: 0
+    # ----------------------------------------===== ACL_SEC_15 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector.
+    ACL_SEC_15: 0
+  # ---------------------------------------===== FLASH_ACL_16_23 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000048, Width: 32b; Access control for flash sector 16-23
+  FLASH_ACL_16_23:
+    # ----------------------------------------===== ACL_SEC_16 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector.
+    ACL_SEC_16: 0
+    # ----------------------------------------===== ACL_SEC_17 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector.
+    ACL_SEC_17: 0
+    # ----------------------------------------===== ACL_SEC_18 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector.
+    ACL_SEC_18: 0
+    # ----------------------------------------===== ACL_SEC_19 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector.
+    ACL_SEC_19: 0
+    # ----------------------------------------===== ACL_SEC_20 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector.
+    ACL_SEC_20: 0
+    # ----------------------------------------===== ACL_SEC_21 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector.
+    ACL_SEC_21: 0
+    # ----------------------------------------===== ACL_SEC_22 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector.
+    ACL_SEC_22: 0
+    # ----------------------------------------===== ACL_SEC_23 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector.
+    ACL_SEC_23: 0
+  # ---------------------------------------===== FLASH_ACL_24_31 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000004C, Width: 32b; Access control for flash sector 24-31
+  FLASH_ACL_24_31:
+    # ----------------------------------------===== ACL_SEC_24 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector.
+    ACL_SEC_24: 0
+    # ----------------------------------------===== ACL_SEC_25 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector.
+    ACL_SEC_25: 0
+    # ----------------------------------------===== ACL_SEC_26 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector.
+    ACL_SEC_26: 0
+    # ----------------------------------------===== ACL_SEC_27 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector.
+    ACL_SEC_27: 0
+    # ----------------------------------------===== ACL_SEC_28 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector.
+    ACL_SEC_28: 0
+    # ----------------------------------------===== ACL_SEC_29 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector.
+    ACL_SEC_29: 0
+    # ----------------------------------------===== ACL_SEC_30 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector.
+    ACL_SEC_30: 0
+    # ----------------------------------------===== ACL_SEC_31 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector.
+    ACL_SEC_31: 0
+  # ---------------------------------------===== FLASH_ACL_32_39 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000050, Width: 32b; Access control for flash sector 32-39
+  FLASH_ACL_32_39:
+    # ----------------------------------------===== ACL_SEC_32 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector.
+    ACL_SEC_32: 0
+    # ----------------------------------------===== ACL_SEC_33 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector.
+    ACL_SEC_33: 0
+    # ----------------------------------------===== ACL_SEC_34 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector.
+    ACL_SEC_34: 0
+    # ----------------------------------------===== ACL_SEC_35 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector.
+    ACL_SEC_35: 0
+    # ----------------------------------------===== ACL_SEC_36 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector.
+    ACL_SEC_36: 0
+    # ----------------------------------------===== ACL_SEC_37 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector.
+    ACL_SEC_37: 0
+    # ----------------------------------------===== ACL_SEC_38 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector.
+    ACL_SEC_38: 0
+    # ----------------------------------------===== ACL_SEC_39 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector.
+    ACL_SEC_39: 0
+  # ---------------------------------------===== FLASH_ACL_40_47 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000054, Width: 32b; Access control for flash sector 40-47
+  FLASH_ACL_40_47:
+    # ----------------------------------------===== ACL_SEC_40 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector.
+    ACL_SEC_40: 0
+    # ----------------------------------------===== ACL_SEC_41 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector.
+    ACL_SEC_41: 0
+    # ----------------------------------------===== ACL_SEC_42 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector.
+    ACL_SEC_42: 0
+    # ----------------------------------------===== ACL_SEC_43 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector.
+    ACL_SEC_43: 0
+    # ----------------------------------------===== ACL_SEC_44 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector.
+    ACL_SEC_44: 0
+    # ----------------------------------------===== ACL_SEC_45 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector.
+    ACL_SEC_45: 0
+    # ----------------------------------------===== ACL_SEC_46 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector.
+    ACL_SEC_46: 0
+    # ----------------------------------------===== ACL_SEC_47 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector.
+    ACL_SEC_47: 0
+  # ---------------------------------------===== FLASH_ACL_48_55 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000058, Width: 32b; Access control for flash sector 48-55
+  FLASH_ACL_48_55:
+    # ----------------------------------------===== ACL_SEC_48 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector.
+    ACL_SEC_48: 0
+    # ----------------------------------------===== ACL_SEC_49 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector.
+    ACL_SEC_49: 0
+    # ----------------------------------------===== ACL_SEC_50 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector.
+    ACL_SEC_50: 0
+    # ----------------------------------------===== ACL_SEC_51 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector.
+    ACL_SEC_51: 0
+    # ----------------------------------------===== ACL_SEC_52 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector.
+    ACL_SEC_52: 0
+    # ----------------------------------------===== ACL_SEC_53 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector.
+    ACL_SEC_53: 0
+    # ----------------------------------------===== ACL_SEC_54 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector.
+    ACL_SEC_54: 0
+    # ----------------------------------------===== ACL_SEC_55 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector.
+    ACL_SEC_55: 0
+  # ---------------------------------------===== FLASH_ACL_56_63 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000005C, Width: 32b; Access control for flash sector 55-63
+  FLASH_ACL_56_63:
+    # ----------------------------------------===== ACL_SEC_56 [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 3b, Access control for flash sector.
+    ACL_SEC_56: 0
+    # ----------------------------------------===== ACL_SEC_57 [Optional] =====-----------------------------------------
+    # Description: Offset: 4b, Width: 3b, Access control for flash sector.
+    ACL_SEC_57: 0
+    # ----------------------------------------===== ACL_SEC_58 [Optional] =====-----------------------------------------
+    # Description: Offset: 8b, Width: 3b, Access control for flash sector.
+    ACL_SEC_58: 0
+    # ----------------------------------------===== ACL_SEC_59 [Optional] =====-----------------------------------------
+    # Description: Offset: 12b, Width: 3b, Access control for flash sector.
+    ACL_SEC_59: 0
+    # ----------------------------------------===== ACL_SEC_60 [Optional] =====-----------------------------------------
+    # Description: Offset: 16b, Width: 3b, Access control for flash sector.
+    ACL_SEC_60: 0
+    # ----------------------------------------===== ACL_SEC_61 [Optional] =====-----------------------------------------
+    # Description: Offset: 20b, Width: 3b, Access control for flash sector.
+    ACL_SEC_61: 0
+    # ----------------------------------------===== ACL_SEC_62 [Optional] =====-----------------------------------------
+    # Description: Offset: 24b, Width: 3b, Access control for flash sector.
+    ACL_SEC_62: 0
+    # ----------------------------------------===== ACL_SEC_63 [Optional] =====-----------------------------------------
+    # Description: Offset: 28b, Width: 3b, Access control for flash sector.
+    ACL_SEC_63: 0
+  # --------------------------------------===== QUICK_SET_GPIO_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000060, Width: 32b; Quick Set to Drive GPIO 0 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_0: "0x00000000"
+  # --------------------------------------===== QUICK_CLR_GPIO_0 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000064, Width: 32b; Quick Clear to Drive GPIO 0 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 0. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_0: "0x00000000"
+  # --------------------------------------===== QUICK_SET_GPIO_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000068, Width: 32b; Quick Set to Drive GPIO 1 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_1: "0x00000000"
+  # --------------------------------------===== QUICK_CLR_GPIO_1 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000006C, Width: 32b; Quick Clear to Drive GPIO 1 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 1. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_1: "0x00000000"
+  # --------------------------------------===== QUICK_SET_GPIO_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000070, Width: 32b; Quick Set to Drive GPIO 2 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_2: "0x00000000"
+  # --------------------------------------===== QUICK_CLR_GPIO_2 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000074, Width: 32b; Quick Clear to Drive GPIO 2 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 2. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_2: "0x00000000"
+  # --------------------------------------===== QUICK_SET_GPIO_3 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000078, Width: 32b; Quick Set to Drive GPIO 3 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_3: "0x00000000"
+  # --------------------------------------===== QUICK_CLR_GPIO_3 [Optional] =====---------------------------------------
+  # Description: Offset: 0x0000007C, Width: 32b; Quick Clear to Drive GPIO 3 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 3. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_3: "0x00000000"
+  # --------------------------------------===== QUICK_SET_GPIO_4 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000080, Width: 32b; Quick Set to Drive GPIO 4 port [31:0] pins high after reset.
+  # Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_SET_GPIO_4: "0x00000000"
+  # --------------------------------------===== QUICK_CLR_GPIO_4 [Optional] =====---------------------------------------
+  # Description: Offset: 0x00000084, Width: 32b; Quick Clear to Drive GPIO 4 port [31:0] pins low after reset.
+  # Each bit corresponds to the pin in GPIO port 4. When set ROM drives the corresponding pin high as soon as possible.
+  # By default most pins come-up as tri-stated inputs.
+  # This feature allows customer to specify active drive pins soon after reset instead of waiting till complete boot.
+  QUICK_CLR_GPIO_4: "0x00000000"
+  # ------------------------------------------===== ROP_STATE [Optional] =====------------------------------------------
+  # Description: Offset: 0x00000090, Width: 32b; Read Out Protection (ROP) State value.
+  # Device does not support secure boot, but it does support four levels of Read Out Protection, referred as ROP_STATE.
+  # This read out protection is a mechanism that allows user to enable different levels of protection in the system.
+  # ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the
+  # device; if match then programs it to SYSCON->ROP_STATE.
+  # Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).
+  ROP_STATE:
+    # -----------------------------------------===== ROP_STATE [Optional] =====-----------------------------------------
+    # Description: Offset: 0b, Width: 32b, ROP_STATE[31:0]
+    # - ROP_LEVEL0, (4294967295): ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state.
+    # - ROP_LEVEL1, (4005168323): ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer,
+    # only limited debug mailbox commands available.
+    # - ROP_LEVEL2, (1228508555): ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer,
+    # only limited debug mailbox commands available.
+    # - ROP_LEVEL3, (2964043523): ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no
+    # debug mailbox commands available.
+    # Possible options: <ROP_LEVEL0, ROP_LEVEL1, ROP_LEVEL2, ROP_LEVEL3>
+    ROP_STATE: ROP_LEVEL0
+  # ----------------------------------------===== ROP_STATE_DP [Optional] =====-----------------------------------------
+  # Description: Offset: 0x000000A0, Width: 32b; Read Out Protection (ROP) State duplicate value.
+  # ROM reads ROP_STATE from ROP_STATE and ROP_STATE_DP on IFR0, does the compare, and if it does not match, resets the
+  # device; if match then programs it to SYSCON->ROP_STATE.
+  # Any other value then four listed means ROP3-like behavior (debug disabled/locked, ISP disabled).
+  ROP_STATE_DP:
+    # ---------------------------------------===== ROP_STATE_DP [Optional] =====----------------------------------------
+    # Description: Offset: 0b, Width: 32b, ROP_STATE_DP[31:0]
+    # - ROP_LEVEL0, (4294967295): ROP_STATE = 0xFFFF_FFFF (erased FLASH value), no ROP. Default for blank state.
+    # - ROP_LEVEL1, (4005168323): ROP_STATE = 0xEEBA_04C3. Debug disabled and unlocked, can be modified by customer,
+    # only limited debug mailbox commands available.
+    # - ROP_LEVEL2, (1228508555): ROP_STATE = 0x4939_8D8B. Debug disabled and locked, cannot be modified by customer,
+    # only limited debug mailbox commands available.
+    # - ROP_LEVEL3, (2964043523): ROP_STATE = 0xB0AB_B703. Debug disabled and locked, cannot be modified by customer, no
+    # debug mailbox commands available.
+    # Possible options: <ROP_LEVEL0, ROP_LEVEL1, ROP_LEVEL2, ROP_LEVEL3>
+    ROP_STATE_DP: ROP_LEVEL0

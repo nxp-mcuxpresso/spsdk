@@ -196,7 +196,7 @@ sb2_test:
           maxLength: 32
           skip_in_template: true
         zeroPadding:
-          type: boolean
+          type: [string, boolean]
           title: Enable zero padding instead of random padding
           description: Zero padding instead of random padding is useful if you want to binary compare two SB 2.1 files.
           template_value: false
@@ -505,7 +505,7 @@ sb2_sections:
                         ver_type:
                           type: number
                           title: Version type
-                          description: 0 for non secure, 1 for secure.
+                          description: 0 for secure, 1 for non secure.
                           format: number
                           template_value: 0
                         fw_version:

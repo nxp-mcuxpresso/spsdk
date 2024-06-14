@@ -2,14 +2,13 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """UART SDP interface implementation."""
 
 import logging
-from dataclasses import dataclass
 from typing import List, Optional
 
 from typing_extensions import Self
@@ -18,25 +17,6 @@ from spsdk.sdp.protocol.serial_protocol import SDPSerialProtocol
 from spsdk.utils.interfaces.device.serial_device import SerialDevice
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ScanArgs:
-    """Scan arguments dataclass."""
-
-    port: Optional[str]
-    baudrate: Optional[int]
-
-    @classmethod
-    def parse(cls, params: str) -> Self:
-        """Parse given scanning parameters into ScanArgs class.
-
-        :param params: Parameters as a string
-        """
-        port_parts = params.split(",")
-        return cls(
-            port=port_parts.pop(0), baudrate=int(port_parts.pop(), 0) if port_parts else None
-        )
 
 
 class SdpUARTInterface(SDPSerialProtocol):
@@ -53,28 +33,6 @@ class SdpUARTInterface(SDPSerialProtocol):
         """
         assert isinstance(device, SerialDevice)
         super().__init__(device=device)
-
-    @classmethod
-    def scan_from_args(
-        cls,
-        params: str,
-        timeout: int,
-        extra_params: Optional[str] = None,
-    ) -> List[Self]:
-        """Scan connected UART devices.
-
-        :param params: Params as a configuration string
-        :param extra_params: Extra params configuration string
-        :param timeout: Timeout for the scan
-        :return: list of matching RawHid devices
-        """
-        scan_args = ScanArgs.parse(params=params)
-        interfaces = cls.scan(
-            port=scan_args.port,
-            baudrate=scan_args.baudrate or cls.default_baudrate,
-            timeout=timeout,
-        )
-        return interfaces
 
     @classmethod
     def scan(
@@ -94,6 +52,7 @@ class SdpUARTInterface(SDPSerialProtocol):
         :param timeout: timeout in milliseconds, defaults to 5000
         :return: list of interfaces responding to the PING command
         """
+        baudrate = baudrate or cls.default_baudrate
         devices = SerialDevice.scan(port=port, baudrate=baudrate, timeout=timeout)
         interfaces = []
         for device in devices:

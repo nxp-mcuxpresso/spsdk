@@ -14,13 +14,12 @@ from copy import deepcopy
 from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 from spsdk.exceptions import SPSDKKeyError
+from spsdk.mboot.commands import CommandTag
+from spsdk.mboot.error_codes import StatusCode
 from spsdk.mboot.exceptions import McuBootError
+from spsdk.mboot.memories import ExtMemPropTags, MemoryRegion
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
-
-from .commands import CommandTag
-from .error_codes import StatusCode
-from .memories import ExtMemPropTags, MemoryRegion
 
 
 ########################################################################################################################
@@ -188,6 +187,11 @@ class PropertyTagKw45xx(SpsdkEnum):
     BOOT_STATUS_REGISTER       = (0x14, "BootStatusRegister", "Boot Status Register",)
     FIRMWARE_VERSION           = (0x15, "FirmwareVersion", "Firmware Version",)
     FUSE_PROGRAM_VOLTAGE       = (0x16, "FuseProgramVoltage", "Fuse Program Voltage")
+
+class PropertyTagMcxa1xx(SpsdkEnum):
+    """McuBoot Properties For mcxa1xx."""
+
+    LIFE_CYCLE_STATE           = (0x11, "LifeCycleState", "Life Cycle State")
 
 class PeripheryTag(SpsdkEnum):
     """Tags representing peripherals."""
@@ -692,48 +696,48 @@ class FuseLockedStatus(PropertyValueBase):
 # McuBoot property response parser
 ########################################################################################################################
 
-PROPERTIES: Dict[PropertyTag, Dict] = {
-    PropertyTag.CURRENT_VERSION: {"class": VersionValue, "kwargs": {}},
-    PropertyTag.AVAILABLE_PERIPHERALS: {
+PROPERTIES: Dict[int, Dict] = {
+    PropertyTag.CURRENT_VERSION.tag: {"class": VersionValue, "kwargs": {}},
+    PropertyTag.AVAILABLE_PERIPHERALS.tag: {
         "class": AvailablePeripheralsValue,
         "kwargs": {},
     },
-    PropertyTag.FLASH_START_ADDRESS: {
+    PropertyTag.FLASH_START_ADDRESS.tag: {
         "class": IntValue,
         "kwargs": {"str_format": "hex"},
     },
-    PropertyTag.FLASH_SIZE: {"class": IntValue, "kwargs": {"str_format": "size"}},
-    PropertyTag.FLASH_SECTOR_SIZE: {
+    PropertyTag.FLASH_SIZE.tag: {"class": IntValue, "kwargs": {"str_format": "size"}},
+    PropertyTag.FLASH_SECTOR_SIZE.tag: {
         "class": IntValue,
         "kwargs": {"str_format": "size"},
     },
-    PropertyTag.FLASH_BLOCK_COUNT: {"class": IntValue, "kwargs": {"str_format": "dec"}},
-    PropertyTag.AVAILABLE_COMMANDS: {"class": AvailableCommandsValue, "kwargs": {}},
-    PropertyTag.CRC_CHECK_STATUS: {
+    PropertyTag.FLASH_BLOCK_COUNT.tag: {"class": IntValue, "kwargs": {"str_format": "dec"}},
+    PropertyTag.AVAILABLE_COMMANDS.tag: {"class": AvailableCommandsValue, "kwargs": {}},
+    PropertyTag.CRC_CHECK_STATUS.tag: {
         "class": EnumValue,
         "kwargs": {"enum": StatusCode, "na_msg": "Unknown CRC Status code"},
     },
-    PropertyTag.VERIFY_WRITES: {
+    PropertyTag.VERIFY_WRITES.tag: {
         "class": BoolValue,
         "kwargs": {"true_string": "ON", "false_string": "OFF"},
     },
-    PropertyTag.LAST_ERROR: {
+    PropertyTag.LAST_ERROR.tag: {
         "class": EnumValue,
         "kwargs": {"enum": StatusCode, "na_msg": "Unknown Error"},
     },
-    PropertyTag.MAX_PACKET_SIZE: {"class": IntValue, "kwargs": {"str_format": "size"}},
-    PropertyTag.RESERVED_REGIONS: {"class": ReservedRegionsValue, "kwargs": {}},
-    PropertyTag.VALIDATE_REGIONS: {
+    PropertyTag.MAX_PACKET_SIZE.tag: {"class": IntValue, "kwargs": {"str_format": "size"}},
+    PropertyTag.RESERVED_REGIONS.tag: {"class": ReservedRegionsValue, "kwargs": {}},
+    PropertyTag.VALIDATE_REGIONS.tag: {
         "class": BoolValue,
         "kwargs": {"true_string": "ON", "false_string": "OFF"},
     },
-    PropertyTag.RAM_START_ADDRESS: {"class": IntValue, "kwargs": {"str_format": "hex"}},
-    PropertyTag.RAM_SIZE: {"class": IntValue, "kwargs": {"str_format": "size"}},
-    PropertyTag.SYSTEM_DEVICE_IDENT: {
+    PropertyTag.RAM_START_ADDRESS.tag: {"class": IntValue, "kwargs": {"str_format": "hex"}},
+    PropertyTag.RAM_SIZE.tag: {"class": IntValue, "kwargs": {"str_format": "size"}},
+    PropertyTag.SYSTEM_DEVICE_IDENT.tag: {
         "class": IntValue,
         "kwargs": {"str_format": "hex"},
     },
-    PropertyTag.FLASH_SECURITY_STATE: {
+    PropertyTag.FLASH_SECURITY_STATE.tag: {
         "class": BoolValue,
         "kwargs": {
             "true_values": (0x00000000, 0x5AA55AA5),
@@ -742,66 +746,66 @@ PROPERTIES: Dict[PropertyTag, Dict] = {
             "false_string": "SECURE",
         },
     },
-    PropertyTag.UNIQUE_DEVICE_IDENT: {"class": DeviceUidValue, "kwargs": {}},
-    PropertyTag.FLASH_FAC_SUPPORT: {
+    PropertyTag.UNIQUE_DEVICE_IDENT.tag: {"class": DeviceUidValue, "kwargs": {}},
+    PropertyTag.FLASH_FAC_SUPPORT.tag: {
         "class": BoolValue,
         "kwargs": {"true_string": "ON", "false_string": "OFF"},
     },
-    PropertyTag.FLASH_ACCESS_SEGMENT_SIZE: {
+    PropertyTag.FLASH_ACCESS_SEGMENT_SIZE.tag: {
         "class": IntValue,
         "kwargs": {"str_format": "size"},
     },
-    PropertyTag.FLASH_ACCESS_SEGMENT_COUNT: {
+    PropertyTag.FLASH_ACCESS_SEGMENT_COUNT.tag: {
         "class": IntValue,
         "kwargs": {"str_format": "int32"},
     },
-    PropertyTag.FLASH_READ_MARGIN: {
+    PropertyTag.FLASH_READ_MARGIN.tag: {
         "class": EnumValue,
         "kwargs": {"enum": FlashReadMargin, "na_msg": "Unknown Margin"},
     },
-    PropertyTag.QSPI_INIT_STATUS: {
+    PropertyTag.QSPI_INIT_STATUS.tag: {
         "class": EnumValue,
         "kwargs": {"enum": StatusCode, "na_msg": "Unknown Error"},
     },
-    PropertyTag.TARGET_VERSION: {"class": VersionValue, "kwargs": {}},
-    PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES: {
+    PropertyTag.TARGET_VERSION.tag: {"class": VersionValue, "kwargs": {}},
+    PropertyTag.EXTERNAL_MEMORY_ATTRIBUTES.tag: {
         "class": ExternalMemoryAttributesValue,
         "kwargs": {"mem_id": None},
     },
-    PropertyTag.RELIABLE_UPDATE_STATUS: {
+    PropertyTag.RELIABLE_UPDATE_STATUS.tag: {
         "class": EnumValue,
         "kwargs": {"enum": StatusCode, "na_msg": "Unknown Error"},
     },
-    PropertyTag.FLASH_PAGE_SIZE: {"class": IntValue, "kwargs": {"str_format": "size"}},
-    PropertyTag.IRQ_NOTIFIER_PIN: {"class": IrqNotifierPinValue, "kwargs": {}},
-    PropertyTag.PFR_KEYSTORE_UPDATE_OPT: {
+    PropertyTag.FLASH_PAGE_SIZE.tag: {"class": IntValue, "kwargs": {"str_format": "size"}},
+    PropertyTag.IRQ_NOTIFIER_PIN.tag: {"class": IrqNotifierPinValue, "kwargs": {}},
+    PropertyTag.PFR_KEYSTORE_UPDATE_OPT.tag: {
         "class": EnumValue,
         "kwargs": {"enum": PfrKeystoreUpdateOpt, "na_msg": "Unknown"},
     },
-    PropertyTag.BYTE_WRITE_TIMEOUT_MS: {
+    PropertyTag.BYTE_WRITE_TIMEOUT_MS.tag: {
         "class": IntValue,
         "kwargs": {"str_format": "dec"},
     },
-    PropertyTag.FUSE_LOCKED_STATUS: {
+    PropertyTag.FUSE_LOCKED_STATUS.tag: {
         "class": FuseLockedStatus,
         "kwargs": {},
     },
 }
 
 PROPERTIES_KW45XX = {
-    PropertyTagKw45xx.VERIFY_ERASE: {
+    PropertyTagKw45xx.VERIFY_ERASE.tag: {
         "class": BoolValue,
         "kwargs": {"true_string": "ENABLE", "false_string": "DISABLE"},
     },
-    PropertyTagKw45xx.BOOT_STATUS_REGISTER: {
+    PropertyTagKw45xx.BOOT_STATUS_REGISTER.tag: {
+        "class": IntValue,
+        "kwargs": {"str_format": "hex"},
+    },
+    PropertyTagKw45xx.FIRMWARE_VERSION.tag: {
         "class": IntValue,
         "kwargs": {"str_format": "int32"},
     },
-    PropertyTagKw45xx.FIRMWARE_VERSION: {
-        "class": IntValue,
-        "kwargs": {"str_format": "int32"},
-    },
-    PropertyTagKw45xx.FUSE_PROGRAM_VOLTAGE: {
+    PropertyTagKw45xx.FUSE_PROGRAM_VOLTAGE.tag: {
         "class": BoolValue,
         "kwargs": {
             "true_string": "Over Drive Voltage (2.5 V)",
@@ -810,12 +814,33 @@ PROPERTIES_KW45XX = {
     },
 }
 
-PROPERTIES_OVERRIDE = {"kw45xx": PROPERTIES_KW45XX, "k32w1xx": PROPERTIES_KW45XX}
-PROPERTY_TAG_OVERRIDE = {"kw45xx": PropertyTagKw45xx, "k32w1xx": PropertyTagKw45xx}
+PROPERTIES_MCXA1XX = {
+    PropertyTagMcxa1xx.LIFE_CYCLE_STATE.tag: {
+        "class": BoolValue,
+        "kwargs": {
+            "true_values": (0x00000000, 0x5AA55AA5),
+            "true_string": "development life cycle",
+            "false_values": (0x00000001, 0xC33CC33C),
+            "false_string": "deployment life cycle",
+        },
+    },
+}
+
+
+PROPERTIES_OVERRIDE = {
+    "kw45xx": PROPERTIES_KW45XX,
+    "k32w1xx": PROPERTIES_KW45XX,
+    "mcxa1xx": PROPERTIES_MCXA1XX,
+}
+PROPERTY_TAG_OVERRIDE = {
+    "kw45xx": PropertyTagKw45xx,
+    "k32w1xx": PropertyTagKw45xx,
+    "mcxa1xx": PropertyTagMcxa1xx,
+}
 
 
 def parse_property_value(
-    property_tag: int,
+    property_tag: Union[int, PropertyTag],
     raw_values: List[int],
     ext_mem_id: Optional[int] = None,
     family: Optional[str] = None,
@@ -828,16 +853,16 @@ def parse_property_value(
     :param family: supported family
     :return: Object representing the property
     """
+    if isinstance(property_tag, PropertyTag):
+        property_tag = property_tag.tag
     assert isinstance(property_tag, int)
     assert isinstance(raw_values, list)
     properties_dict = deepcopy(PROPERTIES)
     if family:
-        properties_dict.update(PROPERTIES_OVERRIDE[family])  # type: ignore
+        properties_dict.update(PROPERTIES_OVERRIDE[family])
     if property_tag not in list(properties_dict.keys()):
         return None
-    property_value = next(
-        value for key, value in properties_dict.items() if key.tag == property_tag
-    )
+    property_value = next(value for key, value in properties_dict.items() if key == property_tag)
     cls: Callable = property_value["class"]
     kwargs: dict = property_value["kwargs"]
     if "mem_id" in kwargs:

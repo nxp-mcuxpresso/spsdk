@@ -9,7 +9,7 @@
 import logging
 from typing import List, Optional
 
-from serial import Serial, SerialException, SerialTimeoutException
+from serial import Serial, SerialTimeoutException
 from serial.tools.list_ports import comports
 from typing_extensions import Self
 
@@ -23,14 +23,14 @@ logger = logging.getLogger(__name__)
 class SerialDevice(DeviceBase):
     """Serial device class."""
 
-    default_baudrate = 115200
-    default_timeout = 5000
+    DEFAULT_BAUDRATE = 115200
+    DEFAULT_TIMEOUT = 5000
 
     def __init__(
         self,
         port: Optional[str] = None,
-        timeout: int = default_timeout,
-        baudrate: int = default_baudrate,
+        timeout: Optional[int] = None,
+        baudrate: Optional[int] = None,
     ):
         """Initialize the UART interface.
 
@@ -40,16 +40,15 @@ class SerialDevice(DeviceBase):
         :raises SPSDKConnectionError: when there is no port available
         """
         super().__init__()
-        self._timeout = timeout
+        self._timeout = timeout or self.DEFAULT_TIMEOUT
         try:
-            timeout_s = timeout / 1000
+            timeout_s = self._timeout / 1000
             self._device = Serial(
-                port=port, timeout=timeout_s, write_timeout=timeout_s, baudrate=baudrate
+                port=port,
+                timeout=timeout_s,
+                write_timeout=timeout_s,
+                baudrate=baudrate or self.DEFAULT_BAUDRATE,
             )
-            self.expect_status = True
-        except SerialException as se:
-            logger.debug(f"Exception occurred during device opening: {se}")
-            self.expect_status = False
         except Exception as e:
             raise SPSDKConnectionError(str(e)) from e
 
@@ -71,10 +70,7 @@ class SerialDevice(DeviceBase):
 
         :return: True if device is open, False otherwise.
         """
-        if self.expect_status == False:
-            return False
-        else:
-            return self._device.is_open
+        return self._device.is_open
 
     def open(self) -> None:
         """Open the UART interface.
@@ -173,7 +169,7 @@ class SerialDevice(DeviceBase):
         :param timeout: timeout in milliseconds, defaults to 5000
         :return: list of interfaces responding to the PING command
         """
-        baudrate = baudrate or cls.default_baudrate
+        baudrate = baudrate or cls.DEFAULT_BAUDRATE
         timeout = timeout or 5000
         if port:
             device = cls._check_port(port, baudrate, timeout)
@@ -202,5 +198,5 @@ class SerialDevice(DeviceBase):
             device.close()
             return device
         except Exception as e:  # pylint: disable=broad-except
-            logger.debug(f"{type(e).__name__}: {e}")
+            logger.info(f"{type(e).__name__}: {e}")
             return None

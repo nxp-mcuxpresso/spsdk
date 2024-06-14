@@ -17,6 +17,7 @@ from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKKeyError, SPSDKValueError
 from spsdk.image.hab.commands.commands_enum import SecCommand
+from spsdk.utils.database import DatabaseManager, get_db
 from spsdk.utils.images import BinaryImage
 
 
@@ -117,15 +118,19 @@ class OptionsConfig:
 
     flags: int
     start_address: int
-    ivt_offset: int
-    initial_load_size: int
-    entrypoint_address: int
+    boot_device: Optional[str] = None
+    family: Optional[str] = None
+    ivt_offset: Optional[int] = None
+    initial_load_size: Optional[int] = None
+    entrypoint_address: Optional[int] = None
     signature_timestamp: Optional[datetime] = None
     dcd_file_path: Optional[str] = None
     xmcd_file_path: Optional[str] = None
 
     _FIELD_MAPPING = {
         "flags": "flags",
+        "bootdevice": "boot_device",
+        "family": "family",
         "startaddress": "start_address",
         "ivtoffset": "ivt_offset",
         "initialloadsize": "initial_load_size",
@@ -149,3 +154,32 @@ class OptionsConfig:
                 value = datetime.strptime(value, "%d/%m/%Y %H:%M:%S").replace(tzinfo=timezone.utc)
             params[cls._FIELD_MAPPING[name.lower()]] = value
         return cls(**params)
+
+    def get_ivt_offset(self) -> int:
+        """Get IVT offset."""
+        if self.ivt_offset is not None:
+            return self.ivt_offset
+        if not (self.family and self.boot_device):
+            raise SPSDKValueError(
+                "Either 'ivtOffset' or 'family' and 'bootDevice' options must be specified."
+            )
+        db = get_db(device=self.family)
+        return db.get_int(
+            DatabaseManager.BOOTABLE_IMAGE,
+            ["mem_types", self.boot_device, "segments", "hab_container"],
+        )
+
+    def get_initial_load_size(self) -> int:
+        """Get initial load size."""
+        if self.initial_load_size is not None:
+            return self.initial_load_size
+        if not (self.family and self.boot_device):
+            raise SPSDKValueError(
+                "Either 'initialLoadSize' or 'family' and 'bootDevice' options must be specified."
+            )
+        assert self.family and self.boot_device
+        db = get_db(device=self.family)
+        return db.get_int(
+            DatabaseManager.HAB,
+            ["mem_types", self.boot_device, "initial_load_size"],
+        )

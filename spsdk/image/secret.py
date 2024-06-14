@@ -15,15 +15,14 @@ from typing import Any, Iterator, List, Optional, Union
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate, ExtensionNotFound
+from spsdk.crypto.crypto_types import SPSDKKeyUsage
 from spsdk.crypto.keys import EccCurve, PublicKeyEcc, PublicKeyRsa, get_ecc_curve
-from spsdk.crypto.types import SPSDKKeyUsage
 from spsdk.exceptions import SPSDKError
+from spsdk.image.header import Header, SegTag
+from spsdk.image.misc import hexdump_fmt, modulus_fmt
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import Endianness
 from spsdk.utils.spsdk_enum import SpsdkEnum
-
-from .header import Header, SegTag
-from .misc import hexdump_fmt, modulus_fmt
 
 
 class EnumAlgorithm(SpsdkEnum):
@@ -488,7 +487,7 @@ class SrkItem:
         if header.tag == EnumSRK.KEY_PUBLIC:
             if header.param == EnumAlgorithm.PKCS1:
                 return SrkItemRSA.parse(data)  # type: ignore
-            elif header.param == EnumAlgorithm.ECDSA:
+            if header.param == EnumAlgorithm.ECDSA:
                 return SrkItemEcc.parse(data)  # type: ignore
             raise NotImplementedSRKPublicKeyType(f"{header.param}")
         if header.tag == EnumSRK.KEY_HASH:

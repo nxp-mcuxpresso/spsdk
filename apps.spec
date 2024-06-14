@@ -191,6 +191,7 @@ a_tpconfig = analyze(["spsdk/apps/tpconfig.py"])
 a_nxpdevscan = analyze(["spsdk/apps/nxpdevscan.py"])
 a_ifr = analyze(["spsdk/apps/ifr.py"])
 a_nxpcrypto = analyze(["spsdk/apps/nxpcrypto.py"])
+a_nxpmemcfg = analyze(["spsdk/apps/nxpmemcfg.py"])
 
 
 # merge the dependencies together so the (first) blhost contains all required dependencies from all tools
@@ -208,6 +209,7 @@ MERGE(
     (a_ifr, "ifr", "ifr"),
     (a_nxpdevscan, "nxpdevscan", "nxpdevscan"),
     (a_nxpcrypto, "nxpcrypto", "nxpcrypto"),
+    (a_nxpmemcfg, "nxpmemcfg", "nxpmemcfg"),
 )
 
 
@@ -229,6 +231,7 @@ exe_nxpdevscan = executable(
 )
 exe_ifr = executable(a_ifr, "ifr", "tools/pyinstaller/ifr_version_info.txt")
 exe_nxpcrypto = executable(a_nxpcrypto, "nxpcrypto", "tools/pyinstaller/nxpcrypto_version_info.txt")
+exe_nxpmemcfg = executable(a_nxpmemcfg, "nxpmemcfg", "tools/pyinstaller/nxpmemcfg_version_info.txt")
 
 # collect all bundles together
 coll_apps = COLLECT(
@@ -245,6 +248,7 @@ coll_apps = COLLECT(
     exe_nxpdevscan,
     exe_ifr,
     exe_nxpcrypto,
+    exe_nxpmemcfg,
     a_bl.binaries,
     a_bl.zipfiles,
     a_bl.datas,
@@ -284,6 +288,9 @@ coll_apps = COLLECT(
     a_nxpcrypto.binaries,
     a_nxpcrypto.zipfiles,
     a_nxpcrypto.datas,
+    a_nxpmemcfg.binaries,
+    a_nxpmemcfg.zipfiles,
+    a_nxpmemcfg.datas,
     strip=False,
     upx=True,
     upx_exclude=[],

@@ -9,7 +9,7 @@ el2go:
       type: string
       title: "EdgeLock2Go URL"
       description: "URL pointing to the root of EL2GO server"
-      template_value: "https://api.qa.sb.edgelock2go.com"
+      template_value: "https://api.edgelock2go.com"
     qi_id:
       type: [number, string]
       title: "Customer Qi ID"
@@ -30,7 +30,10 @@ el2go:
       title: "Timeout for EL2GO API"
       description: "Timeout for EL2GO API in seconds. Default is 60 seconds"
       template_value: 60
-  required: [url, qi_id, api_key]
+    family:
+      type: string
+      skip_in_template: true
+  required: [url, qi_id, api_key, family]
 
 mboot:
   type: object
@@ -42,9 +45,7 @@ mboot:
       template_value: com1
     family:
       type: string
-      title: "Target family"
-      description: "Name of the target family"
-      template_value: mwct2xxxs
+      skip_in_template: true
   required: [port, family]
 
 model:
@@ -58,14 +59,17 @@ model:
       template_value: <path/to/model_dir>
     family:
       type: string
-      title: "Target family"
-      description: "Name of the target family"
-      template_value: mwct2xxxs
+      skip_in_template: true
   required: [model_dir, family]
 
 full_config:
   type: object
   properties:
+    family:
+      type: string
+      title: "Target family"
+      description: "Name of the target family"
+      template_value: mwct2xxxs
     service_type:
       type: string
       title: "Name of the WPC service adapter"
@@ -84,4 +88,43 @@ full_config:
       title: "Parameters for the target adapter"
       description: "Parameters for the target adapter"
       properties: {}
-  required: [service_type, service_parameters, target_type, target_parameters]
+  required:
+    [service_type, service_parameters, target_type, target_parameters, family]
+
+service_config:
+  type: object
+  properties:
+    family:
+      type: string
+      title: "Target family"
+      description: "Name of the target family"
+      template_value: mwct2xxxs
+    service_type:
+      type: string
+      title: "Name of the WPC service adapter"
+      description: "Name of the WPC service adapter"
+    service_parameters:
+      type: object
+      title: "Parameters for the WPC service adapter"
+      description: "Parameters for the WPC service adapter"
+      properties: {}
+  required: [service_type, service_parameters, family]
+
+target_config:
+  type: object
+  properties:
+    family:
+      type: string
+      title: "Target family"
+      description: "Name of the target family"
+      template_value: mwct2xxxs
+    target_type:
+      type: string
+      title: "Name of the target adapter"
+      description: "Name of the target adapter"
+    target_parameters:
+      type: object
+      title: "Parameters for the target adapter"
+      description: "Parameters for the target adapter"
+      properties: {}
+  required: [target_type, target_parameters, family]

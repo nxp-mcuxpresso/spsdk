@@ -1,7 +1,8 @@
-.wy-nav-content {
-    max-width: 75% !important;
+@font-face {
+    font-family: 'Poppins';
+    src: url('./fonts/Poppins-Regular.ttf') format('truetype');
 }
 
-.wy-table-responsive table td {
-    white-space: normal;
+body {
+    font-family: 'Poppins', sans-serif;
 }

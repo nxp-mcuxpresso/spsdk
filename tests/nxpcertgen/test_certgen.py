@@ -23,8 +23,8 @@ from spsdk.crypto.certificate import (
     validate_ca_flag_in_cert_chain,
     validate_certificate_chain,
 )
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import PrivateKeyRsa, PublicKey
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.misc import load_binary, use_working_directory
 from tests.cli_runner import CliRunner
@@ -89,7 +89,6 @@ def test_is_key_priv(data_dir, file_name, password, expect_priv_key):
         ("ca.pem", False),
         ("pub.pem", True),
         ("priv.pem", False),
-        ("CA1_key.der", False),
         ("ca1_crt.der", False),
         ("ca_key.pem", False),
         ("NXPEnterpriseCA4.crt", False),
@@ -286,3 +285,17 @@ def test_generate_template(cli_runner: CliRunner, tmpdir):
             data = yaml.safe_load(f)
         # there should be at least 5 items in the template
         assert len(data) > 5
+
+
+def test_certificate_generation_with_encrypted_private_key(cli_runner: CliRunner, tmpdir, data_dir):
+    with use_working_directory(data_dir):
+        cert_path = os.path.join(tmpdir, "cert.crt")
+        cmd = [
+            "generate",
+            "-c",
+            os.path.join(data_dir, f"certgen_config.yaml"),
+            "-o",
+            cert_path,
+        ]
+        cli_runner.invoke(main, cmd)
+        assert os.path.isfile(cert_path)

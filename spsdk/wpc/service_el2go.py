@@ -10,7 +10,7 @@
 import base64
 import json
 import logging
-import os
+import uuid
 from typing import List, Optional, Union
 
 import requests
@@ -18,24 +18,36 @@ from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate
 from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.misc import find_file
-
-from .utils import SPSDKError, SPSDKWPCError, WPCCertChain, WPCCertificateService, WPCIdType
+from spsdk.utils.misc import load_secret
+from spsdk.wpc.utils import SPSDKWPCError, WPCCertChain, WPCCertificateService, WPCIdType
 
 logger = logging.getLogger(__name__)
+
+
+class EL2GoWPCError(SPSDKWPCError):
+    """Error thrown by EL2Go during WPC operation."""
+
+    def __init__(self, response: requests.Response, desc: Optional[str] = None) -> None:
+        """Initialize the EL2GO WPC error.
+
+        :param response: Response from the EL2GO
+        :param desc: Custom description of the error, defaults to None
+        """
+        super().__init__(desc)
+        self.response = response
 
 
 class WPCCertificateServiceEL2GO(WPCCertificateService):
     """EdgeLock2GO adapter providing WPC Certificate Chain."""
 
-    NAME = "el2go"
+    identifier = "el2go"
 
     def __init__(
         self,
         url: str,
         qi_id: Union[str, int],
         api_key: str,
-        correlation_id: Optional[str] = None,
+        family: str,
         timeout: int = 60,
     ) -> None:
         """Initialize the EL2GO adapter.
@@ -46,18 +58,16 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
         :param correlation_id: Customer's EL2GO Correlation ID, defaults to None
         :param timeout: REST API request timeout in seconds
         """
+        super().__init__(family=family)
         self.base_url = url
         self.qi_id = int(qi_id)
         self.api_key = api_key
-        self.correlation_id = correlation_id
         self.timeout = timeout
         self.headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
             "EL2G-API-Key": self.api_key,
         }
-        if self.correlation_id:
-            self.headers["EL2G-Correlation-ID"] = self.correlation_id
 
     @classmethod
     def get_validation_schema(cls) -> dict:
@@ -80,46 +90,83 @@ class WPCCertificateServiceEL2GO(WPCCertificateService):
             config_data = config_data[cls.CONFIG_PARAMS]
         cls.validate_config(config_data=config_data, search_paths=search_paths)
         api_key = config_data.pop("api_key")
-        # value of api_key may contain '~' for user home or '$' for environment variable
-        api_key = os.path.expanduser(os.path.expandvars(api_key))
-        try:
-            api_key_file = find_file(file_path=api_key, search_paths=search_paths)
-            with open(api_key_file) as f:
-                api_key = f.readline().strip()
-        except SPSDKError:
-            pass
+        api_key = load_secret(api_key, search_paths=search_paths)
         return cls(api_key=api_key, **config_data)
 
     def _handle_request(self, method: str, url: str, payload: dict) -> dict:
         final_url = f"{self.base_url}{url}"
         logger.info(f"Handling url: {final_url}")
+        correlation_id = str(uuid.uuid4())
+        logger.info(f"EL2G-Correlation-ID: {correlation_id}")
+        self.headers["EL2G-Correlation-ID"] = correlation_id
+        logger.debug(f"Request body:\n{json.dumps(payload, indent=2)}")
         response = requests.request(
             method=method, url=final_url, headers=self.headers, json=payload, timeout=self.timeout
         )
         logger.debug(response)
         json_response = response.json()
         if response.status_code >= 400:
-            raise SPSDKWPCError(
+            raise EL2GoWPCError(
+                response,
                 f"Error during '{url}': {response.reason} ({response.status_code})\n"
-                f"Service response:\n{json.dumps(json_response, indent=2)}"
+                f"Service response:\n{json.dumps(json_response, indent=2)}\n"
+                f"EL2G-Correlation-ID: {correlation_id}",
             )
         logger.info(f"Service response:\n{json.dumps(json_response, indent=2)}")
         return json_response
 
-    def get_wpc_cert(
-        self, wpc_id_data: str, wpc_id_type: Optional[WPCIdType] = None
-    ) -> WPCCertChain:
+    def get_wpc_cert(self, wpc_id_data: bytes) -> WPCCertChain:
         """Obtain the WPC Certificate Chain."""
         url = f"/api/v1/wpc/product-unit-certificate/{self.qi_id:06}/request-puc"
-        data = {
-            "pucRequestType": {
-                "requestType": "CSR",
-                "requests": [
-                    {"csr": base64.b64encode(wpc_id_data.encode("utf-8")).decode("utf-8")}
-                ],
+        if self.wpc_id_type == WPCIdType.COMPUTED_CSR:
+            data = {
+                "pucRequestType": {
+                    "requestType": "CSR",
+                    "requests": [
+                        {"csr": base64.b64encode(wpc_id_data).decode("utf-8")},
+                    ],
+                }
             }
-        }
-        response = self._handle_request(method="POST", url=url, payload=data)
+        elif self.wpc_id_type == WPCIdType.RSID:
+            # wpc_id_data should be in the form of TP-Data-Container v2
+            # however there's a bug in HW, so we fetch RSID directly (hoping no one will change the offsets)
+            rsid = wpc_id_data[16:25]
+            device_id = rsid.hex()
+            data = {
+                "pucRequestType": {
+                    "requestType": "PUBLIC_KEY",
+                    "deviceIds": [device_id],
+                },
+            }
+        else:
+            raise SPSDKWPCError(f"WPC ID type: '{self.wpc_id_type.value}' is not supported")
+
+        try:
+            response = self._handle_request(method="POST", url=url, payload=data)
+        except EL2GoWPCError as e:
+            # error 422 means that the certificate already exists
+            if e.response.status_code == 422 and self.wpc_id_type == WPCIdType.RSID:
+                logger.info(e.description)
+                logger.warning("Requested WPC Certificate already exists. Attempting download")
+
+                # This is just a temporary workaround until a proper API is delivered.
+                import re
+
+                try:
+                    response_json = e.response.json()
+                    desc = response_json["fieldErrors"][-1]["description"]
+                except (KeyError, json.JSONDecodeError):
+                    raise SPSDKWPCError("Response format is invalid") from e
+
+                pattern = r".*PUC ID: (?P<puc_id>\d+).*"
+                m = re.match(pattern=pattern, string=desc)
+                if not m:
+                    raise SPSDKWPCError("Unable to parse PUC ID from error description") from e
+                puc_id = int(m.group("puc_id"))
+                url = f"/api/v1/wpc/product-unit-certificate/{puc_id}"
+                response = self._handle_request(method="GET", url=url, payload={})
+            else:
+                raise
         root_ca_hash = bytes.fromhex(response["pucType"]["rootCaHash"].replace(":", ""))
         manufacturer_cert = Certificate.parse(
             response["pucType"]["productManufacturingCertificate"].encode("utf-8"),

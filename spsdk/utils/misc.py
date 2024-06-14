@@ -31,6 +31,8 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version, parse
+
 from spsdk.crypto.rng import random_bytes
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.exceptions import SPSDKTimeoutError
@@ -238,15 +240,13 @@ def load_file(
         return f.read()
 
 
-def write_file(
-    data: Union[str, bytes], path: str, mode: str = "w", encoding: Optional[str] = None
-) -> int:
+def write_file(data: Union[str, bytes], path: str, mode: str = "w", encoding: str = "utf-8") -> int:
     """Writes data into a file.
 
     :param data: data to write
     :param path: Path to the file.
     :param mode: writing mode, 'w' for text, 'wb' for binary data, defaults to 'w'
-    :param encoding: Encoding of written file ('ascii', 'utf-8').
+    :param encoding: Encoding of written file ('ascii', 'utf-8'), default is 'utf-8'.
     :return: number of written elements
     """
     path = path.replace("\\", "/")
@@ -255,7 +255,7 @@ def write_file(
         os.makedirs(folder, exist_ok=True)
 
     logger.debug(f"Storing {'binary' if 'b' in mode else 'text'} file at {path}")
-    with open(path, mode, encoding=encoding) as f:
+    with open(path, mode, encoding=None if "b" in mode else encoding) as f:
         return f.write(data)
 
 
@@ -899,6 +899,21 @@ def wrap_text(text: str, max_line: int = 100) -> str:
     return "\n".join([textwrap.fill(text=line, width=max_line) for line in lines])
 
 
+def get_printable_path(path: str) -> str:
+    """Get path to the file.
+
+    If the JUPYTER_SPSDK environment variable is set to 1,
+    the path is relative to the current working directory.
+
+    :param path: Path to the file.
+    :return: Path to the file.
+    """
+    # check Jupyter env variable
+    if "JUPYTER_SPSDK" in os.environ and os.environ["JUPYTER_SPSDK"] == "1":
+        return os.path.relpath(path, os.getcwd())
+    return path
+
+
 TS = TypeVar("TS", bound="SingletonMeta")  # pylint: disable=invalid-name
 
 
@@ -913,3 +928,50 @@ class SingletonMeta(type):
             instance = super().__call__(*args, **kwargs)
             cls._instance = instance
         return cls._instance
+
+
+def get_spsdk_version() -> Version:
+    """Get SPSDK version."""
+    try:
+        from spsdk.__version__ import version as spsdk_version
+
+    except ImportError:
+        from setuptools_scm import get_version
+
+        spsdk_version = get_version()
+    return parse(spsdk_version)
+
+
+def load_secret(value: str, search_paths: Optional[List[str]] = None) -> str:
+    """Load secret text from the configuration value.
+
+    :param value: Input string to be used for loading the secret
+    :param search_paths: List of paths where to search for the file, defaults to None
+
+    There are several options how the secret is loaded from the input string
+    1. If the value is an existing path, first line of file is read and returned
+    2. If the value has format '$ENV_VAR', the value of environment variable ENV_VAR is returned
+    3. If the value has format '$ENV_VAR' and the value contains a valid path to a file,
+    the first line of a file is returned
+    4. If the value does not match any options above, the input value itself is returned
+
+    Note, that the value with an initial component of ~ or ~user is replaced by that user’s home directory.
+
+    :return: The actual secret value
+    """
+    # value of api_key may contain '~' for user home or '$' for environment variable
+    value = os.path.expanduser(os.path.expandvars(value))
+    try:
+        file = find_file(file_path=value, search_paths=search_paths)
+        with open(file) as f:
+            value = f.readline().strip()
+    except SPSDKError:
+        pass
+    return value
+
+
+def swap_bytes(data: bytes) -> bytes:
+    """Swap individual bytes as following: b'abcd' -> b'badc'."""
+    data_array = bytearray(data)
+    data_array[0::2], data_array[1::2] = data_array[1::2], data_array[0::2]
+    return bytes(data_array)

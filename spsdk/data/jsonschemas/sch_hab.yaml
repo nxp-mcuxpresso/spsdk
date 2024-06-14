@@ -22,6 +22,11 @@ hab:
       type: object
       title: HAB Options
       description: An options block contains zero or more name/value pairs and the option settings that assign values to global options used by the nxpimage to control the generation of the output file.
+      allOf:
+        - required: [flags, startAddress]
+        - oneOf:
+            - required: [ivtOffset, initialLoadSize]
+            - required: [family, bootDevice]
       properties:
         flags:
           type:
@@ -42,22 +47,32 @@ hab:
             - number
             - string
           title: IVT Offset
-          description: "Offset of IVT table(beggining of HAB container) from startAddress."
+          description: "Offset of IVT table(beginning of HAB container) from startAddress. This option can be omitted if family and bootDevice are specified."
           template_value: 0x1000
         initialLoadSize:
           type:
             - number
             - string
           title: Initial Load size
-          description: "Size of the segments(such as IVT, BDT, DCD, XMCD) placed before the actual application image. The value does not have to be exactly the same as the segments size, but it must be large enough to accommodate all the segments."
+          description: "Size of the segments(such as IVT, BDT, DCD, XMCD) placed before the actual application image. The value is specific per boot device type. This option can be omitted if family and bootDevice are specified."
           template_value: 0x2000
         entryPointAddress:
           type:
             - number
             - string
           title: Entry Point address
-          description: "Reset vector of the application."
+          description: "Reset vector of the application. If not specified, the vector will be automatically detected from the input image."
           template_value: 0x800041f5
+        family:
+          type: string
+          title: Family
+          description: "Processor family. If not specified, the ivtOffset and initialLoadSize must be defined."
+          template_value: rt1010
+        bootDevice:
+          type: string
+          title: Boot device
+          description: "Boot device memory where the image is booted from. If not specified, the ivtOffset and initialLoadSize must be defined."
+          template_value: flexspi_nor
         signatureTimestamp:
           type: string
           title: Timestamp of the signature
@@ -68,6 +83,11 @@ hab:
           title: DCD file path
           description: "Optional path to DCD data."
           template_value: "dcd.bin"
+        XMCDFilePath:
+          type: string
+          title: XMCD file path
+          description: "Optional path to XMCD data."
+          template_value: "xmcd.bin"
 
 hab_sections:
   type: object
@@ -449,8 +469,7 @@ hab_sections:
               SecretKey:
                 type: object
                 title: Install Secret Key
-                description:
-                  This command is applicable from HAB 4.1 onwards and only on processors which include CAAM and SNVS. Each instance of this command generates a CSF command to install a secret key in CAAM's secret key store.
+                description: This command is applicable from HAB 4.1 onwards and only on processors which include CAAM and SNVS. Each instance of this command generates a CSF command to install a secret key in CAAM's secret key store.
                 properties:
                   SecretKey_Name:
                     type: string

@@ -1,7 +1,7 @@
 NXP Software Content Register
 
 Package:                   NXP SPSDK
-Version:                   2.1.1
+Version:                   2.2.0
 Outgoing License:          BSD-3-Clause
 License Files:             LICENSE
 Type of content:           Source code
@@ -30,10 +30,10 @@ Flashloader         Name: Flashloader
                     URL: https://mcuxpresso.nxp.com/en/welcome
                     Note: Built from Flashloader sources in NXP MCUXpresso SDK
 
-Roboto              Name: Roboto
-                    Version: 2.138
-                    License: Apache License, Version 2.0
-                    Location: spsdk/docs/_static/fonts/Roboto-Medium.ttf
+Poppins             Name: Poppins
+                    Version: 4.003
+                    License: OFL-1.1 license
+                    Location: spsdk/docs/_static/fonts
                     Type: Source
-                    URL: https://fonts.google.com/specimen/Roboto/
+                    URL: https://fonts.google.com/specimen/Poppins/
                     Note: Font used in docs

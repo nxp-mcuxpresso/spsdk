@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -63,6 +63,17 @@ class SecBootBlckSize:
         :return: data aligned to cipher block size, filled with random values
         """
         return misc.align_block_fill_random(data, SecBootBlckSize.BLOCK_SIZE)
+
+    @staticmethod
+    def align_block_fill_zeros(data: bytes) -> bytes:
+        """Align block size to cipher block size.
+
+        :param data: to be aligned
+        :return: data aligned to cipher block size, filled with random values
+        """
+        return misc.align_block(
+            data, SecBootBlckSize.BLOCK_SIZE, padding=misc.BinaryPattern("zeros")
+        )
 
 
 # the type represents input formats for BcdVersion3 value, see BcdVersion3.to_version

@@ -1,0 +1,14 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# ===========  Bootable Image converted config.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                        == General Options ==
+# ----------------------------------------------------------------------------------------------------
+family: rt1010 # [Required], MCU family name; Possible options:['rt101x']
+revision: latest # [Optional], Chip silicon revision; If needed this could be used to specify silicon revision of device; Possible options:['latest']
+memory_type: flexspi_nor # [Required], Memory type; Specify type of memory used by bootable image description; Possible options:['flexspi_nor']
+init_offset: 0 # # Description: The segment name or the index of initial segment in exported image
+keyblob: keyblob.bin # [Optional], Key blob block path
+fcb: fcb.bin # [Optional], FCB block path; Flash Configuration block path
+hab_container: hab_container.bin # [Required], HAB container path

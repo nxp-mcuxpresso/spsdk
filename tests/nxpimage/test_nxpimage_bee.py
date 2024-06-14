@@ -4,7 +4,7 @@
 #!/usr/bin/env python(tmpdir
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 """Test BEE part of nxpimage app."""
@@ -69,7 +69,8 @@ def test_nxpimage_bee_overlap(cli_runner: CliRunner, tmpdir, data_dir, case, con
 @pytest.mark.parametrize(
     "family",
     [
-        ("rt101x"),
+        ("rt1010"),
+        ("rt1015"),
         ("rt102x"),
         ("rt105x"),
         ("rt106x"),

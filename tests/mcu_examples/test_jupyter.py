@@ -23,7 +23,7 @@ for notebook in GENERAL_NOTEBOOKS:
 @pytest.mark.skipif(sys.platform == "darwin", reason="jupyter produces different results on macOS")
 def test_general_notebooks(notebook_path):
     fixture = NBRegressionFixture(
-        exec_timeout=10,
+        exec_timeout=60,
         diff_ignore=("/metadata/kernelinfo", "/metadata/language_info", "/metadata/vscode"),
     )
     fixture.check(notebook_path)

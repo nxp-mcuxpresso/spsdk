@@ -1,19 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Tests for `dk6_tools` package."""
-import platform
-
-import pytest
 
 from spsdk.apps import dk6prog
 from tests.cli_runner import CliRunner
-
-pytest.importorskip("pyftdi")
 
 
 def test_cli(cli_runner: CliRunner):
@@ -26,26 +21,23 @@ def test_cli(cli_runner: CliRunner):
 
 def test_cli_listdev(cli_runner: CliRunner):
     """Test the CLI listdev command."""
-    if platform.system() == "Windows":
-        # Test needs FTD2xx.DLL
-        return
-    result = cli_runner.invoke(dk6prog.main, "listdev")
+    result = cli_runner.invoke(dk6prog.main, "--backend PYSERIAL listdev")
     assert "List of available devices:" in result.output
 
 
 def test_cli_erase(cli_runner: CliRunner):
     """Test the CLI erase command."""
-    result = cli_runner.invoke(dk6prog.main, "erase --help")
+    result = cli_runner.invoke(dk6prog.main, "--backend PYSERIAL erase --help")
     assert "Erase the content of memory at the given <ADDRESS>" in result.output
 
 
 def test_cli_read(cli_runner: CliRunner):
     """Test the CLI read command."""
-    result = cli_runner.invoke(dk6prog.main, "read --help")
+    result = cli_runner.invoke(dk6prog.main, "--backend PYSERIAL read --help")
     assert "Reads the memory and writes it to the file or stdout." in result.output
 
 
 def test_cli_info(cli_runner: CliRunner):
     """Test the CLI info command."""
-    cli_runner.invoke(dk6prog.main, "info", expected_code=1)
+    cli_runner.invoke(dk6prog.main, "--backend PYSERIAL info", expected_code=1)
     # assert "Issues ISP sequence as defined in Driver interface." in result.output

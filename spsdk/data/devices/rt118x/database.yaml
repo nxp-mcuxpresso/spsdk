@@ -9,7 +9,7 @@ latest: b0
 
 # General MCU information
 info:
-  purpose: General Purpose Processor
+  purpose: i.MX RT Crossover MCUs
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1180-crossover-mcu-dual-core-arm-cortex-m7-and-cortex-m33-with-tsn-switch:i.MX-RT1180
   memory_map:
@@ -40,14 +40,58 @@ info:
       secure_addr: 0x14000000
       size: 0x04000000
       external: true
-
-  # isp:
-  #   mboot_interfaces: [usb, uart]
-  #   usb_rom:
-  #     vid: 0x1FC9
-  #     pid: 0x014C
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x014C
+    flashloader:
+      protocol: mboot
+      interfaces: ["uart", "usb"]
+      usb:
+        vid: 0x15A2
+        pid: 0x0073
 
 features:
+  # ======== Fuses description section ========
+  fuses:
+    tool: blhost
+    grouped_registers:
+      - uid: otfad1_key
+        name: OTFAD1_KEY
+        width: 128
+        reverse_subregs_order: True
+        reversed: True
+        config_as_hexstring: true
+        description: OTFAD1 Key known as KEK.
+        sub_regs: [fuse184, fuse185, fuse186, fuse187]
+      - uid: otfad2_key
+        name: OTFAD2_KEY
+        width: 128
+        reverse_subregs_order: True
+        reversed: True
+        config_as_hexstring: true
+        description: OTFAD2 Key known as KEK.
+        sub_regs: [fuse178, fuse179, fuse180, fuse181]
+      - uid: srkh
+        name: SRKH
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description: "SHA256 hash digest of hash of four SRK keys"
+        sub_regs:
+          [
+            "fuse128",
+            "fuse129",
+            "fuse130",
+            "fuse131",
+            "fuse132",
+            "fuse133",
+            "fuse134",
+            "fuse135",
+          ]
+
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x1ffe_0000
@@ -65,47 +109,69 @@ features:
   # ======== AHAB section ========
   ahab:
     core_ids:
-      1: "cortex-m33"
-      2: "cortex-m7"
-      6: "seco"
-      7: "hdmi-tx"
-      8: "hdmi-rx"
-      9: "v2x-1"
-      10: v2x-2
+      CORTEX_M33: [1, "cortex-m33", "Cortex M33"]
+      CORTEX_M7:  [2, "cortex-m7", "Cortex M7"]
+      ELE:  [6, "ele", "EdgeLock Enclave"]
+    image_types:
+        EXECUTABLE: [0x03, executable, Executable Image]
+        DATA: [0x04, data, Data Image]
+        ELE: [0x06, ele, EdgeLock Enclave Image]
+        PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
+        PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
 
   # ======== FCB section ========
   fcb:
     mem_types:
-      flexspi_nor: fcb_flexspi_nor.xml
+      flexspi_nor:
+        reg_spec: fcb_flexspi_nor.json
 
   # ======== XMCD section ========
   xmcd:
-    header: ../../common/xmcd/header.xml
     mem_types:
       flexspi_ram:
-        simplified: ../../common/xmcd/flexspi_ram_simplified.xml
-        full: ../../common/xmcd/flexspi_ram_full.xml
+        simplified:
+          reg_spec: ../../common/xmcd/flexspi_ram_simplified.json
+        full:
+          reg_spec: ../../common/xmcd/flexspi_ram_full.json
       semc_sdram:
-        simplified: ../../common/xmcd/semc_sdram_simplified.xml
-        full: ../../common/xmcd/semc_sdram_full.xml
+        simplified:
+          reg_spec: ../../common/xmcd/semc_sdram_simplified.json
+        full:
+          reg_spec: ../../common/xmcd/semc_sdram_full.json
 
   # ======== IEE section ========
   iee:
     generate_keyblob: False
-    sb_21_supported: False
     has_kek_fuses: False
     additional_template: ["key_blobs_with_ele"]
 
   # ======== OTFAD section ========
   otfad:
-    otfad_key_fuse: "OTFAD{index}_KEY"
-    otfad_cfg_fuse: "OTFAD{index}_CFG4"
-    reg_fuses: otfad_fuses.xml
     keyblob_byte_swap_cnt: 8
     sb_21_supported: False
     has_kek_fuses: True
-    peripheral_list: ["1", "2"]
     supports_key_scrambling: True
+
+    fuses_1: # Fuses for OTFAD1
+      _name: Configuration of fuses for OTFAD1
+      _no_verify: True
+      fuse188: # OTFAD CFG Fuse
+        fuse188-bit-3: 1 # OTFAD Enable
+        fuse188-bit-7: __scramble_enabled # OTFAD enable scrambling
+        fuse188-bits-8-15: __key_scramble_align # OTFAD scramble align
+      fuse189: __key_scramble_mask # OTFAD Scramble Key
+      otfad1_key: __kek # OTFAD Key
+
+    fuses_2: # Fuses for OTFAD2
+      _name: Configuration of fuses for OTFAD2
+      _no_verify: True
+      fuse182: # OTFAD CFG Fuse
+        fuse182-bit-3: 1 # OTFAD Enable
+        fuse182-bit-7: __scramble_enabled # OTFAD enable scrambling
+        fuse182-bits-8-15: __key_scramble_align # OTFAD scramble align
+      fuse183: __key_scramble_mask # OTFAD Scramble Key
+      otfad2_key: __kek # OTFAD Key
+
     additional_template: ["otfad_scramble"]
     additional_template_text: |
       Is important to use physical addresses (non-secure) in settings of OTFAD to proper run the decryption on device.
@@ -114,17 +180,6 @@ features:
         The code must be still linked on secure base address 0x1400_0000 to proper run of OTFAD hardware.
 
         Same is for FlexSPI1, but instead of 0x3800_0000 base address, the 0x2800_0000 must be used in OTFAD configuration.
-    grouped_registers:
-      - name: OTFAD1_KEY
-        width: 128
-        reverse_subregs_order: True
-        config_as_hexstring: true
-        description: OTFAD1 Key known as KEK.
-      - name: OTFAD2_KEY
-        width: 128
-        reverse_subregs_order: True
-        config_as_hexstring: true
-        description: OTFAD2 Key known as KEK.
 
   # ======== Bootable image section ========
   bootable_image:
@@ -147,6 +202,16 @@ features:
         segments:
           xmcd: 0x00
           ahab_container: 0x400
+      emmc:
+        segments:
+          #secondary_image_table: 0x200 (not used)
+          xmcd: 0x400
+          ahab_container: 0x800
+      sd:
+        segments:
+          #secondary_image_table: 0x200 (not used)
+          xmcd: 0x400
+          ahab_container: 0x800
 
   # ======== EdgeLock Enclave section ========
   ele:
@@ -160,14 +225,14 @@ features:
         instances: [1, 2]
       semc_nor:
         instances: [0] # probably not supported in latest version of Flashloader
-      sd:
-        instances: [0, 1]
-      mmc:
-        instances: [0, 1]
       semc_nand:
         instances: [0] # probably not supported in latest version of Flashloader
+      sd:
+        instances: [1, 2]
+      mmc:
+        instances: [1, 2]
       spi_nor:
-        instances: [0, 1, 2, 3, 4, 5]
+        instances: [1, 2, 4, 5]
 
   # ======== Misc signing section ========
   signing:

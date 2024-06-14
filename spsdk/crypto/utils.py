@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """OpenSSL implementation for security backend."""
 
-from typing import Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKey, PublicKey
 from spsdk.crypto.signature_provider import SignatureProvider
 from spsdk.exceptions import SPSDKError, SPSDKValueError
@@ -25,10 +26,34 @@ def get_matching_key_id(public_keys: List[PublicKey], signature_provider: Signat
     :return: Index of public key.
     """
     for i, public_key in enumerate(public_keys):
-        if signature_provider.verify_public_key(public_key.export()):
+        if signature_provider.verify_public_key(public_key):
             return i
 
     raise SPSDKValueError("There is no match of private key in given list.")
+
+
+def get_matching_key_id_from_signature(
+    public_keys: List[PublicKey],
+    signed_data: bytes,
+    signature: bytes,
+    algorithm: Optional[EnumHashAlgorithm] = None,
+    **kwargs: Any,
+) -> int:
+    """Get index of public key that match to given signed data and signature.
+
+    :param public_keys: List of public key used to find the match for the private key
+    :param signed_data: Signed data
+    :param signature: Signature to signed data
+    :param algorithm: Used algorithm, automatic detection - None
+    :param kwargs: Keyword arguments for specific type of key
+    :raises SPSDKValueError: No match found
+    :return: Index of public key
+    """
+    for i, public_key in enumerate(public_keys):
+        if public_key.verify_signature(signature, signed_data, algorithm, **kwargs):
+            return i
+
+    raise SPSDKValueError("There is no match of signature in given list.")
 
 
 def extract_public_key_from_data(object_data: bytes, password: Optional[str] = None) -> PublicKey:

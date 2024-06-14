@@ -146,10 +146,15 @@ sb3_commands:
                     format: file
                     template_value: my_binary.bin
                   values:
-                    type: string
+                    type: [string, number]
                     title: Binary values.
-                    description: Binary values delimited by comma to be loaded.
+                    description: 32-bit binary values delimited by comma to be loaded.
                     template_value: 0x1234, 0x5678, 0, 12345678
+                  value:
+                    type: [string, number]
+                    title: Binary value
+                    description: Binary value to be loaded. Value will be converted to binary little endian format.
+                    template_value: "0xB38AA899"
                   authentication:
                     type: string
                     title: Authentication
@@ -236,6 +241,11 @@ sb3_commands:
                     title: Binary value
                     description: Binary value to be programmed, at least 4 bytes. Value will be converted to binary little endian format.
                     template_value: "0xB38AA899"
+                  values:
+                    type: [string, number]
+                    title: Binary values.
+                    description: 32-bit binary values delimited by comma to be programmed.
+                    template_value: 0x1234, 0x5678, 0, 12345678
                 required: [address]
 
           - type: object

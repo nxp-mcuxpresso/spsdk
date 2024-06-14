@@ -14,15 +14,12 @@ from struct import unpack_from
 from typing import Any, List, Optional, Tuple, Union
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import PrivateKeyRsa
 from spsdk.crypto.rng import random_bytes
 from spsdk.crypto.symmetric import aes_ccm_decrypt, aes_ccm_encrypt
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKError, SPSDKParsingError
-from spsdk.utils.misc import align, align_block, extend_block
-from spsdk.utils.spsdk_enum import SpsdkEnum
-
-from .commands import (
+from spsdk.image.commands import (
     CmdAuthData,
     CmdInstallKey,
     EnumAlgorithm,
@@ -31,10 +28,10 @@ from .commands import (
     EnumEngine,
     EnumInsKey,
 )
-from .header import Header, Header2
-from .misc import NotEnoughBytesException, read_raw_data, read_raw_segment
-from .secret import MAC, CertificateImg, Signature, SrkTable
-from .segments import (
+from spsdk.image.header import Header, Header2
+from spsdk.image.misc import NotEnoughBytesException, read_raw_data, read_raw_segment
+from spsdk.image.secret import MAC, CertificateImg, Signature, SrkTable
+from spsdk.image.segments import (
     AbstractFCB,
     FlexSPIConfBlockFCB,
     PaddingFCB,
@@ -53,6 +50,8 @@ from .segments import (
     SegXMCD,
     XMCDHeader,
 )
+from spsdk.utils.misc import align, align_block, extend_block
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 ########################################################################################################################
 # i.MX Boot Image Classes

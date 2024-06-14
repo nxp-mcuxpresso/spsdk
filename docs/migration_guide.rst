@@ -2,11 +2,46 @@
 Migration guide
 ===============
 
+Changes in SPSDK 2.2
+====================
+
+CLI changes
+------------
+
+* Codecheck was moved to separate repository and is now installed as part of developers requirements.
+
+
+API changes
+------------
+
+* Dropped support for Python 3.8
+
+* AHAB container module (ahab/ahab_container.py) was refactored. Concept of parent classes was removed and the module was split into several smaller modules containing classes for each AHAB subimage type.
+
+* AHAB extended image array entries were introduced. This helps with creating specific AHAB images like U-Boot. See the examples for more information.
+
+* MBI manifest mixin class was redesigned and renamed to reflect the actual purpose.
+
+* All XML data in database were converted to JSON format. This change is transparent for the user.
+
+* J-Link and PE Micro debugger interfaces support were moved to SPSDK plugins repository. J-Link is still supported by PyOCD in base installation.
+
+* List of VID/PIDs of devices were moved to database from the code.
+
+* Fuses definition was moved to database from the code. New format of fuse definition in DB was introduced.
+
+* Naming of MCX families was clarified - mcxn94x and mcxn54x
+
+* MBI is now using BinaryImage class for image representation, this allow better visualization and verification of image.
+
+Changes in SPSDK 2.0
+====================
+
 This guide details the changes and how to change your CLI and code to migrate to SPSDK 2.0.
 See the full changelog for more information.
 
 CLI changes
-============
+------------
 
 
 * elftosb replaced by :ref:`nxpimage`
@@ -66,7 +101,7 @@ ISK certificate is signed by "root" key.
 
 
 API changes
-===========
+------------
 
 * Crypto backend was refactored. See the API documentation and examples for more information :ref:`nxpimage`.
 

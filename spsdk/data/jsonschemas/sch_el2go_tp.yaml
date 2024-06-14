@@ -1,0 +1,60 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+el2go_tp:
+  type: object
+  properties:
+    family:
+      type: string
+      title: MCU family
+      description:
+        Family identifier including the chip revision. If revision is not
+        present, latest revision is used as default.
+      template_value: rw6xx
+    revision:
+      type: string
+      title: MCU revision
+      description: Revision of silicon
+      template_value: latest
+    url:
+      type: string
+      title: EdgeLock 2GO API URL
+      description: Base URL of the EdgeLock 2GO backend API without an / at the end
+      template_value: https://api.edgelock2go.com
+      skip_in_template: true
+    api_key:
+      type: string
+      title: EdgeLock 2GO API Key
+      description: "REST API key used for user authentication in EdgeLock 2GO.
+        You may use:
+        1) path to a file with the key on the first line: ~/.el2go/wpc_token.txt (~ is interpreted as your HOME)
+        2) environment variable with the key: $MY_EL2GO_KEY
+        3) environment variable containing a path to the key file: $MY_KEY_FILE
+        4) directly your API key in plain text (not recommended)"
+      template_value: abcxyz123
+    device_group_id:
+      type: number
+      title: Device Group ID
+      description: Device Group ID in which the connected secure element needs to be assigned
+      template_value: 49
+    nc12:
+      type: number
+      title: Product 12NC
+      description: Product 12NC registered in EdgeLock 2GO
+      template_value: 123456789012
+    delay:
+      type: number
+      title: Delay between EdgeLock 2GO's API calls
+      description: Delay in seconds between EdgeLock 2GO API requests regarding Secure Objects generation status. Default value is 5 seconds
+      template_value: 5
+    timeout:
+      type: number
+      title: Timeout for EdgeLock 2GO API
+      description: Timeout in seconds of downloading Secure Objects through EdgeLock 2GO API operation. Default is 60 seconds
+      template_value: 60
+    download_timeout:
+      type: number
+      title: Download Timeout
+      description: Timeout for overall download process including waiting for provisionigs creation
+      template_value: 300
+  required: [api_key, device_group_id, nc12, family]

@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 """Module for certificate management (generating certificate, validating certificate, chains)."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Union
 
 from cryptography import x509
@@ -15,9 +15,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.x509.extensions import ExtensionNotFound
 from typing_extensions import Self
 
-from spsdk.crypto.hash import EnumHashAlgorithm
-from spsdk.crypto.keys import PrivateKey, PrivateKeyRsa, PublicKey, PublicKeyEcc, PublicKeyRsa
-from spsdk.crypto.types import (
+from spsdk.crypto.crypto_types import (
     SPSDKEncoding,
     SPSDKExtensionOID,
     SPSDKExtensions,
@@ -26,6 +24,8 @@ from spsdk.crypto.types import (
     SPSDKObjectIdentifier,
     SPSDKVersion,
 )
+from spsdk.crypto.hash import EnumHashAlgorithm
+from spsdk.crypto.keys import PrivateKey, PrivateKeyRsa, PublicKey, PublicKeyEcc, PublicKeyRsa
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.misc import align_block, load_binary, write_file
@@ -69,8 +69,12 @@ class Certificate(BaseClass):
         :param pss_padding: Use RSA-PSS padding
         :return: certificate
         """
-        before = datetime.utcnow() if duration else datetime(2000, 1, 1)
-        after = datetime.utcnow() + timedelta(days=duration) if duration else datetime(9999, 12, 31)
+        before = datetime.now(timezone.utc) if duration else datetime(2000, 1, 1)
+        after = (
+            datetime.now(timezone.utc) + timedelta(days=duration)
+            if duration
+            else datetime(9999, 12, 31)
+        )
         crt = x509.CertificateBuilder(
             subject_name=subject,
             issuer_name=issuer,
@@ -195,6 +199,30 @@ class Certificate(BaseClass):
         """Returns the ObjectIdentifier of the signature algorithm."""
         return self.cert.signature_algorithm_oid
 
+    @property
+    def not_valid_before(self) -> datetime:
+        """Not before time (represented as UTC datetime)."""
+        # TODO Remove this workaround once cryptography > 42.0.0 is supported
+        not_valid_before = (
+            getattr(self.cert, "not_valid_before_utc")
+            if hasattr(self.cert, "not_valid_before_utc")
+            else getattr(self.cert, "not_valid_before")
+        )
+        assert isinstance(not_valid_before, datetime)
+        return not_valid_before
+
+    @property
+    def not_valid_after(self) -> datetime:
+        """Not after time (represented as UTC datetime)."""
+        # TODO Remove this workaround once cryptography > 42.0.0 is supported
+        not_valid_after = (
+            getattr(self.cert, "not_valid_after_utc")
+            if hasattr(self.cert, "not_valid_after_utc")
+            else getattr(self.cert, "not_valid_after")
+        )
+        assert isinstance(not_valid_after, datetime)
+        return not_valid_after
+
     def validate_subject(self, subject_certificate: "Certificate") -> bool:
         """Validate certificate.
 
@@ -256,8 +284,8 @@ class Certificate(BaseClass):
 
     def __str__(self) -> str:
         """Text information about the Certificate."""
-        not_valid_before = self.cert.not_valid_before.strftime("%d.%m.%Y (%H:%M:%S)")
-        not_valid_after = self.cert.not_valid_after.strftime("%d.%m.%Y (%H:%M:%S)")
+        not_valid_before = self.not_valid_before.strftime("%d.%m.%Y (%H:%M:%S)")
+        not_valid_after = self.not_valid_after.strftime("%d.%m.%Y (%H:%M:%S)")
         nfo = ""
         nfo += f"  Certification Authority:    {'YES' if self.ca else 'NO'}\n"
         nfo += f"  Serial Number:              {hex(self.cert.serial_number)}\n"

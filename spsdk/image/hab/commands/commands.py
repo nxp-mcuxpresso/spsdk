@@ -16,8 +16,8 @@ from typing import Dict, List, Mapping, Optional, Type, Union
 from typing_extensions import Self
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.signature_provider import get_signature_provider
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKFileNotFoundError, SPSDKKeyError, SPSDKTypeError, SPSDKValueError
 from spsdk.image.commands import (
     CmdAuthData,
@@ -571,7 +571,7 @@ class SecInstallSecretKey(SecCommandBase):
     @staticmethod
     def calculate_location(config: HabConfig) -> int:
         """Get CSF segment location."""
-        image_len = config.options.initial_load_size + len(config.app_image)
+        image_len = config.options.get_initial_load_size() + len(config.app_image)
         # align to 0x1000
         csf_offset = image_len + (16 - (image_len % 16))
         csf_offset = ((csf_offset + 0x1000 - 1) // 0x1000) * 0x1000

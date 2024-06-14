@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -37,14 +37,14 @@ def test_basics(data_dir: str) -> None:
     issuer = cert.issuer
     assert isinstance(issuer, SPSDKName) and len(issuer) == 5
     #
-    no_before = cert.cert.not_valid_before
+    no_before = cert.not_valid_before
     assert (
         isinstance(no_before, datetime)
         and no_before.year == 2019
         and no_before.month == 5
         and no_before.day == 6
     )
-    no_after = cert.cert.not_valid_after
+    no_after = cert.not_valid_after
     assert (
         isinstance(no_after, datetime)
         and no_after.year == 2039

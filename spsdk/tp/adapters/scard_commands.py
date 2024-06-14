@@ -22,7 +22,7 @@ except ImportError as e:
     ) from e
 
 
-from ..exceptions import SPSDKTpError
+from spsdk.tp.exceptions import SPSDKTpError
 
 logger = logging.getLogger(__name__)
 

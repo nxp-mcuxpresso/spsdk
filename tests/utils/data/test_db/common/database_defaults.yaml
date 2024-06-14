@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,7 +9,13 @@ info:
   purpose: Test Device
   web: Interesting web page
   memory_map: {}
-  isp: {}
+  isp:
+    rom:
+      interfaces: ["uart", "usb", "spi", "i2c"]
+      protocol: mboot # Possible options:[mboot, sdps, sdp]
+      usb:
+        vid: 0xAAAA
+    flashloader: {}
 
 features:
   # ======== Feature 1 ========
@@ -43,26 +49,41 @@ features:
   # ======== Feature 2 ========
   feature3: {}
 
-  # ======== Feature Reg Config Testing ========
-  reg_config:
-    inverted_regs:
-      INVERTED_REG: INVERTED_REG_AP
-    computed_registers:
-      COMPUTED_REG_GENERAL: Hello
-    ignored_fields:
-      - FIELD_GENERAL
+  # ======== Feature Fuses Testing ========
+  fuses:
+    reg_spec: sh_test_dev_x0.json
     grouped_registers:
-      - name: Test
-    seal_start: COMPUTED_REG2
-    seal_count: 8
-
-  # ======== Feature Shadow registers Testing ========
-  shadow_regs:
-    grouped_registers:
-      - name: REG_BIG
+      - uid: reg_big
+        name: REG_BIG
         width: 256
         description: Just Big register
-      - name: REG_BIG_REV
+        "sub_regs":
+          [
+            "field0E0",
+            "field0E4",
+            "field0E8",
+            "field0EC",
+            "field0F0",
+            "field0F4",
+            "field0F8",
+            "field0FC",
+          ]
+      - uid: reg_big_rev
+        name: REG_BIG_REV
         width: 256
         reversed: 1
         description: Just Big register in reversed order
+        "sub_regs":
+          [
+            "field1E0",
+            "field1E4",
+            "field1E8",
+            "field1EC",
+            "field1F0",
+            "field1F4",
+            "field1F8",
+            "field1FC",
+          ]
+
+  # ======== Feature Shadow registers Testing ========
+  shadow_regs: {}

@@ -7,7 +7,7 @@
 
 """Module containing various functions/modules used throughout the SPSDK."""
 
-from .exceptions import (
+from spsdk.utils.exceptions import (
     SPSDKRegsError,
     SPSDKRegsErrorBitfieldNotFound,
     SPSDKRegsErrorEnumNotFound,

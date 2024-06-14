@@ -9,10 +9,10 @@ latest: a1
 
 # General MCU information
 info:
-  use_in_doc: False # Include this MCU in generated documentation
-  purpose: Application Processor
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: i.MX 9 Applications Processors
   # Web page of MCU representative
-  web: https://www.nxp.com
+  web: https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/i-mx-93-applications-processor-family-arm-cortex-a55-ml-acceleration-power-efficient-mpu:i.MX93
   memory_map:
     {} # Memory map basic info
     # internal_flash:
@@ -31,18 +31,44 @@ info:
     #   base_addr: 0x4000000
     #   size: 0x8000
     #   external: false
-  # isp:
-  #   rom_protocol: sdps
-  #   mboot_interfaces: [usb]
-  #   usb_rom:
-  #     vid: 0x1FC9
-  #     pid: 0x014e
+  isp:
+    interfaces: ["usb"]
+    rom:
+      protocol: sdps
+      protocol_params:
+        no_cmd: True
+        hid_ep1: True
+        hid_pack_size: 1020
+      usb:
+        vid: 0x1FC9
+        pid: 0x014E
 
 features:
+  # ======== Fuses description section ========
+  fuses:
+    tool: nxpele
+    grouped_registers:
+      - uid: srkh
+        name: SRKH
+        width: 256
+        reversed: True
+        config_as_hexstring: True
+        description: "SHA256 hash digest of hash of four SRK keys"
+        sub_regs:
+          [
+            "fuse128",
+            "fuse129",
+            "fuse130",
+            "fuse131",
+            "fuse132",
+            "fuse133",
+            "fuse134",
+            "fuse135",
+          ]
   # ======== Communication buffer section ========
   comm_buffer:
     address: 0x2048_0000 # OCRAM for uboot
-    size: 0x8000
+    size: 0x20000
 
   # ======== Certificate block section ========
   cert_block:
@@ -50,21 +76,119 @@ features:
 
   # ======== DAT section ========
   dat:
-    socc: 0x4D58005F # SOCC identification
+    socc: 0x4D58005D # SOCC identification
     based_on_ele: True # Flag if the implementation of DAT is based on EdgeLock Enclave
 
   # ======== AHAB section ========
   ahab:
     valid_offset_minimal_alignment: 0x400
-    ahab_map: [0x0000, 0x0400, 0x800]
     containers_max_cnt: 3
     oem_images_max_cnt: 8
-    oem_srkh_fuses_start: 0x80
-    oem_srkh_fuses_count: 8
-    oem_srkh_fuses_size: 4
+    core_ids:
+      CORTEX_M33: [1, "cortex-m33", "Cortex M33"]
+      CORTEX_A55: [2, "cortex-a55", "Cortex A55"]
+      ELE: [6, "ele", "EdgeLock Enclave"]
+      V2X_1: [9, "v2x-1", "V2X 1"]
+      V2X_2: [10, "v2x-2", "V2X 2"]
+    image_types:
+      EXECUTABLE: [0x03, executable, Executable Image]
+      DATA: [0x04, data, Data Image]
+      ELE: [0x06, ele, EdgeLock Enclave Image]
+      PROVISIONING_IMAGE: [0x07, provisioning_image, Provisioning Image]
+      PROVISIONING_DATA: [0x09, provisioning_data, Provisioning data Image]
+      V2X_PRIMARY: [0x0B, v2x_primary, V2X primary Image]
+      V2X_SECONDARY: [0x0C, v2x_secondary, V2X secondary Image]
+      V2X_ROM_PATCH: [0x0D, v2x_rom_patch, V2X rom patch Image]
+      V2X_DUMMY: [0x0E, v2x_dummy, V2X dummy Image]
+
+    # AHAB extra images
+    ddr_alignments: [0x8000, 0x4000, 0x8000, 0]
+    ddr_fw_alignment: 0x4
+
+    spl_ddr_load_address: 0x2049A000
+    spl_ddr_core_id: cortex-a55
+    spl_ddr_meta_data_start_cpu_id: 2
+
+    atf_load_address: 0x204E0000
+    atf_core_id: cortex-a55
+    atf_meta_data_start_cpu_id: 2
+
+    uboot_load_address: 0x80200000
+    uboot_core_id: cortex-a55
+    uboot_meta_data_start_cpu_id: 2
+
+    extra_images: ["spl_ddr", "atf", "uboot"]
 
   # ======== EdgeLock Enclave section ========
   ele: {}
+
+  # ======== OTFAD section ========
+  otfad:
+    keyblob_byte_swap_cnt: 8
+    sb_21_supported: False
+    has_kek_fuses: True
+    supports_key_scrambling: True
+
+    fuses_1: # Fuses for OTFAD1
+      _name: Configuration of fuses for OTFAD1
+      _no_verify: True
+      fuse188: # OTFAD CFG Fuse
+        fuse188-bit-3: 1 # OTFAD Enable
+        fuse188-bit-7: __scramble_enabled # OTFAD enable scrambling
+        fuse188-bits-8-15: __key_scramble_align # OTFAD scramble align
+      fuse189: __key_scramble_mask # OTFAD Scramble Key
+      otfad1_key: __kek # OTFAD Key
+
+    fuses_2: # Fuses for OTFAD2
+      _name: Configuration of fuses for OTFAD2
+      _no_verify: True
+      fuse182: # OTFAD CFG Fuse
+        fuse182-bit-3: 1 # OTFAD Enable
+        fuse182-bit-7: __scramble_enabled # OTFAD enable scrambling
+        fuse182-bits-8-15: __key_scramble_align # OTFAD scramble align
+      fuse183: __key_scramble_mask # OTFAD Scramble Key
+      otfad2_key: __kek # OTFAD Key
+
+    additional_template_text: |
+      Is important to use physical addresses (non-secure) in settings of OTFAD to proper run the decryption on device.
+      For example:
+        In case of using FlexSPI2 the secure base address address is 0x1400_0000. But in setting of the OTFAD use 0x0400_0000 as a base address.
+        The code must be still linked on secure base address 0x1400_0000 to proper run of OTFAD hardware.
+
+        Same is for FlexSPI1, but instead of 0x3800_0000 base address, the 0x2800_0000 must be used in OTFAD configuration.
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      serial_downloader:
+        segments:
+          primary_image_container_set: 0x0
+          secondary_image_container_set: -1 # Just behind previous segment
+      flexspi_nor:
+        segments:
+          keyblob: 0x0000
+          fcb: 0x0400
+          #not_used: 0xC00
+          primary_image_container_set: 0x1_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      emmc:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      sd:
+        segments:
+          primary_image_container_set: 0x8_000
+          secondary_image_container_set: -1 # Just behind previous segment
+      # flexspi_nand:
+      #   segments:
+      #     xmcd: 0x00
+      #     primary_image_container_set: 0x400
+      #     secondary_image_container_set: -1 # Just behind previous segment
+      recovery_spi:
+        note: Connected to LPSPI1/2/3/4. SPI NOR recovery image
+        segments:
+          primary_image_container_set: 0x00
+          secondary_image_container_set: -1 # Just behind previous segment
 
   # ======== Misc signing section ========
   signing:

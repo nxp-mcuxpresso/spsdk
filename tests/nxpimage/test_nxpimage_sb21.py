@@ -715,3 +715,30 @@ def test_nxpimage_sb21_yaml(cli_runner: CliRunner, conf, nxpimage_data_dir, tmpd
 
         for i in zip_longest(sb_new_lines, sb_old_lines, fillvalue=None):
             assert i[0] == i[1]
+
+
+@pytest.mark.parametrize("conf", ["advanced_params"])
+def test_nxpimage_sb21_zero_padding(cli_runner: CliRunner, conf, nxpimage_data_dir, tmpdir):
+    with use_working_directory(nxpimage_data_dir):
+        # for conf in conf_dir:
+        conf_path = os.path.join(nxpimage_data_dir, "sb_sources", "YAML_files", conf, "config.yaml")
+        ref_binary, new_binary, new_config = process_config_file(conf_path, tmpdir)
+        cmd = [
+            "sb21",
+            "export",
+            "-c",
+            new_config,
+        ]
+        cli_runner.invoke(nxpimage.main, cmd)
+        assert os.path.isfile(new_binary)
+        ref_path = os.path.join(nxpimage_data_dir, "sb_sources", "YAML_files", conf, ref_binary)
+
+        # read generated secure binary image
+        with open(new_binary, "rb") as f:
+            sb_file_data_new = f.read()
+
+        # # read reference SB file
+        with open(ref_path, "rb") as f:
+            sb_file_data_old = f.read()
+
+        assert sb_file_data_new == sb_file_data_old

@@ -1,0 +1,39 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+# =================  Master Boot Image (plain_xip) recreated configuration from :22/02/2024 08:08:29.  =================
+
+# ======================================================================================================================
+#                                                  == Basic Settings ==                                                 
+# ======================================================================================================================
+# ------------------------------------------===== MCU family [Required] =====-------------------------------------------
+# Description: MCU family name.
+family: mcxn9xx
+# --------------------------------------===== Application target [Required] =====---------------------------------------
+# Description: Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence.
+# Possible options: <xip, load-to-ram, Internal flash (XIP), External flash (XIP), Internal Flash (XIP), External Flash
+# (XIP), RAM, ram>
+outputImageExecutionTarget: xip
+# -------------------------------===== Type of boot image authentication [Required] =====-------------------------------
+# Description: Specification of final master boot image authentication.
+# Possible options: <plain, crc, signed, signed-encrypted, signed-nxp, Plain, CRC, Signed, Encrypted + Signed, NXP
+# Signed, NXP signed, encrypted>
+outputImageAuthenticationType: plain
+# ---------------------------------------===== Output Image name [Required] =====---------------------------------------
+# Description: The path for result binary file.
+masterBootOutputFile: .\workspace\output_images\mcxn9xx\mb_xip_plain.bin
+# ------------------------------------===== Plain application image [Required] =====------------------------------------
+# Description: The input application image to by modified to Master Boot Image.
+#inputImageFile: application.bin
+inputImageFile: .\workspace\input_images\normal_boot_mcxn9xx.bin # [Required], Plain application image; The input application image to by modified to Master Boot Image.
+
+# ----------------------------------------===== Image version. [Optional] =====-----------------------------------------
+# Description: Image version is used for dual boot. The boot ROM decides which image to boot first based on the image
+# version. It boots the one with the newer image version first, and in case of a failure, it boots the older one.
+imageVersion: 0
+# ======================================================================================================================
+#                                               == Trust Zone Settings ==                                               
+# ======================================================================================================================
+# ------------------------------------===== TrustZone enable option [Optional] =====------------------------------------
+# Description: If not specified, the Trust zone is disabled.
+enableTrustZone: true

@@ -6,13 +6,17 @@ revisions:
   a0:
     features:
       ifr:
-        data_file: ifr_a0.xml
+        romcfg:
+          reg_spec: ifr_romcfg_a0.json
+        cmactable:
+          reg_spec: ifr_cmactable_a0.json
   a1: {}
-latest: a1
+  a2: {}
+latest: a2
 
 # General MCU information
 info:
-  purpose: General Purpose Processor
+  purpose: Wireless Connectivity
   # Web page of MCU representative
   web: https://www.nxp.com/products/wireless/bluetooth-low-energy/32-bit-bluetooth-5-3-long-range-mcus-with-can-fd-and-lin-bus-options-arm-cortex-m33-core:KW45
   memory_map: # Memory map basic info
@@ -28,10 +32,17 @@ info:
       base_addr: 0x4000000
       size: 0x4000
       external: false
-  # isp:
-  #   mboot_interfaces: [uart]
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0143
 
 features:
+  # ======== Fuses description section ========
+  fuses: {}
+
   # ======== Certificate block section ========
   cert_block:
     rot_type: "cert_block_21"
@@ -47,6 +58,7 @@ features:
   # ======== DAT section ========
   dat:
     socc: 5 # SOCC identification
+    dat_is_using_sha256_always: True
     famode_cert: [signed, nxp_signed] # List of Fault analysis Mode certificates (names of MBI classes)
     famode_cfg_defaults: # Dictionary of default values of standard MBI members for FAmode image
       outputImageExecutionTarget: xip
@@ -57,7 +69,6 @@ features:
       trustZonePresetFile: null
       manifestDigestHashAlgorithm: sha256
       outputImageSubtype: main
-      noSignature: false
 
   # ======== MBI section ========
   mbi:
@@ -66,7 +77,7 @@ features:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinIvt
+          - Mbi_MixinIvtZeroTotalLength
           - Mbi_MixinLoadAddress
           - Mbi_MixinTrustZoneMandatory
           - Mbi_MixinImageSubType
@@ -89,7 +100,6 @@ features:
           - Mbi_MixinLoadAddress
           - Mbi_MixinCertBlockV21
           - Mbi_MixinManifestDigest
-          - Mbi_MixinNoSignature
           - Mbi_ExportMixinAppCertBlockManifest
           - Mbi_ExportMixinEccSign
       nxp_signed:
@@ -101,7 +111,6 @@ features:
           - Mbi_MixinCertBlockV21
           - Mbi_MixinManifestDigest
           - Mbi_MixinImageSubType
-          - Mbi_MixinNoSignature
           - Mbi_ExportMixinAppCertBlockManifest
           - Mbi_ExportMixinEccSign
     images:
@@ -113,9 +122,12 @@ features:
 
   # ======== IFR section ========
   ifr:
-    address: 0x200_0000
-    data_file: ifr_a1.xml
-
+    romcfg:
+      address: 0x200_0000
+      reg_spec: ifr_romcfg_a1.json
+    cmactable:
+      address: 0x0200_4000
+      reg_spec: ifr_cmactable_a0.json
   # ======== Secure binary v3.1 section ========
   sb31:
     supported_commands:
@@ -131,4 +143,4 @@ features:
 
   # ======== TrustZone section ========
   tz:
-    data_file: tz.yaml
+    reg_spec: tz.yaml

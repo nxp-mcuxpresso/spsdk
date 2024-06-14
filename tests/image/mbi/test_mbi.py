@@ -5,7 +5,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import json
 import os
 from typing import Optional
 
@@ -137,19 +136,19 @@ def test_plain_xip_crc_no_tz(data_dir, input_img, expected_mbi: str):
         (
             "selfsign_privatekey_rsa2048.pem",
             "selfsign_2048_v3.der.crt",
-            "evkmimxrt685_testfffffff_xip_signed2048_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_xip_signed2048_no_tz_mbi.bin",
         ),
         # 3072
         (
             "private_rsa3072.pem",
             "selfsign_3072_v3.der.crt",
-            "evkmimxrt685_testfffffff_xip_signed3072_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_xip_signed3072_no_tz_mbi.bin",
         ),
         # 4096
         (
             "private_rsa4096.pem",
             "selfsign_4096_v3.der.crt",
-            "evkmimxrt685_testfffffff_xip_signed4096_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_xip_signed4096_no_tz_mbi.bin",
         ),
     ],
 )
@@ -160,7 +159,7 @@ def test_signed_xip_single_certificate_no_tz(data_dir, priv_key, der_certificate
     :param der_certificate: filename of corresponding certificate in DER format
     :param expected_mbi: filename of expected bootable image
     """
-    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+    with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
     # create certification block
     cert_block = certificate_block(data_dir, [der_certificate])
@@ -183,17 +182,17 @@ def test_signed_xip_single_certificate_no_tz(data_dir, priv_key, der_certificate
         (
             "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5",
             None,
-            "evkmimxrt685_testfffffff_ram_signed2048_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_ram_signed2048_no_tz_mbi.bin",
         ),
         (
             bytes.fromhex("E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"),
             None,
-            "evkmimxrt685_testfffffff_ram_signed2048_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_ram_signed2048_no_tz_mbi.bin",
         ),
         (
             "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5",
             "key_store_rt6xx.bin",
-            "evkmimxrt685_testfffffff_ram_key_store_signed2048_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_ram_key_store_signed2048_no_tz_mbi.bin",
         ),
     ],
 )
@@ -201,7 +200,7 @@ def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filen
     """Test non-XIP signed image with single certificate
     :param data_dir: absolute path, where test data are located
     """
-    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+    with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
     # create certification block
     cert_block = certificate_block(data_dir, ["selfsign_2048_v3.der.crt"])
@@ -236,21 +235,21 @@ def test_signed_ram_single_certificate_no_tz(data_dir, user_key, key_store_filen
             KeySourceType.KEYSTORE,
             None,
             "8de432f2283a1cb8bb818d41bf9dfafb",
-            "evkmimxrt685_testfffffff_ram_encrypted2048_none_keystore_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_ram_encrypted2048_none_keystore_no_tz_mbi.bin",
         ),
         # key source = OTP
         (
             KeySourceType.OTP,
             None,
             "fff5a54ee37de8f9606c048d941588df",
-            "evkmimxrt685_testfffffff_ram_encrypted2048_otp_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_ram_encrypted2048_otp_no_tz_mbi.bin",
         ),
         # key source = KEYSTORE; key store non-empty
         (
             KeySourceType.KEYSTORE,
             "key_store_rt6xx.bin",
             "0691d67713375bf6effcfb2c7d83321e",
-            "evkmimxrt685_testfffffff_ram_encrypted2048_keystore_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_ram_encrypted2048_keystore_no_tz_mbi.bin",
         ),
     ],
 )
@@ -258,7 +257,7 @@ def test_encrypted_ram_single_certificate_no_tz(
     data_dir, keysource: KeySourceType, keystore_fn: Optional[str], ctr_iv: str, expected_mbi: str
 ):
     """Test encrypted image with fixed counter init vector"""
-    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+    with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
     key_store_bin = None
@@ -288,7 +287,7 @@ def test_encrypted_ram_single_certificate_no_tz(
 
 def test_encrypted_random_ctr_single_certificate_no_tz(data_dir):
     """Test encrypted image with random counter init vector"""
-    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+    with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
     user_key = "E39FD7AB61AE6DDDA37158A0FC3008C6D61100A03C7516EA1BE55A39F546BAD5"
     key_store = KeyStore(KeySourceType.KEYSTORE, None)
@@ -314,7 +313,7 @@ def test_encrypted_random_ctr_single_certificate_no_tz(data_dir):
         (
             ["selfsign_4096_v3.der.crt", "selfsign_3072_v3.der.crt", "selfsign_2048_v3.der.crt"],
             2,
-            "evkmimxrt685_testfffffff_xip_3_certs_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_xip_3_certs_no_tz_mbi.bin",
         ),
         # 4 certificates
         (
@@ -325,13 +324,13 @@ def test_encrypted_random_ctr_single_certificate_no_tz(data_dir):
                 "selfsign_3072_v3.der.crt",
             ],
             2,
-            "evkmimxrt685_testfffffff_xip_4_certs_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_xip_4_certs_no_tz_mbi.bin",
         ),
         # 2 certificates (first and last)
         (
             ["selfsign_4096_v3.der.crt", None, None, "selfsign_2048_v3.der.crt"],
             3,
-            "evkmimxrt685_testfffffff_xip_2_certs_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_xip_2_certs_no_tz_mbi.bin",
         ),
     ],
 )
@@ -344,7 +343,7 @@ def test_signed_xip_multiple_certificates_no_tz(
     :param root_index: index of root certificate
     :param expected_mbi: filename of expected bootable image
     """
-    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+    with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
     # create certification block
     cert_block = certificate_block(data_dir, der_certificates, root_index)
@@ -410,14 +409,14 @@ def test_signed_xip_multiple_certificates_invalid_input(data_dir):
             ["ca0_v3.der.crt"],
             ["crt_v3.der.crt"],
             "crt_privatekey_rsa2048.pem",
-            "evkmimxrt685_testfffffff_xip_chain_2_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_xip_chain_2_no_tz_mbi.bin",
         ),
         # 3 certificates in chain
         (
             ["ca0_v3.der.crt"],
             ["ch3_crt_v3.der.crt", "ch3_crt2_v3.der.crt"],
             "crt2_privatekey_rsa2048.pem",
-            "evkmimxrt685_testfffffff_xip_chain_3_no_tz_mbi.bin",
+            "evkmimxrt685_testnormal_xip_chain_3_no_tz_mbi.bin",
         ),
     ],
 )
@@ -431,7 +430,7 @@ def test_signed_xip_certificates_chain_no_tz(
     :param priv_key: private key filename
     :param expected_mbi: filename of expected bootable image
     """
-    with open(os.path.join(data_dir, "testfffffff.bin"), "rb") as f:
+    with open(os.path.join(data_dir, "normal_boot.bin"), "rb") as f:
         org_data = f.read()
     # create certification block
     cert_block = certificate_block(data_dir, der_certificates, 0, chain_certificates)
@@ -603,8 +602,8 @@ def test_multiple_images_with_relocation_table(data_dir):
     """Test image that contains multiple binary images and relocation table
     :param data_dir: absolute path, where test data are located
     """
-    img_data = load_binary(os.path.join(data_dir, "multicore", "testfffffff.bin"))
-    img1_data = load_binary(os.path.join(data_dir, "multicore", "normal_boot.bin"))
+    img_data = load_binary(os.path.join(data_dir, "multicore", "normal_boot.bin"))
+    img1_data = load_binary(os.path.join(data_dir, "multicore", "testfffffff.bin"))
     img2_data = load_binary(os.path.join(data_dir, "multicore", "special_boot.bin"))
 
     trust_zone_data = load_configuration(os.path.join(data_dir, "multicore", "rt5xxA0.yaml"))[

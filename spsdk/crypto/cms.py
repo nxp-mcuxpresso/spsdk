@@ -13,10 +13,10 @@ from datetime import datetime
 from typing import Optional
 
 from spsdk.crypto.certificate import Certificate
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash
 from spsdk.crypto.keys import ECDSASignature, PrivateKey, PrivateKeyEcc, PrivateKeyRsa
 from spsdk.crypto.signature_provider import SignatureProvider
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.exceptions import SPSDKError, SPSDKTypeError, SPSDKValueError
 
 

@@ -10,14 +10,19 @@
 from struct import unpack_from
 from typing import Iterator, List, Optional
 
-from spsdk.crypto.hmac import hmac
+from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.crypto.symmetric import Counter, aes_ctr_decrypt, aes_ctr_encrypt
 from spsdk.exceptions import SPSDKError
 from spsdk.sbfile.misc import SecBootBlckSize
+from spsdk.sbfile.sb2.commands import (
+    CmdBaseClass,
+    CmdHeader,
+    EnumCmdTag,
+    EnumSectionFlag,
+    parse_command,
+)
 from spsdk.utils.abstract import BaseClass
 from spsdk.utils.crypto.cert_blocks import CertBlockV1
-
-from .commands import CmdBaseClass, CmdHeader, EnumCmdTag, EnumSectionFlag, parse_command
 
 ########################################################################################################################
 # Boot Image Sections
@@ -73,14 +78,23 @@ class BootSectionV2(BaseClass):
             size += 16 - (size % 16)
         return size
 
-    def __init__(self, uid: int, *commands: CmdBaseClass, hmac_count: int = 1) -> None:
+    def __init__(
+        self,
+        uid: int,
+        *commands: CmdBaseClass,
+        hmac_count: int = 1,
+        zero_filling: bool = False,
+    ) -> None:
         """Initialize BootSectionV2.
 
         :param uid: section unique identification
         :param commands: List of commands
         :param hmac_count: The number of HMAC entries
+        :param zero_filling: If true, the section is zero-filled
         """
-        self._header = CmdHeader(EnumCmdTag.TAG.tag, EnumSectionFlag.BOOTABLE.tag)
+        self._header = CmdHeader(
+            EnumCmdTag.TAG.tag, EnumSectionFlag.BOOTABLE.tag, zero_filling=zero_filling
+        )
         self._commands: List[CmdBaseClass] = []
         self._hmac_count = hmac_count
         for cmd in commands:

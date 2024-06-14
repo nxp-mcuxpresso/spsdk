@@ -20,22 +20,25 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKError, SPSDKValueError
-from spsdk.image.ahab.ahab_abstract_interfaces import LITTLE_ENDIAN, Container
-from spsdk.image.ahab.ahab_container import (
+from spsdk.image.ahab.ahab_abstract_interfaces import Container
+from spsdk.image.ahab.ahab_container import AHABContainerBase
+from spsdk.image.ahab.ahab_data import (
     CONTAINER_ALIGNMENT,
+    LITTLE_ENDIAN,
     RESERVED,
     UINT8,
     UINT16,
     UINT32,
-    AHABContainerBase,
-    AHABImage,
-    SignatureBlock,
+    FlagsSrkSet,
 )
-from spsdk.utils.database import DatabaseManager
+from spsdk.image.ahab.ahab_image import AHABImage
+from spsdk.image.ahab.ahab_sign_block import SignatureBlock
+from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.images import BinaryImage
-from spsdk.utils.misc import Endianness, align_block, check_range, load_hex_string, value_to_int
+from spsdk.utils.misc import Endianness, align_block, load_hex_string, value_to_int
 from spsdk.utils.schema_validator import CommentedConfig
 from spsdk.utils.spsdk_enum import SpsdkEnum
+from spsdk.utils.verifier import Verifier, VerifierResult
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +129,13 @@ class Message(Container):
         now = datetime.datetime.now()
         self.issue_date = issue_date or (now.month << 12 | now.year)
         self.cmd = cmd
-        self.unique_id = unique_id or b""
+        self.unique_id = unique_id or bytes(self.UNIQUE_ID_LEN)
+        if len(self.unique_id) > self.UNIQUE_ID_LEN:
+            logger.warning(
+                f"The given UUID is longer than used {self.UNIQUE_ID_LEN} "
+                f"bytes and its truncated to {self.unique_id[:self.UNIQUE_ID_LEN].hex()}"
+            )
+            self.unique_id = self.unique_id[: self.UNIQUE_ID_LEN]
 
     def __repr__(self) -> str:
         return f"Message, {MessageCommands.get_description(self.TAG, 'Base Class')}"
@@ -164,36 +173,24 @@ class Message(Container):
             + UINT16  # Reserved to zero
             + UINT8  # Command
             + UINT8  # Reserved
-            + "4s"  # Unique ID (Lower 32 bits)
-            + "4s"  # Unique ID (Upper 32 bits)
+            + UINT32  # Unique ID (Lower 32 bits)
+            + UINT32  # Unique ID (Upper 32 bits)
         )
 
-    def validate(self) -> None:
-        """Validate general message properties."""
-        if self.cert_ver is None or not check_range(self.cert_ver, end=(1 << 8) - 1):
-            raise SPSDKValueError(
-                f"Message: Invalid certificate version: {hex(self.cert_ver) if self.cert_ver else 'None'}"
-            )
-
-        if self.permissions is None or not check_range(self.permissions, end=(1 << 8) - 1):
-            raise SPSDKValueError(
-                f"Message: Invalid certificate permission: {hex(self.permissions) if self.permissions else 'None'}"
-            )
-
-        if self.issue_date is None or not check_range(self.issue_date, start=1, end=(1 << 16) - 1):
-            raise SPSDKValueError(
-                f"Message: Invalid issue date: {hex(self.issue_date) if self.issue_date else 'None'}"
-            )
-
-        if self.cmd is None or self.cmd not in MessageCommands.tags():
-            raise SPSDKValueError(
-                f"Message: Invalid command: {hex(self.cmd) if self.cmd else 'None'}"
-            )
-
-        if self.unique_id is None or len(self.unique_id) < Message.UNIQUE_ID_LEN:
-            raise SPSDKValueError(
-                f"Message: Invalid unique ID: {self.unique_id.hex() if self.unique_id else 'None'}"
-            )
+    def verify(self) -> Verifier:
+        """Verify general message properties."""
+        name = (
+            MessageCommands.get_label(self.cmd)
+            if self.cmd in MessageCommands.tags()
+            else hex(self.cmd)
+        )
+        ret = Verifier(f"Message: {name}")
+        ret.add_record_bit_range("Certificate version", self.cert_ver, 8)
+        ret.add_record_bit_range("Certificate permission", self.permissions, 8)
+        ret.add_record_bit_range("Issue date", self.issue_date, 16)
+        ret.add_record_enum("Command", self.cmd, MessageCommands)
+        ret.add_record_bytes("Unique ID", self.unique_id, min_length=8, max_length=8)
+        return ret
 
     def export(self) -> bytes:
         """Exports message into to bytes array.
@@ -208,8 +205,8 @@ class Message(Container):
             RESERVED,
             self.cmd,
             RESERVED,
-            self.unique_id[:4],
-            self.unique_id[4:8],
+            int.from_bytes(self.unique_id[:4], "big"),
+            int.from_bytes(self.unique_id[4:8], "big"),
         )
         msg += self.export_payload()
         return msg
@@ -317,7 +314,7 @@ class Message(Container):
             cert_ver=certificate_version,
             permissions=permission,
             issue_date=issue_date,
-            unique_id=uuid_lower + uuid_upper,
+            unique_id=uuid_lower.to_bytes(4, "big") + uuid_upper.to_bytes(4, "big"),
         )
         parsed_msg.parse_payload(data[Message.fixed_length() :])
         return parsed_msg  # type: ignore
@@ -427,11 +424,11 @@ class MessageReturnLifeCycle(Message):
 
         return cfg
 
-    def validate(self) -> None:
-        """Validate general message properties."""
-        super().validate()
-        if self.life_cycle is None:
-            raise SPSDKValueError("Message Return Life Cycle request: Invalid life cycle")
+    def verify(self) -> Verifier:
+        """Verify message properties."""
+        ret = super().verify()
+        ret.add_record_range("Life Cycle", self.life_cycle)
+        return ret
 
 
 class MessageWriteSecureFuse(Message):
@@ -572,22 +569,16 @@ class MessageWriteSecureFuse(Message):
 
         return cfg
 
-    def validate(self) -> None:
-        """Validate general message properties."""
-        super().validate()
+    def verify(self) -> Verifier:
+        """Verify message properties."""
+        ret = super().verify()
         if self.fuse_data is None:
-            raise SPSDKValueError("Message Write secure fuse request: Missing fuse data")
-        if len(self.fuse_data) != self.length:
-            raise SPSDKValueError(
-                "Message Write secure fuse request: The fuse value list "
-                f"has invalid length: ({len(self.fuse_data)} != {self.length})"
-            )
-
-        for i, val in enumerate(self.fuse_data):
-            if val >= 1 << 32:
-                raise SPSDKValueError(
-                    f"Message Write secure fuse request: The fuse value({i}) is bigger than 32 bit: ({val})"
-                )
+            ret.add_record("Fuse data", VerifierResult.ERROR, "Doesn't exists")
+        else:
+            ret.add_record_range("Fuse data count", len(self.fuse_data) != self.length)
+            for i, val in enumerate(self.fuse_data):
+                ret.add_record_bit_range(f"Data{i}", val)
+        return ret
 
 
 class MessageKeyStoreReprovisioningEnable(Message):
@@ -656,32 +647,15 @@ class MessageKeyStoreReprovisioningEnable(Message):
             self.PAYLOAD_FORMAT, data[: self.PAYLOAD_LENGTH]
         )
 
-    def validate(self) -> None:
-        """Validate general message properties."""
-        super().validate()
-        if self.flags != self.FLAGS:
-            raise SPSDKValueError(
-                f"Message Key store reprovisioning enable request: Invalid flags: {self.flags}"
-            )
-        if self.target != self.TARGET:
-            raise SPSDKValueError(
-                f"Message Key store reprovisioning enable request: Invalid target: {self.target}"
-            )
-        if self.reserved != RESERVED:
-            raise SPSDKValueError(
-                f"Message Key store reprovisioning enable request: Invalid reserved field: {self.reserved}"
-            )
-        if self.monotonic_counter >= 1 << 32:
-            raise SPSDKValueError(
-                "Message Key store reprovisioning enable request: Invalid monotonic "
-                f"counter field (not fit in 32bit): {self.monotonic_counter}"
-            )
-
-        if self.user_sab_id >= 1 << 32:
-            raise SPSDKValueError(
-                "Message Key store reprovisioning enable request: Invalid user SAB ID "
-                f"field (not fit in 32bit): {self.user_sab_id}"
-            )
+    def verify(self) -> Verifier:
+        """Verify message properties."""
+        ret = super().verify()
+        ret.add_record("Flags", self.flags == self.FLAGS, self.flags)
+        ret.add_record("Target", self.target == self.TARGET, self.target)
+        ret.add_record("Reserved", self.reserved == RESERVED, self.reserved)
+        ret.add_record_range("Monotonic counter", self.monotonic_counter)
+        ret.add_record_bit_range("User SAB ID", self.user_sab_id)
+        return ret
 
     def __str__(self) -> str:
         ret = super().__str__()
@@ -1080,21 +1054,44 @@ class MessageKeyExchange(Message):
             if tag & derived_key_usage:
                 self.derived_key_usage.append(self.DerivedKeyUsage.from_tag(tag))
 
-    def validate(self) -> None:
-        """Validate general message properties."""
-        super().validate()
-        if self.tag != self.TAG:
-            raise SPSDKValueError(
-                f"Message Key store reprovisioning enable request: Invalid tag: {self.tag}"
+    def verify(self) -> Verifier:
+        """Verify message properties."""
+        ret = super().verify()
+        ret.add_record_range("KeyStore ID", self.key_store_id)
+        ret.add_record_enum(
+            "Key exchange algorithm", self.key_exchange_algorithm, self.KeyExchangeAlgorithm
+        )
+        ret.add_record_range("Salt flags", self.salt_flags)
+        ret.add_record_range("Derived key group", self.derived_key_grp)
+        ret.add_record_range("Derived key bit size", self.derived_key_size_bits)
+        ret.add_record_enum("Derived key type", self.derived_key_type, self.DerivedKeyType)
+        ret.add_record_enum("Derived key life time", self.derived_key_lifetime, self.LifeTime)
+        for key_usage in self.derived_key_usage:
+            ret.add_record_enum(
+                f"Derived key usage [{key_usage.label}]", key_usage, self.DerivedKeyUsage
             )
-        if self.version != self.version:
-            raise SPSDKValueError(
-                f"Message Key store reprovisioning enable request: Invalid verssion: {self.version}"
-            )
-        if self.reserved != RESERVED:
-            raise SPSDKValueError(
-                f"Message Key store reprovisioning enable request: Invalid reserved field: {self.reserved}"
-            )
+        ret.add_record_enum(
+            "Derived key permitted algorithm",
+            self.derived_key_permitted_algorithm,
+            self.KeyDerivationAlgorithm,
+        )
+        ret.add_record_enum("Derived key life cycle", self.derived_key_lifecycle, self.LifeCycle)
+        ret.add_record_range("Derived key ID", self.derived_key_id)
+        ret.add_record_range("Private key ID", self.private_key_id)
+        ret.add_record_bytes(
+            "Input peer public key digest",
+            self.input_user_fixed_info_digest,
+            min_length=8,
+            max_length=8,
+        )
+        ret.add_record_bytes(
+            "Input user public fixed info digest",
+            self.input_peer_public_key_digest,
+            min_length=8,
+            max_length=8,
+        )
+
+        return ret
 
     def __str__(self) -> str:
         ret = super().__str__()
@@ -1267,6 +1264,7 @@ class SignedMessage(AHABContainerBase):
 
     TAG = SignedMessageTags.SIGNED_MSG.tag
     ENCRYPT_IV_LEN = 32
+    NAME = "Signed Message"
 
     def __init__(
         self,
@@ -1355,7 +1353,7 @@ class SignedMessage(AHABContainerBase):
         # 1. Update the signature block to get overall size of it
         self.signature_block.update_fields()
         # 2. Sign the image header
-        if self.flag_srk_set != "none":
+        if self.flag_srk_set != FlagsSrkSet.NONE:
             assert self.signature_block.signature
             self.signature_block.signature.sign(self.get_signature_data())
 
@@ -1395,30 +1393,24 @@ class SignedMessage(AHABContainerBase):
         :return: images exported into single binary
         """
         self.update_fields()
-        self.validate({})
+        self.verify().validate()
         return self._export()
 
-    def validate(self, data: Dict[str, Any]) -> None:
-        """Validate object data.
-
-        :param data: Additional validation data.
-        :raises SPSDKValueError: Invalid any value of Image Array entry
-        """
-        data["flag_used_srk_id"] = self.flag_used_srk_id
-
-        if self.length != len(self):
-            raise SPSDKValueError(
-                f"Container Header: Invalid block length: {self.length} != {len(self)}"
+    def verify(self) -> Verifier:
+        """Verify message properties."""
+        ret = self._verify()
+        if self.encrypt_iv:
+            ret.add_record_bytes(
+                "Encryption initialization vector", self.encrypt_iv, min_length=32, max_length=32
             )
-        super().validate(data)
-        if self.encrypt_iv and len(self.encrypt_iv) != self.ENCRYPT_IV_LEN:
-            raise SPSDKValueError(
-                "Signed Message: Invalid Encryption initialization vector length: "
-                f"{len(self.encrypt_iv)*8} Bits != {self.ENCRYPT_IV_LEN * 8} Bits"
-            )
+        else:
+            ret.add_record("Encryption initialization vector", VerifierResult.SUCCEEDED, "Not used")
         if self.message is None:
-            raise SPSDKValueError("Signed Message: Invalid Message payload.")
-        self.message.validate()
+            ret.add_record("Message", VerifierResult.ERROR, "Doesn't exists")
+        else:
+            ret.add_child(self.message.verify())
+
+        return ret
 
     @classmethod
     def parse(cls, data: bytes) -> Self:
@@ -1465,7 +1457,7 @@ class SignedMessage(AHABContainerBase):
         :param data_path: Path to store the data files of configuration.
         :return: Configuration dictionary.
         """
-        self.validate({})
+        self.verify().validate()
         cfg = self._create_config(0, data_path)
         cfg["family"] = "N/A"
         cfg["revision"] = "N/A"
@@ -1504,7 +1496,7 @@ class SignedMessage(AHABContainerBase):
 
         :return: Signed Message Info object.
         """
-        self.validate({})
+        self.verify().validate()
         assert self.message
         ret = BinaryImage(
             name="Signed Message",
@@ -1521,7 +1513,7 @@ class SignedMessage(AHABContainerBase):
 
         :return: Validation list of schemas.
         """
-        sch = DatabaseManager().db.get_schema_file(DatabaseManager.SIGNED_MSG)
+        sch = get_schema_file(DatabaseManager.SIGNED_MSG)
         sch["properties"]["family"]["enum"] = AHABImage.get_supported_families()
         return [sch]
 

@@ -6,10 +6,13 @@ Installation Guide
 Requirements
 ------------
 
-- Make sure to have `Python 3.8+ <https://www.python.org>`_ installed (old version 2.x is not supported).
+- Make sure to have `Python 3.9+ <https://www.python.org>`_ installed (old version 2.x is not supported).
 - It is recommended to create and activate a virtual environment (``venv``, ``pipenv``, etc.) to avoid conflict with other packages
 - Upgrade PyPI to the latest version
 - Install SPSDK
+
+.. note::
+    For more information about creating of virtual environments go to `the official documentation <https://docs.python.org/3/library/venv.html>`_
 
 .. warning::
 
@@ -119,7 +122,8 @@ To install *SPSDK* form GitHub follow:
 
 .. code:: bash
 
-    $ pip install -U https://github.com/NXPmicro/spsdk/archive/master.zip
+    $ pip install -U git+https://github.com/nxp-mcuxpresso/spsdk.git
+
 
 GitHub - from sources
 =====================
@@ -128,7 +132,7 @@ To install *SPSDK* from source code follow:
 
 .. code:: bash
 
-    $ git clone https://github.com/NXPmicro/spsdk.git
+    $ git clone https://github.com/nxp-mcuxpresso/spsdk.git
     $ cd spsdk
     $ pip install -U -e .
 
@@ -167,10 +171,11 @@ Trust Provisioning
 -------------------
 
 Extra dependencies must be installed in order to use Trust Provisioning.
+Also you will need `swig compiler <http://www.swig.org>`_ which is a requirement for pyscard
 
 .. note::
 
-    On **Mac OS** you need to install gcc and pcsc-lite (https://pcsclite.apdu.fr/).
+    On **Mac OS** you need to install gcc, swig (http://www.swig.org), and pcsc-lite (https://pcsclite.apdu.fr/).
     (**brew install pcsc-lite**)
     On **Linux** you need to install pcscd and libpcsclite-dev. (**sudo apt install pcdcs libpcsclite-dev**)
 
@@ -210,3 +215,25 @@ In case you are installing from local repository.
     For Pyftdi backend Linux, macOS libusb 1.x is needed.
     Install it with apt-get install libusb-1.0 or brew install libusb on macOS
     On Windows install D2XX drivers https://ftdichip.com/drivers/d2xx-drivers/
+
+
+-------------------
+CAN Support
+-------------------
+
+The command below install extra dependencies required for CAN to work.
+
+.. code:: bash
+
+    $ pip install spsdk[can]
+
+
+In case you are installing from local repository.
+
+.. code:: bash
+
+    $ pip install ".[can]"
+
+
+.. note::
+    Refer to the documentation of `python-can <https://python-can.readthedocs.io>`_  for more information about supported devices.

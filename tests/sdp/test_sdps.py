@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 
 from typing import List, Optional, Union
+from unittest.mock import patch
 
 from typing_extensions import Self
 
 from spsdk.exceptions import SPSDKAttributeError, SPSDKConnectionError
 from spsdk.sdp.commands import CmdPacket
 from spsdk.sdp.exceptions import SdpConnectionError
-from spsdk.sdp.sdps import SDPS
+from spsdk.sdp.sdps import SDPS, RomInfo
 from spsdk.utils.interfaces.commands import CmdResponseBase
 from spsdk.utils.interfaces.device.base import DeviceBase
 
@@ -105,7 +106,7 @@ class VirtualSDPInterface:
 
 def test_open_close():
     """Test SDPS is closed by default."""
-    spds = SDPS(VirtualSDPInterface(VirtualDevice()), "MX28")
+    spds = SDPS(VirtualSDPInterface(VirtualDevice()), "mx93")
     assert not spds.is_opened
     spds.open()
     assert spds.is_opened
@@ -114,9 +115,10 @@ def test_open_close():
     assert spds.is_opened
 
 
+@patch("spsdk.sdp.sdps.SDPS.rom_info", RomInfo(False, False, 1024))
 def test_sdps_send_data():
     """Test send data"""
-    with SDPS(VirtualSDPInterface(VirtualDevice()), "MX28") as sdps:
+    with SDPS(VirtualSDPInterface(VirtualDevice()), "mx93") as sdps:
         assert sdps.is_opened
         sdps.write_file(data)
     assert sdps.is_opened is False
@@ -133,7 +135,7 @@ class VirtualDeviceException(VirtualDevice):
 def test_sdps_exception():
     """Test connection error"""
     try:
-        sdps = SDPS(VirtualSDPInterface(VirtualDeviceException()), "MX815")
+        sdps = SDPS(VirtualSDPInterface(VirtualDeviceException()), "mx8ulp")
         sdps.write_file(data)
         assert False
     except SdpConnectionError:

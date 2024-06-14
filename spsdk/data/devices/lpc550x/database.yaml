@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -8,7 +8,7 @@ latest: a0
 
 # General MCU information
 info:
-  purpose: General Purpose Processor
+  purpose: LPC5500 Series
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc550x-s0x-baseline-arm-cortex-m33-based-microcontroller-family:LPC550x
   memory_map: # Memory map basic info
@@ -24,18 +24,20 @@ info:
       base_addr: 0x4000000
       size: 0x4000
       external: false
-  # isp:
-  #   mboot_interfaces: ["uart", "spi", "i2c"]
+  isp:
+    rom:
+      protocol: mboot
+      interfaces: ["usb", "spi", "i2c"]
 
 features:
   # ======== MBI section ========
   mbi:
     mbi_classes:
-      plain:
+      plain_xip:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinIvt
+          - Mbi_MixinIvtZeroTotalLength
           - Mbi_ExportMixinApp
       crc_xip:
         image_type: CRC_XIP_IMAGE
@@ -54,7 +56,7 @@ features:
           - Mbi_ExportMixinCrcSign
     images:
       xip:
-        plain: plain
+        plain: plain_xip
         crc: crc_xip
       load_to_ram:
         crc: crc_ram
@@ -64,14 +66,14 @@ features:
     cfpa: # CFPA description
       address: 0x3_DE00
       size: 512
-      data_file: pfr_cfpa.xml
-      seal_start: SHA256_DIGEST0
+      reg_spec: pfr_cfpa.json
+      seal_start: field1E0 # SHA256_DIGEST0
       seal_count: 8
     cmpa: # CMPA description
       address: 0x3_E400
       size: 512
-      data_file: pfr_cmpa.xml
-      seal_start: SHA256_DIGEST0
+      reg_spec: pfr_cmpa.json
+      seal_start: field1E0 # SHA256_DIGEST0
       seal_count: 8
 
   # ======== Memory configuration ========
@@ -79,3 +81,10 @@ features:
     peripherals:
       spi_nor:
         instances: [3]
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      recovery_spi:
+        segments:
+          sb21: 0x00

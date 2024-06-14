@@ -14,10 +14,16 @@ from typing import Any, Dict, List, Optional
 
 from typing_extensions import Self
 
-from spsdk import SPSDK_DATA_FOLDER_COMMON
 from spsdk.exceptions import SPSDKValueError
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import DatabaseManager, get_db, get_device, get_families, get_schema_file
+from spsdk.utils.database import (
+    DatabaseManager,
+    get_common_data_file_path,
+    get_db,
+    get_device,
+    get_families,
+    get_schema_file,
+)
 from spsdk.utils.misc import Endianness
 from spsdk.utils.registers import Registers
 from spsdk.utils.schema_validator import CommentedConfig
@@ -49,14 +55,18 @@ class MemoryConfig(BaseClass):
         :param interface: Memory interface
         """
         self.family = family
-        self.regs = Registers(self.family, Endianness.LITTLE)
         self.db = get_db(family, revision)
-        self.chips_data = DatabaseManager().db.load_db_cfg_file(
-            self.db.get_file_path(DatabaseManager.MEMCFG, "data_file")
-        )
-
         self.revision = self.db.name
+        if peripheral not in self.get_supported_peripherals(self.family):
+            raise SPSDKValueError(f"The {peripheral} is not supported by {self.family}")
         self.peripheral = peripheral
+        self.regs = Registers(
+            family=self.family,
+            feature=DatabaseManager.MEMCFG,
+            base_key=["peripherals", peripheral],
+            revision=revision,
+            base_endianness=Endianness.LITTLE,
+        )
         self.interface = interface or ""
 
     def __repr__(self) -> str:
@@ -81,24 +91,6 @@ class MemoryConfig(BaseClass):
         if not ret:
             raise SPSDKValueError("Peripheral is not specified")
         return ret
-
-    @property
-    def peripheral(self) -> str:
-        """Get used peripheral."""
-        return self._peripheral
-
-    @peripheral.setter
-    def peripheral(self, value: str) -> None:
-        """Get used peripheral."""
-        if value not in self.get_supported_peripherals(self.family):
-            raise SPSDKValueError(f"The {value} is not supported by {self.family}")
-
-        ow_xml = self.db.get_file_path(
-            DatabaseManager.MEMCFG, ["peripherals", value, "description_file"]
-        )
-        self.regs.remove_registers()
-        self.regs.load_registers_from_xml(ow_xml)
-        self._peripheral = value
 
     @property
     def option_words(self) -> List[int]:
@@ -303,11 +295,13 @@ class MemoryConfig(BaseClass):
         revision = config.get("revision", "latest")
         peripheral = config["peripheral"]
         interface = config["interface"]
-        ow_xml = get_db(family, revision).get_file_path(
-            DatabaseManager.MEMCFG, ["peripherals", peripheral, "description_file"]
+        regs = Registers(
+            family=family,
+            feature=DatabaseManager.MEMCFG,
+            base_key=["peripherals", peripheral],
+            revision=revision,
+            base_endianness=Endianness.LITTLE,
         )
-        regs = Registers(family, Endianness.LITTLE)
-        regs.load_registers_from_xml(ow_xml)
         regs.load_yml_config(config["settings"])
 
         ret = cls(family=family, revision=revision, peripheral=peripheral, interface=interface)
@@ -355,7 +349,10 @@ class MemoryConfig(BaseClass):
             )
 
         if (instance is None) and len(instances) > 1 and runtime_instance:
-            raise SPSDKValueError(f"Unspecified instance for {self.family}:{self.peripheral}")
+            raise SPSDKValueError(
+                f"Unspecified instance for {self.family}:{self.peripheral}."
+                "The -ix option is mandatory for devices with more than one instance"
+            )
 
         if instance is not None:  # and switch_instances:
             # Switch instance of peripheral in runtime
@@ -387,7 +384,7 @@ class MemoryConfig(BaseClass):
                     f"Cannot create BLHOST script with FCB generation because of missing memory block"
                     f" '{mem_block}' description"
                 )
-            base_address = mem.get("secure_addr", mem["base_addr"])
+            base_address = mem["base_addr"]
             fcb_offset = self.db.get_int(
                 DatabaseManager.BOOTABLE_IMAGE, ["mem_types", self.peripheral, "segments", "fcb"]
             )
@@ -434,7 +431,7 @@ class MemoryConfig(BaseClass):
         :returns: The mentioned dictionary.
         """
         flash_chips = DatabaseManager().db.load_db_cfg_file(
-            os.path.join(SPSDK_DATA_FOLDER_COMMON, "memcfg", "memcfg_data.yaml")
+            get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
         )["flash_chips"]
         ret: Dict[str, Dict[str, Dict[str, Dict[str, List[int]]]]] = {}
         peripherals = [peripheral] if peripheral else MemoryConfig.PERIPHERALS
@@ -460,7 +457,7 @@ class MemoryConfig(BaseClass):
         :returns: The mentioned dictionary.
         """
         flash_chips = DatabaseManager().db.load_db_cfg_file(
-            os.path.join(SPSDK_DATA_FOLDER_COMMON, "memcfg", "memcfg_data.yaml")
+            get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
         )["flash_chips"]
         ret: Dict[str, Dict[str, Dict[str, Dict[str, List[int]]]]] = {}
         peripherals = [peripheral] if peripheral else MemoryConfig.PERIPHERALS
@@ -479,7 +476,7 @@ class MemoryConfig(BaseClass):
         flash_chips: Dict[
             str, Dict[str, Dict[str, Dict[str, List[int]]]]
         ] = DatabaseManager().db.load_db_cfg_file(
-            os.path.join(SPSDK_DATA_FOLDER_COMMON, "memcfg", "memcfg_data.yaml")
+            get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
         )[
             "flash_chips"
         ]
@@ -503,7 +500,7 @@ class MemoryConfig(BaseClass):
         :returns: The List of option words.
         """
         flash_chips = DatabaseManager().db.load_db_cfg_file(
-            os.path.join(SPSDK_DATA_FOLDER_COMMON, "memcfg", "memcfg_data.yaml")
+            get_common_data_file_path(os.path.join("memcfg", "memcfg_data.yaml"))
         )["flash_chips"]
         man_db: Dict[str, Dict[str, Dict[str, List[int]]]] = flash_chips[peripheral]
         for _, chips in man_db.items():

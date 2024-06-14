@@ -128,6 +128,29 @@ def _print_validation_fail_reason(
     :return: String explaining the reason of fail.
     """
 
+    def process_one_of_rule(
+        exception: fastjsonschema.JsonSchemaValueException,
+        extra_formatters: Optional[Dict[str, Callable[[str], bool]]],
+    ) -> str:
+        message = ""
+        for rule_def in exception.rule_definition:
+            try:
+                # Validate only the rules that apply to exception.value
+                required = rule_def.get("required")
+                if required and required[0] in exception.value:
+                    validator = fastjsonschema.compile(rule_def, formats=extra_formatters)
+                    validator(exception.value)
+            except fastjsonschema.JsonSchemaValueException as _exc:
+                message += (
+                    f"\nReason of fail for oneOf rule '{required[0]}': "
+                    f"\n {_print_validation_fail_reason(_exc , extra_formatters)}\n"
+                )
+        if not message and all(rule_def.get("required") for rule_def in exception.rule_definition):
+            message += f"\nYou need to define {exception.rule} of the following sets:"
+            for rule_def in exc.rule_definition:
+                message += f" {rule_def['required']}"
+        return message
+
     def process_nested_rule(
         exception: fastjsonschema.JsonSchemaValueException,
         extra_formatters: Optional[Dict[str, Callable[[str], bool]]],
@@ -160,7 +183,7 @@ def _print_validation_fail_reason(
     elif exc.rule == "anyOf":
         message += process_nested_rule(exc, extra_formatters=extra_formatters)
     elif exc.rule == "oneOf":
-        message += process_nested_rule(exc, extra_formatters=extra_formatters)
+        message += process_one_of_rule(exc, extra_formatters=extra_formatters)
     return message
 
 
@@ -480,7 +503,7 @@ class CommentedConfig:
         if len(one_of_mod) == 1:
             return self._get_schema_value(one_of_mod[0], custom_value)
 
-        option_types = ", ".join([get_help_name(x) for x in one_of_mod])
+        option_types = ", ".join([x.get("template_title", get_help_name(x)) for x in one_of_mod])
         title = f"List of possible {len(one_of_mod)} options."
         for i, option in enumerate(one_of_mod):
             if option.get("type") != "object":
@@ -493,9 +516,14 @@ class CommentedConfig:
             comment = ""
             if i == 0:
                 comment = self._get_title_block(title, f"Options [{option_types}]") + "\n"
+
             comment += "\n " + (
-                f" [Example of possible configuration #{i}] ".center(self.max_line, "=")
-            )
+                f" [Example of possible configuration: #{i} "
+                + f"{option.get('template_title', '')}, erase if not used] "
+            ).center(self.max_line, "=")
+            description = option.get("description")
+            if description:
+                comment += "\n" + description
             self._update_before_comment(cfg=ret, key=key, comment=comment)
         return ret
 
@@ -540,7 +568,9 @@ class CommentedConfig:
             else:
                 ret = get_custom_or_template()
 
-        assert isinstance(ret, (CMap, CSeq, str, int, float, list))
+        assert isinstance(
+            ret, (CMap, CSeq, str, int, float, list)
+        ), f"{ret} is wrong object instance"
 
         return ret
 
@@ -566,7 +596,7 @@ class CommentedConfig:
         template_title = schema.get("template_title")
         title = schema.get("title", "")
         descr = schema.get("description", "")
-        enum_list = schema.get("enum", schema.get("enum_template", []))
+        enum_list = schema.get("enum_template", schema.get("enum", []))
         enum = ""
 
         if len(enum_list):
@@ -597,8 +627,7 @@ class CommentedConfig:
         if template_title:
             self._update_before_comment(cfg, key, "\n" + self._get_title_block(template_title))
 
-    @staticmethod
-    def _get_schema_block_keys(schema: Dict[str, Dict[str, Any]]) -> List[str]:
+    def _get_schema_block_keys(self, schema: Dict[str, Dict[str, Any]]) -> List[str]:
         """Creates list of property keys in given schema.
 
         :param schema: Input schema piece.
@@ -609,7 +638,10 @@ class CommentedConfig:
         return [
             key
             for key in schema["properties"]
-            if schema["properties"][key].get("skip_in_template", False) == False
+            if (
+                schema["properties"][key].get("skip_in_template", False) == False
+                or self.creating_configuration
+            )
         ]
 
     def _update_before_comment(
@@ -633,7 +665,7 @@ class CommentedConfig:
             comments[1] = []
         new_lines = comment.splitlines()
         new_lines.reverse()
-        start_mark = CommentMark(SPSDK_YML_INDENT * (self.indent - 1))
+        start_mark = CommentMark(max(SPSDK_YML_INDENT * (self.indent - 1), 0))
         for c in new_lines:
             comments[1].insert(0, comment_token(c, start_mark))
 

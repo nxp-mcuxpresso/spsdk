@@ -22,10 +22,8 @@ from spsdk.exceptions import (
     SPSDKSyntaxError,
     SPSDKValueError,
 )
-from spsdk.utils.misc import align, align_block, extend_block, size_fmt
-
-from .bee import BEE_ENCR_BLOCK_SIZE, BeeRegionHeader
-from .commands import (
+from spsdk.image.bee import BEE_ENCR_BLOCK_SIZE, BeeRegionHeader
+from spsdk.image.commands import (
     CmdAuthData,
     CmdBase,
     CmdCheckData,
@@ -38,8 +36,9 @@ from .commands import (
     EnumWriteOps,
     parse_command,
 )
-from .header import Header, Header2, SegTag
-from .secret import MAC, BaseSecretClass
+from spsdk.image.header import Header, Header2, SegTag
+from spsdk.image.secret import MAC, BaseSecretClass
+from spsdk.utils.misc import align, align_block, extend_block, size_fmt
 
 logger = logging.getLogger(__name__)
 TEST = True

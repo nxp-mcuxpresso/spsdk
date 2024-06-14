@@ -18,9 +18,9 @@ from spsdk.apps.utils import spsdk_logger
 from spsdk.apps.utils.common_cli_options import (
     FC,
     CommandsTreeGroup,
-    isp_interfaces,
     spsdk_apps_common_options,
     spsdk_config_option,
+    spsdk_mboot_interface,
     spsdk_output_option,
 )
 from spsdk.apps.utils.utils import SPSDKAppError, catch_spsdk_error, format_raw_data
@@ -28,10 +28,8 @@ from spsdk.crypto.utils import extract_public_keys
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
-from spsdk.mboot.scanner import get_mboot_interface
-from spsdk.pfr import pfr
 from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
-from spsdk.pfr.pfr import CFPA, CMPA, BaseConfigArea
+from spsdk.pfr.pfr import CFPA, CMPA, BaseConfigArea, get_ifr_pfr_class
 from spsdk.pfr.pfrc import Pfrc
 from spsdk.utils.crypto.cert_blocks import get_keys_or_rotkh_from_certblock_config
 from spsdk.utils.misc import load_binary, load_configuration, size_fmt, write_file
@@ -54,11 +52,6 @@ def _store_output(
         write_file(data, path=path, mode=mode)
 
 
-def _get_pfr_class(area_name: str) -> Type[BaseConfigArea]:
-    """Return CMPA/CFPA class based on the name."""
-    return getattr(pfr, area_name.upper())
-
-
 def pfr_device_type_options(no_type: bool = False) -> Callable:
     """PFR common device click options.
 
@@ -77,7 +70,7 @@ def pfr_device_type_options(no_type: bool = False) -> Callable:
         options = click.option(
             "-f",
             "--family",
-            type=click.Choice(CMPA.get_supported_families()),
+            type=click.Choice(CMPA.get_supported_families(), case_sensitive=False),
             help="Device to use",
             required=True,
         )(options)
@@ -87,7 +80,7 @@ def pfr_device_type_options(no_type: bool = False) -> Callable:
                 "--type",
                 "area",
                 required=True,
-                type=click.Choice(["cmpa", "cfpa"]),
+                type=click.Choice(["cmpa", "cfpa"], case_sensitive=False),
                 help="Select PFR partition",
             )(options)
         return options
@@ -113,7 +106,7 @@ def get_template(family: str, revision: str, area: str, output: str, full: bool)
     """Generate user configuration template file."""
     if full:
         logger.warning("The computed values are not part of configuration of PFR anymore.")
-    pfr_cls = _get_pfr_class(area)
+    pfr_cls = get_ifr_pfr_class(area, family)
     schemas = pfr_cls.get_validation_schemas(family=family, revision=revision)
     yaml_data = CommentedConfig(
         f"PFR {area.upper()} configuration template", schemas
@@ -174,7 +167,7 @@ def _parse_binary_data(
     data: bytes,
     family: str,
     area: str,
-    revision: Optional[str] = None,
+    revision: str = "latest",
     show_diff: bool = False,
 ) -> str:
     """Parse binary data and extract YAML configuration.
@@ -187,12 +180,12 @@ def _parse_binary_data(
     :param show_diff: Show only difference to default
     :return: PFR YAML configuration as a string
     """
-    pfr_obj = _get_pfr_class(area)(family=family, revision=revision)
+    pfr_obj = get_ifr_pfr_class(area, family)(family=family, revision=revision)
     pfr_obj.parse(data)
     parsed = pfr_obj.get_config(diff=show_diff)
     schemas = pfr_obj.get_validation_schemas(family)
     yaml_data = CommentedConfig(
-        f"PFR {area.upper()} configuration from parsed binary", schemas=schemas
+        f"PFR/IFR {area.upper()} configuration from parsed binary", schemas=schemas
     ).get_config(parsed)
     return yaml_data
 
@@ -203,7 +196,7 @@ def _parse_binary_data(
     "-e",
     "--rot-config",
     type=click.Path(exists=True, dir_okay=False),
-    help="Specify Root Of Trust from MBI or Cert block configuration file",
+    help="Specify Root Of Trust from MBI or Cert block configuration file/binary file",
 )
 @optgroup.option(
     "-sf",
@@ -228,11 +221,10 @@ def _parse_binary_data(
     help="Password when using Encrypted private keys as --secret-file",
 )
 @click.option(
-    "-x",
-    "--force",
+    "--ignore",
     is_flag=True,
     default=False,
-    help="Force to generate binary even the config validation fails.",
+    help="Ignore validation failures and generate the binary.",
 )
 def generate_binary(
     output: str,
@@ -242,12 +234,12 @@ def generate_binary(
     rot_config: str,
     secret_file: Tuple[str],
     password: str,
-    force: bool,
+    ignore: bool,
 ) -> None:
     """Generate binary data."""
     if calc_inverse:
         logger.warning(
-            "The calc-inverse option is obsolete option. THe current behavior is following:\n"
+            "The calc-inverse option is obsolete option. The current behavior is following:\n"
             "In case that the family support also values for computed fields like LPC55s6x"
             "the inverse fields won't be computed when is not used in configuration, otherwise"
             "it will be updated correctly.\n"
@@ -276,7 +268,7 @@ def generate_binary(
         else:
             log_text = f"PFRC results: passed: {len(rules[0])}, failed: {len(rules[1])}, ignored: {len(rules[2])}"
             if rules[1]:
-                if force:
+                if ignore:
                     logger.warning(log_text)
                 else:
                     raise SPSDKError(log_text)
@@ -295,14 +287,7 @@ def generate_binary(
 
 
 @main.command(name="write", no_args_is_help=True)
-@isp_interfaces(
-    uart=True,
-    usb=True,
-    lpcusbsio=True,
-    buspal=True,
-    json_option=False,
-    use_long_timeout_option=True,
-)
+@spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
 @pfr_device_type_options()
 @click.option(
     "-b",
@@ -318,11 +303,7 @@ def generate_binary(
     help="Path to the PFR YAML config to write.",
 )
 def write(
-    port: str,
-    usb: str,
-    buspal: str,
-    lpcusbsio: str,
-    timeout: int,
+    interface: MbootProtocolBase,
     family: str,
     revision: str,
     area: str,
@@ -332,9 +313,9 @@ def write(
     """Write PFR page to the device."""
     if not binary and not yaml_config:
         raise SPSDKPfrError("The path to the PFR data file was not specified!")
-
+    data = b""
     if binary:
-        pfr_obj = _get_pfr_class(area)(family=family, revision=revision)
+        pfr_obj = get_ifr_pfr_class(area, family)(family=family, revision=revision)
         data = load_binary(binary)
     elif yaml_config:
         cfg = load_configuration(yaml_config)
@@ -344,13 +325,13 @@ def write(
             raise SPSDKAppError(
                 "Configuration area doesn't match CLI value and configuration value."
             )
-        pfr_cls = _get_pfr_class(area)
+        pfr_cls = get_ifr_pfr_class(area, family)
         pfr_cls.validate_config(cfg)
         pfr_obj = pfr_cls.load_from_config(cfg)
         if family != pfr_obj.family:
             raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
         data = pfr_obj.export()
-    pfr_page_address = pfr_obj.reg_config.get_address()
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, pfr_obj.DB_SUB_KEYS + ["address"])
     pfr_page_length = pfr_obj.BINARY_SIZE
 
     click.echo(f"{pfr_obj.__class__.__name__} page address on {family} is {pfr_page_address:#x}")
@@ -359,11 +340,6 @@ def write(
         raise SPSDKError(
             f"PFR page length is {pfr_page_length}. Provided binary has {size_fmt(len(data))}."
         )
-
-    interface = get_mboot_interface(
-        port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
-    )
-    assert isinstance(interface, MbootProtocolBase)
     with McuBoot(interface=interface) as mboot:
         mboot.write_memory(address=pfr_page_address, data=data)
     click.echo(
@@ -372,14 +348,7 @@ def write(
 
 
 @main.command(name="read", no_args_is_help=True)
-@isp_interfaces(
-    uart=True,
-    usb=True,
-    lpcusbsio=True,
-    buspal=True,
-    json_option=False,
-    use_long_timeout_option=True,
-)
+@spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
 @pfr_device_type_options()
 @spsdk_output_option(
     required=False,
@@ -407,11 +376,7 @@ def write(
     "defaults (--show-diff)",
 )
 def read(
-    port: str,
-    usb: str,
-    buspal: str,
-    lpcusbsio: str,
-    timeout: int,
+    interface: MbootProtocolBase,
     family: str,
     revision: str,
     area: str,
@@ -426,17 +391,13 @@ def read(
             "Show calculated fields is obsolete function for configuration YAML files."
             " In case of debugging those values check the binary data."
         )
-    pfr_obj = _get_pfr_class(area)(family=family, revision=revision)
-    pfr_page_address = pfr_obj.reg_config.get_address()
+    pfr_obj = get_ifr_pfr_class(area, family)(family=family, revision=revision)
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, pfr_obj.DB_SUB_KEYS + ["address"])
     pfr_page_length = pfr_obj.BINARY_SIZE
     pfr_page_name = pfr_obj.__class__.__name__
 
     click.echo(f"{pfr_page_name} page address on {family} is {pfr_page_address:#x}")
 
-    interface = get_mboot_interface(
-        port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
-    )
-    assert isinstance(interface, MbootProtocolBase)
     with McuBoot(interface=interface) as mboot:
         data = mboot.read_memory(address=pfr_page_address, length=pfr_page_length)
     if not data:
@@ -460,37 +421,23 @@ def read(
 
 
 @main.command(name="erase-cmpa", no_args_is_help=True)
-@isp_interfaces(
-    uart=True,
-    usb=True,
-    lpcusbsio=True,
-    buspal=True,
-    json_option=False,
-    use_long_timeout_option=True,
-)
+@spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
 @pfr_device_type_options(no_type=True)
 def erase_cmpa(
-    port: str,
-    usb: str,
-    buspal: str,
-    lpcusbsio: str,
-    timeout: int,
+    interface: MbootProtocolBase,
     family: str,
     revision: str,
 ) -> None:
-    """Erase CMPA PFR page in the device if is not sealed."""
-    pfr_obj = _get_pfr_class("cmpa")(family=family, revision=revision)
-    pfr_page_address = pfr_obj.reg_config.get_address()
-    pfr_page_length = pfr_obj.BINARY_SIZE
+    """Erase CMPA PFR page in the device if is not sealed and write the default values into CMPA page."""
+    pfr_obj = get_ifr_pfr_class("cmpa", family)(family=family, revision=revision)
+    pfr_page_address = pfr_obj.db.get_int(pfr_obj.FEATURE_NAME, pfr_obj.DB_SUB_KEYS + ["address"])
+    # Update all possible mandatory fields in PFR block
+    pfr_obj.set_config({})
 
     click.echo(f"CMPA page address on {family} is {pfr_page_address:#x}")
 
-    interface = get_mboot_interface(
-        port=port, usb=usb, buspal=buspal, lpcusbsio=lpcusbsio, timeout=timeout
-    )
-    assert isinstance(interface, MbootProtocolBase)
     with McuBoot(interface=interface) as mboot:
-        mboot.write_memory(address=pfr_page_address, data=bytes(pfr_page_length))
+        mboot.write_memory(address=pfr_page_address, data=pfr_obj.export())
     click.echo(f"CMPA page {'has been erased.' if mboot.status_code == 0 else 'erase failed!'}")
 
 

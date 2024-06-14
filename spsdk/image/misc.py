@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 #
 # Copyright 2017-2018 Martin Olejar
-# Copyright 2019-2023 NXP
+# Copyright 2019-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -12,9 +12,8 @@ from io import SEEK_CUR
 from typing import Optional, Union
 
 from spsdk.exceptions import SPSDKError
+from spsdk.image.header import Header
 from spsdk.utils.registers import value_to_int
-
-from .header import Header
 
 
 class RawDataException(SPSDKError):

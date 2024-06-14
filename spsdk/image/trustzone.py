@@ -104,7 +104,7 @@ class TrustZone:
 
         if self.type == TrustZoneType.CUSTOM:
             self.presets: dict = DatabaseManager().db.load_db_cfg_file(
-                get_db(family, revision).get_file_path(DatabaseManager.TZ, "data_file")
+                get_db(family, revision).get_file_path(DatabaseManager.TZ, "reg_spec")
             )
             if raw_data:
                 self.customs = self._parse_raw_data(raw_data)
@@ -128,7 +128,7 @@ class TrustZone:
         """
         database = get_db(family, revision)
         data = DatabaseManager().db.load_db_cfg_file(
-            database.get_file_path(DatabaseManager.TZ, "data_file")
+            database.get_file_path(DatabaseManager.TZ, "reg_spec")
         )
         return len(data) * 4
 
@@ -157,7 +157,7 @@ class TrustZone:
         try:
             database = get_db(family, revision)
             presets = DatabaseManager().db.load_db_cfg_file(
-                database.get_file_path(DatabaseManager.TZ, "data_file")
+                database.get_file_path(DatabaseManager.TZ, "reg_spec")
             )
             for key, value in presets.items():
                 preset_properties[key] = {
@@ -237,7 +237,10 @@ class TrustZone:
             raise SPSDKError("Data not present")
         modifications = set(self.customs.items()) - set(self.presets.items())
         logger.info(f"{len(modifications)} modifications provided")
-        logger.debug(str(modifications).replace(", ", "\n"))
+        if (
+            logger.getEffectiveLevel() <= logging.DEBUG
+        ):  # Do this additional condition to avoid creating of huge strings used for debug
+            logger.debug(str(modifications).replace(", ", "\n"))
         data = self.presets
         data.update(self.customs)
         registers = [value_to_int(item) for item in data.values()]

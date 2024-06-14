@@ -10,6 +10,71 @@
 Release Notes
 =============
 
+**ANNOUNCEMENT**
+
+Current version introduces breaking changes, which are described in details in `migration guide`_.
+
+--------------------
+2.2.0 (7-June-2024)
+--------------------
+
+**New features**
+
+* :ref:`blhost`:
+    - add can interface
+* :ref:`EL2GO`:
+    - support for mwct2x12, mwct2xd2
+* :ref:`ifr`:
+    - add option to configure sector 2
+* :ref:`nxpdebugmbox`:
+    - add family and revision info into DAC config file
+* :ref:`nxpdevhsm`:
+    - commands limited based on specific devices capabilities
+* :ref:`nxpele`:
+    - add fuses script
+* :ref:`nxpimage`:
+    - add support for RAW image
+    - add re-sign subcommand to ahab
+    - support parsing FCB block with swapped bytes
+    - support MBI CRC for mwct2x12, mwct2xd2, mc56f818xx, mc56f817xx
+    - support BinaryImage in MBI export
+    - support i.MX 95 unsigned build image
+* :ref:`nxpwpc`:
+    - add correlation-id into REST request
+* drop support for Python 3.8
+* support NHS52Sxx, mcxw71xx
+* support RW61x EL2Go
+* P&E Micro and J-Link as separate plugins
+* all options in sub-commands case-insensitive
+
+**Bugfixes**
+
+* :ref:`nxpdebugmbox`:
+    - fix debug authentication on NHS52Sxx
+    - fix generation of DC config file
+    - fix dac response length on kw45xx
+* :ref:`nxpele`:
+    - fix timeout
+    - fix verify image for i.mx93
+    - fix failure in communication with uboot
+* :ref:`nxpimage`:
+    - fix signed-msg incorrect signature
+    - fix wrong offset in FCB
+    - fix xmcd generation
+    - fix mbi export
+    - fix ahab with invalid SRK
+    - fix bootable-image for RW61x
+    - fix mbi config for kw45xx
+    - fix bootable-image with dynamic offset segments
+    - fix inconsistent core ID in parser and export
+* `pfr`_:
+    - fix generate-binary argument position
+    - fix generating cmpa template for mcxa1xx
+    - fix default cmpa page for mcxa1xx
+* :ref:`shadowregs`:
+    - fix shadow registers on RW61x
+    - fix loadconfig command
+
 ----------------------
 2.1.1 (27-March-2024)
 ----------------------

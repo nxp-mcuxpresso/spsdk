@@ -111,14 +111,6 @@ Registers descriptions with support for XML files
    :show-inheritance:
 
 
-Register's configuration
-------------------------
-.. automodule:: spsdk.utils.reg_config
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 USB Device Scanner
 ---------------------
 .. automodule:: spsdk.utils.nxpdevscan

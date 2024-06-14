@@ -10,22 +10,21 @@ import os
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc, PublicKeyEcc
-from spsdk.crypto.types import SPSDKEncoding
-from spsdk.utils.database import DatabaseManager, get_schema_file
-from spsdk.utils.misc import load_binary, write_file
-
-from ..data_container import (
+from spsdk.tp.adapters.model_utils import ModelConfig, get_models_configs
+from spsdk.tp.adapters.utils import OEMKeyFlags, TPFlags
+from spsdk.tp.data_container import (
     AuthenticationType,
     Container,
     DataDestinationEntry,
     DataEntry,
     PayloadType,
 )
-from ..exceptions import SPSDKTpError
-from ..tp_intf import TpIntfDescription, TpTargetInterface
-from .model_utils import ModelConfig, get_models_configs
-from .utils import OEMKeyFlags, TPFlags
+from spsdk.tp.exceptions import SPSDKTpError
+from spsdk.tp.tp_intf import TpIntfDescription, TpTargetInterface
+from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.misc import load_binary, write_file
 
 logger = logging.getLogger(__name__)
 

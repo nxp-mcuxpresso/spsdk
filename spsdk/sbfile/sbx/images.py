@@ -12,12 +12,12 @@ from struct import calcsize, pack, unpack_from
 from typing import Any, Dict, List, Optional, Union
 
 from spsdk.crypto.hash import get_hash
-from spsdk.crypto.hmac import hmac
 from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
+from spsdk.crypto.spsdk_hmac import hmac
 from spsdk.exceptions import SPSDKError, SPSDKParsingError
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
 from spsdk.utils.abstract import BaseClass
-from spsdk.utils.database import DatabaseManager, get_schema_file
+from spsdk.utils.database import DatabaseManager, get_db, get_families, get_schema_file
 from spsdk.utils.misc import align_block, value_to_int
 from spsdk.utils.schema_validator import CommentedConfig
 
@@ -483,10 +483,11 @@ class SecureBinaryX(BaseClass):
 
     @classmethod
     def get_validation_schemas(
-        cls, include_test_configuration: bool = False
+        cls, family: str, include_test_configuration: bool = False
     ) -> List[Dict[str, Any]]:
         """Create the list of validation schemas.
 
+        :param family: Family description.
         :param include_test_configuration: Add also testing configuration schemas.
         :return: List of validation schemas.
         """
@@ -523,6 +524,7 @@ class SecureBinaryX(BaseClass):
         for schema in ret:
             if "properties" in schema and "family" in schema["properties"]:
                 schema["properties"]["family"]["enum"] = cls.get_supported_families()
+                schema["properties"]["family"]["template_value"] = family
                 break
         return ret
 
@@ -653,14 +655,18 @@ class SecureBinaryX(BaseClass):
 
     @staticmethod
     def get_supported_families() -> List[str]:
-        """Return list of supported families.
+        """Get the list of supported families by Device HSM.
 
         :return: List of supported families.
         """
-        sbx_sch_cfg = get_schema_file(DatabaseManager.SBX)
-        sbx_families = sbx_sch_cfg["sbx_family"]
-
-        return sbx_families["properties"]["family"]["enum"]
+        families = get_families(DatabaseManager.DEVHSM)
+        families = [
+            family
+            for family in families
+            if get_db(family, "latest").get_str(DatabaseManager.DEVHSM, "devhsm_class")
+            == "DevHsmSBx"
+        ]
+        return families
 
     @classmethod
     def generate_config_template(cls, family: str) -> Dict[str, str]:
@@ -672,13 +678,8 @@ class SecureBinaryX(BaseClass):
         ret: Dict[str, str] = {}
 
         if family in cls.get_supported_families():
-            schemas = cls.get_validation_schemas()
-            schemas.append(DatabaseManager().db.get_schema_file(DatabaseManager.SBX)["sbx_output"])
-            # find family
-            for schema in schemas:
-                if "properties" in schema and "family" in schema["properties"]:
-                    schema["properties"]["family"]["template_value"] = family
-                    break
+            schemas = cls.get_validation_schemas(family)
+            schemas.append(get_schema_file(DatabaseManager.SBX)["sbx_output"])
 
             yaml_data = CommentedConfig(
                 f"Secure Binary X Configuration template for {family}.", schemas

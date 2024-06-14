@@ -13,11 +13,7 @@ from typing import Any, Dict, List, Optional
 from typing_extensions import Self
 
 from spsdk.crypto.hash import EnumHashAlgorithm, get_hash, get_hash_length
-from spsdk.crypto.signature_provider import (
-    SignatureProvider,
-    get_signature_provider,
-    try_to_verify_public_key,
-)
+from spsdk.crypto.signature_provider import SignatureProvider, get_signature_provider
 from spsdk.crypto.symmetric import aes_cbc_encrypt
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.sbfile.sb31.commands import CFG_NAME_TO_CLASS, CmdSectionHeader, MainCmd
@@ -498,7 +494,9 @@ class SecureBinary31(BaseClass):
             for command in list_of_commands
             if list(command["properties"].keys())[0] in supported_commands
         ]
-
+        # The 'commands' are optional for device HSM
+        required: List[str] = schemas[0]["required"]
+        required.remove("commands")
         return schemas
 
     @classmethod
@@ -619,7 +617,7 @@ class SecureBinary31(BaseClass):
             if self.cert_block.isk_certificate and self.cert_block.isk_certificate.isk_cert
             else self.cert_block.root_key_record.root_public_key
         )
-        try_to_verify_public_key(self.signature_provider, public_key)
+        self.signature_provider.try_to_verify_public_key(public_key)
 
         self.cert_block.validate()
         self.sb_header.validate()
@@ -693,7 +691,7 @@ class SecureBinary31(BaseClass):
 
         if family in cls.get_supported_families():
             schemas = cls.get_validation_schemas(family)
-            schemas.append(DatabaseManager().db.get_schema_file(DatabaseManager.SB31)["sb3_output"])
+            schemas.append(get_schema_file(DatabaseManager.SB31)["sb3_output"])
 
             yaml_data = CommentedConfig(
                 f"Secure Binary v3.1 Configuration template for {family}.", schemas
@@ -710,3 +708,13 @@ class SecureBinary31(BaseClass):
         :raises NotImplementedError: Not yet implemented
         """
         raise NotImplementedError("Not yet implemented.")
+
+    @staticmethod
+    def validate_header(binary: bytes) -> None:
+        """Validate SB3.1 header in binary data.
+
+        :param binary: Binary data to be validate
+        :raises SPSDKError: Invalid header of SB3.1 data
+        """
+        sb31_header = SecureBinary31Header.parse(binary)
+        sb31_header.validate()

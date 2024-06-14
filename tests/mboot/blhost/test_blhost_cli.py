@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 """Testing the BLHost application."""
 import os
+import sys
 from unittest.mock import patch
 
 import spsdk
@@ -532,3 +533,10 @@ def test_batch_error(cli_runner: CliRunner, caplog, data_dir):
     cmd = ["-p", "super-com", "batch", command_file]
     result = run_blhost_proxy(cli_runner, caplog, cmd, expect_exit_code=1)
     assert "Unknown command" in str(result.exception)
+
+
+def test_blhost_help(cli_runner: CliRunner, caplog):
+    caplog.set_level(100_000)
+    cmd = ["--help"]
+    result = cli_runner.invoke(blhost.main, cmd)
+    assert "Utility for communication with the bootloader on target" in str(result.output)

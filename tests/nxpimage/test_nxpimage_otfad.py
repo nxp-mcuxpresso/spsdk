@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -48,11 +48,11 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
             "otfad_rt1160.yaml",
             2,
             [
-                "efuse-program-once 128 0xffeeddcc --no-verify",
-                "efuse-program-once 129 0xbbaa9988 --no-verify",
+                "efuse-program-once 128 0xFFEEDDCC --no-verify",
+                "efuse-program-once 129 0xBBAA9988 --no-verify",
                 "efuse-program-once 130 0x77665544 --no-verify",
                 "efuse-program-once 131 0x33221100 --no-verify",
-                "efuse-program-once 71 0x00000000 --no-verify",
+                "efuse-program-once 71 0x00000020 --no-verify",
             ],
             "otfad_rt1160_out.bin",
             "rt116x",
@@ -61,11 +61,10 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
             "otfad_rt1170.yaml",
             2,
             [
-                "efuse-program-once 128 0xffeeddcc --no-verify",
-                "efuse-program-once 129 0xbbaa9988 --no-verify",
+                "efuse-program-once 128 0xFFEEDDCC --no-verify",
+                "efuse-program-once 129 0xBBAA9988 --no-verify",
                 "efuse-program-once 130 0x77665544 --no-verify",
                 "efuse-program-once 131 0x33221100 --no-verify",
-                "efuse-program-once 71 0x00000000 --no-verify",
             ],
             "otfad_rt1170_out.bin",
             "rt117x",
@@ -74,7 +73,7 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
             "otfad_rt1180.yaml",
             2,
             [
-                "efuse-program-once 178 0xffeeddcc --no-verify",
+                "efuse-program-once 178 0xFFEEDDCC --no-verify",
                 "efuse-program-once 182 0x00000008 --no-verify",
             ],
             "otfad_rt1180_out.bin",
@@ -84,7 +83,7 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
             "otfad_rt1180_txt.yaml",
             2,
             [
-                "efuse-program-once 178 0xffeeddcc --no-verify",
+                "efuse-program-once 178 0xFFEEDDCC --no-verify",
                 "efuse-program-once 182 0x00000008 --no-verify",
             ],
             "otfad_rt1180_out.bin",
@@ -94,7 +93,7 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
             "otfad_rt1180_scramble.yaml",
             2,
             [
-                "efuse-program-once 178 0xffeeddcc --no-verify",
+                "efuse-program-once 178 0xFFEEDDCC --no-verify",
                 "efuse-program-once 182 0x00007288 --no-verify",
                 "efuse-program-once 183 0x78563412 --no-verify",
             ],
@@ -105,11 +104,11 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
             "otfad_rt1170_scramble.yaml",
             1,
             [
-                "efuse-program-once 128 0xffeeddcc --no-verify",
-                "efuse-program-once 129 0xbbaa9988 --no-verify",
+                "efuse-program-once 128 0xFFEEDDCC --no-verify",
+                "efuse-program-once 129 0xBBAA9988 --no-verify",
                 "efuse-program-once 130 0x77665544 --no-verify",
                 "efuse-program-once 131 0x33221100 --no-verify",
-                "efuse-program-once 71 0x00000001 --no-verify",
+                "efuse-program-once 71 0x00000003 --no-verify",
                 "efuse-program-once 132 0x78563412 --no-verify",
                 "efuse-program-once 133 0x00000072 --no-verify",
             ],
@@ -120,13 +119,13 @@ def test_nxpimage_otfad_export(cli_runner: CliRunner, tmpdir, data_dir, config):
             "otfad_rt1010_scramble.yaml",
             1,
             [
-                "efuse-program-once 41 0xffeeddcc --no-verify",
+                "efuse-program-once 41 0xFFEEDDCC --no-verify",
                 "efuse-program-once 44 0x33221100 --no-verify",
                 "efuse-program-once 35 0x00000572 --no-verify",
                 "efuse-program-once 34 0x78563412 --no-verify",
             ],
-            "otfad_rt1170_scramble_out.bin",
-            "rt101x",
+            "otfad_rt1010_scramble_out.bin",
+            "rt1010",
         ),
     ],
 )
@@ -204,7 +203,7 @@ def test_nxpimage_otfad_kek_cli(cli_runner: CliRunner, tmpdir, data_dir, omk, ok
             "000102030405060708090a0b0c0d0e0f",
             "rt5xx",
             [
-                "efuse-program-once 112 0x1c1d1e1f --no-verify",
+                "efuse-program-once 112 0x1C1D1E1F --no-verify",
                 "efuse-program-once 108 0x03020100 --no-verify",
             ],
         ),
@@ -213,7 +212,7 @@ def test_nxpimage_otfad_kek_cli(cli_runner: CliRunner, tmpdir, data_dir, omk, ok
             "000102030405060708090a0b0c0d0e0f",
             "rt6xx",
             [
-                "efuse-program-once 112 0x1c1d1e1f --no-verify",
+                "efuse-program-once 112 0x1C1D1E1F --no-verify",
                 "efuse-program-once 108 0x03020100 --no-verify",
             ],
         ),
@@ -221,7 +220,7 @@ def test_nxpimage_otfad_kek_cli(cli_runner: CliRunner, tmpdir, data_dir, omk, ok
 )
 def test_nxpimage_otfad_keys_blhost(omk, ok, family, results):
     blhost_script = OtfadNxp.get_blhost_script_otp_keys(
-        family, otp_master_key=bytes.fromhex(omk), otfad_key_seed=bytes.fromhex(ok)
+        family, otp_master_key=bytes.fromhex(omk), otfad_kek_seed=bytes.fromhex(ok)
     )
     assert len(blhost_script)
     for result in results:
@@ -233,7 +232,7 @@ def test_nxpimage_otfad_keys_blhost(omk, ok, family, results):
     [
         ("rt5xx"),
         ("rt6xx"),
-        ("rt101x"),
+        ("rt1010"),
         ("rt116x"),
         ("rt117x"),
         ("rt118x"),

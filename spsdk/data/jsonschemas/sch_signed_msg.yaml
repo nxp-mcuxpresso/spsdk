@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 ---
@@ -83,7 +83,7 @@ properties:
   signature_provider:
     type: string
     title: Signature Provider
-    description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>". The signature provider could be used instead of definition of 'signing_key'.
+    description: Signature provider configuration in format 'type=<sp_type>;<key1>=<value1>;<key2>=<value2>'. The signature provider could be used instead of definition of 'signing_key'.
     template_value: type=file;file_path=my_prv_key.pem
 
   srk_table:
@@ -93,14 +93,19 @@ properties:
     description: "SRK (Super Root key) table definition."
     required: [srk_array]
     properties:
+      flag_ca:
+        type: boolean
+        title: CA Flag
+        description: CA Flag is used by HAB to indicate if the SRK is allowed to sign other keys
+        template_value: false
       srk_array:
         type: array
         title: Super Root Key (SRK) table
         description:
           "Table containing the used SRK records. All SRKs must be of the same
-          type. Supported signing algorithms are: RSASSA-PSS or ECDSA. Supported hash algorithms:
-          sha256, sha384, sha512. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
-          rsa2048, rsa4096. Certificate may be of Certificate Authority."
+          type. Supported signing algorithms are: RSASSA-PSS, ECDSA or SM2. Supported hash algorithms:
+          sha256, sha384, sha512, sm3. Supported key sizes/curves: prime256v1, sec384r1, sec512r1,
+          rsa2048, rsa4096, sm2. Certificate may be of Certificate Authority."
         minItems: 4
         maxItems: 4
         items:

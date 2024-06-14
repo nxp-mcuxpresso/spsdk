@@ -1,4 +1,4 @@
-# Copyright 2023 NXP
+# Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -6,13 +6,13 @@ revisions:
   a0:
     features:
       tz:
-        data_file: tz_a0.yaml
+        reg_spec: tz_a0.yaml
   a1: {}
 latest: a1
 
 # General MCU information
 info:
-  purpose: General Purpose Processor
+  purpose: LPC5500 Series
   # Web page of MCU representative
   web: https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc5500-cortex-m33/lpc552x-s2x-mainstream-arm-cortex-m33-based-microcontroller-family:LPC552x-S2x
   memory_map: # Memory map basic info
@@ -32,11 +32,12 @@ info:
       base_addr: 0x4000000
       size: 0x8000
       external: false
-  # isp:
-  #   mboot_interfaces: [usb, uart, spi, i2c]
-  #   usb_rom:
-  #     vid: 0x1FC9
-  #     pid: 0x0021
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x0021
 
 features:
   # ======== Communication buffer section ========
@@ -55,11 +56,11 @@ features:
   # ======== MBI section ========
   mbi:
     mbi_classes:
-      plain:
+      plain_xip:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinIvt
+          - Mbi_MixinIvtZeroTotalLength
           - Mbi_MixinTrustZone
           - Mbi_ExportMixinAppTrustZone
       crc_ram:
@@ -100,7 +101,7 @@ features:
           - Mbi_ExportMixinRsaSign
     images:
       xip:
-        plain: plain
+        plain: plain_xip
         crc: crc_xip
         signed: signed_xip
       load_to_ram:
@@ -112,35 +113,45 @@ features:
     cfpa: # CFPA description
       address: 0x9_DE00
       size: 512
-      data_file: pfr_cfpa.xml
-      seal_start: SHA256_DIGEST0
+      reg_spec: pfr_cfpa.json
+      seal_start: field1E0 # SHA256_DIGEST0
       seal_count: 8
       computed_fields:
-        VENDOR_USAGE:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
-        DCFG_CC_SOCU_NS_PIN:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
-        DCFG_CC_SOCU_NS_DFLT:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
+        field01C: # VENDOR_USAGE
+          field01C-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field020: # DCFG_CC_SOCU_NS_PIN
+          field020-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field024: # DCFG_CC_SOCU_NS_DFLT
+          field024-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
     cmpa: # CMPA description
       address: 0x9_E400
       size: 512
-      data_file: pfr_cmpa.xml
-      seal_start: SHA256_DIGEST0
+      reg_spec: pfr_cmpa.json
+      seal_start: field1E0 # SHA256_DIGEST0
       seal_count: 8
       grouped_registers:
-        - name: ROTKH
+        - uid: cmpa_rotkh
+          name: ROTKH
           width: 256
           config_as_hexstring: true
           reversed: true
           description:
             ROTKH field is compounded by 8 32-bit fields and contains Root key
             table hash
+          sub_regs:
+            - field050
+            - field054
+            - field058
+            - field05C
+            - field060
+            - field064
+            - field068
+            - field06C
       computed_fields:
-        DCFG_CC_SOCU_PIN:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
-        DCFG_CC_SOCU_DFLT:
-          INVERSE_VALUE: pfr_reg_inverse_high_half
+        field010: # DCFG_CC_SOCU_PIN
+          field010-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
+        field014: # DCFG_CC_SOCU_DFLT
+          field014-bits16-31: pfr_reg_inverse_high_half # INVERSE_VALUE
     rules:
       - ../../common/pfrc_rules.yaml
       - pfrc_rules.yaml
@@ -155,10 +166,17 @@ features:
 
   # ======== TrustZone section ========
   tz:
-    data_file: tz.yaml
+    reg_spec: tz.yaml
 
   # ======== Memory configuration ========
   memcfg:
     peripherals:
       spi_nor:
         instances: [3]
+
+  # ======== Bootable image section ========
+  bootable_image:
+    mem_types:
+      recovery_spi:
+        segments:
+          sb21: 0x00

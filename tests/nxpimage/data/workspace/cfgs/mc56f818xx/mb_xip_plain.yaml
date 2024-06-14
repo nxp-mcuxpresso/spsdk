@@ -1,0 +1,14 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+---
+# ----------------------------------------------------------------------------------------------------
+# ===========  Master Boot Image Configuration template for mc56f818xx, Plain Signed XIP Image.  ===========
+# ----------------------------------------------------------------------------------------------------
+#                                         == Basic Settings ==
+family: mc56f818xx # [Required], MCU family name; Possible options:['mc56f818xx']
+outputImageExecutionTarget: Internal flash (XIP) # [Required], Application target; Definition if application is Execute in Place(XiP) or loaded to RAM during reset sequence; Possible options:['Internal flash (XIP)', 'External flash (XIP)', 'Internal Flash (XIP)', 'External Flash (XIP)', 'RAM', 'ram', 'xip']
+outputImageAuthenticationType: Plain # [Required], Type of boot image authentication; Specification of final master boot image authentication; Possible options:['Plain', 'CRC', 'Signed', 'Encrypted + Signed', 'encrypted', 'signed', 'crc']
+inputImageFile: "./workspace/input_images/mc56xx_flash_image_short.bin" # [Required], Plain application image; The input application image to by modified to Master Boot Image.
+masterBootOutputFile: "./workspace/output_images/mc56f818xx/mb_xip_plain.bin" # [Required], Master Boot Image name; The file for Master Boot Image result file.
+lifeCycle: OEM_CLOSED_ROP1

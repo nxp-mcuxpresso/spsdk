@@ -4,6 +4,8 @@
 # Copyright 2023-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""Script to Generate PC-side certificates (aka NXP_GLOB and NXP_PROD)."""
 import os
 import secrets
 import sys
@@ -11,8 +13,8 @@ import sys
 import click
 
 from spsdk.crypto.certificate import Certificate, generate_extensions, generate_name
+from spsdk.crypto.crypto_types import SPSDKEncoding
 from spsdk.crypto.keys import EccCurve, PrivateKeyEcc
-from spsdk.crypto.types import SPSDKEncoding
 from spsdk.tp.data_container import AuthenticationType, Container, DataEntry, PayloadType
 from spsdk.tp.utils import get_supported_devices
 from spsdk.utils.misc import write_file

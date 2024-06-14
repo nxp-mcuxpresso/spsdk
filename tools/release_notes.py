@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2021-2023 NXP
+# Copyright 2021-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -236,6 +236,7 @@ def main() -> None:
         logging.info("No tickets found in commit messages.")
         sys.exit(1)
 
+    password = ""
     # ask for password if running in online mode, user doesn't uses netrc, but specifies username
     if not args.offline and args.user:
         password = getpass(f"Enter password for '{args.user}': ")

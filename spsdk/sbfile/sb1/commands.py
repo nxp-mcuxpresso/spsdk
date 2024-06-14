@@ -10,8 +10,7 @@
 from typing import Mapping, Type
 
 from spsdk.exceptions import SPSDKError
-
-from ..sb2.commands import (
+from spsdk.sbfile.sb2.commands import (
     CmdBaseClass,
     CmdCall,
     CmdErase,

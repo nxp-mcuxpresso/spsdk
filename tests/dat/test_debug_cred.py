@@ -11,10 +11,9 @@
 import pytest
 import yaml
 
-from spsdk.apps.nxpdebugmbox import DatProtocol
 from spsdk.crypto.hash import EnumHashAlgorithm
 from spsdk.crypto.keys import PrivateKeyEcc
-from spsdk.dat.debug_credential import DebugCredential
+from spsdk.dat.debug_credential import DebugCredentialCertificate, ProtocolVersion
 from spsdk.exceptions import SPSDKError, SPSDKValueError
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 
@@ -35,10 +34,10 @@ def test_determine_protocol_version(protocol_version, rsa_detected, invalid):
     """Test for checking all available protocol versions."""
     if invalid:
         with pytest.raises(SPSDKValueError):
-            protocol = DatProtocol(protocol_version)
+            protocol = ProtocolVersion(protocol_version)
             protocol.validate()
     else:
-        protocol = DatProtocol(protocol_version)
+        protocol = ProtocolVersion(protocol_version)
         assert protocol.is_rsa() is rsa_detected
 
 
@@ -47,7 +46,9 @@ def test_debugcredential_rsa_compare_with_reference(data_dir):
     with use_working_directory(data_dir):
         with open("new_dck_rsa2048.yml", "r") as f:
             yaml_config = yaml.safe_load(f)
-            dc = DebugCredential.create_from_yaml_config(version="1.0", yaml_config=yaml_config)
+            dc = DebugCredentialCertificate.create_from_yaml_config(
+                version=ProtocolVersion.from_version(1, 0), config=yaml_config
+            )
             dc.sign()
             data = dc.export()
             data_loaded = load_binary("new_dck_rsa2048.cert")
@@ -61,7 +62,9 @@ def test_verify_ecc_signature(data_dir):
     with use_working_directory(data_dir):
         with open("new_dck_secp256.yml", "r") as f:
             yaml_config = yaml.safe_load(f)
-        dc = DebugCredential.create_from_yaml_config(version="2.0", yaml_config=yaml_config)
+        dc = DebugCredentialCertificate.create_from_yaml_config(
+            version=ProtocolVersion.from_version(2, 0), config=yaml_config
+        )
         dc.sign()
         data = dc.export()
         priv_key = PrivateKeyEcc.load(yaml_config["rotk"])
@@ -78,7 +81,9 @@ def test_verify_ecc_signature_lpc55s3x_256(data_dir):
     with use_working_directory(data_dir):
         with open("new_dck_secp256_lpc55s3x.yml", "r") as f:
             yaml_config = yaml.safe_load(f)
-        dc = DebugCredential.create_from_yaml_config(version="2.0", yaml_config=yaml_config)
+        dc = DebugCredentialCertificate.create_from_yaml_config(
+            version=ProtocolVersion("2.0"), config=yaml_config
+        )
         dc.sign()
         data = dc.export()
         priv_key = PrivateKeyEcc.load(yaml_config["rotk"])
@@ -96,7 +101,9 @@ def test_verify_ecc_signature_lpc55s3x_384(data_dir):
     with use_working_directory(data_dir):
         with open("new_dck_secp384_lpc55s3x.yml", "r") as f:
             yaml_config = yaml.safe_load(f)
-        dc = DebugCredential.create_from_yaml_config(version="2.1", yaml_config=yaml_config)
+        dc = DebugCredentialCertificate.create_from_yaml_config(
+            version=ProtocolVersion("2.1"), config=yaml_config
+        )
         dc.sign()
         data = dc.export()
         priv_key = PrivateKeyEcc.load(yaml_config["rotk"])
@@ -113,7 +120,9 @@ def test_debugcredential_ecc_compare_with_reference(data_dir):
     with use_working_directory(data_dir):
         with open("new_dck_secp256.yml", "r") as f:
             yaml_config = yaml.safe_load(f)
-            dc = DebugCredential.create_from_yaml_config(version="2.0", yaml_config=yaml_config)
+            dc = DebugCredentialCertificate.create_from_yaml_config(
+                version=ProtocolVersion("2.0"), config=yaml_config
+            )
             dc.sign()
             data = dc.export()
             priv_key = PrivateKeyEcc.load(yaml_config["rotk"])
@@ -138,10 +147,10 @@ def test_debugcredential_ecc_compare_with_reference(data_dir):
 @pytest.mark.parametrize(
     "yml_file_name, version",
     [
-        ("new_dck_secp256_lpc55s3x.yml", "2.0"),
-        ("new_dck_secp256_lpc55s3x_not_empty.yml", "2.0"),
-        ("new_dck_secp384_lpc55s3x.yml", "2.1"),
-        ("new_dck_secp384_lpc55s3x_not_empty.yml", "2.1"),
+        ("new_dck_secp256_lpc55s3x.yml", ProtocolVersion("2.0")),
+        ("new_dck_secp256_lpc55s3x_not_empty.yml", ProtocolVersion("2.0")),
+        ("new_dck_secp384_lpc55s3x.yml", ProtocolVersion("2.1")),
+        ("new_dck_secp384_lpc55s3x_not_empty.yml", ProtocolVersion("2.1")),
     ],
 )
 def test_lpc55s3x_export_parse(data_dir, yml_file_name, version):
@@ -149,7 +158,7 @@ def test_lpc55s3x_export_parse(data_dir, yml_file_name, version):
     with use_working_directory(data_dir):
         with open(yml_file_name, "r") as f:
             yaml_config = yaml.safe_load(f)
-        dc = DebugCredential.create_from_yaml_config(version=version, yaml_config=yaml_config)
+        dc = DebugCredentialCertificate.create_from_yaml_config(version=version, config=yaml_config)
         dc.sign()
         data = dc.export()
         dc_parsed = dc.parse(data)
@@ -160,7 +169,9 @@ def test_lpc55s3x_export_parse_invalid(data_dir):
     with use_working_directory(data_dir):
         with open("new_dck_secp256_lpc55s3x.yml", "r") as f:
             yaml_config = yaml.safe_load(f)
-        dc = DebugCredential.create_from_yaml_config(version="2.0", yaml_config=yaml_config)
+        dc = DebugCredentialCertificate.create_from_yaml_config(
+            version=ProtocolVersion("2.0"), config=yaml_config
+        )
         dc.sign()
         with pytest.raises(SPSDKValueError):
             dc.parse(bytes(232))
@@ -169,9 +180,9 @@ def test_lpc55s3x_export_parse_invalid(data_dir):
 @pytest.mark.parametrize(
     "dc_file_name, class_name",
     [
-        ("new_dck_rsa2048.cert", "DebugCredentialRSA2048"),
-        ("new_dck_secp256r1.cert", "DebugCredentialECC256"),
-        ("lpc55s3x_dck_secp384r1.cert", "DebugCredentialECC384"),
+        ("new_dck_rsa2048.cert", "DebugCredentialCertificateRsa"),
+        ("new_dck_secp256r1.cert", "DebugCredentialCertificateEcc"),
+        ("lpc55s3x_dck_secp384r1.cert", "DebugCredentialCertificateEcc"),
     ],
 )
 def test_parse(data_dir, dc_file_name, class_name):
@@ -179,7 +190,7 @@ def test_parse(data_dir, dc_file_name, class_name):
     with use_working_directory(data_dir):
         with open(dc_file_name, "rb") as f:
             dc_file = f.read()
-        dc = DebugCredential.parse(dc_file)
+        dc = DebugCredentialCertificate.parse(dc_file)
         assert dc.__class__.__name__ == class_name
 
 
@@ -188,12 +199,12 @@ def test_parse(data_dir, dc_file_name, class_name):
     [
         (
             "new_dck_secp256_lpc55s3x.yml",
-            "2.0",
+            ProtocolVersion("2.0"),
             ["E004090E6BDD2155BBCE9E0665805BE3", "4", "0x3ff", "0x5678", "CRTK table not present"],
         ),
         (
             "new_dck_secp256_lpc55s3x_not_empty.yml",
-            "2.0",
+            ProtocolVersion("2.0"),
             [
                 "E004090E6BDD2155BBCE9E0665805BE3",
                 "4",
@@ -204,7 +215,7 @@ def test_parse(data_dir, dc_file_name, class_name):
         ),
         (
             "new_dck_secp256.yml",
-            "2.0",
+            ProtocolVersion("2.0"),
             ["E004090E6BDD2155BBCE9E0665805BE3", "4", "0x3ff", "0x5678"],
         ),
     ],
@@ -214,7 +225,7 @@ def test_debugcredential_info_lpc55s3x(data_dir, yml_file_name, version, require
     with use_working_directory(data_dir):
         with open(yml_file_name, "r") as f:
             yaml_config = yaml.safe_load(f)
-        dc = DebugCredential.create_from_yaml_config(version=version, yaml_config=yaml_config)
+        dc = DebugCredentialCertificate.create_from_yaml_config(version=version, config=yaml_config)
         dc.sign()
     output = str(dc)
     req_strings = ["Version", "SOCC", "UUID", "UUID", "CC_SOCC", "CC_VU", "BEACON"]
@@ -230,8 +241,13 @@ def test_debugcredential_invalid(data_dir):
     with use_working_directory(data_dir):
         with open("new_dck_rsa2048.yml", "r") as f:
             yaml_config = yaml.safe_load(f)
-            dc = DebugCredential.create_from_yaml_config(version="1.0", yaml_config=yaml_config)
-            with pytest.raises(SPSDKError, match="Debug Credential Signature is not set"):
+            dc = DebugCredentialCertificate.create_from_yaml_config(
+                version=ProtocolVersion("1.0"), config=yaml_config
+            )
+            with pytest.raises(
+                SPSDKError,
+                match="Debug Credential signature is not set, call the `sign` method first",
+            ):
                 dc.export()
             with pytest.raises(SPSDKError, match="Debug Credential Signature provider is not set"):
                 dc.signature_provider = None
@@ -242,9 +258,10 @@ def test_debugcredential_rot_meta_as_cert(data_dir):
     """Verifies the info message for debug authentication."""
     with use_working_directory(data_dir):
         yaml_config = load_configuration("dck_rsa2048_rot_meta_cert.yaml")
-        dc = DebugCredential.create_from_yaml_config(version="1.0", yaml_config=yaml_config)
+        version = ProtocolVersion("1.0")
+        dc = DebugCredentialCertificate.create_from_yaml_config(version=version, config=yaml_config)
         dc.sign()
-        assert dc.VERSION == "1.0"
+        assert dc.version == version
         assert dc.cc_beacon == 0
         assert dc.cc_socu == 1023
         assert dc.cc_vu == 22136
@@ -257,7 +274,9 @@ def test_debugcredential_rot_meta_as_cert_not_matching(data_dir):
     with use_working_directory(data_dir):
         yaml_config = load_configuration("dck_rsa2048_rot_meta_cert.yaml")
         yaml_config["rot_meta"][0] = "2048b-rsa-example-cert.der"
-        dc = DebugCredential.create_from_yaml_config(version="1.0", yaml_config=yaml_config)
+        dc = DebugCredentialCertificate.create_from_yaml_config(
+            version=ProtocolVersion("1.0"), config=yaml_config
+        )
         with pytest.raises(SPSDKError):
             dc.sign()
 
@@ -267,11 +286,11 @@ def test_debugcredential_parse_export(data_dir, dc_file_name):
     """Verifies parse/export functions."""
     with use_working_directory(data_dir):
         dc_binary = load_binary(dc_file_name)
-        dc = DebugCredential.parse(dc_binary)
+        dc = DebugCredentialCertificate.parse(dc_binary)
         assert dc_binary == dc.export()
 
 
 def test_debugcredential_parse_invalid_data():
     """Verifies parse/export functions."""
     with pytest.raises(SPSDKError):
-        DebugCredential.parse(b"123456798258963147")
+        DebugCredentialCertificate.parse(b"123456798258963147")

@@ -1,0 +1,115 @@
+def agents  = ['linux-spsdk', 'windows-spsdk', 'mac']
+
+// Abort older builds
+def buildNumber = BUILD_NUMBER as int
+if (buildNumber > 1) milestone(buildNumber - 1)
+milestone(buildNumber)
+
+def generateStage(nodeLabel) {
+    return {
+        stage("Codecheck on ${nodeLabel}") {
+                timeout(time: 1, unit: 'HOURS', activity: true) {
+                node(nodeLabel) {
+                    // Checkout SPSDK repository
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: scm.branches,
+                        doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+                        extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: false]],
+                        submoduleCfg: [],
+                        userRemoteConfigs: scm.userRemoteConfigs
+                    ])
+                    // Setup and Codecheck
+                    if (isUnix()) {
+                        withPythonEnv('/usr/bin/python3') {
+                                try {
+                                    sh 'python -m pip install --upgrade pip'
+                                    sh 'pip install --upgrade --editable ".[all]"'
+                                    sh 'pip install --upgrade -r requirements-develop.txt'
+                                    sh 'tox -e py39,py312 -- --info-check gitcov'
+                                }
+                                finally {
+                                    stash includes: 'reports_py39/**/*.txt, reports_py312/**/*.txt', name: "reports_${nodeLabel}"
+                                    dir("reports_${nodeLabel}") {
+                                        unstash "reports_${nodeLabel}"
+                                    }
+                                    archiveArtifacts artifacts: "reports_${nodeLabel}/**/*", fingerprint: true
+                                }
+                        }
+                    }
+                    else {
+                        withPythonEnv('c:\\python39\\python.exe') {
+                                try {
+                                    bat '''
+                                       python -m pip install --upgrade pip
+                                       pip install --upgrade --editable ".[all]"
+                                       pip install --upgrade -r requirements-develop.txt
+                                       tox -e py39,py312 -- --info-check gitcov'''
+                                }
+                                finally {
+                                    stash includes: 'reports_py39/**/*.txt, reports_py312/**/*.txt', name: "reports_${nodeLabel}"
+                                    dir("reports_${nodeLabel}") {
+                                        unstash "reports_${nodeLabel}"
+                                    }
+                                    archiveArtifacts artifacts: "reports_${nodeLabel}/**/*", fingerprint: true
+                                }
+                        }
+                    }
+                }
+                }
+        }
+    }
+}
+def parallelStagesMap = agents.collectEntries {
+    ["${it}" : generateStage(it)]
+}
+pipeline {
+    agent none
+    stages {
+        stage('Quick test') {
+            steps {
+                timeout(time: 1, unit: 'HOURS', activity: true) {
+                    script {
+                        node('linux-spsdk') {
+                            checkout([
+                            $class: 'GitSCM',
+                            branches: scm.branches,
+                            doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+                            extensions: scm.extensions + [[$class: 'CloneOption', noTags: false, reference: '', shallow: false]],
+                            submoduleCfg: [],
+                            userRemoteConfigs: scm.userRemoteConfigs
+                        ])
+                            withPythonEnv('python3.9') {
+                                try {
+                                    sh 'python -m pip install --upgrade pip'
+                                    sh 'pip install --upgrade --editable ".[all]"'
+                                    sh 'pip install --upgrade -r requirements-develop.txt'
+                                    sh 'codecheck -s -ic gitcov --output reports_py39'
+                                }
+                                finally {
+                                    stash includes: 'reports_py39/**/*.txt', name: 'reports_quicktest'
+                                    dir('reports_quicktest') {
+                                        unstash 'reports_quicktest'
+                                    }
+                                    archiveArtifacts artifacts: 'reports_quicktest/**/*', fingerprint: true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Parallel stage') {
+            steps {
+                script {
+                    parallel parallelStagesMap
+                }
+                emailext(body: '${DEFAULT_CONTENT}', mimeType: 'text/html',
+                 replyTo: '$DEFAULT_REPLYTO', subject: '${DEFAULT_SUBJECT}',
+                 to: emailextrecipients([[$class: 'CulpritsRecipientProvider'],
+                                         [$class: 'RequesterRecipientProvider']]))
+            }
+        }
+    }
+}

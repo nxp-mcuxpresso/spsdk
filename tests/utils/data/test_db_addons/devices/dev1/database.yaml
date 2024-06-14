@@ -1,0 +1,8 @@
+# Copyright 2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+features:
+  # ======== Feature 1 ========
+  feature1:
+    addons_file: addons.txt

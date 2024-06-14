@@ -10,10 +10,7 @@ import struct
 import time
 from typing import Union
 
-from spsdk.utils.misc import Endianness
-from spsdk.utils.spsdk_enum import SpsdkEnum
-
-from .commands import (
+from spsdk.dk6.commands import (
     CmdPacket,
     CommandTag,
     GenericResponse,
@@ -29,7 +26,9 @@ from .commands import (
     MemReadResponse,
     MemWriteResponse,
 )
-from .interface import Uart
+from spsdk.dk6.interface import Uart
+from spsdk.utils.misc import Endianness
+from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
 

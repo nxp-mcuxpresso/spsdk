@@ -16,33 +16,32 @@ from typing import Any
 import click
 
 from spsdk import __version__ as spsdk_version
+from spsdk.apps.blhost import main as blhost_main
+from spsdk.apps.dk6prog import main as dk6prog_main
+from spsdk.apps.ifr import main as ifr_main
+from spsdk.apps.nxpcrypto import main as nxpcrypto_main
+from spsdk.apps.nxpdebugmbox import main as nxpdebugmbox_main
+from spsdk.apps.nxpdevhsm import main as nxpdevhsm_main
+from spsdk.apps.nxpdevscan import main as nxpdevscan_main
+from spsdk.apps.nxpele import main as nxpele_main
+from spsdk.apps.nxpimage import main as nxpimage_main
+from spsdk.apps.nxpmemcfg import main as nxpmemcfg_main
+from spsdk.apps.nxpwpc import main as nxpwpc_main
+from spsdk.apps.pfr import main as pfr_main
+from spsdk.apps.sdphost import main as sdphost_main
+from spsdk.apps.sdpshost import main as sdpshost_main
+from spsdk.apps.shadowregs import main as shadowregs_main
 from spsdk.apps.utils.common_cli_options import CommandsTreeGroup
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import DatabaseManager
 
-from .blhost import main as blhost_main
-from .dk6prog import main as dk6prog_main
-from .ifr import main as ifr_main
-from .nxpcrypto import main as nxpcrypto_main
-from .nxpdebugmbox import main as nxpdebugmbox_main
-from .nxpdevhsm import main as nxpdevhsm_main
-from .nxpdevscan import main as nxpdevscan_main
-from .nxpele import main as nxpele_main
-from .nxpimage import main as nxpimage_main
-from .nxpmemcfg import main as nxpmemcfg_main
-from .nxpwpc import main as nxpwpc_main
-from .pfr import main as pfr_main
-from .sdphost import main as sdphost_main
-from .sdpshost import main as sdpshost_main
-from .shadowregs import main as shadowregs_main
-
 try:
     TP = True
-    from .tpconfig import main as tpconfig_main
-    from .tphost import main as tphost_main
+    from spsdk.apps.tpconfig import main as tpconfig_main
+    from spsdk.apps.tphost import main as tphost_main
 except SPSDKError:
     TP = False
-from .utils.utils import catch_spsdk_error
+from spsdk.apps.utils.utils import catch_spsdk_error
 
 
 @click.group(name="spsdk", no_args_is_help=True, cls=CommandsTreeGroup)

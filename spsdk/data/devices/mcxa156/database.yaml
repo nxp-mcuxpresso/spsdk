@@ -1,0 +1,60 @@
+# Copyright 2023-2024 NXP
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+revisions:
+  a0: {}
+latest: a0
+
+# General MCU information
+info:
+  use_in_doc: True # Include this MCU in generated documentation
+  purpose: General Purpose Processor
+  # Web page of MCU representative
+  web: https://www.nxp.com
+  memory_map: # Memory map basic info
+    internal_flash:
+      base_addr: 0x0
+      size: 0x10_0000
+      external: false
+    sram:
+      base_addr: 0x2000_0000
+      size: 0x2_0000
+      external: false
+  isp:
+    rom:
+      protocol: mboot
+      usb:
+        vid: 0x1FC9
+        pid: 0x015e
+
+features:
+  # ======== MBI section ========
+  mbi:
+    mbi_classes:
+      plain_xip:
+        image_type: PLAIN_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinImageVersion
+          - Mbi_ExportMixinApp
+      crc_xip:
+        image_type: CRC_XIP_IMAGE
+        mixins:
+          - Mbi_MixinApp
+          - Mbi_MixinIvt
+          - Mbi_MixinImageVersion
+          - Mbi_ExportMixinApp
+          - Mbi_ExportMixinCrcSign
+    images:
+      xip:
+        plain: plain_xip
+        crc: crc_xip
+
+  # ======== PFR section ========
+  pfr:
+    cmpa: # CMPA description
+      address: 0x100_0000
+      size: 512
+      reg_spec: pfr_cmpa.json

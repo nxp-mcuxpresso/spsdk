@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,6 +9,7 @@ import filecmp
 import os
 import time
 from typing import Union
+from unittest.mock import patch
 
 import pytest
 
@@ -28,6 +29,7 @@ from spsdk.utils.misc import (
     get_bytes_cnt_of_int,
     load_binary,
     load_file,
+    load_secret,
     reverse_bits_in_bytes,
     reverse_bytes_in_longs,
     size_fmt,
@@ -471,3 +473,14 @@ def test_size_format(input_value, use_kibibyte, expected):
 def test_swap16_invalid():
     with pytest.raises(SPSDKError, match="Incorrect number to be swapped"):
         swap16(0xFFFFA)
+
+
+def test_load_secret(data_dir):
+    file_with_secret = os.path.join(data_dir, "secret.txt")
+    assert load_secret(file_with_secret) == "secret text"
+    assert load_secret("secret text") == "secret text"
+    load_secret("$TEST_VAR")
+    with patch.dict("os.environ", {"TEST_VAR": "secret text"}):
+        assert load_secret("$TEST_VAR") == "secret text"
+    with patch.dict("os.environ", {"TEST_VAR": file_with_secret}):
+        assert load_secret("$TEST_VAR") == "secret text"
