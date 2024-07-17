@@ -53,6 +53,9 @@ from spsdk.image.segments import (
 from spsdk.utils.misc import align, align_block, extend_block
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
+# This caused issue on Python 3.xx with pylint version 3.2.5 on LINUX
+# pylint: disable=attribute-defined-outside-init
+
 ########################################################################################################################
 # i.MX Boot Image Classes
 ########################################################################################################################

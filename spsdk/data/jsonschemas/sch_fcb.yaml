@@ -1,4 +1,4 @@
-# Copyright 2022-2023 NXP
+# Copyright 2022-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -36,4 +36,4 @@ fcb:
       description: Flash Configuration settings for selected MCU.
       # properties will be added in runtime
 
-  required: [family, type, fcb_settings]
+  required: [fcb_settings]
