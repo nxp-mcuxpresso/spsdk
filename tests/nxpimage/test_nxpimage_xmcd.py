@@ -105,11 +105,9 @@ def test_nxpimage_xmcd_template_cli(cli_runner: CliRunner, tmpdir, data_dir, fam
 
     mem_types = XMCD.get_supported_memory_types(family)
     for mem_type in mem_types:
-        config_types = XMCD.get_supported_configuration_types(
-            family, MemoryType.from_label(mem_type)
-        )
+        config_types = XMCD.get_supported_configuration_types(family, mem_type)
         for config_type in config_types:
-            template_name = f"xmcd_{family}_{mem_type}_{config_type}.yaml"
+            template_name = f"xmcd_{family}_{mem_type.label}_{config_type}.yaml"
             new_template_path = os.path.join(tmpdir, template_name)
             assert os.path.isfile(new_template_path)
             with open(new_template_path) as f:
@@ -157,3 +155,10 @@ def test_nxpimage_xmcd_export_invalid(data_dir, mem_type, config_type, option):
     config_data["family"] = "rt5xx"
     with pytest.raises(SPSDKError):
         XMCD.load_from_config(config_data)
+
+
+def test_nxpimage_supported_mem_types():
+    mem_types = XMCD.get_supported_memory_types()
+    assert len(mem_types) == 2
+    mem_types[0] == MemoryType.FLEXSPI_RAM
+    mem_types[0] == MemoryType.SEMC_SDRAM

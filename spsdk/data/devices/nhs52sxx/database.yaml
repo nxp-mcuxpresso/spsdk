@@ -52,7 +52,7 @@ features:
         image_type: PLAIN_IMAGE
         mixins:
           - Mbi_MixinApp
-          - Mbi_MixinIvtZeroTotalLength
+          - Mbi_MixinIvt
           - Mbi_MixinLoadAddressOptional
           - Mbi_MixinTrustZone
           - Mbi_ExportMixinAppTrustZone

@@ -15,6 +15,7 @@ import pytest
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.image.bootable_image.bimg import BootableImage
+from spsdk.image.mem_type import MemoryType
 from spsdk.image.bootable_image.segments import BootableImageSegment
 from spsdk.utils.misc import load_binary, load_configuration, use_working_directory
 from tests.cli_runner import CliRunner
@@ -230,6 +231,40 @@ def test_nxpimage_bimg_parse_autodetect_mem_type(data_dir, family, input_path, e
 
 
 @pytest.mark.parametrize(
+    "family,input_path,expected_mem_type",
+    [
+        ("rt5xx", "rt5xx/flexspi_nor/xip_crc/merged_image.bin", "flexspi_nor"),
+        ("lpc55s3x", "lpc55s3x/internal/merged_image.bin", "internal"),
+        ("rt116x", "rt116x/flexspi_nor/merged_image.bin", "flexspi_nor"),
+        ("rt116x", "rt116x/flexspi_nand/merged_image.bin", "flexspi_nand"),
+        ("rt116x", "rt116x/semc_nand/merged_image.bin", "flexspi_nand"),
+        ("mcxn9xx", "mcxn9xx/flexspi_nor/full/merged_image.bin", "flexspi_nor"),
+    ],
+)
+def test_nxpimage_bimg_parse_autodetect_mem_type_cli(
+    cli_runner: CliRunner, tmpdir, data_dir, family, input_path, expected_mem_type
+):
+    input_binary_path = os.path.join(data_dir, "bootable_image", input_path)
+
+    with use_working_directory(data_dir):
+        cmd = [
+            "bootable-image",
+            "parse",
+            "-f",
+            family,
+            "-b",
+            input_binary_path,
+            "-o",
+            str(tmpdir),
+        ]
+        cli_runner.invoke(nxpimage.main, cmd)
+
+        bimg_config = os.path.join(tmpdir, f"bootable_image_{family}_{expected_mem_type}.yaml")
+        assert os.path.isfile(bimg_config)
+        load_configuration(bimg_config)
+
+
+@pytest.mark.parametrize(
     "family,mem_type,configuration,blocks",
     [
         ("mcxn9xx", "flexspi_nor", "full", ["fcb", "mbi"]),
@@ -328,7 +363,7 @@ def test_nxpimage_bimg_parse_image_adjustement(
         data_dir, "bootable_image", family, mem_type, configuration, "merged_image.bin"
     )
     input_binary = load_binary(input_binary_path)
-    bimg = BootableImage.parse(input_binary, family, mem_type)
+    bimg = BootableImage.parse(input_binary, family, MemoryType.from_label(mem_type))
     assert bimg.init_offset == init_offset
     assert len(bimg.segments) == segments_count
 
@@ -355,19 +390,20 @@ def test_nxpimage_bimg_default_init_offset():
     ],
 )
 def test_nxpimage_bimg_init_offset_setter(family, mem_type, init_offset, actual_offset):
+    memory_type = MemoryType.from_label(mem_type)
     if actual_offset is not None:
-        bimg = BootableImage(family=family, mem_type=mem_type, init_offset=init_offset)
+        bimg = BootableImage(family=family, mem_type=memory_type, init_offset=init_offset)
         assert bimg.init_offset == actual_offset
         if isinstance(init_offset, int):
-            bimg = BootableImage(family=family, mem_type=mem_type)
+            bimg = BootableImage(family=family, mem_type=memory_type)
             bimg.init_offset = init_offset
             assert bimg.init_offset == actual_offset
     else:
         with pytest.raises(SPSDKError):
-            BootableImage(family=family, mem_type=mem_type, init_offset=init_offset)
+            BootableImage(family=family, mem_type=memory_type, init_offset=init_offset)
         if isinstance(init_offset, int):
             with pytest.raises(SPSDKError):
-                bimg = BootableImage(family=family, mem_type=mem_type)
+                bimg = BootableImage(family=family, mem_type=memory_type)
                 bimg.init_offset = init_offset
 
 
@@ -428,5 +464,27 @@ def test_nxpimage_bimg_parse_export(data_dir, family, mem_type, configuration):
         data_dir, "bootable_image", family, mem_type, configuration, "merged_image.bin"
     )
     input_binary = load_binary(input_binary_path)
-    bimg = BootableImage.parse(input_binary, family, mem_type)
+    bimg = BootableImage.parse(input_binary, family, MemoryType.from_label(mem_type))
     assert len(bimg.export()) == len(input_binary)
+
+
+def test_bimg_get_supported_memory_types_all():
+    mem_types = BootableImage.get_supported_memory_types()
+    for mem_type in mem_types:
+        assert mem_type in MemoryType
+    # contains only unique values
+    assert len(set(mem_types)) == len(mem_types)
+
+
+@pytest.mark.parametrize(
+    "family,mem_types",
+    [
+        (
+            "mcxn9xx",
+            [MemoryType.FLEXSPI_NOR, MemoryType.RECOVERY_SPI_SB31, MemoryType.RECOVERY_SPI_MBI],
+        ),
+    ],
+)
+def test_bimg_get_supported_memory_types_family(family, mem_types):
+    ret_mem_types = BootableImage.get_supported_memory_types(family)
+    assert ret_mem_types == mem_types

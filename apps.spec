@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 #
-# Copyright 2020-2023 NXP
+# Copyright 2020-2024 NXP
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
@@ -192,6 +192,9 @@ a_nxpdevscan = analyze(["spsdk/apps/nxpdevscan.py"])
 a_ifr = analyze(["spsdk/apps/ifr.py"])
 a_nxpcrypto = analyze(["spsdk/apps/nxpcrypto.py"])
 a_nxpmemcfg = analyze(["spsdk/apps/nxpmemcfg.py"])
+a_nxpwpc = analyze(["spsdk/apps/nxpwpc.py"])
+a_el2go = analyze(["spsdk/apps/el2go.py"])
+a_dk6prog = analyze(["spsdk/apps/dk6prog.py"])
 
 
 # merge the dependencies together so the (first) blhost contains all required dependencies from all tools
@@ -210,6 +213,9 @@ MERGE(
     (a_nxpdevscan, "nxpdevscan", "nxpdevscan"),
     (a_nxpcrypto, "nxpcrypto", "nxpcrypto"),
     (a_nxpmemcfg, "nxpmemcfg", "nxpmemcfg"),
+    (a_nxpwpc, "nxpwpc", "nxpwpc"),
+    (a_el2go, "el2go", "el2go"),
+    (a_dk6prog, "dk6prog", "dk6prog"),
 )
 
 
@@ -232,6 +238,9 @@ exe_nxpdevscan = executable(
 exe_ifr = executable(a_ifr, "ifr", "tools/pyinstaller/ifr_version_info.txt")
 exe_nxpcrypto = executable(a_nxpcrypto, "nxpcrypto", "tools/pyinstaller/nxpcrypto_version_info.txt")
 exe_nxpmemcfg = executable(a_nxpmemcfg, "nxpmemcfg", "tools/pyinstaller/nxpmemcfg_version_info.txt")
+exe_nxpwpc = executable(a_nxpwpc, "nxpwpc", "tools/pyinstaller/nxpwpc_version_info.txt")
+exe_el2go = executable(a_el2go, "el2go", "tools/pyinstaller/el2go_version_info.txt")
+exe_dk6prog = executable(a_dk6prog, "dk6prog", "tools/pyinstaller/dk6prog_version_info.txt")
 
 # collect all bundles together
 coll_apps = COLLECT(
@@ -249,6 +258,9 @@ coll_apps = COLLECT(
     exe_ifr,
     exe_nxpcrypto,
     exe_nxpmemcfg,
+    exe_nxpwpc,
+    exe_el2go,
+    exe_dk6prog,
     a_bl.binaries,
     a_bl.zipfiles,
     a_bl.datas,
@@ -291,6 +303,15 @@ coll_apps = COLLECT(
     a_nxpmemcfg.binaries,
     a_nxpmemcfg.zipfiles,
     a_nxpmemcfg.datas,
+    a_nxpwpc.binaries,
+    a_nxpwpc.zipfiles,
+    a_nxpwpc.datas,
+    a_el2go.binaries,
+    a_el2go.zipfiles,
+    a_el2go.datas,
+    a_dk6prog.binaries,
+    a_dk6prog.zipfiles,
+    a_dk6prog.datas,
     strip=False,
     upx=True,
     upx_exclude=[],

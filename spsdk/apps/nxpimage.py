@@ -52,8 +52,9 @@ from spsdk.image.mbi.mbi import (
     mbi_generate_config_templates,
     mbi_get_supported_families,
 )
+from spsdk.image.mem_type import MemoryType
 from spsdk.image.trustzone import TrustZone
-from spsdk.image.xmcd.xmcd import XMCD, ConfigurationBlockType, MemoryType
+from spsdk.image.xmcd.xmcd import XMCD, ConfigurationBlockType
 from spsdk.sbfile.sb2 import sly_bd_parser as bd_parser
 from spsdk.sbfile.sb2.commands import CmdLoad
 from spsdk.sbfile.sb2.images import BootImageV21
@@ -195,7 +196,7 @@ def mbi_get_templates(family: str, output: str) -> None:
     templates = mbi_generate_config_templates(family)
     for file_name, template in templates.items():
         full_file_name = os.path.join(output, file_name + ".yaml")
-        click.echo(f"Creating {full_file_name} template file.")
+        click.echo(f"Creating {get_printable_path(full_file_name)} template file.")
         write_file(template, full_file_name)
 
 
@@ -410,7 +411,7 @@ def get_sbkek(master_key: str, output_folder: str) -> None:
     if output_folder:
         store_key(os.path.join(output_folder, "sbkek"), sbkek, reverse=True)
         store_key(os.path.join(output_folder, "otp_master_key"), otp_master_key)
-        click.echo(f"Keys have been stored to: {output_folder}")
+        click.echo(f"Keys have been stored to: {get_printable_path(output_folder)}")
 
 
 @sb21_group.command(name="convert", no_args_is_help=False)
@@ -607,7 +608,7 @@ def cert_block_get_template_command(output: str, family: str) -> None:
 
 def cert_block_get_template(output: str, family: str) -> None:
     """Create template of configuration in YAML format."""
-    click.echo(f"Creating {output} template file.")
+    click.echo(f"Creating {get_printable_path(output)} template file.")
     cert_block_class = CertBlock.get_cert_block_class(family)
     write_file(cert_block_class.generate_config_template(family), output)
 
@@ -655,7 +656,9 @@ def cert_block_export(config: str, family: str, plugin: Optional[str] = None) ->
         )
         write_file(cert_block.get_otp_script(), otp_script_path)
         click.echo(f"OTP script written to: {otp_script_path}")
-    click.echo(f"Success. (Certificate Block: {cert_block_output_file_path} created.)")
+    click.echo(
+        f"Success. (Certificate Block: {get_printable_path(cert_block_output_file_path)} created.)"
+    )
 
 
 @cert_block_group.command(name="get-isk-tbs", no_args_is_help=True)
@@ -1014,7 +1017,7 @@ def ahab_verify(family: str, binary: str, dek: str, problems: bool) -> None:
     "-m",
     "--mem-type",
     type=click.Choice(
-        BootableImage.get_supported_memory_types(),
+        [mem_type.label for mem_type in BootableImage.get_supported_memory_types()],
         case_sensitive=False,
     ),
     required=False,
@@ -1063,7 +1066,7 @@ def ahab_update_keyblob_command(
     "-m",
     "--mem-type",
     type=click.Choice(
-        BootableImage.get_supported_memory_types(),
+        [mem_type.label for mem_type in BootableImage.get_supported_memory_types()],
         case_sensitive=False,
     ),
     required=False,
@@ -1689,7 +1692,7 @@ def bootable_image_merge(config: str, output: str, plugin: Optional[str] = None)
     "-m",
     "--mem-type",
     type=click.Choice(
-        BootableImage.get_supported_memory_types(),
+        [mem_type.label for mem_type in BootableImage.get_supported_memory_types()],
         case_sensitive=False,
     ),
     required=False,
@@ -1703,12 +1706,19 @@ def bootable_image_merge(config: str, output: str, plugin: Optional[str] = None)
     help="Path to binary Bootable image to parse.",
 )
 @spsdk_output_option(directory=True)
-def bootable_image_parse_command(family: str, mem_type: str, binary: str, output: str) -> None:
+def bootable_image_parse_command(
+    family: str, mem_type: Optional[str], binary: str, output: str
+) -> None:
     """Parse Bootable Image into YAML configuration and binary images."""
-    bootable_image_parse(family, mem_type, binary, output)
+    memory = None
+    if mem_type:
+        memory = MemoryType.from_label(mem_type)
+    bootable_image_parse(family, memory, binary, output)
 
 
-def bootable_image_parse(family: str, mem_type: str, binary: str, output: str) -> None:
+def bootable_image_parse(
+    family: str, mem_type: Optional[MemoryType], binary: str, output: str
+) -> None:
     """Parse Bootable Image into YAML configuration and binary images."""
     bimg_image = BootableImage.parse(load_binary(binary), family=family, mem_type=mem_type)
     bimg_image_info = bimg_image.image_info()
@@ -1732,7 +1742,7 @@ def bootable_image_get_templates(family: str, output: str) -> None:
     """Create template of configurations in YAML format from all memory types."""
     mem_types = BootableImage.get_supported_memory_types(family)
     for mem_type in mem_types:
-        output_file = os.path.join(output, f"bootimg_{family}_{mem_type}.yaml")
+        output_file = os.path.join(output, f"bootimg_{family}_{mem_type.label}.yaml")
         click.echo(f"Creating {output_file} template file.")
         write_file(BootableImage.generate_config_template(family, mem_type), output_file)
 
@@ -1892,7 +1902,7 @@ def fcb_export(config: str, output: str) -> None:
     config_data = load_configuration(config)
     check_config(config_data, FCB.get_validation_schemas_family())
     family = config_data["family"]
-    mem_type = config_data["type"]
+    mem_type = MemoryType.from_label(config_data["type"])
     revision = config_data.get("revision", "latest")
     schemas = FCB.get_validation_schemas(family, mem_type, revision)
     check_config(config_data, schemas, search_paths=[os.path.dirname(config)])
@@ -1911,7 +1921,9 @@ def fcb_export(config: str, output: str) -> None:
     "-m",
     "--mem-type",
     default="flexspi_nor",
-    type=click.Choice(["flexspi_nor", "xspi_nor"], case_sensitive=False),
+    type=click.Choice(
+        [mem_type.label for mem_type in FCB.get_supported_memory_types()], case_sensitive=False
+    ),
     required=True,
     help="Select the chip used memory type.",
 )
@@ -1925,10 +1937,10 @@ def fcb_export(config: str, output: str) -> None:
 @spsdk_output_option()
 def fcb_parse_command(family: str, mem_type: str, binary: str, output: str) -> None:
     """Parse FCB Image into YAML configuration."""
-    fcb_parse(family, mem_type, binary, output)
+    fcb_parse(family, MemoryType.from_label(mem_type), binary, output)
 
 
-def fcb_parse(family: str, mem_type: str, binary: str, output: str) -> None:
+def fcb_parse(family: str, mem_type: MemoryType, binary: str, output: str) -> None:
     """Parse FCB Image into YAML configuration."""
     fcb_image = FCB.parse(load_binary(binary), family=family, mem_type=mem_type)
 
@@ -1953,7 +1965,7 @@ def fcb_get_templates(family: str, output_folder: str) -> None:
     """Create template of configurations in YAML format for all memory types."""
     mem_types = FCB.get_supported_memory_types(family)
     for mem_type in mem_types:
-        output = os.path.join(output_folder, f"fcb_{family}_{mem_type}.yaml")
+        output = os.path.join(output_folder, f"fcb_{family}_{mem_type.label}.yaml")
         click.echo(f"Creating {output} template file.")
         write_file(FCB.generate_config_template(family, mem_type), output)
 
@@ -2034,16 +2046,14 @@ def xmcd_get_templates(family: str, output: str) -> None:
     """Create template of configurations in YAML format for all memory types."""
     mem_types = XMCD.get_supported_memory_types(family)
     for mem_type in mem_types:
-        config_types = XMCD.get_supported_configuration_types(
-            family, MemoryType.from_label(mem_type)
-        )
+        config_types = XMCD.get_supported_configuration_types(family, mem_type)
         for config_type in config_types:
-            output_file = os.path.join(output, f"xmcd_{family}_{mem_type}_{config_type}.yaml")
+            output_file = os.path.join(output, f"xmcd_{family}_{mem_type.label}_{config_type}.yaml")
             click.echo(f"Creating {output_file} template file.")
             write_file(
                 XMCD.generate_config_template(
                     family,
-                    MemoryType.from_label(mem_type),
+                    mem_type,
                     ConfigurationBlockType.from_label(config_type),
                 ),
                 output_file,
@@ -2199,7 +2209,7 @@ def binary_convert(input_file: str, output_format: str, output: str) -> None:
     image = BinaryImage.load_binary_image(input_file)
     logger.info(image.draw())
     image.save_binary_image(output, file_format=output_format)
-    click.echo(f"Success. (Converted file: {output} created.)")
+    click.echo(f"Success. (Converted file: {get_printable_path(output)} created.)")
 
 
 @bin_image_group.command(name="get-template", no_args_is_help=True)

@@ -10,13 +10,27 @@
 Release Notes
 =============
 
-**ANNOUNCEMENT**
+---------------------
+2.2.1 (26-July-2024)
+---------------------
 
-Current version introduces breaking changes, which are described in details in `migration guide`_.
+**Bugfixes**
+
+* :ref:`ifr`:
+    - fix read command
+* :ref:`nxpimage`:
+    - fix parsing bootable image without specified memory type
+    - fix plain mbi for NHS52sxx
+* :ref:`nxpwpc`:
+    - fix unavailable item
 
 --------------------
 2.2.0 (7-June-2024)
 --------------------
+
+**ANNOUNCEMENT**
+
+Current version introduces breaking changes, which are described in details in `migration guide`_.
 
 **New features**
 

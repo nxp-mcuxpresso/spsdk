@@ -695,14 +695,13 @@ class BeeNxp:
         bee_engines: List[Dict[str, Any]] = config["bee_engine"]
         base_address = value_to_int(config["base_address"])
 
-        prdb = BeeProtectRegionBlock()
-        kib = BeeKIB()
-
         bee_headers: List[Optional[BeeRegionHeader]] = [None, None]
 
         engine_selections = {"engine0": [0], "engine1": [1], "both": [0, 1]}
 
         for engine_idx in engine_selections[engine_selection]:
+            prdb = BeeProtectRegionBlock()
+            kib = BeeKIB()
             header_idx = engine_idx
             if engine_idx == len(bee_engines) and engine_selections[engine_selection] == [1]:
                 engine_idx = 0

@@ -17,6 +17,7 @@ from typing_extensions import Self
 
 from spsdk import version as spsdk_version
 from spsdk.exceptions import SPSDKError, SPSDKKeyError, SPSDKValueError
+from spsdk.image.mem_type import MemoryType
 from spsdk.image.segments import XMCDHeader
 from spsdk.image.segments_base import SegmentBase
 from spsdk.utils.database import DatabaseManager, get_schema_file
@@ -26,13 +27,6 @@ from spsdk.utils.schema_validator import CommentedConfig, check_config
 from spsdk.utils.spsdk_enum import SpsdkEnum
 
 logger = logging.getLogger(__name__)
-
-
-class MemoryType(SpsdkEnum):
-    """Support memory types Enum."""
-
-    FLEXSPI_RAM = (0, "flexspi_ram", "FlexSPI RAM")
-    SEMC_SDRAM = (1, "semc_sdram", "SEMC SDRAM")
 
 
 class ConfigurationBlockType(SpsdkEnum):
@@ -276,9 +270,9 @@ class XMCD(SegmentBase):
         revisions = DatabaseManager().db.devices.get(family).revisions.revision_names(True)
         sch_cfg["xmcd_family_rev"]["properties"]["revision"]["enum"] = revisions
         sch_cfg["xmcd_family_rev"]["properties"]["revision"]["template_value"] = revision
-        sch_cfg["xmcd_family_rev"]["properties"]["mem_type"]["enum"] = (
-            XMCD.get_supported_memory_types(family, revision)
-        )
+        sch_cfg["xmcd_family_rev"]["properties"]["mem_type"]["enum"] = [
+            mem_type.label for mem_type in XMCD.get_supported_memory_types(family, revision)
+        ]
         sch_cfg["xmcd_family_rev"]["properties"]["revision"]["template_value"] = revision
         sch_cfg["xmcd_family_rev"]["properties"]["mem_type"]["template_value"] = mem_type.label
         sch_cfg["xmcd_family_rev"]["properties"]["config_type"]["enum"] = (
@@ -339,7 +333,7 @@ class XMCD(SegmentBase):
 
         :return: List of supported family interfaces.
         """
-        mem_types = cls.get_memory_types(family, revision)
+        mem_types = cls.get_memory_types_config(family, revision)
         return list(mem_types[mem_type.label].keys())
 
     @staticmethod

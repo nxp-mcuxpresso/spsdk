@@ -423,7 +423,7 @@ def get_xmcd_doc() -> None:
         memories = XMCD.get_supported_memory_types(fam)
         for mem in memories:
             validation_schemas = XMCD.get_validation_schemas(
-                fam, MemoryType.from_label(mem), ConfigurationBlockType.FULL
+                fam, MemoryType.from_label(mem.name), ConfigurationBlockType.FULL
             )
             schema = get_schema(validation_schemas)
             schema["title"] = f"XMCD for {fam} and {mem}"

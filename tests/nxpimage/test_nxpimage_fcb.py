@@ -14,6 +14,7 @@ import pytest
 from spsdk.apps import nxpimage
 from spsdk.exceptions import SPSDKError
 from spsdk.image.fcb.fcb import FCB
+from spsdk.image.mem_type import MemoryType
 from spsdk.utils.misc import use_working_directory
 from tests.cli_runner import CliRunner
 
@@ -121,9 +122,9 @@ def test_nxpimage_fcb_template_cli(cli_runner: CliRunner, tmpdir, family, mem_ty
 @pytest.mark.parametrize(
     "family,mem_type",
     [
-        ("rt5xx", "flexspi_nor"),
-        ("rt117x", "flexspi_nor"),
-        ("rt118x", "flexspi_nor"),
+        ("rt5xx", MemoryType.FLEXSPI_NOR),
+        ("rt117x", MemoryType.FLEXSPI_NOR),
+        ("rt118x", MemoryType.FLEXSPI_NOR),
     ],
 )
 def test_fcb_parse_invalid(binary, fail, family, mem_type):

@@ -305,6 +305,7 @@ features:
     supported_commands:
       - erase
       - load
+      - execute
       - programFuses
       - programIFR
       - loadCMAC

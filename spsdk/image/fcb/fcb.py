@@ -16,6 +16,7 @@ from typing_extensions import Self
 
 from spsdk import version as spsdk_version
 from spsdk.exceptions import SPSDKError, SPSDKValueError
+from spsdk.image.mem_type import MemoryType
 from spsdk.image.segments_base import SegmentBase
 from spsdk.utils.database import DatabaseManager, get_schema_file
 from spsdk.utils.misc import Endianness, swap_bytes
@@ -33,7 +34,7 @@ class FCB(SegmentBase):
     TAG_SWAPPED = swap_bytes(TAG)
     SIZE = 0x200
 
-    def __init__(self, family: str, mem_type: str, revision: str = "latest") -> None:
+    def __init__(self, family: str, mem_type: MemoryType, revision: str = "latest") -> None:
         """FCB Constructor.
 
         :param family: Chip family.
@@ -44,12 +45,14 @@ class FCB(SegmentBase):
         super().__init__(family, revision)
         mem_types = FCB.get_supported_memory_types(self.family, self.revision)
         if mem_type not in mem_types:
-            raise SPSDKValueError(f"Unsupported memory type:{mem_type} not in {mem_types}")
+            raise SPSDKValueError(
+                f"Unsupported memory type:{mem_type.label} not in {[mem_type.label for mem_type in mem_types]}"
+            )
         self.mem_type = mem_type
         self._registers = Registers(
             family=family,
             feature=self.FEATURE,
-            base_key=["mem_types", self.mem_type],
+            base_key=["mem_types", self.mem_type.label],
             revision=revision,
             base_endianness=Endianness.LITTLE,
         )
@@ -65,7 +68,7 @@ class FCB(SegmentBase):
         binary: bytes,
         offset: int = 0,
         family: str = "Unknown",
-        mem_type: str = "Unknown",
+        mem_type: MemoryType = MemoryType.FLEXSPI_NOR,
         revision: str = "latest",
     ) -> Self:
         """Parse binary block into FCB object.
@@ -101,8 +104,8 @@ class FCB(SegmentBase):
         :return: FCB object.
         """
         try:
-            family = config.get("family", "Unknown")
-            mem_type = config.get("type", "Unknown")
+            family = config["family"]
+            mem_type = MemoryType.from_label(config["type"])
             revision = config.get("revision", "latest")
             fcb = FCB(family=family, mem_type=mem_type, revision=revision)
             fcb_settings = config.get("fcb_settings", {})
@@ -119,7 +122,7 @@ class FCB(SegmentBase):
         config: Dict[str, Any] = {}
         config["family"] = self.family
         config["revision"] = self.revision
-        config["type"] = self.mem_type
+        config["type"] = self.mem_type.label
         config["fcb_settings"] = self.registers.get_config()
         schemas = self.get_validation_schemas(self.family, self.mem_type, self.revision)
         return CommentedConfig(
@@ -133,7 +136,7 @@ class FCB(SegmentBase):
 
     @classmethod
     def get_validation_schemas(
-        cls, family: str, mem_type: str, revision: str = "latest"
+        cls, family: str, mem_type: MemoryType, revision: str = "latest"
     ) -> List[Dict[str, Any]]:
         """Create the validation schema.
 
@@ -151,10 +154,11 @@ class FCB(SegmentBase):
             revisions = DatabaseManager().db.devices.get(family).revisions.revision_names(True)
             sch_cfg["fcb_family_rev"]["properties"]["revision"]["enum"] = revisions
             sch_cfg["fcb_family_rev"]["properties"]["revision"]["template_value"] = revision
-            sch_cfg["fcb_family_rev"]["properties"]["type"]["enum"] = (
-                fcb_obj.get_supported_memory_types(fcb_obj.family, revision)
-            )
-            sch_cfg["fcb_family_rev"]["properties"]["type"]["template_value"] = mem_type
+            sch_cfg["fcb_family_rev"]["properties"]["type"]["enum"] = [
+                mem_type.label
+                for mem_type in fcb_obj.get_supported_memory_types(fcb_obj.family, revision)
+            ]
+            sch_cfg["fcb_family_rev"]["properties"]["type"]["template_value"] = mem_type.label
             sch_cfg["fcb"]["properties"]["fcb_settings"] = fcb_obj.registers.get_validation_schema()
             return [sch_cfg["fcb_family_rev"], sch_cfg["fcb"]]
         except (KeyError, SPSDKError) as exc:
@@ -171,7 +175,9 @@ class FCB(SegmentBase):
         return [sch_cfg["fcb_family_rev"]]
 
     @staticmethod
-    def generate_config_template(family: str, mem_type: str, revision: str = "latest") -> str:
+    def generate_config_template(
+        family: str, mem_type: MemoryType, revision: str = "latest"
+    ) -> str:
         """Generate configuration for selected family.
 
         :param family: Family description.
@@ -190,12 +196,12 @@ class FCB(SegmentBase):
         return ret
 
     def __repr__(self) -> str:
-        return f"FCB Segment, memory type: {self.mem_type}"
+        return f"FCB Segment, memory type: {self.mem_type.description}"
 
     def __str__(self) -> str:
         return (
             "FCB Segment:\n"
             f" Family:           {self.family}\n"
             f" Revision:         {self.revision}\n"
-            f" Memory type:      {self.mem_type}\n"
+            f" Memory type:      {self.mem_type.description}\n"
         )

@@ -14,6 +14,12 @@
                     "description": "Description is available in restricted data, see documentation for more details.",
                     "index_int": "0",
                     "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -29,10 +35,7 @@
                             "description": "Description is available in restricted data, see documentation for more details."
                         },
                         {
-                            "width": 3,
-                            "id": "fuse0-bits-6-8",
-                            "name": "Restricted",
-                            "description": "Description is available in restricted data, see documentation for more details."
+                            "width": 3
                         },
                         {
                             "width": 3,
@@ -41,7 +44,10 @@
                             "description": "Description is available in restricted data, see documentation for more details."
                         },
                         {
-                            "width": 3
+                            "width": 3,
+                            "id": "fuse0-bits-12-14",
+                            "name": "Restricted",
+                            "description": "Description is available in restricted data, see documentation for more details."
                         },
                         {
                             "width": 1
@@ -54,6 +60,12 @@
                     "description": "Description is available in restricted data, see documentation for more details.",
                     "index_int": "0x0001",
                     "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -91,6 +103,12 @@
                     "description": "Description is available in restricted data, see documentation for more details.",
                     "index_int": "0x0002",
                     "individual_write_lock": "none",
+                    "lock": {
+                        "register_id": "fuse0",
+                        "write_lock_int": "0x1000",
+                        "read_lock_int": "0x4000",
+                        "operation_lock_int": "0x2000"
+                    },
                     "reg_width": 16,
                     "bitfields": [
                         {
@@ -1520,7 +1538,7 @@
                 {
                     "id": "fuse21",
                     "name": "BOOT_CFG6",
-                    "description": "The SDIO VID and PID can be customized by writing the new VID to the usbVid field and the new PID to the usbPid field in this OTP.Shadow register is present for this word thus SW could access the register directly to read contents.",
+                    "description": "The SDIO VID and PID can be customized by writing the new VID to the usbVid field and the new PID to the usbPid field in this OTP. Shadow register is present for this word thus SW could access the register directly to read contents.",
                     "index_int": "0x0015",
                     "shadow_reg_offset_int": "0x0054",
                     "individual_write_lock": "always_lock",
@@ -2243,7 +2261,7 @@
                     "shadow_reg_offset_int": "0x0084",
                     "individual_write_lock": "always_lock",
                     "lock": {
-                        "register_id": "fuse0",
+                        "register_id": "fuse1",
                         "write_lock_int": "0x0040",
                         "read_lock_int": "0x0100",
                         "operation_lock_int": "0x0080"
@@ -2676,7 +2694,7 @@
                         "src_register_id": "fuse33"
                     },
                     "lock": {
-                        "register_id": "fuse0",
+                        "register_id": "fuse1",
                         "write_lock_int": "0x0040",
                         "read_lock_int": "0x0100",
                         "operation_lock_int": "0x0080"
@@ -3007,9 +3025,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3021,9 +3039,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3035,9 +3053,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3049,9 +3067,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3063,9 +3081,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3077,9 +3095,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3091,9 +3109,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3105,9 +3123,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3119,9 +3137,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3133,9 +3151,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3147,9 +3165,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 },
                 {
@@ -3161,9 +3179,9 @@
                     "individual_write_lock": "always_lock",
                     "lock": {
                         "register_id": "fuse1",
-                        "write_lock_int": "0x0040",
-                        "read_lock_int": "0x0100",
-                        "operation_lock_int": "0x0080"
+                        "write_lock_int": "0x0001",
+                        "read_lock_int": "0x0004",
+                        "operation_lock_int": "0x0002"
                     }
                 }
             ]

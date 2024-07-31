@@ -273,8 +273,7 @@ class MbootBuspalSPIInterface(MbootBuspalProtocol):
     def __init__(self, device: SerialDevice):
         """Initialize the BUSPAL SPI interface.
 
-        :param port: name of the serial port, defaults to None
-        :param timeout: read/write timeout in milliseconds
+        :param device: The device instance
         """
         self.mode = BuspalMode.SPI
         super().__init__(device)

@@ -21,6 +21,7 @@ from spsdk.image.ahab.ahab_image import AHABImage
 from spsdk.image.fcb.fcb import FCB
 from spsdk.image.hab.hab_container import HabContainer
 from spsdk.image.mbi.mbi import MasterBootImage, get_mbi_class
+from spsdk.image.mem_type import MemoryType
 from spsdk.image.xmcd.xmcd import XMCD
 from spsdk.sbfile.sb2.images import BootImageV21
 from spsdk.sbfile.sb31.images import SecureBinary31
@@ -89,7 +90,7 @@ class Segment(BaseClass):
         self,
         offset: int,
         family: str,
-        mem_type: str,
+        mem_type: MemoryType,
         revision: str = "latest",
         raw_block: Optional[bytes] = None,
     ) -> None:
@@ -259,7 +260,7 @@ class SegmentFcb(Segment):
         self,
         offset: int,
         family: str,
-        mem_type: str,
+        mem_type: MemoryType,
         revision: str = "latest",
         raw_block: Optional[bytes] = None,
         fcb: Optional[FCB] = None,
@@ -487,7 +488,7 @@ class SegmentXmcd(Segment):
         self,
         offset: int,
         family: str,
-        mem_type: str,
+        mem_type: MemoryType,
         revision: str = "latest",
         raw_block: Optional[bytes] = None,
         xmcd: Optional[XMCD] = None,
@@ -568,7 +569,7 @@ class SegmentMbi(Segment):
         self,
         offset: int,
         family: str,
-        mem_type: str,
+        mem_type: MemoryType,
         revision: str = "latest",
         raw_block: Optional[bytes] = None,
         mbi: Optional[MasterBootImage] = None,
@@ -671,7 +672,7 @@ class SegmentHab(Segment):
         self,
         offset: int,
         family: str,
-        mem_type: str,
+        mem_type: MemoryType,
         revision: str = "latest",
         raw_block: Optional[bytes] = None,
         hab: Optional[HabContainer] = None,
@@ -760,7 +761,7 @@ class SegmentAhab(Segment):
         self,
         offset: int,
         family: str,
-        mem_type: str,
+        mem_type: MemoryType,
         revision: str = "latest",
         raw_block: Optional[bytes] = None,
         ahab: Optional[AHABImage] = None,
@@ -897,7 +898,7 @@ class SegmentSB21(Segment):
         self,
         offset: int,
         family: str,
-        mem_type: str,
+        mem_type: MemoryType,
         revision: str = "latest",
         raw_block: Optional[bytes] = None,
         sb21: Optional[BootImageV21] = None,
@@ -971,7 +972,7 @@ class SegmentSB31(Segment):
         self,
         offset: int,
         family: str,
-        mem_type: str,
+        mem_type: MemoryType,
         revision: str = "latest",
         raw_block: Optional[bytes] = None,
         sb31: Optional[SecureBinary31] = None,

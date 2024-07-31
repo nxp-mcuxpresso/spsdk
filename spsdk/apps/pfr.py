@@ -32,7 +32,13 @@ from spsdk.pfr.exceptions import SPSDKPfrConfigError, SPSDKPfrError
 from spsdk.pfr.pfr import CFPA, CMPA, BaseConfigArea, get_ifr_pfr_class
 from spsdk.pfr.pfrc import Pfrc
 from spsdk.utils.crypto.cert_blocks import get_keys_or_rotkh_from_certblock_config
-from spsdk.utils.misc import load_binary, load_configuration, size_fmt, write_file
+from spsdk.utils.misc import (
+    get_printable_path,
+    load_binary,
+    load_configuration,
+    size_fmt,
+    write_file,
+)
 from spsdk.utils.schema_validator import CommentedConfig
 
 PFRArea = Union[Type[CMPA], Type[CFPA]]
@@ -48,7 +54,7 @@ def _store_output(
     if path is None:
         click.echo(data)
     else:
-        click.echo(f"Result has been stored in: {path}")
+        click.echo(f"Result has been stored in: {get_printable_path(path)}")
         write_file(data, path=path, mode=mode)
 
 
@@ -111,7 +117,11 @@ def get_template(family: str, revision: str, area: str, output: str, full: bool)
     yaml_data = CommentedConfig(
         f"PFR {area.upper()} configuration template", schemas
     ).get_template()
-    _store_output(yaml_data, output, msg=f"PFR {area} configuration template has been created.")
+    _store_output(
+        yaml_data,
+        output,
+        msg=f"The PFR {area} template for {family} has been saved into {get_printable_path(output)} YAML file",
+    )
 
 
 @main.command(name="parse-binary", no_args_is_help=True)

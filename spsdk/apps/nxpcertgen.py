@@ -33,7 +33,14 @@ from spsdk.crypto.keys import (
 from spsdk.crypto.utils import extract_public_key
 from spsdk.exceptions import SPSDKError
 from spsdk.utils.database import get_common_data_file_path
-from spsdk.utils.misc import find_file, load_configuration, load_secret, load_text, write_file
+from spsdk.utils.misc import (
+    find_file,
+    get_printable_path,
+    load_configuration,
+    load_secret,
+    load_text,
+    write_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +99,7 @@ def convert(encoding: str, input_file: str, output: str) -> None:
     cert = Certificate.load(input_file)
     encoding_type = {"PEM": SPSDKEncoding.PEM, "DER": SPSDKEncoding.DER}[encoding]
     cert.save(output, encoding_type)
-    click.echo(f"The certificate file has been created: {output}")
+    click.echo(f"The certificate file has been created: {get_printable_path(output)}")
 
 
 @main.command(name="generate", no_args_is_help=True)
@@ -147,7 +154,7 @@ def generate(config: str, output: str, encoding: str) -> None:
     encoding_type = SPSDKEncoding.PEM if encoding.lower() == "pem" else SPSDKEncoding.DER
     certificate.save(output, encoding_type=encoding_type)
     logger.info("Certificate generated successfully...")
-    click.echo(f"The certificate file has been created: {output}")
+    click.echo(f"The certificate file has been created: {get_printable_path(output)}")
 
 
 @main.command(name="get-template", no_args_is_help=True)
@@ -156,7 +163,9 @@ def get_template(output: str) -> None:
     """Generate the template of Certificate generation YML configuration file."""
     logger.info("Creating Certificate template...")
     write_file(load_text(get_common_data_file_path("certgen_config.yaml")), output)
-    click.echo(f"The configuration template file has been created: {output}")
+    click.echo(
+        f"The Certificate template has been saved into {get_printable_path(output)} YAML file"
+    )
 
 
 @main.command(name="verify", no_args_is_help=True)

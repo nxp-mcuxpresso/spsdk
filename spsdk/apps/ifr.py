@@ -25,11 +25,17 @@ from spsdk.apps.utils.common_cli_options import (
     spsdk_output_option,
     spsdk_revision_option,
 )
-from spsdk.apps.utils.utils import catch_spsdk_error, deprecated_option_warning, format_raw_data
+from spsdk.apps.utils.utils import (
+    SPSDKAppError,
+    catch_spsdk_error,
+    deprecated_option_warning,
+    format_raw_data,
+)
 from spsdk.exceptions import SPSDKError
 from spsdk.mboot.mcuboot import McuBoot
 from spsdk.mboot.protocol.base import MbootProtocolBase
 from spsdk.pfr import pfr
+from spsdk.pfr.exceptions import SPSDKPfrError
 from spsdk.utils.misc import load_binary, load_configuration, size_fmt, write_file
 from spsdk.utils.schema_validator import CommentedConfig
 
@@ -150,29 +156,54 @@ def generate_binary(output: str, config: str, family: str, revision: str) -> Non
 
 @main.command(name="write", no_args_is_help=True)
 @spsdk_mboot_interface(use_long_timeout_form=True, identify_by_family=True)
-@spsdk_family_option(families=pfr.ROMCFG.get_supported_families())
-@spsdk_revision_option
+@ifr_device_type_options()
 @click.option(
     "-b",
     "--binary",
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-    required=True,
     help="Path to IFR data to write.",
+)
+@click.option(
+    "-y",
+    "--yaml",
+    "yaml_config",
+    type=click.Path(dir_okay=False, resolve_path=True),
+    help="Path to the PFR YAML config to write.",
 )
 def write(
     interface: MbootProtocolBase,
     family: str,
     revision: str,
     binary: str,
+    sector: str,
+    yaml_config: str,
 ) -> None:
     """Write IFR page to the device."""
-    ifr_obj = pfr.ROMCFG(family=family, revision=revision)
+    if not binary and not yaml_config:
+        raise SPSDKPfrError("The path to the IFR data file was not specified!")
+    data = b""
+    if binary:
+        ifr_obj = pfr.get_ifr_pfr_class(sector, family)(family=family, revision=revision)
+        data = load_binary(binary)
+    elif yaml_config:
+        cfg = load_configuration(yaml_config)
+        description = cfg.get("description")
+        cfg_area: str = cfg.get("type", description["type"] if description else "Invalid")
+        if sector.lower() != cfg_area.lower():
+            raise SPSDKAppError(
+                "Configuration area doesn't match CLI value and configuration value."
+            )
+        ifr_cls = pfr.get_ifr_pfr_class(sector, family)
+        ifr_cls.validate_config(cfg)
+        ifr_obj = ifr_cls.load_from_config(cfg)
+        if family != ifr_obj.family:
+            raise SPSDKAppError("Family in configuration doesn't match family from CLI.")
+        data = ifr_obj.export()
     ifr_page_address = ifr_obj.db.get_int(ifr_obj.FEATURE_NAME, ifr_obj.DB_SUB_KEYS + ["address"])
     ifr_page_length = ifr_obj.BINARY_SIZE
 
     click.echo(f"{ifr_obj.__class__.__name__} page address on {family} is {ifr_page_address:#x}")
 
-    data = load_binary(binary)
     if len(data) != ifr_page_length:
         raise SPSDKError(
             f"IFR page length is {ifr_page_length}. Provided binary has {size_fmt(len(data))}."
@@ -205,14 +236,6 @@ def write(
     is_flag=True,
     help="(applicable for parsing) Show differences comparing to defaults",
 )
-@click.option(
-    "-c",
-    "--show-calc",
-    is_flag=True,
-    hidden=True,
-    help="(applicable for parsing) Show also calculated fields when displaying difference to "
-    "defaults (--show-diff)",
-)
 def read(
     interface: MbootProtocolBase,
     family: str,
@@ -221,15 +244,9 @@ def read(
     output: str,
     yaml_output: str,
     show_diff: bool,
-    show_calc: bool,
 ) -> None:
     """Read IFR page from the device."""
-    if show_calc:
-        logger.warning(
-            "Show calculated fields is obsolete function for configuration YAML files."
-            " In case of debugging those values check the binary data."
-        )
-    ifr_obj = pfr.ROMCFG(family=family, revision=revision)
+    ifr_obj = pfr.get_ifr_pfr_class(sector, family)(family=family, revision=revision)
     ifr_page_address = ifr_obj.db.get_int(ifr_obj.FEATURE_NAME, ifr_obj.DB_SUB_KEYS + ["address"])
     ifr_page_length = ifr_obj.BINARY_SIZE
     ifr_page_name = ifr_obj.__class__.__name__

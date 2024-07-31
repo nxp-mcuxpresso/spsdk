@@ -285,6 +285,7 @@ features:
   wpc:
     insert_puc_only: false
     need_reset: false
+    need_address_adjust: false
     check_lifecycle: 0
 
   # ======== Misc signing section ========
